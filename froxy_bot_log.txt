@@ -1,0 +1,131 @@
+🚀 Destek ve Satış botu başlatılıyor...
+2026-06-01 02:34:57,040 - FroxyBot - INFO - Starting Froxy Customer Bot...
+2026-06-01 02:34:57,041 - telethon.network.mtprotosender - INFO - Connecting to 149.154.167.91:443/TcpFull...
+2026-06-01 02:34:57,121 - telethon.network.mtprotosender - INFO - Connection to 149.154.167.91:443/TcpFull complete!
+2026-06-01 02:50:03,250 - telethon.client.updates - WARNING - Cannot get difference since the account is likely misusing the session: database is locked
+2026-06-01 02:50:03,250 - telethon.network.mtprotosender - INFO - Disconnecting from 149.154.167.91:443/TcpFull...
+2026-06-01 02:50:03,250 - telethon.network.mtprotosender - INFO - Disconnection from 149.154.167.91:443/TcpFull complete!
+2026-06-01 02:50:03,251 - telethon.client.telegrambaseclient - ERROR - Unhandled exception from keepalive_handle after cancelling <class '_asyncio.Task'> (<Task finished name='Task-7' coro=<UpdateMethods._keepalive_loop() done, defined at C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\client\updates.py:516> exception=OperationalError('database is locked')>)
+Traceback (most recent call last):
+  File "C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\helpers.py", line 176, in _cancel
+    await task
+  File "C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\client\updates.py", line 552, in _keepalive_loop
+    await self._save_states_and_entities()
+  File "C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\client\telegrambaseclient.py", line 709, in _save_states_and_entities
+    self.session.process_entities(
+  File "C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\sessions\sqlite.py", line 318, in process_entities
+    c.executemany(
+sqlite3.OperationalError: database is locked
+2026-06-01 02:50:08,820 - asyncio - ERROR - Task exception was never retrieved
+future: <Task finished name='Task-38' coro=<TelegramBaseClient._disconnect_coro() done, defined at C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\client\telegrambaseclient.py:724> exception=OperationalError('database is locked')>
+Traceback (most recent call last):
+  File "C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\client\telegrambaseclient.py", line 754, in _disconnect_coro
+    await self._save_states_and_entities()
+  File "C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\client\telegrambaseclient.py", line 709, in _save_states_and_entities
+    self.session.process_entities(
+  File "C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\sessions\sqlite.py", line 318, in process_entities
+    c.executemany(
+sqlite3.OperationalError: database is locked
+2026-06-01 02:50:08,820 - telethon.network.mtprotosender - INFO - Not disconnecting (already have no connection)
+2026-06-01 02:50:08,820 - telethon.client.telegrambaseclient - ERROR - Unhandled exception from keepalive_handle after cancelling <class '_asyncio.Task'> (<Task finished name='Task-7' coro=<UpdateMethods._keepalive_loop() done, defined at C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\client\updates.py:516> exception=OperationalError('database is locked')>)
+Traceback (most recent call last):
+  File "C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\helpers.py", line 176, in _cancel
+    await task
+sqlite3.OperationalError: database is locked
+2026-06-01 02:50:14,395 - telethon.network.mtprotosender - INFO - Not disconnecting (already have no connection)
+2026-06-01 02:50:14,395 - telethon.client.telegrambaseclient - ERROR - Unhandled exception from keepalive_handle after cancelling <class '_asyncio.Task'> (<Task finished name='Task-7' coro=<UpdateMethods._keepalive_loop() done, defined at C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\client\updates.py:516> exception=OperationalError('database is locked')>)
+Traceback (most recent call last):
+  File "C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\client\updates.py", line 47, in _run_until_disconnected
+    raise self._updates_error
+  File "C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\client\updates.py", line 317, in _update_loop
+    diff = await self(get_diff)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\client\users.py", line 30, in __call__
+    return await self._call(self._sender, request, ordered=ordered)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\client\users.py", line 93, in _call
+    await utils.maybe_async(self.session.process_entities(result))
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\sessions\sqlite.py", line 318, in process_entities
+    c.executemany(
+sqlite3.OperationalError: database is locked
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\client\updates.py", line 105, in run_until_disconnected
+    return self.loop.run_until_complete(self._run_until_disconnected())
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\asyncio\base_events.py", line 691, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\client\updates.py", line 52, in _run_until_disconnected
+    await self.disconnect()
+  File "C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\client\telegrambaseclient.py", line 754, in _disconnect_coro
+    await self._save_states_and_entities()
+  File "C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\client\telegrambaseclient.py", line 709, in _save_states_and_entities
+    self.session.process_entities(
+  File "C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\sessions\sqlite.py", line 318, in process_entities
+    c.executemany(
+sqlite3.OperationalError: database is locked
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\helpers.py", line 176, in _cancel
+    await task
+sqlite3.OperationalError: database is locked
+Traceback (most recent call last):
+  File "C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\client\updates.py", line 47, in _run_until_disconnected
+    raise self._updates_error
+  File "C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\client\updates.py", line 317, in _update_loop
+    diff = await self(get_diff)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\client\users.py", line 30, in __call__
+    return await self._call(self._sender, request, ordered=ordered)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\client\users.py", line 93, in _call
+    await utils.maybe_async(self.session.process_entities(result))
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\sessions\sqlite.py", line 318, in process_entities
+    c.executemany(
+sqlite3.OperationalError: database is locked
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\client\updates.py", line 105, in run_until_disconnected
+    return self.loop.run_until_complete(self._run_until_disconnected())
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\asyncio\base_events.py", line 691, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\client\updates.py", line 52, in _run_until_disconnected
+    await self.disconnect()
+  File "C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\client\telegrambaseclient.py", line 754, in _disconnect_coro
+    await self._save_states_and_entities()
+  File "C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\client\telegrambaseclient.py", line 709, in _save_states_and_entities
+    self.session.process_entities(
+  File "C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\sessions\sqlite.py", line 318, in process_entities
+    c.executemany(
+sqlite3.OperationalError: database is locked
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\habil\.gemini\antigravity\scratch\tg-bot-reklam\froxy_bot.py", line 240, in <module>
+    bot.run_until_disconnected()
+  File "C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\client\updates.py", line 110, in run_until_disconnected
+    self.disconnect()
+  File "C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\client\telegrambaseclient.py", line 664, in disconnect
+    self.loop.run_until_complete(self._disconnect_coro())
+  File "C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\asyncio\base_events.py", line 691, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\client\telegrambaseclient.py", line 754, in _disconnect_coro
+    await self._save_states_and_entities()
+  File "C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\client\telegrambaseclient.py", line 709, in _save_states_and_entities
+    self.session.process_entities(
+  File "C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\sessions\sqlite.py", line 318, in process_entities
+    c.executemany(
+sqlite3.OperationalError: database is locked

@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reklam Botu Paneli</title>
+  <meta name="description" content="Telegram Otomatik Reklam Botu Kontrol Paneli" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #08080e;
+      --surface: #0f0f1a;
+      --surface2: #16162a;
+      --surface3: #1d1d35;
+      --border: rgba(255,255,255,0.07);
+      --accent: #7c3aed;
+      --accent2: #a78bfa;
+      --green: #22c55e;
+      --red: #ef4444;
+      --yellow: #f59e0b;
+      --blue: #3b82f6;
+      --text: #e2e8f0;
+      --muted: #64748b;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      background-image:
+        radial-gradient(ellipse 70% 40% at 20% -10%, rgba(124,58,237,0.12), transparent),
+        radial-gradient(ellipse 50% 30% at 80% 90%, rgba(167,139,250,0.06), transparent);
+    }
+
+    /* Header */
+    header {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(8,8,14,0.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 60px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .logo { display: flex; align-items: center; gap: 10px; }
+    .logo-icon {
+      width: 34px; height: 34px; border-radius: 9px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex; align-items: center; justify-content: center; font-size: 16px;
+    }
+    .logo-name { font-size: 15px; font-weight: 700; }
+    .logo-sub { font-size: 10px; color: var(--muted); }
+
+    .companion-pill {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 20px; padding: 5px 12px; font-size: 12px; font-weight: 500;
+    }
+    .cpill-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--red); transition: background .4s; }
+    .cpill-dot.on { background: var(--green); animation: pdot 2s infinite; }
+    @keyframes pdot {
+      0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,.4);}
+      50%{box-shadow:0 0 0 5px rgba(34,197,94,0);}
+    }
+
+    /* Main */
+    main { max-width: 1080px; margin: 0 auto; padding: 28px 20px 60px; display: flex; flex-direction: column; gap: 18px; }
+
+    /* Status Hero */
+    .hero {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 18px;
+      padding: 28px; display: flex; align-items: center; justify-content: space-between;
+      gap: 20px; flex-wrap: wrap; position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content:''; position:absolute; top:0;left:0;right:0;height:1px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    }
+    .hero-left { display: flex; align-items: center; gap: 18px; }
+    .hero-orb {
+      width: 64px; height: 64px; border-radius: 50%;
+      background: var(--surface2); border: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: center; font-size: 26px;
+      transition: all .4s;
+    }
+    .hero-orb.running { border-color: var(--green); background: rgba(34,197,94,.08); animation: orb 3s ease-in-out infinite; }
+    .hero-orb.stopped { border-color: var(--red); background: rgba(239,68,68,.06); }
+    @keyframes orb { 0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,.3);}50%{box-shadow:0 0 20px 4px rgba(34,197,94,.12);} }
+    .hero-info h1 { font-size: 22px; font-weight: 800; letter-spacing: -.3px; }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 5px; margin-top: 5px;
+      padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+    }
+    .hero-badge.running { background: rgba(34,197,94,.12); color: var(--green); }
+    .hero-badge.stopped { background: rgba(239,68,68,.1); color: var(--red); }
+    .hero-badge .dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+    /* Stats Row */
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+    .stat {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+      padding: 16px 18px; transition: border-color .2s, transform .2s;
+    }
+    .stat:hover { border-color: rgba(124,58,237,.3); transform: translateY(-2px); }
+    .stat-label { font-size: 11px; color: var(--muted); font-weight: 500; margin-bottom: 6px; display: flex; align-items: center; gap: 5px; }
+    .stat-val { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+    /* Controls */
+    .panel {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 22px;
+    }
+    .panel-title {
+      font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: .6px;
+      text-transform: uppercase; margin-bottom: 14px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .panel-title::after { content:''; flex:1; height:1px; background: var(--border); }
+    .btns { display: flex; flex-wrap: wrap; gap: 10px; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 9px 18px; border-radius: 10px; border: none;
+      font-family: inherit; font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: all .18s; user-select: none;
+    }
+    .btn:active { transform: scale(.97); }
+    .btn:disabled { opacity: .4; cursor: not-allowed; transform: none !important; }
+    .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; }
+    .btn-primary:hover:not(:disabled) { opacity:.9; box-shadow: 0 4px 18px rgba(124,58,237,.4); }
+    .btn-danger { background: rgba(239,68,68,.12); color: var(--red); border: 1px solid rgba(239,68,68,.2); }
+    .btn-danger:hover:not(:disabled) { background: rgba(239,68,68,.22); }
+    .btn-warning { background: rgba(245,158,11,.1); color: var(--yellow); border: 1px solid rgba(245,158,11,.2); }
+    .btn-warning:hover:not(:disabled) { background: rgba(245,158,11,.2); }
+    .btn-ghost { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    .btn-ghost:hover:not(:disabled) { border-color: rgba(124,58,237,.35); }
+    .btn-blue { background: rgba(59,130,246,.12); color: var(--blue); border: 1px solid rgba(59,130,246,.2); }
+    .btn-blue:hover:not(:disabled) { background: rgba(59,130,246,.22); }
+    .btn-green { background: rgba(34,197,94,.12); color: var(--green); border: 1px solid rgba(34,197,94,.2); }
+    .btn-green:hover:not(:disabled) { background: rgba(34,197,94,.22); }
+
+    /* Auto mode card */
+    .auto-card {
+      margin-top: 14px; padding: 14px 16px;
+      background: var(--surface2); border: 1px solid var(--border); border-radius: 12px;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    }
+    .auto-card .auto-info h3 { font-size: 13px; font-weight: 600; }
+    .auto-card .auto-info p { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .auto-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 8px; font-size: 11px; font-weight: 600; margin-top: 4px; }
+    .auto-badge.on { background: rgba(34,197,94,.15); color: var(--green); }
+    .auto-badge.off { background: rgba(100,116,139,.12); color: var(--muted); }
+
+    /* Message Editor */
+    .msg-editor { display: flex; flex-direction: column; gap: 10px; }
+    textarea {
+      width: 100%; min-height: 140px; resize: vertical;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 10px; color: var(--text);
+      font-family: 'JetBrains Mono', monospace; font-size: 13px;
+      padding: 12px 14px; outline: none; transition: border-color .2s;
+      line-height: 1.6;
+    }
+    textarea:focus { border-color: rgba(124,58,237,.5); }
+    .msg-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+    .msg-status { font-size: 12px; color: var(--muted); }
+    .msg-status.saved { color: var(--green); }
+    .msg-status.saving { color: var(--yellow); }
+
+    /* Logs */
+    .log-box {
+      background: var(--surface2); border: 1px solid var(--border); border-radius: 12px;
+      padding: 14px; max-height: 320px; overflow-y: auto;
+      font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.7;
+    }
+    .log-box::-webkit-scrollbar { width: 4px; }
+    .log-box::-webkit-scrollbar-track { background: transparent; }
+    .log-box::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    .log-line { padding: 1px 0; white-space: pre-wrap; word-break: break-word; }
+    .log-line.success { color: var(--green); }
+    .log-line.error { color: var(--red); }
+    .log-line.warn { color: var(--yellow); }
+    .log-line.info { color: var(--blue); }
+    .log-line.muted { color: var(--muted); }
+    .log-empty { color: var(--muted); text-align: center; padding: 20px; font-family: inherit; }
+
+    .log-controls { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; }
+    .log-controls label { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 5px; cursor: pointer; }
+    .log-controls input[type=checkbox] { accent-color: var(--accent); }
+
+    /* Progress bar */
+    .prog-bar-wrap { margin-top: 8px; }
+    .prog-bar-bg { background: var(--surface3); border-radius: 8px; height: 6px; overflow: hidden; }
+    .prog-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 8px; transition: width .5s; }
+    .prog-label { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+    @media(max-width:600px){
+      main{padding:16px 12px 48px;}
+      .hero{padding:18px;}
+      .btns{gap:8px;}
+      .btn{padding:8px 14px;font-size:12px;}
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">📢</div>
+    <div>
+      <div class="logo-name">Reklam Botu</div>
+      <div class="logo-sub">Telegram Otomatik Mesaj Paneli</div>
+    </div>
+  </div>
+  <div class="companion-pill">
+    <span class="cpill-dot" id="cpill-dot"></span>
+    <span id="cpill-label">Bağlanıyor...</span>
+  </div>
+</header>
+
+<main>
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-left">
+      <div class="hero-orb stopped" id="hero-orb">📢</div>
+      <div class="hero-info">
+        <h1 id="hero-title">Bot Durumu</h1>
+        <div class="hero-badge stopped" id="hero-badge">
+          <span class="dot"></span>
+          <span id="hero-status-text">Yükleniyor...</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-label">⏱ Çalışma Süresi</div>
+      <div class="stat-val" id="s-uptime">—</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">📊 Tamamlanan Grup</div>
+      <div class="stat-val" id="s-done">—</div>
+      <div class="prog-bar-wrap">
+        <div class="prog-bar-bg"><div class="prog-bar-fill" id="prog-fill" style="width:0%"></div></div>
+        <div class="prog-label" id="prog-label"></div>
+      </div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">🚫 Kara Liste</div>
+      <div class="stat-val" id="s-blacklist">—</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">🔢 PID</div>
+      <div class="stat-val" id="s-pid">—</div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="panel">
+    <div class="panel-title">Bot Kontrolleri</div>
+    <div class="btns">
+      <button class="btn btn-primary" id="btn-start" onclick="sendCmd('start')">▶&nbsp; Başlat</button>
+      <button class="btn btn-danger" id="btn-stop" onclick="sendCmd('stop')">⏹&nbsp; Durdur</button>
+      <button class="btn btn-warning" id="btn-restart" onclick="sendCmd('restart')">🔄&nbsp; Yeniden Başlat</button>
+      <button class="btn btn-ghost" id="btn-refresh-logs" onclick="window._refreshLogs && window._refreshLogs()">🔃&nbsp; Logları Yenile</button>
+    </div>
+    <!-- Auto-Restart Card -->
+    <div class="auto-card">
+      <div class="auto-info">
+        <h3>🔁 Otomatik Yeniden Başlatma</h3>
+        <p>Bot kapanırsa companion scripti otomatik olarak yeniden başlatır.</p>
+        <span class="auto-badge off" id="auto-badge">KAPALI</span>
+      </div>
+      <div class="btns">
+        <button class="btn btn-green" id="btn-auto-on" onclick="sendCmd('auto_on')">✅ AÇ</button>
+        <button class="btn btn-ghost" id="btn-auto-off" onclick="sendCmd('auto_off')">❌ KAPAT</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Message Editor -->
+  <div class="panel">
+    <div class="panel-title">Mesaj İçeriği</div>
+    <div class="msg-editor">
+      <textarea id="msg-textarea" placeholder="Yükleniyor...">🤖 Yapay Zeka (AI) Paketleri
+
+Manus AI
+• 1 Haftalık: 99.99 TL
+
+ChatGPT
+• Plus Ortak (1 Ay): 29.99 TL
+• Business Davet: 99.99 TL
+
+Gemini
+• Business Pro Davet (1 Ay): 29.99 TL
+• Pro Davet: 1 Ay 69.99 TL | 2 Ay 79.99 TL | 1 Yıl 299.99 TL
+• Antigravity (1 Ay): 99.99 TL
+• Ultra: Giriş 279.99 TL | 1 Hafta 499.99 TL | 20 Gün 799.99 TL
+
+Perplexity
+• Ortak (1 Ay): 49.99 TL
+
+Grok
+• SuperGrok Ortak: 1 Hafta 69.99 TL | 1 Ay 99.99 TL
+• Ortak (3 Ay): 199.99 TL
+• Kişisel: SuperGrok 1 Yıl 599.99 TL | HeavyGrok 1 Yıl 799.99 TL
+
+🎵 Premium
+• Spotify Kod (4 Ay): 19.99 TL
+• YouTube Kod (3 Ay): 19.99 TL
+• YouTube Davet (1 Ay): 19.99 TL
+
+💬 Stok ve bilgi: DM
+
+✅ Sipariş Başlat: @LisansArenaBot
+💬 Destek: @LisansArena</textarea>
+      <div class="msg-footer">
+        <span class="msg-status" id="msg-status">Yükleniyor...</span>
+        <button class="btn btn-blue" onclick="saveMessage()">💾&nbsp; Kaydet & Uygula</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Logs -->
+  <div class="panel">
+    <div class="panel-title">Canlı Loglar</div>
+    <div class="log-controls">
+      <label><input type="checkbox" id="auto-scroll" checked /> Otomatik kaydır</label>
+    </div>
+    <div class="log-box" id="log-box">
+      <div class="log-empty">Bot başlatıldığında loglar burada görünecek.</div>
+    </div>
+  </div>
+
+</main>
+
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+  import { getFirestore, doc, onSnapshot, setDoc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCZz54GBF4nCgP84DsTSwwMyPq70Lb_Mjo",
+    authDomain: "bot-2-63772.firebaseapp.com",
+    projectId: "bot-2-63772",
+    storageBucket: "bot-2-63772.firebasestorage.app",
+    messagingSenderId: "103012565223",
+    appId: "1:103012565223:web:ca316318be590638fb2242",
+    measurementId: "G-7F3XRD1KV7"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  function el(id) { return document.getElementById(id); }
+  function set(id, v) { const e = el(id); if(e) e.textContent = v ?? '—'; }
+
+  // ── Status listener ──
+  onSnapshot(doc(db, 'reklam', 'status'), snap => {
+    if (!snap.exists()) return;
+    const d = snap.data();
+
+    const running = d.running === true;
+    const autoOn = d.auto_keep_running === true;
+    el('hero-orb').className = `hero-orb ${running ? 'running' : 'stopped'}`;
+    el('hero-badge').className = `hero-badge ${running ? 'running' : 'stopped'}`;
+    set('hero-title', running ? 'Bot Aktif' : 'Bot Pasif');
+    set('hero-status-text', running ? 'ÇALIŞIYOR ✓' : 'DURDURULDU');
+    // Auto badge
+    const ab = el('auto-badge');
+    ab.className = `auto-badge ${autoOn ? 'on' : 'off'}`;
+    ab.textContent = autoOn ? 'AUTO-RESTART AÇIK ✓' : 'KAPALI';
+
+    set('s-uptime', d.uptime || '—');
+    set('s-pid', d.pid || '—');
+
+    const done = parseInt(d.progress_done) || 0;
+    const total = parseInt(d.progress_total) || 0;
+    set('s-done', total > 0 ? `${done} / ${total}` : done || '—');
+    if (total > 0) {
+      const pct = Math.round(done / total * 100);
+      el('prog-fill').style.width = pct + '%';
+      el('prog-label').textContent = `%${pct} tamamlandı`;
+    }
+    set('s-blacklist', d.blacklist_count !== undefined ? `${d.blacklist_count} grup` : '—');
+
+    const online = d.companion_online === true;
+    el('cpill-dot').className = `cpill-dot ${online ? 'on' : ''}`;
+    set('cpill-label', online ? 'Companion Online' : 'Companion Offline');
+  });
+
+  // ── Logs listener ──
+  function classifyLine(line) {
+    const l = line.toLowerCase();
+    if (l.includes('✅') || l.includes('gönderildi') || l.includes('başlatıldı') || l.includes('✓')) return 'success';
+    if (l.includes('❌') || l.includes('hata') || l.includes('error') || l.includes('flood')) return 'error';
+    if (l.includes('⚠️') || l.includes('warn') || l.includes('bekleniyor')) return 'warn';
+    if (l.includes('🚀') || l.includes('📢') || l.includes('🔍') || l.includes('[')) return 'info';
+    if (l.includes('---') || line.trim() === '') return 'muted';
+    return '';
+  }
+
+  function renderLogs(lines) {
+    const box = el('log-box');
+    if (!lines || lines.length === 0) {
+      box.innerHTML = '<div class="log-empty">Henüz log yok.</div>';
+      return;
+    }
+    box.innerHTML = lines.map(l =>
+      `<div class="log-line ${classifyLine(l)}">${escHtml(l)}</div>`
+    ).join('');
+    if (el('auto-scroll').checked) box.scrollTop = box.scrollHeight;
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  window._refreshLogs = async () => {
+    const snap = await getDoc(doc(db, 'reklam', 'logs'));
+    if (snap.exists()) {
+      const raw = snap.data().content || '';
+      renderLogs(raw.split('\n'));
+    }
+  };
+
+  onSnapshot(doc(db, 'reklam', 'logs'), snap => {
+    if (!snap.exists()) return;
+    const raw = snap.data().content || '';
+    renderLogs(raw.split('\n'));
+  });
+
+  // ── Message ──
+  onSnapshot(doc(db, 'reklam', 'message'), snap => {
+    if (!snap.exists()) return;
+    const ta = el('msg-textarea');
+    if (document.activeElement !== ta) {
+      ta.value = snap.data().content || '';
+    }
+    el('msg-status').textContent = 'Firestore\'dan yüklendi ✓';
+    el('msg-status').className = 'msg-status saved';
+  });
+
+  window.saveMessage = async () => {
+    const content = el('msg-textarea').value;
+    el('msg-status').textContent = 'Kaydediliyor...';
+    el('msg-status').className = 'msg-status saving';
+    try {
+      await setDoc(doc(db, 'reklam', 'message'), { content });
+      el('msg-status').textContent = 'Kaydedildi & Bota uygulandı ✓';
+      el('msg-status').className = 'msg-status saved';
+    } catch(e) {
+      el('msg-status').textContent = 'Hata: ' + e.message;
+      el('msg-status').className = 'msg-status';
+    }
+  };
+
+  // ── Commands ──
+  window.sendCmd = async (action) => {
+    ['btn-start','btn-stop','btn-restart','btn-auto-on','btn-auto-off'].forEach(id => el(id).disabled = true);
+    try {
+      await setDoc(doc(db, 'reklam', 'command'), {
+        action, issued_at: new Date().toISOString(), processed: false
+      });
+    } catch(e) { alert('Komut gönderilemedi: ' + e.message); }
+    setTimeout(() => {
+      ['btn-start','btn-stop','btn-restart','btn-auto-on','btn-auto-off'].forEach(id => el(id).disabled = false);
+    }, 2500);
+  };
+</script>
+</body>
+</html>

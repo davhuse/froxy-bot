@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Froxy AI Bot Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="background-aurora"></div>
+    
+    <div class="dashboard-container">
+        <header>
+            <h1><i class="fa-solid fa-robot"></i> Froxy AI Control Center</h1>
+            <div class="tabs-header">
+                <button class="tab-btn active" id="tabBtnReklam" onclick="switchTab('reklam')">
+                    <i class="fa-solid fa-bullhorn"></i> Reklam Botu
+                </button>
+                <button class="tab-btn" id="tabBtnDestek" onclick="switchTab('destek')">
+                    <i class="fa-solid fa-headset"></i> Destek & Satış Botu
+                </button>
+            </div>
+        </header>
+
+        <!-- TAB 1: REKLAM BOTU -->
+        <div id="tab-reklam" class="tab-content active">
+            <div class="controls-panel glass-panel">
+                <div class="bot-info-header">
+                    <h2><i class="fa-solid fa-circle-play"></i> Reklam Gönderim Kontrolü</h2>
+                    <div class="status-badge stopped" id="botStatus">
+                        <span class="dot"></span>
+                        <span class="text">Kontrol Ediliyor...</span>
+                    </div>
+                </div>
+                <div class="control-actions">
+                    <button id="btnStart" class="btn primary" onclick="startBot()">
+                        <i class="fa-solid fa-play"></i> Başlat
+                    </button>
+                    <button id="btnStop" class="btn danger" onclick="stopBot()">
+                        <i class="fa-solid fa-stop"></i> Durdur
+                    </button>
+                </div>
+                <p class="info-note">
+                    <i class="fa-solid fa-circle-info"></i> Reklam botu message.txt dosyasını okuyarak gruplara otomatik mesaj gönderir.
+                </p>
+            </div>
+
+            <div class="main-content">
+                <div class="editor-section glass-panel">
+                    <h2><i class="fa-solid fa-pen-to-square"></i> Reklam Mesajı (message.txt)</h2>
+                    <textarea id="messageEditor" spellcheck="false"></textarea>
+                    <button class="btn secondary" id="btnSave" onclick="saveMessage(event)">
+                        <i class="fa-solid fa-floppy-disk"></i> Kaydet
+                    </button>
+                </div>
+
+                <div class="logs-section glass-panel">
+                    <h2><i class="fa-solid fa-terminal"></i> Canlı Reklam Günlükleri</h2>
+                    <div class="terminal" id="terminalOutput">
+                        <!-- Loglar buraya gelecek -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: DESTEK & SATIŞ BOTU -->
+        <div id="tab-destek" class="tab-content">
+            <div class="controls-panel glass-panel">
+                <div class="bot-info-header">
+                    <h2><i class="fa-solid fa-headset"></i> Müşteri Paneli Kontrolü</h2>
+                    <div class="status-badge stopped" id="supportBotStatus">
+                        <span class="dot"></span>
+                        <span class="text">Kontrol Ediliyor...</span>
+                    </div>
+                </div>
+                <div class="control-actions">
+                    <button id="btnSupportStart" class="btn primary" onclick="startSupportBot()">
+                        <i class="fa-solid fa-play"></i> Botu Aktifleştir
+                    </button>
+                    <button id="btnSupportStop" class="btn danger" onclick="stopSupportBot()">
+                        <i class="fa-solid fa-stop"></i> Botu Durdur
+                    </button>
+                </div>
+                <p class="info-note">
+                    <i class="fa-solid fa-circle-info"></i> Bu bot, müşterilerin Telegram üzerinden paket satın almasını ve destek talebi açmasını sağlar.
+                </p>
+            </div>
+
+            <div class="main-content grid-layout">
+                <div class="config-section glass-panel">
+                    <h2><i class="fa-solid fa-gears"></i> Bot Yapılandırması</h2>
+                    
+                    <div class="form-group">
+                        <label for="cfgBotToken">Telegram Bot Token (BotFather)</label>
+                        <input type="text" id="cfgBotToken" placeholder="Örn: 123456789:ABCdefGhI..." spellcheck="false">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="cfgAdminId">Admin Telegram Chat ID (Destek Mesajları İçin)</label>
+                        <input type="number" id="cfgAdminId" placeholder="Örn: 987654321">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="cfgAdStringSession">Reklam Botu StringSession Anahtarı (Bulut Sunucu İçin)</label>
+                        <input type="text" id="cfgAdStringSession" placeholder="Örn: 1BQWxsY..." spellcheck="false">
+                    </div>
+
+                    <h3>Shopier Ödeme Linkleri</h3>
+                    
+                    <div class="form-row">
+                        <div class="form-group half">
+                            <label for="linkBaslangic">Başlangıç (₺129.99)</label>
+                            <input type="text" id="linkBaslangic" placeholder="Shopier Linki" spellcheck="false">
+                        </div>
+                        <div class="form-group half">
+                            <label for="linkPopuler">Popüler (₺249.99)</label>
+                            <input type="text" id="linkPopuler" placeholder="Shopier Linki" spellcheck="false">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group half">
+                            <label for="linkProfesyonel">Profesyonel (₺449.99)</label>
+                            <input type="text" id="linkProfesyonel" placeholder="Shopier Linki" spellcheck="false">
+                        </div>
+                        <div class="form-group half">
+                            <label for="linkGelistirici">Geliştirici (₺599.99)</label>
+                            <input type="text" id="linkGelistirici" placeholder="Shopier Linki" spellcheck="false">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group half">
+                            <label for="linkIsletme">İşletme (₺799.99)</label>
+                            <input type="text" id="linkIsletme" placeholder="Shopier Linki" spellcheck="false">
+                        </div>
+                        <div class="form-group half">
+                            <label for="linkKurumsal">Kurumsal (₺1499.99)</label>
+                            <input type="text" id="linkKurumsal" placeholder="Shopier Linki" spellcheck="false">
+                        </div>
+                    </div>
+
+                    <button class="btn primary" id="btnSaveConfig" onclick="saveConfig()" style="margin-top:20px; width:100%; justify-content:center;">
+                        <i class="fa-solid fa-floppy-disk"></i> Yapılandırmayı Kaydet
+                    </button>
+                </div>
+
+                <div class="logs-section glass-panel">
+                    <h2><i class="fa-solid fa-terminal"></i> Canlı Destek Botu Günlükleri</h2>
+                    <div class="terminal" id="supportTerminalOutput">
+                        <!-- Loglar buraya gelecek -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
