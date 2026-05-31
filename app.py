@@ -18,6 +18,60 @@ SUPPORT_LOG_FILE = "froxy_bot_log.txt"
 MESSAGE_FILE = "message.txt"
 CONFIG_FILE = "bot_config.json"
 
+def update_config_state(key, value):
+    if not os.path.exists(CONFIG_FILE):
+        return
+    try:
+        with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+            cfg = json.load(f)
+        cfg[key] = value
+        with open(CONFIG_FILE, "w", encoding="utf-8") as f:
+            json.dump(cfg, f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        print(f"Error updating config state: {e}")
+
+def auto_start_bots():
+    global ad_process, support_process
+    if not os.path.exists(CONFIG_FILE):
+        return
+    try:
+        with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+            cfg = json.load(f)
+            
+        # Start Support Bot if it was marked as active
+        if cfg.get("support_bot_running", False):
+            token = cfg.get("bot_token", "")
+            if token and token != "YOUR_TELEGRAM_BOT_TOKEN":
+                flags = subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
+                file_out = open(SUPPORT_LOG_FILE, 'a', encoding="utf-8", buffering=1)
+                env = os.environ.copy()
+                env["PYTHONIOENCODING"] = "utf-8"
+                support_process = subprocess.Popen(
+                    [sys.executable, 'froxy_bot.py'],
+                    stdout=file_out,
+                    stderr=subprocess.STDOUT,
+                    creationflags=flags,
+                    env=env
+                )
+                print("🤖 [Auto-Start] Destek botu başarıyla başlatıldı.")
+                
+        # Start Ad Bot if it was marked as active
+        if cfg.get("ad_bot_running", False):
+            flags = subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
+            file_out = open(LOG_FILE, 'a', encoding="utf-8", buffering=1)
+            env = os.environ.copy()
+            env["PYTHONIOENCODING"] = "utf-8"
+            ad_process = subprocess.Popen(
+                [sys.executable, 'otomatik_katil.py'],
+                stdout=file_out,
+                stderr=subprocess.STDOUT,
+                creationflags=flags,
+                env=env
+            )
+            print("📢 [Auto-Start] Reklam botu başarıyla başlatıldı.")
+    except Exception as e:
+        print(f"⚠️ [Auto-Start] Hata oluştu: {e}")
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -53,6 +107,7 @@ def start():
             creationflags=flags,
             env=env
         )
+        update_config_state("ad_bot_running", True)
         return jsonify({"success": True})
     except Exception as e:
          return jsonify({"success": False, "message": str(e)})
@@ -73,6 +128,7 @@ def stop():
             f.write("\n🛑 Reklam botu kullanıcı tarafından durduruldu.\n")
             
         ad_process = None
+        update_config_state("ad_bot_running", False)
         return jsonify({"success": True})
     return jsonify({"success": False, "message": "Reklam botu zaten durmuş durumda!"})
 
@@ -129,6 +185,7 @@ def support_start():
             creationflags=flags,
             env=env
         )
+        update_config_state("support_bot_running", True)
         return jsonify({"success": True})
     except Exception as e:
          return jsonify({"success": False, "message": str(e)})
@@ -149,6 +206,7 @@ def support_stop():
             f.write("\n🛑 Destek ve Satış botu kullanıcı tarafından durduruldu.\n")
             
         support_process = None
+        update_config_state("support_bot_running", False)
         return jsonify({"success": True})
     return jsonify({"success": False, "message": "Destek botu zaten durmuş durumda!"})
 
@@ -201,6 +259,13 @@ def get_config():
 def save_config():
     data = request.json
     try:
+        # Keep internal running states when saving config
+        if os.path.exists(CONFIG_FILE):
+            with open(CONFIG_FILE, 'r', encoding="utf-8") as f:
+                old_cfg = json.load(f)
+            data["ad_bot_running"] = old_cfg.get("ad_bot_running", False)
+            data["support_bot_running"] = old_cfg.get("support_bot_running", False)
+            
         with open(CONFIG_FILE, 'w', encoding="utf-8") as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
         return jsonify({"success": True})
@@ -208,4 +273,7 @@ def save_config():
         return jsonify({"success": False, "message": str(e)})
 
 if __name__ == '__main__':
+    # In debug mode Flask runs twice, verify it runs on main thread
+    if os.environ.get("WERKZEUG_RUN_MAIN") == "true" or not app.debug:
+        auto_start_bots()
     app.run(host='0.0.0.0', port=5000, debug=True)
