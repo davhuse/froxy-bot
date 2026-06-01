@@ -1,0 +1,13 @@
+{
+  "bot_token": "YOUR_TELEGRAM_BOT_TOKEN_HERE",
+  "admin_id": 123456789,
+  "ad_string_session": "YOUR_TELEGRAM_STRING_SESSION_HERE",
+  "shopier_links": {
+    "baslangic": "https://www.shopier.com/your_shop_id/link1",
+    "populer": "https://www.shopier.com/your_shop_id/link2",
+    "profesyonel": "https://www.shopier.com/your_shop_id/link3",
+    "gelistirici": "https://www.shopier.com/your_shop_id/link4",
+    "isletme": "https://www.shopier.com/your_shop_id/link5",
+    "kurumsal": "https://www.shopier.com/your_shop_id/link6"
+  }
+}
