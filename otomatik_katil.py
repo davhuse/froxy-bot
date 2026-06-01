@@ -170,6 +170,7 @@ async def main():
     print("-----------------------------------")
 
     string_session_key = ""
+    string_session_key_2 = ""
     ad_sleep_min = 180
     ad_sleep_max = 300
     
@@ -178,107 +179,121 @@ async def main():
             with open("bot_config.json", "r", encoding="utf-8") as f:
                 cfg = json.load(f)
                 string_session_key = cfg.get("ad_string_session", "")
+                string_session_key_2 = cfg.get("ad_string_session_2", "")
                 ad_sleep_min = cfg.get("ad_sleep_min", 180)
                 ad_sleep_max = cfg.get("ad_sleep_max", 300)
         except:
             pass
 
+    active_clients = []
+    
+    # Client 1
     if string_session_key:
-        print("🔑 StringSession kullanılarak bağlanılıyor...")
+        print("🔑 1. Hesap: StringSession kullanılarak bağlanılıyor...")
         from telethon.sessions import StringSession
-        client = TelegramClient(StringSession(string_session_key), api_id, api_hash)
-    else:
-        print("📂 Yerel oturum dosyası kullanılarak bağlanılıyor...")
-        client = TelegramClient(SESSION_NAME, api_id, api_hash)
-        
-    await client.connect()
+        client1 = TelegramClient(StringSession(string_session_key), api_id, api_hash)
+        await client1.connect()
+        if await client1.is_user_authorized():
+            active_clients.append((client1, "Hesap #1", {}))
+            print("✅ 1. Hesap yetkilendirildi.")
+        else:
+            print("❌ HATA: 1. Hesap yetkilendirilmemiş!")
+            
+    # Client 2
+    if string_session_key_2:
+        print("🔑 2. Hesap: StringSession kullanılarak bağlanılıyor...")
+        from telethon.sessions import StringSession
+        client2 = TelegramClient(StringSession(string_session_key_2), api_id, api_hash)
+        await client2.connect()
+        if await client2.is_user_authorized():
+            active_clients.append((client2, "Hesap #2", {}))
+            print("✅ 2. Hesap yetkilendirildi.")
+        else:
+            print("❌ HATA: 2. Hesap yetkilendirilmemiş!")
 
-    if not await client.is_user_authorized():
-        print("❌ HATA: Oturum açılmamış! Lütfen önce web sitesini kapatıp terminal üzerinden 'python otomatik_katil.py' komutuyla bir kereliğe mahsus oturum açınız.")
+    # Fallback to local session file if no string session is configured at all
+    if not string_session_key and not string_session_key_2:
+        print("📂 Yerel oturum dosyası kullanılarak bağlanılıyor...")
+        client1 = TelegramClient(SESSION_NAME, api_id, api_hash)
+        await client1.connect()
+        if await client1.is_user_authorized():
+            active_clients.append((client1, "Yerel Hesap", {}))
+            print("✅ Yerel hesap yetkilendirildi.")
+        else:
+            print("❌ HATA: Yerel hesap yetkilendirilmemiş!")
+            import sys
+            sys.exit(1)
+            
+    if not active_clients:
+        print("❌ HATA: Hiçbir aktif ve yetkili Telegram hesabı bulunamadı!")
         import sys
         sys.exit(1)
 
-    # Başlangıçta Firestore'dan verileri çek
-    print("🔄 Firestore'dan güncel durum yükleniyor...")
-    fs_prog, fs_black = fs_get_state()
-    if fs_prog:
-        with open(PROGRESS_FILE, 'w', encoding='utf-8') as f:
-            f.write(fs_prog)
-        print("📥 İlerleme durumu buluttan indirildi.")
-    if fs_black:
-        local_black = get_list(BLACKLIST_FILE)
-        remote_black = set(x.strip() for x in fs_black.splitlines() if x.strip())
-        merged_black = local_black.union(remote_black)
-        with open(BLACKLIST_FILE, 'w', encoding='utf-8') as f:
-            f.write('\n'.join(merged_black) + '\n')
-        print("📥 Kara liste buluttan indirildi ve birleştirildi.")
+    state_lock = asyncio.Lock()
+    active_jobs = set()
 
-    # Diyalogları önbelleğe al (Resolving username engellemek için)
-    print("🔄 Telegram diyalogları önbelleğe alınıyor...")
-    joined_dialogs = {}
-    try:
-        async for dialog in client.iter_dialogs():
-            if dialog.is_group or dialog.is_channel:
-                if dialog.entity.username:
-                    joined_dialogs[dialog.entity.username.lower()] = dialog.entity
-        print(f"✅ {len(joined_dialogs)} grup/kanal önbelleğe alındı.")
-    except Exception as e:
-        print(f"⚠️ Önbellek alınırken hata oluştu: {e}")
+    async def run_worker(client, client_name, joined_dialogs):
+        print(f"🚀 Worker {client_name} diyalogları önbelleğe alınıyor...")
+        try:
+            async for dialog in client.iter_dialogs():
+                if dialog.is_group or dialog.is_channel:
+                    if dialog.entity.username:
+                        joined_dialogs[dialog.entity.username.lower()] = dialog.entity
+            print(f"✅ Worker {client_name}: {len(joined_dialogs)} diyalog önbelleğe alındı.")
+        except Exception as e:
+            print(f"⚠️ Worker {client_name} önbellek hatası: {e}")
 
-    while True:
-        kullanilacak_gruplar = []
-        blacklist = get_list(BLACKLIST_FILE)
-
-        # Temiz grupları seç
-        for g in gruplar:
-            if g not in blacklist:
-                kullanilacak_gruplar.append(g)
-
-        if not kullanilacak_gruplar:
-            print("⚠️ Listede mesaj atılabilecek aktif grup kalmadı!")
-            break
-
-        print(f"\n📢 Döngü başlıyor... Toplam {len(gruplar)} gruptan {len(kullanilacak_gruplar)} tanesine mesaj atılacak (Boş kanallar elendi).")
-        
-        done_groups = get_list(PROGRESS_FILE)
-        if done_groups and len(done_groups) < len(kullanilacak_gruplar):
-            print(f"🔄 Kaldığın yerden devam ediliyor ({len(done_groups)} grup geçildi)...")
-        elif done_groups:
-             # Eğer liste tamamsa ama döngü baştan başlayacaksa dosyayı temizle
-            if os.path.exists(PROGRESS_FILE):
-                os.remove(PROGRESS_FILE)
-            # Firestore'daki progress'i de temizle
-            try:
-                blacklist_content = ""
-                if os.path.exists(BLACKLIST_FILE):
-                    with open(BLACKLIST_FILE, 'r', encoding='utf-8') as f:
-                        blacklist_content = f.read()
-                fs_set_state("", blacklist_content)
-            except Exception as e:
-                pass
-            done_groups = set()
-
-        for i, grup in enumerate(kullanilacak_gruplar, 1):
-            if grup in done_groups:
-                continue
-
-            try:
-                print(f"\n[{i}/{len(kullanilacak_gruplar)}] 🔍 @{grup} denetleniyor...")
+        while True:
+            hedef_grup = None
+            
+            async with state_lock:
+                kullanilacak_gruplar = []
+                blacklist = get_list(BLACKLIST_FILE)
+                for g in gruplar:
+                    if g not in blacklist:
+                        kullanilacak_gruplar.append(g)
+                        
+                if not kullanilacak_gruplar:
+                    print(f"⚠️ Worker {client_name}: Atılacak aktif grup kalmadı!")
+                    break
+                    
+                done_groups = get_list(PROGRESS_FILE)
                 
-                grup_lower = grup.lower()
+                # Check if all groups are done
+                if done_groups and len(done_groups) >= len(kullanilacak_gruplar):
+                    break
+                    
+                # Find the first available group not done and not actively processed
+                for g in kullanilacak_gruplar:
+                    if g not in done_groups and g not in active_jobs:
+                        hedef_grup = g
+                        active_jobs.add(g)
+                        break
+            
+            if not hedef_grup:
+                # No groups available right now (others might be processed), sleep a bit
+                await asyncio.sleep(5)
+                # Check if we should exit because all are done
+                async with state_lock:
+                    done_groups = get_list(PROGRESS_FILE)
+                    if done_groups and len(done_groups) >= len(kullanilacak_gruplar):
+                        break
+                continue
+                
+            try:
+                print(f"\n[{client_name}] 🔍 @{hedef_grup} denetleniyor...")
+                grup_lower = hedef_grup.lower()
                 entity = None
                 
                 # Önbellekte varsa doğrudan entity al ve Join/GetFullChannel adımlarını atla
                 if grup_lower in joined_dialogs:
                     entity = joined_dialogs[grup_lower]
-                    print(f"✅ Zaten gruptayız (Önbellekten): @{grup}")
+                    print(f"[{client_name}] ✅ Zaten gruptayız (Önbellekten): @{hedef_grup}")
                 else:
                     # Gruba katıl (Zaten varsan hata vermez)
                     try:
                         from telethon.tl.functions.channels import GetFullChannelRequest
-                        
-                        # Username çözümle
-                        entity = await client.get_entity(grup)
+                        entity = await client.get_entity(hedef_grup)
                         await client(JoinChannelRequest(entity))
                         
                         # Üye sayısını kontrol et
@@ -286,22 +301,22 @@ async def main():
                         member_count = full_channel.full_chat.participants_count
                         
                         if member_count < 20:
-                            print(f"📉 @{grup} -> Üye sayısı çok az ({member_count}). Kara listeye alınıyor...")
-                            save_to_list(grup, BLACKLIST_FILE)
+                            print(f"[{client_name}] 📉 @{hedef_grup} -> Üye sayısı çok az ({member_count}). Kara listeye alınıyor...")
+                            async with state_lock:
+                                save_to_list(hedef_grup, BLACKLIST_FILE)
                             continue
                             
-                        print(f"✅ Gruba girildi: @{grup} ({member_count} üye)")
+                        print(f"[{client_name}] ✅ Gruba girildi: @{hedef_grup} ({member_count} üye)")
                         joined_dialogs[grup_lower] = entity
                     except FloodWaitError as e:
                         raise e
                     except Exception as join_err:
-                        # Eğer username bulunamazsa veya özel kanal ise hataya göre davran
-                        print(f"⚠️ Gruba girilemedi: {join_err}")
+                        print(f"[{client_name}] ⚠️ Gruba girilemedi: {join_err}")
                         pass
 
                 if not entity:
-                    # Entity çözülemediyse ilerlemeye kaydet ve geç
-                    save_to_list(grup, PROGRESS_FILE)
+                    async with state_lock:
+                        save_to_list(hedef_grup, PROGRESS_FILE)
                     continue
 
                 # Mesaj gönder
@@ -311,21 +326,23 @@ async def main():
                             msg_to_send = fm.read()
                     except:
                         msg_to_send = "⚠️ message.txt okunamadı!"
-                    # Eğer kanal @kuponceking ise 'bot' kelimelerini temizle
-                    if grup.lower() == "kuponceking":
-                        # Bot sipariş linkini tamamen kaldır, sadece Destek kalsın
+                        
+                    if hedef_grup.lower() == "kuponceking":
                         msg_to_send = msg_to_send.replace("🤖 Sipariş & Canlı Destek Botu: @FroxyDestekBOT", "") \
                                                   .replace("bot", "sistem") \
                                                   .replace("Bot", "Sistem") \
                                                   .replace("🤖", "") \
-                                                  .strip() + "\n" # Fazla boşlukları temizle
-                        print(f"✨ @{grup} için temizlenmiş (sadece destek) mesaj kullanılıyor...")
+                                                  .strip() + "\n"
+                        print(f"[{client_name}] ✨ @{hedef_grup} için temizlenmiş mesaj kullanılıyor...")
 
                     await client.send_message(entity, msg_to_send)
-                    print(f"📨 Mesaj gönderildi!")
-                    save_to_list(grup, PROGRESS_FILE)
+                    print(f"[{client_name}] 📨 Mesaj gönderildi!")
+                    async with state_lock:
+                        save_to_list(hedef_grup, PROGRESS_FILE)
                     
-                    # Dinamik bekleme ayarlarını güncelle
+                    # Dinamik bekleme
+                    ad_sleep_min = 180
+                    ad_sleep_max = 300
                     if os.path.exists("bot_config.json"):
                         try:
                             with open("bot_config.json", "r", encoding="utf-8") as f:
@@ -336,17 +353,19 @@ async def main():
                             pass
                     
                     bekleme = random.randint(ad_sleep_min, ad_sleep_max)
-                    print(f"⏳ {bekleme // 60} dakika {bekleme % 60} saniye bekleniyor...")
+                    print(f"[{client_name}] ⏳ {bekleme // 60} dakika {bekleme % 60} saniye bekleniyor...")
                     await asyncio.sleep(bekleme)
 
                 except FloodWaitError as e:
                     raise e
                 except SlowModeWaitError as e:
-                    print(f"⏳ @{grup} -> Slow Mode aktif! {e.seconds} saniye beklemek gerekiyor. Bu döngüde pas geçiliyor...")
-                    save_to_list(grup, PROGRESS_FILE)
+                    print(f"[{client_name}] ⏳ @{hedef_grup} -> Slow Mode aktif! {e.seconds} saniye beklemek gerekiyor. Pas geçiliyor...")
+                    async with state_lock:
+                        save_to_list(hedef_grup, PROGRESS_FILE)
                 except UserBannedInChannelError:
-                    print(f"❌ @{grup} -> Bu gruptan banlanmışız! Kara listeye ekleniyor...")
-                    save_to_list(grup, BLACKLIST_FILE)
+                    print(f"[{client_name}] ❌ @{hedef_grup} -> Bu gruptan banlanmışız! Kara listeye ekleniyor...")
+                    async with state_lock:
+                        save_to_list(hedef_grup, BLACKLIST_FILE)
                 except ChatWriteForbiddenError:
                     try:
                         is_broadcast = getattr(entity, 'broadcast', False)
@@ -354,25 +373,60 @@ async def main():
                         is_broadcast = False
                     
                     if is_broadcast:
-                        print(f"📢 @{grup} -> KANAL (Yayın kanalı)! Sadece admin yazabilir. Kara listeye ekleniyor...")
-                        save_to_list(grup, BLACKLIST_FILE)
+                        print(f"[{client_name}] 📢 @{hedef_grup} -> KANAL! Sadece admin yazabilir. Kara listeye ekleniyor...")
+                        async with state_lock:
+                            save_to_list(hedef_grup, BLACKLIST_FILE)
                     else:
-                        print(f"🔒 @{grup} -> Yazma izni yok (Grup geçici olarak kilitli veya susturulduk). Pas geçiliyor...")
-                        save_to_list(grup, PROGRESS_FILE)
+                        print(f"[{client_name}] 🔒 @{hedef_grup} -> Yazma izni yok. Pas geçiliyor...")
+                        async with state_lock:
+                            save_to_list(hedef_grup, PROGRESS_FILE)
                 except Exception as msg_err:
-                    print(f"⚠️ Mesaj hatası: {msg_err}")
-                    save_to_list(grup, PROGRESS_FILE)
+                    print(f"[{client_name}] ⚠️ Mesaj hatası: {msg_err}")
+                    async with state_lock:
+                        save_to_list(hedef_grup, PROGRESS_FILE)
 
             except FloodWaitError as e:
-                print(f"🚨 Flood! {e.seconds}sn bekleniyor...")
+                print(f"[{client_name}] 🚨 Flood! {e.seconds}sn bekleniyor...")
                 await asyncio.sleep(e.seconds)
             except (UsernameNotOccupiedError, UsernameInvalidError):
-                print(f"❌ @{grup} bulunamadı. Kara listeye ekleniyor...")
-                save_to_list(grup, BLACKLIST_FILE) # Artık bir daha bu gruba uğramayacak
+                print(f"[{client_name}] ❌ @{hedef_grup} bulunamadı. Kara listeye ekleniyor...")
+                async with state_lock:
+                    save_to_list(hedef_grup, BLACKLIST_FILE)
             except Exception as e:
-                print(f"⚠️ @{grup} genel hatası: {type(e).__name__}")
-                save_to_list(grup, PROGRESS_FILE)
+                print(f"[{client_name}] ⚠️ @{hedef_grup} genel hatası: {type(e).__name__}")
+                async with state_lock:
+                    save_to_list(hedef_grup, PROGRESS_FILE)
+            finally:
+                async with state_lock:
+                    if hedef_grup in active_jobs:
+                        active_jobs.remove(hedef_grup)
 
+    while True:
+        # Başlangıçta Firestore'dan verileri çek
+        print("🔄 Firestore'dan güncel durum yükleniyor...")
+        fs_prog, fs_black = fs_get_state()
+        if fs_prog:
+            with open(PROGRESS_FILE, 'w', encoding='utf-8') as f:
+                f.write(fs_prog)
+            print("📥 İlerleme durumu buluttan indirildi.")
+        if fs_black:
+            local_black = get_list(BLACKLIST_FILE)
+            remote_black = set(x.strip() for x in fs_black.splitlines() if x.strip())
+            merged_black = local_black.union(remote_black)
+            with open(BLACKLIST_FILE, 'w', encoding='utf-8') as f:
+                f.write('\n'.join(merged_black) + '\n')
+            print("📥 Kara liste buluttan indirildi ve birleştirildi.")
+
+        active_jobs.clear()
+        
+        # Run workers concurrently
+        tasks = []
+        for client, name, j_dialogs in active_clients:
+            tasks.append(run_worker(client, name, j_dialogs))
+            
+        await asyncio.gather(*tasks)
+
+        # Tüm liste bittiğinde
         print(f"\n✅ Tüm liste bitti! 1 SAAT ARA VERİLİYOR...")
         if os.path.exists(PROGRESS_FILE):
             os.remove(PROGRESS_FILE)
@@ -388,7 +442,9 @@ async def main():
         
         await asyncio.sleep(3600) # 1 saat bekle ve baştan başla
     
-    await client.disconnect()
+    # Clean up (unreachable but formal)
+    for client, name, _ in active_clients:
+        await client.disconnect()
 
 if __name__ == '__main__':
     asyncio.run(main())
