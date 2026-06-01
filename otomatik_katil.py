@@ -105,6 +105,9 @@ gruplar = [
     "turkey_wholesale", "ucbosspubgHESAP", "ucuzaalisvers", "uye_ekleme_satis", "uzaktan_freelancee",
     "webmasterdestek", "webmasterscafe", "yazilimci_hanim", "yazilimcigencler", "yazilimciiiadam",
     "yazilimcilarburada", "yukseklisansdoktora", "zesetsyco", "zirvedekidolaplar",
+    "turkiyesatispazari", "dijitalpazarkey", "reklampazaritr", "hesaplisansmarket", "uygunlisanssatis",
+    "satis_ilanlari_tr", "toptan_perakende_tr", "freelance_dijital", "premium_market_tr", "kupon_pazari",
+    "telegram_reklam_tr", "dijital_tedarikci", "dijitalalisveris", "turkiyereklamsohbet", "smm_bayi_ticaret"
 ]
 
 PROGRESS_FILE = 'progress.txt'
