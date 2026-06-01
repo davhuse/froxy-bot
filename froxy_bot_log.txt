@@ -5,19 +5,14 @@
 2026-06-01 02:50:03,250 - telethon.client.updates - WARNING - Cannot get difference since the account is likely misusing the session: database is locked
 2026-06-01 02:50:03,250 - telethon.network.mtprotosender - INFO - Disconnecting from 149.154.167.91:443/TcpFull...
 2026-06-01 02:50:03,250 - telethon.network.mtprotosender - INFO - Disconnection from 149.154.167.91:443/TcpFull complete!
-2026-06-01 02:50:03,251 - telethon.client.telegrambaseclient - ERROR - Unhandled exception from keepalive_handle after cancelling <class '_asyncio.Task'> (<Task finished name='Task-7' coro=<UpdateMethods._keepalive_loop() done, defined at C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\client\updates.py:516> exception=OperationalError('database is locked')>)
-Traceback (most recent call last):
-  File "C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\helpers.py", line 176, in _cancel
-    await task
-  File "C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\client\updates.py", line 552, in _keepalive_loop
-    await self._save_states_and_entities()
-  File "C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\client\telegrambaseclient.py", line 709, in _save_states_and_entities
-    self.session.process_entities(
-  File "C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\sessions\sqlite.py", line 318, in process_entities
-    c.executemany(
-sqlite3.OperationalError: database is locked
-2026-06-01 02:50:08,820 - asyncio - ERROR - Task exception was never retrieved
-future: <Task finished name='Task-38' coro=<TelegramBaseClient._disconnect_coro() done, defined at C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\client\telegrambaseclient.py:724> exception=OperationalError('database is locked')>
+2026-06-01 02:50:03,251 - telethon.client.telegrambaseclient - ERROR - Unhandled exception from keepalive_handle after cancelling <class '_asyncio.Task'> (<Task finished name='Task-7' coro=<UpdateMethods._keepalive_loop() done, defined at C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\client\updates.py:516> exception2026-06-01 03:12:33,147 - telethon.client.updates - INFO - Cannot get difference since the account is not logged in: AuthKeyDuplicatedError
+2026-06-01 03:12:33,219 - telethon.client.updates - INFO - Cannot get difference since the account is not logged in: AuthKeyDuplicatedError
+2026-06-01 03:25:32,604 - telethon.client.updates - INFO - Cannot get difference since the account is not logged in: AuthKeyDuplicatedError
+2026-06-01 03:27:33,310 - telethon.client.updates - INFO - Cannot get difference since the account is not logged in: AuthKeyDuplicatedError
+2026-06-01 03:40:32,666 - telethon.client.updates - INFO - Cannot get difference since the account is not logged in: AuthKeyDuplicatedError
+2026-06-01 03:42:33,420 - telethon.client.updates - INFO - Cannot get difference since the account is not logged in: AuthKeyDuplicatedError
+2026-06-01 03:55:32,736 - telethon.client.updates - INFO - Cannot get difference since the account is not logged in: AuthKeyDuplicatedError
+ C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\client\telegrambaseclient.py:724> exception=OperationalError('database is locked')>
 Traceback (most recent call last):
   File "C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\client\telegrambaseclient.py", line 754, in _disconnect_coro
     await self._save_states_and_entities()
@@ -129,3 +124,7 @@ Traceback (most recent call last):
   File "C:\Users\habil\AppData\Local\Programs\Python\Python312\Lib\site-packages\telethon\sessions\sqlite.py", line 318, in process_entities
     c.executemany(
 sqlite3.OperationalError: database is locked
+2026-06-01 03:12:33,147 - telethon.client.updates - INFO - Cannot get difference since the account is not logged in: AuthKeyDuplicatedError
+2026-06-01 03:12:33,219 - telethon.client.updates - INFO - Cannot get difference since the account is not logged in: AuthKeyDuplicatedError
+2026-06-01 03:25:32,604 - telethon.client.updates - INFO - Cannot get difference since the account is not logged in: AuthKeyDuplicatedError
+2026-06-01 03:27:33,310 - telethon.client.updates - INFO - Cannot get difference since the account is not logged in: AuthKeyDuplicatedError

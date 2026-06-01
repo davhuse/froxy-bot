@@ -10,3 +10,4 @@ PythonTurkiye
 StartupTR
 TurkiyeReklamGrubu
 ShopifyUzmani
+kuponsat

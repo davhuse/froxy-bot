@@ -297,9 +297,9 @@ def save_config():
         return jsonify({"success": False, "message": str(e)})
 
 if __name__ == '__main__':
-    # Start the watchdog thread (if in debug mode, prevent running twice)
-    if os.environ.get("WERKZEUG_RUN_MAIN") == "true" or not app.debug:
-        t = threading.Thread(target=bot_watchdog, daemon=True)
-        t.start()
+    # Start the watchdog thread
+    t = threading.Thread(target=bot_watchdog, daemon=True)
+    t.start()
         
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
