@@ -1,40 +1,9 @@
-# Caches and temporary files
-__pycache__/
-*.py[cod]
-*$py.class
-*.log
-*.tmp
-
-# Environments
-.venv/
-venv/
-ENV/
-env/
-.env
-
-# Secrets & Configurations (CRITICAL: Do not upload credentials)
-bot_config.json
 *.session
 *.session-journal
-blacklist.txt
+__pycache__/
+*.pyc
 bot_log.txt
 froxy_bot_log.txt
 progress.txt
-
-# Databases and spreadsheets
-*.db
-*.sqlite
-*.xlsx
-accounts.txt
-zula_accounts.txt
-zula_accounts_failed.txt
-zula_hesaplar_*.txt
-
-# IDE / Editor folders
-.vscode/
-.idea/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.swp
+c4hex_session.session
+froxy_bot_session.session
