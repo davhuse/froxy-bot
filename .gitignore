@@ -7,3 +7,13 @@ froxy_bot_log.txt
 progress.txt
 c4hex_session.session
 froxy_bot_session.session
+
+# Shopier scanning and analysis files
+shopier_*
+keyvadi_shopier_page.html
+live_shopier_products.json
+parsed_keyvadi_products.json
+inspect_html.py
+verify_shopier_mapping.py
+check_live_shopier.py
+create_shopier_listings.py
