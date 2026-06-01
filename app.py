@@ -77,48 +77,56 @@ def bot_watchdog():
             env = os.environ.copy()
             env["PYTHONIOENCODING"] = "utf-8"
 
-            # 1. Check Ad Bot (otomatik_katil.py) - Always run
-            ad_proc_os = get_process_by_script('otomatik_katil.py')
-            if ad_proc_os is None:
-                print("📢 [Watchdog] Reklam botu aktif değil veya durmuş. Başlatılıyor...")
-                with open(LOG_FILE, "a", encoding="utf-8") as f:
-                    f.write("\n🚀 [Watchdog] Reklam botu otomatik olarak başlatılıyor...\n")
-                
-                # Double-check: Kill any orphan process to unlock session database
-                kill_process_by_script('otomatik_katil.py')
-                
-                file_out = open(LOG_FILE, 'a', encoding="utf-8", buffering=1)
-                ad_process = subprocess.Popen(
-                    [sys.executable, 'otomatik_katil.py'],
-                    stdout=file_out,
-                    stderr=subprocess.STDOUT,
-                    creationflags=flags,
-                    env=env
-                )
-                update_config_state("ad_bot_running", True)
-            else:
-                ad_process = ad_proc_os
-
-            # 2. Check Support Bot (froxy_bot.py) - Only run if configured
+            ad_enabled = False
+            support_enabled = False
             has_token = False
+            
             if os.path.exists(CONFIG_FILE):
                 try:
                     with open(CONFIG_FILE, "r", encoding="utf-8") as f:
                         cfg = json.load(f)
+                    ad_enabled = cfg.get("ad_bot_running", False)
+                    support_enabled = cfg.get("support_bot_running", False)
                     token = cfg.get("bot_token", "")
                     if token and token != "YOUR_TELEGRAM_BOT_TOKEN":
                         has_token = True
                 except Exception as ex:
                     print(f"Error checking config: {ex}")
-            
-            if has_token:
+
+            # 1. Check Ad Bot (otomatik_katil.py)
+            ad_proc_os = get_process_by_script('otomatik_katil.py')
+            if ad_enabled:
+                if ad_proc_os is None:
+                    print("📢 [Watchdog] Reklam botu aktif değil veya durmuş. Başlatılıyor...")
+                    with open(LOG_FILE, "a", encoding="utf-8") as f:
+                        f.write("\n🚀 [Watchdog] Reklam botu otomatik olarak başlatılıyor...\n")
+                    
+                    kill_process_by_script('otomatik_katil.py')
+                    
+                    file_out = open(LOG_FILE, 'a', encoding="utf-8", buffering=1)
+                    ad_process = subprocess.Popen(
+                        [sys.executable, 'otomatik_katil.py'],
+                        stdout=file_out,
+                        stderr=subprocess.STDOUT,
+                        creationflags=flags,
+                        env=env
+                    )
+                else:
+                    ad_process = ad_proc_os
+            else:
+                if ad_proc_os is not None:
+                    print("📢 [Watchdog] Reklam botu durduruluyor (Yapılandırmada kapalı)...")
+                    kill_process_by_script('otomatik_katil.py')
+                    ad_process = None
+
+            # 2. Check Support Bot (froxy_bot.py)
+            if has_token and support_enabled:
                 support_proc_os = get_process_by_script('froxy_bot.py')
                 if support_proc_os is None:
                     print("🤖 [Watchdog] Destek botu aktif değil veya durmuş. Başlatılıyor...")
                     with open(SUPPORT_LOG_FILE, "a", encoding="utf-8") as f:
                         f.write("\n🚀 [Watchdog] Destek botu otomatik olarak başlatılıyor...\n")
                     
-                    # Kill any orphan process to unlock session database
                     kill_process_by_script('froxy_bot.py')
                     
                     file_out = open(SUPPORT_LOG_FILE, 'a', encoding="utf-8", buffering=1)
@@ -129,11 +137,14 @@ def bot_watchdog():
                         creationflags=flags,
                         env=env
                     )
-                    update_config_state("support_bot_running", True)
                 else:
                     support_process = support_proc_os
             else:
-                print("⚠️ [Watchdog] Destek botu için geçerli bir Token bulunamadı. Bekleniyor...")
+                support_proc_os = get_process_by_script('froxy_bot.py')
+                if support_proc_os is not None:
+                    print("🤖 [Watchdog] Destek botu durduruluyor (Yapılandırmada kapalı)...")
+                    kill_process_by_script('froxy_bot.py')
+                    support_process = None
 
         except Exception as e:
             print(f"⚠️ [Watchdog] Genel denetleme hatası: {e}")
