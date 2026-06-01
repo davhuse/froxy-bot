@@ -18,6 +18,8 @@ const UI = {
     cfgBotToken: document.getElementById('cfgBotToken'),
     cfgAdminId: document.getElementById('cfgAdminId'),
     cfgAdStringSession: document.getElementById('cfgAdStringSession'),
+    cfgAdSleepMin: document.getElementById('cfgAdSleepMin'),
+    cfgAdSleepMax: document.getElementById('cfgAdSleepMax'),
     linkBaslangic: document.getElementById('linkBaslangic'),
     linkPopuler: document.getElementById('linkPopuler'),
     linkProfesyonel: document.getElementById('linkProfesyonel'),
@@ -171,10 +173,12 @@ async function loadConfig() {
     try {
         const res = await fetch('/api/config');
         const data = await res.json();
-        if (data.bot_token || data.ad_string_session) {
+        if (data.bot_token || data.ad_string_session || data.ad_sleep_min) {
             UI.cfgBotToken.value = data.bot_token || '';
             UI.cfgAdminId.value = data.admin_id || '';
             UI.cfgAdStringSession.value = data.ad_string_session || '';
+            UI.cfgAdSleepMin.value = data.ad_sleep_min || 180;
+            UI.cfgAdSleepMax.value = data.ad_sleep_max || 300;
             
             const links = data.shopier_links || {};
             UI.linkBaslangic.value = links.baslangic || '';
@@ -197,6 +201,8 @@ async function saveConfig() {
         bot_token: UI.cfgBotToken.value.trim(),
         admin_id: parseInt(UI.cfgAdminId.value) || 0,
         ad_string_session: UI.cfgAdStringSession.value.trim(),
+        ad_sleep_min: parseInt(UI.cfgAdSleepMin.value) || 180,
+        ad_sleep_max: parseInt(UI.cfgAdSleepMax.value) || 300,
         shopier_links: {
             baslangic: UI.linkBaslangic.value.trim(),
             populer: UI.linkPopuler.value.trim(),

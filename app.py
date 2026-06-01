@@ -5,6 +5,7 @@ import sys
 import json
 import threading
 import time
+import psutil
 
 base_dir = os.path.abspath(os.path.dirname(__file__))
 app = Flask(__name__, 
@@ -32,6 +33,38 @@ def update_config_state(key, value):
     except Exception as e:
         print(f"Error updating config state: {e}")
 
+# Process tracking helpers using psutil
+def get_process_by_script(script_name):
+    """Finds a running python process that executes script_name."""
+    for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+        try:
+            cmd = proc.info.get('cmdline') or []
+            if any(script_name in arg for arg in cmd):
+                return proc
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            pass
+    return None
+
+def kill_process_by_script(script_name):
+    """Kills any running python process that executes script_name."""
+    killed = False
+    for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+        try:
+            cmd = proc.info.get('cmdline') or []
+            if any(script_name in arg for arg in cmd):
+                print(f"Killing orphan process {proc.info['pid']} running {script_name}")
+                for child in proc.children(recursive=True):
+                    try: child.terminate()
+                    except: pass
+                proc.terminate()
+                try: proc.wait(timeout=3)
+                except psutil.TimeoutExpired:
+                    proc.kill()
+                killed = True
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            pass
+    return killed
+
 # WATCHDOG SYSTEM: Keeps both bots running 24/7 unconditionally
 def bot_watchdog():
     global ad_process, support_process
@@ -45,11 +78,14 @@ def bot_watchdog():
             env["PYTHONIOENCODING"] = "utf-8"
 
             # 1. Check Ad Bot (otomatik_katil.py) - Always run
-            if ad_process is None or ad_process.poll() is not None:
+            ad_proc_os = get_process_by_script('otomatik_katil.py')
+            if ad_proc_os is None:
                 print("📢 [Watchdog] Reklam botu aktif değil veya durmuş. Başlatılıyor...")
-                # Write a startup log
                 with open(LOG_FILE, "a", encoding="utf-8") as f:
                     f.write("\n🚀 [Watchdog] Reklam botu otomatik olarak başlatılıyor...\n")
+                
+                # Double-check: Kill any orphan process to unlock session database
+                kill_process_by_script('otomatik_katil.py')
                 
                 file_out = open(LOG_FILE, 'a', encoding="utf-8", buffering=1)
                 ad_process = subprocess.Popen(
@@ -60,6 +96,8 @@ def bot_watchdog():
                     env=env
                 )
                 update_config_state("ad_bot_running", True)
+            else:
+                ad_process = ad_proc_os
 
             # 2. Check Support Bot (froxy_bot.py) - Only run if configured
             has_token = False
@@ -74,10 +112,14 @@ def bot_watchdog():
                     print(f"Error checking config: {ex}")
             
             if has_token:
-                if support_process is None or support_process.poll() is not None:
+                support_proc_os = get_process_by_script('froxy_bot.py')
+                if support_proc_os is None:
                     print("🤖 [Watchdog] Destek botu aktif değil veya durmuş. Başlatılıyor...")
                     with open(SUPPORT_LOG_FILE, "a", encoding="utf-8") as f:
                         f.write("\n🚀 [Watchdog] Destek botu otomatik olarak başlatılıyor...\n")
+                    
+                    # Kill any orphan process to unlock session database
+                    kill_process_by_script('froxy_bot.py')
                     
                     file_out = open(SUPPORT_LOG_FILE, 'a', encoding="utf-8", buffering=1)
                     support_process = subprocess.Popen(
@@ -88,6 +130,8 @@ def bot_watchdog():
                         env=env
                     )
                     update_config_state("support_bot_running", True)
+                else:
+                    support_process = support_proc_os
             else:
                 print("⚠️ [Watchdog] Destek botu için geçerli bir Token bulunamadı. Bekleniyor...")
 
@@ -106,24 +150,25 @@ def index():
 
 @app.route('/api/status', methods=['GET'])
 def status():
-    global ad_process
-    is_running = ad_process is not None and ad_process.poll() is None
+    is_running = get_process_by_script('otomatik_katil.py') is not None
     return jsonify({"status": "running" if is_running else "stopped"})
 
 @app.route('/api/start', methods=['POST'])
 def start():
-    global ad_process
-    if ad_process is not None and ad_process.poll() is None:
+    if get_process_by_script('otomatik_katil.py') is not None:
         return jsonify({"success": False, "message": "Reklam botu zaten çalışıyor!"})
     
     with open(LOG_FILE, "w", encoding="utf-8") as f:
         f.write("🚀 Reklam botu başlatılıyor...\n")
         
     try:
+        kill_process_by_script('otomatik_katil.py')
+        
         flags = subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
         file_out = open(LOG_FILE, 'a', encoding="utf-8", buffering=1)
         env = os.environ.copy()
         env["PYTHONIOENCODING"] = "utf-8"
+        global ad_process
         ad_process = subprocess.Popen(
             [sys.executable, 'otomatik_katil.py'],
             stdout=file_out,
@@ -138,23 +183,13 @@ def start():
 
 @app.route('/api/stop', methods=['POST'])
 def stop():
+    kill_process_by_script('otomatik_katil.py')
+    with open(LOG_FILE, "a", encoding="utf-8") as f:
+        f.write("\n🛑 Reklam botu kullanıcı tarafından durduruldu.\n")
     global ad_process
-    if ad_process is not None and ad_process.poll() is None:
-        try:
-            ad_process.terminate()
-            ad_process.wait(timeout=3)
-        except Exception:
-            try:
-                ad_process.kill()
-            except: pass
-            
-        with open(LOG_FILE, "a", encoding="utf-8") as f:
-            f.write("\n🛑 Reklam botu kullanıcı tarafından durduruldu.\n")
-            
-        ad_process = None
-        update_config_state("ad_bot_running", False)
-        return jsonify({"success": True})
-    return jsonify({"success": False, "message": "Reklam botu zaten durmuş durumda!"})
+    ad_process = None
+    update_config_state("ad_bot_running", False)
+    return jsonify({"success": True})
 
 @app.route('/api/logs', methods=['GET'])
 def get_logs():
@@ -174,17 +209,14 @@ def get_logs():
 
 @app.route('/api/support/status', methods=['GET'])
 def support_status():
-    global support_process
-    is_running = support_process is not None and support_process.poll() is None
+    is_running = get_process_by_script('froxy_bot.py') is not None
     return jsonify({"status": "running" if is_running else "stopped"})
 
 @app.route('/api/support/start', methods=['POST'])
 def support_start():
-    global support_process
-    if support_process is not None and support_process.poll() is None:
+    if get_process_by_script('froxy_bot.py') is not None:
         return jsonify({"success": False, "message": "Destek botu zaten çalışıyor!"})
     
-    # Check if Bot Token is set first
     try:
         with open(CONFIG_FILE, "r", encoding="utf-8") as f:
             cfg = json.load(f)
@@ -198,10 +230,13 @@ def support_start():
         f.write("🚀 Destek ve Satış botu başlatılıyor...\n")
         
     try:
+        kill_process_by_script('froxy_bot.py')
+        
         flags = subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
         file_out = open(SUPPORT_LOG_FILE, 'a', encoding="utf-8", buffering=1)
         env = os.environ.copy()
         env["PYTHONIOENCODING"] = "utf-8"
+        global support_process
         support_process = subprocess.Popen(
             [sys.executable, 'froxy_bot.py'],
             stdout=file_out,
@@ -216,23 +251,13 @@ def support_start():
 
 @app.route('/api/support/stop', methods=['POST'])
 def support_stop():
+    kill_process_by_script('froxy_bot.py')
+    with open(SUPPORT_LOG_FILE, "a", encoding="utf-8") as f:
+        f.write("\n🛑 Destek ve Satış botu kullanıcı tarafından durduruldu.\n")
     global support_process
-    if support_process is not None and support_process.poll() is None:
-        try:
-            support_process.terminate()
-            support_process.wait(timeout=3)
-        except Exception:
-            try:
-                support_process.kill()
-            except: pass
-            
-        with open(SUPPORT_LOG_FILE, "a", encoding="utf-8") as f:
-            f.write("\n🛑 Destek ve Satış botu kullanıcı tarafından durduruldu.\n")
-            
-        support_process = None
-        update_config_state("support_bot_running", False)
-        return jsonify({"success": True})
-    return jsonify({"success": False, "message": "Destek botu zaten durmuş durumda!"})
+    support_process = None
+    update_config_state("support_bot_running", False)
+    return jsonify({"success": True})
 
 @app.route('/api/support/logs', methods=['GET'])
 def get_support_logs():

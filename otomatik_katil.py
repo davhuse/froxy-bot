@@ -1,6 +1,8 @@
 import asyncio
 import random
 import os
+import json
+import requests
 from telethon import TelegramClient
 from telethon.tl.functions.channels import JoinChannelRequest
 from telethon.tl.functions.contacts import ResolveUsernameRequest
@@ -78,33 +80,93 @@ gruplar = [
     "EpinKoduSatis", "WebTasarimYardim", "SMMPanelSatisGrubu", "AdsenseAlSat",
     "KriptoSohbetGrubu", "PremiumSatisTR", "SosyalMedyaDestekGrubu", "DropshippingTurk",
     "AmazonSellersYardim", "ShopifyDestekTR", "GrafikerDestekTR", "YazilimIlanTR",
-    "EpinSatisPazari", "HesapAlimSatimTR"
+    "EpinSatisPazari", "HesapAlimSatimTR",
+    # Yeni eklenen Türkçe pazar ve satış grupları
+    "ikincielalimsatimtr", "turkiyepazar", "turkcesmm", "sosyalmedyapazaritr", "dijitalpazaryeritr",
+    "satisgrubu", "toptanvesatis", "ikincielalisveristr", "webmasteryardimlasmatr", "reklamgrubutr",
+    "satiskanali", "dijitalurunsatis", "hesap_satis_tr", "epin_pazari", "lisans_alim_satim",
+    "freelance_is_ilanlari_tr", "yazilimci_is_ilanlari_tr", "dropshipping_tr_destek", "amazon_satis_ortakligi", "trendyol_saticilari_tr",
+    "hepsiburada_satis_toplulugu", "kriptosatistr", "borsa_sohbet_tr", "teknolojialimsatim", "donanimsatistr",
+    "smmbayilertr", "smmhizmetleripazari", "sosyalmedyaalimsatim", "ikincieltelefontr", "ikincielelektroniktr",
+    "freelancework_tr", "designer_is_ilanlari", "coder_is_ilanlari", "pythontr_satis", "javascripttr_satis",
+    "siberguvenliktr_satis", "linux_kullanicilari_tr", "oyun_hesap_satis_pazari", "epicgames_firsatlari_tr", "premium_satis_pazari",
+    "spotify_premium_tr", "youtube_premium_satis", "takipcialsat", "tiktok_hesap_satis", "satilik_domainler",
+    "adsense_alim_satim", "dropshipping_turk", "eticaret_tedarik", "freelance_destek_tr", "ticaretmeydanitr", "kupon_satis_tr"
 ]
 
 PROGRESS_FILE = 'progress.txt'
 BLACKLIST_FILE = 'blacklist.txt'
 
+# Firestore Ayarları
+API_KEY    = "AIzaSyCZz54GBF4nCgP84DsTSwwMyPq70Lb_Mjo"
+PROJECT_ID = "bot-2-63772"
+BASE_URL   = f"https://firestore.googleapis.com/v1/projects/{PROJECT_ID}/databases/(default)/documents"
+
+def fs_get_state():
+    try:
+        url = f"{BASE_URL}/reklam/state?key={API_KEY}"
+        r = requests.get(url, timeout=10)
+        if r.status_code == 200:
+            fields = r.json().get("fields", {})
+            progress = fields.get("progress_list", {}).get("stringValue", "")
+            blacklist = fields.get("blacklist_list", {}).get("stringValue", "")
+            return progress, blacklist
+    except Exception as e:
+        print(f"⚠️ Firestore yükleme hatası: {e}")
+    return "", ""
+
+def fs_set_state(progress, blacklist):
+    try:
+        url = f"{BASE_URL}/reklam/state?key={API_KEY}"
+        fields = {
+            "progress_list": {"stringValue": progress},
+            "blacklist_list": {"stringValue": blacklist}
+        }
+        requests.patch(url, json={"fields": fields}, timeout=10)
+    except Exception as e:
+        print(f"⚠️ Firestore kaydetme hatası: {e}")
+
 def get_list(dosya):
     if os.path.exists(dosya):
-        with open(dosya, 'r') as f:
+        with open(dosya, 'r', encoding='utf-8') as f:
             return set(line.strip() for line in f if line.strip())
     return set()
 
 def save_to_list(grup, dosya):
-    with open(dosya, 'a') as f:
+    with open(dosya, 'a', encoding='utf-8') as f:
         f.write(grup + '\n')
+    
+    # Firestore durum eşitlemesi
+    try:
+        progress_content = ""
+        if os.path.exists(PROGRESS_FILE):
+            with open(PROGRESS_FILE, 'r', encoding='utf-8') as f:
+                progress_content = f.read()
+        
+        blacklist_content = ""
+        if os.path.exists(BLACKLIST_FILE):
+            with open(BLACKLIST_FILE, 'r', encoding='utf-8') as f:
+                blacklist_content = f.read()
+                
+        fs_set_state(progress_content, blacklist_content)
+    except Exception as e:
+        print(f"⚠️ Firestore güncelleme hatası: {e}")
 
 async def main():
     print("\n🚀 Habil Reklam Botu v2 - Akıllı Mod")
     print("-----------------------------------")
 
-    import json
     string_session_key = ""
+    ad_sleep_min = 180
+    ad_sleep_max = 300
+    
     if os.path.exists("bot_config.json"):
         try:
             with open("bot_config.json", "r", encoding="utf-8") as f:
                 cfg = json.load(f)
                 string_session_key = cfg.get("ad_string_session", "")
+                ad_sleep_min = cfg.get("ad_sleep_min", 180)
+                ad_sleep_max = cfg.get("ad_sleep_max", 300)
         except:
             pass
 
@@ -122,6 +184,21 @@ async def main():
         print("❌ HATA: Oturum açılmamış! Lütfen önce web sitesini kapatıp terminal üzerinden 'python otomatik_katil.py' komutuyla bir kereliğe mahsus oturum açınız.")
         import sys
         sys.exit(1)
+
+    # Başlangıçta Firestore'dan verileri çek
+    print("🔄 Firestore'dan güncel durum yükleniyor...")
+    fs_prog, fs_black = fs_get_state()
+    if fs_prog:
+        with open(PROGRESS_FILE, 'w', encoding='utf-8') as f:
+            f.write(fs_prog)
+        print("📥 İlerleme durumu buluttan indirildi.")
+    if fs_black:
+        local_black = get_list(BLACKLIST_FILE)
+        remote_black = set(x.strip() for x in fs_black.splitlines() if x.strip())
+        merged_black = local_black.union(remote_black)
+        with open(BLACKLIST_FILE, 'w', encoding='utf-8') as f:
+            f.write('\n'.join(merged_black) + '\n')
+        print("📥 Kara liste buluttan indirildi ve birleştirildi.")
 
     while True:
         kullanilacak_gruplar = []
@@ -145,6 +222,15 @@ async def main():
              # Eğer liste tamamsa ama döngü baştan başlayacaksa dosyayı temizle
             if os.path.exists(PROGRESS_FILE):
                 os.remove(PROGRESS_FILE)
+            # Firestore'daki progress'i de temizle
+            try:
+                blacklist_content = ""
+                if os.path.exists(BLACKLIST_FILE):
+                    with open(BLACKLIST_FILE, 'r', encoding='utf-8') as f:
+                        blacklist_content = f.read()
+                fs_set_state("", blacklist_content)
+            except Exception as e:
+                pass
             done_groups = set()
 
         for i, grup in enumerate(kullanilacak_gruplar, 1):
@@ -193,8 +279,18 @@ async def main():
                     print(f"📨 Mesaj gönderildi!")
                     save_to_list(grup, PROGRESS_FILE)
                     
-                    bekleme = random.randint(570, 630) # Anti-ban: 10 dakika aralıkla (570-630 saniye)
-                    print(f"⏳ {bekleme // 60} dakika bekleniyor...")
+                    # Dinamik bekleme ayarlarını güncelle
+                    if os.path.exists("bot_config.json"):
+                        try:
+                            with open("bot_config.json", "r", encoding="utf-8") as f:
+                                cfg = json.load(f)
+                                ad_sleep_min = cfg.get("ad_sleep_min", 180)
+                                ad_sleep_max = cfg.get("ad_sleep_max", 300)
+                        except:
+                            pass
+                    
+                    bekleme = random.randint(ad_sleep_min, ad_sleep_max)
+                    print(f"⏳ {bekleme // 60} dakika {bekleme % 60} saniye bekleniyor...")
                     await asyncio.sleep(bekleme)
 
                 except SlowModeWaitError as e:
@@ -233,6 +329,15 @@ async def main():
         print(f"\n✅ Tüm liste bitti! 1 SAAT ARA VERİLİYOR...")
         if os.path.exists(PROGRESS_FILE):
             os.remove(PROGRESS_FILE)
+        # Firestore progress temizleme
+        try:
+            blacklist_content = ""
+            if os.path.exists(BLACKLIST_FILE):
+                with open(BLACKLIST_FILE, 'r', encoding='utf-8') as f:
+                    blacklist_content = f.read()
+            fs_set_state("", blacklist_content)
+        except Exception as e:
+            pass
         
         await asyncio.sleep(3600) # 1 saat bekle ve baştan başla
     
@@ -240,3 +345,4 @@ async def main():
 
 if __name__ == '__main__':
     asyncio.run(main())
+
