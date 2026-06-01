@@ -24,74 +24,87 @@ def print(*args, **kwargs):
 
 gruplar = [
     "dolapdestek0", "Nightsatis", "eticaretlab", "ticaretmerkezi", "bedavainternetssohbet",
-    "ticaretmeydani", "ikincieltr", "BuyukClup",
-    "DijitalPazarTR", "YazilimLisans", "PremiumHesapSatiss", "EticaretTR",
-    "WebmasterTR", "SMMBayiTR", "firsattdiyari", "Turkishbazaar22",
-    "firsatmarketi", "trendindirimler", "eticaret_tedarikcileri",
-    "FreelancerTurkiye", "AITurkiye", "YazilimciGelistirme", "HesapSatisTR",
-    "EpisSatis", "OyunHesapTR", "DijitalMarketim", "UcuzaLisans",
-    "GirisimciGrup", "PazaryeriSaticilari", "DropshippingTR", "AmazonSellersTR",
-    "WebmasterSatis", "SEO_Turkiye", "SosyalMedyaTicaret", "BotSatisTR",
-    "AdsenseSatis", "DomainPazari", "YazilimDestek", "TeknolojiSohbet",
-    "ikincieltelefon", "ikincielelektronik", "FreelanceIsIlani", "DesignerTR",
-    "CoderTurkiye", "PythonTurkiye", "JavaScript_TR", "CyberSecurity_TR",
-    "KriptoTicaret", "FinansHaberTR", "StartupTR", "YatirimciGrup",
-    "ToptanUrun_TR", "UygunFiyatliUrunler", "KuponPaylasim",
-    "TurkiyeReklamGrubu", "WebmasterYardimlasma", "SMMPanelTurkiye",
-    "HesapSatisPazari", "LisansPazari", "Oyun_Hesap_Alim_Satim", "PremiumHesaplar_TR",
-    "Canva_Pro_Yardimlasma", "Adobe_Creative_Cloud_TR", "Windows_Office_Key_Satis",
-    "Yazilimci_Is_Ilanlari", "Freelance_Turkiye_Grup", "Girisimcilik_Sohbetleri",
-    "E_Ticaret_Satis_Taktikleri", "Dropshipping_Turkiye_Sohbet", "Amazon_FBA_Turkiye",
-    "Trendyol_Saticilari_Grubu", "Hepsiburada_Saticilari", "Shopify_Turkiye_Yardim",
-    "Kripto_Para_Sohbet_TR", "Altcoin_Alim_Satim_Haber", "Airdrop_Firsatlari_TR",
-    "Ekonomi_Gundem_TR", "Borsa_Istanbul_Sohbet", "Teknoloji_Dunyasi_Haber",
-    "Donanim_Haber_Sohbet", "Yazilim_Kulu_Yardim", "Python_Turkiye_Gelistirici",
-    "Java_Turkiye_Toplulugu", "PHP_Laravel_TR", "React_Vue_Turkiye",
-    "Siber_Guvenlik_Platformu", "Hack_Haber_Turkiye", "Linux_Turkiye_Kullanicilari",
-    "Oyun_Haber_Sohbet", "Steam_Indirimleri_TR", "Epic_Games_Firsatlari",
-    "Netflix_Disney_Premium", "Spotify_Premium_Hizmet", "YouTube_Premium_TR",
-    "Insta_Twitter_Takipci", "TikTok_Etkilesim_Grubu",
-    "satilikilanlar", "ikincielarabailan", "sahibindenarabalar", "ShopifyUzmani",
-    "stoksuzparakazan", "arabalar_ikinciel", "Gurcistanticaret", "magazanolsunbayi",
-    "ticaretvarburada", "eticaretyardimlasmaa", "ilan_ver", "is_ilanlari_grubu",
-    "FreelanceWorkTR", "kuponindirimsatis", "kuponsatisgrup", "kuponhesapsatis",
-    "kuponsat", "KuponindirimPazari", "kuponceking", "kuponkodalsat",
-    "kupongrupta", "satcek", "kuponceksatis", "yazilimci_grubu", "phpturkiye",
-    "linux_turkiye", "cppturkiye", "seoyedek", "ikincielpazar",
+    "ticaretmeydani", "ikincieltr", "BuyukClup", "DijitalPazarTR", "YazilimLisans",
+    "PremiumHesapSatiss", "EticaretTR", "WebmasterTR", "SMMBayiTR", "firsattdiyari",
+    "Turkishbazaar22", "firsatmarketi", "trendindirimler", "eticaret_tedarikcileri", "FreelancerTurkiye",
+    "AITurkiye", "YazilimciGelistirme", "HesapSatisTR", "EpisSatis", "OyunHesapTR",
+    "DijitalMarketim", "UcuzaLisans", "GirisimciGrup", "PazaryeriSaticilari", "DropshippingTR",
+    "AmazonSellersTR", "WebmasterSatis", "SEO_Turkiye", "SosyalMedyaTicaret", "BotSatisTR",
+    "AdsenseSatis", "DomainPazari", "YazilimDestek", "TeknolojiSohbet", "ikincieltelefon",
+    "ikincielelektronik", "FreelanceIsIlani", "DesignerTR", "CoderTurkiye", "PythonTurkiye",
+    "JavaScript_TR", "CyberSecurity_TR", "KriptoTicaret", "FinansHaberTR", "StartupTR",
+    "YatirimciGrup", "ToptanUrun_TR", "UygunFiyatliUrunler", "KuponPaylasim", "TurkiyeReklamGrubu",
+    "WebmasterYardimlasma", "SMMPanelTurkiye", "HesapSatisPazari", "LisansPazari", "Oyun_Hesap_Alim_Satim",
+    "PremiumHesaplar_TR", "Canva_Pro_Yardimlasma", "Adobe_Creative_Cloud_TR", "Windows_Office_Key_Satis", "Yazilimci_Is_Ilanlari",
+    "Freelance_Turkiye_Grup", "Girisimcilik_Sohbetleri", "E_Ticaret_Satis_Taktikleri", "Dropshipping_Turkiye_Sohbet", "Amazon_FBA_Turkiye",
+    "Trendyol_Saticilari_Grubu", "Hepsiburada_Saticilari", "Shopify_Turkiye_Yardim", "Kripto_Para_Sohbet_TR", "Altcoin_Alim_Satim_Haber",
+    "Airdrop_Firsatlari_TR", "Ekonomi_Gundem_TR", "Borsa_Istanbul_Sohbet", "Teknoloji_Dunyasi_Haber", "Donanim_Haber_Sohbet",
+    "Yazilim_Kulu_Yardim", "Python_Turkiye_Gelistirici", "Java_Turkiye_Toplulugu", "PHP_Laravel_TR", "React_Vue_Turkiye",
+    "Siber_Guvenlik_Platformu", "Hack_Haber_Turkiye", "Linux_Turkiye_Kullanicilari", "Oyun_Haber_Sohbet", "Steam_Indirimleri_TR",
+    "Epic_Games_Firsatlari", "Netflix_Disney_Premium", "Spotify_Premium_Hizmet", "YouTube_Premium_TR", "Insta_Twitter_Takipci",
+    "TikTok_Etkilesim_Grubu", "satilikilanlar", "ikincielarabailan", "sahibindenarabalar", "ShopifyUzmani",
+    "stoksuzparakazan", "arabalar_ikinciel", "Gurcistanticaret", "magazanolsunbayi", "ticaretvarburada",
+    "eticaretyardimlasmaa", "ilan_ver", "is_ilanlari_grubu", "FreelanceWorkTR", "kuponindirimsatis",
+    "kuponsatisgrup", "kuponhesapsatis", "kuponsat", "KuponindirimPazari", "kuponceking",
+    "kuponkodalsat", "kupongrupta", "satcek", "kuponceksatis", "yazilimci_grubu",
+    "phpturkiye", "linux_turkiye", "cppturkiye", "seoyedek", "ikincielpazar",
     "smmbayim", "eticaretplatformu", "ikincielsatis", "freelanceyazilim", "oyunalisveris",
-    "dijitalpazar", "webmastersatis", "kriptosohbet", "borsasohbet", "yardimlasmagrubu",
-    "freelancertr", "teknolojihaber", "toptangrubu", "ucuzlisanslar", "premiumhesaplar",
-    "smmhizmetleri", "sosyalmedyadestek", "tasarimciyardim", "yazilimciyardim", "dropshippingturkiye",
-    "amazonfbatr", "trendyolsaticilar", "hepsiburadasaticilar", "spotifygenel", "youtubepremiumtr",
-    "netflixpremiumtr", "oyunhesaplarisatis", "steamcuzdankodu", "KuponSatis", "SosyalMedyaPazari",
-    "AdsenseTurkiye", "FreelancerYazilimci", "TeknolojiSohbetleri", "WebTasarimDestek", "SMMHizmeti",
-    "KriptoSohbetTR", "EpinDestek", "OyunAlSat", "ikincielesya", "GirisimciToplulugu",
-    "TrendyolDestekSohbet", "AmazonSellersTRGroup", "ShopifyDestek", "BorsaYardim", "EkonomiToplulugu",
-    "DesignerTurkiye", "CoderDestekTR", "EpinPazari", "HesapSatisGenel", "LisansBayi",
-    "SosyalMedyaTicaretGrubu", "EpinAlSat", "SMMPanelTurk", "AdsenseDestekTR",
-    "FreelanceIsIlanlariTR", "KriptoKazan", "IndirimFirsat", "ToptanGiyimTR",
-    "DropshippingTRyardim", "AmazonFBAyardim", "TrendyolPazaryeri", "WebmasterDestekTR",
-    "PythonSohbet", "JavaYardimlasma", "ReactTR", "NodejsTR",
-    "SiberGundem", "OyunPazariTR", "SteamOyunTR", "EpicGamesFirsatTR",
-    "PremiumUyelikTR", "CanvaTasarimYardim", "AdobeTRYardim", "WindowsOfficeKey",
-    "YazilimIsFirsatlari", "GirisimcilikSohbet", "ShopifyGirisim", "BorsaKriptoHaber",
-    "FinansGundemTR", "GrafikTasarimDestek", "YazilimciSohbetleri", "EpinBayilik",
-    "ZulaPazariTR", "WolfteamSatisTR", "MinecraftMacroTRGroup", "SpotifyDavet",
-    "EpinKoduSatis", "WebTasarimYardim", "SMMPanelSatisGrubu", "AdsenseAlSat",
-    "KriptoSohbetGrubu", "PremiumSatisTR", "SosyalMedyaDestekGrubu", "DropshippingTurk",
-    "AmazonSellersYardim", "ShopifyDestekTR", "GrafikerDestekTR", "YazilimIlanTR",
-    "EpinSatisPazari", "HesapAlimSatimTR",
-    # Yeni eklenen Türkçe pazar ve satış grupları
-    "ikincielalimsatimtr", "turkiyepazar", "turkcesmm", "sosyalmedyapazaritr", "dijitalpazaryeritr",
-    "satisgrubu", "toptanvesatis", "ikincielalisveristr", "webmasteryardimlasmatr", "reklamgrubutr",
-    "satiskanali", "dijitalurunsatis", "hesap_satis_tr", "epin_pazari", "lisans_alim_satim",
-    "freelance_is_ilanlari_tr", "yazilimci_is_ilanlari_tr", "dropshipping_tr_destek", "amazon_satis_ortakligi", "trendyol_saticilari_tr",
-    "hepsiburada_satis_toplulugu", "kriptosatistr", "borsa_sohbet_tr", "teknolojialimsatim", "donanimsatistr",
-    "smmbayilertr", "smmhizmetleripazari", "sosyalmedyaalimsatim", "ikincieltelefontr", "ikincielelektroniktr",
-    "freelancework_tr", "designer_is_ilanlari", "coder_is_ilanlari", "pythontr_satis", "javascripttr_satis",
-    "siberguvenliktr_satis", "linux_kullanicilari_tr", "oyun_hesap_satis_pazari", "epicgames_firsatlari_tr", "premium_satis_pazari",
-    "spotify_premium_tr", "youtube_premium_satis", "takipcialsat", "tiktok_hesap_satis", "satilik_domainler",
-    "adsense_alim_satim", "dropshipping_turk", "eticaret_tedarik", "freelance_destek_tr", "ticaretmeydanitr", "kupon_satis_tr"
+    "dijitalpazar", "kriptosohbet", "borsasohbet", "yardimlasmagrubu", "freelancertr",
+    "teknolojihaber", "toptangrubu", "ucuzlisanslar", "premiumhesaplar", "smmhizmetleri",
+    "sosyalmedyadestek", "tasarimciyardim", "yazilimciyardim", "dropshippingturkiye", "amazonfbatr",
+    "trendyolsaticilar", "hepsiburadasaticilar", "spotifygenel", "youtubepremiumtr", "netflixpremiumtr",
+    "oyunhesaplarisatis", "steamcuzdankodu", "KuponSatis", "SosyalMedyaPazari", "AdsenseTurkiye",
+    "FreelancerYazilimci", "TeknolojiSohbetleri", "WebTasarimDestek", "SMMHizmeti", "KriptoSohbetTR",
+    "EpinDestek", "OyunAlSat", "ikincielesya", "GirisimciToplulugu", "TrendyolDestekSohbet",
+    "AmazonSellersTRGroup", "ShopifyDestek", "BorsaYardim", "EkonomiToplulugu", "DesignerTurkiye",
+    "CoderDestekTR", "EpinPazari", "HesapSatisGenel", "LisansBayi", "SosyalMedyaTicaretGrubu",
+    "EpinAlSat", "SMMPanelTurk", "AdsenseDestekTR", "FreelanceIsIlanlariTR", "KriptoKazan",
+    "IndirimFirsat", "ToptanGiyimTR", "DropshippingTRyardim", "AmazonFBAyardim", "TrendyolPazaryeri",
+    "WebmasterDestekTR", "PythonSohbet", "JavaYardimlasma", "ReactTR", "NodejsTR",
+    "SiberGundem", "OyunPazariTR", "SteamOyunTR", "EpicGamesFirsatTR", "PremiumUyelikTR",
+    "CanvaTasarimYardim", "AdobeTRYardim", "WindowsOfficeKey", "YazilimIsFirsatlari", "GirisimcilikSohbet",
+    "ShopifyGirisim", "BorsaKriptoHaber", "FinansGundemTR", "GrafikTasarimDestek", "YazilimciSohbetleri",
+    "EpinBayilik", "ZulaPazariTR", "WolfteamSatisTR", "MinecraftMacroTRGroup", "SpotifyDavet",
+    "EpinKoduSatis", "WebTasarimYardim", "SMMPanelSatisGrubu", "AdsenseAlSat", "KriptoSohbetGrubu",
+    "PremiumSatisTR", "SosyalMedyaDestekGrubu", "DropshippingTurk", "AmazonSellersYardim", "ShopifyDestekTR",
+    "GrafikerDestekTR", "YazilimIlanTR", "EpinSatisPazari", "HesapAlimSatimTR", "ikincielalimsatimtr",
+    "turkiyepazar", "turkcesmm", "sosyalmedyapazaritr", "dijitalpazaryeritr", "satisgrubu",
+    "toptanvesatis", "ikincielalisveristr", "webmasteryardimlasmatr", "reklamgrubutr", "satiskanali",
+    "dijitalurunsatis", "hesap_satis_tr", "epin_pazari", "lisans_alim_satim", "freelance_is_ilanlari_tr",
+    "yazilimci_is_ilanlari_tr", "dropshipping_tr_destek", "amazon_satis_ortakligi", "trendyol_saticilari_tr", "hepsiburada_satis_toplulugu",
+    "kriptosatistr", "borsa_sohbet_tr", "teknolojialimsatim", "donanimsatistr", "smmbayilertr",
+    "smmhizmetleripazari", "sosyalmedyaalimsatim", "ikincieltelefontr", "ikincielelektroniktr", "freelancework_tr",
+    "designer_is_ilanlari", "coder_is_ilanlari", "pythontr_satis", "javascripttr_satis", "siberguvenliktr_satis",
+    "linux_kullanicilari_tr", "oyun_hesap_satis_pazari", "epicgames_firsatlari_tr", "premium_satis_pazari", "spotify_premium_tr",
+    "youtube_premium_satis", "takipcialsat", "tiktok_hesap_satis", "satilik_domainler", "adsense_alim_satim",
+    "dropshipping_turk", "eticaret_tedarik", "freelance_destek_tr", "ticaretmeydanitr", "kupon_satis_tr",
+    "AmazonTrGenelSohbet", "AyakkabiSanati", "BuyukFirsat", "CasinoBeko", "ElitSohbettt",
+    "Gardrops", "HESAPACCOUNT1", "IWEfTGD7OCBjY2I8", "KorgPa2xPa800", "KriptoSozlukTVPiyasaMuhabbeti",
+    "N_A_F_A_Smm", "Panel_Member_Premium_Ban_buy", "Prof_Amazon8", "ReklamYaptr", "Saatlersi",
+    "TAL0NE7SFiLAuNDf", "Turkiye_telefon_pazari", "VevoBahis_NgsBahis", "XushnudMFYreklama", "Yardimlasmag",
+    "YouTuBeAboneKazan", "YuceKuponSatis", "amaev_pro", "amazon_fbauz1", "amazonfbasellers",
+    "bayanaktuel", "borsao", "buy_Panel_Premium_Members_Adder", "buyukdolaplar", "dakikadoksan",
+    "dijitalpazarlamatr", "diyarbakirikincielarac", "dolapa", "dolapdesteks", "dolapgardropsdestek",
+    "dolaplink", "dolaplinkleri0", "dolapotomasyon", "dolaptakipbegeniteklif", "dolapxgardrops",
+    "dolapyildizlari", "ekpssyardimlasma2026", "el_ikincim", "erdil_satis", "finansalpusula",
+    "firsat0", "firsatbildirimi", "firsatcik", "firsatlarsizinle", "firsats",
+    "firsatspt", "freelancertoplulugu", "gardrops23", "gardropslink", "guvenilirshowcularx",
+    "h03244320222", "huuvelbagi", "icon_webmasters_cpa", "iddaatahmin_tr", "ikinciel01chat",
+    "ikincielantalya", "ikincielkralligi", "ikincielotoalimsatimhizmeti", "ikincieltoptanalsat", "ikincii_el",
+    "indirim363", "indirimc", "indirimcin", "indirimciyizbiz", "indirimdeal",
+    "indirimfirsatburada", "indirimkodusatis", "indirimkurt3144", "indirimz", "iqostereaaa",
+    "istanbultereavozol", "ithaltptan", "izmirpazar", "kampanyam", "kampanyaradari",
+    "kendireklaminiyap", "kpss3", "kripto1", "kriptoe", "kuponceksatisi",
+    "kuponl", "kuponsatislari0", "mehmet1uzun", "mesutkupon", "neastronhesap",
+    "onemlifirsatlar", "otoemlakajans", "pazaryerialsat", "pegasusucakbileti", "referansreklam1",
+    "refkasAxMxMA", "reklama_bardankol", "reklamvereferanssss", "reklamyap", "sanalpos3d",
+    "satisrefim", "shawtysaha", "sistemcin", "smmpanelkur", "smsngsatis",
+    "sosyalmedyaalimsatimticaret", "sultanbeyliikinciel0", "svp_referans", "tekstiltoptancilari", "temukazan",
+    "temulinkpaylasimtemu", "tereaatr1", "testnet_aidrop_on_satis_kripto", "tevkil_yardimlasma", "ticar4t",
+    "ticaretguvenilir", "ticaretsaha", "toptankozmetik47", "trendyol8", "trendyolsatkazan",
+    "turkey_wholesale", "ucbosspubgHESAP", "ucuzaalisvers", "uye_ekleme_satis", "uzaktan_freelancee",
+    "webmasterdestek", "webmasterscafe", "yazilimci_hanim", "yazilimcigencler", "yazilimciiiadam",
+    "yazilimcilarburada", "yukseklisansdoktora", "zesetsyco", "zirvedekidolaplar",
 ]
 
 PROGRESS_FILE = 'progress.txt'
@@ -200,6 +213,18 @@ async def main():
             f.write('\n'.join(merged_black) + '\n')
         print("📥 Kara liste buluttan indirildi ve birleştirildi.")
 
+    # Diyalogları önbelleğe al (Resolving username engellemek için)
+    print("🔄 Telegram diyalogları önbelleğe alınıyor...")
+    joined_dialogs = {}
+    try:
+        async for dialog in client.iter_dialogs():
+            if dialog.is_group or dialog.is_channel:
+                if dialog.entity.username:
+                    joined_dialogs[dialog.entity.username.lower()] = dialog.entity
+        print(f"✅ {len(joined_dialogs)} grup/kanal önbelleğe alındı.")
+    except Exception as e:
+        print(f"⚠️ Önbellek alınırken hata oluştu: {e}")
+
     while True:
         kullanilacak_gruplar = []
         blacklist = get_list(BLACKLIST_FILE)
@@ -240,23 +265,44 @@ async def main():
             try:
                 print(f"\n[{i}/{len(kullanilacak_gruplar)}] 🔍 @{grup} denetleniyor...")
                 
-                # Gruba katıl (Zaten varsan hata vermez)
-                try:
-                    from telethon.tl.functions.channels import GetFullChannelRequest
-                    await client(JoinChannelRequest(grup))
-                    
-                    # Üye sayısını kontrol et
-                    full_channel = await client(GetFullChannelRequest(grup))
-                    member_count = full_channel.full_chat.participants_count
-                    
-                    if member_count < 20:
-                        print(f"📉 @{grup} -> Üye sayısı çok az ({member_count}). Kara listeye alınıyor...")
-                        save_to_list(grup, BLACKLIST_FILE)
-                        continue
+                grup_lower = grup.lower()
+                entity = None
+                
+                # Önbellekte varsa doğrudan entity al ve Join/GetFullChannel adımlarını atla
+                if grup_lower in joined_dialogs:
+                    entity = joined_dialogs[grup_lower]
+                    print(f"✅ Zaten gruptayız (Önbellekten): @{grup}")
+                else:
+                    # Gruba katıl (Zaten varsan hata vermez)
+                    try:
+                        from telethon.tl.functions.channels import GetFullChannelRequest
                         
-                    print(f"✅ Gruba girildi: @{grup} ({member_count} üye)")
-                except Exception as join_err:
-                    pass
+                        # Username çözümle
+                        entity = await client.get_entity(grup)
+                        await client(JoinChannelRequest(entity))
+                        
+                        # Üye sayısını kontrol et
+                        full_channel = await client(GetFullChannelRequest(entity))
+                        member_count = full_channel.full_chat.participants_count
+                        
+                        if member_count < 20:
+                            print(f"📉 @{grup} -> Üye sayısı çok az ({member_count}). Kara listeye alınıyor...")
+                            save_to_list(grup, BLACKLIST_FILE)
+                            continue
+                            
+                        print(f"✅ Gruba girildi: @{grup} ({member_count} üye)")
+                        joined_dialogs[grup_lower] = entity
+                    except FloodWaitError as e:
+                        raise e
+                    except Exception as join_err:
+                        # Eğer username bulunamazsa veya özel kanal ise hataya göre davran
+                        print(f"⚠️ Gruba girilemedi: {join_err}")
+                        pass
+
+                if not entity:
+                    # Entity çözülemediyse ilerlemeye kaydet ve geç
+                    save_to_list(grup, PROGRESS_FILE)
+                    continue
 
                 # Mesaj gönder
                 try:
@@ -275,7 +321,7 @@ async def main():
                                                   .strip() + "\n" # Fazla boşlukları temizle
                         print(f"✨ @{grup} için temizlenmiş (sadece destek) mesaj kullanılıyor...")
 
-                    await client.send_message(grup, msg_to_send)
+                    await client.send_message(entity, msg_to_send)
                     print(f"📨 Mesaj gönderildi!")
                     save_to_list(grup, PROGRESS_FILE)
                     
@@ -293,6 +339,8 @@ async def main():
                     print(f"⏳ {bekleme // 60} dakika {bekleme % 60} saniye bekleniyor...")
                     await asyncio.sleep(bekleme)
 
+                except FloodWaitError as e:
+                    raise e
                 except SlowModeWaitError as e:
                     print(f"⏳ @{grup} -> Slow Mode aktif! {e.seconds} saniye beklemek gerekiyor. Bu döngüde pas geçiliyor...")
                     save_to_list(grup, PROGRESS_FILE)
@@ -301,7 +349,6 @@ async def main():
                     save_to_list(grup, BLACKLIST_FILE)
                 except ChatWriteForbiddenError:
                     try:
-                        entity = await client.get_entity(grup)
                         is_broadcast = getattr(entity, 'broadcast', False)
                     except Exception:
                         is_broadcast = False
@@ -345,4 +392,3 @@ async def main():
 
 if __name__ == '__main__':
     asyncio.run(main())
-

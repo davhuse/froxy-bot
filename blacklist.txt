@@ -28,3 +28,4 @@ Nightsatis
 ikincielesya
 TrendyolDestekSohbet
 ShopifyDestek
+EpinPazari
