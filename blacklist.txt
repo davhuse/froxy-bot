@@ -7,3 +7,6 @@ SosyalMedyaTicaret
 YazilimDestek
 ikincieltelefon
 PythonTurkiye
+StartupTR
+TurkiyeReklamGrubu
+ShopifyUzmani

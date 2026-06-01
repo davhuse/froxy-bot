@@ -3,6 +3,8 @@ import subprocess
 import os
 import sys
 import json
+import threading
+import time
 
 base_dir = os.path.abspath(os.path.dirname(__file__))
 app = Flask(__name__, 
@@ -30,47 +32,69 @@ def update_config_state(key, value):
     except Exception as e:
         print(f"Error updating config state: {e}")
 
-def auto_start_bots():
+# WATCHDOG SYSTEM: Keeps both bots running 24/7 unconditionally
+def bot_watchdog():
     global ad_process, support_process
-    if not os.path.exists(CONFIG_FILE):
-        return
-    try:
-        with open(CONFIG_FILE, "r", encoding="utf-8") as f:
-            cfg = json.load(f)
-            
-        # Start Support Bot if it was marked as active
-        if cfg.get("support_bot_running", False):
-            token = cfg.get("bot_token", "")
-            if token and token != "YOUR_TELEGRAM_BOT_TOKEN":
-                flags = subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
-                file_out = open(SUPPORT_LOG_FILE, 'a', encoding="utf-8", buffering=1)
-                env = os.environ.copy()
-                env["PYTHONIOENCODING"] = "utf-8"
-                support_process = subprocess.Popen(
-                    [sys.executable, 'froxy_bot.py'],
+    print("🛡️ [Watchdog] Bot takip sistemi başlatıldı. Botlar her 15 saniyede bir denetlenecek.")
+    time.sleep(5) # Give the system some time to initialize
+    
+    while True:
+        try:
+            flags = subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
+            env = os.environ.copy()
+            env["PYTHONIOENCODING"] = "utf-8"
+
+            # 1. Check Ad Bot (otomatik_katil.py) - Always run
+            if ad_process is None or ad_process.poll() is not None:
+                print("📢 [Watchdog] Reklam botu aktif değil veya durmuş. Başlatılıyor...")
+                # Write a startup log
+                with open(LOG_FILE, "a", encoding="utf-8") as f:
+                    f.write("\n🚀 [Watchdog] Reklam botu otomatik olarak başlatılıyor...\n")
+                
+                file_out = open(LOG_FILE, 'a', encoding="utf-8", buffering=1)
+                ad_process = subprocess.Popen(
+                    [sys.executable, 'otomatik_katil.py'],
                     stdout=file_out,
                     stderr=subprocess.STDOUT,
                     creationflags=flags,
                     env=env
                 )
-                print("🤖 [Auto-Start] Destek botu başarıyla başlatıldı.")
-                
-        # Start Ad Bot if it was marked as active
-        if cfg.get("ad_bot_running", False):
-            flags = subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
-            file_out = open(LOG_FILE, 'a', encoding="utf-8", buffering=1)
-            env = os.environ.copy()
-            env["PYTHONIOENCODING"] = "utf-8"
-            ad_process = subprocess.Popen(
-                [sys.executable, 'otomatik_katil.py'],
-                stdout=file_out,
-                stderr=subprocess.STDOUT,
-                creationflags=flags,
-                env=env
-            )
-            print("📢 [Auto-Start] Reklam botu başarıyla başlatıldı.")
-    except Exception as e:
-        print(f"⚠️ [Auto-Start] Hata oluştu: {e}")
+                update_config_state("ad_bot_running", True)
+
+            # 2. Check Support Bot (froxy_bot.py) - Only run if configured
+            has_token = False
+            if os.path.exists(CONFIG_FILE):
+                try:
+                    with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+                        cfg = json.load(f)
+                    token = cfg.get("bot_token", "")
+                    if token and token != "YOUR_TELEGRAM_BOT_TOKEN":
+                        has_token = True
+                except Exception as ex:
+                    print(f"Error checking config: {ex}")
+            
+            if has_token:
+                if support_process is None or support_process.poll() is not None:
+                    print("🤖 [Watchdog] Destek botu aktif değil veya durmuş. Başlatılıyor...")
+                    with open(SUPPORT_LOG_FILE, "a", encoding="utf-8") as f:
+                        f.write("\n🚀 [Watchdog] Destek botu otomatik olarak başlatılıyor...\n")
+                    
+                    file_out = open(SUPPORT_LOG_FILE, 'a', encoding="utf-8", buffering=1)
+                    support_process = subprocess.Popen(
+                        [sys.executable, 'froxy_bot.py'],
+                        stdout=file_out,
+                        stderr=subprocess.STDOUT,
+                        creationflags=flags,
+                        env=env
+                    )
+                    update_config_state("support_bot_running", True)
+            else:
+                print("⚠️ [Watchdog] Destek botu için geçerli bir Token bulunamadı. Bekleniyor...")
+
+        except Exception as e:
+            print(f"⚠️ [Watchdog] Genel denetleme hatası: {e}")
+            
+        time.sleep(15)
 
 @app.route('/')
 def index():
@@ -273,7 +297,9 @@ def save_config():
         return jsonify({"success": False, "message": str(e)})
 
 if __name__ == '__main__':
-    # In debug mode Flask runs twice, verify it runs on main thread
+    # Start the watchdog thread (if in debug mode, prevent running twice)
     if os.environ.get("WERKZEUG_RUN_MAIN") == "true" or not app.debug:
-        auto_start_bots()
+        t = threading.Thread(target=bot_watchdog, daemon=True)
+        t.start()
+        
     app.run(host='0.0.0.0', port=5000, debug=True)
