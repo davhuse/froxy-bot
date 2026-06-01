@@ -304,7 +304,26 @@ def update_message():
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
+MESSAGE_2_FILE = "message_2.txt"
 
+@app.route('/api/message2', methods=['GET'])
+def get_message2():
+    try:
+        with open(MESSAGE_2_FILE, 'r', encoding="utf-8") as f:
+            return jsonify({"message": f.read()})
+    except:
+        return jsonify({"message": ""})
+
+@app.route('/api/message2', methods=['POST'])
+def update_message2():
+    data = request.json
+    new_message = data.get('message', '')
+    try:
+        with open(MESSAGE_2_FILE, 'w', encoding="utf-8") as f:
+            f.write(new_message)
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})
 @app.route('/api/config', methods=['GET'])
 def get_config():
     if not os.path.exists(CONFIG_FILE):

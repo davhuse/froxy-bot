@@ -55,19 +55,14 @@ welcome_text = (
     "Lütfen yapmak istediğiniz işlemi seçin 👇"
 )
 
-packages_text = (
-    "💳 **Popüler Ürünlerimiz**\n\n"
-    "Aşağıdaki popüler ürünleri doğrudan satın alabilirsiniz. Listede olmayan diğer tüm ürünler (ChatGPT Plus, Claude Pro, Spotify Premium, Exxen, Perplexity Pro, Grammarly, Duolingo vb.) için ana menüden **📞 Destek Talebi Aç** butonuna basarak bizimle iletişime geçebilirsiniz."
-)
-
 # Callbacks and command handlers
 @bot.on(events.NewMessage(pattern='/start'))
 async def start_handler(event):
     user_id = event.sender_id
     user_states[user_id] = None  # Clear state
     buttons = [
-        [Button.inline("💳 Popüler Ürünler & Satın Al", b"menu_packages")],
-        [Button.inline("📞 Destek & Diğer Ürünler", b"menu_support")]
+        [Button.inline("💳 Ürün Kategorileri & Satın Al", b"menu_packages")],
+        [Button.inline("📞 Canlı Destek & Sipariş", b"menu_support")]
     ]
     await event.respond(welcome_text, buttons=buttons)
 
@@ -76,26 +71,26 @@ async def main_menu_handler(event):
     user_id = event.sender_id
     user_states[user_id] = None
     buttons = [
-        [Button.inline("💳 Popüler Ürünler & Satın Al", b"menu_packages")],
-        [Button.inline("📞 Destek & Diğer Ürünler", b"menu_support")]
+        [Button.inline("💳 Ürün Kategorileri & Satın Al", b"menu_packages")],
+        [Button.inline("📞 Canlı Destek & Sipariş", b"menu_support")]
     ]
     await event.edit(welcome_text, buttons=buttons)
 
 @bot.on(events.CallbackQuery(data=b'menu_packages'))
 async def packages_menu_handler(event):
     buttons = [
-        [Button.inline("🔴 YouTube Premium (3 Aylık) - ₺129", b"pkg_baslangic")],
-        [Button.inline("🎨 Canva Pro (Sınırsız) - ₺99", b"pkg_populer")],
-        [Button.inline("🎬 Netflix 4K Ultra HD (3 Aylık) - ₺149", b"pkg_profesyonel")],
-        [Button.inline("💻 Adobe Express & Cloud (3 Aylık) - ₺199", b"pkg_gelistirici")],
-        [Button.inline("🍔 Yemek/Market İndirim Kuponu - ₺129", b"pkg_isletme")],
-        [Button.inline("📈 TradingView Premium (3 Aylık) - ₺349", b"pkg_kurumsal")],
+        [Button.inline("🤖 Yapay Zeka (AI) Araçları", b"cat_ai")],
+        [Button.inline("🎬 Eğlence & Sinema & Müzik", b"cat_ent")],
+        [Button.inline("🎨 Tasarım & Video Edit", b"cat_design")],
+        [Button.inline("📱 Onaylı No & Mail", b"cat_accounts")],
+        [Button.inline("🍔 Yemek & Akaryakıt Kuponları", b"cat_coupons")],
+        [Button.inline("🎓 Eğitim & Yazılımlar", b"cat_learning")],
         [Button.inline("↩️ Ana Menü", b"menu_main")]
     ]
-    await event.edit(packages_text, buttons=buttons)
+    await event.edit("💳 **Froxy Premium Ürün Kategorileri**\n\nDetaylarını incelemek ve satın almak istediğiniz kategoriye tıklayınız:", buttons=buttons)
 
-# Package details handler
-async def show_package_details(event, name, title, price, desc, link_key):
+# Direct package details helper
+async def show_package_details(event, title, price, desc, link_key):
     config = load_config() or {}
     links = config.get("shopier_links", SHOPIER_LINKS)
     shopier_url = links.get(link_key, "https://www.shopier.com")
@@ -103,14 +98,125 @@ async def show_package_details(event, name, title, price, desc, link_key):
     text = (
         f"🌟 **{title}**\n\n"
         f"💰 **Fiyat:** {price}\n"
-        f"📝 **Açıklama:**\n{desc}\n\n"
+        f"📝 **Özellikler & Garanti:**\n{desc}\n\n"
         f"Satın almak için aşağıdaki butona tıklayabilirsiniz. Ödeme sonrasında teslimat anında gerçekleştirilir."
     )
     buttons = [
         [Button.url("💳 Shopier ile Güvenli Satın Al", shopier_url)],
-        [Button.inline("↩️ Ürün Listesi", b"menu_packages")]
+        [Button.inline("↩️ Kategorilere Dön", b"menu_packages")]
     ]
     await event.edit(text, buttons=buttons)
+
+@bot.on(events.CallbackQuery(pattern=r'cat_(\w+)'))
+async def category_select_handler(event):
+    cat_type = event.data.decode('utf-8').split('_')[1]
+    
+    if cat_type == "ai":
+        text = (
+            "🤖 **Yapay Zeka (AI) Araçları Fiyat Listesi**\n\n"
+            "• **ChatGPT Plus:** ₺199.99 *(Giriş + 3 Gün Garanti)*\n"
+            "• **Gemini Pro (1 Yıllık Hesap):** ₺299.99 *(Giriş Garantili)*\n"
+            "• **Gemini Pro (Davet):** ₺124.99 *(Giriş Garantili)*\n"
+            "• **Gemini Ultra (Davet):** ₺399.99 *(Full Garanti)*\n"
+            "• **Gemini Ultra (2.5k Kredili):** ₺599.99 *(Full Garanti)*\n"
+            "• **Super Grok (1 Aylık):** ₺449.99 *(Giriş Garantili)*\n"
+            "• **Super Grok (3 Aylık):** ₺949.99 *(15 Gün Garanti)*\n"
+            "• **Super Grok (6 Aylık):** ₺1499.99 *(3 Hafta Garanti)*\n"
+            "• **Super Grok (12 Aylık):** ₺2299.99 *(3 Ay Garanti)*\n"
+            "• **Gamma Ultra (1 Aylık):** ₺449.99\n"
+            "• **Gamma Pro (1 Aylık):** ₺299.99\n\n"
+            "Satın almak istediğiniz ürünü seçin 👇"
+        )
+        buttons = [
+            [Button.inline("🤖 ChatGPT Plus (₺199.99)", b"pkg_baslangic")],
+            [Button.inline("🤖 Gemini Pro Hesap (₺299.99)", b"pkg_populer")],
+            [Button.inline("🤖 Grok 1 Aylık (₺449.99)", b"pkg_profesyonel")],
+            [Button.inline("📞 Diğerleri İçin İletişime Geç", b"menu_support")],
+            [Button.inline("↩️ Kategoriler", b"menu_packages")]
+        ]
+        await event.edit(text, buttons=buttons)
+        
+    elif cat_type == "ent":
+        text = (
+            "🎬 **Eğlence, Sinema & Müzik Fiyat Listesi**\n\n"
+            "• **Kişisel Netflix Profili:** ₺89.99 *(Full Garanti)*\n"
+            "• **Spotify Premium (4 Aylık Kod):** ₺34.99 *(Kendi Hesabınıza)*\n"
+            "• **YouTube Premium (3 Aylık Kod):** ₺44.99 *(Mevcut/Yeni Hesaba)*\n"
+            "• **Exxen Reklamsız (3 Aylık):** ₺34.99\n\n"
+            "Satın almak istediğiniz ürünü seçin 👇"
+        )
+        buttons = [
+            [Button.inline("🎬 Netflix Profili (₺89.99)", b"pkg_gelistirici")],
+            [Button.inline("🎵 Spotify Premium 4 Ay (₺34.99)", b"pkg_isletme")],
+            [Button.inline("🔴 YouTube Premium 3 Ay (₺44.99)", b"pkg_kurumsal")],
+            [Button.inline("📞 Diğerleri İçin İletişime Geç", b"menu_support")],
+            [Button.inline("↩️ Kategoriler", b"menu_packages")]
+        ]
+        await event.edit(text, buttons=buttons)
+        
+    elif cat_type == "design":
+        text = (
+            "🎨 **Tasarım & Video Edit Fiyat Listesi**\n\n"
+            "• **Canva Pro (1 Yıllık):** ₺79.99\n"
+            "• **Adobe Express (3 Aylık):** ₺99.99 *(1 Hafta Garanti)*\n"
+            "• **Adobe Creative Cloud (Tüm Uygulamalar):**\n"
+            "  - 1 Haftalık: ₺69.99 *(1 Hafta Garanti)*\n"
+            "  - 1 Aylık: ₺119.99 *(1 Hafta Garanti)*\n"
+            "  - 4 Aylık: ₺249.99 *(1 Hafta Garanti)*\n"
+            "• **CapCut Pro (1 Haftalık Hesap):** ₺99.99 *(3 Gün Garanti)*\n"
+            "• **Kiro (10k Kredili Hesap):** ₺499.99 *(Giriş Garantili)*\n\n"
+            "Bu kategorideki ürünleri satın almak veya özel teklif almak için lütfen canlı desteğe yazınız 👇"
+        )
+        buttons = [
+            [Button.inline("📞 Satın Al / Destek", b"menu_support")],
+            [Button.inline("↩️ Kategoriler", b"menu_packages")]
+        ]
+        await event.edit(text, buttons=buttons)
+        
+    elif cat_type == "accounts":
+        text = (
+            "📱 **Onaylı No & Mail Fiyat Listesi**\n\n"
+            "• **ABD / Kanada Karma WhatsApp Numarası:** ₺149.99\n"
+            "• **Türk Apple ID (iCloud Etkin):** ₺149.99 *(Giriş Garantili)*\n"
+            "• **Eski Tarihli Gmail (2022-2024 Kurulu):** ₺59.99 *(Giriş Garantili)*\n\n"
+            "Bu kategorideki ürünleri satın almak için lütfen canlı desteğe yazınız 👇"
+        )
+        buttons = [
+            [Button.inline("📞 Satın Al / Destek", b"menu_support")],
+            [Button.inline("↩️ Kategoriler", b"menu_packages")]
+        ]
+        await event.edit(text, buttons=buttons)
+        
+    elif cat_type == "coupons":
+        text = (
+            "🍔 **Yemek & Akaryakıt Kuponları Fiyat Listesi**\n\n"
+            "• **Trendyol Go Yemek (700 TL'ye 250 TL İndirim):** ₺14.99\n"
+            "• **Trendyol Go Market (900 TL'ye 250 TL İndirim):** ₺14.99\n"
+            "• **Uber Eats Yemek (700 TL'ye 250 TL İndirim):** ₺14.99\n"
+            "• **Shell 75 TL Akaryakıt Puanı:** ₺14.99\n\n"
+            "Bu kategorideki kuponları temin etmek için lütfen canlı desteğe yazınız 👇"
+        )
+        buttons = [
+            [Button.inline("📞 Satın Al / Destek", b"menu_support")],
+            [Button.inline("↩️ Kategoriler", b"menu_packages")]
+        ]
+        await event.edit(text, buttons=buttons)
+        
+    elif cat_type == "learning":
+        text = (
+            "🎓 **Eğitim & Yazılımlar Fiyat Listesi**\n\n"
+            "• **Duolingo Super Sınırsız:** ₺69.99\n"
+            "• **Scribd Premium (3 Aylık):** ₺99.99\n"
+            "• **Skillshare Premium (3 Aylık):** ₺99.99\n"
+            "• **Coursera (3 Aylık):** ₺99.99\n"
+            "• **Udemy (3 Aylık):** ₺99.99\n\n"
+            "Eğitim hesaplarını ve yazılımları satın almak için lütfen canlı desteğe yazınız 👇"
+        )
+        buttons = [
+            [Button.inline("📞 Satın Al / Destek", b"menu_support")],
+            [Button.inline("↩️ Kategoriler", b"menu_packages")]
+        ]
+        await event.edit(text, buttons=buttons)
 
 @bot.on(events.CallbackQuery(pattern=r'pkg_(\w+)'))
 async def pkg_select_handler(event):
@@ -118,38 +224,38 @@ async def pkg_select_handler(event):
     
     if pkg_type == "baslangic":
         await show_package_details(
-            event, "baslangic", "YouTube Premium (3 Aylık)", "₺129.00",
-            "• Reklamsız video izleme keyfi\n• Arka planda oynatma\n• Çevrimdışı izlemek için videoları indirme\n• YouTube Music Premium erişimi\n\n*Kod olarak teslim edilir, mevcut hesabınızda veya yeni hesapta aktifleştirebilirsiniz.*",
+            event, "ChatGPT Plus", "₺199.99",
+            "• Yapay zeka ile gelişmiş kod yazma, analiz ve görsel üretim.\n• Orijinal ChatGPT Plus özellikleri.\n• **Garanti:** Giriş garantisi ve 3 gün kullanım garantisi sağlanır.",
             "baslangic"
         )
     elif pkg_type == "populer":
         await show_package_details(
-            event, "populer", "Canva Pro (Sınırsız / Ömür Boyu)", "₺99.00",
-            "• Milyonlarca premium şablon, fotoğraf ve videoya erişim\n• Arka plan kaldırma aracı\n• Marka kiti ve özel yazı tipleri\n\n*Kendi hesabınıza Pro yetkisi tanımlanır. Sınırsız sürelidir.*",
+            event, "Gemini Pro Hesap", "₺299.99 / 1 Yıllık",
+            "• Google'ın gelişmiş yapay zeka asistanı.\n• 1 Yıllık kullanım hesabı.\n• **Garanti:** Giriş garantilidir.",
             "populer"
         )
     elif pkg_type == "profesyonel":
         await show_package_details(
-            event, "profesyonel", "Netflix 4K Ultra HD (3 Aylık)", "₺149.00",
-            "• 4K Ultra HD çözünürlük desteği\n• Ortak profil (1 Ekran erişim)\n• Tüm cihazlarda izleme desteği\n\n*Giriş bilgileri ödeme sonrası teslim edilir.*",
+            event, "Super Grok (1 Aylık)", "₺449.99 / 1 Ay",
+            "• X (Twitter) entegrasyonlu en güncel arama ve analiz yapay zekası.\n• **Garanti:** Giriş garantisi sağlanır.",
             "profesyonel"
         )
     elif pkg_type == "gelistirici":
         await show_package_details(
-            event, "gelistirici", "Adobe Express & Cloud (3 Aylık)", "₺199.00",
-            "• Adobe Express Pro araçları\n• Adobe PDF düzenleme ve bulut depolama\n• Binlerce hazır tasarım bileşeni\n\n*Hesabınıza yetkilendirme olarak tanımlanır.*",
+            event, "Kişisel Netflix Profili", "₺89.99",
+            "• 4K Ultra HD çözünürlük desteği.\n• Ortak hesapta size ait özel profil ve şifreleme.\n• **Garanti:** Full kullanım garantilidir.",
             "gelistirici"
         )
     elif pkg_type == "isletme":
         await show_package_details(
-            event, "isletme", "Yemek & Market İndirim Kuponu", "₺129.00",
-            "• Trendyol Go / Uber Eats Yemek Siparişlerinde 700 TL'ye 250 TL Net İndirim sağlar.\n• Trendyol Go / Uber Eats Market Siparişlerinde 900 TL'ye 250 TL Net İndirim sağlar.\n• Tek kullanımlıktır, her siparişte yüzlerce lira tasarruf etmenizi sağlar.",
+            event, "Spotify Premium (4 Aylık Kod)", "₺34.99",
+            "• Reklamsız ve yüksek kaliteli müzik keyfi.\n• Kendi kişisel hesabınıza tanımlanır.\n• **Garanti:** Giriş ve aktivasyon garantilidir.",
             "isletme"
         )
     elif pkg_type == "kurumsal":
         await show_package_details(
-            event, "kurumsal", "TradingView Premium (3 Aylık)", "₺349.00",
-            "• Sınırsız grafik ve indikatör yerleşimi\n• Saniye bazlı grafikler ve özel grafik süreleri\n• 4 kat daha hızlı veri akışı ve reklamsız deneyim\n\n*Cookie-based erişim veya hesap bilgileriyle anında teslim.*",
+            event, "YouTube Premium (3 Aylık Kod)", "₺44.99",
+            "• Arka planda oynatma ve reklamsız video keyfi.\n• YouTube Music Premium dahildir.\n• **Garanti:** Giriş ve aktivasyon garantilidir.",
             "kurumsal"
         )
 
@@ -159,8 +265,8 @@ async def support_menu_handler(event):
     user_states[user_id] = "AWAITING_SUPPORT"
     
     text = (
-        "📞 **Destek Talebi & Diğer Ürünler**\n\n"
-        "Lütfen satın almak istediğiniz diğer ürünü (Örn: ChatGPT Plus, Claude Pro, Spotify, Exxen, Perplexity Pro vb.) veya iletmek istediğiniz destek talebini detaylıca yazıp bu sohbete gönderin.\n\n"
+        "📞 **Destek Talebi & Sipariş Verme**\n\n"
+        "Lütfen satın almak istediğiniz diğer ürünü (Örn: Adobe CC, WhatsApp No, Yemek Kuponu, CapCut vb.) veya destek talebinizi detaylıca yazıp bu sohbete gönderin.\n\n"
         "Mesajınız doğrudan admin ekibimize iletilecektir. En kısa sürede bu sohbet üzerinden yanıt alacaksınız."
     )
     buttons = [

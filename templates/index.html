@@ -49,12 +49,22 @@
             </div>
 
             <div class="main-content">
-                <div class="editor-section glass-panel">
-                    <h2><i class="fa-solid fa-pen-to-square"></i> Reklam Mesajı (message.txt)</h2>
-                    <textarea id="messageEditor" spellcheck="false"></textarea>
-                    <button class="btn secondary" id="btnSave" onclick="saveMessage(event)">
-                        <i class="fa-solid fa-floppy-disk"></i> Kaydet
-                    </button>
+                <div class="editors-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; margin-bottom: 20px;">
+                    <div class="editor-section glass-panel" style="margin-bottom: 0;">
+                        <h2><i class="fa-solid fa-pen-to-square"></i> 1. Hesap Mesajı (message.txt)</h2>
+                        <textarea id="messageEditor" spellcheck="false" style="min-height: 250px;"></textarea>
+                        <button class="btn secondary" id="btnSave" onclick="saveMessage(event)">
+                            <i class="fa-solid fa-floppy-disk"></i> Kaydet
+                        </button>
+                    </div>
+
+                    <div class="editor-section glass-panel" style="margin-bottom: 0;">
+                        <h2><i class="fa-solid fa-pen-to-square"></i> 2. Hesap Mesajı (message_2.txt)</h2>
+                        <textarea id="messageEditor2" spellcheck="false" style="min-height: 250px;"></textarea>
+                        <button class="btn secondary" id="btnSave2" onclick="saveMessage2(event)">
+                            <i class="fa-solid fa-floppy-disk"></i> Kaydet
+                        </button>
+                    </div>
                 </div>
 
                 <div class="logs-section glass-panel">

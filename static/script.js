@@ -5,6 +5,7 @@ const UI = {
     btnStop: document.getElementById('btnStop'),
     btnSave: document.getElementById('btnSave'),
     editor: document.getElementById('messageEditor'),
+    editor2: document.getElementById('messageEditor2'),
     terminal: document.getElementById('terminalOutput'),
     
     // Support Bot UI Elements
@@ -91,9 +92,16 @@ async function stopBot() {
 }
 
 async function loadMessage() {
-    const res = await fetch('/api/message');
-    const data = await res.json();
-    UI.editor.value = data.message;
+    try {
+        const res = await fetch('/api/message');
+        const data = await res.json();
+        UI.editor.value = data.message;
+    } catch(e) {}
+    try {
+        const res = await fetch('/api/message2');
+        const data = await res.json();
+        UI.editor2.value = data.message;
+    } catch(e) {}
 }
 
 async function saveMessage(event) {
@@ -106,6 +114,33 @@ async function saveMessage(event) {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ message: UI.editor.value })
+    });
+    
+    const data = await res.json();
+    if(data.success) {
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> Kaydedildi';
+        btn.classList.add('success-state');
+        setTimeout(() => {
+            btn.innerHTML = oldHtml;
+            btn.classList.remove('success-state');
+        }, 2000);
+    } else {
+        btn.innerHTML = '<i class="fa-solid fa-xmark"></i> Hata';
+        setTimeout(() => btn.innerHTML = oldHtml, 2000);
+        alert("Mesaj kaydedilemedi: " + data.message);
+    }
+}
+
+async function saveMessage2(event) {
+    const btn = event.currentTarget;
+    const oldHtml = btn.innerHTML;
+    
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Kaydediliyor...';
+    
+    const res = await fetch('/api/message2', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ message: UI.editor2.value })
     });
     
     const data = await res.json();

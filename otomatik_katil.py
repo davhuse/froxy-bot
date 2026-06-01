@@ -321,11 +321,16 @@ async def main():
 
                 # Mesaj gönder
                 try:
+                    msg_file = "message_2.txt" if "2" in client_name else "message.txt"
                     try:
-                        with open("message.txt", "r", encoding="utf-8") as fm:
+                        with open(msg_file, "r", encoding="utf-8") as fm:
                             msg_to_send = fm.read()
                     except:
-                        msg_to_send = "⚠️ message.txt okunamadı!"
+                        try:
+                            with open("message.txt", "r", encoding="utf-8") as fm:
+                                msg_to_send = fm.read()
+                        except:
+                            msg_to_send = f"⚠️ {msg_file} okunamadı!"
                         
                     if hedef_grup.lower() == "kuponceking":
                         msg_to_send = msg_to_send.replace("🤖 Sipariş & Canlı Destek Botu: @FroxyDestekBOT", "") \
