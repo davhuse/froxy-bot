@@ -338,12 +338,20 @@ def get_config():
 def save_config():
     data = request.json
     try:
-        # Keep internal running states when saving config
+        # Keep internal running states and merge shopier links when saving config
         if os.path.exists(CONFIG_FILE):
             with open(CONFIG_FILE, 'r', encoding="utf-8") as f:
                 old_cfg = json.load(f)
             data["ad_bot_running"] = old_cfg.get("ad_bot_running", False)
             data["support_bot_running"] = old_cfg.get("support_bot_running", False)
+            
+            # Merge shopier_links to protect 24 keys
+            old_links = old_cfg.get("shopier_links", {})
+            new_links = data.get("shopier_links", {})
+            for k, v in new_links.items():
+                if v:  # Only update if a value is provided
+                    old_links[k] = v
+            data["shopier_links"] = old_links
             
         with open(CONFIG_FILE, 'w', encoding="utf-8") as f:
             json.dump(data, f, indent=2, ensure_ascii=False)

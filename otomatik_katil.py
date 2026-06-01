@@ -333,7 +333,7 @@ async def main():
                             msg_to_send = f"⚠️ {msg_file} okunamadı!"
                         
                     if hedef_grup.lower() == "kuponceking":
-                        msg_to_send = msg_to_send.replace("🤖 Sipariş & Canlı Destek Botu: @FroxyDestekBOT", "") \
+                        msg_to_send = msg_to_send.replace("🤖 **Sipariş & Canlı Destek Botumuz:** @KeyVadiSatisBot", "") \
                                                   .replace("bot", "sistem") \
                                                   .replace("Bot", "Sistem") \
                                                   .replace("🤖", "") \

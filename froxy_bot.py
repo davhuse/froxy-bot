@@ -13,7 +13,7 @@ logging.basicConfig(
         logging.StreamHandler()
     ]
 )
-logger = logging.getLogger("FroxyBot")
+logger = logging.getLogger("KeyVadiBot")
 
 API_ID = 31076280
 API_HASH = '7ba4072dcf0a05a7ccf80e570866b6d8'
@@ -207,7 +207,7 @@ PRODUCTS_DATA = {
 }
 
 welcome_text = (
-    "🤖 **Froxy Premium Müşteri Paneline Hoş Geldiniz!**\n\n"
+    "🤖 **KeyVadi Müşteri Paneline Hoş Geldiniz!**\n\n"
     "En popüler dijital premium üyelikler, yapay zeka hesapları ve indirim kuponları en uygun fiyatlarla burada!\n\n"
     "Lütfen yapmak istediğiniz işlemi seçin 👇"
 )
@@ -244,7 +244,7 @@ async def packages_menu_handler(event):
         [Button.inline("🎓 Eğitim & Yazılımlar", b"cat_learning")],
         [Button.inline("↩️ Ana Menü", b"menu_main")]
     ]
-    await event.edit("💳 **Froxy Premium Ürün Kategorileri**\n\nDetaylarını incelemek ve satın almak istediğiniz kategoriye tıklayınız:", buttons=buttons)
+    await event.edit("💳 **KeyVadi Ürün Kategorileri**\n\nDetaylarını incelemek ve satın almak istediğiniz kategoriye tıklayınız:", buttons=buttons)
 
 # Direct package details helper
 async def show_package_details(event, key):
@@ -431,6 +431,6 @@ async def message_handler(event):
                     await event.reply(f"❌ Cevap iletilemedi. Hata: {e}")
 
 if __name__ == '__main__':
-    logger.info("Starting Froxy Customer Bot...")
+    logger.info("Starting KeyVadi Customer Bot...")
     bot.start(bot_token=BOT_TOKEN)
     bot.run_until_disconnected()
