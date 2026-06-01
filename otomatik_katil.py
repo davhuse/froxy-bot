@@ -65,7 +65,20 @@ gruplar = [
     "AdsenseTurkiye", "FreelancerYazilimci", "TeknolojiSohbetleri", "WebTasarimDestek", "SMMHizmeti",
     "KriptoSohbetTR", "EpinDestek", "OyunAlSat", "ikincielesya", "GirisimciToplulugu",
     "TrendyolDestekSohbet", "AmazonSellersTRGroup", "ShopifyDestek", "BorsaYardim", "EkonomiToplulugu",
-    "DesignerTurkiye", "CoderDestekTR", "EpinPazari", "HesapSatisGenel", "LisansBayi"
+    "DesignerTurkiye", "CoderDestekTR", "EpinPazari", "HesapSatisGenel", "LisansBayi",
+    "SosyalMedyaTicaretGrubu", "EpinAlSat", "SMMPanelTurk", "AdsenseDestekTR",
+    "FreelanceIsIlanlariTR", "KriptoKazan", "IndirimFirsat", "ToptanGiyimTR",
+    "DropshippingTRyardim", "AmazonFBAyardim", "TrendyolPazaryeri", "WebmasterDestekTR",
+    "PythonSohbet", "JavaYardimlasma", "ReactTR", "NodejsTR",
+    "SiberGundem", "OyunPazariTR", "SteamOyunTR", "EpicGamesFirsatTR",
+    "PremiumUyelikTR", "CanvaTasarimYardim", "AdobeTRYardim", "WindowsOfficeKey",
+    "YazilimIsFirsatlari", "GirisimcilikSohbet", "ShopifyGirisim", "BorsaKriptoHaber",
+    "FinansGundemTR", "GrafikTasarimDestek", "YazilimciSohbetleri", "EpinBayilik",
+    "ZulaPazariTR", "WolfteamSatisTR", "MinecraftMacroTRGroup", "SpotifyDavet",
+    "EpinKoduSatis", "WebTasarimYardim", "SMMPanelSatisGrubu", "AdsenseAlSat",
+    "KriptoSohbetGrubu", "PremiumSatisTR", "SosyalMedyaDestekGrubu", "DropshippingTurk",
+    "AmazonSellersYardim", "ShopifyDestekTR", "GrafikerDestekTR", "YazilimIlanTR",
+    "EpinSatisPazari", "HesapAlimSatimTR"
 ]
 
 PROGRESS_FILE = 'progress.txt'
