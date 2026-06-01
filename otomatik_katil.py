@@ -171,8 +171,8 @@ async def main():
 
     string_session_key = ""
     string_session_key_2 = ""
-    ad_sleep_min = 180
-    ad_sleep_max = 300
+    ad_sleep_min = 600
+    ad_sleep_max = 1200
     
     if os.path.exists("bot_config.json"):
         try:
@@ -180,8 +180,8 @@ async def main():
                 cfg = json.load(f)
                 string_session_key = cfg.get("ad_string_session", "")
                 string_session_key_2 = cfg.get("ad_string_session_2", "")
-                ad_sleep_min = cfg.get("ad_sleep_min", 180)
-                ad_sleep_max = cfg.get("ad_sleep_max", 300)
+                ad_sleep_min = cfg.get("ad_sleep_min", 600)
+                ad_sleep_max = cfg.get("ad_sleep_max", 1200)
         except:
             pass
 
@@ -308,6 +308,11 @@ async def main():
                             
                         print(f"[{client_name}] ✅ Gruba girildi: @{hedef_grup} ({member_count} üye)")
                         joined_dialogs[grup_lower] = entity
+                        
+                        # Anti-spam delay after joining a new group
+                        join_sleep = random.randint(15, 30)
+                        print(f"[{client_name}] ⏳ Yeni gruba girildi. Güvenlik için {join_sleep} saniye bekleniyor...")
+                        await asyncio.sleep(join_sleep)
                     except FloodWaitError as e:
                         raise e
                     except Exception as join_err:
@@ -333,7 +338,8 @@ async def main():
                             msg_to_send = f"⚠️ {msg_file} okunamadı!"
                         
                     if hedef_grup.lower() == "kuponceking":
-                        msg_to_send = msg_to_send.replace("🤖 **Sipariş & Canlı Destek Botumuz:** @KeyVadiSatisBot", "") \
+                        msg_to_send = msg_to_send.replace("🤖 **Sipariş & Canlı Destek Botumuz:** @FroxyDestekBOT", "") \
+                                                  .replace("🤖 **Sipariş & Canlı Destek Botumuz:** @KeyVadiSatisBot", "") \
                                                   .replace("bot", "sistem") \
                                                   .replace("Bot", "Sistem") \
                                                   .replace("🤖", "") \
@@ -346,14 +352,14 @@ async def main():
                         save_to_list(hedef_grup, PROGRESS_FILE)
                     
                     # Dinamik bekleme
-                    ad_sleep_min = 180
-                    ad_sleep_max = 300
+                    ad_sleep_min = 600
+                    ad_sleep_max = 1200
                     if os.path.exists("bot_config.json"):
                         try:
                             with open("bot_config.json", "r", encoding="utf-8") as f:
                                 cfg = json.load(f)
-                                ad_sleep_min = cfg.get("ad_sleep_min", 180)
-                                ad_sleep_max = cfg.get("ad_sleep_max", 300)
+                                ad_sleep_min = cfg.get("ad_sleep_min", 600)
+                                ad_sleep_max = cfg.get("ad_sleep_max", 1200)
                         except:
                             pass
                     
