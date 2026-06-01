@@ -50,14 +50,14 @@ user_states = {}
 bot = TelegramClient('froxy_bot_session', API_ID, API_HASH)
 
 welcome_text = (
-    "🤖 **Froxy AI Müşteri Paneline Hoş Geldiniz!**\n\n"
-    "Tek bir panel üzerinden 600+ yapay zeka modeline (ChatGPT 5.5, Claude 4.6, Gemini Pro, Midjourney vb.) erişim sağlayın.\n\n"
+    "🤖 **Froxy Premium Müşteri Paneline Hoş Geldiniz!**\n\n"
+    "Yapay zeka, eğlence, eğitim paketleri ve özel indirim kuponları için tek adresiniz!\n\n"
     "Lütfen yapmak istediğiniz işlemi seçin 👇"
 )
 
 packages_text = (
-    "💳 **Froxy AI Paketleri**\n\n"
-    "Her bütçeye uygun yapay zeka paketlerimiz aşağıda listelenmiştir. Detaylarını incelemek ve satın almak için bir paket seçin:"
+    "💳 **Froxy Premium Paket Listesi**\n\n"
+    "Aşağıda yer alan paketlerden dilediğinizi seçerek özelliklerini inceleyebilir ve güvenle satın alabilirsiniz:"
 )
 
 # Callbacks and command handlers
@@ -84,12 +84,12 @@ async def main_menu_handler(event):
 @bot.on(events.CallbackQuery(data=b'menu_packages'))
 async def packages_menu_handler(event):
     buttons = [
-        [Button.inline("📦 Başlangıç (₺129.99/ay)", b"pkg_baslangic")],
-        [Button.inline("🔥 Popüler (₺249.99/ay)", b"pkg_populer")],
-        [Button.inline("📦 Profesyonel (₺449.99/ay)", b"pkg_profesyonel")],
-        [Button.inline("📦 Geliştirici (₺599.99/ay)", b"pkg_gelistirici")],
-        [Button.inline("📦 İşletme (₺799.99/ay)", b"pkg_isletme")],
-        [Button.inline("🏢 Kurumsal (₺1499.99/ay)", b"pkg_kurumsal")],
+        [Button.inline("🤖 AI Pack (₺399.00/3 Ay)", b"pkg_baslangic")],
+        [Button.inline("🎬 Entertainment Pack (₺399.00/3 Ay)", b"pkg_populer")],
+        [Button.inline("🎓 Learning Pack (₺399.00/3 Ay)", b"pkg_profesyonel")],
+        [Button.inline("📈 TradingView Premium (₺399.00/3 Ay)", b"pkg_gelistirici")],
+        [Button.inline("🍔 Yemek & Market İndirimi (₺129.00)", b"pkg_isletme")],
+        [Button.inline("🔥 Combo Paket (₺1899.00/12 Ay)", b"pkg_kurumsal")],
         [Button.inline("↩️ Ana Menü", b"menu_main")]
     ]
     await event.edit(packages_text, buttons=buttons)
@@ -118,38 +118,38 @@ async def pkg_select_handler(event):
     
     if pkg_type == "baslangic":
         await show_package_details(
-            event, "baslangic", "Başlangıç Paketi", "₺129.99 / ay",
-            "• 5.000 Kredi\n• Tüm 600+ Yapay Zeka Modeline Erişim\n• 200 İstek/Gün Limiti\n• Hızlı Yanıt Süresi",
+            event, "baslangic", "AI Pack (3 Aylık)", "₺399.00 / 3 Ay",
+            "• CG-AI (OpenAI ChatGPT)\n• Cloudyee (Claude AI)\n• Ghaspher AI (Jasper AI)\n• Gryok (Grok AI)\n• Kaanvah Pro (Canva Pro)\n\n*Tek hesapla en popüler 5 yapay zeka aracına kesintisiz erişim!*",
             "baslangic"
         )
     elif pkg_type == "populer":
         await show_package_details(
-            event, "populer", "Popüler Paket 🔥", "₺249.99 / ay",
-            "• 15.000 Kredi\n• Tüm 600+ Yapay Zeka Modeline Erişim\n• 500 İstek/Gün Limiti\n• Görsel ve Resim Üretim Desteği",
+            event, "populer", "Entertainment Pack (3 Aylık)", "₺399.00 / 3 Ay",
+            "• Netflix 4K Ultra HD\n• Crunchyroll Premium\n• YouTube Premium\n• Tidal Music\n• Prime Video\n• Apple Music & TV\n\n*Dizi, film, müzik ve eğlence platformlarının tamamı tek pakette!*",
             "populer"
         )
     elif pkg_type == "profesyonel":
         await show_package_details(
-            event, "profesyonel", "Profesyonel Paket", "₺449.99 / ay",
-            "• 50.000 Kredi\n• Tüm 600+ Yapay Zeka Modeline Erişim\n• 1.500 İstek/Gün Limiti\n• Öncelikli Sunucu ve Hız",
+            event, "profesyonel", "Learning Pack (3 Aylık)", "₺399.00 / 3 Ay",
+            "• Scribd Premium\n• Skillshare Premium\n• Coursera\n• Super Duolingo\n• Adobe Creative\n• Udemy\n\n*Kendini geliştirmek isteyenler için harika bir öğrenme kütüphanesi!*",
             "profesyonel"
         )
     elif pkg_type == "gelistirici":
         await show_package_details(
-            event, "gelistirici", "Geliştirici Paketi", "₺599.99 / ay",
-            "• 100.000 Kredi\n• Tüm 600+ Yapay Zeka Modeline Erişim\n• 2.000 İstek/Gün Limiti\n• RAG (Kendi Verini Eğitme) Desteği",
+            event, "gelistirici", "TradingView Premium (3 Aylık)", "₺399.00 / 3 Ay",
+            "• TradingView Premium Özellikleri\n• Profesyonel İndikatörler & Grafikler\n• Cookie Tabanlı Hızlı Erişim Desteği",
             "gelistirici"
         )
     elif pkg_type == "isletme":
         await show_package_details(
-            event, "isletme", "İşletme Paketi", "₺799.99 / ay",
-            "• 150.000 Kredi\n• Tüm 600+ Yapay Zeka Modeline Erişim\n• 5.000 İstek/Gün Limiti\n• Öncelikli API Erişimi",
+            event, "isletme", "Yemek & Market İndirim Paketi", "₺129.00",
+            "• Trendyol Go / Uber Eats Yemek Siparişlerinde 700 TL'ye 250 TL İndirim\n• Trendyol Go / Uber Eats Market Siparişlerinde 900 TL'ye 250 TL İndirim\n• 3 Aylık YouTube Premium & 4 Aylık Spotify Premium Kodları\n• Shell 75 TL Değerinde Akaryakıt Puanı\n• 3 Aylık Exxen Reklamsız Üyelik",
             "isletme"
         )
     elif pkg_type == "kurumsal":
         await show_package_details(
-            event, "kurumsal", "Kurumsal Paket 🏢", "₺1499.99 / ay",
-            "• 500.000 Kredi\n• Sınırsız İstek Desteği\n• Özel Sunucu ve White-Label Deneyimi\n• 7/24 Özel Destek Hattı",
+            event, "kurumsal", "Combo Paket (12 Aylık)", "₺1899.00 / 12 Ay",
+            "• Tüm 22 Servis ve Paketin Tamamı Dahil!\n• 12 Ay Boyunca Kesintisiz Garanti ve Erişim\n• AI Pack + Entertainment Pack + Learning Pack + TradingView Premium + İndirim Paketleri\n\n*En popüler ve en avantajlı kombine paketimizdir!*",
             "kurumsal"
         )
 
