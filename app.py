@@ -15,9 +15,11 @@ app = Flask(__name__,
 # State variables for background processes
 ad_process = None
 support_process = None
+froxy_process = None
 
 LOG_FILE = "bot_log.txt"
 SUPPORT_LOG_FILE = "froxy_bot_log.txt"
+FROXY_LOG_FILE = "froxy_destek_log.txt"
 MESSAGE_FILE = "message.txt"
 CONFIG_FILE = "bot_config.json"
 
@@ -182,6 +184,53 @@ def bot_watchdog():
                     try: os.remove("froxy_bot.py.pid")
                     except: pass
                     support_process = None
+
+            # 3. Check Froxy AI Bot (froxy_destek_bot.py)
+            froxy_enabled = False
+            has_froxy_token = False
+            if os.path.exists(CONFIG_FILE):
+                try:
+                    with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+                        cfg = json.load(f)
+                    froxy_enabled = cfg.get("froxy_bot_running", False)
+                    froxy_token = cfg.get("froxy_bot_token", "")
+                    if froxy_token and froxy_token != "YOUR_TELEGRAM_BOT_TOKEN":
+                        has_froxy_token = True
+                except Exception:
+                    pass
+
+            if has_froxy_token and froxy_enabled:
+                froxy_proc_os = get_process_by_script('froxy_destek_bot.py')
+                if froxy_proc_os is None:
+                    print("🤖 [Watchdog] Froxy AI botu aktif değil veya durmuş. Başlatılıyor...")
+                    with open(FROXY_LOG_FILE, "a", encoding="utf-8") as f:
+                        f.write("\n🚀 [Watchdog] Froxy AI botu otomatik olarak başlatılıyor...\n")
+                    
+                    kill_process_by_script('froxy_destek_bot.py')
+                    
+                    file_out = open(FROXY_LOG_FILE, 'a', encoding="utf-8", buffering=1)
+                    froxy_process = subprocess.Popen(
+                        [sys.executable, 'froxy_destek_bot.py'],
+                        stdout=file_out,
+                        stderr=subprocess.STDOUT,
+                        creationflags=flags,
+                        env=env
+                    )
+                    try:
+                        with open("froxy_destek_bot.py.pid", "w") as f:
+                            f.write(str(froxy_process.pid))
+                    except:
+                        pass
+                else:
+                    froxy_process = froxy_proc_os
+            else:
+                froxy_proc_os = get_process_by_script('froxy_destek_bot.py')
+                if froxy_proc_os is not None:
+                    print("🤖 [Watchdog] Froxy AI botu durduruluyor (Yapılandırmada kapalı)...")
+                    kill_process_by_script('froxy_destek_bot.py')
+                    try: os.remove("froxy_destek_bot.py.pid")
+                    except: pass
+                    froxy_process = None
 
         except Exception as e:
             print(f"⚠️ [Watchdog] Genel denetleme hatası: {e}")
@@ -379,6 +428,116 @@ def get_support_logs():
             return jsonify({"logs": lines[-100:]}) # Son 100 satır
     except Exception as e:
         return jsonify({"logs": [f"Log okuma hatası: {str(e)}"]})
+
+# ==========================================
+# FROXY AI BOT (@FroxyDestekBOT) API ENDPOINTS
+# ==========================================
+
+@app.route('/api/froxy/status', methods=['GET'])
+def froxy_status():
+    is_running = get_process_by_script('froxy_destek_bot.py') is not None
+    return jsonify({"status": "running" if is_running else "stopped"})
+
+@app.route('/api/froxy/start', methods=['POST'])
+def froxy_start():
+    if get_process_by_script('froxy_destek_bot.py') is not None:
+        return jsonify({"success": False, "message": "Froxy AI botu zaten çalışıyor!"})
+    
+    try:
+        with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+            cfg = json.load(f)
+        token = cfg.get("froxy_bot_token", "")
+        if not token or token == "YOUR_TELEGRAM_BOT_TOKEN":
+            return jsonify({"success": False, "message": "Lütfen önce geçerli bir Froxy Bot Token kaydedin!"})
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Yapılandırma hatası: {str(e)}"})
+
+    with open(FROXY_LOG_FILE, "w", encoding="utf-8") as f:
+        f.write("🚀 Froxy AI destek botu başlatılıyor...\n")
+        
+    try:
+        kill_process_by_script('froxy_destek_bot.py')
+        
+        flags = subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
+        file_out = open(FROXY_LOG_FILE, 'a', encoding="utf-8", buffering=1)
+        env = os.environ.copy()
+        env["PYTHONIOENCODING"] = "utf-8"
+        global froxy_process
+        froxy_process = subprocess.Popen(
+            [sys.executable, 'froxy_destek_bot.py'],
+            stdout=file_out,
+            stderr=subprocess.STDOUT,
+            creationflags=flags,
+            env=env
+        )
+        try:
+            with open("froxy_destek_bot.py.pid", "w") as f:
+                f.write(str(froxy_process.pid))
+        except:
+            pass
+        update_config_state("froxy_bot_running", True)
+        return jsonify({"success": True})
+    except Exception as e:
+         return jsonify({"success": False, "message": str(e)})
+
+@app.route('/api/froxy/stop', methods=['POST'])
+def froxy_stop():
+    kill_process_by_script('froxy_destek_bot.py')
+    try: os.remove("froxy_destek_bot.py.pid")
+    except: pass
+    with open(FROXY_LOG_FILE, "a", encoding="utf-8") as f:
+        f.write("\n🛑 Froxy AI destek botu kullanıcı tarafından durduruldu.\n")
+    global froxy_process
+    froxy_process = None
+    update_config_state("froxy_bot_running", False)
+    return jsonify({"success": True})
+
+@app.route('/api/froxy/logs', methods=['GET'])
+def get_froxy_logs():
+    if not os.path.exists(FROXY_LOG_FILE):
+        return jsonify({"logs": []})
+    
+    try:
+        with open(FROXY_LOG_FILE, 'r', encoding="utf-8", errors="replace") as f:
+            lines = f.readlines()
+            return jsonify({"logs": lines[-100:]})
+    except Exception as e:
+        return jsonify({"logs": [f"Log okuma hatası: {str(e)}"]})
+
+@app.route('/api/froxy/config', methods=['GET'])
+def get_froxy_config():
+    if not os.path.exists(CONFIG_FILE):
+        return jsonify({})
+    try:
+        with open(CONFIG_FILE, 'r', encoding="utf-8") as f:
+            cfg = json.load(f)
+        return jsonify({
+            "froxy_bot_token": cfg.get("froxy_bot_token", ""),
+            "froxy_admin_id": cfg.get("froxy_admin_id", "")
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
+@app.route('/api/froxy/config', methods=['POST'])
+def save_froxy_config():
+    data = request.json
+    try:
+        if os.path.exists(CONFIG_FILE):
+            with open(CONFIG_FILE, 'r', encoding="utf-8") as f:
+                cfg = json.load(f)
+        else:
+            cfg = {}
+        
+        if data.get("froxy_bot_token"):
+            cfg["froxy_bot_token"] = data["froxy_bot_token"]
+        if data.get("froxy_admin_id"):
+            cfg["froxy_admin_id"] = int(data["froxy_admin_id"])
+        
+        with open(CONFIG_FILE, 'w', encoding="utf-8") as f:
+            json.dump(cfg, f, indent=2, ensure_ascii=False)
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})
 
 # ==========================================
 # YAPILANDIRMA VE DİĞER YARDIMCI API'LER

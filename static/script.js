@@ -21,6 +21,16 @@ const UI = {
     btnSupportStop: document.getElementById('btnSupportStop'),
     supportTerminal: document.getElementById('supportTerminalOutput'),
     
+    // Froxy Bot UI Elements
+    froxyStatusBadge: document.getElementById('froxyBotStatus'),
+    froxyStatusText: document.querySelector('#froxyBotStatus .text'),
+    btnFroxyStart: document.getElementById('btnFroxyStart'),
+    btnFroxyStop: document.getElementById('btnFroxyStop'),
+    froxyTerminal: document.getElementById('froxyTerminalOutput'),
+    cfgFroxyBotToken: document.getElementById('cfgFroxyBotToken'),
+    cfgFroxyAdminId: document.getElementById('cfgFroxyAdminId'),
+    btnSaveFroxyConfig: document.getElementById('btnSaveFroxyConfig'),
+    
     // Config Form Inputs
     cfgBotToken: document.getElementById('cfgBotToken'),
     cfgAdminId: document.getElementById('cfgAdminId'),
@@ -28,12 +38,6 @@ const UI = {
     cfgAdStringSession2: document.getElementById('cfgAdStringSession2'),
     cfgAdSleepMin: document.getElementById('cfgAdSleepMin'),
     cfgAdSleepMax: document.getElementById('cfgAdSleepMax'),
-    linkBaslangic: document.getElementById('linkBaslangic'),
-    linkPopuler: document.getElementById('linkPopuler'),
-    linkProfesyonel: document.getElementById('linkProfesyonel'),
-    linkGelistirici: document.getElementById('linkGelistirici'),
-    linkIsletme: document.getElementById('linkIsletme'),
-    linkKurumsal: document.getElementById('linkKurumsal'),
     btnSaveConfig: document.getElementById('btnSaveConfig')
 };
 
@@ -41,14 +45,8 @@ const UI = {
 function switchTab(tabName) {
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-    
-    if (tabName === 'reklam') {
-        document.getElementById('tab-reklam').classList.add('active');
-        document.getElementById('tabBtnReklam').classList.add('active');
-    } else {
-        document.getElementById('tab-destek').classList.add('active');
-        document.getElementById('tabBtnDestek').classList.add('active');
-    }
+    document.getElementById('tab-' + tabName).classList.add('active');
+    document.getElementById('tabBtn' + tabName.charAt(0).toUpperCase() + tabName.slice(1)).classList.add('active');
 }
 
 // AD ADVERTISING BOT LOGIC
@@ -210,6 +208,96 @@ async function stopSupportBot() {
     else alert("Hata: " + data.message);
 }
 
+// FROXY AI BOT LOGIC
+async function checkFroxyStatus() {
+    try {
+        const res = await fetch('/api/froxy/status');
+        const data = await res.json();
+        updateFroxyStatusUI(data.status);
+    } catch (e) {
+        updateFroxyStatusUI('offline');
+    }
+}
+
+function updateFroxyStatusUI(status) {
+    UI.froxyStatusBadge.className = 'status-badge ' + status;
+    
+    if (status === 'running') {
+        UI.froxyStatusText.textContent = 'Aktif';
+        UI.btnFroxyStart.disabled = true; UI.btnFroxyStart.style.opacity = '0.5';
+        UI.btnFroxyStop.disabled = false; UI.btnFroxyStop.style.opacity = '1';
+    } else if (status === 'stopped') {
+        UI.froxyStatusText.textContent = 'Durduruldu';
+        UI.btnFroxyStart.disabled = false; UI.btnFroxyStart.style.opacity = '1';
+        UI.btnFroxyStop.disabled = true; UI.btnFroxyStop.style.opacity = '0.5';
+    } else {
+        UI.froxyStatusText.textContent = 'Bağlantı Yok';
+        UI.btnFroxyStart.disabled = true; UI.btnFroxyStop.disabled = true;
+    }
+}
+
+async function startFroxyBot() {
+    UI.btnFroxyStart.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Başlatılıyor...';
+    const res = await fetch('/api/froxy/start', { method: 'POST' });
+    const data = await res.json();
+    UI.btnFroxyStart.innerHTML = '<i class="fa-solid fa-play"></i> Botu Aktifleştir';
+    if(data.success) checkFroxyStatus();
+    else alert("Hata: " + data.message);
+}
+
+async function stopFroxyBot() {
+    UI.btnFroxyStop.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Durduruluyor...';
+    const res = await fetch('/api/froxy/stop', { method: 'POST' });
+    const data = await res.json();
+    UI.btnFroxyStop.innerHTML = '<i class="fa-solid fa-stop"></i> Botu Durdur';
+    if(data.success) checkFroxyStatus();
+    else alert("Hata: " + data.message);
+}
+
+async function loadFroxyConfig() {
+    try {
+        const res = await fetch('/api/froxy/config');
+        const data = await res.json();
+        UI.cfgFroxyBotToken.value = data.froxy_bot_token || '';
+        UI.cfgFroxyAdminId.value = data.froxy_admin_id || '';
+    } catch (e) {
+        console.error("Froxy config load error: ", e);
+    }
+}
+
+async function saveFroxyConfig() {
+    const oldHtml = UI.btnSaveFroxyConfig.innerHTML;
+    UI.btnSaveFroxyConfig.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Kaydediliyor...';
+    
+    const configData = {
+        froxy_bot_token: UI.cfgFroxyBotToken.value.trim(),
+        froxy_admin_id: parseInt(UI.cfgFroxyAdminId.value) || 0
+    };
+    
+    try {
+        const res = await fetch('/api/froxy/config', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(configData)
+        });
+        const data = await res.json();
+        if (data.success) {
+            UI.btnSaveFroxyConfig.innerHTML = '<i class="fa-solid fa-check"></i> Kaydedildi';
+            UI.btnSaveFroxyConfig.classList.add('success-state');
+            setTimeout(() => {
+                UI.btnSaveFroxyConfig.innerHTML = oldHtml;
+                UI.btnSaveFroxyConfig.classList.remove('success-state');
+            }, 2000);
+        } else {
+            throw new Error(data.message);
+        }
+    } catch(e) {
+        UI.btnSaveFroxyConfig.innerHTML = '<i class="fa-solid fa-xmark"></i> Hata';
+        setTimeout(() => UI.btnSaveFroxyConfig.innerHTML = oldHtml, 2000);
+        alert("Yapılandırma kaydedilemedi: " + e.message);
+    }
+}
+
 // CONFIGURATION LOGIC
 async function loadConfig() {
     try {
@@ -222,14 +310,6 @@ async function loadConfig() {
             UI.cfgAdStringSession2.value = data.ad_string_session_2 || '';
             UI.cfgAdSleepMin.value = data.ad_sleep_min || 180;
             UI.cfgAdSleepMax.value = data.ad_sleep_max || 300;
-            
-            const links = data.shopier_links || {};
-            UI.linkBaslangic.value = links.baslangic || '';
-            UI.linkPopuler.value = links.populer || '';
-            UI.linkProfesyonel.value = links.profesyonel || '';
-            UI.linkGelistirici.value = links.gelistirici || '';
-            UI.linkIsletme.value = links.isletme || '';
-            UI.linkKurumsal.value = links.kurumsal || '';
         }
     } catch (e) {
         console.error("Config load error: ", e);
@@ -247,14 +327,6 @@ async function saveConfig() {
         ad_string_session_2: UI.cfgAdStringSession2.value.trim(),
         ad_sleep_min: parseInt(UI.cfgAdSleepMin.value) || 180,
         ad_sleep_max: parseInt(UI.cfgAdSleepMax.value) || 300,
-        shopier_links: {
-            baslangic: UI.linkBaslangic.value.trim(),
-            populer: UI.linkPopuler.value.trim(),
-            profesyonel: UI.linkProfesyonel.value.trim(),
-            gelistirici: UI.linkGelistirici.value.trim(),
-            isletme: UI.linkIsletme.value.trim(),
-            kurumsal: UI.linkKurumsal.value.trim()
-        }
     };
     
     try {
@@ -328,6 +400,23 @@ async function fetchLogs() {
             UI.supportTerminal.scrollTop = UI.supportTerminal.scrollHeight;
         }
     } catch(e) {}
+    
+    // 3. Fetch Froxy Bot Logs
+    try {
+        const res = await fetch('/api/froxy/logs');
+        const data = await res.json();
+        let html = '';
+        if (data.logs.length === 0) {
+            html = '<p style="color: #666; text-align: center; margin-top: 50px;">Henüz log yok...</p>';
+        } else {
+            html = data.logs.map(line => colorizeLog(line)).join('');
+        }
+        const isScrolledToBottom = UI.froxyTerminal.scrollHeight - UI.froxyTerminal.clientHeight <= UI.froxyTerminal.scrollTop + 50;
+        UI.froxyTerminal.innerHTML = html;
+        if (isScrolledToBottom) {
+            UI.froxyTerminal.scrollTop = UI.froxyTerminal.scrollHeight;
+        }
+    } catch(e) {}
 }
 
 async function fetchStats() {
@@ -353,14 +442,17 @@ async function fetchStats() {
 window.onload = () => {
     loadMessage();
     loadConfig();
+    loadFroxyConfig();
     
     checkStatus();
     checkSupportStatus();
+    checkFroxyStatus();
     fetchLogs();
     fetchStats();
     
     setInterval(checkStatus, 2000);
     setInterval(checkSupportStatus, 2000);
+    setInterval(checkFroxyStatus, 2000);
     setInterval(fetchLogs, 1500);
     setInterval(fetchStats, 2000);
 };

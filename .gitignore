@@ -4,9 +4,11 @@ __pycache__/
 *.pyc
 bot_log.txt
 froxy_bot_log.txt
+froxy_destek_log.txt
 progress.txt
 c4hex_session.session
 froxy_bot_session.session
+froxy_destek_session.session
 
 # Shopier scanning and analysis files
 shopier_*

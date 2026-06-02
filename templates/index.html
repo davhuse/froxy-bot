@@ -22,6 +22,12 @@
                 <button class="tab-btn" id="tabBtnDestek" onclick="switchTab('destek')">
                     <i class="fa-solid fa-headset"></i> Destek & Satış Botu
                 </button>
+                <button class="tab-btn" id="tabBtnFroxy" onclick="switchTab('froxy')">
+                    <i class="fa-solid fa-brain"></i> Froxy AI Botu
+                </button>
+                <button class="tab-btn" id="tabBtnFroxy" onclick="switchTab('froxy')">
+                    <i class="fa-solid fa-brain"></i> Froxy AI Botu
+                </button>
             </div>
         </header>
 
@@ -153,40 +159,6 @@
                         </div>
                     </div>
 
-                    <h3>Shopier Ödeme Linkleri</h3>
-                    
-                    <div class="form-row">
-                        <div class="form-group half">
-                            <label for="linkBaslangic">Başlangıç (₺129.99)</label>
-                            <input type="text" id="linkBaslangic" placeholder="Shopier Linki" spellcheck="false">
-                        </div>
-                        <div class="form-group half">
-                            <label for="linkPopuler">Popüler (₺249.99)</label>
-                            <input type="text" id="linkPopuler" placeholder="Shopier Linki" spellcheck="false">
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group half">
-                            <label for="linkProfesyonel">Profesyonel (₺449.99)</label>
-                            <input type="text" id="linkProfesyonel" placeholder="Shopier Linki" spellcheck="false">
-                        </div>
-                        <div class="form-group half">
-                            <label for="linkGelistirici">Geliştirici (₺599.99)</label>
-                            <input type="text" id="linkGelistirici" placeholder="Shopier Linki" spellcheck="false">
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group half">
-                            <label for="linkIsletme">İşletme (₺799.99)</label>
-                            <input type="text" id="linkIsletme" placeholder="Shopier Linki" spellcheck="false">
-                        </div>
-                        <div class="form-group half">
-                            <label for="linkKurumsal">Kurumsal (₺1499.99)</label>
-                            <input type="text" id="linkKurumsal" placeholder="Shopier Linki" spellcheck="false">
-                        </div>
-                    </div>
 
                     <button class="btn primary" id="btnSaveConfig" onclick="saveConfig()" style="margin-top:20px; width:100%; justify-content:center;">
                         <i class="fa-solid fa-floppy-disk"></i> Yapılandırmayı Kaydet
@@ -196,6 +168,57 @@
                 <div class="logs-section glass-panel">
                     <h2><i class="fa-solid fa-terminal"></i> Canlı Destek Botu Günlükleri</h2>
                     <div class="terminal" id="supportTerminalOutput">
+                        <!-- Loglar buraya gelecek -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: FROXY AI BOTU -->
+        <div id="tab-froxy" class="tab-content">
+            <div class="controls-panel glass-panel">
+                <div class="bot-info-header">
+                    <h2><i class="fa-solid fa-brain"></i> Froxy AI Bot Kontrolü</h2>
+                    <div class="status-badge stopped" id="froxyBotStatus">
+                        <span class="dot"></span>
+                        <span class="text">Kontrol Ediliyor...</span>
+                    </div>
+                </div>
+                <div class="control-actions">
+                    <button id="btnFroxyStart" class="btn primary" onclick="startFroxyBot()">
+                        <i class="fa-solid fa-play"></i> Botu Aktifleştir
+                    </button>
+                    <button id="btnFroxyStop" class="btn danger" onclick="stopFroxyBot()">
+                        <i class="fa-solid fa-stop"></i> Botu Durdur
+                    </button>
+                </div>
+                <p class="info-note">
+                    <i class="fa-solid fa-circle-info"></i> Bu bot, Froxy AI müşterilerinin Telegram üzerinden kredi paketi satın almasını ve destek talebi açmasını sağlar (@FroxyDestekBOT).
+                </p>
+            </div>
+
+            <div class="main-content grid-layout">
+                <div class="config-section glass-panel">
+                    <h2><i class="fa-solid fa-gears"></i> Froxy AI Bot Yapılandırması</h2>
+                    
+                    <div class="form-group">
+                        <label for="cfgFroxyBotToken">Froxy AI Bot Token (@FroxyDestekBOT)</label>
+                        <input type="text" id="cfgFroxyBotToken" placeholder="Örn: 123456789:ABCdefGhI..." spellcheck="false">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="cfgFroxyAdminId">Froxy Admin Telegram Chat ID</label>
+                        <input type="number" id="cfgFroxyAdminId" placeholder="Örn: 987654321">
+                    </div>
+
+                    <button class="btn primary" id="btnSaveFroxyConfig" onclick="saveFroxyConfig()" style="margin-top:20px; width:100%; justify-content:center;">
+                        <i class="fa-solid fa-floppy-disk"></i> Yapılandırmayı Kaydet
+                    </button>
+                </div>
+
+                <div class="logs-section glass-panel">
+                    <h2><i class="fa-solid fa-terminal"></i> Canlı Froxy AI Bot Günlükleri</h2>
+                    <div class="terminal" id="froxyTerminalOutput">
                         <!-- Loglar buraya gelecek -->
                     </div>
                 </div>

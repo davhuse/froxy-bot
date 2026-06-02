@@ -13,7 +13,7 @@ logging.basicConfig(
         logging.StreamHandler()
     ]
 )
-logger = logging.getLogger("FroxyAIBot")
+logger = logging.getLogger("KeyVadiBot")
 
 API_ID = 31076280
 API_HASH = '7ba4072dcf0a05a7ccf80e570866b6d8'
@@ -49,49 +49,60 @@ user_states = {}
 # Initialize client
 bot = TelegramClient('froxy_bot_session', API_ID, API_HASH)
 
-# 6 Products Catalog Data (Froxy AI Credit Packages)
-PRODUCTS_DATA = {
-    "baslangic": {
-        "title": "Başlangıç Paketi",
-        "price": "₺129.99",
-        "desc": "• **Kredi/Kullanım:** 100,000 Kelime veya Görsel Üretim Kredisi.\n• **Özellikler:** Temel yapay zeka modellerine (GPT-3.5, Gemini Flash vb.) erişim.\n• **Garanti:** Anında aktivasyon, 7/24 kullanım.",
-        "link_key": "baslangic"
+# ═══════════════════════════════════════════════════════════════
+# KeyVadi Product Catalog - Shopier üzerinden satılan ürünler
+# ═══════════════════════════════════════════════════════════════
+
+CATEGORIES = {
+    "ai": {
+        "title": "🌟 Yapay Zeka (AI) Hesapları",
+        "products": {
+            "gemini_pro_1y": {"title": "Gemini Pro (1 Yıllık Hesap)", "price": "₺299.99"},
+            "gemini_pro_davet": {"title": "Gemini Pro (Davet Linki)", "price": "₺124.99"},
+            "gemini_ultra_davet": {"title": "Gemini Ultra (Davet Linki)", "price": "₺399.90"},
+            "gemini_ultra_25k": {"title": "Gemini Ultra (2.5k Kredili)", "price": "₺599.99"},
+            "grok_1m": {"title": "Super Grok — 1 Aylık", "price": "₺449.99"},
+            "grok_3m": {"title": "Super Grok — 3 Aylık", "price": "₺949.99"},
+            "grok_6m": {"title": "Super Grok — 6 Aylık", "price": "₺1499.99"},
+            "grok_12m": {"title": "Super Grok — 12 Aylık", "price": "₺2299.99"},
+            "gamma_ultra": {"title": "Gamma Ultra (1 Aylık)", "price": "₺449.99"},
+            "gamma_pro": {"title": "Gamma Pro (1 Aylık)", "price": "₺299.99"},
+            "kiro": {"title": "Kiro (10k Kredili Yapay Zeka)", "price": "₺499.99"},
+        }
     },
-    "populer": {
-        "title": "Popüler Paket",
-        "price": "₺249.99",
-        "desc": "• **Kredi/Kullanım:** 250,000 Kelime veya Görsel Üretim Kredisi.\n• **Özellikler:** Gelişmiş yapay zeka modellerine (GPT-4o, Claude 3.5, Gemini Ultra, Grok) erişim.\n• **Garanti:** Hızlı ve kesintisiz kullanım, öncelikli API erişimi.",
-        "link_key": "populer"
+    "design": {
+        "title": "🎨 Tasarım & Lisans Hizmetleri",
+        "products": {
+            "canva": {"title": "Canva Pro (1 Yıllık Yetki)", "price": "₺79.99"},
+            "adobe_express": {"title": "Adobe Express (3 Aylık Üyelik)", "price": "₺99.99"},
+            "adobe_cc_1w": {"title": "Adobe Creative Cloud — 1 Haftalık", "price": "₺69.99"},
+            "adobe_cc_1m": {"title": "Adobe Creative Cloud — 1 Aylık", "price": "₺119.99"},
+            "adobe_cc_4m": {"title": "Adobe Creative Cloud — 4 Aylık", "price": "₺249.99"},
+            "capcut": {"title": "CapCut Pro (1 Haftalık)", "price": "₺99.99"},
+            "duolingo": {"title": "Duolingo Super Sınırsız", "price": "₺69.99"},
+            "scribd": {"title": "Scribd Premium (3 Aylık)", "price": "₺99.99"},
+        }
     },
-    "profesyonel": {
-        "title": "Profesyonel Paket",
-        "price": "₺449.99",
-        "desc": "• **Kredi/Kullanım:** 600,000 Kredi.\n• **Özellikler:** Tüm gelişmiş AI modelleri, dosya analizi ve web arama özellikleri aktif.\n• **Garanti:** 7/24 kesintisiz destek ve kullanım.",
-        "link_key": "profesyonel"
+    "mobile": {
+        "title": "📱 Onaylı Mobil Hesaplar",
+        "products": {
+            "whatsapp": {"title": "ABD/Kanada Karma WhatsApp Numarası", "price": "₺149.99"},
+            "apple_id": {"title": "Türk Apple ID (iCloud Etkin)", "price": "₺149.99"},
+        }
     },
-    "gelistirici": {
-        "title": "Geliştirici Paketi",
-        "price": "₺599.99",
-        "desc": "• **Kredi/Kullanım:** 1,000,000 Kredi.\n• **Özellikler:** API erişim anahtarı (v1 API), tüm modellerde sınırsız sorgulama imkanı.\n• **Garanti:** API entegrasyon desteği ve yüksek limitler.",
-        "link_key": "gelistirici"
-    },
-    "isletme": {
-        "title": "İşletme Paketi",
-        "price": "₺799.99",
-        "desc": "• **Kredi/Kullanım:** 2,000,000 Kredi.\n• **Özellikler:** Çoklu kullanıcı desteği, ortak çalışma alanı paneli, API entegrasyonu ve kurumsal kontrol.\n• **Garanti:** Özel müşteri temsilcisi ve kesintisiz kurumsal destek.",
-        "link_key": "isletme"
-    },
-    "kurumsal": {
-        "title": "Kurumsal Paket",
-        "price": "₺1499.99",
-        "desc": "• **Kredi/Kullanım:** 5,000,000 Kredi.\n• **Özellikler:** Özel modeller ince ayar (fine-tuning) desteği, sınırsız API kullanımı, en yüksek hız ve kota limitleri.\n• **Garanti:** SLA garantili destek ve özel kurumsal altyapı.",
-        "link_key": "kurumsal"
+    "deals": {
+        "title": "🍔 Yemek & Akaryakıt Fırsatları",
+        "products": {
+            "trendyol_yemek": {"title": "Trendyol Go Yemek (700₺'ye 250₺ İndirim)", "price": "₺49.99"},
+            "trendyol_market": {"title": "Trendyol Go Market (900₺'ye 250₺ İndirim)", "price": "₺49.99"},
+            "shell": {"title": "Shell 75 TL Akaryakıt Puanı", "price": "₺14.99"},
+        }
     }
 }
 
 welcome_text = (
-    "🤖 **Froxy AI Müşteri Paneline Hoş Geldiniz!**\n\n"
-    "En popüler yapay zeka modellerini tek bir panelden kullanmanızı sağlayan paketlerimiz ve API erişimlerimiz en uygun fiyatlarla burada!\n\n"
+    "⚡ **KeyVadi Satış Paneline Hoş Geldiniz!**\n\n"
+    "Premium yapay zeka hesapları, lisanslar, onaylı mobil hesaplar ve özel fırsatlar en uygun fiyatlarla!\n\n"
     "Lütfen yapmak istediğiniz işlemi seçin 👇"
 )
 
@@ -101,7 +112,10 @@ async def start_handler(event):
     user_id = event.sender_id
     user_states[user_id] = None
     buttons = [
-        [Button.inline("💳 Paket Seçenekleri & Satın Al", b"menu_packages")],
+        [Button.inline("🌟 Yapay Zeka (AI) Hesapları", b"cat_ai")],
+        [Button.inline("🎨 Tasarım & Lisans Hizmetleri", b"cat_design")],
+        [Button.inline("📱 Onaylı Mobil Hesaplar", b"cat_mobile")],
+        [Button.inline("🍔 Yemek & Akaryakıt Fırsatları", b"cat_deals")],
         [Button.inline("📞 Canlı Destek & İletişim", b"menu_support")]
     ]
     await event.respond(welcome_text, buttons=buttons)
@@ -111,53 +125,68 @@ async def main_menu_handler(event):
     user_id = event.sender_id
     user_states[user_id] = None
     buttons = [
-        [Button.inline("💳 Paket Seçenekleri & Satın Al", b"menu_packages")],
+        [Button.inline("🌟 Yapay Zeka (AI) Hesapları", b"cat_ai")],
+        [Button.inline("🎨 Tasarım & Lisans Hizmetleri", b"cat_design")],
+        [Button.inline("📱 Onaylı Mobil Hesaplar", b"cat_mobile")],
+        [Button.inline("🍔 Yemek & Akaryakıt Fırsatları", b"cat_deals")],
         [Button.inline("📞 Canlı Destek & İletişim", b"menu_support")]
     ]
     await event.edit(welcome_text, buttons=buttons)
 
-@bot.on(events.CallbackQuery(data=b'menu_packages'))
-async def packages_menu_handler(event):
-    buttons = [
-        [Button.inline("🤖 Başlangıç Paketi (₺129.99)", b"pkg_baslangic")],
-        [Button.inline("🔥 Popüler Paket (₺249.99)", b"pkg_populer")],
-        [Button.inline("💼 Profesyonel Paket (₺449.99)", b"pkg_profesyonel")],
-        [Button.inline("💻 Geliştirici Paketi (₺599.99)", b"pkg_gelistirici")],
-        [Button.inline("🏢 İşletme Paketi (₺799.99)", b"pkg_isletme")],
-        [Button.inline("👑 Kurumsal Paket (₺1499.99)", b"pkg_kurumsal")],
-        [Button.inline("↩️ Ana Menü", b"menu_main")]
-    ]
-    await event.edit("💳 **Froxy AI Paket Seçenekleri**\n\nDetaylarını incelemek ve satın almak istediğiniz paketi seçiniz:", buttons=buttons)
+# Category handler
+@bot.on(events.CallbackQuery(pattern=r'cat_(\w+)'))
+async def category_handler(event):
+    cat_key = event.data.decode('utf-8').replace("cat_", "")
+    cat = CATEGORIES.get(cat_key)
+    if not cat:
+        await event.answer("Kategori bulunamadı!", alert=True)
+        return
 
-# Direct package details helper
-async def show_package_details(event, key):
-    p_data = PRODUCTS_DATA.get(key)
-    if not p_data:
+    buttons = []
+    for prod_key, prod in cat["products"].items():
+        label = f"{prod['title']} — {prod['price']}"
+        # Truncate label to 64 chars for Telegram button limit
+        if len(label) > 64:
+            label = label[:61] + "..."
+        buttons.append([Button.inline(label, f"prod_{prod_key}".encode())])
+    buttons.append([Button.inline("↩️ Ana Menü", b"menu_main")])
+
+    await event.edit(f"{cat['title']}\n\nDetaylarını görmek ve satın almak istediğiniz ürünü seçin:", buttons=buttons)
+
+# Product detail handler
+@bot.on(events.CallbackQuery(pattern=r'prod_(\w+)'))
+async def product_handler(event):
+    prod_key = event.data.decode('utf-8').replace("prod_", "")
+
+    # Find product across all categories
+    product = None
+    cat_key_found = None
+    for ck, cat in CATEGORIES.items():
+        if prod_key in cat["products"]:
+            product = cat["products"][prod_key]
+            cat_key_found = ck
+            break
+
+    if not product:
         await event.answer("Ürün bulunamadı!", alert=True)
         return
-        
+
     config = load_config() or {}
     links = config.get("shopier_links", SHOPIER_LINKS)
-    shopier_url = links.get(p_data["link_key"], "https://www.shopier.com/keyvadi")
-    
+    shopier_url = links.get(prod_key, "https://www.shopier.com/keyvadi")
+
     text = (
-        f"🌟 **{p_data['title']}**\n\n"
-        f"💰 **Fiyat:** {p_data['price']}\n\n"
-        f"📝 **Özellikler & Garanti Detayları:**\n{p_data['desc']}\n\n"
-        f"Satın almak için aşağıdaki butona tıklayabilirsiniz. Ödeme sonrasında teslimat anında gerçekleştirilir."
+        f"🌟 **{product['title']}**\n\n"
+        f"💰 **Fiyat:** {product['price']}\n\n"
+        f"✅ Anında teslim · 7/24 destek · Güvenli ödeme\n\n"
+        f"Satın almak için aşağıdaki butona tıklayın. Ödeme sonrası teslimat anında gerçekleştirilir."
     )
     buttons = [
         [Button.url("💳 Shopier ile Güvenli Satın Al", shopier_url)],
-        [Button.inline("↩️ Paketlere Dön", b"menu_packages")]
+        [Button.inline(f"↩️ {CATEGORIES[cat_key_found]['title']}", f"cat_{cat_key_found}".encode())],
+        [Button.inline("↩️ Ana Menü", b"menu_main")]
     ]
     await event.edit(text, buttons=buttons)
-
-# Package detail Callback Handler
-@bot.on(events.CallbackQuery(pattern=r'pkg_(\w+)'))
-async def pkg_select_handler(event):
-    full_pkg_data = event.data.decode('utf-8')
-    pkg_key = full_pkg_data.replace("pkg_", "")
-    await show_package_details(event, pkg_key)
 
 
 # Support Menu
@@ -165,11 +194,11 @@ async def pkg_select_handler(event):
 async def support_menu_handler(event):
     user_id = event.sender_id
     user_states[user_id] = "AWAITING_SUPPORT"
-    
+
     text = (
         "📞 **Destek Talebi & Sipariş Verme**\n\n"
-        "Lütfen satın almak istediğiniz diğer ürünü (Örn: Eski Gmail, YouTube Premium vb.) veya destek talebinizi detaylıca yazıp bu sohbete gönderin.\n\n"
-        "Mesajınız doğrudan admin ekibimize iletilecektir. En kısa sürede bu sohbet üzerinden yanıt alacaksınız."
+        "Satın almak istediğiniz ürün, sipariş sorunu veya destek talebinizi detaylıca yazıp bu sohbete gönderin.\n\n"
+        "Mesajınız doğrudan admin ekibimize iletilecektir. En kısa sürede yanıt alacaksınız."
     )
     buttons = [
         [Button.inline("↩️ Vazgeç ve İptal Et", b"menu_main")]
@@ -179,25 +208,25 @@ async def support_menu_handler(event):
 @bot.on(events.NewMessage)
 async def message_handler(event):
     user_id = event.sender_id
-    
+
     if user_states.get(user_id) == "AWAITING_SUPPORT":
         if event.text.startswith('/'):
             user_states[user_id] = None
             return
-            
+
         config = load_config() or {}
         admin_chat_id = config.get("admin_id", ADMIN_ID)
-        
+
         if not admin_chat_id:
             await event.respond("⚠️ Üzgünüz, şu anda destek sistemi aktif değil (Admin ID tanımlanmamış). Lütfen daha sonra deneyin.")
             user_states[user_id] = None
             return
-            
+
         user = await event.get_sender()
         username = f"@{user.username}" if user.username else "Yok"
         first_name = user.first_name or ""
         last_name = user.last_name or ""
-        
+
         admin_msg = (
             f"📩 **Yeni Destek Talebi!**\n"
             f"👤 **Kullanıcı ID:** `{user_id}`\n"
@@ -207,37 +236,37 @@ async def message_handler(event):
             f"{event.text}\n\n"
             f"*(Bu mesajı yanıtlayarak (Reply) doğrudan kullanıcıya cevap gönderebilirsiniz.)*"
         )
-        
+
         try:
             await bot.send_message(admin_chat_id, admin_msg)
             await event.respond("✅ Mesajınız ekibimize iletildi. En kısa sürede yanıt alacaksınız.")
         except Exception as e:
             logger.error(f"Failed to forward message to admin: {e}")
             await event.respond("⚠️ Mesajınız iletilemedi. Lütfen daha sonra tekrar deneyiniz.")
-            
+
         user_states[user_id] = None
         return
 
     config = load_config() or {}
     admin_chat_id = config.get("admin_id", ADMIN_ID)
-    
+
     if event.sender_id == admin_chat_id and event.is_reply:
         reply_msg = await event.get_reply_message()
         if reply_msg and reply_msg.text:
             match = re.search(r"Kullanıcı ID:\*\* `(\d+)`", reply_msg.text)
             if not match:
                 match = re.search(r"Kullanıcı ID: (\d+)", reply_msg.text)
-                
+
             if match:
                 target_user_id = int(match.group(1))
                 try:
-                    await bot.send_message(target_user_id, f"📨 **Destek Ekibinden Cevap:**\n\n{event.text}")
+                    await bot.send_message(target_user_id, f"📨 **KeyVadi Destek Ekibinden Cevap:**\n\n{event.text}")
                     await event.reply("✅ Cevabınız kullanıcıya iletildi.")
                 except Exception as e:
                     logger.error(f"Failed to reply to user {target_user_id}: {e}")
                     await event.reply(f"❌ Cevap iletilemedi. Hata: {e}")
 
 if __name__ == '__main__':
-    logger.info("Starting Froxy AI Customer Bot...")
+    logger.info("Starting KeyVadi Sales Bot (@KeyVadiSatisBot)...")
     bot.start(bot_token=BOT_TOKEN)
     bot.run_until_disconnected()
