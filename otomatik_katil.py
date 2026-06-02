@@ -304,6 +304,7 @@ async def main():
             print(f"⚠️ Worker {client_name} önbellek hatası: {e}")
 
         join_restricted = False
+        join_count = 0
         while True:
             hedef_grup = None
             
@@ -396,11 +397,16 @@ async def main():
                                     print(f"[{client_name}] ⚠️ Son mesaj kontrol edilemedi: {msg_check_err}")
                                     
                                 if entity:
-                                    print(f"[{client_name}] ✅ Gruba girildi: @{hedef_grup} ({member_count} üye)")
+                                    join_count += 1
+                                    print(f"[{client_name}] ✅ Gruba girildi: @{hedef_grup} ({member_count} üye). Katılım Sayısı: {join_count}/3")
                                     joined_dialogs[grup_lower] = entity
                                     
-                                    # Anti-spam delay after joining a new group
-                                    join_sleep = random.randint(15, 30)
+                                    if join_count >= 3:
+                                        print(f"[{client_name}] 🔒 Maksimum yeni gruba katılım limitine ({join_count}) ulaşıldı. Bu döngü boyunca daha fazla gruba katılınmayacak.")
+                                        join_restricted = True
+                                        
+                                    # Anti-spam delay after joining a new group (Safety adjusted to 60-120s)
+                                    join_sleep = random.randint(60, 120)
                                     print(f"[{client_name}] ⏳ Yeni gruba girildi. Güvenlik için {join_sleep} saniye bekleniyor...")
                                     await asyncio.sleep(join_sleep)
                         except FloodWaitError as e:
