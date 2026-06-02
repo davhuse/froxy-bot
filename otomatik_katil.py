@@ -251,10 +251,51 @@ async def main():
     async def run_worker(client, client_name, joined_dialogs):
         print(f"🚀 Worker {client_name} diyalogları önbelleğe alınıyor...")
         try:
+            from datetime import datetime, timezone
+            now = datetime.now(timezone.utc)
+            new_blacklisted_groups = []
+            
             async for dialog in client.iter_dialogs():
                 if dialog.is_group or dialog.is_channel:
                     if hasattr(dialog.entity, 'username') and dialog.entity.username:
-                        joined_dialogs[dialog.entity.username.lower()] = dialog.entity
+                        username_lower = dialog.entity.username.lower()
+                        
+                        # 1. Üye sayısı kontrolü (Önceden üye olduklarımızı filtreler)
+                        member_count = getattr(dialog.entity, 'participants_count', None)
+                        if member_count is not None and member_count < 50:
+                            print(f"[{client_name}] 📉 Önbellek: @{dialog.entity.username} üye sayısı çok az ({member_count}). Kara listeye alınıyor...")
+                            new_blacklisted_groups.append(dialog.entity.username)
+                            continue
+                            
+                        # 2. Aktiflik (Son mesaj tarihi) kontrolü (Örn: Son 3 gündür mesaj atılmamış ölü grupları eler)
+                        if dialog.message and dialog.message.date:
+                            delta = now - dialog.message.date
+                            if delta.days >= 3:
+                                print(f"[{client_name}] 💤 Önbellek: @{dialog.entity.username} son mesaj {delta.days} gün önce atılmış (İnaktif). Kara listeye alınıyor...")
+                                new_blacklisted_groups.append(dialog.entity.username)
+                                continue
+                                
+                        joined_dialogs[username_lower] = dialog.entity
+                        
+            if new_blacklisted_groups:
+                print(f"[{client_name}] 💾 {len(new_blacklisted_groups)} inaktif/küçük grup toplu olarak kara listeye kaydediliyor...")
+                async with state_lock:
+                    with open(BLACKLIST_FILE, 'a', encoding='utf-8') as f:
+                        for g in new_blacklisted_groups:
+                            f.write(g + '\n')
+                    try:
+                        progress_content = ""
+                        if os.path.exists(PROGRESS_FILE):
+                            with open(PROGRESS_FILE, 'r', encoding='utf-8') as f:
+                                progress_content = f.read()
+                        blacklist_content = ""
+                        if os.path.exists(BLACKLIST_FILE):
+                            with open(BLACKLIST_FILE, 'r', encoding='utf-8') as f:
+                                blacklist_content = f.read()
+                        fs_set_state(progress_content, blacklist_content)
+                    except Exception as fs_err:
+                        print(f"⚠️ Firestore güncelleme hatası: {fs_err}")
+                        
             print(f"✅ Worker {client_name}: {len(joined_dialogs)} diyalog önbelleğe alındı.")
         except FloodWaitError as e:
             print(f"🚨 Worker {client_name} önbellek aşamasında Flood yedi! {e.seconds} saniye bekleniyor...")
@@ -338,13 +379,30 @@ async def main():
                                     save_to_list(hedef_grup, BLACKLIST_FILE)
                                 entity = None
                             else:
-                                print(f"[{client_name}] ✅ Gruba girildi: @{hedef_grup} ({member_count} üye)")
-                                joined_dialogs[grup_lower] = entity
-                                
-                                # Anti-spam delay after joining a new group
-                                join_sleep = random.randint(15, 30)
-                                print(f"[{client_name}] ⏳ Yeni gruba girildi. Güvenlik için {join_sleep} saniye bekleniyor...")
-                                await asyncio.sleep(join_sleep)
+                                # Son mesaj tarihini kontrol et (Aktiflik)
+                                try:
+                                    messages = await client.get_messages(entity, limit=1)
+                                    if messages:
+                                        last_msg = messages[0]
+                                        from datetime import datetime, timezone
+                                        now = datetime.now(timezone.utc)
+                                        delta = now - last_msg.date
+                                        if delta.days >= 3:
+                                            print(f"[{client_name}] 💤 @{hedef_grup} -> Son mesaj {delta.days} gün önce atılmış (İnaktif). Kara listeye alınıyor...")
+                                            async with state_lock:
+                                                save_to_list(hedef_grup, BLACKLIST_FILE)
+                                            entity = None
+                                except Exception as msg_check_err:
+                                    print(f"[{client_name}] ⚠️ Son mesaj kontrol edilemedi: {msg_check_err}")
+                                    
+                                if entity:
+                                    print(f"[{client_name}] ✅ Gruba girildi: @{hedef_grup} ({member_count} üye)")
+                                    joined_dialogs[grup_lower] = entity
+                                    
+                                    # Anti-spam delay after joining a new group
+                                    join_sleep = random.randint(15, 30)
+                                    print(f"[{client_name}] ⏳ Yeni gruba girildi. Güvenlik için {join_sleep} saniye bekleniyor...")
+                                    await asyncio.sleep(join_sleep)
                         except FloodWaitError as e:
                             if e.seconds <= 120:
                                 print(f"[{client_name}] ⏳ Katılma/Bilgi edinme limiti (Flood). {e.seconds} saniye bekleniyor...")
