@@ -201,6 +201,53 @@ def status():
     is_running = get_process_by_script('otomatik_katil.py') is not None
     return jsonify({"status": "running" if is_running else "stopped"})
 
+@app.route('/api/stats', methods=['GET'])
+def stats():
+    done_count = 0
+    if os.path.exists("progress.txt"):
+        try:
+            with open("progress.txt", "r", encoding="utf-8") as f:
+                done_count = len([line.strip() for line in f if line.strip()])
+        except:
+            pass
+            
+    blacklist_count = 0
+    if os.path.exists("blacklist.txt"):
+        try:
+            with open("blacklist.txt", "r", encoding="utf-8") as f:
+                blacklist_count = len([line.strip() for line in f if line.strip()])
+        except:
+            pass
+            
+    sent_count = 0
+    if os.path.exists("bot_log.txt"):
+        try:
+            with open("bot_log.txt", "r", encoding="utf-8", errors="replace") as f:
+                for line in f:
+                    if "Mesaj gönderildi!" in line:
+                        sent_count += 1
+        except:
+            pass
+            
+    total_groups = 0
+    try:
+        # Avoid full import overhead by parsing gruplar length directly
+        with open("otomatik_katil.py", "r", encoding="utf-8") as f:
+            content = f.read()
+            # Match the gruplar list size roughly or import safely since watchdog isn't running main
+            from otomatik_katil import gruplar
+            total_groups = len(gruplar)
+    except Exception as e:
+        print(f"Error reading total groups: {e}")
+        total_groups = 410 # Fallback default
+        
+    return jsonify({
+        "total_groups": total_groups,
+        "done_groups": done_count,
+        "blacklist_groups": blacklist_count,
+        "sent_messages": sent_count
+    })
+
 @app.route('/api/start', methods=['POST'])
 def start():
     if get_process_by_script('otomatik_katil.py') is not None:

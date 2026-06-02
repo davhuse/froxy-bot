@@ -42,10 +42,26 @@
                     <button id="btnStop" class="btn danger" onclick="stopBot()">
                         <i class="fa-solid fa-stop"></i> Durdur
                     </button>
+            </div>
+
+            <!-- STATS BAR -->
+            <div class="stats-bar" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 20px; width: 100%;">
+                <div class="stat-card glass-panel" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 15px; text-align: center;">
+                    <span class="stat-title" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px; font-weight: 500;">Toplam Reklam Grubu</span>
+                    <span class="stat-value" id="statTotalGroups" style="font-size: 1.8rem; font-weight: 700; color: var(--accent);">0</span>
                 </div>
-                <p class="info-note">
-                    <i class="fa-solid fa-circle-info"></i> Reklam botu message.txt dosyasını okuyarak gruplara otomatik mesaj gönderir.
-                </p>
+                <div class="stat-card glass-panel" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 15px; text-align: center;">
+                    <span class="stat-title" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px; font-weight: 500;">Başarıyla Gönderilen Mesaj</span>
+                    <span class="stat-value" id="statSentMessages" style="font-size: 1.8rem; font-weight: 700; color: var(--success);">0</span>
+                </div>
+                <div class="stat-card glass-panel" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 15px; text-align: center;">
+                    <span class="stat-title" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px; font-weight: 500;">Mevcut Döngü İlerlemesi</span>
+                    <span class="stat-value" id="statProgress" style="font-size: 1.8rem; font-weight: 700; color: #60a5fa;">0%</span>
+                </div>
+                <div class="stat-card glass-panel" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 15px; text-align: center;">
+                    <span class="stat-title" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px; font-weight: 500;">Kara Listeye Alınan</span>
+                    <span class="stat-value" id="statBlacklist" style="font-size: 1.8rem; font-weight: 700; color: var(--danger);">0</span>
+                </div>
             </div>
 
             <div class="main-content">

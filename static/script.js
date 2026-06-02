@@ -8,6 +8,12 @@ const UI = {
     editor2: document.getElementById('messageEditor2'),
     terminal: document.getElementById('terminalOutput'),
     
+    // Stats Elements
+    statTotalGroups: document.getElementById('statTotalGroups'),
+    statSentMessages: document.getElementById('statSentMessages'),
+    statProgress: document.getElementById('statProgress'),
+    statBlacklist: document.getElementById('statBlacklist'),
+    
     // Support Bot UI Elements
     supportStatusBadge: document.getElementById('supportBotStatus'),
     supportStatusText: document.querySelector('#supportBotStatus .text'),
@@ -324,6 +330,26 @@ async function fetchLogs() {
     } catch(e) {}
 }
 
+async function fetchStats() {
+    try {
+        const res = await fetch('/api/stats');
+        const data = await res.json();
+        
+        UI.statTotalGroups.textContent = data.total_groups || 0;
+        UI.statSentMessages.textContent = data.sent_messages || 0;
+        UI.statBlacklist.textContent = data.blacklist_groups || 0;
+        
+        if (data.total_groups > 0) {
+            const pct = Math.min(100, Math.round((data.done_groups / data.total_groups) * 100));
+            UI.statProgress.textContent = pct + '%';
+        } else {
+            UI.statProgress.textContent = '0%';
+        }
+    } catch(e) {
+        console.error("Error fetching stats:", e);
+    }
+}
+
 window.onload = () => {
     loadMessage();
     loadConfig();
@@ -331,8 +357,10 @@ window.onload = () => {
     checkStatus();
     checkSupportStatus();
     fetchLogs();
+    fetchStats();
     
     setInterval(checkStatus, 2000);
     setInterval(checkSupportStatus, 2000);
     setInterval(fetchLogs, 1500);
+    setInterval(fetchStats, 2000);
 };

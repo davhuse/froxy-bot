@@ -303,3 +303,15 @@ textarea:focus { border-color: rgba(108, 92, 231, 0.5); box-shadow: 0 0 15px rgb
         justify-content: center;
     }
 }
+
+/* Stats Bar Responsive Rules */
+@media (max-width: 768px) {
+    .stats-bar {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+@media (max-width: 480px) {
+    .stats-bar {
+        grid-template-columns: 1fr !important;
+    }
+}
