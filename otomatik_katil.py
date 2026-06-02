@@ -107,7 +107,10 @@ gruplar = [
     "yazilimcilarburada", "yukseklisansdoktora", "zesetsyco", "zirvedekidolaplar",
     "turkiyesatispazari", "dijitalpazarkey", "reklampazaritr", "hesaplisansmarket", "uygunlisanssatis",
     "satis_ilanlari_tr", "toptan_perakende_tr", "freelance_dijital", "premium_market_tr", "kupon_pazari",
-    "telegram_reklam_tr", "dijital_tedarikci", "dijitalalisveris", "turkiyereklamsohbet", "smm_bayi_ticaret"
+    "telegram_reklam_tr", "dijital_tedarikci", "dijitalalisveris", "turkiyereklamsohbet", "smm_bayi_ticaret",
+    "r10_com", "r10_forum", "wmaraci_forum", "wmaracitr", "yazilimci_sohbeti",
+    "freelance_ilanlari", "freelancer_tr", "hesap_alsat", "eticaret_sohbet", "smm_panel_rehberi",
+    "smm_bayileri", "epin_alsat_tr", "kupon_yardimlasmasi", "tasarimcilar_kulubu", "coder_turkiye_sohbet"
 ]
 
 PROGRESS_FILE = 'progress.txt'
@@ -259,6 +262,7 @@ async def main():
         except Exception as e:
             print(f"⚠️ Worker {client_name} önbellek hatası: {e}")
 
+        join_restricted = False
         while True:
             hedef_grup = None
             
@@ -306,34 +310,44 @@ async def main():
                     entity = joined_dialogs[grup_lower]
                     print(f"[{client_name}] ✅ Zaten gruptayız (Önbellekten): @{hedef_grup}")
                 else:
-                    # Gruba katıl (Zaten varsan hata vermez)
-                    try:
-                        from telethon.tl.functions.channels import GetFullChannelRequest
-                        entity = await client.get_entity(hedef_grup)
-                        await client(JoinChannelRequest(entity))
-                        
-                        # Üye sayısını kontrol et
-                        full_channel = await client(GetFullChannelRequest(entity))
-                        member_count = full_channel.full_chat.participants_count
-                        
-                        if member_count < 20:
-                            print(f"[{client_name}] 📉 @{hedef_grup} -> Üye sayısı çok az ({member_count}). Kara listeye alınıyor...")
-                            async with state_lock:
-                                save_to_list(hedef_grup, BLACKLIST_FILE)
-                            continue
+                    if join_restricted:
+                        print(f"[{client_name}] ⚠️ Hesap join/resolve limitli. @{hedef_grup} katılma denemesi atlanıyor (Sadece grupta olduklarımıza atılacak).")
+                        entity = None
+                    else:
+                        # Gruba katıl (Zaten varsan hata vermez)
+                        try:
+                            from telethon.tl.functions.channels import GetFullChannelRequest
+                            entity = await client.get_entity(hedef_grup)
+                            await client(JoinChannelRequest(entity))
                             
-                        print(f"[{client_name}] ✅ Gruba girildi: @{hedef_grup} ({member_count} üye)")
-                        joined_dialogs[grup_lower] = entity
-                        
-                        # Anti-spam delay after joining a new group
-                        join_sleep = random.randint(15, 30)
-                        print(f"[{client_name}] ⏳ Yeni gruba girildi. Güvenlik için {join_sleep} saniye bekleniyor...")
-                        await asyncio.sleep(join_sleep)
-                    except FloodWaitError as e:
-                        raise e
-                    except Exception as join_err:
-                        print(f"[{client_name}] ⚠️ Gruba girilemedi: {join_err}")
-                        pass
+                            # Üye sayısını kontrol et
+                            full_channel = await client(GetFullChannelRequest(entity))
+                            member_count = full_channel.full_chat.participants_count
+                            
+                            if member_count < 20:
+                                print(f"[{client_name}] 📉 @{hedef_grup} -> Üye sayısı çok az ({member_count}). Kara listeye alınıyor...")
+                                async with state_lock:
+                                    save_to_list(hedef_grup, BLACKLIST_FILE)
+                                entity = None
+                            else:
+                                print(f"[{client_name}] ✅ Gruba girildi: @{hedef_grup} ({member_count} üye)")
+                                joined_dialogs[grup_lower] = entity
+                                
+                                # Anti-spam delay after joining a new group
+                                join_sleep = random.randint(15, 30)
+                                print(f"[{client_name}] ⏳ Yeni gruba girildi. Güvenlik için {join_sleep} saniye bekleniyor...")
+                                await asyncio.sleep(join_sleep)
+                        except FloodWaitError as e:
+                            if e.seconds <= 120:
+                                print(f"[{client_name}] ⏳ Katılma/Bilgi edinme limiti (Flood). {e.seconds} saniye bekleniyor...")
+                                await asyncio.sleep(e.seconds)
+                            else:
+                                print(f"[{client_name}] ⚠️ Katılma/Bilgi edinme limiti yüksek ({e.seconds}sn). Bu gruptan sonra yeni gruplara katılım denenmeyecek.")
+                                join_restricted = True
+                                entity = None
+                        except Exception as join_err:
+                            print(f"[{client_name}] ⚠️ Gruba girilemedi: {join_err}")
+                            entity = None
 
                 if not entity:
                     async with state_lock:
