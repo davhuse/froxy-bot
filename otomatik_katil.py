@@ -250,7 +250,7 @@ async def main():
         try:
             async for dialog in client.iter_dialogs():
                 if dialog.is_group or dialog.is_channel:
-                    if dialog.entity.username:
+                    if hasattr(dialog.entity, 'username') and dialog.entity.username:
                         joined_dialogs[dialog.entity.username.lower()] = dialog.entity
             print(f"✅ Worker {client_name}: {len(joined_dialogs)} diyalog önbelleğe alındı.")
         except FloodWaitError as e:
