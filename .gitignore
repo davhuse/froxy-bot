@@ -17,3 +17,4 @@ inspect_html.py
 verify_shopier_mapping.py
 check_live_shopier.py
 create_shopier_listings.py
+*.pid

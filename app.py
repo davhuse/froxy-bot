@@ -36,10 +36,31 @@ def update_config_state(key, value):
 # Process tracking helpers using psutil
 def get_process_by_script(script_name):
     """Finds a running python process that executes script_name."""
+    # 1. Try checking the PID file first
+    pid_file = f"{script_name}.pid"
+    if os.path.exists(pid_file):
+        try:
+            with open(pid_file, "r") as f:
+                pid = int(f.read().strip())
+            if psutil.pid_exists(pid):
+                proc = psutil.Process(pid)
+                cmd = proc.cmdline() or []
+                if any(script_name in arg for arg in cmd):
+                    return proc
+        except Exception:
+            pass
+
+    # 2. Fallback to process iteration
     for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
         try:
             cmd = proc.info.get('cmdline') or []
             if any(script_name in arg for arg in cmd):
+                # Save it to the PID file for future fast checks
+                try:
+                    with open(pid_file, "w") as f:
+                        f.write(str(proc.pid))
+                except:
+                    pass
                 return proc
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             pass
@@ -111,12 +132,20 @@ def bot_watchdog():
                         creationflags=flags,
                         env=env
                     )
+                    try:
+                        with open("otomatik_katil.py.pid", "w") as f:
+                            f.write(str(ad_process.pid))
+                    except:
+                        pass
                 else:
                     ad_process = ad_proc_os
             else:
                 if ad_proc_os is not None:
                     print("📢 [Watchdog] Reklam botu durduruluyor (Yapılandırmada kapalı)...")
                     kill_process_by_script('otomatik_katil.py')
+                    # Remove PID file
+                    try: os.remove("otomatik_katil.py.pid")
+                    except: pass
                     ad_process = None
 
             # 2. Check Support Bot (froxy_bot.py)
@@ -137,6 +166,11 @@ def bot_watchdog():
                         creationflags=flags,
                         env=env
                     )
+                    try:
+                        with open("froxy_bot.py.pid", "w") as f:
+                            f.write(str(support_process.pid))
+                    except:
+                        pass
                 else:
                     support_process = support_proc_os
             else:
@@ -144,6 +178,9 @@ def bot_watchdog():
                 if support_proc_os is not None:
                     print("🤖 [Watchdog] Destek botu durduruluyor (Yapılandırmada kapalı)...")
                     kill_process_by_script('froxy_bot.py')
+                    # Remove PID file
+                    try: os.remove("froxy_bot.py.pid")
+                    except: pass
                     support_process = None
 
         except Exception as e:
@@ -187,6 +224,11 @@ def start():
             creationflags=flags,
             env=env
         )
+        try:
+            with open("otomatik_katil.py.pid", "w") as f:
+                f.write(str(ad_process.pid))
+        except:
+            pass
         update_config_state("ad_bot_running", True)
         return jsonify({"success": True})
     except Exception as e:
@@ -195,6 +237,8 @@ def start():
 @app.route('/api/stop', methods=['POST'])
 def stop():
     kill_process_by_script('otomatik_katil.py')
+    try: os.remove("otomatik_katil.py.pid")
+    except: pass
     with open(LOG_FILE, "a", encoding="utf-8") as f:
         f.write("\n🛑 Reklam botu kullanıcı tarafından durduruldu.\n")
     global ad_process
@@ -255,6 +299,11 @@ def support_start():
             creationflags=flags,
             env=env
         )
+        try:
+            with open("froxy_bot.py.pid", "w") as f:
+                f.write(str(support_process.pid))
+        except:
+            pass
         update_config_state("support_bot_running", True)
         return jsonify({"success": True})
     except Exception as e:
@@ -263,6 +312,8 @@ def support_start():
 @app.route('/api/support/stop', methods=['POST'])
 def support_stop():
     kill_process_by_script('froxy_bot.py')
+    try: os.remove("froxy_bot.py.pid")
+    except: pass
     with open(SUPPORT_LOG_FILE, "a", encoding="utf-8") as f:
         f.write("\n🛑 Destek ve Satış botu kullanıcı tarafından durduruldu.\n")
     global support_process

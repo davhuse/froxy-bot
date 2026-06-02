@@ -193,42 +193,52 @@ async def main():
     # Client 1
     if string_session_key:
         print("🔑 1. Hesap: StringSession kullanılarak bağlanılıyor...")
-        from telethon.sessions import StringSession
-        client1 = TelegramClient(StringSession(string_session_key), api_id, api_hash)
-        await client1.connect()
-        if await client1.is_user_authorized():
-            active_clients.append((client1, "Hesap #1", {}))
-            print("✅ 1. Hesap yetkilendirildi.")
-        else:
-            print("❌ HATA: 1. Hesap yetkilendirilmemiş!")
+        try:
+            from telethon.sessions import StringSession
+            client1 = TelegramClient(StringSession(string_session_key), api_id, api_hash)
+            await client1.connect()
+            if await client1.is_user_authorized():
+                active_clients.append((client1, "Hesap #1", {}))
+                print("✅ 1. Hesap yetkilendirildi.")
+            else:
+                print("❌ HATA: 1. Hesap yetkilendirilmemiş!")
+        except Exception as e:
+            print(f"❌ HATA: 1. Hesap bağlanırken hata oluştu: {type(e).__name__} - {e}")
             
     # Client 2
     if string_session_key_2:
         print("🔑 2. Hesap: StringSession kullanılarak bağlanılıyor...")
-        from telethon.sessions import StringSession
-        client2 = TelegramClient(StringSession(string_session_key_2), api_id, api_hash)
-        await client2.connect()
-        if await client2.is_user_authorized():
-            active_clients.append((client2, "Hesap #2", {}))
-            print("✅ 2. Hesap yetkilendirildi.")
-        else:
-            print("❌ HATA: 2. Hesap yetkilendirilmemiş!")
+        try:
+            from telethon.sessions import StringSession
+            client2 = TelegramClient(StringSession(string_session_key_2), api_id, api_hash)
+            await client2.connect()
+            if await client2.is_user_authorized():
+                active_clients.append((client2, "Hesap #2", {}))
+                print("✅ 2. Hesap yetkilendirildi.")
+            else:
+                print("❌ HATA: 2. Hesap yetkilendirilmemiş!")
+        except Exception as e:
+            print(f"❌ HATA: 2. Hesap bağlanırken hata oluştu: {type(e).__name__} - {e}")
 
     # Fallback to local session file if no string session is configured at all
     if not string_session_key and not string_session_key_2:
         print("📂 Yerel oturum dosyası kullanılarak bağlanılıyor...")
-        client1 = TelegramClient(SESSION_NAME, api_id, api_hash)
-        await client1.connect()
-        if await client1.is_user_authorized():
-            active_clients.append((client1, "Yerel Hesap", {}))
-            print("✅ Yerel hesap yetkilendirildi.")
-        else:
-            print("❌ HATA: Yerel hesap yetkilendirilmemiş!")
+        try:
+            client1 = TelegramClient(SESSION_NAME, api_id, api_hash)
+            await client1.connect()
+            if await client1.is_user_authorized():
+                active_clients.append((client1, "Yerel Hesap", {}))
+                print("✅ Yerel hesap yetkilendirildi.")
+            else:
+                print("❌ HATA: Yerel hesap yetkilendirilmemiş!")
+        except Exception as e:
+            print(f"❌ HATA: Yerel hesap bağlanırken hata oluştu: {type(e).__name__} - {e}")
             import sys
             sys.exit(1)
             
     if not active_clients:
-        print("❌ HATA: Hiçbir aktif ve yetkili Telegram hesabı bulunamadı!")
+        print("❌ HATA: Hiçbir aktif ve yetkili Telegram hesabı bulunamadı! Watchdog kilitlenmesini önlemek için 10 dakika bekleniyor...")
+        await asyncio.sleep(600)
         import sys
         sys.exit(1)
 
@@ -243,6 +253,9 @@ async def main():
                     if dialog.entity.username:
                         joined_dialogs[dialog.entity.username.lower()] = dialog.entity
             print(f"✅ Worker {client_name}: {len(joined_dialogs)} diyalog önbelleğe alındı.")
+        except FloodWaitError as e:
+            print(f"🚨 Worker {client_name} önbellek aşamasında Flood yedi! {e.seconds} saniye bekleniyor...")
+            await asyncio.sleep(e.seconds)
         except Exception as e:
             print(f"⚠️ Worker {client_name} önbellek hatası: {e}")
 
