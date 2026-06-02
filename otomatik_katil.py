@@ -309,6 +309,14 @@ async def main():
                 if grup_lower in joined_dialogs:
                     entity = joined_dialogs[grup_lower]
                     print(f"[{client_name}] ✅ Zaten gruptayız (Önbellekten): @{hedef_grup}")
+                    
+                    # Üye sayısı kontrolü (Örn: 1-4 kişilik boş kanallara atmamak için)
+                    member_count = getattr(entity, 'participants_count', None)
+                    if member_count is not None and member_count < 50:
+                        print(f"[{client_name}] 📉 @{hedef_grup} -> Üye sayısı çok az ({member_count}). Kara listeye alınıyor...")
+                        async with state_lock:
+                            save_to_list(hedef_grup, BLACKLIST_FILE)
+                        entity = None
                 else:
                     if join_restricted:
                         print(f"[{client_name}] ⚠️ Hesap join/resolve limitli. @{hedef_grup} katılma denemesi atlanıyor (Sadece grupta olduklarımıza atılacak).")
@@ -324,7 +332,7 @@ async def main():
                             full_channel = await client(GetFullChannelRequest(entity))
                             member_count = full_channel.full_chat.participants_count
                             
-                            if member_count < 20:
+                            if member_count < 50:
                                 print(f"[{client_name}] 📉 @{hedef_grup} -> Üye sayısı çok az ({member_count}). Kara listeye alınıyor...")
                                 async with state_lock:
                                     save_to_list(hedef_grup, BLACKLIST_FILE)
