@@ -523,13 +523,12 @@ async def main():
                                 print(f"[{client_name}] ⏳ Yeni gruba girildi. Güvenlik için {join_sleep} saniye bekleniyor...")
                                 await asyncio.sleep(join_sleep)
                     except FloodWaitError as e:
-                        if e.seconds <= 300:
+                        if e.seconds <= 120:
                             print(f"[{client_name}] ⏳ Katılma limiti (Flood). {e.seconds} saniye bekleniyor...")
                             await asyncio.sleep(e.seconds)
-                            # Flood bittikten sonra devam et, tamamen durma
                         else:
-                            print(f"[{client_name}] ⚠️ Katılma limiti yüksek ({e.seconds}sn). {e.seconds}sn bekleniyor...")
-                            await asyncio.sleep(e.seconds)
+                            # 2dk'dan fazla flood → bu grubu atla, bekleme!
+                            print(f"[{client_name}] ⚠️ Katılma flood çok yüksek ({e.seconds}sn). Grup atlanıyor, beklenmeyecek.")
                         entity = None
                     except (ChannelPrivateError,):
                         print(f"[{client_name}] 🔒 @{hedef_grup} -> Özel kanal/grup. Kara listeye ekleniyor...")
@@ -539,8 +538,13 @@ async def main():
                     except Exception as join_err:
                         err_msg = str(join_err)
                         err_type = type(join_err).__name__
+                        # InviteRequestSentError = onay gerekli grup → kara liste
+                        if 'InviteRequestSent' in err_type or 'invite' in err_msg.lower():
+                            print(f"[{client_name}] 🔒 @{hedef_grup} -> Katılım onayı gerekli. Kara listeye ekleniyor...")
+                            async with state_lock:
+                                save_to_list(hedef_grup, BLACKLIST_FILE)
                         # Var olmayan, geçersiz veya bulunamayan grupları kara listeye al
-                        if any(x in err_msg.lower() for x in ['no user has', 'no username', 'not found', 'invalid']) or isinstance(join_err, (UsernameNotOccupiedError, UsernameInvalidError, ValueError)):
+                        elif any(x in err_msg.lower() for x in ['no user has', 'no username', 'not found', 'invalid']) or isinstance(join_err, (UsernameNotOccupiedError, UsernameInvalidError, ValueError)):
                             print(f"[{client_name}] ❌ @{hedef_grup} -> Bulunamadı/Geçersiz ({err_type}). Kara listeye ekleniyor...")
                             async with state_lock:
                                 save_to_list(hedef_grup, BLACKLIST_FILE)
