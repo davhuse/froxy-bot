@@ -231,7 +231,7 @@ async def main():
                         
                         # 1. Üye sayısı kontrolü (Önceden üye olduklarımızı filtreler)
                         member_count = getattr(dialog.entity, 'participants_count', None)
-                        if member_count is not None and member_count < 2:
+                        if member_count is not None and member_count < 20:
                             print(f"[{client_name}] 📉 Önbellek: @{dialog.entity.username} üye sayısı çok az ({member_count}). Kara listeye alınıyor...")
                             new_blacklisted_groups.append(dialog.entity.username)
                             continue
@@ -343,7 +343,7 @@ async def main():
                             full_channel = await client(GetFullChannelRequest(entity))
                             member_count = full_channel.full_chat.participants_count
                             
-                            if member_count < 2:
+                            if member_count < 20:
                                 print(f"[{client_name}] 📉 @{hedef_grup} -> Üye sayısı çok az ({member_count}). Kara listeye alınıyor...")
                                 async with state_lock:
                                     save_to_list(hedef_grup, BLACKLIST_FILE)
