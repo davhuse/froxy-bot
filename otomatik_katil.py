@@ -397,6 +397,20 @@ async def main():
 
                 # Mesaj gönder
                 try:
+                    # Anlık Online sayısı kontrolü
+                    try:
+                        from telethon.tl.functions.channels import GetFullChannelRequest
+                        full_channel = await client(GetFullChannelRequest(entity))
+                        online_count = getattr(full_channel.full_chat, 'online_count', None)
+                        if online_count is not None and online_count < 10:
+                            print(f"[{client_name}] 📉 @{hedef_grup} -> Anlık online üye sayısı çok az ({online_count} < 10). Kara listeye alınıyor...")
+                            async with state_lock:
+                                save_to_list(hedef_grup, BLACKLIST_FILE)
+                            continue
+                    except Exception as oc_err:
+                        # Eğer kanal/grup online sayısını gizliyorsa pas geçme, devam et.
+                        pass
+                        
                     msg_file = "message_2.txt" if "2" in client_name else "message.txt"
                     try:
                         with open(msg_file, "r", encoding="utf-8") as fm:
