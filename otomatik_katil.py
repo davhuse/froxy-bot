@@ -415,7 +415,6 @@ async def main():
         except Exception as e:
             print(f"⚠️ Worker {client_name} önbellek hatası: {e}")
 
-        join_restricted = False
         join_count = 0
         while True:
             hedef_grup = None
@@ -475,66 +474,71 @@ async def main():
                             save_to_list(hedef_grup, BLACKLIST_FILE)
                         entity = None
                 else:
-                    if join_restricted:
-                        print(f"[{client_name}] ⚠️ Hesap join/resolve limitli. @{hedef_grup} katılma denemesi atlanıyor (Sadece grupta olduklarımıza atılacak).")
-                        entity = None
-                    else:
-                        # Gruba katıl (Zaten varsan hata vermez)
-                        try:
-                            from telethon.tl.functions.channels import GetFullChannelRequest
-                            entity = await client.get_entity(hedef_grup)
-                            await client(JoinChannelRequest(entity))
-                            
-                            # Üye sayısını kontrol et
-                            full_channel = await client(GetFullChannelRequest(entity))
-                            member_count = full_channel.full_chat.participants_count
-                            
-                            if member_count < 20:
-                                print(f"[{client_name}] 📉 @{hedef_grup} -> Üye sayısı çok az ({member_count}). Kara listeye alınıyor...")
-                                async with state_lock:
-                                    save_to_list(hedef_grup, BLACKLIST_FILE)
-                                entity = None
-                            else:
-                                # Son mesaj tarihini kontrol et (Aktiflik)
-                                try:
-                                    messages = await client.get_messages(entity, limit=1)
-                                    if messages:
-                                        last_msg = messages[0]
-                                        from datetime import datetime, timezone
-                                        now = datetime.now(timezone.utc)
-                                        delta = now - last_msg.date
-                                        if delta.days >= 30:
-                                            print(f"[{client_name}] 💤 @{hedef_grup} -> Son mesaj {delta.days} gün önce atılmış (İnaktif). Kara listeye alınıyor...")
-                                            async with state_lock:
-                                                save_to_list(hedef_grup, BLACKLIST_FILE)
-                                            entity = None
-                                except Exception as msg_check_err:
-                                    print(f"[{client_name}] ⚠️ Son mesaj kontrol edilemedi: {msg_check_err}")
-                                    
-                                if entity:
-                                    join_count += 1
-                                    print(f"[{client_name}] ✅ Gruba girildi: @{hedef_grup} ({member_count} üye). Katılım Sayısı: {join_count}/3")
-                                    joined_dialogs[grup_lower] = entity
-                                    
-                                    if join_count >= 3:
-                                        print(f"[{client_name}] 🔒 Maksimum yeni gruba katılım limitine ({join_count}) ulaşıldı. Bu döngü boyunca daha fazla gruba katılınmayacak.")
-                                        join_restricted = True
-                                        
-                                    # Anti-spam delay after joining a new group (Safety adjusted to 60-120s)
-                                    join_sleep = random.randint(60, 120)
-                                    print(f"[{client_name}] ⏳ Yeni gruba girildi. Güvenlik için {join_sleep} saniye bekleniyor...")
-                                    await asyncio.sleep(join_sleep)
-                        except FloodWaitError as e:
-                            if e.seconds <= 120:
-                                print(f"[{client_name}] ⏳ Katılma/Bilgi edinme limiti (Flood). {e.seconds} saniye bekleniyor...")
-                                await asyncio.sleep(e.seconds)
-                            else:
-                                print(f"[{client_name}] ⚠️ Katılma/Bilgi edinme limiti yüksek ({e.seconds}sn). Bu gruptan sonra yeni gruplara katılım denenmeyecek.")
-                                join_restricted = True
-                                entity = None
-                        except Exception as join_err:
-                            print(f"[{client_name}] ⚠️ Gruba girilemedi: {join_err}")
+                    # Join limiti: 3 gruba katıldıktan sonra 10dk bekle, sayacı sıfırla
+                    if join_count >= 3:
+                        cooldown = random.randint(300, 600)  # 5-10 dk
+                        print(f"[{client_name}] 🔒 3 gruba katılındı. Güvenlik için {cooldown // 60}dk bekleniyor ve sayaç sıfırlanıyor...")
+                        await asyncio.sleep(cooldown)
+                        join_count = 0
+                    
+                    # Gruba katıl
+                    try:
+                        from telethon.tl.functions.channels import GetFullChannelRequest
+                        entity = await client.get_entity(hedef_grup)
+                        await client(JoinChannelRequest(entity))
+                        
+                        # Üye sayısını kontrol et
+                        full_channel = await client(GetFullChannelRequest(entity))
+                        member_count = full_channel.full_chat.participants_count
+                        
+                        if member_count < 20:
+                            print(f"[{client_name}] 📉 @{hedef_grup} -> Üye sayısı çok az ({member_count}). Kara listeye alınıyor...")
+                            async with state_lock:
+                                save_to_list(hedef_grup, BLACKLIST_FILE)
                             entity = None
+                        else:
+                            # Son mesaj tarihini kontrol et (Aktiflik)
+                            try:
+                                messages = await client.get_messages(entity, limit=1)
+                                if messages:
+                                    last_msg = messages[0]
+                                    from datetime import datetime, timezone
+                                    now = datetime.now(timezone.utc)
+                                    delta = now - last_msg.date
+                                    if delta.days >= 30:
+                                        print(f"[{client_name}] 💤 @{hedef_grup} -> Son mesaj {delta.days} gün önce atılmış (İnaktif). Kara listeye alınıyor...")
+                                        async with state_lock:
+                                            save_to_list(hedef_grup, BLACKLIST_FILE)
+                                        entity = None
+                            except Exception as msg_check_err:
+                                print(f"[{client_name}] ⚠️ Son mesaj kontrol edilemedi: {msg_check_err}")
+                                
+                            if entity:
+                                join_count += 1
+                                print(f"[{client_name}] ✅ Gruba girildi: @{hedef_grup} ({member_count} üye). Bu turda katılım: {join_count}/3")
+                                joined_dialogs[grup_lower] = entity
+                                    
+                                # Anti-spam delay after joining a new group
+                                join_sleep = random.randint(30, 60)
+                                print(f"[{client_name}] ⏳ Yeni gruba girildi. Güvenlik için {join_sleep} saniye bekleniyor...")
+                                await asyncio.sleep(join_sleep)
+                    except FloodWaitError as e:
+                        if e.seconds <= 300:
+                            print(f"[{client_name}] ⏳ Katılma limiti (Flood). {e.seconds} saniye bekleniyor...")
+                            await asyncio.sleep(e.seconds)
+                            # Flood bittikten sonra devam et, tamamen durma
+                        else:
+                            print(f"[{client_name}] ⚠️ Katılma limiti yüksek ({e.seconds}sn). {e.seconds}sn bekleniyor...")
+                            await asyncio.sleep(e.seconds)
+                        entity = None
+                    except (ChannelPrivateError,):
+                        print(f"[{client_name}] 🔒 @{hedef_grup} -> Özel kanal/grup. Kara listeye ekleniyor...")
+                        async with state_lock:
+                            save_to_list(hedef_grup, BLACKLIST_FILE)
+                        entity = None
+                    except Exception as join_err:
+                        print(f"[{client_name}] ⚠️ Gruba girilemedi (@{hedef_grup}): {type(join_err).__name__} - {join_err}")
+                        entity = None
 
                 if not entity:
                     async with state_lock:
