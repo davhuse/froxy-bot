@@ -23,94 +23,63 @@ def print(*args, **kwargs):
     builtins.print(*args, **kwargs)
 
 gruplar = [
-    "dolapdestek0", "Nightsatis", "eticaretlab", "ticaretmerkezi", "bedavainternetssohbet",
-    "ticaretmeydani", "ikincieltr", "BuyukClup", "DijitalPazarTR", "YazilimLisans",
-    "PremiumHesapSatiss", "EticaretTR", "WebmasterTR", "SMMBayiTR", "firsattdiyari",
-    "Turkishbazaar22", "firsatmarketi", "trendindirimler", "eticaret_tedarikcileri", "FreelancerTurkiye",
-    "AITurkiye", "YazilimciGelistirme", "HesapSatisTR", "EpisSatis", "OyunHesapTR",
-    "DijitalMarketim", "UcuzaLisans", "GirisimciGrup", "PazaryeriSaticilari", "DropshippingTR",
-    "AmazonSellersTR", "WebmasterSatis", "SEO_Turkiye", "SosyalMedyaTicaret", "BotSatisTR",
-    "AdsenseSatis", "DomainPazari", "YazilimDestek", "TeknolojiSohbet", "ikincieltelefon",
-    "ikincielelektronik", "FreelanceIsIlani", "DesignerTR", "CoderTurkiye", "PythonTurkiye",
-    "JavaScript_TR", "CyberSecurity_TR", "KriptoTicaret", "FinansHaberTR", "StartupTR",
-    "YatirimciGrup", "ToptanUrun_TR", "UygunFiyatliUrunler", "KuponPaylasim", "TurkiyeReklamGrubu",
-    "WebmasterYardimlasma", "SMMPanelTurkiye", "HesapSatisPazari", "LisansPazari", "Oyun_Hesap_Alim_Satim",
-    "PremiumHesaplar_TR", "Canva_Pro_Yardimlasma", "Adobe_Creative_Cloud_TR", "Windows_Office_Key_Satis", "Yazilimci_Is_Ilanlari",
-    "Freelance_Turkiye_Grup", "Girisimcilik_Sohbetleri", "E_Ticaret_Satis_Taktikleri", "Dropshipping_Turkiye_Sohbet", "Amazon_FBA_Turkiye",
-    "Trendyol_Saticilari_Grubu", "Hepsiburada_Saticilari", "Shopify_Turkiye_Yardim", "Kripto_Para_Sohbet_TR", "Altcoin_Alim_Satim_Haber",
-    "Airdrop_Firsatlari_TR", "Ekonomi_Gundem_TR", "Borsa_Istanbul_Sohbet", "Teknoloji_Dunyasi_Haber", "Donanim_Haber_Sohbet",
-    "Yazilim_Kulu_Yardim", "Python_Turkiye_Gelistirici", "Java_Turkiye_Toplulugu", "PHP_Laravel_TR", "React_Vue_Turkiye",
-    "Siber_Guvenlik_Platformu", "Hack_Haber_Turkiye", "Linux_Turkiye_Kullanicilari", "Oyun_Haber_Sohbet", "Steam_Indirimleri_TR",
-    "Epic_Games_Firsatlari", "Netflix_Disney_Premium", "Spotify_Premium_Hizmet", "YouTube_Premium_TR", "Insta_Twitter_Takipci",
-    "TikTok_Etkilesim_Grubu", "satilikilanlar", "ikincielarabailan", "sahibindenarabalar", "ShopifyUzmani",
-    "stoksuzparakazan", "arabalar_ikinciel", "Gurcistanticaret", "magazanolsunbayi", "ticaretvarburada",
-    "eticaretyardimlasmaa", "ilan_ver", "is_ilanlari_grubu", "FreelanceWorkTR", "kuponindirimsatis",
-    "kuponsatisgrup", "kuponhesapsatis", "kuponsat", "KuponindirimPazari", "kuponceking",
-    "kuponkodalsat", "kupongrupta", "satcek", "kuponceksatis", "yazilimci_grubu",
-    "phpturkiye", "linux_turkiye", "cppturkiye", "seoyedek", "ikincielpazar",
-    "smmbayim", "eticaretplatformu", "ikincielsatis", "freelanceyazilim", "oyunalisveris",
-    "dijitalpazar", "kriptosohbet", "borsasohbet", "yardimlasmagrubu", "freelancertr",
-    "teknolojihaber", "toptangrubu", "ucuzlisanslar", "premiumhesaplar", "smmhizmetleri",
-    "sosyalmedyadestek", "tasarimciyardim", "yazilimciyardim", "dropshippingturkiye", "amazonfbatr",
-    "trendyolsaticilar", "hepsiburadasaticilar", "spotifygenel", "youtubepremiumtr", "netflixpremiumtr",
-    "oyunhesaplarisatis", "steamcuzdankodu", "KuponSatis", "SosyalMedyaPazari", "AdsenseTurkiye",
-    "FreelancerYazilimci", "TeknolojiSohbetleri", "WebTasarimDestek", "SMMHizmeti", "KriptoSohbetTR",
-    "EpinDestek", "OyunAlSat", "ikincielesya", "GirisimciToplulugu", "TrendyolDestekSohbet",
-    "AmazonSellersTRGroup", "ShopifyDestek", "BorsaYardim", "EkonomiToplulugu", "DesignerTurkiye",
-    "CoderDestekTR", "EpinPazari", "HesapSatisGenel", "LisansBayi", "SosyalMedyaTicaretGrubu",
-    "EpinAlSat", "SMMPanelTurk", "AdsenseDestekTR", "FreelanceIsIlanlariTR", "KriptoKazan",
-    "IndirimFirsat", "ToptanGiyimTR", "DropshippingTRyardim", "AmazonFBAyardim", "TrendyolPazaryeri",
-    "WebmasterDestekTR", "PythonSohbet", "JavaYardimlasma", "ReactTR", "NodejsTR",
-    "SiberGundem", "OyunPazariTR", "SteamOyunTR", "EpicGamesFirsatTR", "PremiumUyelikTR",
-    "CanvaTasarimYardim", "AdobeTRYardim", "WindowsOfficeKey", "YazilimIsFirsatlari", "GirisimcilikSohbet",
-    "ShopifyGirisim", "BorsaKriptoHaber", "FinansGundemTR", "GrafikTasarimDestek", "YazilimciSohbetleri",
-    "EpinBayilik", "ZulaPazariTR", "WolfteamSatisTR", "MinecraftMacroTRGroup", "SpotifyDavet",
-    "EpinKoduSatis", "WebTasarimYardim", "SMMPanelSatisGrubu", "AdsenseAlSat", "KriptoSohbetGrubu",
-    "PremiumSatisTR", "SosyalMedyaDestekGrubu", "DropshippingTurk", "AmazonSellersYardim", "ShopifyDestekTR",
-    "GrafikerDestekTR", "YazilimIlanTR", "EpinSatisPazari", "HesapAlimSatimTR", "ikincielalimsatimtr",
-    "turkiyepazar", "turkcesmm", "sosyalmedyapazaritr", "dijitalpazaryeritr", "satisgrubu",
-    "toptanvesatis", "ikincielalisveristr", "webmasteryardimlasmatr", "reklamgrubutr", "satiskanali",
-    "dijitalurunsatis", "hesap_satis_tr", "epin_pazari", "lisans_alim_satim", "freelance_is_ilanlari_tr",
-    "yazilimci_is_ilanlari_tr", "dropshipping_tr_destek", "amazon_satis_ortakligi", "trendyol_saticilari_tr", "hepsiburada_satis_toplulugu",
-    "kriptosatistr", "borsa_sohbet_tr", "teknolojialimsatim", "donanimsatistr", "smmbayilertr",
-    "smmhizmetleripazari", "sosyalmedyaalimsatim", "ikincieltelefontr", "ikincielelektroniktr", "freelancework_tr",
-    "designer_is_ilanlari", "coder_is_ilanlari", "pythontr_satis", "javascripttr_satis", "siberguvenliktr_satis",
-    "linux_kullanicilari_tr", "oyun_hesap_satis_pazari", "epicgames_firsatlari_tr", "premium_satis_pazari", "spotify_premium_tr",
-    "youtube_premium_satis", "takipcialsat", "tiktok_hesap_satis", "satilik_domainler", "adsense_alim_satim",
-    "dropshipping_turk", "eticaret_tedarik", "freelance_destek_tr", "ticaretmeydanitr", "kupon_satis_tr",
-    "AmazonTrGenelSohbet", "AyakkabiSanati", "BuyukFirsat", "CasinoBeko", "ElitSohbettt",
-    "Gardrops", "HESAPACCOUNT1", "IWEfTGD7OCBjY2I8", "KorgPa2xPa800", "KriptoSozlukTVPiyasaMuhabbeti",
-    "N_A_F_A_Smm", "Panel_Member_Premium_Ban_buy", "Prof_Amazon8", "ReklamYaptr", "Saatlersi",
-    "TAL0NE7SFiLAuNDf", "Turkiye_telefon_pazari", "VevoBahis_NgsBahis", "XushnudMFYreklama", "Yardimlasmag",
-    "YouTuBeAboneKazan", "YuceKuponSatis", "amaev_pro", "amazon_fbauz1", "amazonfbasellers",
-    "bayanaktuel", "borsao", "buy_Panel_Premium_Members_Adder", "buyukdolaplar", "dakikadoksan",
-    "dijitalpazarlamatr", "diyarbakirikincielarac", "dolapa", "dolapdesteks", "dolapgardropsdestek",
-    "dolaplink", "dolaplinkleri0", "dolapotomasyon", "dolaptakipbegeniteklif", "dolapxgardrops",
-    "dolapyildizlari", "ekpssyardimlasma2026", "el_ikincim", "erdil_satis", "finansalpusula",
-    "firsat0", "firsatbildirimi", "firsatcik", "firsatlarsizinle", "firsats",
-    "firsatspt", "freelancertoplulugu", "gardrops23", "gardropslink", "guvenilirshowcularx",
-    "h03244320222", "huuvelbagi", "icon_webmasters_cpa", "iddaatahmin_tr", "ikinciel01chat",
-    "ikincielantalya", "ikincielkralligi", "ikincielotoalimsatimhizmeti", "ikincieltoptanalsat", "ikincii_el",
-    "indirim363", "indirimc", "indirimcin", "indirimciyizbiz", "indirimdeal",
-    "indirimfirsatburada", "indirimkodusatis", "indirimkurt3144", "indirimz", "iqostereaaa",
-    "istanbultereavozol", "ithaltptan", "izmirpazar", "kampanyam", "kampanyaradari",
-    "kendireklaminiyap", "kpss3", "kripto1", "kriptoe", "kuponceksatisi",
-    "kuponl", "kuponsatislari0", "mehmet1uzun", "mesutkupon", "neastronhesap",
-    "onemlifirsatlar", "otoemlakajans", "pazaryerialsat", "pegasusucakbileti", "referansreklam1",
-    "refkasAxMxMA", "reklama_bardankol", "reklamvereferanssss", "reklamyap", "sanalpos3d",
-    "satisrefim", "shawtysaha", "sistemcin", "smmpanelkur", "smsngsatis",
-    "sosyalmedyaalimsatimticaret", "sultanbeyliikinciel0", "svp_referans", "tekstiltoptancilari", "temukazan",
-    "temulinkpaylasimtemu", "tereaatr1", "testnet_aidrop_on_satis_kripto", "tevkil_yardimlasma", "ticar4t",
-    "ticaretguvenilir", "ticaretsaha", "toptankozmetik47", "trendyol8", "trendyolsatkazan",
-    "turkey_wholesale", "ucbosspubgHESAP", "ucuzaalisvers", "uye_ekleme_satis", "uzaktan_freelancee",
-    "webmasterdestek", "webmasterscafe", "yazilimci_hanim", "yazilimcigencler", "yazilimciiiadam",
-    "yazilimcilarburada", "yukseklisansdoktora", "zesetsyco", "zirvedekidolaplar",
-    "turkiyesatispazari", "dijitalpazarkey", "reklampazaritr", "hesaplisansmarket", "uygunlisanssatis",
-    "satis_ilanlari_tr", "toptan_perakende_tr", "freelance_dijital", "premium_market_tr", "kupon_pazari",
-    "telegram_reklam_tr", "dijital_tedarikci", "dijitalalisveris", "turkiyereklamsohbet", "smm_bayi_ticaret",
-    "r10_com", "r10_forum", "wmaraci_forum", "wmaracitr", "yazilimci_sohbeti",
-    "freelance_ilanlari", "freelancer_tr", "hesap_alsat", "eticaret_sohbet", "smm_panel_rehberi",
-    "smm_bayileri", "epin_alsat_tr", "kupon_yardimlasmasi", "tasarimcilar_kulubu", "coder_turkiye_sohbet"
+    "Nightsatis", "eticaretlab", "ticaretmerkezi", "bedavainternetssohbet", "ticaretmeydani", 
+    "DijitalPazarTR", "YazilimLisans", "PremiumHesapSatiss", "EticaretTR", "WebmasterTR", 
+    "SMMBayiTR", "eticaret_tedarikcileri", "FreelancerTurkiye", "AITurkiye", "YazilimciGelistirme", 
+    "HesapSatisTR", "EpisSatis", "OyunHesapTR", "DijitalMarketim", "UcuzaLisans", 
+    "PazaryeriSaticilari", "AmazonSellersTR", "WebmasterSatis", "SEO_Turkiye", "SosyalMedyaTicaret", 
+    "BotSatisTR", "AdsenseSatis", "DomainPazari", "YazilimDestek", "TeknolojiSohbet", 
+    "FreelanceIsIlani", "CoderTurkiye", "PythonTurkiye", "JavaScript_TR", "CyberSecurity_TR", 
+    "KriptoTicaret", "StartupTR", "KuponPaylasim", "TurkiyeReklamGrubu", "WebmasterYardimlasma", 
+    "SMMPanelTurkiye", "HesapSatisPazari", "LisansPazari", "Oyun_Hesap_Alim_Satim", "PremiumHesaplar_TR", 
+    "Canva_Pro_Yardimlasma", "Adobe_Creative_Cloud_TR", "Windows_Office_Key_Satis", "Yazilimci_Is_Ilanlari", "Freelance_Turkiye_Grup", 
+    "E_Ticaret_Satis_Taktikleri", "Amazon_FBA_Turkiye", "Trendyol_Saticilari_Grubu", "Hepsiburada_Saticilari", "Shopify_Turkiye_Yardim", 
+    "Kripto_Para_Sohbet_TR", "Airdrop_Firsatlari_TR", "Borsa_Istanbul_Sohbet", "Teknoloji_Dunyasi_Haber", "Yazilim_Kulu_Yardim", 
+    "Python_Turkiye_Gelistirici", "Java_Turkiye_Toplulugu", "PHP_Laravel_TR", "Oyun_Haber_Sohbet", "Netflix_Disney_Premium", 
+    "Spotify_Premium_Hizmet", "YouTube_Premium_TR", "TikTok_Etkilesim_Grubu", "satilikilanlar", "ShopifyUzmani", 
+    "Gurcistanticaret", "ticaretvarburada", "eticaretyardimlasmaa", "ilan_ver", "is_ilanlari_grubu", 
+    "FreelanceWorkTR", "kuponindirimsatis", "kuponsatisgrup", "kuponhesapsatis", "kuponsat", 
+    "KuponindirimPazari", "kuponceking", "kuponkodalsat", "kupongrupta", "kuponceksatis", 
+    "yazilimci_grubu", "phpturkiye", "seoyedek", "smmbayim", "eticaretplatformu", 
+    "freelanceyazilim", "oyunalisveris", "dijitalpazar", "kriptosohbet", "borsasohbet", 
+    "freelancertr", "teknolojihaber", "ucuzlisanslar", "premiumhesaplar", "smmhizmetleri", 
+    "tasarimciyardim", "yazilimciyardim", "amazonfbatr", "trendyolsaticilar", "hepsiburadasaticilar", 
+    "spotifygenel", "youtubepremiumtr", "netflixpremiumtr", "oyunhesaplarisatis", "KuponSatis", 
+    "SosyalMedyaPazari", "AdsenseTurkiye", "FreelancerYazilimci", "TeknolojiSohbetleri", "WebTasarimDestek", 
+    "SMMHizmeti", "KriptoSohbetTR", "EpinDestek", "OyunAlSat", "TrendyolDestekSohbet", 
+    "AmazonSellersTRGroup", "ShopifyDestek", "BorsaYardim", "CoderDestekTR", "EpinPazari", 
+    "HesapSatisGenel", "LisansBayi", "SosyalMedyaTicaretGrubu", "EpinAlSat", "SMMPanelTurk", 
+    "AdsenseDestekTR", "FreelanceIsIlanlariTR", "KriptoKazan", "AmazonFBAyardim", "TrendyolPazaryeri", 
+    "WebmasterDestekTR", "PythonSohbet", "JavaYardimlasma", "OyunPazariTR", "SteamOyunTR", 
+    "PremiumUyelikTR", "CanvaTasarimYardim", "AdobeTRYardim", "WindowsOfficeKey", "YazilimIsFirsatlari", 
+    "ShopifyGirisim", "BorsaKriptoHaber", "GrafikTasarimDestek", "YazilimciSohbetleri", "EpinBayilik", 
+    "ZulaPazariTR", "WolfteamSatisTR", "SpotifyDavet", "EpinKoduSatis", "WebTasarimYardim", 
+    "SMMPanelSatisGrubu", "AdsenseAlSat", "KriptoSohbetGrubu", "PremiumSatisTR", "AmazonSellersYardim", 
+    "ShopifyDestekTR", "YazilimIlanTR", "EpinSatisPazari", "HesapAlimSatimTR", "turkiyepazar", 
+    "turkcesmm", "sosyalmedyapazaritr", "dijitalpazaryeritr", "satisgrubu", "webmasteryardimlasmatr", 
+    "reklamgrubutr", "satiskanali", "dijitalurunsatis", "hesap_satis_tr", "epin_pazari", 
+    "lisans_alim_satim", "freelance_is_ilanlari_tr", "yazilimci_is_ilanlari_tr", "amazon_satis_ortakligi", "trendyol_saticilari_tr", 
+    "hepsiburada_satis_toplulugu", "kriptosatistr", "borsa_sohbet_tr", "teknolojialimsatim", "donanimsatistr", 
+    "smmbayilertr", "smmhizmetleripazari", "freelancework_tr", "designer_is_ilanlari", "coder_is_ilanlari", 
+    "pythontr_satis", "javascripttr_satis", "siberguvenliktr_satis", "oyun_hesap_satis_pazari", "premium_satis_pazari", 
+    "spotify_premium_tr", "youtube_premium_satis", "tiktok_hesap_satis", "satilik_domainler", "adsense_alim_satim", 
+    "eticaret_tedarik", "freelance_destek_tr", "ticaretmeydanitr", "kupon_satis_tr", "AmazonTrGenelSohbet", 
+    "HESAPACCOUNT1", "KriptoSozlukTVPiyasaMuhabbeti", "N_A_F_A_Smm", "Panel_Member_Premium_Ban_buy", "Prof_Amazon8", 
+    "ReklamYaptr", "Turkiye_telefon_pazari", "XushnudMFYreklama", "YouTuBeAboneKazan", "YuceKuponSatis", 
+    "amazon_fbauz1", "amazonfbasellers", "borsao", "buy_Panel_Premium_Members_Adder", "dijitalpazarlamatr", 
+    "erdil_satis", "freelancertoplulugu", "icon_webmasters_cpa", "indirimkodusatis", "izmirpazar", 
+    "kendireklaminiyap", "kripto1", "kriptoe", "kuponceksatisi", "kuponl", 
+    "kuponsatislari0", "mesutkupon", "neastronhesap", "pazaryerialsat", "referansreklam1", 
+    "reklama_bardankol", "reklamvereferanssss", "reklamyap", "satisrefim", "smmpanelkur", 
+    "smsngsatis", "sosyalmedyaalimsatimticaret", "testnet_aidrop_on_satis_kripto", "ticaretguvenilir", "ticaretsaha", 
+    "trendyol8", "trendyolsatkazan", "ucbosspubgHESAP", "uye_ekleme_satis", "uzaktan_freelancee", 
+    "webmasterdestek", "webmasterscafe", "yazilimci_hanim", "yazilimcigencler", "yazilimciiiadam", 
+    "yazilimcilarburada", "yukseklisansdoktora", "turkiyesatispazari", "dijitalpazarkey", "reklampazaritr", 
+    "hesaplisansmarket", "uygunlisanssatis", "satis_ilanlari_tr", "freelance_dijital", "premium_market_tr", 
+    "kupon_pazari", "telegram_reklam_tr", "dijital_tedarikci", "dijitalalisveris", "turkiyereklamsohbet", 
+    "smm_bayi_ticaret", "r10_com", "r10_forum", "yazilimci_sohbeti", "freelance_ilanlari", 
+    "freelancer_tr", "hesap_alsat", "eticaret_sohbet", "smm_panel_rehberi", "smm_bayileri", 
+    "epin_alsat_tr", "kupon_yardimlasmasi", "tasarimcilar_kulubu", "coder_turkiye_sohbet"
 ]
 
 PROGRESS_FILE = 'progress.txt'
@@ -262,7 +231,7 @@ async def main():
                         
                         # 1. Üye sayısı kontrolü (Önceden üye olduklarımızı filtreler)
                         member_count = getattr(dialog.entity, 'participants_count', None)
-                        if member_count is not None and member_count < 50:
+                        if member_count is not None and member_count < 2:
                             print(f"[{client_name}] 📉 Önbellek: @{dialog.entity.username} üye sayısı çok az ({member_count}). Kara listeye alınıyor...")
                             new_blacklisted_groups.append(dialog.entity.username)
                             continue
@@ -270,8 +239,8 @@ async def main():
                         # 2. Aktiflik (Son mesaj tarihi) kontrolü (Örn: Son 3 gündür mesaj atılmamış ölü grupları eler)
                         if dialog.message and dialog.message.date:
                             delta = now - dialog.message.date
-                            if delta.days >= 3:
-                                print(f"[{client_name}] 💤 Önbellek: @{dialog.entity.username} son mesaj {delta.days} gün önce atılmış (İnaktif). Kara listeye alınıyor...")
+                            if delta.days >= 30:
+                                print(f"[{client_name}] 💤 Önbellek: @{dialog.entity.username} son mesaj {delta.days} gün önce atılmış (Çok İnaktif). Kara listeye alınıyor...")
                                 new_blacklisted_groups.append(dialog.entity.username)
                                 continue
                                 
@@ -354,7 +323,7 @@ async def main():
                     
                     # Üye sayısı kontrolü (Örn: 1-4 kişilik boş kanallara atmamak için)
                     member_count = getattr(entity, 'participants_count', None)
-                    if member_count is not None and member_count < 50:
+                    if member_count is not None and member_count < 2:
                         print(f"[{client_name}] 📉 @{hedef_grup} -> Üye sayısı çok az ({member_count}). Kara listeye alınıyor...")
                         async with state_lock:
                             save_to_list(hedef_grup, BLACKLIST_FILE)
@@ -374,7 +343,7 @@ async def main():
                             full_channel = await client(GetFullChannelRequest(entity))
                             member_count = full_channel.full_chat.participants_count
                             
-                            if member_count < 50:
+                            if member_count < 2:
                                 print(f"[{client_name}] 📉 @{hedef_grup} -> Üye sayısı çok az ({member_count}). Kara listeye alınıyor...")
                                 async with state_lock:
                                     save_to_list(hedef_grup, BLACKLIST_FILE)
@@ -388,7 +357,7 @@ async def main():
                                         from datetime import datetime, timezone
                                         now = datetime.now(timezone.utc)
                                         delta = now - last_msg.date
-                                        if delta.days >= 3:
+                                        if delta.days >= 30:
                                             print(f"[{client_name}] 💤 @{hedef_grup} -> Son mesaj {delta.days} gün önce atılmış (İnaktif). Kara listeye alınıyor...")
                                             async with state_lock:
                                                 save_to_list(hedef_grup, BLACKLIST_FILE)
