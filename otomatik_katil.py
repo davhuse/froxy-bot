@@ -460,15 +460,17 @@ async def main():
                 grup_lower = hedef_grup.lower()
                 entity = None
                 
-                # Önbellekte varsa doğrudan entity al ve Join/GetFullChannel adımlarını atla
+                # ═══════════════════════════════════════════
+                # ADIM 1: Entity'yi bul (Önbellek veya Join)
+                # ═══════════════════════════════════════════
                 if grup_lower in joined_dialogs:
                     entity = joined_dialogs[grup_lower]
                     print(f"[{client_name}] ✅ Zaten gruptayız (Önbellekten): @{hedef_grup}")
                     
-                    # Üye sayısı kontrolü (Örn: 1-4 kişilik boş kanallara atmamak için)
+                    # Önbellekteki üye sayısı kontrolü (< 20 = değersiz grup)
                     member_count = getattr(entity, 'participants_count', None)
-                    if member_count is not None and member_count < 2:
-                        print(f"[{client_name}] 📉 @{hedef_grup} -> Üye sayısı çok az ({member_count}). Kara listeye alınıyor...")
+                    if member_count is not None and member_count < 20:
+                        print(f"[{client_name}] 📉 @{hedef_grup} -> Üye sayısı çok az ({member_count} < 20). Kara listeye alınıyor...")
                         async with state_lock:
                             save_to_list(hedef_grup, BLACKLIST_FILE)
                         entity = None
@@ -539,22 +541,66 @@ async def main():
                         save_to_list(hedef_grup, PROGRESS_FILE)
                     continue
 
-                # Mesaj gönder
+                # ═══════════════════════════════════════════
+                # ADIM 2: Online kontrolü (HER GRUP İÇİN)
+                # ═══════════════════════════════════════════
+                online_ok = False
                 try:
-                    # Anlık Online sayısı kontrolü
-                    try:
-                        from telethon.tl.functions.channels import GetFullChannelRequest
-                        full_channel = await client(GetFullChannelRequest(entity))
-                        online_count = getattr(full_channel.full_chat, 'online_count', None)
-                        if online_count is not None and online_count < 10:
-                            print(f"[{client_name}] 📉 @{hedef_grup} -> Anlık online üye sayısı çok az ({online_count} < 10). Kara listeye alınıyor...")
+                    from telethon.tl.functions.channels import GetFullChannelRequest
+                    full_channel = await client(GetFullChannelRequest(entity))
+                    online_count = getattr(full_channel.full_chat, 'online_count', None)
+                    
+                    # Ayrıca member_count'u da güncelle (önbellek eski olabilir)
+                    fresh_member_count = getattr(full_channel.full_chat, 'participants_count', None)
+                    if fresh_member_count is not None and fresh_member_count < 20:
+                        print(f"[{client_name}] 📉 @{hedef_grup} -> Güncel üye sayısı çok az ({fresh_member_count} < 20). Kara listeye alınıyor...")
+                        async with state_lock:
+                            save_to_list(hedef_grup, BLACKLIST_FILE)
+                        continue
+                    
+                    if online_count is not None:
+                        if online_count < 10:
+                            print(f"[{client_name}] 📉 @{hedef_grup} -> Anlık online: {online_count} kişi (< 10). Kara listeye alınıyor...")
                             async with state_lock:
                                 save_to_list(hedef_grup, BLACKLIST_FILE)
                             continue
-                    except Exception as oc_err:
-                        # Eğer kanal/grup online sayısını gizliyorsa pas geçme, devam et.
-                        pass
-                        
+                        else:
+                            print(f"[{client_name}] 👥 @{hedef_grup} -> Online: {online_count} kişi ✓")
+                            online_ok = True
+                    else:
+                        # Telegram online sayısını vermedi (gizli veya grup tipi desteklemiyor)
+                        # Güvenli tarafta kal: üye sayısı yeterliyse gönder
+                        if fresh_member_count and fresh_member_count >= 50:
+                            print(f"[{client_name}] ℹ️ @{hedef_grup} -> Online sayısı gizli ama {fresh_member_count} üyeli. Mesaj gönderiliyor...")
+                            online_ok = True
+                        else:
+                            print(f"[{client_name}] ⚠️ @{hedef_grup} -> Online sayısı gizli ve üye sayısı düşük ({fresh_member_count}). Atlanıyor...")
+                            async with state_lock:
+                                save_to_list(hedef_grup, PROGRESS_FILE)
+                            continue
+                            
+                except FloodWaitError as e:
+                    print(f"[{client_name}] ⏳ Online kontrol flood: {e.seconds}sn bekleniyor...")
+                    await asyncio.sleep(e.seconds)
+                    # Flood sonrası bu grubu atla, sonraki turda tekrar denenecek
+                    async with state_lock:
+                        save_to_list(hedef_grup, PROGRESS_FILE)
+                    continue
+                except Exception as oc_err:
+                    print(f"[{client_name}] ⚠️ @{hedef_grup} online kontrol hatası: {type(oc_err).__name__}. Atlanıyor...")
+                    async with state_lock:
+                        save_to_list(hedef_grup, PROGRESS_FILE)
+                    continue
+
+                if not online_ok:
+                    async with state_lock:
+                        save_to_list(hedef_grup, PROGRESS_FILE)
+                    continue
+
+                # ═══════════════════════════════════════════
+                # ADIM 3: Mesaj gönder (Sadece tüm kontrollerden geçen gruplara)
+                # ═══════════════════════════════════════════
+                try:
                     msg_file = "message_2.txt" if "2" in client_name else "message.txt"
                     try:
                         with open(msg_file, "r", encoding="utf-8") as fm:
@@ -579,7 +625,7 @@ async def main():
                     msg_to_send = parse_spintax(msg_to_send)
 
                     await client.send_message(entity, msg_to_send)
-                    print(f"[{client_name}] 📨 Mesaj gönderildi!")
+                    print(f"[{client_name}] 📨 Mesaj gönderildi! @{hedef_grup}")
                     update_stats(sent=1)
                     async with state_lock:
                         save_to_list(hedef_grup, PROGRESS_FILE)
