@@ -245,6 +245,7 @@ def index():
 # REKLAM BOTU (ADVERTISING BOT) API ENDPOINTS
 # ==========================================
 
+
 @app.route('/api/status', methods=['GET'])
 def status():
     is_running = get_process_by_script('otomatik_katil.py') is not None
@@ -289,12 +290,21 @@ def stats():
     except Exception as e:
         print(f"Error reading total groups: {e}")
         total_groups = 410 # Fallback default
-        
+
+    auto_discovered = 0
+    if os.path.exists("auto_groups.txt"):
+        try:
+            with open("auto_groups.txt", "r", encoding="utf-8") as f:
+                auto_discovered = len([line.strip() for line in f if line.strip()])
+        except:
+            pass
+
     return jsonify({
         "total_groups": total_groups,
         "done_groups": done_count,
         "blacklist_groups": blacklist_count,
-        "sent_messages": sent_count
+        "sent_messages": sent_count,
+        "auto_discovered": auto_discovered
     })
 
 @app.route('/api/start', methods=['POST'])

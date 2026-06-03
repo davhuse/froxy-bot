@@ -13,6 +13,7 @@ const UI = {
     statSentMessages: document.getElementById('statSentMessages'),
     statProgress: document.getElementById('statProgress'),
     statBlacklist: document.getElementById('statBlacklist'),
+    statAutoDiscovered: document.getElementById('statAutoDiscovered'),
     
     // Support Bot UI Elements
     supportStatusBadge: document.getElementById('supportBotStatus'),
@@ -427,6 +428,9 @@ async function fetchStats() {
         UI.statTotalGroups.textContent = data.total_groups || 0;
         UI.statSentMessages.textContent = data.sent_messages || 0;
         UI.statBlacklist.textContent = data.blacklist_groups || 0;
+        if (UI.statAutoDiscovered) {
+            UI.statAutoDiscovered.textContent = data.auto_discovered || 0;
+        }
         
         if (data.total_groups > 0) {
             const pct = Math.min(100, Math.round((data.done_groups / data.total_groups) * 100));

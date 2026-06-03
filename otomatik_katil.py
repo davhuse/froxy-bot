@@ -2,10 +2,11 @@ import asyncio
 import random
 import os
 import json
+import re
 import requests
-from telethon import TelegramClient
+from telethon import TelegramClient, events
 from telethon.tl.functions.channels import JoinChannelRequest
-from telethon.tl.functions.contacts import ResolveUsernameRequest
+from telethon.tl.functions.contacts import ResolveUsernameRequest, SearchRequest
 from telethon.errors import (
     FloodWaitError, SessionPasswordNeededError, UsernameNotOccupiedError, 
     UsernameInvalidError, ChannelPrivateError, ChatWriteForbiddenError,
@@ -82,8 +83,119 @@ gruplar = [
     "epin_alsat_tr", "kupon_yardimlasmasi", "tasarimcilar_kulubu", "coder_turkiye_sohbet"
 ]
 
+
+STATS_FILE = 'stats.json'
+
+def update_stats(sent=0, discovered=0, blacklisted=0, active=0):
+    try:
+        import os, json
+        stats = {}
+        if os.path.exists(STATS_FILE):
+            with open(STATS_FILE, 'r', encoding='utf-8') as f:
+                try:
+                    stats = json.load(f)
+                except:
+                    pass
+        
+        from datetime import datetime
+        today = datetime.now().strftime("%Y-%m-%d")
+        
+        if stats.get("last_reset") != today:
+            stats["last_reset"] = today
+            stats["messages_sent_today"] = 0
+            stats["auto_discovered"] = 0
+            
+        stats["messages_sent_today"] = stats.get("messages_sent_today", 0) + sent
+        stats["auto_discovered"] = stats.get("auto_discovered", 0) + discovered
+        if blacklisted > 0: stats["blacklisted_total"] = blacklisted
+        if active > 0: stats["active_groups"] = active
+        
+        with open(STATS_FILE, 'w', encoding='utf-8') as f:
+            json.dump(stats, f, indent=4)
+    except Exception as e:
+        print(f"⚠️ Stat güncelleme hatası: {e}")
+
+def parse_spintax(text):
+    import random, re
+    def replace(match):
+        options = match.group(1).split('|')
+        return random.choice(options)
+    return re.sub(r'\{([^\{\}]*)\}', replace, text)
+
+
+# Auto discovered groups
+if os.path.exists("auto_groups.txt"):
+    with open("auto_groups.txt", "r", encoding="utf-8") as f:
+        auto_g = [x.strip() for x in f.read().splitlines() if x.strip()]
+        for g in auto_g:
+            if g not in gruplar:
+                gruplar.append(g)
+
+
 PROGRESS_FILE = 'progress.txt'
 BLACKLIST_FILE = 'blacklist.txt'
+AUTO_GROUPS_FILE = 'auto_groups.txt'
+
+# --- Auto-DM: Yanıt veren kullanıcıları takip et ---
+replied_users = set()
+
+# --- Auto-Scrape: Anahtar kelimeler ---
+SCRAPE_KEYWORDS = [
+    "yazılım", "hesap satış", "kripto", "smm panel",
+    "freelance", "e-ticaret", "sosyal medya", "bot",
+    "reklam", "dijital pazarlama", "epin", "oyun hesap",
+    "spotify", "netflix", "vpn", "hosting"
+]
+
+async def auto_scrape_groups(client, client_name):
+    """Telegram global aramasıyla yeni gruplar keşfeder ve auto_groups.txt'ye kaydeder."""
+    print(f"\n🔍 [{client_name}] Otomatik Grup Keşfi (Auto-Scraper) başlıyor...")
+    
+    existing_groups = set(g.lower() for g in gruplar)
+    blacklist = get_list(BLACKLIST_FILE)
+    new_found = 0
+    
+    keyword = random.choice(SCRAPE_KEYWORDS)
+    print(f"🔎 [{client_name}] Aranan anahtar kelime: '{keyword}'")
+    
+    try:
+        from telethon.tl.types import Channel
+        result = await client(SearchRequest(q=keyword, limit=50))
+        
+        for chat in result.chats:
+            if isinstance(chat, Channel) and chat.username:
+                username = chat.username.lower()
+                if username not in existing_groups and username not in blacklist:
+                    # auto_groups.txt'ye kaydet
+                    with open(AUTO_GROUPS_FILE, 'a', encoding='utf-8') as f:
+                        f.write(chat.username + '\n')
+                    existing_groups.add(username)
+                    gruplar.append(chat.username)
+                    new_found += 1
+                    print(f"🆕 [{client_name}] Yeni grup keşfedildi: @{chat.username}")
+        
+        if new_found > 0:
+            update_stats(discovered=new_found)
+            print(f"✅ [{client_name}] Auto-Scraper: {new_found} yeni grup keşfedildi ve listeye eklendi!")
+        else:
+            print(f"ℹ️ [{client_name}] Auto-Scraper: '{keyword}' için yeni grup bulunamadı.")
+            
+    except FloodWaitError as e:
+        print(f"⏳ [{client_name}] Auto-Scraper: Flood bekleniyor ({e.seconds}s)...")
+        await asyncio.sleep(e.seconds)
+    except Exception as e:
+        print(f"⚠️ [{client_name}] Auto-Scraper hatası: {type(e).__name__} - {e}")
+    
+    return new_found
+
+DM_MESSAGE = (
+    "Merhaba 👋\n\n"
+    "Gruptaki mesajınıza istinaden yazıyorum.\n"
+    "Sorularınız ve satın alım için ana botumuz olan "
+    "@FroxyDestekBOT üzerinden iletişime geçebilirsiniz.\n\n"
+    "İyi günler! 🙏"
+)
+
 
 # Firestore Ayarları
 API_KEY    = "AIzaSyCZz54GBF4nCgP84DsTSwwMyPq70Lb_Mjo"
@@ -217,6 +329,37 @@ async def main():
     state_lock = asyncio.Lock()
     active_jobs = set()
 
+    # --- AUTO-DM: Mesajlarımıza yanıt veren kullanıcılara otomatik DM ---
+    for client, client_name, _ in active_clients:
+        my_id = (await client.get_me()).id
+        
+        @client.on(events.NewMessage(func=lambda e: e.is_reply and e.is_group))
+        async def auto_dm_handler(event, _client=client, _name=client_name, _my_id=my_id):
+            try:
+                replied_msg = await event.get_reply_message()
+                if replied_msg and replied_msg.sender_id == _my_id:
+                    sender_id = event.sender_id
+                    if sender_id in replied_users or sender_id == _my_id:
+                        return
+                    
+                    replied_users.add(sender_id)
+                    try:
+                        await _client.send_message(sender_id, DM_MESSAGE)
+                        print(f"📩 [{_name}] Auto-DM: Kullanıcı {sender_id} mesajımıza yanıt verdi. DM gönderildi!")
+                        update_stats(sent=0)  # Sadece log amaçlı
+                    except Exception as dm_err:
+                        print(f"⚠️ [{_name}] Auto-DM: DM gönderilemedi ({sender_id}): {type(dm_err).__name__}")
+            except Exception as e:
+                pass  # Sessiz hata - event loop'u bozmamalı
+        
+        print(f"🎯 [{client_name}] Auto-DM dinleyicisi aktifleştirildi.")
+
+    # --- AUTO-SCRAPE: İlk çalıştırmada grup keşfi yap ---
+    first_client, first_name, _ = active_clients[0]
+    scrape_count = await auto_scrape_groups(first_client, first_name)
+    if scrape_count > 0:
+        print(f"🎉 Auto-Scraper toplamda {scrape_count} yeni grup ekledi. Liste güncellendi!")
+
     async def run_worker(client, client_name, joined_dialogs):
         print(f"🚀 Worker {client_name} diyalogları önbelleğe alınıyor...")
         try:
@@ -283,6 +426,7 @@ async def main():
                 for g in gruplar:
                     if g not in blacklist:
                         kullanilacak_gruplar.append(g)
+                update_stats(active=len(kullanilacak_gruplar), blacklisted=len(blacklist))
                         
                 if not kullanilacak_gruplar:
                     print(f"⚠️ Worker {client_name}: Atılacak aktif grup kalmadı!")
@@ -431,8 +575,12 @@ async def main():
                                                   .strip() + "\n"
                         print(f"[{client_name}] ✨ @{hedef_grup} için temizlenmiş mesaj kullanılıyor...")
 
+                    # Spintax Uygula
+                    msg_to_send = parse_spintax(msg_to_send)
+
                     await client.send_message(entity, msg_to_send)
                     print(f"[{client_name}] 📨 Mesaj gönderildi!")
+                    update_stats(sent=1)
                     async with state_lock:
                         save_to_list(hedef_grup, PROGRESS_FILE)
                     
@@ -535,6 +683,10 @@ async def main():
             fs_set_state("", blacklist_content)
         except Exception as e:
             pass
+        
+        # Yeni döngü öncesi otomatik grup keşfi
+        print(f"\n🔍 Yeni döngü için Auto-Scraper çalıştırılıyor...")
+        await auto_scrape_groups(first_client, first_name)
         
         await asyncio.sleep(3600) # 1 saat bekle ve baştan başla
     
