@@ -281,12 +281,19 @@ def stats():
             
     total_groups = 0
     try:
-        # Avoid full import overhead by parsing gruplar length directly
         with open("otomatik_katil.py", "r", encoding="utf-8") as f:
             content = f.read()
-            # Match the gruplar list size roughly or import safely since watchdog isn't running main
-            from otomatik_katil import gruplar
-            total_groups = len(gruplar)
+            # gruplar listesindeki elemanları say (her satırdaki tırnak içi string)
+            import re
+            match = re.search(r'gruplar\s*=\s*\[([^\]]+)\]', content, re.DOTALL)
+            if match:
+                items = [x.strip().strip('"').strip("'") for x in match.group(1).split(',') if x.strip().strip('"').strip("'")]
+                total_groups = len(items)
+        # auto_groups.txt'deki grupları da ekle
+        if os.path.exists("auto_groups.txt"):
+            with open("auto_groups.txt", "r", encoding="utf-8") as f:
+                auto_g = [x.strip() for x in f if x.strip()]
+                total_groups += len(auto_g)
     except Exception as e:
         print(f"Error reading total groups: {e}")
         total_groups = 410 # Fallback default
