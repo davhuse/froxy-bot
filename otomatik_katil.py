@@ -537,7 +537,15 @@ async def main():
                             save_to_list(hedef_grup, BLACKLIST_FILE)
                         entity = None
                     except Exception as join_err:
-                        print(f"[{client_name}] ⚠️ Gruba girilemedi (@{hedef_grup}): {type(join_err).__name__} - {join_err}")
+                        err_msg = str(join_err)
+                        err_type = type(join_err).__name__
+                        # Var olmayan, geçersiz veya bulunamayan grupları kara listeye al
+                        if any(x in err_msg.lower() for x in ['no user has', 'no username', 'not found', 'invalid']) or isinstance(join_err, (UsernameNotOccupiedError, UsernameInvalidError, ValueError)):
+                            print(f"[{client_name}] ❌ @{hedef_grup} -> Bulunamadı/Geçersiz ({err_type}). Kara listeye ekleniyor...")
+                            async with state_lock:
+                                save_to_list(hedef_grup, BLACKLIST_FILE)
+                        else:
+                            print(f"[{client_name}] ⚠️ Gruba girilemedi (@{hedef_grup}): {err_type} - {join_err}")
                         entity = None
 
                 if not entity:
@@ -682,14 +690,20 @@ async def main():
             except FloodWaitError as e:
                 print(f"[{client_name}] 🚨 Flood! {e.seconds}sn bekleniyor...")
                 await asyncio.sleep(e.seconds)
-            except (UsernameNotOccupiedError, UsernameInvalidError):
-                print(f"[{client_name}] ❌ @{hedef_grup} bulunamadı. Kara listeye ekleniyor...")
+            except (UsernameNotOccupiedError, UsernameInvalidError, ValueError):
+                print(f"[{client_name}] ❌ @{hedef_grup} bulunamadı/geçersiz. Kara listeye ekleniyor...")
                 async with state_lock:
                     save_to_list(hedef_grup, BLACKLIST_FILE)
             except Exception as e:
-                print(f"[{client_name}] ⚠️ @{hedef_grup} genel hatası: {type(e).__name__}")
-                async with state_lock:
-                    save_to_list(hedef_grup, PROGRESS_FILE)
+                err_msg = str(e)
+                if 'no user has' in err_msg.lower() or 'not found' in err_msg.lower():
+                    print(f"[{client_name}] ❌ @{hedef_grup} -> {type(e).__name__}: Bulunamadı. Kara listeye ekleniyor...")
+                    async with state_lock:
+                        save_to_list(hedef_grup, BLACKLIST_FILE)
+                else:
+                    print(f"[{client_name}] ⚠️ @{hedef_grup} genel hatası: {type(e).__name__} - {e}")
+                    async with state_lock:
+                        save_to_list(hedef_grup, BLACKLIST_FILE)
             finally:
                 async with state_lock:
                     if hedef_grup in active_jobs:
