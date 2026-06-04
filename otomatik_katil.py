@@ -338,15 +338,34 @@ async def main():
                                 new_blacklisted_groups.append(dialog.entity.username)
                             continue
                             
-                        # 2. Aktiflik kontrolü (7 gündür mesaj yazılmamışsa es geç)
+                        # 2. Aktiflik kontrolü (7 gündür mesaj yazılmamışsa es geç, kendi mesajlarımızı sayma)
                         days_inactive = 0
-                        if dialog.message and dialog.message.date:
-                            delta = now - dialog.message.date
+                        last_msg = dialog.message
+                        
+                        # Son mesaj bizim gönderdiğimizse geçmişe bakıp başkasının mesajını arayalım
+                        if last_msg and getattr(last_msg, 'out', False):
+                            try:
+                                found_other = False
+                                async for msg in client.iter_messages(dialog.entity, limit=5):
+                                    if not getattr(msg, 'out', False):
+                                        last_msg = msg
+                                        found_other = True
+                                        break
+                                if not found_other:
+                                    last_msg = None  # Son 5 mesajın hepsi bizimse
+                            except Exception as history_err:
+                                pass
+                                
+                        if last_msg and getattr(last_msg, 'date', None):
+                            delta = now - last_msg.date
                             days_inactive = delta.days
                             if delta.days >= 7:
                                 if not is_protected:
                                     new_blacklisted_groups.append(dialog.entity.username)
                                 continue
+                        else:
+                            # Mesaj yoksa veya son 5 mesajın hepsi bizimse grubu inaktif sayıp es geç
+                            continue
                                 
                         joined_dialogs[username_lower] = dialog.entity
                         all_groups_info.append({
@@ -449,6 +468,40 @@ async def main():
                 sent_count = 0
                 fail_count = 0
                 
+                async def record_failure(grup_name):
+                    async with state_lock:
+                        try:
+                            failures = {}
+                            if os.path.exists("group_failures.json"):
+                                with open("group_failures.json", "r", encoding="utf-8") as f:
+                                    failures = json.load(f)
+                            g_key = grup_name.lower()
+                            failures[g_key] = failures.get(g_key, 0) + 1
+                            with open("group_failures.json", "w", encoding="utf-8") as f:
+                                json.dump(failures, f, indent=4)
+                            
+                            # 3 kez üst üste hata aldıysa kara listeye ekle
+                            if failures[g_key] >= 3:
+                                save_to_list(grup_name, BLACKLIST_FILE)
+                                print(f"[{client_name}] 🚫 @{grup_name} -> 3 kez üst üste hata alındı, KARA LİSTEYE ALINDI!")
+                        except Exception as fe:
+                            print(f"⚠️ Hata sayacı güncelleme hatası: {fe}")
+
+                async def reset_failure(grup_name):
+                    async with state_lock:
+                        try:
+                            failures = {}
+                            if os.path.exists("group_failures.json"):
+                                with open("group_failures.json", "r", encoding="utf-8") as f:
+                                    failures = json.load(f)
+                            g_key = grup_name.lower()
+                            if g_key in failures and failures[g_key] > 0:
+                                failures[g_key] = 0
+                                with open("group_failures.json", "w", encoding="utf-8") as f:
+                                    json.dump(failures, f, indent=4)
+                        except:
+                            pass
+
                 async def blast_one(grup_name):
                     """Tek bir gruba mesaj gönder"""
                     nonlocal sent_count, fail_count
@@ -469,6 +522,7 @@ async def main():
                         sent_count += 1
                         print(f"[{client_name}] ✅ @{grup_name} -> Gönderildi! ({sent_count})")
                         update_stats(sent=1)
+                        await reset_failure(grup_name)
                         async with state_lock:
                             save_to_list(grup_name, PROGRESS_FILE)
                     except FloodWaitError as e:
@@ -480,17 +534,21 @@ async def main():
                                 sent_count += 1
                                 print(f"[{client_name}] ✅ @{grup_name} -> Gönderildi (flood sonrası)!")
                                 update_stats(sent=1)
+                                await reset_failure(grup_name)
                             except:
                                 fail_count += 1
+                                await record_failure(grup_name)
                         else:
                             print(f"[{client_name}] ⏳ @{grup_name} -> Flood {e.seconds}sn, atlanıyor...")
                             fail_count += 1
                     except UserBannedInChannelError:
-                        print(f"[{client_name}] ❌ @{grup_name} -> Banlandık! (sonraki turda tekrar denenecek)")
+                        print(f"[{client_name}] ❌ @{grup_name} -> Banlandık!")
                         fail_count += 1
+                        await record_failure(grup_name)
                     except ChatWriteForbiddenError:
-                        print(f"[{client_name}] 🔒 @{grup_name} -> Yazma izni yok (geçici olabilir)")
+                        print(f"[{client_name}] 🔒 @{grup_name} -> Yazma izni yok")
                         fail_count += 1
+                        await record_failure(grup_name)
                     except SlowModeWaitError:
                         print(f"[{client_name}] 🐌 @{grup_name} -> SlowMode, atlanıyor.")
                         fail_count += 1
@@ -498,6 +556,7 @@ async def main():
                         err_type = type(e).__name__
                         print(f"[{client_name}] ⚠️ @{grup_name} -> {err_type} (atlanıyor)")
                         fail_count += 1
+                        await record_failure(grup_name)
 
                 # Gruplara sırayla ve aralarında 10-20 saniye rastgele bekleme koyarak gönder!
                 import random
