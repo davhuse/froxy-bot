@@ -600,7 +600,16 @@ async def main():
                 bekleme = random.randint(3000, 3600)     # 50-60 dk
             
             print(f"\n[{client_name}] ⏳ {grup_sayisi} gruba blast atıldı → Sonraki blast {bekleme // 60} dk sonra")
-            await asyncio.sleep(bekleme)
+            # Geri sayım (her dakika yazdır)
+            kalan = bekleme
+            while kalan > 0:
+                dakika = kalan // 60
+                saniye = kalan % 60
+                if kalan == bekleme or kalan % 60 == 0:
+                    print(f"[{client_name}] ⏱️ Kalan: {dakika}dk {saniye}sn")
+                uyku = min(60, kalan)
+                await asyncio.sleep(uyku)
+                kalan -= uyku
 
     while True:
         # Başlangıçta Firestore'dan verileri çek
