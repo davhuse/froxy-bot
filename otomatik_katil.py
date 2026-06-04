@@ -254,8 +254,8 @@ async def main():
             client1 = TelegramClient(StringSession(string_session_key), api_id, api_hash)
             await client1.connect()
             if await client1.is_user_authorized():
-                active_clients.append((client1, "Hesap #1", {}))
-                print("✅ 1. Hesap yetkilendirildi.")
+                # active_clients.append((client1, "Hesap #1", {}))  # DEVRE DIŞI - spam kısıtlaması
+                print("⚠️ 1. Hesap bağlandı ama DEVRE DIŞI (spam kısıtlaması). Sadece Hesap #2 çalışacak.")
             else:
                 print("❌ HATA: 1. Hesap yetkilendirilmemiş!")
         except Exception as e:
