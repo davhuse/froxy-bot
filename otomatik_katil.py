@@ -329,21 +329,23 @@ async def main():
                         member_count = getattr(dialog.entity, 'participants_count', None)
                         is_broadcast = getattr(dialog.entity, 'broadcast', False)
                         
-                        # Hedef gruptaysa ASLA kara listeye atma
+                        # Hedef gruptaysa kara listeye yazmayacağız ama aktif değilse/boşsa yine de es geçeceğiz
                         is_protected = username_lower in protected_groups
                         
-                        # 1. Üye sayısı kontrolü (korumalı gruplar hariç)
-                        if not is_protected and member_count is not None and member_count < 20:
-                            new_blacklisted_groups.append(dialog.entity.username)
+                        # 1. Üye sayısı kontrolü (boş grupları es geç)
+                        if member_count is not None and member_count < 20:
+                            if not is_protected:
+                                new_blacklisted_groups.append(dialog.entity.username)
                             continue
                             
-                        # 2. Aktiflik kontrolü (korumalı gruplar hariç)
+                        # 2. Aktiflik kontrolü (30 gündür mesaj yazılmamışsa es geç)
                         days_inactive = 0
                         if dialog.message and dialog.message.date:
                             delta = now - dialog.message.date
                             days_inactive = delta.days
-                            if not is_protected and delta.days >= 30:
-                                new_blacklisted_groups.append(dialog.entity.username)
+                            if delta.days >= 30:
+                                if not is_protected:
+                                    new_blacklisted_groups.append(dialog.entity.username)
                                 continue
                                 
                         joined_dialogs[username_lower] = dialog.entity
@@ -530,9 +532,10 @@ async def main():
                         
                         member_count = getattr(entity, 'participants_count', None)
                         if member_count is not None and member_count < 20:
-                            async with state_lock:
-                                save_to_list(hedef_grup, BLACKLIST_FILE)
-                            print(f"[{client_name}] 📉 @{hedef_grup} -> Üye az ({member_count}), kara liste.")
+                            if hedef_grup.lower() not in protected_groups:
+                                async with state_lock:
+                                    save_to_list(hedef_grup, BLACKLIST_FILE)
+                            print(f"[{client_name}] 📉 @{hedef_grup} -> Üye az ({member_count}), es geçildi.")
                             continue
                         
                         joined_dialogs[hedef_grup.lower()] = entity
