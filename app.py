@@ -633,10 +633,32 @@ def save_config():
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
 
+# KEEP-ALIVE: Render free tier uyku modunu engelle (her 10dk kendine ping at)
+def keep_alive():
+    import urllib.request, ssl
+    time.sleep(30)  # App'in ayağa kalkmasını bekle
+    render_url = os.environ.get("RENDER_EXTERNAL_URL", "")
+    if not render_url:
+        print("[KeepAlive] RENDER_EXTERNAL_URL bulunamadı, keep-alive devre dışı.")
+        return
+    ping_url = render_url + "/api/status"
+    print(f"[KeepAlive] Başlatıldı. Her 10dk {ping_url} adresine ping atılacak.")
+    ctx = ssl._create_unverified_context()
+    while True:
+        try:
+            urllib.request.urlopen(ping_url, context=ctx, timeout=10)
+        except Exception:
+            pass
+        time.sleep(600)  # 10 dakika
+
 if __name__ == '__main__':
     # Start the watchdog thread
     t = threading.Thread(target=bot_watchdog, daemon=True)
     t.start()
+    
+    # Start keep-alive thread (Render sleep prevention)
+    ka = threading.Thread(target=keep_alive, daemon=True)
+    ka.start()
         
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=False)

@@ -576,21 +576,21 @@ async def main():
                     
                     if online_count is not None:
                         if online_count < 10:
-                            print(f"[{client_name}] 📉 @{hedef_grup} -> Anlık online: {online_count} kişi (< 10). Kara listeye alınıyor...")
+                            print(f"[{client_name}] 💤 @{hedef_grup} -> Anlık online: {online_count} kişi (< 10). Bu tur atlanıyor...")
                             async with state_lock:
-                                save_to_list(hedef_grup, BLACKLIST_FILE)
+                                save_to_list(hedef_grup, PROGRESS_FILE)
                             continue
                         else:
                             print(f"[{client_name}] 👥 @{hedef_grup} -> Online: {online_count} kişi ✓")
                             online_ok = True
                     else:
                         # Telegram online sayısını vermedi (gizli veya grup tipi desteklemiyor)
-                        # Güvenli tarafta kal: üye sayısı yeterliyse gönder
+                        # Üye sayısı yeterliyse gönder
                         if fresh_member_count and fresh_member_count >= 50:
                             print(f"[{client_name}] ℹ️ @{hedef_grup} -> Online sayısı gizli ama {fresh_member_count} üyeli. Mesaj gönderiliyor...")
                             online_ok = True
                         else:
-                            print(f"[{client_name}] ⚠️ @{hedef_grup} -> Online sayısı gizli ve üye sayısı düşük ({fresh_member_count}). Atlanıyor...")
+                            print(f"[{client_name}] 💤 @{hedef_grup} -> Online gizli, üye düşük ({fresh_member_count}). Bu tur atlanıyor...")
                             async with state_lock:
                                 save_to_list(hedef_grup, PROGRESS_FILE)
                             continue
