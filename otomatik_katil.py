@@ -571,11 +571,11 @@ async def main():
             if grup_sayisi <= 10:
                 bekleme = random.randint(600, 720)      # 10-12 dk
             elif grup_sayisi <= 30:
-                bekleme = random.randint(1200, 1800)     # 20-30 dk
+                bekleme = random.randint(600, 900)       # 10-15 dk
             elif grup_sayisi <= 50:
-                bekleme = random.randint(2400, 3000)     # 40-50 dk
+                bekleme = random.randint(900, 1200)      # 15-20 dk
             else:
-                bekleme = random.randint(3000, 3600)     # 50-60 dk
+                bekleme = random.randint(1200, 1500)      # 20-25 dk
             
             print(f"\n[{client_name}] ⏳ {grup_sayisi} gruba blast atıldı → Sonraki blast {bekleme // 60} dk sonra")
             # Geri sayım (her dakika yazdır)
