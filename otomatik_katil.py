@@ -427,14 +427,21 @@ async def main():
             
             # Önbellekte olan + kara listede olmayan hedef gruplar
             blast_targets = []
+            debug_blacklisted = 0
+            debug_not_cached = 0
             for username_lower in hedef_set:
                 if username_lower in blacklist_lower:
+                    debug_blacklisted += 1
                     continue
                 if username_lower in joined_dialogs:
                     entity = joined_dialogs[username_lower]
                     if getattr(entity, 'broadcast', False):
                         continue
                     blast_targets.append(username_lower)
+                else:
+                    debug_not_cached += 1
+            
+            print(f"[{client_name}] 📊 Hedef: {len(hedef_set)} | Önbellekte: {len(hedef_set)-debug_not_cached-debug_blacklisted} | Kara liste: {debug_blacklisted} | Üye değil: {debug_not_cached}")
             
             if not blast_targets:
                 print(f"[{client_name}] ⚠️ Önbellekte mesaj atılacak grup yok. Yeni gruplara katılma aşamasına geçiliyor...")
@@ -530,14 +537,15 @@ async def main():
             # YENİ GRUPLARA KATILMA AŞAMASI (blast sonrası)
             # ═══════════════════════════════════════════════════
             blacklist = get_list(BLACKLIST_FILE)
-            not_joined = [g for g in gruplar if g not in blacklist and g.lower() not in joined_dialogs]
+            blacklist_lower = set(b.lower() for b in blacklist)
+            not_joined = [g for g in gruplar if g.lower() not in blacklist_lower and g.lower() not in joined_dialogs]
             
             if not_joined:
                 join_count = 0
-                print(f"\n[{client_name}] 🔍 {len(not_joined)} yeni gruba katılma denemesi başlıyor...")
+                print(f"\n[{client_name}] 🔍 {len(not_joined)} gruba henüz üye değiliz. Katılma başlıyor...")
                 for hedef_grup in not_joined:
-                    if join_count >= 5:
-                        print(f"[{client_name}] 🔒 Bu turda 5 gruba katılındı, durduruluyor.")
+                    if join_count >= 15:
+                        print(f"[{client_name}] 🔒 Bu turda 15 gruba katılındı, durduruluyor.")
                         break
                     try:
                         entity = await client.get_entity(hedef_grup)
