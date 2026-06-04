@@ -588,20 +588,18 @@ async def main():
                 except:
                     pass
             
-            # Bekleme (dashboard'dan ayarlanabilir)
-            wait_min = 3600  # default 1 saat
-            wait_max = 3600
-            if os.path.exists("bot_config.json"):
-                try:
-                    with open("bot_config.json", "r", encoding="utf-8") as f:
-                        cfg = json.load(f)
-                        wait_min = cfg.get("ad_sleep_min", 3600)
-                        wait_max = cfg.get("ad_sleep_max", 3600)
-                except:
-                    pass
+            # Dinamik bekleme: grup sayısına göre otomatik ayarla
+            grup_sayisi = len(blast_targets) if blast_targets else 0
+            if grup_sayisi <= 10:
+                bekleme = random.randint(600, 720)      # 10-12 dk
+            elif grup_sayisi <= 30:
+                bekleme = random.randint(1200, 1800)     # 20-30 dk
+            elif grup_sayisi <= 50:
+                bekleme = random.randint(2400, 3000)     # 40-50 dk
+            else:
+                bekleme = random.randint(3000, 3600)     # 50-60 dk
             
-            bekleme = random.randint(min(wait_min, wait_max), max(wait_min, wait_max))
-            print(f"\n[{client_name}] ⏳ Sonraki blast için {bekleme // 60} dakika bekleniyor...")
+            print(f"\n[{client_name}] ⏳ {grup_sayisi} gruba blast atıldı → Sonraki blast {bekleme // 60} dk sonra")
             await asyncio.sleep(bekleme)
 
     while True:
