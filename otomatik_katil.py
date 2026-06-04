@@ -338,12 +338,12 @@ async def main():
                                 new_blacklisted_groups.append(dialog.entity.username)
                             continue
                             
-                        # 2. Aktiflik kontrolü (30 gündür mesaj yazılmamışsa es geç)
+                        # 2. Aktiflik kontrolü (7 gündür mesaj yazılmamışsa es geç)
                         days_inactive = 0
                         if dialog.message and dialog.message.date:
                             delta = now - dialog.message.date
                             days_inactive = delta.days
-                            if delta.days >= 30:
+                            if delta.days >= 7:
                                 if not is_protected:
                                     new_blacklisted_groups.append(dialog.entity.username)
                                 continue
