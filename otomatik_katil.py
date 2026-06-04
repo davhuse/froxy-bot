@@ -31,7 +31,7 @@ gruplar = [
     "YuceKuponSatis", "ticaretforumofficial", "referansreklam1", "Nightsatis",
     "kuponsat", "indirimkodusatis", "dolapdestek0",
     # Önbellekten bulunan satış grupları (üye sayısına göre sıralı)
-    "dakikadoksan", "bayanaktuel", "mesutkupon", "kuponceksatis",
+    "dakikadoksan", "bayanaktuel", "mesutkupon",
     "sahibindenarabalar", "sicakfirsatveindirimler", "ikincieltr", "BuyukFirsat",
     "sicakfirsatlar", "aracalimsatim1", "indirimfirsatburada",
     "ticaretref", "TekstilPlatformu", "firsatspt",
