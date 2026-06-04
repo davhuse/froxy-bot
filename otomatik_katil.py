@@ -366,31 +366,50 @@ async def main():
             from datetime import datetime, timezone
             now = datetime.now(timezone.utc)
             new_blacklisted_groups = []
+            all_groups_info = []  # Tüm grupları kaydet
             
             async for dialog in client.iter_dialogs():
                 if dialog.is_group or dialog.is_channel:
                     if hasattr(dialog.entity, 'username') and dialog.entity.username:
                         username_lower = dialog.entity.username.lower()
-                        
-                        # 1. Üye sayısı kontrolü (Önceden üye olduklarımızı filtreler)
+                        title = getattr(dialog.entity, 'title', '') or ''
                         member_count = getattr(dialog.entity, 'participants_count', None)
+                        is_broadcast = getattr(dialog.entity, 'broadcast', False)
+                        
+                        # 1. Üye sayısı kontrolü
                         if member_count is not None and member_count < 20:
-                            print(f"[{client_name}] 📉 Önbellek: @{dialog.entity.username} üye sayısı çok az ({member_count}). Kara listeye alınıyor...")
                             new_blacklisted_groups.append(dialog.entity.username)
                             continue
                             
-                        # 2. Aktiflik (Son mesaj tarihi) kontrolü (Örn: Son 3 gündür mesaj atılmamış ölü grupları eler)
+                        # 2. Aktiflik kontrolü
+                        days_inactive = 0
                         if dialog.message and dialog.message.date:
                             delta = now - dialog.message.date
+                            days_inactive = delta.days
                             if delta.days >= 30:
-                                print(f"[{client_name}] 💤 Önbellek: @{dialog.entity.username} son mesaj {delta.days} gün önce atılmış (Çok İnaktif). Kara listeye alınıyor...")
                                 new_blacklisted_groups.append(dialog.entity.username)
                                 continue
                                 
                         joined_dialogs[username_lower] = dialog.entity
+                        all_groups_info.append({
+                            "username": dialog.entity.username,
+                            "title": title,
+                            "members": member_count,
+                            "broadcast": is_broadcast,
+                            "days_inactive": days_inactive
+                        })
                         
+            # Grup bilgilerini dosyaya kaydet
+            groups_file = f"cached_groups_{client_name.replace(' ', '_').replace('#', '')}.json"
+            try:
+                with open(groups_file, 'w', encoding='utf-8') as f:
+                    json.dump(all_groups_info, f, ensure_ascii=False, indent=2)
+                print(f"[{client_name}] 📋 {len(all_groups_info)} grup bilgisi {groups_file} dosyasına kaydedildi.")
+            except:
+                pass
+            
             if new_blacklisted_groups:
-                print(f"[{client_name}] 💾 {len(new_blacklisted_groups)} inaktif/küçük grup toplu olarak kara listeye kaydediliyor...")
+                print(f"[{client_name}] 💾 {len(new_blacklisted_groups)} inaktif/küçük grup kara listeye kaydediliyor...")
                 async with state_lock:
                     with open(BLACKLIST_FILE, 'a', encoding='utf-8') as f:
                         for g in new_blacklisted_groups:
@@ -434,43 +453,90 @@ async def main():
                 except:
                     pass
             
-            # Türkçe karakter ve anahtar kelime tespiti
-            TR_CHARS = set("şçğüöıİŞÇĞÜÖ")
-            TR_KEYWORDS = ["satis", "satış", "ticaret", "alim", "pazar", "reklam", "kupon", 
-                           "freelance", "yazilim", "yazılım", "kripto", "borsa", "lisans",
-                           "hesap", "oyun", "premium", "epin", "bayi", "smm", "türk",
-                           "turk", "istanbul", "ankara", "sohbet", "destek", "ilan"]
+            # ═══════════════════════════════════════════════════
+            # AKILLI GRUP FİLTRESİ: Sadece satışa uygun gruplara at
+            # ═══════════════════════════════════════════════════
             
-            def is_turkish_group(username_lower, entity):
-                """Grubun Türk grubu olup olmadığını kontrol et"""
-                # 1. Bilinen listede mi?
+            # Satış/ticaret ile ilgili anahtar kelimeler (puan: +1 veya +2)
+            SALES_KEYWORDS = {
+                # Doğrudan satış (+2)
+                "satis": 2, "satış": 2, "sat": 2, "alsat": 2, "alim": 2, "alimsatim": 2,
+                "market": 2, "pazar": 2, "pazari": 2, "pazaryeri": 2, "ticaret": 2, 
+                "ilan": 2, "reklam": 2, "reklamyap": 2, "referans": 2, "ref": 2,
+                # Dijital ürünler (+2) 
+                "lisans": 2, "hesap": 2, "epin": 2, "key": 2, "premium": 2, "kupon": 2,
+                "indirim": 2, "ucuz": 2, "uygun": 2, "bedava": 2,
+                # Hizmet satışı (+2)
+                "smm": 2, "bayi": 2, "panel": 2, "freelance": 2, "hizmet": 2,
+                "tedarik": 2, "tedarikcileri": 2, "siparis": 2,
+                # E-ticaret platformları (+2)
+                "shopify": 2, "trendyol": 2, "hepsiburada": 2, "amazon": 2, "eticaret": 2,
+                "adsense": 2, "domain": 2,
+                # Yazılım/Dijital (+1)
+                "yazilim": 1, "yazılım": 1, "bot": 1, "webmaster": 1, "web": 1, "seo": 1,
+                "tasarim": 1, "grafik": 1, "coder": 1, "developer": 1, "api": 1,
+                # Kripto/Finans (+1)
+                "kripto": 1, "crypto": 1, "borsa": 1, "bitcoin": 1, "airdrop": 1,
+                "nft": 1, "trade": 1, "trading": 1,
+                # Oyun hesap (+1)
+                "oyun": 1, "steam": 1, "pubg": 1, "valorant": 1, "zula": 1, 
+                "wolfteam": 1, "gaming": 1,
+                # Sosyal medya (+1)
+                "sosyalmedya": 1, "instagram": 1, "tiktok": 1, "youtube": 1,
+                "spotify": 1, "netflix": 1, "telegram": 1,
+                # Genel ticaret (+1)
+                "is_ilanlari": 1, "girisim": 1, "startup": 1, "para": 1, "kazan": 1,
+            }
+            
+            # Bu kelimeleri içeren grupları ATLA (satışa uygun değil)
+            EXCLUDE_KEYWORDS = [
+                "haber", "news", "egitim", "eğitim", "ders", "universite", "okul",
+                "siyaset", "politika", "din", "islam", "namaz", "dua", "ayet",
+                "spor", "futbol", "fenerbahce", "galatasaray", "besiktas",
+                "muzik", "film", "dizi", "anime", "manga", "meme",
+                "yemek", "tarif", "saglik", "sağlık", "doktor",
+                "kedi", "kopek", "hayvan", "foto", "photography",
+                "chat", "arkadas", "arkadaş", "flort", "bulusma",
+                "18+", "nsfw", "porn", "adult",
+            ]
+            
+            def is_sales_relevant(username_lower, entity):
+                """Grubun satış/reklam için uygun olup olmadığını kontrol et"""
+                # 1. Bilinen listede mi? (gruplar + auto_groups = kesin uygun)
                 if username_lower in known_turkish:
                     return True
-                # 2. Grup başlığında Türkçe karakter var mı?
+                
                 title = getattr(entity, 'title', '') or ''
-                if any(c in TR_CHARS for c in title):
-                    return True
-                # 3. Username veya başlıkta Türkçe anahtar kelime var mı?
-                combined = (username_lower + ' ' + title.lower())
-                if any(kw in combined for kw in TR_KEYWORDS):
-                    return True
-                return False
+                combined = (username_lower + ' ' + title.lower()).replace('_', ' ').replace('-', ' ')
+                
+                # 2. Yasaklı içerik varsa atla
+                for ex in EXCLUDE_KEYWORDS:
+                    if ex in combined:
+                        return False
+                
+                # 3. Satış puanı hesapla
+                score = 0
+                for keyword, points in SALES_KEYWORDS.items():
+                    if keyword in combined:
+                        score += points
+                
+                return score >= 1
             
-            # Önbellekteki TÜRK gruplara mesaj at (kara listede olmayanlar)
+            # Önbellekteki SATIŞ GRUPLARINA mesaj at
             blast_targets = []
-            skipped_foreign = 0
+            skipped_irrelevant = 0
             for username_lower, entity in joined_dialogs.items():
                 if username_lower in blacklist_lower:
                     continue
                 if getattr(entity, 'broadcast', False):
                     continue
-                if not is_turkish_group(username_lower, entity):
-                    skipped_foreign += 1
+                if not is_sales_relevant(username_lower, entity):
+                    skipped_irrelevant += 1
                     continue
                 blast_targets.append(username_lower)
             
-            if skipped_foreign > 0:
-                print(f"[{client_name}] 🌍 {skipped_foreign} yabancı grup atlandı.")
+            if skipped_irrelevant > 0:
+                print(f"[{client_name}] 🚫 {skipped_irrelevant} alakasız grup atlandı (satış grubu değil).")
             
             if not blast_targets:
                 print(f"[{client_name}] ⚠️ Önbellekte mesaj atılacak grup yok. Yeni gruplara katılma aşamasına geçiliyor...")

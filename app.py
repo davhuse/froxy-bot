@@ -633,6 +633,22 @@ def save_config():
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
 
+@app.route('/api/groups')
+def api_groups():
+    """Tüm önbelleğe alınan grupları döndür"""
+    result = {}
+    for fname in ["cached_groups_Hesap_1.json", "cached_groups_Hesap_2.json"]:
+        try:
+            with open(fname, 'r', encoding='utf-8') as f:
+                groups = json.load(f)
+                # Sadece broadcast olmayan grupları göster
+                groups = [g for g in groups if not g.get('broadcast', False)]
+                groups.sort(key=lambda x: x.get('members') or 0, reverse=True)
+                result[fname.replace("cached_groups_", "").replace(".json", "")] = groups
+        except:
+            pass
+    return jsonify(result)
+
 # KEEP-ALIVE: Render free tier uyku modunu engelle (her 10dk kendine ping at)
 def keep_alive():
     import urllib.request, ssl
