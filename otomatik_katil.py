@@ -24,63 +24,32 @@ def print(*args, **kwargs):
     builtins.print(*args, **kwargs)
 
 gruplar = [
-    "Nightsatis", "eticaretlab", "ticaretmerkezi", "bedavainternetssohbet", "ticaretmeydani", 
-    "DijitalPazarTR", "YazilimLisans", "PremiumHesapSatiss", "EticaretTR", "WebmasterTR", 
-    "SMMBayiTR", "eticaret_tedarikcileri", "FreelancerTurkiye", "AITurkiye", "YazilimciGelistirme", 
-    "HesapSatisTR", "EpisSatis", "OyunHesapTR", "DijitalMarketim", "UcuzaLisans", 
-    "PazaryeriSaticilari", "AmazonSellersTR", "WebmasterSatis", "SEO_Turkiye", "SosyalMedyaTicaret", 
-    "BotSatisTR", "AdsenseSatis", "DomainPazari", "YazilimDestek", "TeknolojiSohbet", 
-    "FreelanceIsIlani", "CoderTurkiye", "PythonTurkiye", "JavaScript_TR", "CyberSecurity_TR", 
-    "KriptoTicaret", "StartupTR", "KuponPaylasim", "TurkiyeReklamGrubu", "WebmasterYardimlasma", 
-    "SMMPanelTurkiye", "HesapSatisPazari", "LisansPazari", "Oyun_Hesap_Alim_Satim", "PremiumHesaplar_TR", 
-    "Canva_Pro_Yardimlasma", "Adobe_Creative_Cloud_TR", "Windows_Office_Key_Satis", "Yazilimci_Is_Ilanlari", "Freelance_Turkiye_Grup", 
-    "E_Ticaret_Satis_Taktikleri", "Amazon_FBA_Turkiye", "Trendyol_Saticilari_Grubu", "Hepsiburada_Saticilari", "Shopify_Turkiye_Yardim", 
-    "Kripto_Para_Sohbet_TR", "Airdrop_Firsatlari_TR", "Borsa_Istanbul_Sohbet", "Teknoloji_Dunyasi_Haber", "Yazilim_Kulu_Yardim", 
-    "Python_Turkiye_Gelistirici", "Java_Turkiye_Toplulugu", "PHP_Laravel_TR", "Oyun_Haber_Sohbet", "Netflix_Disney_Premium", 
-    "Spotify_Premium_Hizmet", "YouTube_Premium_TR", "TikTok_Etkilesim_Grubu", "satilikilanlar", "ShopifyUzmani", 
-    "Gurcistanticaret", "ticaretvarburada", "eticaretyardimlasmaa", "ilan_ver", "is_ilanlari_grubu", 
-    "FreelanceWorkTR", "kuponindirimsatis", "kuponsatisgrup", "kuponhesapsatis", "kuponsat", 
-    "KuponindirimPazari", "kuponceking", "kuponkodalsat", "kupongrupta", "kuponceksatis", 
-    "yazilimci_grubu", "phpturkiye", "seoyedek", "smmbayim", "eticaretplatformu", 
-    "freelanceyazilim", "oyunalisveris", "dijitalpazar", "kriptosohbet", "borsasohbet", 
-    "freelancertr", "teknolojihaber", "ucuzlisanslar", "premiumhesaplar", "smmhizmetleri", 
-    "tasarimciyardim", "yazilimciyardim", "amazonfbatr", "trendyolsaticilar", "hepsiburadasaticilar", 
-    "spotifygenel", "youtubepremiumtr", "netflixpremiumtr", "oyunhesaplarisatis", "KuponSatis", 
-    "SosyalMedyaPazari", "AdsenseTurkiye", "FreelancerYazilimci", "TeknolojiSohbetleri", "WebTasarimDestek", 
-    "SMMHizmeti", "KriptoSohbetTR", "EpinDestek", "OyunAlSat", "TrendyolDestekSohbet", 
-    "AmazonSellersTRGroup", "ShopifyDestek", "BorsaYardim", "CoderDestekTR", "EpinPazari", 
-    "HesapSatisGenel", "LisansBayi", "SosyalMedyaTicaretGrubu", "EpinAlSat", "SMMPanelTurk", 
-    "AdsenseDestekTR", "FreelanceIsIlanlariTR", "KriptoKazan", "AmazonFBAyardim", "TrendyolPazaryeri", 
-    "WebmasterDestekTR", "PythonSohbet", "JavaYardimlasma", "OyunPazariTR", "SteamOyunTR", 
-    "PremiumUyelikTR", "CanvaTasarimYardim", "AdobeTRYardim", "WindowsOfficeKey", "YazilimIsFirsatlari", 
-    "ShopifyGirisim", "BorsaKriptoHaber", "GrafikTasarimDestek", "YazilimciSohbetleri", "EpinBayilik", 
-    "ZulaPazariTR", "WolfteamSatisTR", "SpotifyDavet", "EpinKoduSatis", "WebTasarimYardim", 
-    "SMMPanelSatisGrubu", "AdsenseAlSat", "KriptoSohbetGrubu", "PremiumSatisTR", "AmazonSellersYardim", 
-    "ShopifyDestekTR", "YazilimIlanTR", "EpinSatisPazari", "HesapAlimSatimTR", "turkiyepazar", 
-    "turkcesmm", "sosyalmedyapazaritr", "dijitalpazaryeritr", "satisgrubu", "webmasteryardimlasmatr", 
-    "reklamgrubutr", "satiskanali", "dijitalurunsatis", "hesap_satis_tr", "epin_pazari", 
-    "lisans_alim_satim", "freelance_is_ilanlari_tr", "yazilimci_is_ilanlari_tr", "amazon_satis_ortakligi", "trendyol_saticilari_tr", 
-    "hepsiburada_satis_toplulugu", "kriptosatistr", "borsa_sohbet_tr", "teknolojialimsatim", "donanimsatistr", 
-    "smmbayilertr", "smmhizmetleripazari", "freelancework_tr", "designer_is_ilanlari", "coder_is_ilanlari", 
-    "pythontr_satis", "javascripttr_satis", "siberguvenliktr_satis", "oyun_hesap_satis_pazari", "premium_satis_pazari", 
-    "spotify_premium_tr", "youtube_premium_satis", "tiktok_hesap_satis", "satilik_domainler", "adsense_alim_satim", 
-    "eticaret_tedarik", "freelance_destek_tr", "ticaretmeydanitr", "kupon_satis_tr", "AmazonTrGenelSohbet", 
-    "HESAPACCOUNT1", "KriptoSozlukTVPiyasaMuhabbeti", "N_A_F_A_Smm", "Panel_Member_Premium_Ban_buy", "Prof_Amazon8", 
-    "ReklamYaptr", "Turkiye_telefon_pazari", "XushnudMFYreklama", "YouTuBeAboneKazan", "YuceKuponSatis", 
-    "amazon_fbauz1", "amazonfbasellers", "borsao", "buy_Panel_Premium_Members_Adder", "dijitalpazarlamatr", 
-    "erdil_satis", "freelancertoplulugu", "icon_webmasters_cpa", "indirimkodusatis", "izmirpazar", 
-    "kendireklaminiyap", "kripto1", "kriptoe", "kuponceksatisi", "kuponl", 
-    "kuponsatislari0", "mesutkupon", "neastronhesap", "pazaryerialsat", "referansreklam1", 
-    "reklama_bardankol", "reklamvereferanssss", "reklamyap", "satisrefim", "smmpanelkur", 
-    "smsngsatis", "sosyalmedyaalimsatimticaret", "testnet_aidrop_on_satis_kripto", "ticaretguvenilir", "ticaretsaha", 
-    "trendyol8", "trendyolsatkazan", "ucbosspubgHESAP", "uye_ekleme_satis", "uzaktan_freelancee", 
-    "webmasterdestek", "webmasterscafe", "yazilimci_hanim", "yazilimcigencler", "yazilimciiiadam", 
-    "yazilimcilarburada", "yukseklisansdoktora", "turkiyesatispazari", "dijitalpazarkey", "reklampazaritr", 
-    "hesaplisansmarket", "uygunlisanssatis", "satis_ilanlari_tr", "freelance_dijital", "premium_market_tr", 
-    "kupon_pazari", "telegram_reklam_tr", "dijital_tedarikci", "dijitalalisveris", "turkiyereklamsohbet", 
-    "smm_bayi_ticaret", "r10_com", "r10_forum", "yazilimci_sohbeti", "freelance_ilanlari", 
-    "freelancer_tr", "hesap_alsat", "eticaret_sohbet", "smm_panel_rehberi", "smm_bayileri", 
-    "epin_alsat_tr", "kupon_yardimlasmasi", "tasarimcilar_kulubu", "coder_turkiye_sohbet"
+    # Kullanıcının verdiği gruplar
+    "kuponceking", "kuponsatislari0", "sosyalmedyaalimsatimticaret", "ticaretguvenilir",
+    "kuponsatisgrup", "dijitalilan", "kuponceksatis", "ticaretsaha", "IWEfTGD7OCBjY2I8",
+    "satilikilanlar", "diyarbakirikincielarac", "smmpanelgrup", "kuponhesapsatis",
+    "YuceKuponSatis", "ticaretforumofficial", "referansreklam1", "Nightsatis",
+    "kuponsat", "indirimkodusatis", "dolapdestek0",
+    # Önbellekten bulunan satış grupları (üye sayısına göre sıralı)
+    "dakikadoksan", "bayanaktuel", "mesutkupon", "kuponceksatis",
+    "sahibindenarabalar", "sicakfirsatveindirimler", "ikincieltr", "BuyukFirsat",
+    "sicakfirsatlar", "aracalimsatim1", "indirimfirsatburada",
+    "ticaretref", "TekstilPlatformu", "firsatspt",
+    "ticaretmerkezi", "uzaktan_freelancee", "eticaretlab",
+    "sultanbeyliikinciel0", "Gurcistanticaret", "freelancertoplulugu",
+    "satisrefim", "ticaretvarburada", "banggoodturkey", "neastronhesap",
+    "smmpanelgrup", "izmirpazar", "hesapalimsatim12", "oemalsat", "pubgsatis",
+    "Turkiye_telefon_pazari", "kuponsatislari0",
+    "AyakkabiSanati", "Turkiyepazar", "reklama_bardankol",
+    "toptankozmetik47", "iindirimlercee", "BrawlStarsHesap1", "kuponceksatisi",
+    "kendireklaminiyap", "dijitalpazarlamatr", "elektroniksigaradunyasi",
+    "hesapsatistrsohbet", "smmpanelkur", "reklamvereferanssss",
+    "ttingalimsatim", "trendyolsatkazan", "ucbosspubgHESAP", "reklamyap",
+    "HESAPACCOUNT1", "ReklamYaptr", "hesapsatistr", "N_A_F_A_Smm",
+    "kuponkodalsat", "svp_referans", "smsngsatis", "pazaryerialsat",
+    "ticaretmeydani", "smmpanelturkiye", "freelancerturkiye",
+    "trendyolsatici", "lisanspazari", "KorgPa2xPa800",
+    "sharkvapetr", "ikincielkralligi",
 ]
 
 
@@ -141,10 +110,13 @@ replied_users = set()
 
 # --- Auto-Scrape: Anahtar kelimeler ---
 SCRAPE_KEYWORDS = [
-    "yazılım", "hesap satış", "kripto", "smm panel",
-    "freelance", "e-ticaret", "sosyal medya", "bot",
-    "reklam", "dijital pazarlama", "epin", "oyun hesap",
-    "spotify", "netflix", "vpn", "hosting"
+    "kupon satış", "kod satış", "kupon çek", "kupon satis",
+    "alım satım", "ticaret grubu", "satış grubu", "ilan grubu",
+    "hesap satış", "dijital ilan", "smm panel",
+    "indirim kupon", "fırsat indirim", "reklam grubu",
+    "ikinci el", "2.el satış", "alim satim",
+    "e-ticaret satış", "trendyol satıcı", "freelance iş",
+    "referans reklam", "satılık ilan", "epin satış",
 ]
 
 async def auto_scrape_groups(client, client_name):
@@ -441,102 +413,28 @@ async def main():
             blacklist = get_list(BLACKLIST_FILE)
             blacklist_lower = set(b.lower() for b in blacklist)
             
-            # Bilinen Türk grupları (listeden + auto_groups)
-            known_turkish = set(g.lower() for g in gruplar)
+            # Hedef gruplar: gruplar listesi + auto_groups.txt
+            hedef_set = set(g.lower() for g in gruplar)
             if os.path.exists("auto_groups.txt"):
                 try:
                     with open("auto_groups.txt", "r", encoding="utf-8") as f:
                         for line in f:
                             g = line.strip()
                             if g:
-                                known_turkish.add(g.lower())
+                                hedef_set.add(g.lower())
                 except:
                     pass
             
-            # ═══════════════════════════════════════════════════
-            # AKILLI GRUP FİLTRESİ: Sadece satışa uygun gruplara at
-            # ═══════════════════════════════════════════════════
-            
-            # Satış/ticaret ile ilgili anahtar kelimeler (puan: +1 veya +2)
-            SALES_KEYWORDS = {
-                # Doğrudan satış (+2)
-                "satis": 2, "satış": 2, "sat": 2, "alsat": 2, "alim": 2, "alimsatim": 2,
-                "market": 2, "pazar": 2, "pazari": 2, "pazaryeri": 2, "ticaret": 2, 
-                "ilan": 2, "reklam": 2, "reklamyap": 2, "referans": 2, "ref": 2,
-                # Dijital ürünler (+2) 
-                "lisans": 2, "hesap": 2, "epin": 2, "key": 2, "premium": 2, "kupon": 2,
-                "indirim": 2, "ucuz": 2, "uygun": 2, "bedava": 2,
-                # Hizmet satışı (+2)
-                "smm": 2, "bayi": 2, "panel": 2, "freelance": 2, "hizmet": 2,
-                "tedarik": 2, "tedarikcileri": 2, "siparis": 2,
-                # E-ticaret platformları (+2)
-                "shopify": 2, "trendyol": 2, "hepsiburada": 2, "amazon": 2, "eticaret": 2,
-                "adsense": 2, "domain": 2,
-                # Yazılım/Dijital (+1)
-                "yazilim": 1, "yazılım": 1, "bot": 1, "webmaster": 1, "web": 1, "seo": 1,
-                "tasarim": 1, "grafik": 1, "coder": 1, "developer": 1, "api": 1,
-                # Kripto/Finans (+1)
-                "kripto": 1, "crypto": 1, "borsa": 1, "bitcoin": 1, "airdrop": 1,
-                "nft": 1, "trade": 1, "trading": 1,
-                # Oyun hesap (+1)
-                "oyun": 1, "steam": 1, "pubg": 1, "valorant": 1, "zula": 1, 
-                "wolfteam": 1, "gaming": 1,
-                # Sosyal medya (+1)
-                "sosyalmedya": 1, "instagram": 1, "tiktok": 1, "youtube": 1,
-                "spotify": 1, "netflix": 1, "telegram": 1,
-                # Genel ticaret (+1)
-                "is_ilanlari": 1, "girisim": 1, "startup": 1, "para": 1, "kazan": 1,
-            }
-            
-            # Bu kelimeleri içeren grupları ATLA (satışa uygun değil)
-            EXCLUDE_KEYWORDS = [
-                "haber", "news", "egitim", "eğitim", "ders", "universite", "okul",
-                "siyaset", "politika", "din", "islam", "namaz", "dua", "ayet",
-                "spor", "futbol", "fenerbahce", "galatasaray", "besiktas",
-                "muzik", "film", "dizi", "anime", "manga", "meme",
-                "yemek", "tarif", "saglik", "sağlık", "doktor",
-                "kedi", "kopek", "hayvan", "foto", "photography",
-                "chat", "arkadas", "arkadaş", "flort", "bulusma",
-                "18+", "nsfw", "porn", "adult",
-            ]
-            
-            def is_sales_relevant(username_lower, entity):
-                """Grubun satış/reklam için uygun olup olmadığını kontrol et"""
-                # 1. Bilinen listede mi? (gruplar + auto_groups = kesin uygun)
-                if username_lower in known_turkish:
-                    return True
-                
-                title = getattr(entity, 'title', '') or ''
-                combined = (username_lower + ' ' + title.lower()).replace('_', ' ').replace('-', ' ')
-                
-                # 2. Yasaklı içerik varsa atla
-                for ex in EXCLUDE_KEYWORDS:
-                    if ex in combined:
-                        return False
-                
-                # 3. Satış puanı hesapla
-                score = 0
-                for keyword, points in SALES_KEYWORDS.items():
-                    if keyword in combined:
-                        score += points
-                
-                return score >= 1
-            
-            # Önbellekteki SATIŞ GRUPLARINA mesaj at
+            # Önbellekte olan + kara listede olmayan hedef gruplar
             blast_targets = []
-            skipped_irrelevant = 0
-            for username_lower, entity in joined_dialogs.items():
+            for username_lower in hedef_set:
                 if username_lower in blacklist_lower:
                     continue
-                if getattr(entity, 'broadcast', False):
-                    continue
-                if not is_sales_relevant(username_lower, entity):
-                    skipped_irrelevant += 1
-                    continue
-                blast_targets.append(username_lower)
-            
-            if skipped_irrelevant > 0:
-                print(f"[{client_name}] 🚫 {skipped_irrelevant} alakasız grup atlandı (satış grubu değil).")
+                if username_lower in joined_dialogs:
+                    entity = joined_dialogs[username_lower]
+                    if getattr(entity, 'broadcast', False):
+                        continue
+                    blast_targets.append(username_lower)
             
             if not blast_targets:
                 print(f"[{client_name}] ⚠️ Önbellekte mesaj atılacak grup yok. Yeni gruplara katılma aşamasına geçiliyor...")
