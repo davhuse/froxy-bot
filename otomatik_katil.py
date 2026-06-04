@@ -152,6 +152,13 @@ async def auto_scrape_groups(client, client_name):
                 is_group = True
                 
             if not is_group or not chat.username:
+                # Yayın kanalıysa ve kullanıcı adı varsa kara listeye ekleyelim
+                if isinstance(chat, Channel) and getattr(chat, 'broadcast', False) and chat.username:
+                    username = chat.username.lower()
+                    if username not in blacklist_lower:
+                        save_to_list(chat.username, BLACKLIST_FILE)
+                        blacklist_lower.add(username)
+                        print(f"🚫 [Scraper] @{chat.username} -> Yayın kanalı olduğu için kara listeye alındı.")
                 continue
                 
             username = chat.username.lower()
@@ -161,6 +168,10 @@ async def auto_scrape_groups(client, client_name):
             # 2. Üye sayısı kontrolü (En az 50 üye olmalı)
             member_count = getattr(chat, 'participants_count', None)
             if member_count is not None and member_count < 50:
+                if username not in blacklist_lower:
+                    save_to_list(chat.username, BLACKLIST_FILE)
+                    blacklist_lower.add(username)
+                    print(f"🚫 [Scraper] @{chat.username} -> Üye sayısı az ({member_count}), kara listeye alındı.")
                 continue
                 
             # 3. Dil ve İçerik Kontrolü: Başlıkta satış kelimeleri veya Türkçe karakter geçmeli
@@ -169,6 +180,10 @@ async def auto_scrape_groups(client, client_name):
             has_tr_chars = bool(re.search(r"[ıışşğğççööüüıİİŞŞĞĞÇÇÖÖÜÜ]", title))
             
             if not (has_sales_word or has_tr_chars):
+                if username not in blacklist_lower:
+                    save_to_list(chat.username, BLACKLIST_FILE)
+                    blacklist_lower.add(username)
+                    print(f"🚫 [Scraper] @{chat.username} -> İçerik/Dil uyumsuz, kara listeye alındı.")
                 continue
                 
             # auto_groups.txt'ye kaydet
