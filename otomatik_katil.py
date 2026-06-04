@@ -334,11 +334,13 @@ async def main():
 
     async def run_worker(client, client_name, joined_dialogs):
         print(f"🚀 Worker {client_name} diyalogları önbelleğe alınıyor...")
+        # Hedef grupları kara listeye ASLA atma
+        protected_groups = set(g.lower() for g in gruplar)
         try:
             from datetime import datetime, timezone
             now = datetime.now(timezone.utc)
             new_blacklisted_groups = []
-            all_groups_info = []  # Tüm grupları kaydet
+            all_groups_info = []
             
             async for dialog in client.iter_dialogs():
                 if dialog.is_group or dialog.is_channel:
@@ -348,17 +350,20 @@ async def main():
                         member_count = getattr(dialog.entity, 'participants_count', None)
                         is_broadcast = getattr(dialog.entity, 'broadcast', False)
                         
-                        # 1. Üye sayısı kontrolü
-                        if member_count is not None and member_count < 20:
+                        # Hedef gruptaysa ASLA kara listeye atma
+                        is_protected = username_lower in protected_groups
+                        
+                        # 1. Üye sayısı kontrolü (korumalı gruplar hariç)
+                        if not is_protected and member_count is not None and member_count < 20:
                             new_blacklisted_groups.append(dialog.entity.username)
                             continue
                             
-                        # 2. Aktiflik kontrolü
+                        # 2. Aktiflik kontrolü (korumalı gruplar hariç)
                         days_inactive = 0
                         if dialog.message and dialog.message.date:
                             delta = now - dialog.message.date
                             days_inactive = delta.days
-                            if delta.days >= 30:
+                            if not is_protected and delta.days >= 30:
                                 new_blacklisted_groups.append(dialog.entity.username)
                                 continue
                                 
@@ -631,9 +636,16 @@ async def main():
             local_black = get_list(BLACKLIST_FILE)
             remote_black = set(x.strip() for x in fs_black.splitlines() if x.strip())
             merged_black = local_black.union(remote_black)
+            # Hedef grupları kara listeden ÇIKAR
+            protected = set(g.lower() for g in gruplar)
+            cleaned = set(g for g in merged_black if g.lower() not in protected)
+            removed = len(merged_black) - len(cleaned)
             with open(BLACKLIST_FILE, 'w', encoding='utf-8') as f:
-                f.write('\n'.join(merged_black) + '\n')
-            print("📥 Kara liste buluttan indirildi ve birleştirildi.")
+                f.write('\n'.join(cleaned) + '\n')
+            if removed > 0:
+                print(f"📥 Kara liste birleştirildi. {removed} hedef grup kara listeden çıkarıldı!")
+            else:
+                print("📥 Kara liste buluttan indirildi ve birleştirildi.")
 
         active_jobs.clear()
         
