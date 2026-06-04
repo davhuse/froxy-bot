@@ -120,44 +120,77 @@ SCRAPE_KEYWORDS = [
 ]
 
 async def auto_scrape_groups(client, client_name):
-    """Telegram global aramasıyla yeni gruplar keşfeder ve auto_groups.txt'ye kaydeder."""
-    print(f"\n🔍 [{client_name}] Otomatik Grup Keşfi (Auto-Scraper) başlıyor...")
+    """Telegram global aramasıyla yeni, aktif ve Türkçe satış grupları keşfeder."""
+    print(f"\n🔍 [{client_name}] Akıllı Grup Keşfi (Auto-Scraper) başlıyor...")
     
     existing_groups = set(g.lower() for g in gruplar)
     blacklist = get_list(BLACKLIST_FILE)
+    blacklist_lower = set(b.lower() for b in blacklist)
     new_found = 0
     
     keyword = random.choice(SCRAPE_KEYWORDS)
     print(f"🔎 [{client_name}] Aranan anahtar kelime: '{keyword}'")
     
+    # Türkçe satış grubu olup olmadığını kontrol etmek için kelimeler
+    sales_keywords = [
+        "satış", "satis", "ticaret", "ilan", "reklam", "kupon", "indirim",
+        "shopier", "hesap", "alım", "satım", "alim", "satim", "smm", "kod",
+        "ucuz", "ref", "pazar", "ikinci el", "brawl", "pubg", "takipçi"
+    ]
+    
     try:
-        from telethon.tl.types import Channel
+        from telethon.tl.types import Channel, Chat
         result = await client(SearchRequest(q=keyword, limit=50))
         
         for chat in result.chats:
-            if isinstance(chat, Channel) and chat.username:
-                username = chat.username.lower()
-                if username not in existing_groups and username not in blacklist:
-                    # auto_groups.txt'ye kaydet
-                    with open(AUTO_GROUPS_FILE, 'a', encoding='utf-8') as f:
-                        f.write(chat.username + '\n')
-                    existing_groups.add(username)
-                    gruplar.append(chat.username)
-                    new_found += 1
-                    print(f"🆕 [{client_name}] Yeni grup keşfedildi: @{chat.username}")
-        
+            # 1. Yayın kanalı olmamalı (broadcast=True elenir), megagrup veya chat olmalı
+            is_group = False
+            if isinstance(chat, Channel):
+                if not getattr(chat, 'broadcast', False):
+                    is_group = True
+            elif isinstance(chat, Chat):
+                is_group = True
+                
+            if not is_group or not chat.username:
+                continue
+                
+            username = chat.username.lower()
+            if username in existing_groups or username in blacklist_lower:
+                continue
+                
+            # 2. Üye sayısı kontrolü (En az 50 üye olmalı)
+            member_count = getattr(chat, 'participants_count', None)
+            if member_count is not None and member_count < 50:
+                continue
+                
+            # 3. Dil ve İçerik Kontrolü: Başlıkta satış kelimeleri veya Türkçe karakter geçmeli
+            title = (chat.title or "").lower()
+            has_sales_word = any(w in title for w in sales_keywords)
+            has_tr_chars = bool(re.search(r"[ıışşğğççööüüıİİŞŞĞĞÇÇÖÖÜÜ]", title))
+            
+            if not (has_sales_word or has_tr_chars):
+                continue
+                
+            # auto_groups.txt'ye kaydet
+            with open(AUTO_GROUPS_FILE, 'a', encoding='utf-8') as f:
+                f.write(chat.username + '\n')
+            existing_groups.add(username)
+            gruplar.append(chat.username)
+            new_found += 1
+            print(f"🆕 [{client_name}] Akıllı Scraper Yeni Grup Keşfetti: @{chat.username} (Üye: {member_count or 'Bilinmiyor'})")
+            
         if new_found > 0:
             update_stats(discovered=new_found)
-            print(f"✅ [{client_name}] Auto-Scraper: {new_found} yeni grup keşfedildi ve listeye eklendi!")
+            print(f"✅ [{client_name}] Auto-Scraper: {new_found} yeni grup keşfedildi!")
         else:
-            print(f"ℹ️ [{client_name}] Auto-Scraper: '{keyword}' için yeni grup bulunamadı.")
+            print(f"ℹ️ [{client_name}] Auto-Scraper: '{keyword}' için uygun yeni grup bulunamadı.")
             
     except FloodWaitError as e:
-        print(f"⏳ [{client_name}] Auto-Scraper: Flood bekleniyor ({e.seconds}s)...")
+        print(f"⏳ [{client_name}] Auto-Scraper: Flood beklenecek ({e.seconds}s)...")
         await asyncio.sleep(e.seconds)
     except Exception as e:
         print(f"⚠️ [{client_name}] Auto-Scraper hatası: {type(e).__name__} - {e}")
-    
+        
     return new_found
 
 DM_MESSAGE = (
@@ -305,11 +338,11 @@ async def main():
     # Özel mesaj gönderme devre dışı
     print("ℹ️ Auto-DM kapalı.")
 
-    # --- AUTO-SCRAPE: KAPATILDI ---
+    # --- AUTO-SCRAPE: AKTİF ---
     first_client, first_name, _ = active_clients[0]
-    # scrape_count = await auto_scrape_groups(first_client, first_name)
-    # if scrape_count > 0:
-    #     print(f"🎉 Auto-Scraper toplamda {scrape_count} yeni grup ekledi. Liste güncellendi!")
+    scrape_count = await auto_scrape_groups(first_client, first_name)
+    if scrape_count > 0:
+        print(f"🎉 Auto-Scraper toplamda {scrape_count} yeni grup ekledi. Liste güncellendi!")
 
     async def run_worker(client, client_name, joined_dialogs):
         print(f"🚀 Worker {client_name} diyalogları önbelleğe alınıyor...")
@@ -704,9 +737,9 @@ async def main():
         except Exception as e:
             pass
         
-        # Yeni döngü öncesi otomatik grup keşfi - KAPATILDI
-        # print(f"\n🔍 Yeni döngü için Auto-Scraper çalıştırılıyor...")
-        # await auto_scrape_groups(first_client, first_name)
+        # Yeni döngü öncesi otomatik grup keşfi - AKTİF
+        print(f"\n🔍 Yeni döngü için Auto-Scraper çalıştırılıyor...")
+        await auto_scrape_groups(first_client, first_name)
         
         await asyncio.sleep(3600) # 1 saat bekle ve baştan başla
     
