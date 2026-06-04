@@ -326,11 +326,11 @@ async def main():
         
         print(f"🎯 [{client_name}] Auto-DM dinleyicisi aktifleştirildi.")
 
-    # --- AUTO-SCRAPE: İlk çalıştırmada grup keşfi yap ---
+    # --- AUTO-SCRAPE: KAPATILDI ---
     first_client, first_name, _ = active_clients[0]
-    scrape_count = await auto_scrape_groups(first_client, first_name)
-    if scrape_count > 0:
-        print(f"🎉 Auto-Scraper toplamda {scrape_count} yeni grup ekledi. Liste güncellendi!")
+    # scrape_count = await auto_scrape_groups(first_client, first_name)
+    # if scrape_count > 0:
+    #     print(f"🎉 Auto-Scraper toplamda {scrape_count} yeni grup ekledi. Liste güncellendi!")
 
     async def run_worker(client, client_name, joined_dialogs):
         print(f"🚀 Worker {client_name} diyalogları önbelleğe alınıyor...")
@@ -650,9 +650,9 @@ async def main():
         except Exception as e:
             pass
         
-        # Yeni döngü öncesi otomatik grup keşfi
-        print(f"\n🔍 Yeni döngü için Auto-Scraper çalıştırılıyor...")
-        await auto_scrape_groups(first_client, first_name)
+        # Yeni döngü öncesi otomatik grup keşfi - KAPATILDI
+        # print(f"\n🔍 Yeni döngü için Auto-Scraper çalıştırılıyor...")
+        # await auto_scrape_groups(first_client, first_name)
         
         await asyncio.sleep(3600) # 1 saat bekle ve baştan başla
     
