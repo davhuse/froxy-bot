@@ -41,7 +41,7 @@ gruplar = [
     "smmpanelgrup", "izmirpazar", "hesapalimsatim12", "oemalsat", "pubgsatis",
     "Turkiye_telefon_pazari", "kuponsatislari0",
     "AyakkabiSanati", "Turkiyepazar", "reklama_bardankol",
-    "toptankozmetik47", "iindirimlercee", "BrawlStarsHesap1", "kuponceksatisi",
+    "toptankozmetik47", "BrawlStarsHesap1", "kuponceksatisi",
     "kendireklaminiyap", "dijitalpazarlamatr", "elektroniksigaradunyasi",
     "hesapsatistrsohbet", "smmpanelkur", "reklamvereferanssss",
     "ttingalimsatim", "trendyolsatkazan", "ucbosspubgHESAP", "reklamyap",
