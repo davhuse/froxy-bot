@@ -37,7 +37,7 @@ gruplar = [
     "ticaretref", "TekstilPlatformu", "firsatspt",
     "ticaretmerkezi", "uzaktan_freelancee", "eticaretlab",
     "sultanbeyliikinciel0", "Gurcistanticaret", "freelancertoplulugu",
-    "satisrefim", "ticaretvarburada", "banggoodturkey", "neastronhesap",
+    "ticaretvarburada", "banggoodturkey", "neastronhesap",
     "smmpanelgrup", "izmirpazar", "hesapalimsatim12", "oemalsat", "pubgsatis",
     "Turkiye_telefon_pazari", "kuponsatislari0",
     "AyakkabiSanati", "Turkiyepazar", "reklama_bardankol",
@@ -301,30 +301,9 @@ async def main():
     state_lock = asyncio.Lock()
     active_jobs = set()
 
-    # --- AUTO-DM: Mesajlarımıza yanıt veren kullanıcılara otomatik DM ---
-    for client, client_name, _ in active_clients:
-        my_id = (await client.get_me()).id
-        
-        @client.on(events.NewMessage(func=lambda e: e.is_reply and e.is_group))
-        async def auto_dm_handler(event, _client=client, _name=client_name, _my_id=my_id):
-            try:
-                replied_msg = await event.get_reply_message()
-                if replied_msg and replied_msg.sender_id == _my_id:
-                    sender_id = event.sender_id
-                    if sender_id in replied_users or sender_id == _my_id:
-                        return
-                    
-                    replied_users.add(sender_id)
-                    try:
-                        await _client.send_message(sender_id, DM_MESSAGE)
-                        print(f"📩 [{_name}] Auto-DM: Kullanıcı {sender_id} mesajımıza yanıt verdi. DM gönderildi!")
-                        update_stats(sent=0)  # Sadece log amaçlı
-                    except Exception as dm_err:
-                        print(f"⚠️ [{_name}] Auto-DM: DM gönderilemedi ({sender_id}): {type(dm_err).__name__}")
-            except Exception as e:
-                pass  # Sessiz hata - event loop'u bozmamalı
-        
-        print(f"🎯 [{client_name}] Auto-DM dinleyicisi aktifleştirildi.")
+    # --- AUTO-DM: KAPATILDI ---
+    # Özel mesaj gönderme devre dışı
+    print("ℹ️ Auto-DM kapalı.")
 
     # --- AUTO-SCRAPE: KAPATILDI ---
     first_client, first_name, _ = active_clients[0]
