@@ -420,25 +420,18 @@ async def main():
         # ═══════════════════════════════════════════════════
         while True:
             blacklist = get_list(BLACKLIST_FILE)
+            blacklist_lower = set(b.lower() for b in blacklist)
             
-            # Mesaj atılacak grupları belirle (önbellekte olan + kara listede olmayan)
+            # Önbellekteki TÜM gruplara mesaj at (kara listede olmayanlar)
             blast_targets = []
-            for g in gruplar:
-                if g in blacklist:
+            for username_lower, entity in joined_dialogs.items():
+                # Kara listede mi kontrol et
+                if username_lower in blacklist_lower:
                     continue
-                if g.lower() in joined_dialogs:
-                    blast_targets.append(g)
-            
-            # auto_groups.txt'den de ekle
-            if os.path.exists("auto_groups.txt"):
-                try:
-                    with open("auto_groups.txt", "r", encoding="utf-8") as f:
-                        for line in f:
-                            g = line.strip()
-                            if g and g not in blacklist and g.lower() in joined_dialogs and g not in blast_targets:
-                                blast_targets.append(g)
-                except:
-                    pass
+                # broadcast kanallarını atla (sadece admin yazabilir)
+                if getattr(entity, 'broadcast', False):
+                    continue
+                blast_targets.append(username_lower)
             
             if not blast_targets:
                 print(f"[{client_name}] ⚠️ Önbellekte mesaj atılacak grup yok. Yeni gruplara katılma aşamasına geçiliyor...")
@@ -504,16 +497,22 @@ async def main():
                             save_to_list(grup_name, BLACKLIST_FILE)
                         fail_count += 1
                     except ChatWriteForbiddenError:
-                        is_broadcast = getattr(entity, 'broadcast', False)
-                        if is_broadcast:
-                            async with state_lock:
-                                save_to_list(grup_name, BLACKLIST_FILE)
-                        print(f"[{client_name}] 🔒 @{grup_name} -> Yazma izni yok.")
+                        async with state_lock:
+                            save_to_list(grup_name, BLACKLIST_FILE)
+                        print(f"[{client_name}] 🔒 @{grup_name} -> Yazma izni yok, kara liste.")
                         fail_count += 1
                     except SlowModeWaitError:
                         print(f"[{client_name}] 🐌 @{grup_name} -> SlowMode, atlanıyor.")
                         fail_count += 1
                     except Exception as e:
+                        err_type = type(e).__name__
+                        # ChatAdminRequired, ChatRestricted vs. = kara listeye al
+                        if 'Admin' in err_type or 'Restrict' in err_type or 'Forbidden' in err_type or 'PAYMENT' in str(e):
+                            async with state_lock:
+                                save_to_list(grup_name, BLACKLIST_FILE)
+                            print(f"[{client_name}] 🔒 @{grup_name} -> {err_type}, kara liste.")
+                            fail_count += 1
+                            return
                         err_type = type(e).__name__
                         print(f"[{client_name}] ⚠️ @{grup_name} -> {err_type}")
                         fail_count += 1
