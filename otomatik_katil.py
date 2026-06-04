@@ -497,9 +497,16 @@ async def main():
                         print(f"[{client_name}] ⚠️ @{grup_name} -> {err_type} (atlanıyor)")
                         fail_count += 1
 
-                # TÜM gruplara aynı anda gönder!
-                tasks = [blast_one(g) for g in blast_targets]
-                await asyncio.gather(*tasks, return_exceptions=True)
+                # Gruplara sırayla ve aralarında 10-20 saniye rastgele bekleme koyarak gönder!
+                import random
+                print(f"\n[{client_name}] 📤 Sırayla gönderim başlıyor ({len(blast_targets)} grup)...")
+                for i, g in enumerate(blast_targets, 1):
+                    await blast_one(g)
+                    if i < len(blast_targets):
+                        delay = random.randint(10, 20)
+                        print(f"[{client_name}] ⏳ Sonraki grup için {delay} saniye bekleniyor...")
+                        await asyncio.sleep(delay)
+
                 
                 print(f"\n[{client_name}] 📊 BLAST SONUÇ: {sent_count} başarılı, {fail_count} başarısız / {len(blast_targets)} toplam")
 
