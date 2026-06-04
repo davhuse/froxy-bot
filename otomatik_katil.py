@@ -478,37 +478,23 @@ async def main():
                                 sent_count += 1
                                 print(f"[{client_name}] ✅ @{grup_name} -> Gönderildi (flood sonrası)!")
                                 update_stats(sent=1)
-                                async with state_lock:
-                                    save_to_list(grup_name, PROGRESS_FILE)
                             except:
                                 fail_count += 1
                         else:
                             print(f"[{client_name}] ⏳ @{grup_name} -> Flood {e.seconds}sn, atlanıyor...")
                             fail_count += 1
                     except UserBannedInChannelError:
-                        print(f"[{client_name}] ❌ @{grup_name} -> Banlandık!")
-                        async with state_lock:
-                            save_to_list(grup_name, BLACKLIST_FILE)
+                        print(f"[{client_name}] ❌ @{grup_name} -> Banlandık! (sonraki turda tekrar denenecek)")
                         fail_count += 1
                     except ChatWriteForbiddenError:
-                        async with state_lock:
-                            save_to_list(grup_name, BLACKLIST_FILE)
-                        print(f"[{client_name}] 🔒 @{grup_name} -> Yazma izni yok, kara liste.")
+                        print(f"[{client_name}] 🔒 @{grup_name} -> Yazma izni yok (geçici olabilir)")
                         fail_count += 1
                     except SlowModeWaitError:
                         print(f"[{client_name}] 🐌 @{grup_name} -> SlowMode, atlanıyor.")
                         fail_count += 1
                     except Exception as e:
                         err_type = type(e).__name__
-                        # ChatAdminRequired, ChatRestricted vs. = kara listeye al
-                        if 'Admin' in err_type or 'Restrict' in err_type or 'Forbidden' in err_type or 'PAYMENT' in str(e):
-                            async with state_lock:
-                                save_to_list(grup_name, BLACKLIST_FILE)
-                            print(f"[{client_name}] 🔒 @{grup_name} -> {err_type}, kara liste.")
-                            fail_count += 1
-                            return
-                        err_type = type(e).__name__
-                        print(f"[{client_name}] ⚠️ @{grup_name} -> {err_type}")
+                        print(f"[{client_name}] ⚠️ @{grup_name} -> {err_type} (atlanıyor)")
                         fail_count += 1
 
                 # TÜM gruplara aynı anda gönder!
