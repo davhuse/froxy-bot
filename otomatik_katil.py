@@ -422,16 +422,55 @@ async def main():
             blacklist = get_list(BLACKLIST_FILE)
             blacklist_lower = set(b.lower() for b in blacklist)
             
-            # Önbellekteki TÜM gruplara mesaj at (kara listede olmayanlar)
+            # Bilinen Türk grupları (listeden + auto_groups)
+            known_turkish = set(g.lower() for g in gruplar)
+            if os.path.exists("auto_groups.txt"):
+                try:
+                    with open("auto_groups.txt", "r", encoding="utf-8") as f:
+                        for line in f:
+                            g = line.strip()
+                            if g:
+                                known_turkish.add(g.lower())
+                except:
+                    pass
+            
+            # Türkçe karakter ve anahtar kelime tespiti
+            TR_CHARS = set("şçğüöıİŞÇĞÜÖ")
+            TR_KEYWORDS = ["satis", "satış", "ticaret", "alim", "pazar", "reklam", "kupon", 
+                           "freelance", "yazilim", "yazılım", "kripto", "borsa", "lisans",
+                           "hesap", "oyun", "premium", "epin", "bayi", "smm", "türk",
+                           "turk", "istanbul", "ankara", "sohbet", "destek", "ilan"]
+            
+            def is_turkish_group(username_lower, entity):
+                """Grubun Türk grubu olup olmadığını kontrol et"""
+                # 1. Bilinen listede mi?
+                if username_lower in known_turkish:
+                    return True
+                # 2. Grup başlığında Türkçe karakter var mı?
+                title = getattr(entity, 'title', '') or ''
+                if any(c in TR_CHARS for c in title):
+                    return True
+                # 3. Username veya başlıkta Türkçe anahtar kelime var mı?
+                combined = (username_lower + ' ' + title.lower())
+                if any(kw in combined for kw in TR_KEYWORDS):
+                    return True
+                return False
+            
+            # Önbellekteki TÜRK gruplara mesaj at (kara listede olmayanlar)
             blast_targets = []
+            skipped_foreign = 0
             for username_lower, entity in joined_dialogs.items():
-                # Kara listede mi kontrol et
                 if username_lower in blacklist_lower:
                     continue
-                # broadcast kanallarını atla (sadece admin yazabilir)
                 if getattr(entity, 'broadcast', False):
                     continue
+                if not is_turkish_group(username_lower, entity):
+                    skipped_foreign += 1
+                    continue
                 blast_targets.append(username_lower)
+            
+            if skipped_foreign > 0:
+                print(f"[{client_name}] 🌍 {skipped_foreign} yabancı grup atlandı.")
             
             if not blast_targets:
                 print(f"[{client_name}] ⚠️ Önbellekte mesaj atılacak grup yok. Yeni gruplara katılma aşamasına geçiliyor...")
