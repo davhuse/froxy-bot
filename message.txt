@@ -1,6 +1,6 @@
-FROXY AI - CHATGPT, CLAUDE, GEMINI VE 400+ AI MODELİ TEK PANELDE
+{FROXY AI - CHATGPT, CLAUDE, GEMINI VE 400+ AI MODELİ TEK PANELDE|FROXY AI - 400+ YAPAY ZEKA MODELİ TEK PANELDE|FROXY AI - TÜM YAPAY ZEKA MODELLERİ TEK HESAPTA}
 
-Tüm yapay zeka modellerini tek hesaptan kullanın! Sohbet, görsel üretim, AI ajanları ve dosya analizi — hepsi Froxy AI panelinde.
+{Tüm yapay zeka modellerini tek hesaptan kullanın! Sohbet, görsel üretim, AI ajanları ve dosya analizi — hepsi Froxy AI panelinde.|ChatGPT, Claude, Gemini, DeepSeek ve 400'den fazla yapay zeka modelini tek bir panelden yönetin. Sohbet, görsel üretme ve analiz araçları aktif!}
 
 KREDİ PAKETLERİ:
 - Başlangıç: 5.000 Kredi - 129.99 TL
@@ -16,5 +16,5 @@ NEDEN FROXY AI?
 - 100 ücretsiz başlangıç kredisi (kart gerekmez)
 - Shopier ile güvenli ödeme ve anında kredi tanımlama
 
-Detaylı bilgi, ücretsiz deneme ve sipariş için:
+{Detaylı bilgi, ücretsiz deneme ve sipariş için:|Soru, detaylı bilgi ve hemen sipariş vermek için:}
 Sipariş ve Destek: @FroxyDestekBOT

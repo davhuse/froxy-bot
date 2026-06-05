@@ -1,13 +1,14 @@
-KEYVADİ - UYGUN FİYATLI PREMIUM HESAPLAR VE LİSANSLAR
+{KEYVADİ - UYGUN FİYATLI PREMIUM LİSANSLAR & HESAPLAR|KEYVADİ - EN UCUZ PREMIUM LİSANSLAR VE AI HESAPLARI|KEYVADİ - GÜVENİLİR VE UYGUN LİSANS SATIŞI}
+
+{Tüm premium lisanslar, yapay zeka hesapları, onaylı numaralar ve yemek indirimleri en ucuz fiyatlarla teslim edilir.|İşlerinizi kolaylaştıracak profesyonel lisanslar, onaylı numaralar ve indirim kuponları en uygun fiyatlarla 7/24 teslim edilmektedir.}
 
 YAPAY ZEKA VE PREMIUM HESAPLAR:
-- Gemini Pro (1 Yıl Garanti): 299.99 TL
-- Gemini Ultra (Davet): 399.90 TL
+- Gemini Pro (1 Yıl): 299.99 TL | Ultra (Davet): 399.90 TL
 - Super Grok Premium (1 Ay): 449.99 TL | Gamma Pro: 299.99 TL
 - Canva Pro (1 Yıl Davet): 79.99 TL | Duolingo Super: 69.99 TL
 - Scribd Premium (3 Ay): 99.99 TL
 
-TASARIM VE ADOBE LİSANSLARI:
+ADOBE CC VE TASARIM YAZILIMLARI:
 - Adobe Creative Cloud (Tüm Uygulamalar):
   ↳ 1 Hafta: 69.99 TL | 1 Ay: 119.99 TL | 4 Ay: 249.99 TL
 - CapCut Pro (1 Hafta): 99.99 TL
@@ -19,5 +20,5 @@ ONAYLI MOBİL HESAPLAR & FIRSATLAR:
 - Trendyol Market (900 TL'ye 250 TL İndirim): 49.99 TL
 - Shell 75 TL Akaryakıt Puanı: 14.99 TL
 
-7/24 Shopier Güvenli Ödeme & Anında Teslimat!
-Detaylar ve Hızlı Sipariş İçin: @KeyVadiSatisBot
+{7/24 Güvenli Ödeme (Shopier) & Anında Teslimat!|7/24 Shopier Güvenli Ödeme & Anında Otomatik Teslimat!}
+{Detaylar ve Hızlı Sipariş İçin:|Hemen bilgi almak ve sipariş vermek için:} @KeyVadiSatisBot

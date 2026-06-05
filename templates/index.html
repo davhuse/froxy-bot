@@ -25,7 +25,9 @@
                 <button class="tab-btn" id="tabBtnFroxy" onclick="switchTab('froxy')">
                     <i class="fa-solid fa-brain"></i> Froxy AI Botu
                 </button>
-
+                <button class="tab-btn" id="tabBtnBlacklist" onclick="switchTab('blacklist')">
+                    <i class="fa-solid fa-ban"></i> Kara Liste
+                </button>
             </div>
         </header>
 
@@ -222,6 +224,44 @@
                     <h2><i class="fa-solid fa-terminal"></i> Canlı Froxy AI Bot Günlükleri</h2>
                     <div class="terminal" id="froxyTerminalOutput">
                         <!-- Loglar buraya gelecek -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 4: KARA LİSTE -->
+        <div id="tab-blacklist" class="tab-content">
+            <div class="controls-panel glass-panel">
+                <div class="bot-info-header">
+                    <h2><i class="fa-solid fa-ban"></i> Kara Liste Yönetimi</h2>
+                </div>
+                <div class="control-actions" style="gap: 15px; width: 100%; display: flex; align-items: center; justify-content: space-between;">
+                    <input type="text" id="newBlacklistGroup" placeholder="Kara listeye eklenecek grup kullanıcı adı (Örn: @grup_adi)" spellcheck="false" style="flex: 1; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.2); color: white; outline: none;">
+                    <button class="btn primary" onclick="addToBlacklist(event)" style="white-space: nowrap;">
+                        <i class="fa-solid fa-plus"></i> Kara Listeye Ekle
+                    </button>
+                </div>
+            </div>
+
+            <div class="main-content">
+                <div class="glass-panel" style="width: 100%; padding: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+                        <h2 style="margin: 0;"><i class="fa-solid fa-list-check"></i> Kara Listedeki Gruplar</h2>
+                        <input type="text" id="searchBlacklist" placeholder="Grup ara..." oninput="filterBlacklist()" style="padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.15); color: white; width: 250px; outline: none;">
+                    </div>
+                    
+                    <div class="table-container" style="max-height: 450px; overflow-y: auto;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left; color: white;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.95rem; opacity: 0.8;">
+                                    <th style="padding: 12px 10px; font-weight: 600;">Grup Kullanıcı Adı</th>
+                                    <th style="padding: 12px 10px; font-weight: 600; text-align: right; width: 120px;">İşlem</th>
+                                </tr>
+                            </thead>
+                            <tbody id="blacklistTableBody">
+                                <!-- Gruplar JavaScript ile yüklenecek -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>

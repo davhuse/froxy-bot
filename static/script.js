@@ -39,7 +39,12 @@ const UI = {
     cfgAdStringSession2: document.getElementById('cfgAdStringSession2'),
     cfgAdSleepMin: document.getElementById('cfgAdSleepMin'),
     cfgAdSleepMax: document.getElementById('cfgAdSleepMax'),
-    btnSaveConfig: document.getElementById('btnSaveConfig')
+    btnSaveConfig: document.getElementById('btnSaveConfig'),
+    
+    // Blacklist Elements
+    newBlacklistGroup: document.getElementById('newBlacklistGroup'),
+    blacklistTableBody: document.getElementById('blacklistTableBody'),
+    searchBlacklist: document.getElementById('searchBlacklist')
 };
 
 // TAB SWITCHING LOGIC
@@ -48,7 +53,105 @@ function switchTab(tabName) {
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
     document.getElementById('tab-' + tabName).classList.add('active');
     document.getElementById('tabBtn' + tabName.charAt(0).toUpperCase() + tabName.slice(1)).classList.add('active');
+    if (tabName === 'blacklist') {
+        loadBlacklist();
+    }
 }
+
+// BLACKLIST MANAGER LOGIC
+let blacklistData = [];
+
+async function loadBlacklist() {
+    try {
+        const res = await fetch('/api/blacklist');
+        blacklistData = await res.json();
+        renderBlacklist(blacklistData);
+    } catch(e) {
+        console.error("Error loading blacklist:", e);
+    }
+}
+
+function renderBlacklist(data) {
+    if (!UI.blacklistTableBody) return;
+    if (data.length === 0) {
+        UI.blacklistTableBody.innerHTML = `
+            <tr>
+                <td colspan="2" style="text-align: center; padding: 30px; color: #666; font-style: italic; font-size: 0.95rem;">
+                    Kara listede hiç grup yok.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    UI.blacklistTableBody.innerHTML = data.map(group => `
+        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+            <td style="padding: 12px 10px; font-family: 'Inconsolata', monospace; font-size: 1.05rem; color: #f3f4f6;">@${group}</td>
+            <td style="padding: 12px 10px; text-align: right;">
+                <button class="btn danger" onclick="removeFromBlacklist('${group}')" style="padding: 5px 12px; font-size: 0.85rem;">
+                    <i class="fa-solid fa-trash-can"></i> Sil
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+async function addToBlacklist(event) {
+    if (event) event.preventDefault();
+    const username = UI.newBlacklistGroup.value.trim();
+    if (!username) {
+        alert("Lütfen bir grup kullanıcı adı girin.");
+        return;
+    }
+    
+    try {
+        const res = await fetch('/api/blacklist/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username })
+        });
+        const data = await res.json();
+        if (data.success) {
+            UI.newBlacklistGroup.value = '';
+            loadBlacklist();
+            fetchStats();
+        } else {
+            alert("Hata: " + data.message);
+        }
+    } catch(e) {
+        alert("Bağlantı hatası!");
+    }
+}
+
+async function removeFromBlacklist(username) {
+    if (!confirm(`@${username} grubunu kara listeden kaldırmak istediğinize emin misiniz?`)) {
+        return;
+    }
+    
+    try {
+        const res = await fetch('/api/blacklist/remove', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username })
+        });
+        const data = await res.json();
+        if (data.success) {
+            loadBlacklist();
+            fetchStats();
+        } else {
+            alert("Hata: " + data.message);
+        }
+    } catch(e) {
+        alert("Bağlantı hatası!");
+    }
+}
+
+function filterBlacklist() {
+    const query = UI.searchBlacklist.value.trim().toLowerCase();
+    const filtered = blacklistData.filter(group => group.toLowerCase().includes(query));
+    renderBlacklist(filtered);
+}
+
 
 // AD ADVERTISING BOT LOGIC
 async function checkStatus() {

@@ -633,6 +633,83 @@ def save_config():
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
 
+BLACKLIST_FILE = "blacklist.txt"
+
+def get_blacklist():
+    if os.path.exists(BLACKLIST_FILE):
+        try:
+            with open(BLACKLIST_FILE, 'r', encoding='utf-8') as f:
+                return [line.strip() for line in f if line.strip()]
+        except:
+            pass
+    return []
+
+def save_blacklist(blacklist_list):
+    try:
+        with open(BLACKLIST_FILE, 'w', encoding='utf-8') as f:
+            f.write('\n'.join(blacklist_list) + '\n')
+        
+        # Firestore'a senkronize et
+        try:
+            import requests
+            API_KEY = "AIzaSyCZz54GBF4nCgP84DsTSwwMyPq70Lb_Mjo"
+            PROJECT_ID = "bot-2-63772"
+            url = f"https://firestore.googleapis.com/v1/projects/{PROJECT_ID}/databases/(default)/documents/reklam/state?key={API_KEY}"
+            
+            progress_content = ""
+            if os.path.exists("progress.txt"):
+                with open("progress.txt", "r", encoding="utf-8") as pf:
+                    progress_content = pf.read()
+                    
+            blacklist_content = '\n'.join(blacklist_list) + '\n'
+            
+            fields = {
+                "progress_list": {"stringValue": progress_content},
+                "blacklist_list": {"stringValue": blacklist_content}
+            }
+            requests.patch(url, json={"fields": fields}, timeout=5)
+        except Exception as fs_err:
+            print(f"Firestore sync error from web api: {fs_err}")
+        return True
+    except Exception as e:
+        print(f"Error saving blacklist: {e}")
+        return False
+
+@app.route('/api/blacklist', methods=['GET'])
+def api_get_blacklist():
+    return jsonify(get_blacklist())
+
+@app.route('/api/blacklist/add', methods=['POST'])
+def api_add_blacklist():
+    data = request.json
+    username = data.get('username', '').strip().replace('@', '')
+    if not username:
+        return jsonify({"success": False, "message": "Grup adı boş olamaz."})
+    
+    blacklist = get_blacklist()
+    blacklist_lower = [b.lower() for b in blacklist]
+    if username.lower() not in blacklist_lower:
+        blacklist.append(username)
+        if save_blacklist(blacklist):
+            return jsonify({"success": True})
+        return jsonify({"success": False, "message": "Kara liste dosyası kaydedilemedi."})
+    return jsonify({"success": True, "message": "Grup zaten kara listede."})
+
+@app.route('/api/blacklist/remove', methods=['POST'])
+def api_remove_blacklist():
+    data = request.json
+    username = data.get('username', '').strip().replace('@', '')
+    if not username:
+        return jsonify({"success": False, "message": "Grup adı boş olamaz."})
+    
+    blacklist = get_blacklist()
+    new_blacklist = [b for b in blacklist if b.lower() != username.lower()]
+    if len(new_blacklist) != len(blacklist):
+        if save_blacklist(new_blacklist):
+            return jsonify({"success": True})
+        return jsonify({"success": False, "message": "Kara liste dosyası kaydedilemedi."})
+    return jsonify({"success": False, "message": "Grup kara listede bulunamadı."})
+
 @app.route('/api/groups')
 def api_groups():
     """Tüm önbelleğe alınan grupları döndür"""
