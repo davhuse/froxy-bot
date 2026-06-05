@@ -167,8 +167,9 @@ def is_active_hours():
     # Aktif saatler: 09:00-14:00 ve 18:00-23:59
     return (9 <= hour <= 14) or (18 <= hour <= 23)
 
-# --- Auto-Scrape: Anahtar kelimeler ---
+# --- Auto-Scrape: Anahtar kelimeler (genişletilmiş) ---
 SCRAPE_KEYWORDS = [
+    # Genel ticaret
     "kupon satış", "kod satış", "kupon çek", "kupon satis",
     "alım satım", "ticaret grubu", "satış grubu", "ilan grubu",
     "hesap satış", "dijital ilan", "smm panel",
@@ -176,11 +177,27 @@ SCRAPE_KEYWORDS = [
     "ikinci el", "2.el satış", "alim satim",
     "e-ticaret satış", "trendyol satıcı", "freelance iş",
     "referans reklam", "satılık ilan", "epin satış",
+    # AI ve yazılım
+    "yapay zeka", "chatgpt türkçe", "ai araçları", "ai tools",
+    "adobe lisans", "canva pro", "premium hesap",
+    "lisans satış", "yazılım indirim",
+    # Kupon ve indirim
+    "trendyol indirim", "trendyol kupon", "yemek kuponu",
+    "indirim kodu", "promosyon kodu", "kampanya kodu",
+    # Freelance ve dijital
+    "freelancer türkiye", "dijital pazarlama", "sosyal medya yönetimi",
+    "instagram takipçi", "youtube abone", "tiktok takipçi",
+    # Oyun hesapları
+    "pubg hesap", "brawl stars hesap", "valorant hesap",
+    "oyun hesap satış", "game account",
+    # Genel satış
+    "telefon satış", "elektronik satış", "kozmetik satış",
+    "toptan satış türkiye", "pazar yeri",
 ]
 
 async def auto_scrape_groups(client, client_name):
-    """Telegram global aramasıyla yeni, aktif ve Türkçe satış grupları keşfeder."""
-    print(f"\n🔍 [{client_name}] Akıllı Grup Keşfi (Auto-Scraper) başlıyor...")
+    """Telegram global aramasıyla yeni, aktif ve kaliteli Türkçe satış grupları keşfeder."""
+    print(f"\n🔍 [{client_name}] Gelişmiş Grup Keşfi (Auto-Scraper v2) başlıyor...")
     
     # Yapılandırmayı bot_config.json dosyasından dinamik olarak oku
     scraper_active = True
@@ -190,41 +207,48 @@ async def auto_scrape_groups(client, client_name):
             with open("bot_config.json", "r", encoding="utf-8") as f:
                 cfg = json.load(f)
                 scraper_active = cfg.get("scraper_active", True)
-                keywords_list = cfg.get("scrape_keywords", SCRAPE_KEYWORDS)
+                custom_kw = cfg.get("scrape_keywords", None)
+                if custom_kw and len(custom_kw) > 0:
+                    keywords_list = custom_kw
         except:
             pass
             
     if not scraper_active:
-        print(f"ℹ️ [{client_name}] Auto-Scraper pasif (kontrol panelinden kapatılmış). Arama yapılmıyor.")
+        print(f"ℹ️ [{client_name}] Auto-Scraper pasif (kontrol panelinden kapatılmış).")
         return 0
         
     if not keywords_list:
-        print(f"⚠️ [{client_name}] Scraper anahtar kelime listesi boş! Arama iptal edildi.")
+        print(f"⚠️ [{client_name}] Scraper anahtar kelime listesi boş!")
         return 0
         
     existing_groups = set(g.lower() for g in gruplar)
     blacklist = get_list(BLACKLIST_FILE)
     blacklist_lower = set(b.lower() for b in blacklist)
     new_found = 0
+    blacklisted_count = 0
     
     # Türkçe satış grubu olup olmadığını kontrol etmek için kelimeler
     sales_keywords = [
         "satış", "satis", "ticaret", "ilan", "reklam", "kupon", "indirim",
         "shopier", "hesap", "alım", "satım", "alim", "satim", "smm", "kod",
-        "ucuz", "ref", "pazar", "ikinci el", "brawl", "pubg", "takipçi"
+        "ucuz", "ref", "pazar", "ikinci el", "brawl", "pubg", "takipçi",
+        "lisans", "premium", "freelance", "dijital", "adobe", "canva",
+        "trendyol", "kampanya", "fırsat", "firsat", "oyun", "epin",
+        "kozmetik", "toptan", "e-ticaret", "yapay zeka", "ai",
     ]
     
-    # 3 random keyword seç ve ara
-    selected_keywords = random.sample(keywords_list, min(3, len(keywords_list)))
-    print(f"🔎 [{client_name}] Seçilen anahtar kelimeler: {selected_keywords}")
+    # 5 random keyword seç ve ara (3'ten artırıldı)
+    selected_keywords = random.sample(keywords_list, min(5, len(keywords_list)))
+    print(f"🔎 [{client_name}] Seçilen anahtar kelimeler ({len(selected_keywords)}): {selected_keywords}")
     
     from telethon.tl.types import Channel, Chat
     
     for keyword in selected_keywords:
-        print(f"🔎 [{client_name}] Anahtar kelime taranıyor: '{keyword}'")
+        print(f"🔎 [{client_name}] Aranıyor: '{keyword}'")
         try:
             result = await client(SearchRequest(q=keyword, limit=50))
             keyword_found = 0
+            keyword_blacklisted = 0
             
             for chat in result.chats:
                 is_group = False
@@ -234,13 +258,14 @@ async def auto_scrape_groups(client, client_name):
                 elif isinstance(chat, Chat):
                     is_group = True
                     
+                # Yayın kanallarını kara listeye al
                 if not is_group or not chat.username:
                     if isinstance(chat, Channel) and getattr(chat, 'broadcast', False) and chat.username:
                         username = chat.username.lower()
                         if username not in blacklist_lower:
                             save_to_list(chat.username, BLACKLIST_FILE)
                             blacklist_lower.add(username)
-                            print(f"🚫 [Scraper] @{chat.username} -> Yayın kanalı olduğu için kara listeye alındı.")
+                            keyword_blacklisted += 1
                     continue
                     
                 username = chat.username.lower()
@@ -248,69 +273,116 @@ async def auto_scrape_groups(client, client_name):
                     continue
                     
                 member_count = getattr(chat, 'participants_count', None)
-                if member_count is not None and member_count < 50:
+                title = (chat.title or "").lower()
+                
+                # === FİLTRE 1: Üye sayısı (100'den az = zaman kaybı) ===
+                if member_count is not None and member_count < 100:
                     if username not in blacklist_lower:
                         save_to_list(chat.username, BLACKLIST_FILE)
                         blacklist_lower.add(username)
-                        print(f"🚫 [Scraper] @{chat.username} -> Üye sayısı az ({member_count}), kara listeye alındı.")
+                        keyword_blacklisted += 1
+                        print(f"  🚫 @{chat.username} → Üye az ({member_count}), kara liste")
                     continue
-                    
-                try:
-                    recent_msgs = await client.get_messages(chat, limit=1)
-                    if recent_msgs:
-                        from datetime import datetime, timezone
-                        now_utc = datetime.now(timezone.utc)
-                        last_msg_date = recent_msgs[0].date
-                        delta_days = (now_utc - last_msg_date).days
-                        if delta_days >= 7:
-                            if username not in blacklist_lower:
-                                save_to_list(chat.username, BLACKLIST_FILE)
-                                blacklist_lower.add(username)
-                                print(f"🚫 [Scraper] @{chat.username} -> Grup inaktif (Son mesaj {delta_days} gün önce), kara listeye alındı.")
-                            continue
-                    else:
-                        if username not in blacklist_lower:
-                            save_to_list(chat.username, BLACKLIST_FILE)
-                            blacklist_lower.add(username)
-                            print(f"🚫 [Scraper] @{chat.username} -> Grupta hiç mesaj yok, kara listeye alındı.")
-                        continue
-                except Exception:
-                    pass
-                    
-                title = (chat.title or "").lower()
+                
+                # === FİLTRE 2: Başlık dil/alaka kontrolü ===
                 has_sales_word = any(w in title for w in sales_keywords)
-                has_tr_chars = bool(re.search(r"[ıışşğğççööüüıİİŞŞĞĞÇÇÖÖÜÜ]", title))
+                has_tr_chars = bool(re.search(r"[ışğçöüİŞĞÇÖÜ]", title))
                 
                 if not (has_sales_word or has_tr_chars):
                     if username not in blacklist_lower:
                         save_to_list(chat.username, BLACKLIST_FILE)
                         blacklist_lower.add(username)
-                        print(f"🚫 [Scraper] @{chat.username} -> İçerik/Dil uyumsuz, kara listeye alındı.")
+                        keyword_blacklisted += 1
+                        print(f"  🚫 @{chat.username} → Alakasız/yabancı ('{chat.title}'), kara liste")
                     continue
+                
+                # === FİLTRE 3: Derin kalite taraması (son 5 mesaj) ===
+                try:
+                    recent_msgs = await client.get_messages(chat, limit=5)
                     
+                    if not recent_msgs or len(recent_msgs) == 0:
+                        if username not in blacklist_lower:
+                            save_to_list(chat.username, BLACKLIST_FILE)
+                            blacklist_lower.add(username)
+                            keyword_blacklisted += 1
+                            print(f"  🚫 @{chat.username} → Boş grup (mesaj yok), kara liste")
+                        continue
+                    
+                    # İnaktiflik kontrolü (5 gün)
+                    from datetime import datetime, timezone
+                    now_utc = datetime.now(timezone.utc)
+                    last_msg_date = recent_msgs[0].date
+                    delta_days = (now_utc - last_msg_date).days
+                    if delta_days >= 5:
+                        if username not in blacklist_lower:
+                            save_to_list(chat.username, BLACKLIST_FILE)
+                            blacklist_lower.add(username)
+                            keyword_blacklisted += 1
+                            print(f"  🚫 @{chat.username} → İnaktif ({delta_days} gün), kara liste")
+                        continue
+                    
+                    # Spam çöplüğü tespiti
+                    bot_mention_count = 0
+                    unique_senders = set()
+                    
+                    for m in recent_msgs:
+                        msg_text = (getattr(m, 'raw_text', '') or '').lower()
+                        sender_id = getattr(m, 'sender_id', None)
+                        if sender_id:
+                            unique_senders.add(sender_id)
+                        
+                        # @...Bot mention'ları say
+                        bot_mentions = re.findall(r'@\w+bot\b', msg_text, re.IGNORECASE)
+                        if bot_mentions:
+                            bot_mention_count += 1
+                    
+                    # Son 5 mesajın 3+'ü bot reklamı → spam çöplüğü
+                    if bot_mention_count >= 3:
+                        if username not in blacklist_lower:
+                            save_to_list(chat.username, BLACKLIST_FILE)
+                            blacklist_lower.add(username)
+                            keyword_blacklisted += 1
+                            print(f"  🗑️ @{chat.username} → Spam çöplüğü ({bot_mention_count}/5 bot reklamı), kara liste")
+                        continue
+                    
+                    # Son 5 mesajda sadece 1-2 unique gönderen → ölü grup
+                    if len(recent_msgs) >= 5 and len(unique_senders) <= 2:
+                        if username not in blacklist_lower:
+                            save_to_list(chat.username, BLACKLIST_FILE)
+                            blacklist_lower.add(username)
+                            keyword_blacklisted += 1
+                            print(f"  💀 @{chat.username} → Ölü grup ({len(unique_senders)} kişi aktif), kara liste")
+                        continue
+                    
+                except Exception:
+                    pass
+                    
+                # === TÜM FİLTRELERİ GEÇTİ — KALİTELİ GRUP ===
                 with open(AUTO_GROUPS_FILE, 'a', encoding='utf-8') as f:
                     f.write(chat.username + '\n')
                 existing_groups.add(username)
                 gruplar.append(chat.username)
                 new_found += 1
                 keyword_found += 1
-                print(f"🆕 [{client_name}] Akıllı Scraper Yeni Grup Keşfetti: @{chat.username} (Üye: {member_count or 'Bilinmiyor'})")
+                print(f"  🆕 KALİTELİ GRUP: @{chat.username} (Üye: {member_count or '?'}, Başlık: '{chat.title}')")
                 
-            if keyword_found > 0:
-                print(f"✅ [{client_name}] '{keyword}' aramasıyla {keyword_found} yeni grup eklendi.")
-            await asyncio.sleep(3) # Arama aralarında 3 saniye bekleme
+            summary = f"'{keyword}': +{keyword_found} yeni"
+            if keyword_blacklisted > 0:
+                summary += f", {keyword_blacklisted} kara listeye alındı"
+            print(f"  📊 [{client_name}] {summary}")
+            blacklisted_count += keyword_blacklisted
+            await asyncio.sleep(3)
                 
         except FloodWaitError as e:
-            print(f"⏳ [{client_name}] Auto-Scraper: Arama flood beklenecek ({e.seconds}s)...")
+            print(f"⏳ [{client_name}] Auto-Scraper: Flood beklenecek ({e.seconds}s)...")
             await asyncio.sleep(e.seconds)
         except Exception as e:
             print(f"⚠️ [{client_name}] Auto-Scraper hatası ('{keyword}'): {type(e).__name__} - {e}")
             
     if new_found > 0:
         update_stats(discovered=new_found)
-        print(f"🎉 [{client_name}] Auto-Scraper: Bu turda toplam {new_found} yeni grup keşfedildi ve eklendi!")
-    else:
-        print(f"ℹ️ [{client_name}] Auto-Scraper: Bu turda yeni grup bulunamadı.")
+    
+    print(f"\n📊 [{client_name}] Scraper Sonuç: {new_found} yeni kaliteli grup eklendi, {blacklisted_count} çöp grup kara listeye alındı.")
         
     return new_found
 
