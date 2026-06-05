@@ -719,9 +719,15 @@ def save_blacklist(blacklist_list):
                     
             blacklist_content = '\n'.join(blacklist_list) + '\n'
             
+            auto_groups_content = ""
+            if os.path.exists("auto_groups.txt"):
+                with open("auto_groups.txt", "r", encoding="utf-8") as af:
+                    auto_groups_content = af.read()
+            
             fields = {
                 "progress_list": {"stringValue": progress_content},
-                "blacklist_list": {"stringValue": blacklist_content}
+                "blacklist_list": {"stringValue": blacklist_content},
+                "auto_groups_list": {"stringValue": auto_groups_content}
             }
             requests.patch(url, json={"fields": fields}, timeout=5)
         except Exception as fs_err:

@@ -148,9 +148,6 @@ async def auto_scrape_groups(client, client_name):
     blacklist_lower = set(b.lower() for b in blacklist)
     new_found = 0
     
-    keyword = random.choice(keywords_list)
-    print(f"🔎 [{client_name}] Aranan anahtar kelime: '{keyword}'")
-    
     # Türkçe satış grubu olup olmadığını kontrol etmek için kelimeler
     sales_keywords = [
         "satış", "satis", "ticaret", "ilan", "reklam", "kupon", "indirim",
@@ -158,97 +155,103 @@ async def auto_scrape_groups(client, client_name):
         "ucuz", "ref", "pazar", "ikinci el", "brawl", "pubg", "takipçi"
     ]
     
-    try:
-        from telethon.tl.types import Channel, Chat
-        result = await client(SearchRequest(q=keyword, limit=50))
-        
-        for chat in result.chats:
-            # 1. Yayın kanalı olmamalı (broadcast=True elenir), megagrup veya chat olmalı
-            is_group = False
-            if isinstance(chat, Channel):
-                if not getattr(chat, 'broadcast', False):
+    # 3 random keyword seç ve ara
+    selected_keywords = random.sample(keywords_list, min(3, len(keywords_list)))
+    print(f"🔎 [{client_name}] Seçilen anahtar kelimeler: {selected_keywords}")
+    
+    from telethon.tl.types import Channel, Chat
+    
+    for keyword in selected_keywords:
+        print(f"🔎 [{client_name}] Anahtar kelime taranıyor: '{keyword}'")
+        try:
+            result = await client(SearchRequest(q=keyword, limit=50))
+            keyword_found = 0
+            
+            for chat in result.chats:
+                is_group = False
+                if isinstance(chat, Channel):
+                    if not getattr(chat, 'broadcast', False):
+                        is_group = True
+                elif isinstance(chat, Chat):
                     is_group = True
-            elif isinstance(chat, Chat):
-                is_group = True
-                
-            if not is_group or not chat.username:
-                # Yayın kanalıysa ve kullanıcı adı varsa kara listeye ekleyelim
-                if isinstance(chat, Channel) and getattr(chat, 'broadcast', False) and chat.username:
-                    username = chat.username.lower()
-                    if username not in blacklist_lower:
-                        save_to_list(chat.username, BLACKLIST_FILE)
-                        blacklist_lower.add(username)
-                        print(f"🚫 [Scraper] @{chat.username} -> Yayın kanalı olduğu için kara listeye alındı.")
-                continue
-                
-            username = chat.username.lower()
-            if username in existing_groups or username in blacklist_lower:
-                continue
-                
-            # 2. Üye sayısı kontrolü (En az 50 üye olmalı)
-            member_count = getattr(chat, 'participants_count', None)
-            if member_count is not None and member_count < 50:
-                if username not in blacklist_lower:
-                    save_to_list(chat.username, BLACKLIST_FILE)
-                    blacklist_lower.add(username)
-                    print(f"🚫 [Scraper] @{chat.username} -> Üye sayısı az ({member_count}), kara listeye alındı.")
-                continue
-                
-            # 2.5 Aktiflik Kontrolü: Katılmadan önce grubun son mesaj tarihine bak (Son 7 gün içinde olmalı)
-            try:
-                recent_msgs = await client.get_messages(chat, limit=1)
-                if recent_msgs:
-                    from datetime import datetime, timezone
-                    now_utc = datetime.now(timezone.utc)
-                    last_msg_date = recent_msgs[0].date
-                    delta_days = (now_utc - last_msg_date).days
-                    if delta_days >= 7:
+                    
+                if not is_group or not chat.username:
+                    if isinstance(chat, Channel) and getattr(chat, 'broadcast', False) and chat.username:
+                        username = chat.username.lower()
                         if username not in blacklist_lower:
                             save_to_list(chat.username, BLACKLIST_FILE)
                             blacklist_lower.add(username)
-                            print(f"🚫 [Scraper] @{chat.username} -> Grup inaktif (Son mesaj {delta_days} gün önce), kara listeye alındı.")
-                        continue
-                else:
+                            print(f"🚫 [Scraper] @{chat.username} -> Yayın kanalı olduğu için kara listeye alındı.")
+                    continue
+                    
+                username = chat.username.lower()
+                if username in existing_groups or username in blacklist_lower:
+                    continue
+                    
+                member_count = getattr(chat, 'participants_count', None)
+                if member_count is not None and member_count < 50:
                     if username not in blacklist_lower:
                         save_to_list(chat.username, BLACKLIST_FILE)
                         blacklist_lower.add(username)
-                        print(f"🚫 [Scraper] @{chat.username} -> Grupta hiç mesaj yok, kara listeye alındı.")
+                        print(f"🚫 [Scraper] @{chat.username} -> Üye sayısı az ({member_count}), kara listeye alındı.")
                     continue
-            except Exception as act_err:
-                # Özel grup veya Telethon yetki hatası alırsak aramayı bloklamamak için devam et
-                pass
+                    
+                try:
+                    recent_msgs = await client.get_messages(chat, limit=1)
+                    if recent_msgs:
+                        from datetime import datetime, timezone
+                        now_utc = datetime.now(timezone.utc)
+                        last_msg_date = recent_msgs[0].date
+                        delta_days = (now_utc - last_msg_date).days
+                        if delta_days >= 7:
+                            if username not in blacklist_lower:
+                                save_to_list(chat.username, BLACKLIST_FILE)
+                                blacklist_lower.add(username)
+                                print(f"🚫 [Scraper] @{chat.username} -> Grup inaktif (Son mesaj {delta_days} gün önce), kara listeye alındı.")
+                            continue
+                    else:
+                        if username not in blacklist_lower:
+                            save_to_list(chat.username, BLACKLIST_FILE)
+                            blacklist_lower.add(username)
+                            print(f"🚫 [Scraper] @{chat.username} -> Grupta hiç mesaj yok, kara listeye alındı.")
+                        continue
+                except Exception:
+                    pass
+                    
+                title = (chat.title or "").lower()
+                has_sales_word = any(w in title for w in sales_keywords)
+                has_tr_chars = bool(re.search(r"[ıışşğğççööüüıİİŞŞĞĞÇÇÖÖÜÜ]", title))
                 
-            # 3. Dil ve İçerik Kontrolü: Başlıkta satış kelimeleri veya Türkçe karakter geçmeli
-            title = (chat.title or "").lower()
-            has_sales_word = any(w in title for w in sales_keywords)
-            has_tr_chars = bool(re.search(r"[ıışşğğççööüüıİİŞŞĞĞÇÇÖÖÜÜ]", title))
-            
-            if not (has_sales_word or has_tr_chars):
-                if username not in blacklist_lower:
-                    save_to_list(chat.username, BLACKLIST_FILE)
-                    blacklist_lower.add(username)
-                    print(f"🚫 [Scraper] @{chat.username} -> İçerik/Dil uyumsuz, kara listeye alındı.")
-                continue
+                if not (has_sales_word or has_tr_chars):
+                    if username not in blacklist_lower:
+                        save_to_list(chat.username, BLACKLIST_FILE)
+                        blacklist_lower.add(username)
+                        print(f"🚫 [Scraper] @{chat.username} -> İçerik/Dil uyumsuz, kara listeye alındı.")
+                    continue
+                    
+                with open(AUTO_GROUPS_FILE, 'a', encoding='utf-8') as f:
+                    f.write(chat.username + '\n')
+                existing_groups.add(username)
+                gruplar.append(chat.username)
+                new_found += 1
+                keyword_found += 1
+                print(f"🆕 [{client_name}] Akıllı Scraper Yeni Grup Keşfetti: @{chat.username} (Üye: {member_count or 'Bilinmiyor'})")
                 
-            # auto_groups.txt'ye kaydet
-            with open(AUTO_GROUPS_FILE, 'a', encoding='utf-8') as f:
-                f.write(chat.username + '\n')
-            existing_groups.add(username)
-            gruplar.append(chat.username)
-            new_found += 1
-            print(f"🆕 [{client_name}] Akıllı Scraper Yeni Grup Keşfetti: @{chat.username} (Üye: {member_count or 'Bilinmiyor'})")
+            if keyword_found > 0:
+                print(f"✅ [{client_name}] '{keyword}' aramasıyla {keyword_found} yeni grup eklendi.")
+            await asyncio.sleep(3) # Arama aralarında 3 saniye bekleme
+                
+        except FloodWaitError as e:
+            print(f"⏳ [{client_name}] Auto-Scraper: Arama flood beklenecek ({e.seconds}s)...")
+            await asyncio.sleep(e.seconds)
+        except Exception as e:
+            print(f"⚠️ [{client_name}] Auto-Scraper hatası ('{keyword}'): {type(e).__name__} - {e}")
             
-        if new_found > 0:
-            update_stats(discovered=new_found)
-            print(f"✅ [{client_name}] Auto-Scraper: {new_found} yeni grup keşfedildi!")
-        else:
-            print(f"ℹ️ [{client_name}] Auto-Scraper: '{keyword}' için uygun yeni grup bulunamadı.")
-            
-    except FloodWaitError as e:
-        print(f"⏳ [{client_name}] Auto-Scraper: Flood beklenecek ({e.seconds}s)...")
-        await asyncio.sleep(e.seconds)
-    except Exception as e:
-        print(f"⚠️ [{client_name}] Auto-Scraper hatası: {type(e).__name__} - {e}")
+    if new_found > 0:
+        update_stats(discovered=new_found)
+        print(f"🎉 [{client_name}] Auto-Scraper: Bu turda toplam {new_found} yeni grup keşfedildi ve eklendi!")
+    else:
+        print(f"ℹ️ [{client_name}] Auto-Scraper: Bu turda yeni grup bulunamadı.")
         
     return new_found
 
@@ -274,17 +277,37 @@ def fs_get_state():
             fields = r.json().get("fields", {})
             progress = fields.get("progress_list", {}).get("stringValue", "")
             blacklist = fields.get("blacklist_list", {}).get("stringValue", "")
-            return progress, blacklist
+            auto_groups = fields.get("auto_groups_list", {}).get("stringValue", "")
+            return progress, blacklist, auto_groups
     except Exception as e:
         print(f"⚠️ Firestore yükleme hatası: {e}")
-    return "", ""
+    return "", "", ""
 
-def fs_set_state(progress, blacklist):
+def fs_set_state(progress=None, blacklist=None, auto_groups=None):
     try:
+        if progress is None:
+            progress = ""
+            if os.path.exists(PROGRESS_FILE):
+                with open(PROGRESS_FILE, 'r', encoding='utf-8') as f:
+                    progress = f.read()
+                    
+        if blacklist is None:
+            blacklist = ""
+            if os.path.exists(BLACKLIST_FILE):
+                with open(BLACKLIST_FILE, 'r', encoding='utf-8') as f:
+                    blacklist = f.read()
+                    
+        if auto_groups is None:
+            auto_groups = ""
+            if os.path.exists(AUTO_GROUPS_FILE):
+                with open(AUTO_GROUPS_FILE, 'r', encoding='utf-8') as f:
+                    auto_groups = f.read()
+                    
         url = f"{BASE_URL}/reklam/state?key={API_KEY}"
         fields = {
             "progress_list": {"stringValue": progress},
-            "blacklist_list": {"stringValue": blacklist}
+            "blacklist_list": {"stringValue": blacklist},
+            "auto_groups_list": {"stringValue": auto_groups}
         }
         requests.patch(url, json={"fields": fields}, timeout=10)
     except Exception as e:
@@ -302,17 +325,7 @@ def save_to_list(grup, dosya):
     
     # Firestore durum eşitlemesi
     try:
-        progress_content = ""
-        if os.path.exists(PROGRESS_FILE):
-            with open(PROGRESS_FILE, 'r', encoding='utf-8') as f:
-                progress_content = f.read()
-        
-        blacklist_content = ""
-        if os.path.exists(BLACKLIST_FILE):
-            with open(BLACKLIST_FILE, 'r', encoding='utf-8') as f:
-                blacklist_content = f.read()
-                
-        fs_set_state(progress_content, blacklist_content)
+        fs_set_state()
     except Exception as e:
         print(f"⚠️ Firestore güncelleme hatası: {e}")
 
@@ -444,13 +457,19 @@ async def main():
                         member_count = getattr(dialog.entity, 'participants_count', None)
                         is_broadcast = getattr(dialog.entity, 'broadcast', False)
                         
-                        # Hedef gruptaysa kara listeye yazmayacağız ama aktif değilse/boşsa yine de es geçeceğiz
+                        # Hedef gruptaysa kara listeye yazmayacağız ama aktif değilse/boşsa yine de es geçececeğiz
                         is_protected = username_lower in protected_groups
                         
-                        # 1. Üye sayısı kontrolü (boş grupları es geç)
+                        # 1. Üye sayısı kontrolü (boş grupları es geç ve çık)
                         if member_count is not None and member_count < 20:
                             if not is_protected:
                                 new_blacklisted_groups.append(dialog.entity.username)
+                                try:
+                                    from telethon.tl.functions.channels import LeaveChannelRequest
+                                    await client(LeaveChannelRequest(dialog.entity))
+                                    print(f"🚪 [{client_name}] @{dialog.entity.username} -> Üye sayısı az olduğundan gruptan çıkıldı.")
+                                except Exception:
+                                    pass
                             continue
                             
                         # 2. Aktiflik kontrolü ve Kendi Mesajlarımızla Dolan Grupların Temizlenmesi
@@ -476,6 +495,12 @@ async def main():
                             if is_all_ours:
                                 new_blacklisted_groups.append(dialog.entity.username)
                                 print(f"🚫 [{client_name}] @{dialog.entity.username} -> Son 3 mesajın tamamı bizden/botlarımızdan, KARA LİSTEYE ALINDI!")
+                                try:
+                                    from telethon.tl.functions.channels import LeaveChannelRequest
+                                    await client(LeaveChannelRequest(dialog.entity))
+                                    print(f"🚪 [{client_name}] @{dialog.entity.username} -> Gruptan çıkıldı.")
+                                except Exception:
+                                    pass
                                 continue
                                 
                             # Son mesaj bizim hesaplarımızdan/botlarımızdan birinin ise geçmişe bakıp başkasının mesajını arayalım
@@ -499,6 +524,12 @@ async def main():
                             if delta.days >= 7:
                                 if not is_protected:
                                     new_blacklisted_groups.append(dialog.entity.username)
+                                    try:
+                                        from telethon.tl.functions.channels import LeaveChannelRequest
+                                        await client(LeaveChannelRequest(dialog.entity))
+                                        print(f"🚪 [{client_name}] @{dialog.entity.username} -> İnaktiflik nedeniyle gruptan çıkıldı.")
+                                    except Exception:
+                                        pass
                                 continue
                         else:
                             # Mesaj yoksa veya son 5 mesajın hepsi bizimse grubu inaktif sayıp es geç
@@ -621,6 +652,14 @@ async def main():
                             if failures[g_key] >= 3:
                                 save_to_list(grup_name, BLACKLIST_FILE)
                                 print(f"[{client_name}] 🚫 @{grup_name} -> 3 kez üst üste hata alındı, KARA LİSTEYE ALINDI!")
+                                try:
+                                    from telethon.tl.functions.channels import LeaveChannelRequest
+                                    entity = joined_dialogs.get(grup_name.lower())
+                                    if entity:
+                                        await client(LeaveChannelRequest(entity))
+                                        print(f"🚪 [{client_name}] @{grup_name} -> Sürekli hata verdiğinden gruptan çıkıldı.")
+                                except Exception:
+                                    pass
                         except Exception as fe:
                             print(f"⚠️ Hata sayacı güncelleme hatası: {fe}")
 
@@ -808,7 +847,7 @@ async def main():
     while True:
         # Başlangıçta Firestore'dan verileri çek
         print("🔄 Firestore'dan güncel durum yükleniyor...")
-        fs_prog, fs_black = fs_get_state()
+        fs_prog, fs_black, fs_auto = fs_get_state()
         if fs_prog:
             with open(PROGRESS_FILE, 'w', encoding='utf-8') as f:
                 f.write(fs_prog)
@@ -827,6 +866,15 @@ async def main():
                 print(f"📥 Kara liste birleştirildi. {removed} hedef grup kara listeden çıkarıldı!")
             else:
                 print("📥 Kara liste buluttan indirildi ve birleştirildi.")
+        if fs_auto:
+            with open(AUTO_GROUPS_FILE, 'w', encoding='utf-8') as f:
+                f.write(fs_auto)
+            print("📥 Otomatik keşfedilen gruplar buluttan indirildi.")
+            # gruplar listesini güncelle
+            auto_g = [x.strip() for x in fs_auto.splitlines() if x.strip()]
+            for g in auto_g:
+                if g not in gruplar:
+                    gruplar.append(g)
 
         active_jobs.clear()
         
