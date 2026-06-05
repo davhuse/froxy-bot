@@ -302,8 +302,8 @@ async def main():
             client1 = TelegramClient(StringSession(string_session_key), api_id, api_hash)
             await client1.connect()
             if await client1.is_user_authorized():
-                # active_clients.append((client1, "Hesap #1", {}))  # DEVRE DIŞI - spam kısıtlaması
-                print("⚠️ 1. Hesap bağlandı ama DEVRE DIŞI (spam kısıtlaması). Sadece Hesap #2 çalışacak.")
+                active_clients.append((client1, "Hesap #1", {}))
+                print("✅ 1. Hesap yetkilendirildi ve aktif edildi.")
             else:
                 print("❌ HATA: 1. Hesap yetkilendirilmemiş!")
         except Exception as e:
@@ -386,13 +386,24 @@ async def main():
                                 new_blacklisted_groups.append(dialog.entity.username)
                             continue
                             
-                        # 2. Aktiflik kontrolü (7 gündür mesaj yazılmamışsa es geç, kendi mesajlarımızı sayma)
+                        # 2. Aktiflik kontrolü ve Kendi Mesajlarımızla Dolan Grupların Temizlenmesi
                         days_inactive = 0
                         last_msg = dialog.message
                         
-                        # Son mesaj bizim gönderdiğimizse geçmişe bakıp başkasının mesajını arayalım
-                        if last_msg and getattr(last_msg, 'out', False):
-                            try:
+                        try:
+                            # Son 3 mesajı alıp kontrol edelim
+                            recent_messages = []
+                            async for msg in client.iter_messages(dialog.entity, limit=3):
+                                recent_messages.append(msg)
+                            
+                            # Eğer son 3 mesajın tamamı bizden ise (outgoing) grubu kalıcı olarak kara listeye alalım
+                            if len(recent_messages) >= 3 and all(getattr(m, 'out', False) for m in recent_messages):
+                                new_blacklisted_groups.append(dialog.entity.username)
+                                print(f"🚫 [{client_name}] @{dialog.entity.username} -> Son 3 mesajın tamamı bizden, KARA LİSTEYE ALINDI!")
+                                continue
+                                
+                            # Son mesaj bizim gönderdiğimizse geçmişe bakıp başkasının mesajını arayalım
+                            if last_msg and getattr(last_msg, 'out', False):
                                 found_other = False
                                 async for msg in client.iter_messages(dialog.entity, limit=5):
                                     if not getattr(msg, 'out', False):
@@ -400,10 +411,10 @@ async def main():
                                         found_other = True
                                         break
                                 if not found_other:
-                                    last_msg = None  # Son 5 mesajın hepsi bizimse
-                            except Exception as history_err:
-                                pass
-                                
+                                    last_msg = None
+                        except Exception as history_err:
+                            pass
+                            
                         if last_msg and getattr(last_msg, 'date', None):
                             delta = now - last_msg.date
                             days_inactive = delta.days
