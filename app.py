@@ -633,6 +633,62 @@ def save_config():
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
 
+DEFAULT_SCRAPE_KEYWORDS = [
+    "kupon satış", "kod satış", "kupon çek", "kupon satis",
+    "alım satım", "ticaret grubu", "satış grubu", "ilan grubu",
+    "hesap satış", "dijital ilan", "smm panel",
+    "indirim kupon", "fırsat indirim", "reklam grubu",
+    "ikinci el", "2.el satış", "alim satim",
+    "e-ticaret satış", "trendyol satıcı", "freelance iş",
+    "referans reklam", "satılık ilan", "epin satış"
+]
+
+@app.route('/api/scraper/config', methods=['GET'])
+def get_scraper_config():
+    cfg = {}
+    if os.path.exists(CONFIG_FILE):
+        try:
+            with open(CONFIG_FILE, 'r', encoding="utf-8") as f:
+                cfg = json.load(f)
+        except:
+            pass
+    active = cfg.get("scraper_active", True)
+    keywords = cfg.get("scrape_keywords", DEFAULT_SCRAPE_KEYWORDS)
+    return jsonify({"scraper_active": active, "scrape_keywords": keywords})
+
+@app.route('/api/scraper/config', methods=['POST'])
+def save_scraper_config():
+    data = request.json
+    cfg = {}
+    if os.path.exists(CONFIG_FILE):
+        try:
+            with open(CONFIG_FILE, 'r', encoding="utf-8") as f:
+                cfg = json.load(f)
+        except:
+            pass
+    
+    if "scraper_active" in data:
+        cfg["scraper_active"] = bool(data["scraper_active"])
+    if "scrape_keywords" in data:
+        keywords = [k.strip() for k in data["scrape_keywords"] if k.strip()]
+        cfg["scrape_keywords"] = keywords
+        
+    try:
+        with open(CONFIG_FILE, 'w', encoding="utf-8") as f:
+            json.dump(cfg, f, indent=2, ensure_ascii=False)
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})
+
+@app.route('/api/scraper/trigger', methods=['POST'])
+def trigger_scraper():
+    try:
+        with open("trigger_scraper.flag", "w", encoding="utf-8") as f:
+            f.write("trigger")
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})
+
 BLACKLIST_FILE = "blacklist.txt"
 
 def get_blacklist():

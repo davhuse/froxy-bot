@@ -28,6 +28,9 @@
                 <button class="tab-btn" id="tabBtnBlacklist" onclick="switchTab('blacklist')">
                     <i class="fa-solid fa-ban"></i> Kara Liste
                 </button>
+                <button class="tab-btn" id="tabBtnScraper" onclick="switchTab('scraper')">
+                    <i class="fa-solid fa-magnifying-glass"></i> Grup Arama (Scraper)
+                </button>
             </div>
         </header>
 
@@ -262,6 +265,53 @@
                                 <!-- Gruplar JavaScript ile yüklenecek -->
                             </tbody>
                         </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 5: GRUP SCRAPER -->
+        <div id="tab-scraper" class="tab-content">
+            <div class="controls-panel glass-panel">
+                <div class="bot-info-header">
+                    <h2><i class="fa-solid fa-magnifying-glass"></i> Otomatik Grup Arama (Scraper) Kontrolü</h2>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <label class="switch-container" style="display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none;">
+                            <span style="font-size: 0.95rem; font-weight: 500; color: var(--text-secondary);">Otomatik Arama Aktif:</span>
+                            <div class="switch-wrapper" style="position: relative; display: inline-block; width: 50px; height: 26px;">
+                                <input type="checkbox" id="scraperActiveToggle" onchange="toggleScraperActive()" style="opacity: 0; width: 0; height: 0;">
+                                <span class="slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255, 255, 255, 0.1); border: 1px solid var(--glass-border); border-radius: 34px; transition: 0.3s;"></span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                <div class="control-actions" style="margin-top: 15px; width: 100%;">
+                    <button id="btnTriggerScraper" class="btn primary" onclick="triggerScraper()" style="width: 100%; justify-content: center;">
+                        <i class="fa-solid fa-search"></i> Aramayı Şimdi Tetikle (Anlık Keşif Başlat)
+                    </button>
+                </div>
+                <p class="info-note">
+                    <i class="fa-solid fa-circle-info"></i> Aramayı tetiklediğinizde, reklam botu anlık olarak `trigger_scraper.flag` dosyası aracılığıyla uyarılır ve bir sonraki bekleme döngüsünü beklemeden hemen arama yapmaya başlar.
+                </p>
+            </div>
+
+            <div class="main-content" style="grid-template-columns: 1fr; width: 100%;">
+                <div class="glass-panel" style="width: 100%; padding: 25px;">
+                    <h2 style="font-size: 1.2rem; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; color: var(--text-primary);">
+                        <i class="fa-solid fa-tags" style="color: var(--text-secondary);"></i> Arama Anahtar Kelimeleri
+                    </h2>
+                    
+                    <div style="display: flex; gap: 15px; margin-bottom: 25px;">
+                        <input type="text" id="newScrapeKeyword" placeholder="Yeni arama kelimesi veya kelime grubu girin (Örn: smm panel)" spellcheck="false" style="flex: 1; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.2); color: white; outline: none; font-family: 'Outfit', sans-serif;">
+                        <button class="btn primary" onclick="addScrapeKeyword(event)" style="white-space: nowrap;">
+                            <i class="fa-solid fa-plus"></i> Kelime Ekle
+                        </button>
+                    </div>
+
+                    <div style="background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 10px; padding: 15px; min-height: 150px;">
+                        <div id="scrapeKeywordsList" style="display: flex; flex-wrap: wrap; gap: 10px;">
+                            <!-- Kelimeler dinamik olarak buraya eklenecek -->
+                        </div>
                     </div>
                 </div>
             </div>

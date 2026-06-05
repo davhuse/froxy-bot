@@ -315,3 +315,26 @@ textarea:focus { border-color: rgba(108, 92, 231, 0.5); box-shadow: 0 0 15px rgb
         grid-template-columns: 1fr !important;
     }
 }
+
+/* Custom Toggle Switch */
+.switch-wrapper input:checked + .slider {
+    background-color: rgba(46, 213, 115, 0.2);
+    border-color: rgba(46, 213, 115, 0.4);
+}
+.switch-wrapper .slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    border-radius: 50%;
+    transition: 0.3s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+.switch-wrapper input:checked + .slider:before {
+    transform: translateX(24px);
+    background-color: var(--success);
+    box-shadow: 0 0 10px var(--success);
+}

@@ -123,12 +123,32 @@ async def auto_scrape_groups(client, client_name):
     """Telegram global aramasıyla yeni, aktif ve Türkçe satış grupları keşfeder."""
     print(f"\n🔍 [{client_name}] Akıllı Grup Keşfi (Auto-Scraper) başlıyor...")
     
+    # Yapılandırmayı bot_config.json dosyasından dinamik olarak oku
+    scraper_active = True
+    keywords_list = SCRAPE_KEYWORDS
+    if os.path.exists("bot_config.json"):
+        try:
+            with open("bot_config.json", "r", encoding="utf-8") as f:
+                cfg = json.load(f)
+                scraper_active = cfg.get("scraper_active", True)
+                keywords_list = cfg.get("scrape_keywords", SCRAPE_KEYWORDS)
+        except:
+            pass
+            
+    if not scraper_active:
+        print(f"ℹ️ [{client_name}] Auto-Scraper pasif (kontrol panelinden kapatılmış). Arama yapılmıyor.")
+        return 0
+        
+    if not keywords_list:
+        print(f"⚠️ [{client_name}] Scraper anahtar kelime listesi boş! Arama iptal edildi.")
+        return 0
+        
     existing_groups = set(g.lower() for g in gruplar)
     blacklist = get_list(BLACKLIST_FILE)
     blacklist_lower = set(b.lower() for b in blacklist)
     new_found = 0
     
-    keyword = random.choice(SCRAPE_KEYWORDS)
+    keyword = random.choice(keywords_list)
     print(f"🔎 [{client_name}] Aranan anahtar kelime: '{keyword}'")
     
     # Türkçe satış grubu olup olmadığını kontrol etmek için kelimeler
@@ -173,6 +193,30 @@ async def auto_scrape_groups(client, client_name):
                     blacklist_lower.add(username)
                     print(f"🚫 [Scraper] @{chat.username} -> Üye sayısı az ({member_count}), kara listeye alındı.")
                 continue
+                
+            # 2.5 Aktiflik Kontrolü: Katılmadan önce grubun son mesaj tarihine bak (Son 7 gün içinde olmalı)
+            try:
+                recent_msgs = await client.get_messages(chat, limit=1)
+                if recent_msgs:
+                    from datetime import datetime, timezone
+                    now_utc = datetime.now(timezone.utc)
+                    last_msg_date = recent_msgs[0].date
+                    delta_days = (now_utc - last_msg_date).days
+                    if delta_days >= 7:
+                        if username not in blacklist_lower:
+                            save_to_list(chat.username, BLACKLIST_FILE)
+                            blacklist_lower.add(username)
+                            print(f"🚫 [Scraper] @{chat.username} -> Grup inaktif (Son mesaj {delta_days} gün önce), kara listeye alındı.")
+                        continue
+                else:
+                    if username not in blacklist_lower:
+                        save_to_list(chat.username, BLACKLIST_FILE)
+                        blacklist_lower.add(username)
+                        print(f"🚫 [Scraper] @{chat.username} -> Grupta hiç mesaj yok, kara listeye alındı.")
+                    continue
+            except Exception as act_err:
+                # Özel grup veya Telethon yetki hatası alırsak aramayı bloklamamak için devam et
+                pass
                 
             # 3. Dil ve İçerik Kontrolü: Başlıkta satış kelimeleri veya Türkçe karakter geçmeli
             title = (chat.title or "").lower()
@@ -709,11 +753,21 @@ async def main():
             # Geri sayım (her dakika yazdır)
             kalan = bekleme
             while kalan > 0:
+                # Scraper tetikleyici kontrolü
+                if os.path.exists("trigger_scraper.flag"):
+                    print(f"\n⚡ [{client_name}] TETİKLEYİCİ: 'trigger_scraper.flag' tespit edildi! Anlık tarama başlatılıyor...")
+                    try:
+                        os.remove("trigger_scraper.flag")
+                    except:
+                        pass
+                    await auto_scrape_groups(client, client_name)
+                    break
+                
                 dakika = kalan // 60
                 saniye = kalan % 60
                 if kalan == bekleme or kalan % 60 == 0:
                     print(f"[{client_name}] ⏱️ Kalan: {dakika}dk {saniye}sn")
-                uyku = min(60, kalan)
+                uyku = min(15, kalan)
                 await asyncio.sleep(uyku)
                 kalan -= uyku
 
@@ -767,7 +821,20 @@ async def main():
         print(f"\n🔍 Yeni döngü için Auto-Scraper çalıştırılıyor...")
         await auto_scrape_groups(first_client, first_name)
         
-        await asyncio.sleep(3600) # 1 saat bekle ve baştan başla
+        # 1 saatlik beklemeyi 15 saniyelik parçalara bölerek tetikleyiciyi dinle
+        kalan_bekleme = 3600
+        while kalan_bekleme > 0:
+            if os.path.exists("trigger_scraper.flag"):
+                print("⚡ TETİKLEYİCİ: 'trigger_scraper.flag' tespit edildi! Anlık tarama başlatılıyor...")
+                try:
+                    os.remove("trigger_scraper.flag")
+                except:
+                    pass
+                await auto_scrape_groups(first_client, first_name)
+                break
+            uyku_suresi = min(15, kalan_bekleme)
+            await asyncio.sleep(uyku_suresi)
+            kalan_bekleme -= uyku_suresi
     
     # Clean up (unreachable but formal)
     for client, name, _ in active_clients:

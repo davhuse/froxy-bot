@@ -44,7 +44,13 @@ const UI = {
     // Blacklist Elements
     newBlacklistGroup: document.getElementById('newBlacklistGroup'),
     blacklistTableBody: document.getElementById('blacklistTableBody'),
-    searchBlacklist: document.getElementById('searchBlacklist')
+    searchBlacklist: document.getElementById('searchBlacklist'),
+    
+    // Scraper Elements
+    scraperActiveToggle: document.getElementById('scraperActiveToggle'),
+    btnTriggerScraper: document.getElementById('btnTriggerScraper'),
+    newScrapeKeyword: document.getElementById('newScrapeKeyword'),
+    scrapeKeywordsList: document.getElementById('scrapeKeywordsList')
 };
 
 // TAB SWITCHING LOGIC
@@ -55,6 +61,8 @@ function switchTab(tabName) {
     document.getElementById('tabBtn' + tabName.charAt(0).toUpperCase() + tabName.slice(1)).classList.add('active');
     if (tabName === 'blacklist') {
         loadBlacklist();
+    } else if (tabName === 'scraper') {
+        loadScraperConfig();
     }
 }
 
@@ -546,10 +554,130 @@ async function fetchStats() {
     }
 }
 
+// SCRAPER TAB LOGIC
+let scraperKeywords = [];
+
+async function loadScraperConfig() {
+    try {
+        const res = await fetch('/api/scraper/config');
+        const data = await res.json();
+        UI.scraperActiveToggle.checked = data.scraper_active;
+        scraperKeywords = data.scrape_keywords || [];
+        renderScraperKeywords();
+    } catch(e) {
+        console.error("Error loading scraper config:", e);
+    }
+}
+
+function renderScraperKeywords() {
+    if (!UI.scrapeKeywordsList) return;
+    if (scraperKeywords.length === 0) {
+        UI.scrapeKeywordsList.innerHTML = `<span style="color: #666; font-style: italic; font-size: 0.9rem;">Henüz hiç anahtar kelime eklenmemiş.</span>`;
+        return;
+    }
+    
+    UI.scrapeKeywordsList.innerHTML = scraperKeywords.map(keyword => `
+        <div class="keyword-badge" style="display: inline-flex; align-items: center; gap: 8px; background: rgba(108, 92, 231, 0.15); border: 1px solid rgba(108, 92, 231, 0.3); padding: 6px 12px; border-radius: 20px; color: #f1f2f6; font-size: 0.9rem; font-weight: 500;">
+            <span>${keyword}</span>
+            <i class="fa-solid fa-circle-xmark" onclick="removeScrapeKeyword('${keyword}')" style="cursor: pointer; color: rgba(255,255,255,0.4); transition: color 0.2s;" onmouseover="this.style.color='#ff4757'" onmouseout="this.style.color='rgba(255,255,255,0.4)'"></i>
+        </div>
+    `).join('');
+}
+
+async function toggleScraperActive() {
+    const active = UI.scraperActiveToggle.checked;
+    try {
+        const res = await fetch('/api/scraper/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ scraper_active: active, scrape_keywords: scraperKeywords })
+        });
+        const data = await res.json();
+        if (!data.success) {
+            alert("Hata: " + data.message);
+            UI.scraperActiveToggle.checked = !active;
+        }
+    } catch(e) {
+        alert("Bağlantı hatası!");
+        UI.scraperActiveToggle.checked = !active;
+    }
+}
+
+async function saveScraperKeywords() {
+    try {
+        const res = await fetch('/api/scraper/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ scrape_keywords: scraperKeywords })
+        });
+        const data = await res.json();
+        if (!data.success) {
+            alert("Hata: " + data.message);
+        }
+    } catch(e) {
+        alert("Kaydedilemedi, bağlantı hatası!");
+    }
+}
+
+async function addScrapeKeyword(event) {
+    if (event) event.preventDefault();
+    const keyword = UI.newScrapeKeyword.value.trim();
+    if (!keyword) {
+        alert("Lütfen geçerli bir anahtar kelime girin.");
+        return;
+    }
+    
+    if (scraperKeywords.map(k => k.toLowerCase()).includes(keyword.toLowerCase())) {
+        alert("Bu kelime zaten listede var.");
+        return;
+    }
+    
+    scraperKeywords.push(keyword);
+    UI.newScrapeKeyword.value = '';
+    renderScraperKeywords();
+    await saveScraperKeywords();
+}
+
+async function removeScrapeKeyword(keyword) {
+    scraperKeywords = scraperKeywords.filter(k => k.toLowerCase() !== keyword.toLowerCase());
+    renderScraperKeywords();
+    await saveScraperKeywords();
+}
+
+async function triggerScraper() {
+    const btn = UI.btnTriggerScraper;
+    const oldHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Arama Başlatılıyor...';
+    
+    try {
+        const res = await fetch('/api/scraper/trigger', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+            btn.innerHTML = '<i class="fa-solid fa-check"></i> Tetiklendi! Arama Başlıyor';
+            btn.style.background = 'linear-gradient(135deg, #2ed573, #7bed9f)';
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.innerHTML = oldHtml;
+                btn.style.background = '';
+            }, 3000);
+        } else {
+            alert("Hata: " + data.message);
+            btn.disabled = false;
+            btn.innerHTML = oldHtml;
+        }
+    } catch(e) {
+        alert("Tetikleme başarısız, bağlantı hatası!");
+        btn.disabled = false;
+        btn.innerHTML = oldHtml;
+    }
+}
+
 window.onload = () => {
     loadMessage();
     loadConfig();
     loadFroxyConfig();
+    loadScraperConfig();
     
     checkStatus();
     checkSupportStatus();
