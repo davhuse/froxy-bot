@@ -30,26 +30,6 @@ gruplar = [
     "satilikilanlar", "diyarbakirikincielarac", "smmpanelgrup", "kuponhesapsatis",
     "YuceKuponSatis", "ticaretforumofficial", "referansreklam1", "Nightsatis",
     "kuponsat", "indirimkodusatis", "dolapdestek0",
-    # Önbellekten bulunan satış grupları (üye sayısına göre sıralı)
-    "dakikadoksan", "bayanaktuel", "mesutkupon",
-    "sahibindenarabalar", "sicakfirsatveindirimler", "ikincieltr", "BuyukFirsat",
-    "sicakfirsatlar", "aracalimsatim1", "indirimfirsatburada",
-    "ticaretref", "TekstilPlatformu", "firsatspt",
-    "ticaretmerkezi", "uzaktan_freelancee", "eticaretlab",
-    "sultanbeyliikinciel0", "Gurcistanticaret", "freelancertoplulugu",
-    "ticaretvarburada", "banggoodturkey", "neastronhesap",
-    "smmpanelgrup", "izmirpazar", "hesapalimsatim12", "oemalsat", "pubgsatis",
-    "Turkiye_telefon_pazari", "kuponsatislari0",
-    "AyakkabiSanati", "Turkiyepazar", "reklama_bardankol",
-    "toptankozmetik47", "BrawlStarsHesap1", "kuponceksatisi",
-    "kendireklaminiyap", "dijitalpazarlamatr", "elektroniksigaradunyasi",
-    "hesapsatistrsohbet", "smmpanelkur", "reklamvereferanssss",
-    "ttingalimsatim", "trendyolsatkazan", "ucbosspubgHESAP", "reklamyap",
-    "HESAPACCOUNT1", "ReklamYaptr", "hesapsatistr", "N_A_F_A_Smm",
-    "kuponkodalsat", "svp_referans", "smsngsatis", "pazaryerialsat",
-    "ticaretmeydani", "smmpanelturkiye", "freelancerturkiye",
-    "trendyolsatici", "lisanspazari", "KorgPa2xPa800",
-    "sharkvapetr", "ikincielkralligi",
 ]
 
 
@@ -108,6 +88,17 @@ MESSAGES_DIR = 'messages'
 MSG_HISTORY_FILE = 'msg_history.json'
 COOLDOWN_FILE = 'group_cooldown.json'
 GROUP_COOLDOWN_HOURS = 24  # Bir gruba mesaj gönderdikten sonra kaç saat beklenecek
+
+NEGATIVE_KEYWORDS = [
+    "sigara", "vape", "puff", "tütün", "likit", "shisha", "nargile", "elektronik sigara", "elektroniksigara",
+    "ayakkabı", "ayakkabi", "giyim", "butik", "moda", "elbise", "çanta", "canta",
+    "brawl", "pubg", "valorant", "clash", "roblox", "free fire", "mobile legends", "metin2", "knight online",
+    "korg", "pa800", "pa2x", "pa600", "pa900", "orgcu", "müzik", "muzik", "enstrüman",
+    "gürcistan", "gurcistan", "batum", "tiflisi",
+    "escort", "sex", "porno", "ifşa", "ifsa", "adult", "travesti",
+    "film", "dizi", "izle", "sinema", "warez",
+    "bahis", "iddaa", "casino", "kumar", "rulet", "bet", "kazan", "tahmin",
+]
 
 # --- Auto-DM: Yanıt veren kullanıcıları takip et ---
 replied_users = set()
@@ -321,16 +312,16 @@ async def auto_scrape_groups(client, client_name):
                         print(f"  🚫 @{chat.username} → Üye az ({member_count}), kara liste")
                     continue
                 
-                # === FİLTRE 2: Başlık dil/alaka kontrolü ===
+                # === FİLTRE 2: Başlık dil/alaka/negatif kontrolü ===
                 has_sales_word = any(w in title for w in sales_keywords)
-                has_tr_chars = bool(re.search(r"[ışğçöüİŞĞÇÖÜ]", title))
+                has_negative = any(w in title for w in NEGATIVE_KEYWORDS)
                 
-                if not (has_sales_word or has_tr_chars):
+                if has_negative or not has_sales_word:
                     if username not in blacklist_lower:
                         save_to_list(chat.username, BLACKLIST_FILE)
                         blacklist_lower.add(username)
                         keyword_blacklisted += 1
-                        print(f"  🚫 @{chat.username} → Alakasız/yabancı ('{chat.title}'), kara liste")
+                        print(f"  🚫 @{chat.username} → Alakasız/yabancı/negatif ('{chat.title}'), kara liste")
                     continue
                 
                 # === FİLTRE 3: Derin kalite taraması (son 5 mesaj) ===
@@ -785,22 +776,21 @@ async def main():
                             continue
                         
                         # === GRUP ALAKA DENETİMİ ===
-                        # Grup başlığında hiç ilgili kelime yoksa zaman kaybı
                         title_lower = title.lower()
                         relevance_words = [
                             "satış", "satis", "ticaret", "ilan", "reklam", "kupon", "indirim",
                             "hesap", "alım", "alim", "satım", "satim", "smm", "kod", "pazar",
                             "ikinci el", "2.el", "fırsat", "firsat", "lisans", "premium",
                             "freelance", "dijital", "e-ticaret", "trendyol", "shopier",
-                            "ref", "ucuz", "kampanya", "epin", "pubg", "brawl", "oyun",
-                            "yazılım", "yazilim", "adobe", "canva", "ai", "yapay zeka",
+                            "ref", "ucuz", "kampanya", "epin", "yazılım", "yazilim", 
+                            "adobe", "canva", "ai", "yapay zeka",
                         ]
-                        has_tr_chars = bool(re.search(r"[ışğçöüİŞĞÇÖÜ]", title))
                         has_relevance = any(w in title_lower for w in relevance_words)
+                        has_negative = any(w in title_lower for w in NEGATIVE_KEYWORDS)
                         
-                        if not has_relevance and not has_tr_chars and not is_protected:
+                        if (has_negative or not has_relevance) and not is_protected:
                             new_blacklisted_groups.append(dialog.entity.username)
-                            print(f"🎯 [{client_name}] @{dialog.entity.username} → Alakasız grup ('{title}'), KARA LİSTE!")
+                            print(f"🎯 [{client_name}] @{dialog.entity.username} → Alakasız/Negatif grup ('{title}'), KARA LİSTE!")
                             try:
                                 from telethon.tl.functions.channels import LeaveChannelRequest
                                 await client(LeaveChannelRequest(dialog.entity))
@@ -1071,7 +1061,7 @@ async def main():
                         await client(JoinChannelRequest(entity))
                         
                         member_count = getattr(entity, 'participants_count', None)
-                        if member_count is not None and member_count < 20:
+                        if member_count is not None and member_count < 50:
                             if hedef_grup.lower() not in protected_groups:
                                 async with state_lock:
                                     save_to_list(hedef_grup, BLACKLIST_FILE)
@@ -1131,16 +1121,6 @@ async def main():
             # Geri sayım (her dakika yazdır)
             kalan = bekleme
             while kalan > 0:
-                # Scraper tetikleyici kontrolü
-                if os.path.exists("trigger_scraper.flag"):
-                    print(f"\n⚡ [{client_name}] TETİKLEYİCİ: 'trigger_scraper.flag' tespit edildi! Anlık tarama başlatılıyor...")
-                    try:
-                        os.remove("trigger_scraper.flag")
-                    except:
-                        pass
-                    await auto_scrape_groups(client, client_name)
-                    break
-                
                 dakika = kalan // 60
                 saniye = kalan % 60
                 if kalan == bekleme or kalan % 60 == 0:
@@ -1149,83 +1129,89 @@ async def main():
                 await asyncio.sleep(uyku)
                 kalan -= uyku
 
-    while True:
-        # Başlangıçta Firestore'dan verileri çek
-        print("🔄 Firestore'dan güncel durum yükleniyor...")
-        fs_prog, fs_black, fs_auto = fs_get_state()
-        if fs_prog:
-            with open(PROGRESS_FILE, 'w', encoding='utf-8') as f:
-                f.write(fs_prog)
-            print("📥 İlerleme durumu buluttan indirildi.")
-        if fs_black:
-            local_black = get_list(BLACKLIST_FILE)
-            remote_black = set(x.strip() for x in fs_black.splitlines() if x.strip())
-            merged_black = local_black.union(remote_black)
-            # Hedef grupları kara listeden ÇIKAR
-            protected = set(g.lower() for g in gruplar)
-            cleaned = set(g for g in merged_black if g.lower() not in protected)
-            removed = len(merged_black) - len(cleaned)
-            with open(BLACKLIST_FILE, 'w', encoding='utf-8') as f:
-                f.write('\n'.join(cleaned) + '\n')
-            if removed > 0:
-                print(f"📥 Kara liste birleştirildi. {removed} hedef grup kara listeden çıkarıldı!")
-            else:
-                print("📥 Kara liste buluttan indirildi ve birleştirildi.")
-        if fs_auto:
-            with open(AUTO_GROUPS_FILE, 'w', encoding='utf-8') as f:
-                f.write(fs_auto)
-            print("📥 Otomatik keşfedilen gruplar buluttan indirildi.")
-            # gruplar listesini güncelle
-            auto_g = [x.strip() for x in fs_auto.splitlines() if x.strip()]
-            for g in auto_g:
-                if g not in gruplar:
-                    gruplar.append(g)
+    # İlk çalıştırmada Firestore'dan verileri çek
+    print("🔄 Firestore'dan güncel durum yükleniyor...")
+    fs_prog, fs_black, fs_auto = fs_get_state()
+    if fs_prog:
+        with open(PROGRESS_FILE, 'w', encoding='utf-8') as f:
+            f.write(fs_prog)
+        print("📥 İlerleme durumu buluttan indirildi.")
+    if fs_black:
+        # Sadece birleştirip kaydediyoruz, sabit grupları silme mantığı KALDIRILDI
+        local_black = get_list(BLACKLIST_FILE)
+        remote_black = set(x.strip() for x in fs_black.splitlines() if x.strip())
+        merged_black = local_black.union(remote_black)
+        with open(BLACKLIST_FILE, 'w', encoding='utf-8') as f:
+            f.write('\n'.join(merged_black) + '\n')
+        print("📥 Kara liste buluttan indirildi ve birleştirildi.")
+    if fs_auto:
+        with open(AUTO_GROUPS_FILE, 'w', encoding='utf-8') as f:
+            f.write(fs_auto)
+        print("📥 Otomatik keşfedilen gruplar buluttan indirildi.")
+        auto_g = [x.strip() for x in fs_auto.splitlines() if x.strip()]
+        for g in auto_g:
+            if g not in gruplar:
+                gruplar.append(g)
 
-        active_jobs.clear()
-        
-        # Run workers concurrently
-        tasks = []
-        for client, name, j_dialogs in active_clients:
-            tasks.append(run_worker(client, name, j_dialogs))
+    # Periyodik arka plan görevleri
+    async def periodic_firestore_sync():
+        print("🔄 [Firestore Sync] Periyodik senkronizasyon görevi başlatıldı (5 dk aralıklarla).")
+        while True:
+            await asyncio.sleep(300)
+            try:
+                print("🔄 [Firestore Sync] Firestore'dan güncel durum yükleniyor...")
+                _, fs_black_new, fs_auto_new = fs_get_state()
+                if fs_black_new:
+                    local_black = get_list(BLACKLIST_FILE)
+                    remote_black = set(x.strip() for x in fs_black_new.splitlines() if x.strip())
+                    merged_black = local_black.union(remote_black)
+                    with open(BLACKLIST_FILE, 'w', encoding='utf-8') as f:
+                        f.write('\n'.join(merged_black) + '\n')
+                if fs_auto_new:
+                    auto_g = [x.strip() for x in fs_auto_new.splitlines() if x.strip()]
+                    new_added = 0
+                    for g in auto_g:
+                        if g not in gruplar:
+                            gruplar.append(g)
+                            new_added += 1
+                    if new_added > 0:
+                        print(f"📥 [Firestore Sync] Buluttan {new_added} yeni otomatik grup eklendi.")
+                        with open(AUTO_GROUPS_FILE, 'w', encoding='utf-8') as f:
+                            f.write(fs_auto_new)
+            except Exception as e:
+                print(f"⚠️ [Firestore Sync] Hata: {e}")
+
+    async def periodic_scraper(client, client_name):
+        print("🔍 [Scraper Task] Periyodik grup tarama görevi başlatıldı (1 saat aralıklarla).")
+        while True:
+            # 1 saat bekleyelim ama her 15 saniyede bir flag dosyasını kontrol edelim
+            kalan = 3600
+            while kalan > 0:
+                if os.path.exists("trigger_scraper.flag"):
+                    print("⚡ [Scraper Task] TETİKLEYİCİ: 'trigger_scraper.flag' tespit edildi! Anlık tarama başlatılıyor...")
+                    try:
+                        os.remove("trigger_scraper.flag")
+                    except:
+                        pass
+                    await auto_scrape_groups(client, client_name)
+                await asyncio.sleep(15)
+                kalan -= 15
             
-        await asyncio.gather(*tasks)
+            # Normal periyodik tarama
+            await auto_scrape_groups(client, client_name)
 
-        # Tüm liste bittiğinde
-        print(f"\n✅ Tüm liste bitti! 1 SAAT ARA VERİLİYOR...")
-        if os.path.exists(PROGRESS_FILE):
-            os.remove(PROGRESS_FILE)
-        # Firestore progress temizleme
-        try:
-            blacklist_content = ""
-            if os.path.exists(BLACKLIST_FILE):
-                with open(BLACKLIST_FILE, 'r', encoding='utf-8') as f:
-                    blacklist_content = f.read()
-            fs_set_state("", blacklist_content)
-        except Exception as e:
-            pass
-        
-        # Yeni döngü öncesi otomatik grup keşfi - AKTİF
-        print(f"\n🔍 Yeni döngü için Auto-Scraper çalıştırılıyor...")
-        await auto_scrape_groups(first_client, first_name)
-        
-        # 1 saatlik beklemeyi 15 saniyelik parçalara bölerek tetikleyiciyi dinle
-        kalan_bekleme = 3600
-        while kalan_bekleme > 0:
-            if os.path.exists("trigger_scraper.flag"):
-                print("⚡ TETİKLEYİCİ: 'trigger_scraper.flag' tespit edildi! Anlık tarama başlatılıyor...")
-                try:
-                    os.remove("trigger_scraper.flag")
-                except:
-                    pass
-                await auto_scrape_groups(first_client, first_name)
-                break
-            uyku_suresi = min(15, kalan_bekleme)
-            await asyncio.sleep(uyku_suresi)
-            kalan_bekleme -= uyku_suresi
+    # Workers ve arka plan görevlerini başlat
+    tasks = []
+    for client, name, j_dialogs in active_clients:
+        tasks.append(run_worker(client, name, j_dialogs))
     
-    # Clean up (unreachable but formal)
-    for client, name, _ in active_clients:
-        await client.disconnect()
+    # Scraper ve Firestore sync'i arka planda çalıştır
+    first_client, first_name, _ = active_clients[0]
+    tasks.append(periodic_scraper(first_client, first_name))
+    tasks.append(periodic_firestore_sync())
+    
+    # Tüm görevleri eşzamanlı olarak çalıştır
+    await asyncio.gather(*tasks)
 
 if __name__ == '__main__':
     asyncio.run(main())
