@@ -303,8 +303,8 @@ async def auto_scrape_groups(client, client_name):
                 member_count = getattr(chat, 'participants_count', None)
                 title = (chat.title or "").lower()
                 
-                # === FİLTRE 1: Üye sayısı (100'den az = zaman kaybı) ===
-                if member_count is not None and member_count < 100:
+                # === FİLTRE 1: Üye sayısı (500'den az = zaman kaybı) ===
+                if member_count is not None and member_count < 500:
                     if username not in blacklist_lower:
                         save_to_list(chat.username, BLACKLIST_FILE)
                         blacklist_lower.add(username)
@@ -658,8 +658,8 @@ async def main():
                         # Hedef gruptaysa kara listeye yazmayacağız ama aktif değilse/boşsa yine de es geçeceğiz
                         is_protected = username_lower in protected_groups
                         
-                        # 1. Üye sayısı kontrolü (50'den az üyeli gruplar zaman kaybı)
-                        if member_count is not None and member_count < 50:
+                        # 1. Üye sayısı kontrolü (500'den az üyeli gruplar zaman kaybı)
+                        if member_count is not None and member_count < 500:
                             if not is_protected:
                                 new_blacklisted_groups.append(dialog.entity.username)
                                 try:
@@ -1061,7 +1061,7 @@ async def main():
                         await client(JoinChannelRequest(entity))
                         
                         member_count = getattr(entity, 'participants_count', None)
-                        if member_count is not None and member_count < 50:
+                        if member_count is not None and member_count < 500:
                             if hedef_grup.lower() not in protected_groups:
                                 async with state_lock:
                                     save_to_list(hedef_grup, BLACKLIST_FILE)
