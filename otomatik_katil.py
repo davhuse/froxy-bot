@@ -71,6 +71,83 @@ def parse_spintax(text):
         return random.choice(options)
     return re.sub(r'\{([^\{\}]*)\}', replace, text)
 
+def process_marketing_features(msg, is_keyvadi):
+    import datetime
+    import random
+    import os
+    
+    # 1. Haftalık Ürün Kampanyası (Sadece KeyVadi için)
+    if is_keyvadi:
+        weekly_campaigns = [
+            {
+                "message_addon": "🔥 **HAFTANIN DEV FIRSATI:** Adobe Creative Cloud (Tüm Uygulamalar) 1 Yıllık Yetkilendirme 149.99 TL yerine sadece **79.99 TL!**"
+            },
+            {
+                "message_addon": "🎨 **HAFTANIN DEV FIRSATI:** Canva Pro Sınırsız Tasarım Yetkisi (1 Yıllık) 79.99 TL yerine sadece **39.99 TL!**"
+            },
+            {
+                "message_addon": "🍔 **HAFTANIN FIRSATI:** Trendyol Yemek (700 TL'ye 250 TL İndirim Kuponu) 49.99 TL yerine sadece **24.99 TL!**"
+            }
+        ]
+        
+        try:
+            week_no = datetime.datetime.now().isocalendar()[1]
+            campaign = weekly_campaigns[week_no % len(weekly_campaigns)]
+            addon = campaign["message_addon"]
+            
+            lines = msg.splitlines()
+            if len(lines) >= 3:
+                lines.insert(2, "\n" + addon + "\n")
+                msg = "\n".join(lines)
+            else:
+                msg = addon + "\n\n" + msg
+        except Exception as e:
+            print(f"⚠️ Kampanya ekleme hatası: {e}")
+
+    # 2. Promosyon Kodu ve FOMO (Aciliyet) Ekleme
+    gunler = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]
+    bugun_no = datetime.datetime.now().weekday()
+    bugun_adi = gunler[bugun_no]
+    
+    if is_keyvadi:
+        kodlar = ["KEYVADI10", "KEY10", "FIRSAT10"]
+        fomolar = [
+            f"Bugün ({bugun_adi}) geçerli",
+            "Kısa süreliğine geçerli",
+            "Bu haftaya özel",
+            "Sadece bugün geçerli",
+        ]
+    else:
+        kodlar = ["FROXY20", "AI20", "REKLAM20"]
+        fomolar = [
+            f"Bugün ({bugun_adi}) geçerli",
+            "Kısa süreliğine geçerli",
+            "Bu haftaya özel",
+            "Sadece bugün geçerli",
+        ]
+        
+    chosen_kod = random.choice(kodlar)
+    chosen_fomo = random.choice(fomolar)
+    
+    # Eger sablon icinde tag'ler varsa degistir
+    has_tags = "{KOD}" in msg or "{FOMO}" in msg
+    if has_tags:
+        msg = msg.replace("{BUGUN}", bugun_adi)
+        msg = msg.replace("{KOD}", chosen_kod)
+        msg = msg.replace("{FOMO}", chosen_fomo)
+    else:
+        # Tag yoksa mesajın sonuna yeni bir satır olarak ekle
+        discount = "10%" if is_keyvadi else "20%"
+        promo_line = f"\n🎟️ **{chosen_fomo}:** `{chosen_kod}` koduyla **%{discount} indirim** fırsatını kaçırma!"
+        lines = msg.splitlines()
+        if len(lines) >= 2:
+            lines.insert(-1, promo_line)
+            msg = "\n".join(lines)
+        else:
+            msg += "\n" + promo_line
+            
+    return msg
+
 
 # Auto discovered groups
 if os.path.exists("auto_groups.txt"):
@@ -983,11 +1060,28 @@ async def main():
                                      .replace("🤖", "").strip() + "\n"
                         msg = parse_spintax(msg)
                         
-                        await client.send_message(entity, msg)
+                        # Pazarlama özellikleri (İndirim kodları, FOMO, Haftalık kampanya) ekle
+                        is_keyvadi = "2" in client_name
+                        msg = process_marketing_features(msg, is_keyvadi)
+                        
+                        # Görsel/Banner gönderimi (Grup izin veriyorsa)
+                        banner_file = "keyvadi_banner.png" if is_keyvadi else "froxy_banner.png"
+                        allows_media = True
+                        if hasattr(entity, 'default_banned_rights') and entity.default_banned_rights:
+                            if getattr(entity.default_banned_rights, 'send_media', False):
+                                allows_media = False
+                                
+                        if allows_media and os.path.exists(banner_file) and len(msg) <= 1024:
+                            await client.send_message(entity, msg, file=banner_file)
+                            chosen_name = os.path.basename(chosen_file) if available_files else "fallback"
+                            print(f"[{client_name}] 📸 @{grup_name} → Görselli Gönderildi! ({sent_count+1}) [Şablon: {chosen_name}]")
+                        else:
+                            await client.send_message(entity, msg)
+                            chosen_name = os.path.basename(chosen_file) if available_files else "fallback"
+                            print(f"[{client_name}] ✅ @{grup_name} → Gönderildi! ({sent_count+1}) [Şablon: {chosen_name}]")
+                            
                         sent_count += 1
                         set_cooldown(grup_name, cooldowns)  # 24 saat cooldown başlat
-                        chosen_name = os.path.basename(chosen_file) if available_files else "fallback"
-                        print(f"[{client_name}] ✅ @{grup_name} → Gönderildi! ({sent_count}) [Şablon: {chosen_name}]")
                         update_stats(sent=1)
                         await reset_failure(grup_name)
                         async with state_lock:
@@ -996,8 +1090,10 @@ async def main():
                         if e.seconds <= 30:
                             await asyncio.sleep(e.seconds)
                             try:
-                                msg = parse_spintax(base_msg)
-                                await client.send_message(entity, msg)
+                                if allows_media and os.path.exists(banner_file) and len(msg) <= 1024:
+                                    await client.send_message(entity, msg, file=banner_file)
+                                else:
+                                    await client.send_message(entity, msg)
                                 sent_count += 1
                                 set_cooldown(grup_name, cooldowns)  # 24 saat cooldown başlat
                                 print(f"[{client_name}] ✅ @{grup_name} → Gönderildi (flood sonrası)!")
