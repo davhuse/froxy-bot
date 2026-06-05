@@ -1181,13 +1181,14 @@ async def main():
                     except Exception as e:
                         err_msg = str(e)
                         err_type = type(e).__name__
-                        if 'InviteRequestSent' in err_type or 'invite' in err_msg.lower() or \
-                           'no user has' in err_msg.lower() or isinstance(e, (UsernameNotOccupiedError, UsernameInvalidError, ValueError)):
+                        if 'InviteRequestSent' in err_type or 'invite' in err_msg.lower():
+                            print(f"[{client_name}] ⏳ @{hedef_grup} -> Katılım isteği gönderildi (onay bekleniyor).")
+                        elif 'no user has' in err_msg.lower() or isinstance(e, (UsernameNotOccupiedError, UsernameInvalidError, ValueError)):
                             async with state_lock:
                                 save_to_list(hedef_grup, BLACKLIST_FILE)
-                            print(f"[{client_name}] ❌ @{hedef_grup} -> {err_type}, kara liste.")
+                            print(f"[{client_name}] ❌ @{hedef_grup} -> {err_type} (Kullanıcı/Grup yok), kara liste.")
                         else:
-                            print(f"[{client_name}] ⚠️ @{hedef_grup} -> {err_type}")
+                            print(f"[{client_name}] ⚠️ @{hedef_grup} -> {err_type} (Hata: {err_msg})")
 
             # Progress sıfırla (bir sonraki blast için)
             async with state_lock:
