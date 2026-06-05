@@ -1116,22 +1116,16 @@ async def main():
                 except:
                     pass
             
-            # Dinamik bekleme: grup sayısına göre + aktif saat kontrolü
+            # Dinamik bekleme: grup sayısına göre (cooldown zaten tekrarı engelliyor)
             grup_sayisi = len(blast_targets) if blast_targets else 0
             if grup_sayisi <= 10:
-                bekleme = random.randint(1800, 2100)      # 30-35 dk
+                bekleme = random.randint(600, 720)      # 10-12 dk
             elif grup_sayisi <= 30:
-                bekleme = random.randint(1800, 2400)       # 30-40 dk
+                bekleme = random.randint(600, 900)       # 10-15 dk
             elif grup_sayisi <= 50:
-                bekleme = random.randint(2100, 2700)      # 35-45 dk
+                bekleme = random.randint(900, 1200)      # 15-20 dk
             else:
-                bekleme = random.randint(2400, 2700)      # 40-45 dk
-            
-            # Aktif saat dışındaysa ekstra bekleme ekle
-            if not is_active_hours():
-                ekstra = random.randint(600, 1200)  # +10-20 dk
-                bekleme += ekstra
-                print(f"\n[{client_name}] 🌙 Aktif saat dışı — ekstra {ekstra // 60}dk eklendi.")
+                bekleme = random.randint(1200, 1500)      # 20-25 dk
             
             print(f"\n[{client_name}] ⏳ {grup_sayisi} gruba blast atıldı → Sonraki blast {bekleme // 60} dk sonra")
             # Geri sayım (her dakika yazdır)
