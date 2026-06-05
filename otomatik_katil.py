@@ -346,8 +346,9 @@ async def main():
             client1 = TelegramClient(StringSession(string_session_key), api_id, api_hash)
             await client1.connect()
             if await client1.is_user_authorized():
-                active_clients.append((client1, "Hesap #1", {}))
-                print("✅ 1. Hesap yetkilendirildi ve aktif edildi.")
+                me = await client1.get_me()
+                active_clients.append((client1, "Hesap #1", {"id": me.id}))
+                print(f"✅ 1. Hesap yetkilendirildi ve aktif edildi. ID: {me.id}")
             else:
                 print("❌ HATA: 1. Hesap yetkilendirilmemiş!")
         except Exception as e:
@@ -361,8 +362,9 @@ async def main():
             client2 = TelegramClient(StringSession(string_session_key_2), api_id, api_hash)
             await client2.connect()
             if await client2.is_user_authorized():
-                active_clients.append((client2, "Hesap #2", {}))
-                print("✅ 2. Hesap yetkilendirildi.")
+                me = await client2.get_me()
+                active_clients.append((client2, "Hesap #2", {"id": me.id}))
+                print(f"✅ 2. Hesap yetkilendirildi. ID: {me.id}")
             else:
                 print("❌ HATA: 2. Hesap yetkilendirilmemiş!")
         except Exception as e:
@@ -375,8 +377,9 @@ async def main():
             client1 = TelegramClient(SESSION_NAME, api_id, api_hash)
             await client1.connect()
             if await client1.is_user_authorized():
-                active_clients.append((client1, "Yerel Hesap", {}))
-                print("✅ Yerel hesap yetkilendirildi.")
+                me = await client1.get_me()
+                active_clients.append((client1, "Yerel Hesap", {"id": me.id}))
+                print(f"✅ Yerel hesap yetkilendirildi. ID: {me.id}")
             else:
                 print("❌ HATA: Yerel hesap yetkilendirilmemiş!")
         except Exception as e:
@@ -389,6 +392,26 @@ async def main():
         await asyncio.sleep(600)
         import sys
         sys.exit(1)
+
+    # Sistem genelinde bizim olan User ID'lerin toplanması
+    our_user_ids = set()
+    for _, _, info in active_clients:
+        if "id" in info:
+            our_user_ids.add(info["id"])
+            
+    # bot_config.json dosyasından bot id'lerini ayıkla
+    if os.path.exists("bot_config.json"):
+        try:
+            with open("bot_config.json", "r", encoding="utf-8") as f:
+                cfg = json.load(f)
+            for key in ["bot_token", "froxy_bot_token"]:
+                token = cfg.get(key, "")
+                if token and ":" in token:
+                    bot_id = int(token.split(":")[0])
+                    our_user_ids.add(bot_id)
+            print(f"🔒 Sistem Hesap ve Bot Kimlikleri Kaydedildi: {list(our_user_ids)}")
+        except Exception as e:
+            print(f"⚠️ Bot ID'leri ayıklanırken hata: {e}")
 
     state_lock = asyncio.Lock()
     active_jobs = set()
@@ -440,17 +463,28 @@ async def main():
                             async for msg in client.iter_messages(dialog.entity, limit=3):
                                 recent_messages.append(msg)
                             
-                            # Eğer son 3 mesajın tamamı bizden ise (outgoing) grubu kalıcı olarak kara listeye alalım
-                            if len(recent_messages) >= 3 and all(getattr(m, 'out', False) for m in recent_messages):
+                            # Eğer son 3 mesajın tamamı bizden/botlarımızdan biri tarafından gönderildiyse grubu kalıcı olarak kara listeye alalım
+                            is_all_ours = False
+                            if len(recent_messages) >= 3:
+                                is_all_ours = True
+                                for m in recent_messages:
+                                    sender_id = getattr(m, 'sender_id', None)
+                                    if not (getattr(m, 'out', False) or (sender_id in our_user_ids)):
+                                        is_all_ours = False
+                                        break
+                                        
+                            if is_all_ours:
                                 new_blacklisted_groups.append(dialog.entity.username)
-                                print(f"🚫 [{client_name}] @{dialog.entity.username} -> Son 3 mesajın tamamı bizden, KARA LİSTEYE ALINDI!")
+                                print(f"🚫 [{client_name}] @{dialog.entity.username} -> Son 3 mesajın tamamı bizden/botlarımızdan, KARA LİSTEYE ALINDI!")
                                 continue
                                 
-                            # Son mesaj bizim gönderdiğimizse geçmişe bakıp başkasının mesajını arayalım
-                            if last_msg and getattr(last_msg, 'out', False):
+                            # Son mesaj bizim hesaplarımızdan/botlarımızdan birinin ise geçmişe bakıp başkasının mesajını arayalım
+                            last_sender_id = getattr(last_msg, 'sender_id', None) if last_msg else None
+                            if last_msg and (getattr(last_msg, 'out', False) or (last_sender_id in our_user_ids)):
                                 found_other = False
                                 async for msg in client.iter_messages(dialog.entity, limit=5):
-                                    if not getattr(msg, 'out', False):
+                                    msg_sender_id = getattr(msg, 'sender_id', None)
+                                    if not (getattr(msg, 'out', False) or (msg_sender_id in our_user_ids)):
                                         last_msg = msg
                                         found_other = True
                                         break
