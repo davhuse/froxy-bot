@@ -673,11 +673,116 @@ async function triggerScraper() {
     }
 }
 
+// ==========================================
+// AUTO-DM FONKSİYONLARI
+// ==========================================
+
+async function loadAutoDmConfig() {
+    try {
+        const res = await fetch('/api/autodm/config');
+        const data = await res.json();
+        document.getElementById('autoDmToggle').checked = data.auto_dm_active;
+        document.getElementById('autoDmLimit').value = data.max_dm_per_day || 20;
+    } catch(e) {
+        console.error('Auto-DM config yüklenemedi:', e);
+    }
+}
+
+async function saveAutoDmConfig() {
+    const active = document.getElementById('autoDmToggle').checked;
+    const limit = parseInt(document.getElementById('autoDmLimit').value) || 20;
+    
+    try {
+        const res = await fetch('/api/autodm/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ auto_dm_active: active, max_dm_per_day: limit })
+        });
+        const data = await res.json();
+        if (!data.success) {
+            alert('Auto-DM ayarları kaydedilemedi: ' + data.message);
+        }
+    } catch(e) {
+        alert('Auto-DM ayarları kaydedilemedi!');
+    }
+}
+
+// ==========================================
+// MESAJ ŞABLONLARI FONKSİYONLARI
+// ==========================================
+
+async function loadTemplates() {
+    const container = document.getElementById('templatesContainer');
+    if (!container) return;
+    
+    try {
+        const res = await fetch('/api/templates');
+        const data = await res.json();
+        
+        if (!data.templates || data.templates.length === 0) {
+            container.innerHTML = '<p style="color: var(--text-secondary); grid-column: 1/-1; text-align: center;">Henüz şablon yok. messages/ klasörüne .txt dosyaları ekleyin.</p>';
+            return;
+        }
+        
+        container.innerHTML = '';
+        data.templates.forEach(tpl => {
+            const isfroxy = tpl.name.startsWith('froxy_');
+            const badge = isfroxy 
+                ? '<span style="background: linear-gradient(135deg, #a78bfa, #818cf8); padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; color: white;">Froxy AI</span>'
+                : '<span style="background: linear-gradient(135deg, #f59e0b, #ef4444); padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; color: white;">KeyVadi</span>';
+            
+            const card = document.createElement('div');
+            card.className = 'glass-panel';
+            card.style.cssText = 'padding: 15px; border: 1px solid var(--border);';
+            card.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h3 style="font-size: 0.9rem; margin: 0; color: var(--text-primary);">
+                        <i class="fa-solid fa-file-lines" style="margin-right: 5px;"></i>${tpl.name}
+                    </h3>
+                    ${badge}
+                </div>
+                <textarea id="tpl_${tpl.name}" spellcheck="false" style="min-height: 180px; width: 100%; font-size: 0.8rem; padding: 10px; background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border); border-radius: 8px; resize: vertical; font-family: 'Inconsolata', monospace;">${tpl.content}</textarea>
+                <button class="btn secondary" onclick="saveTemplate('${tpl.name}')" style="margin-top: 8px; padding: 5px 12px; font-size: 0.8rem;">
+                    <i class="fa-solid fa-floppy-disk"></i> Kaydet
+                </button>
+            `;
+            container.appendChild(card);
+        });
+    } catch(e) {
+        container.innerHTML = '<p style="color: var(--danger); grid-column: 1/-1; text-align: center;">Şablonlar yüklenemedi!</p>';
+    }
+}
+
+async function saveTemplate(name) {
+    const textarea = document.getElementById('tpl_' + name);
+    if (!textarea) return;
+    
+    try {
+        const res = await fetch('/api/templates/' + name, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: textarea.value })
+        });
+        const data = await res.json();
+        if (data.success) {
+            // Flash success
+            textarea.style.borderColor = '#2ed573';
+            setTimeout(() => { textarea.style.borderColor = ''; }, 1500);
+        } else {
+            alert('Şablon kaydedilemedi: ' + data.message);
+        }
+    } catch(e) {
+        alert('Şablon kaydedilemedi!');
+    }
+}
+
 window.onload = () => {
     loadMessage();
     loadConfig();
     loadFroxyConfig();
     loadScraperConfig();
+    loadAutoDmConfig();
+    loadTemplates();
     
     checkStatus();
     checkSupportStatus();

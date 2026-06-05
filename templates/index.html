@@ -80,6 +80,42 @@
             </div>
 
             <div class="main-content">
+                <!-- AUTO-DM AYARLARI -->
+                <div class="glass-panel" style="margin-bottom: 20px; padding: 20px;">
+                    <h2><i class="fa-solid fa-paper-plane"></i> Auto-DM Ayarları</h2>
+                    <p class="info-note" style="margin-bottom: 15px;">
+                        <i class="fa-solid fa-circle-info"></i> Gruplarda ilgili anahtar kelimeleri yazan kullanıcılara otomatik DM gönderir (yapay zeka, chatgpt, kupon, adobe vb.)
+                    </p>
+                    <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="color: var(--text-secondary);">Auto-DM:</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="autoDmToggle" onchange="saveAutoDmConfig()">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="color: var(--text-secondary);">Günlük Limit:</span>
+                            <input type="number" id="autoDmLimit" value="20" min="1" max="50" style="width: 80px; padding: 6px 10px; background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border); border-radius: 8px; font-size: 0.9rem;">
+                            <button class="btn secondary" onclick="saveAutoDmConfig()" style="padding: 6px 15px; font-size: 0.85rem;">
+                                <i class="fa-solid fa-floppy-disk"></i> Kaydet
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MESAJ ŞABLONLARI -->
+                <div class="glass-panel" style="margin-bottom: 20px; padding: 20px;">
+                    <h2><i class="fa-solid fa-layer-group"></i> Mesaj Şablonları (Rotasyon)</h2>
+                    <p class="info-note" style="margin-bottom: 15px;">
+                        <i class="fa-solid fa-circle-info"></i> Her blast döngüsünde gruplara farklı şablonlar gönderilir. Aynı gruba aynı mesaj arka arkaya gitmez.
+                    </p>
+                    <div id="templatesContainer" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <p style="color: var(--text-secondary); grid-column: 1/-1; text-align: center;">Şablonlar yükleniyor...</p>
+                    </div>
+                </div>
+
+                <!-- ESKİ TEK MESAJ EDİTÖRLERİ (Fallback) -->
                 <div class="editors-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; margin-bottom: 20px;">
                     <div class="editor-section glass-panel" style="margin-bottom: 0;">
                         <h2><i class="fa-solid fa-pen-to-square"></i> 1. Hesap Mesajı (message.txt)</h2>

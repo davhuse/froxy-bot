@@ -680,11 +680,102 @@ def save_scraper_config():
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
 
+
 @app.route('/api/scraper/trigger', methods=['POST'])
 def trigger_scraper():
     try:
         with open("trigger_scraper.flag", "w", encoding="utf-8") as f:
             f.write("trigger")
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})
+
+# ==========================================
+# AUTO-DM API
+# ==========================================
+
+@app.route('/api/autodm/config', methods=['GET'])
+def get_autodm_config():
+    cfg = {}
+    if os.path.exists(CONFIG_FILE):
+        try:
+            with open(CONFIG_FILE, 'r', encoding="utf-8") as f:
+                cfg = json.load(f)
+        except:
+            pass
+    return jsonify({
+        "auto_dm_active": cfg.get("auto_dm_active", True),
+        "max_dm_per_day": cfg.get("max_dm_per_day", 20),
+    })
+
+@app.route('/api/autodm/config', methods=['POST'])
+def save_autodm_config():
+    data = request.json
+    cfg = {}
+    if os.path.exists(CONFIG_FILE):
+        try:
+            with open(CONFIG_FILE, 'r', encoding="utf-8") as f:
+                cfg = json.load(f)
+        except:
+            pass
+    
+    if "auto_dm_active" in data:
+        cfg["auto_dm_active"] = bool(data["auto_dm_active"])
+    if "max_dm_per_day" in data:
+        cfg["max_dm_per_day"] = int(data["max_dm_per_day"])
+    
+    try:
+        with open(CONFIG_FILE, 'w', encoding="utf-8") as f:
+            json.dump(cfg, f, indent=2, ensure_ascii=False)
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})
+
+# ==========================================
+# MESAJ ŞABLONLARI API
+# ==========================================
+
+MESSAGES_DIR = "messages"
+
+@app.route('/api/templates', methods=['GET'])
+def get_templates():
+    templates = []
+    if os.path.exists(MESSAGES_DIR):
+        for fname in sorted(os.listdir(MESSAGES_DIR)):
+            if fname.endswith('.txt'):
+                fpath = os.path.join(MESSAGES_DIR, fname)
+                try:
+                    with open(fpath, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                    templates.append({
+                        "name": fname,
+                        "content": content,
+                        "size": len(content),
+                    })
+                except:
+                    pass
+    return jsonify({"templates": templates})
+
+@app.route('/api/templates/<name>', methods=['GET'])
+def get_template(name):
+    fpath = os.path.join(MESSAGES_DIR, name)
+    if not os.path.exists(fpath):
+        return jsonify({"error": "Template not found"}), 404
+    try:
+        with open(fpath, 'r', encoding='utf-8') as f:
+            return jsonify({"name": name, "content": f.read()})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/templates/<name>', methods=['POST'])
+def save_template(name):
+    data = request.json
+    content = data.get('content', '')
+    fpath = os.path.join(MESSAGES_DIR, name)
+    try:
+        os.makedirs(MESSAGES_DIR, exist_ok=True)
+        with open(fpath, 'w', encoding='utf-8') as f:
+            f.write(content)
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})

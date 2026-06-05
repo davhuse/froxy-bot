@@ -104,9 +104,68 @@ if os.path.exists("auto_groups.txt"):
 PROGRESS_FILE = 'progress.txt'
 BLACKLIST_FILE = 'blacklist.txt'
 AUTO_GROUPS_FILE = 'auto_groups.txt'
+MESSAGES_DIR = 'messages'
+MSG_HISTORY_FILE = 'msg_history.json'
 
 # --- Auto-DM: Yanıt veren kullanıcıları takip et ---
 replied_users = set()
+dm_count_today = 0
+dm_last_reset = ""
+MAX_DM_PER_DAY = 20
+
+# --- Auto-DM: Anahtar kelimeler ---
+DM_TRIGGER_KEYWORDS = [
+    "yapay zeka", "chatgpt", "claude", "gemini", "ai ", " ai",
+    "gpt", "deepseek", "canva", "adobe", "lisans", "premium hesap",
+    "kupon", "indirim", "trendyol", "capcut",
+]
+
+# --- Mesaj Rotasyonu ---
+FROXY_MESSAGES = [
+    os.path.join(MESSAGES_DIR, 'froxy_hook.txt'),
+    os.path.join(MESSAGES_DIR, 'froxy_compare.txt'),
+    os.path.join(MESSAGES_DIR, 'froxy_social.txt'),
+]
+KEYVADI_MESSAGES = [
+    os.path.join(MESSAGES_DIR, 'keyvadi_ai.txt'),
+    os.path.join(MESSAGES_DIR, 'keyvadi_kupon.txt'),
+    os.path.join(MESSAGES_DIR, 'keyvadi_adobe.txt'),
+]
+
+# Mesaj geçmişi (aynı gruba aynı mesaj gitmesin)
+def load_msg_history():
+    if os.path.exists(MSG_HISTORY_FILE):
+        try:
+            with open(MSG_HISTORY_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except:
+            pass
+    return {}
+
+def save_msg_history(history):
+    try:
+        with open(MSG_HISTORY_FILE, 'w', encoding='utf-8') as f:
+            json.dump(history, f, indent=2)
+    except:
+        pass
+
+def pick_message_for_group(grup_name, msg_files, history):
+    """Grup için son gönderilen mesajdan farklı bir mesaj seç"""
+    last_used = history.get(grup_name.lower(), "")
+    available = [f for f in msg_files if f != last_used]
+    if not available:
+        available = msg_files  # Hepsi kullanıldıysa sıfırla
+    chosen = random.choice(available)
+    history[grup_name.lower()] = chosen
+    return chosen
+
+def is_active_hours():
+    """TR saatlerinde aktif saatleri kontrol et (UTC+3)"""
+    from datetime import datetime, timezone, timedelta
+    tr_time = datetime.now(timezone(timedelta(hours=3)))
+    hour = tr_time.hour
+    # Aktif saatler: 09:00-14:00 ve 18:00-23:59
+    return (9 <= hour <= 14) or (18 <= hour <= 23)
 
 # --- Auto-Scrape: Anahtar kelimeler ---
 SCRAPE_KEYWORDS = [
@@ -255,13 +314,54 @@ async def auto_scrape_groups(client, client_name):
         
     return new_found
 
-DM_MESSAGE = (
-    "Merhaba 👋\n\n"
-    "Gruptaki mesajınıza istinaden yazıyorum.\n"
-    "Sorularınız ve satın alım için ana botumuz olan "
-    "@FroxyDestekBOT üzerinden iletişime geçebilirsiniz.\n\n"
-    "İyi günler! 🙏"
-)
+# Akıllı DM Mesaj Şablonları (anahtar kelimeye göre)
+DM_TEMPLATES = {
+    "ai": (
+        "Merhaba 👋\n\n"
+        "Yapay zeka ile ilgili mesajınızı gördüm. "
+        "ChatGPT, Claude, Gemini ve 400+ AI modelini tek panelden kullanabilirsiniz — "
+        "üstelik ilk 100 kredi ücretsiz!\n\n"
+        "Detaylar için: @FroxyDestekBOT\n"
+        "İyi günler! 🙏"
+    ),
+    "kupon": (
+        "Merhaba 👋\n\n"
+        "Kupon/indirim ile ilgili mesajınızı gördüm. "
+        "Trendyol Yemek, Market ve Shell kuponlarını en uygun fiyatlarla sunuyoruz!\n\n"
+        "Detaylar için: @KeyVadiSatisBot\n"
+        "İyi günler! 🙏"
+    ),
+    "yazilim": (
+        "Merhaba 👋\n\n"
+        "Yazılım/lisans ile ilgili mesajınızı gördüm. "
+        "Adobe CC, Canva Pro ve diğer premium lisanslar en uygun fiyatlarla!\n\n"
+        "Detaylar için: @KeyVadiSatisBot\n"
+        "İyi günler! 🙏"
+    ),
+    "genel": (
+        "Merhaba 👋\n\n"
+        "Gruptaki mesajınızı gördüm. Size yardımcı olabilirim!\n"
+        "Yapay zeka, premium lisanslar ve dijital ürünler için:\n"
+        "• AI Modelleri: @FroxyDestekBOT\n"
+        "• Lisans & Kuponlar: @KeyVadiSatisBot\n\n"
+        "İyi günler! 🙏"
+    ),
+}
+
+def get_dm_category(text):
+    """Mesaj metninden DM kategorisini belirle"""
+    text_lower = text.lower()
+    ai_words = ["yapay zeka", "chatgpt", "claude", "gemini", "gpt", "ai ", " ai", "deepseek", "llama"]
+    kupon_words = ["kupon", "indirim", "trendyol", "shell", "akaryakıt"]
+    yazilim_words = ["adobe", "canva", "capcut", "lisans", "premium", "photoshop", "illustrator"]
+    
+    if any(w in text_lower for w in ai_words):
+        return "ai"
+    elif any(w in text_lower for w in kupon_words):
+        return "kupon"
+    elif any(w in text_lower for w in yazilim_words):
+        return "yazilim"
+    return None
 
 
 # Firestore Ayarları
@@ -429,9 +529,83 @@ async def main():
     state_lock = asyncio.Lock()
     active_jobs = set()
 
-    # --- AUTO-DM: KAPATILDI ---
-    # Özel mesaj gönderme devre dışı
-    print("ℹ️ Auto-DM kapalı.")
+    # --- AUTO-DM: AKILLI MOD ---
+    # bot_config.json'dan auto_dm_active kontrolü
+    auto_dm_enabled = True
+    if os.path.exists("bot_config.json"):
+        try:
+            with open("bot_config.json", "r", encoding="utf-8") as f:
+                cfg = json.load(f)
+                auto_dm_enabled = cfg.get("auto_dm_active", True)
+        except:
+            pass
+    
+    if auto_dm_enabled and active_clients:
+        dm_client, dm_client_name, _ = active_clients[0]
+        
+        @dm_client.on(events.NewMessage(incoming=True))
+        async def auto_dm_handler(event):
+            global dm_count_today, dm_last_reset, replied_users
+            
+            # Sadece grup mesajlarını dinle
+            if not event.is_group:
+                return
+            
+            # Günlük sayacı sıfırla
+            from datetime import datetime
+            today = datetime.now().strftime("%Y-%m-%d")
+            if dm_last_reset != today:
+                dm_last_reset = today
+                dm_count_today = 0
+            
+            # Günlük limit kontrolü
+            if dm_count_today >= MAX_DM_PER_DAY:
+                return
+            
+            # Mesaj gönderen bizim hesabımız/botumuz mu?
+            sender_id = event.sender_id
+            if sender_id in our_user_ids:
+                return
+            
+            # Daha önce DM attık mı?
+            if sender_id in replied_users:
+                return
+            
+            # Mesaj içeriğini kontrol et
+            text = event.raw_text or ""
+            if len(text) < 5:
+                return
+            
+            # Anahtar kelime kontrolü
+            text_lower = text.lower()
+            has_keyword = any(kw in text_lower for kw in DM_TRIGGER_KEYWORDS)
+            if not has_keyword:
+                return
+            
+            # DM kategorisini belirle
+            category = get_dm_category(text)
+            if not category:
+                category = "genel"
+            
+            dm_text = DM_TEMPLATES.get(category, DM_TEMPLATES["genel"])
+            
+            # Doğal gecikme (30-120 saniye)
+            delay = random.randint(30, 120)
+            print(f"📨 [Auto-DM] @{sender_id} ilgili mesaj tespit edildi ({category}). {delay}sn sonra DM gönderilecek...")
+            await asyncio.sleep(delay)
+            
+            try:
+                await dm_client.send_message(sender_id, dm_text)
+                replied_users.add(sender_id)
+                dm_count_today += 1
+                print(f"✅ [Auto-DM] @{sender_id} → DM gönderildi! ({category}) [{dm_count_today}/{MAX_DM_PER_DAY}]")
+                update_stats(sent=0)  # DM'leri ayrı sayabiliriz ileride
+            except Exception as e:
+                print(f"⚠️ [Auto-DM] @{sender_id} → DM gönderilemedi: {type(e).__name__}")
+        
+        print(f"✅ Auto-DM AKTİF — Anahtar kelime dinleme başladı (Günlük limit: {MAX_DM_PER_DAY})")
+    else:
+        print("ℹ️ Auto-DM kapalı.")
 
     # --- AUTO-SCRAPE: AKTİF ---
     first_client, first_name, _ = active_clients[0]
@@ -457,48 +631,90 @@ async def main():
                         member_count = getattr(dialog.entity, 'participants_count', None)
                         is_broadcast = getattr(dialog.entity, 'broadcast', False)
                         
-                        # Hedef gruptaysa kara listeye yazmayacağız ama aktif değilse/boşsa yine de es geçececeğiz
+                        # Hedef gruptaysa kara listeye yazmayacağız ama aktif değilse/boşsa yine de es geçeceğiz
                         is_protected = username_lower in protected_groups
                         
-                        # 1. Üye sayısı kontrolü (boş grupları es geç ve çık)
-                        if member_count is not None and member_count < 20:
+                        # 1. Üye sayısı kontrolü (50'den az üyeli gruplar zaman kaybı)
+                        if member_count is not None and member_count < 50:
                             if not is_protected:
                                 new_blacklisted_groups.append(dialog.entity.username)
                                 try:
                                     from telethon.tl.functions.channels import LeaveChannelRequest
                                     await client(LeaveChannelRequest(dialog.entity))
-                                    print(f"🚪 [{client_name}] @{dialog.entity.username} -> Üye sayısı az olduğundan gruptan çıkıldı.")
+                                    print(f"🚪 [{client_name}] @{dialog.entity.username} → Üye sayısı az ({member_count}), gruptan çıkıldı.")
                                 except Exception:
                                     pass
                             continue
                             
-                        # 2. Aktiflik kontrolü ve Kendi Mesajlarımızla Dolan Grupların Temizlenmesi
+                        # 2. Aktiflik kontrolü ve Kalite Taraması
                         days_inactive = 0
                         last_msg = dialog.message
+                        spam_score = 0
                         
                         try:
-                            # Son 3 mesajı alıp kontrol edelim
+                            # Son 5 mesajı alıp analiz edelim
                             recent_messages = []
-                            async for msg in client.iter_messages(dialog.entity, limit=3):
+                            async for msg in client.iter_messages(dialog.entity, limit=5):
                                 recent_messages.append(msg)
                             
-                            # Eğer son 3 mesajın tamamı bizden/botlarımızdan biri tarafından gönderildiyse grubu kalıcı olarak kara listeye alalım
-                            is_all_ours = False
+                            # === SPAM GRUP TESPİTİ ===
+                            # Son 5 mesajda kaç tanesi bot reklamı/spam?
+                            bot_mention_count = 0
+                            our_msg_count = 0
+                            unique_senders = set()
+                            
+                            for m in recent_messages:
+                                msg_text = (getattr(m, 'raw_text', '') or '').lower()
+                                sender_id = getattr(m, 'sender_id', None)
+                                
+                                if sender_id:
+                                    unique_senders.add(sender_id)
+                                
+                                # Bizim mesajlarımız
+                                if getattr(m, 'out', False) or (sender_id in our_user_ids):
+                                    our_msg_count += 1
+                                
+                                # Bot username'i içeren mesajlar (spam reklam göstergesi)
+                                import re as _re
+                                bot_mentions = _re.findall(r'@\w+bot\b', msg_text, _re.IGNORECASE)
+                                if bot_mentions:
+                                    bot_mention_count += 1
+                            
+                            # Eğer son 3+ mesajın tamamı bizden/botlarımızdan → kara liste
                             if len(recent_messages) >= 3:
-                                is_all_ours = True
-                                for m in recent_messages:
-                                    sender_id = getattr(m, 'sender_id', None)
-                                    if not (getattr(m, 'out', False) or (sender_id in our_user_ids)):
-                                        is_all_ours = False
-                                        break
-                                        
-                            if is_all_ours:
+                                is_all_ours = all(
+                                    getattr(m, 'out', False) or (getattr(m, 'sender_id', None) in our_user_ids)
+                                    for m in recent_messages[:3]
+                                )
+                                if is_all_ours:
+                                    new_blacklisted_groups.append(dialog.entity.username)
+                                    print(f"🚫 [{client_name}] @{dialog.entity.username} → Son 3 mesaj bizden, KARA LİSTE!")
+                                    try:
+                                        from telethon.tl.functions.channels import LeaveChannelRequest
+                                        await client(LeaveChannelRequest(dialog.entity))
+                                        print(f"🚪 [{client_name}] @{dialog.entity.username} → Gruptan çıkıldı.")
+                                    except Exception:
+                                        pass
+                                    continue
+                            
+                            # Eğer son 5 mesajın 3+'ü @...Bot içeriyorsa → spam çöplüğü
+                            if bot_mention_count >= 3 and not is_protected:
                                 new_blacklisted_groups.append(dialog.entity.username)
-                                print(f"🚫 [{client_name}] @{dialog.entity.username} -> Son 3 mesajın tamamı bizden/botlarımızdan, KARA LİSTEYE ALINDI!")
+                                print(f"🗑️ [{client_name}] @{dialog.entity.username} → Spam çöplüğü ({bot_mention_count}/5 mesaj bot reklamı), KARA LİSTE!")
                                 try:
                                     from telethon.tl.functions.channels import LeaveChannelRequest
                                     await client(LeaveChannelRequest(dialog.entity))
-                                    print(f"🚪 [{client_name}] @{dialog.entity.username} -> Gruptan çıkıldı.")
+                                except Exception:
+                                    pass
+                                continue
+                            
+                            # Eğer 5 mesajda sadece 1-2 unique gönderen varsa → ölü grup
+                            if len(recent_messages) >= 5 and len(unique_senders) <= 2 and not is_protected:
+                                new_blacklisted_groups.append(dialog.entity.username)
+                                print(f"💀 [{client_name}] @{dialog.entity.username} → Ölü grup (son 5 mesajda sadece {len(unique_senders)} kişi), KARA LİSTE!")
+                                try:
+                                    from telethon.tl.functions.channels import LeaveChannelRequest
+                                    await client(LeaveChannelRequest(dialog.entity))
                                 except Exception:
                                     pass
                                 continue
@@ -521,18 +737,42 @@ async def main():
                         if last_msg and getattr(last_msg, 'date', None):
                             delta = now - last_msg.date
                             days_inactive = delta.days
-                            if delta.days >= 7:
+                            if delta.days >= 5:  # 7 günden 5 güne düşürdük
                                 if not is_protected:
                                     new_blacklisted_groups.append(dialog.entity.username)
                                     try:
                                         from telethon.tl.functions.channels import LeaveChannelRequest
                                         await client(LeaveChannelRequest(dialog.entity))
-                                        print(f"🚪 [{client_name}] @{dialog.entity.username} -> İnaktiflik nedeniyle gruptan çıkıldı.")
+                                        print(f"🚪 [{client_name}] @{dialog.entity.username} → {days_inactive} gün inaktif, gruptan çıkıldı.")
                                     except Exception:
                                         pass
                                 continue
                         else:
                             # Mesaj yoksa veya son 5 mesajın hepsi bizimse grubu inaktif sayıp es geç
+                            continue
+                        
+                        # === GRUP ALAKA DENETİMİ ===
+                        # Grup başlığında hiç ilgili kelime yoksa zaman kaybı
+                        title_lower = title.lower()
+                        relevance_words = [
+                            "satış", "satis", "ticaret", "ilan", "reklam", "kupon", "indirim",
+                            "hesap", "alım", "alim", "satım", "satim", "smm", "kod", "pazar",
+                            "ikinci el", "2.el", "fırsat", "firsat", "lisans", "premium",
+                            "freelance", "dijital", "e-ticaret", "trendyol", "shopier",
+                            "ref", "ucuz", "kampanya", "epin", "pubg", "brawl", "oyun",
+                            "yazılım", "yazilim", "adobe", "canva", "ai", "yapay zeka",
+                        ]
+                        has_tr_chars = bool(re.search(r"[ışğçöüİŞĞÇÖÜ]", title))
+                        has_relevance = any(w in title_lower for w in relevance_words)
+                        
+                        if not has_relevance and not has_tr_chars and not is_protected:
+                            new_blacklisted_groups.append(dialog.entity.username)
+                            print(f"🎯 [{client_name}] @{dialog.entity.username} → Alakasız grup ('{title}'), KARA LİSTE!")
+                            try:
+                                from telethon.tl.functions.channels import LeaveChannelRequest
+                                await client(LeaveChannelRequest(dialog.entity))
+                            except Exception:
+                                pass
                             continue
                                 
                         joined_dialogs[username_lower] = dialog.entity
@@ -619,19 +859,29 @@ async def main():
             if not blast_targets:
                 print(f"[{client_name}] ⚠️ Önbellekte mesaj atılacak grup yok. Yeni gruplara katılma aşamasına geçiliyor...")
             else:
-                print(f"\n[{client_name}] 🚀 BLAST MODE: {len(blast_targets)} gruba aynı anda mesaj gönderiliyor!")
+                print(f"\n[{client_name}] 🚀 BLAST MODE: {len(blast_targets)} gruba mesaj gönderiliyor!")
                 
-                # Mesajı oku
-                msg_file = "message_2.txt" if "2" in client_name else "message.txt"
-                try:
-                    with open(msg_file, "r", encoding="utf-8") as fm:
-                        base_msg = fm.read()
-                except:
-                    try:
-                        with open("message.txt", "r", encoding="utf-8") as fm:
-                            base_msg = fm.read()
-                    except:
-                        base_msg = "Merhaba! Detaylar için @FroxyDestekBOT"
+                # Aktif saat kontrolü
+                if not is_active_hours():
+                    from datetime import datetime, timezone, timedelta
+                    tr_time = datetime.now(timezone(timedelta(hours=3)))
+                    print(f"[{client_name}] 🌙 Şu an TR saati {tr_time.strftime('%H:%M')} — aktif saat değil. Yine de gönderilecek ama daha uzun aralıklarla.")
+                
+                # Mesaj rotasyonu: hangi hesap için hangi şablonlar?
+                is_keyvadi = "2" in client_name
+                msg_files = KEYVADI_MESSAGES if is_keyvadi else FROXY_MESSAGES
+                
+                # Mevcut şablonları kontrol et, yoksa eski dosyaya fallback
+                available_files = [f for f in msg_files if os.path.exists(f)]
+                if not available_files:
+                    # Fallback: eski mesaj dosyası
+                    fallback = "message_2.txt" if is_keyvadi else "message.txt"
+                    if os.path.exists(fallback):
+                        available_files = [fallback]
+                    else:
+                        available_files = []
+                
+                msg_history = load_msg_history()
 
                 sent_count = 0
                 fail_count = 0
@@ -679,24 +929,33 @@ async def main():
                             pass
 
                 async def blast_one(grup_name):
-                    """Tek bir gruba mesaj gönder"""
+                    """Tek bir gruba rotasyonlu mesaj gönder"""
                     nonlocal sent_count, fail_count
                     entity = joined_dialogs.get(grup_name.lower())
                     if not entity:
                         return
                     try:
-                        # Mesajı spintax ile çeşitle
+                        # Mesaj rotasyonu: bu grup için farklı mesaj seç
+                        if available_files:
+                            chosen_file = pick_message_for_group(grup_name, available_files, msg_history)
+                            try:
+                                with open(chosen_file, 'r', encoding='utf-8') as fm:
+                                    base_msg = fm.read()
+                            except:
+                                base_msg = "Merhaba! Detaylar için @FroxyDestekBOT"
+                        else:
+                            base_msg = "Merhaba! Detaylar için @FroxyDestekBOT"
+                        
                         msg = base_msg
                         if grup_name.lower() == "kuponceking":
-                            msg = msg.replace("🤖 **Sipariş & Canlı Destek Botumuz:** @FroxyDestekBOT", "") \
-                                     .replace("🤖 **Sipariş & Canlı Destek Botumuz:** @KeyVadiSatisBot", "") \
-                                     .replace("bot", "sistem").replace("Bot", "Sistem") \
+                            msg = msg.replace("bot", "sistem").replace("Bot", "Sistem") \
                                      .replace("🤖", "").strip() + "\n"
                         msg = parse_spintax(msg)
                         
                         await client.send_message(entity, msg)
                         sent_count += 1
-                        print(f"[{client_name}] ✅ @{grup_name} -> Gönderildi! ({sent_count})")
+                        chosen_name = os.path.basename(chosen_file) if available_files else "fallback"
+                        print(f"[{client_name}] ✅ @{grup_name} → Gönderildi! ({sent_count}) [Şablon: {chosen_name}]")
                         update_stats(sent=1)
                         await reset_failure(grup_name)
                         async with state_lock:
@@ -708,42 +967,44 @@ async def main():
                                 msg = parse_spintax(base_msg)
                                 await client.send_message(entity, msg)
                                 sent_count += 1
-                                print(f"[{client_name}] ✅ @{grup_name} -> Gönderildi (flood sonrası)!")
+                                print(f"[{client_name}] ✅ @{grup_name} → Gönderildi (flood sonrası)!")
                                 update_stats(sent=1)
                                 await reset_failure(grup_name)
                             except:
                                 fail_count += 1
                                 await record_failure(grup_name)
                         else:
-                            print(f"[{client_name}] ⏳ @{grup_name} -> Flood {e.seconds}sn, atlanıyor...")
+                            print(f"[{client_name}] ⏳ @{grup_name} → Flood {e.seconds}sn, atlanıyor...")
                             fail_count += 1
                     except UserBannedInChannelError:
-                        print(f"[{client_name}] ❌ @{grup_name} -> Banlandık!")
+                        print(f"[{client_name}] ❌ @{grup_name} → Banlandık!")
                         fail_count += 1
                         await record_failure(grup_name)
                     except ChatWriteForbiddenError:
-                        print(f"[{client_name}] 🔒 @{grup_name} -> Yazma izni yok")
+                        print(f"[{client_name}] 🔒 @{grup_name} → Yazma izni yok")
                         fail_count += 1
                         await record_failure(grup_name)
                     except SlowModeWaitError:
-                        print(f"[{client_name}] 🐌 @{grup_name} -> SlowMode, atlanıyor.")
+                        print(f"[{client_name}] 🐌 @{grup_name} → SlowMode, atlanıyor.")
                         fail_count += 1
                     except Exception as e:
                         err_type = type(e).__name__
-                        print(f"[{client_name}] ⚠️ @{grup_name} -> {err_type} (atlanıyor)")
+                        print(f"[{client_name}] ⚠️ @{grup_name} → {err_type} (atlanıyor)")
                         fail_count += 1
                         await record_failure(grup_name)
 
-                # Gruplara sırayla ve aralarında 10-20 saniye rastgele bekleme koyarak gönder!
-                import random
+                # Gruplara sırayla ve aralarında 20-45 saniye rastgele bekleme (daha doğal)
+                random.shuffle(blast_targets)  # Grup sırasını karıştır
                 print(f"\n[{client_name}] 📤 Sırayla gönderim başlıyor ({len(blast_targets)} grup)...")
                 for i, g in enumerate(blast_targets, 1):
                     await blast_one(g)
                     if i < len(blast_targets):
-                        delay = random.randint(10, 20)
+                        delay = random.randint(20, 45)
                         print(f"[{client_name}] ⏳ Sonraki grup için {delay} saniye bekleniyor...")
                         await asyncio.sleep(delay)
-
+                
+                # Mesaj geçmişini kaydet
+                save_msg_history(msg_history)
                 
                 print(f"\n[{client_name}] 📊 BLAST SONUÇ: {sent_count} başarılı, {fail_count} başarısız / {len(blast_targets)} toplam")
 
@@ -811,16 +1072,22 @@ async def main():
                 except:
                     pass
             
-            # Dinamik bekleme: grup sayısına göre otomatik ayarla
+            # Dinamik bekleme: grup sayısına göre + aktif saat kontrolü
             grup_sayisi = len(blast_targets) if blast_targets else 0
             if grup_sayisi <= 10:
-                bekleme = random.randint(600, 720)      # 10-12 dk
+                bekleme = random.randint(1800, 2100)      # 30-35 dk
             elif grup_sayisi <= 30:
-                bekleme = random.randint(600, 900)       # 10-15 dk
+                bekleme = random.randint(1800, 2400)       # 30-40 dk
             elif grup_sayisi <= 50:
-                bekleme = random.randint(900, 1200)      # 15-20 dk
+                bekleme = random.randint(2100, 2700)      # 35-45 dk
             else:
-                bekleme = random.randint(1200, 1500)      # 20-25 dk
+                bekleme = random.randint(2400, 2700)      # 40-45 dk
+            
+            # Aktif saat dışındaysa ekstra bekleme ekle
+            if not is_active_hours():
+                ekstra = random.randint(600, 1200)  # +10-20 dk
+                bekleme += ekstra
+                print(f"\n[{client_name}] 🌙 Aktif saat dışı — ekstra {ekstra // 60}dk eklendi.")
             
             print(f"\n[{client_name}] ⏳ {grup_sayisi} gruba blast atıldı → Sonraki blast {bekleme // 60} dk sonra")
             # Geri sayım (her dakika yazdır)
