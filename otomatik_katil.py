@@ -179,6 +179,7 @@ NEGATIVE_KEYWORDS = [
 
 # --- Auto-DM: Yanıt veren kullanıcıları takip et ---
 replied_users = set()
+pending_invites = set() # Yeni: Katılım isteği gönderilen grupları takip etmek için
 dm_count_today = 0
 dm_last_reset = ""
 MAX_DM_PER_DAY = 20
@@ -732,19 +733,29 @@ async def main():
                         member_count = getattr(dialog.entity, 'participants_count', None)
                         is_broadcast = getattr(dialog.entity, 'broadcast', False)
                         
-                        # Hedef gruptaysa kara listeye yazmayacağız ama aktif değilse/boşsa yine de es geçeceğiz
                         is_protected = username_lower in protected_groups
                         
-                        # 1. Üye sayısı kontrolü (500'den az üyeli gruplar zaman kaybı)
-                        if member_count is not None and member_count < 500:
-                            if not is_protected:
-                                new_blacklisted_groups.append(dialog.entity.username)
-                                try:
-                                    from telethon.tl.functions.channels import LeaveChannelRequest
-                                    await client(LeaveChannelRequest(dialog.entity))
-                                    print(f"🚪 [{client_name}] @{dialog.entity.username} → Üye sayısı az ({member_count}), gruptan çıkıldı.")
-                                except Exception:
-                                    pass
+                        # Korumalı grupları (sabit hedef listesi) doğrudan önbelleğe ekle ve geç
+                        if is_protected:
+                            joined_dialogs[username_lower] = dialog.entity
+                            all_groups_info.append({
+                                "username": dialog.entity.username,
+                                "title": title,
+                                "members": member_count,
+                                "broadcast": is_broadcast,
+                                "days_inactive": 0
+                            })
+                            continue
+                        
+                        # 1. Üye sayısı kontrolü (50'den az üyeli gruplar zaman kaybı)
+                        if member_count is not None and member_count < 50:
+                            new_blacklisted_groups.append(dialog.entity.username)
+                            try:
+                                from telethon.tl.functions.channels import LeaveChannelRequest
+                                await client(LeaveChannelRequest(dialog.entity))
+                                print(f"🚪 [{client_name}] @{dialog.entity.username} → Üye sayısı az ({member_count}), gruptan çıkıldı.")
+                            except Exception:
+                                pass
                             continue
                             
                         # 2. Aktiflik kontrolü ve Kalite Taraması
@@ -759,7 +770,6 @@ async def main():
                                 recent_messages.append(msg)
                             
                             # === SPAM GRUP TESPİTİ ===
-                            # Son 5 mesajda kaç tanesi bot reklamı/spam?
                             bot_mention_count = 0
                             our_msg_count = 0
                             unique_senders = set()
@@ -771,11 +781,9 @@ async def main():
                                 if sender_id:
                                     unique_senders.add(sender_id)
                                 
-                                # Bizim mesajlarımız
                                 if getattr(m, 'out', False) or (sender_id in our_user_ids):
                                     our_msg_count += 1
                                 
-                                # Bot username'i içeren mesajlar (spam reklam göstergesi)
                                 import re as _re
                                 bot_mentions = _re.findall(r'@\w+bot\b', msg_text, _re.IGNORECASE)
                                 if bot_mentions:
@@ -799,7 +807,7 @@ async def main():
                                     continue
                             
                             # Eğer son 5 mesajın 3+'ü @...Bot içeriyorsa → spam çöplüğü
-                            if bot_mention_count >= 3 and not is_protected:
+                            if bot_mention_count >= 3:
                                 new_blacklisted_groups.append(dialog.entity.username)
                                 print(f"🗑️ [{client_name}] @{dialog.entity.username} → Spam çöplüğü ({bot_mention_count}/5 mesaj bot reklamı), KARA LİSTE!")
                                 try:
@@ -810,7 +818,7 @@ async def main():
                                 continue
                             
                             # Eğer 5 mesajda sadece 1-2 unique gönderen varsa → ölü grup
-                            if len(recent_messages) >= 5 and len(unique_senders) <= 2 and not is_protected:
+                            if len(recent_messages) >= 5 and len(unique_senders) <= 2:
                                 new_blacklisted_groups.append(dialog.entity.username)
                                 print(f"💀 [{client_name}] @{dialog.entity.username} → Ölü grup (son 5 mesajda sadece {len(unique_senders)} kişi), KARA LİSTE!")
                                 try:
@@ -839,14 +847,13 @@ async def main():
                             delta = now - last_msg.date
                             days_inactive = delta.days
                             if delta.days >= 5:  # 7 günden 5 güne düşürdük
-                                if not is_protected:
-                                    new_blacklisted_groups.append(dialog.entity.username)
-                                    try:
-                                        from telethon.tl.functions.channels import LeaveChannelRequest
-                                        await client(LeaveChannelRequest(dialog.entity))
-                                        print(f"🚪 [{client_name}] @{dialog.entity.username} → {days_inactive} gün inaktif, gruptan çıkıldı.")
-                                    except Exception:
-                                        pass
+                                new_blacklisted_groups.append(dialog.entity.username)
+                                try:
+                                    from telethon.tl.functions.channels import LeaveChannelRequest
+                                    await client(LeaveChannelRequest(dialog.entity))
+                                    print(f"🚪 [{client_name}] @{dialog.entity.username} → {days_inactive} gün inaktif, gruptan çıkıldı.")
+                                except Exception:
+                                    pass
                                 continue
                         else:
                             # Mesaj yoksa veya son 5 mesajın hepsi bizimse grubu inaktif sayıp es geç
@@ -865,7 +872,7 @@ async def main():
                         has_relevance = any(w in title_lower for w in relevance_words)
                         has_negative = any(w in title_lower for w in NEGATIVE_KEYWORDS)
                         
-                        if (has_negative or not has_relevance) and not is_protected:
+                        if has_negative or not has_relevance:
                             new_blacklisted_groups.append(dialog.entity.username)
                             print(f"🎯 [{client_name}] @{dialog.entity.username} → Alakasız/Negatif grup ('{title}'), KARA LİSTE!")
                             try:
@@ -1143,7 +1150,7 @@ async def main():
             # ═══════════════════════════════════════════════════
             blacklist = get_list(BLACKLIST_FILE)
             blacklist_lower = set(b.lower() for b in blacklist)
-            not_joined = [g for g in gruplar if g.lower() not in blacklist_lower and g.lower() not in joined_dialogs]
+            not_joined = [g for g in gruplar if g.lower() not in blacklist_lower and g.lower() not in joined_dialogs and g.lower() not in pending_invites]
             
             if not_joined:
                 join_count = 0
@@ -1182,6 +1189,7 @@ async def main():
                         err_msg = str(e)
                         err_type = type(e).__name__
                         if 'InviteRequestSent' in err_type or 'invite' in err_msg.lower():
+                            pending_invites.add(hedef_grup.lower())
                             print(f"[{client_name}] ⏳ @{hedef_grup} -> Katılım isteği gönderildi (onay bekleniyor).")
                         elif 'no user has' in err_msg.lower() or isinstance(e, (UsernameNotOccupiedError, UsernameInvalidError, ValueError)):
                             async with state_lock:
