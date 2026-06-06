@@ -226,16 +226,22 @@ def set_cooldown(grup_name, cooldowns):
     from datetime import datetime
     cooldowns[grup_name.lower()] = datetime.now().isoformat()
 
-# --- Mesaj Rotasyonu ---
+# --- Mesaj Rotasyonu (6 şablon: kısa/uzun, soru/direkt, fiyat/sosyal) ---
 FROXY_MESSAGES = [
     os.path.join(MESSAGES_DIR, 'froxy_hook.txt'),
     os.path.join(MESSAGES_DIR, 'froxy_compare.txt'),
     os.path.join(MESSAGES_DIR, 'froxy_social.txt'),
+    os.path.join(MESSAGES_DIR, 'froxy_question.txt'),
+    os.path.join(MESSAGES_DIR, 'froxy_short.txt'),
+    os.path.join(MESSAGES_DIR, 'froxy_price.txt'),
 ]
 KEYVADI_MESSAGES = [
     os.path.join(MESSAGES_DIR, 'keyvadi_ai.txt'),
     os.path.join(MESSAGES_DIR, 'keyvadi_kupon.txt'),
     os.path.join(MESSAGES_DIR, 'keyvadi_adobe.txt'),
+    os.path.join(MESSAGES_DIR, 'keyvadi_ogrenci.txt'),
+    os.path.join(MESSAGES_DIR, 'keyvadi_deal.txt'),
+    os.path.join(MESSAGES_DIR, 'keyvadi_genel.txt'),
 ]
 
 # Mesaj geçmişi (aynı gruba aynı mesaj gitmesin)
@@ -270,8 +276,26 @@ def is_active_hours():
     from datetime import datetime, timezone, timedelta
     tr_time = datetime.now(timezone(timedelta(hours=3)))
     hour = tr_time.hour
-    # Aktif saatler: 09:00-14:00 ve 18:00-23:59
-    return (9 <= hour <= 14) or (18 <= hour <= 23)
+    # Peak saatler: 12:00-14:00 ve 19:00-23:59 (en yüksek etkileşim)
+    # Normal saatler: 09:00-12:00 ve 14:00-19:00 (orta etkileşim)
+    # Ölü saatler: 01:00-08:00 (mesaj kaybolur, atılmaz)
+    if (12 <= hour <= 14) or (19 <= hour <= 23):
+        return 'peak'
+    elif (9 <= hour <= 11) or (15 <= hour <= 18) or hour == 0:
+        return 'normal'
+    else:
+        return 'dead'
+
+def minutes_until_active():
+    """Ölü saatlerden aktif saate kaç dakika kaldığını hesapla"""
+    from datetime import datetime, timezone, timedelta
+    tr_time = datetime.now(timezone(timedelta(hours=3)))
+    hour = tr_time.hour
+    minute = tr_time.minute
+    # 09:00'a kaç dakika?
+    if hour < 9:
+        return (9 - hour) * 60 - minute
+    return 0  # Zaten aktif
 
 # --- Auto-Scrape: Anahtar kelimeler (genişletilmiş) ---
 SCRAPE_KEYWORDS = [
@@ -991,10 +1015,19 @@ async def main():
                 print(f"\n[{client_name}] 🚀 BLAST MODE: {len(blast_targets)} gruba mesaj gönderiliyor!")
                 
                 # Aktif saat kontrolü
-                if not is_active_hours():
-                    from datetime import datetime, timezone, timedelta
-                    tr_time = datetime.now(timezone(timedelta(hours=3)))
-                    print(f"[{client_name}] 🌙 Şu an TR saati {tr_time.strftime('%H:%M')} — aktif saat değil. Yine de gönderilecek ama daha uzun aralıklarla.")
+                from datetime import datetime, timezone, timedelta
+                tr_time = datetime.now(timezone(timedelta(hours=3)))
+                saat_durumu = is_active_hours()
+                
+                if saat_durumu == 'dead':
+                    bekle_dk = minutes_until_active()
+                    print(f"[{client_name}] 🌙 TR saati {tr_time.strftime('%H:%M')} — ölü saat. Mesaj kaybolur, {bekle_dk} dk sonra (09:00'da) blast başlayacak.")
+                    await asyncio.sleep(bekle_dk * 60)
+                    continue  # Döngü başına dön, saati tekrar kontrol et
+                elif saat_durumu == 'peak':
+                    print(f"[{client_name}] 🔥 TR saati {tr_time.strftime('%H:%M')} — PEAK SAAT! Maksimum etkileşim bekleniyor.")
+                elif saat_durumu == 'normal':
+                    print(f"[{client_name}] 📤 TR saati {tr_time.strftime('%H:%M')} — normal saat, gönderim devam ediyor.")
                 
                 # Mesaj rotasyonu: hangi hesap için hangi şablonlar?
                 is_keyvadi = "2" in client_name
@@ -1266,18 +1299,32 @@ async def main():
                 except:
                     pass
             
-            # Dinamik bekleme: grup sayısına göre
+            # Dinamik bekleme: grup sayısı + saat dilimine göre
             grup_sayisi = len(blast_targets) if blast_targets else 0
-            if grup_sayisi <= 10:
-                bekleme = random.randint(600, 720)      # 10-12 dk
-            elif grup_sayisi <= 30:
-                bekleme = random.randint(600, 900)       # 10-15 dk
-            elif grup_sayisi <= 50:
-                bekleme = random.randint(900, 1200)      # 15-20 dk
-            else:
-                bekleme = random.randint(1200, 1500)      # 20-25 dk
+            saat_durumu = is_active_hours()
             
-            print(f"\n[{client_name}] ⏳ {grup_sayisi} gruba blast atıldı → Sonraki blast {bekleme // 60} dk sonra")
+            if saat_durumu == 'peak':
+                # Peak saatlerde daha sık blast (etkileşim yüksek)
+                if grup_sayisi <= 10:
+                    bekleme = random.randint(480, 600)      # 8-10 dk
+                elif grup_sayisi <= 30:
+                    bekleme = random.randint(540, 720)       # 9-12 dk
+                elif grup_sayisi <= 50:
+                    bekleme = random.randint(600, 900)       # 10-15 dk
+                else:
+                    bekleme = random.randint(900, 1200)       # 15-20 dk
+                print(f"\n[{client_name}] 🔥 PEAK SAAT — {grup_sayisi} gruba blast atıldı → Sonraki blast {bekleme // 60} dk sonra")
+            else:
+                # Normal saatlerde standart aralık
+                if grup_sayisi <= 10:
+                    bekleme = random.randint(600, 720)      # 10-12 dk
+                elif grup_sayisi <= 30:
+                    bekleme = random.randint(600, 900)       # 10-15 dk
+                elif grup_sayisi <= 50:
+                    bekleme = random.randint(900, 1200)      # 15-20 dk
+                else:
+                    bekleme = random.randint(1200, 1500)      # 20-25 dk
+                print(f"\n[{client_name}] ⏳ {grup_sayisi} gruba blast atıldı → Sonraki blast {bekleme // 60} dk sonra")
             # Geri sayım (her dakika yazdır)
             kalan = bekleme
             while kalan > 0:
