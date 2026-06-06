@@ -786,146 +786,14 @@ async def main():
                                 })
                                 continue
                             
-                            # 1. Üye sayısı kontrolü (50'den az üyeli gruplar zaman kaybı)
-                            if member_count is not None and member_count < 50:
-                                new_blacklisted_groups.append(dialog.entity.username)
-                                try:
-                                    from telethon.tl.functions.channels import LeaveChannelRequest
-                                    await client(LeaveChannelRequest(dialog.entity))
-                                    print(f"🚪 [{client_name}] @{dialog.entity.username} → Üye sayısı az ({member_count}), gruptan çıkıldı.")
-                                except Exception:
-                                    pass
-                                continue
-                                
-                            # 2. Aktiflik kontrolü ve Kalite Taraması
-                            days_inactive = 0
-                            last_msg = dialog.message
-                            
-                            try:
-                                # Son 5 mesajı alıp analiz edelim
-                                recent_messages = []
-                                async for msg in client.iter_messages(dialog.entity, limit=5):
-                                    recent_messages.append(msg)
-                                
-                                # === SPAM GRUP TESPİTİ ===
-                                bot_mention_count = 0
-                                our_msg_count = 0
-                                unique_senders = set()
-                                
-                                for m in recent_messages:
-                                    msg_text = (getattr(m, 'raw_text', '') or '').lower()
-                                    sender_id = getattr(m, 'sender_id', None)
-                                    
-                                    if sender_id:
-                                        unique_senders.add(sender_id)
-                                    
-                                    if getattr(m, 'out', False) or (sender_id in our_user_ids):
-                                        our_msg_count += 1
-                                    
-                                    import re as _re
-                                    bot_mentions = _re.findall(r'@\w+bot\b', msg_text, _re.IGNORECASE)
-                                    if bot_mentions:
-                                        bot_mention_count += 1
-                                
-                                # Eğer son 3+ mesajın tamamı bizden/botlarımızdan → kara liste
-                                if len(recent_messages) >= 3:
-                                    is_all_ours = all(
-                                        getattr(m, 'out', False) or (getattr(m, 'sender_id', None) in our_user_ids)
-                                        for m in recent_messages[:3]
-                                    )
-                                    if is_all_ours:
-                                        new_blacklisted_groups.append(dialog.entity.username)
-                                        print(f"🚫 [{client_name}] @{dialog.entity.username} → Son 3 mesaj bizden, KARA LİSTE!")
-                                        try:
-                                            from telethon.tl.functions.channels import LeaveChannelRequest
-                                            await client(LeaveChannelRequest(dialog.entity))
-                                            print(f"🚪 [{client_name}] @{dialog.entity.username} → Gruptan çıkıldı.")
-                                        except Exception:
-                                            pass
-                                        continue
-                                
-                                # Eğer son 5 mesajın 3+'ü @...Bot içeriyorsa → spam çöplüğü
-                                if bot_mention_count >= 3:
-                                    new_blacklisted_groups.append(dialog.entity.username)
-                                    print(f"🗑️ [{client_name}] @{dialog.entity.username} → Spam çöplüğü ({bot_mention_count}/5 mesaj bot reklamı), KARA LİSTE!")
-                                    try:
-                                        from telethon.tl.functions.channels import LeaveChannelRequest
-                                        await client(LeaveChannelRequest(dialog.entity))
-                                    except Exception:
-                                        pass
-                                    continue
-                                
-                                # Eğer 5 mesajda sadece 1-2 unique gönderen varsa → ölü grup
-                                if len(recent_messages) >= 5 and len(unique_senders) <= 2:
-                                    new_blacklisted_groups.append(dialog.entity.username)
-                                    print(f"💀 [{client_name}] @{dialog.entity.username} → Ölü grup (son 5 mesajda sadece {len(unique_senders)} kişi), KARA LİSTE!")
-                                    try:
-                                        from telethon.tl.functions.channels import LeaveChannelRequest
-                                        await client(LeaveChannelRequest(dialog.entity))
-                                    except Exception:
-                                        pass
-                                    continue
-                                    
-                                # Son mesaj bizim hesaplarımızdan/botlarımızdan birinin ise geçmişe bakıp başkasının mesajını arayalım
-                                last_sender_id = getattr(last_msg, 'sender_id', None) if last_msg else None
-                                if last_msg and (getattr(last_msg, 'out', False) or (last_sender_id in our_user_ids)):
-                                    found_other = False
-                                    async for msg in client.iter_messages(dialog.entity, limit=5):
-                                        msg_sender_id = getattr(msg, 'sender_id', None)
-                                        if not (getattr(msg, 'out', False) or (msg_sender_id in our_user_ids)):
-                                            last_msg = msg
-                                            found_other = True
-                                            break
-                                    if not found_other:
-                                        last_msg = None
-                            except Exception as history_err:
-                                pass
-                                
-                            if last_msg and getattr(last_msg, 'date', None):
-                                delta = now - last_msg.date
-                                days_inactive = delta.days
-                                if delta.days >= 5:
-                                    new_blacklisted_groups.append(dialog.entity.username)
-                                    try:
-                                        from telethon.tl.functions.channels import LeaveChannelRequest
-                                        await client(LeaveChannelRequest(dialog.entity))
-                                        print(f"🚪 [{client_name}] @{dialog.entity.username} → {days_inactive} gün inaktif, gruptan çıkıldı.")
-                                    except Exception:
-                                        pass
-                                    continue
-                            else:
-                                continue
-                            
-                            # === GRUP ALAKA DENETİMİ ===
-                            title_lower = title.lower()
-                            relevance_words = [
-                                "satış", "satis", "ticaret", "ilan", "reklam", "kupon", "indirim",
-                                "hesap", "alım", "alim", "satım", "satim", "smm", "kod", "pazar",
-                                "ikinci el", "2.el", "fırsat", "firsat", "lisans", "premium",
-                                "freelance", "dijital", "e-ticaret", "trendyol", "shopier",
-                                "ref", "ucuz", "kampanya", "epin", "yazılım", "yazilim", 
-                                "adobe", "canva", "ai", "yapay zeka",
-                            ]
-                            has_relevance = any(w in title_lower for w in relevance_words)
-                            has_negative = any(w in title_lower for w in NEGATIVE_KEYWORDS)
-                            
-                            if has_negative or not has_relevance:
-                                new_blacklisted_groups.append(dialog.entity.username)
-                                print(f"🎯 [{client_name}] @{dialog.entity.username} → Alakasız/Negatif grup ('{title}'), KARA LİSTE!")
-                                try:
-                                    from telethon.tl.functions.channels import LeaveChannelRequest
-                                    await client(LeaveChannelRequest(dialog.entity))
-                                except Exception:
-                                    pass
-                                continue
-                                    
+                            # Otomatik Çıkma/Kara Liste Mantığı Kaldırıldı. Tüm grupları direkt ekle.
                             joined_dialogs[username_lower] = dialog.entity
                             all_groups_info.append({
                                 "username": dialog.entity.username,
                                 "title": title,
                                 "members": member_count,
                                 "broadcast": is_broadcast,
-                                "days_inactive": days_inactive
+                                "days_inactive": 0
                             })
                             
                 # Grup bilgilerini dosyaya kaydet
@@ -1060,21 +928,9 @@ async def main():
                             with open("group_failures.json", "w", encoding="utf-8") as f:
                                 json.dump(failures, f, indent=4)
                             
-                            # 3 kez üst üste hata aldıysa kara listeye ekle (korumalı değilse)
+                            # 3 kez üst üste hata aldıysa uyar ama kara listeye alma ve gruptan çıkma
                             if failures[g_key] >= 3:
-                                if g_key not in protected_groups:
-                                    save_to_list(grup_name, BLACKLIST_FILE)
-                                    print(f"[{client_name}] 🚫 @{grup_name} -> 3 kez üst üste hata alındı, KARA LİSTEYE ALINDI!")
-                                    try:
-                                        from telethon.tl.functions.channels import LeaveChannelRequest
-                                        entity = joined_dialogs.get(g_key)
-                                        if entity:
-                                            await client(LeaveChannelRequest(entity))
-                                            print(f"🚪 [{client_name}] @{grup_name} -> Sürekli hata verdiğinden gruptan çıkıldı.")
-                                    except Exception:
-                                        pass
-                                else:
-                                    print(f"[{client_name}] ⚠️ Korumalı @{grup_name} -> 3 kez üst üste hata alındı, ancak korumalı olduğundan kara listeye alınmadı ve gruptan çıkılmadı.")
+                                print(f"[{client_name}] ⚠️ @{grup_name} -> 3 kez üst üste hata alındı, ancak gruptan çıkılmadı ve kara listeye alınmadı.")
                         except Exception as fe:
                             print(f"⚠️ Hata sayacı güncelleme hatası: {fe}")
 
@@ -1236,19 +1092,9 @@ async def main():
                             
                         if entity:
                             member_count = getattr(entity, 'participants_count', None)
-                            if member_count is not None and member_count < 500:
-                                if hedef_grup.lower() not in protected_groups:
-                                    async with state_lock:
-                                        save_to_list(hedef_grup, BLACKLIST_FILE)
-                                    print(f"[{client_name}] 📉 @{hedef_grup} -> Üye az ({member_count}), kara listeye alındı.")
-                                    try:
-                                        from telethon.tl.functions.channels import LeaveChannelRequest
-                                        await client(LeaveChannelRequest(entity))
-                                    except:
-                                        pass
-                                    continue
-                                else:
-                                    print(f"[{client_name}] 📉 @{hedef_grup} -> Üye sayısı az ({member_count}), ancak korumalı olduğundan kara listeye alınmadı ve çıkılmadı.")
+                            # Üye sayısı limit kontrolü (Gruptan çıkma/kara listeye alma devre dışı bırakıldı)
+                            if member_count is not None and member_count < 50:
+                                print(f"[{client_name}] 📉 @{hedef_grup} -> Üye az ({member_count}), ancak gruptan çıkılmadı.")
                                 
                             joined_dialogs[hedef_grup.lower()] = entity
                             join_count += 1
