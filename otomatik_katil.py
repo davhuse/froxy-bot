@@ -277,14 +277,14 @@ def is_active_hours():
     tr_time = datetime.now(timezone(timedelta(hours=3)))
     hour = tr_time.hour
     # Peak saatler: 12:00-14:00 ve 19:00-23:59 (en yüksek etkileşim)
-    # Normal saatler: 09:00-12:00 ve 14:00-19:00 (orta etkileşim)
-    # Ölü saatler: 01:00-08:00 (mesaj kaybolur, atılmaz)
+    # Normal saatler: 00:00-02:59 ve 07:00-11:59 ve 15:00-18:59
+    # Ölü saatler: 03:00-06:59 (mesaj kaybolur, atılmaz)
     if (12 <= hour <= 14) or (19 <= hour <= 23):
         return 'peak'
-    elif (9 <= hour <= 11) or (15 <= hour <= 18) or hour == 0:
-        return 'normal'
-    else:
+    elif (3 <= hour <= 6):
         return 'dead'
+    else:
+        return 'normal'
 
 def minutes_until_active():
     """Ölü saatlerden aktif saate kaç dakika kaldığını hesapla"""
@@ -292,9 +292,9 @@ def minutes_until_active():
     tr_time = datetime.now(timezone(timedelta(hours=3)))
     hour = tr_time.hour
     minute = tr_time.minute
-    # 09:00'a kaç dakika?
-    if hour < 9:
-        return (9 - hour) * 60 - minute
+    # 07:00'a kaç dakika?
+    if hour < 7:
+        return (7 - hour) * 60 - minute
     return 0  # Zaten aktif
 
 # --- Auto-Scrape: Anahtar kelimeler (genişletilmiş) ---
@@ -1021,7 +1021,7 @@ async def main():
                 
                 if saat_durumu == 'dead':
                     bekle_dk = minutes_until_active()
-                    print(f"[{client_name}] 🌙 TR saati {tr_time.strftime('%H:%M')} — ölü saat. Mesaj kaybolur, {bekle_dk} dk sonra (09:00'da) blast başlayacak.")
+                    print(f"[{client_name}] 🌙 TR saati {tr_time.strftime('%H:%M')} — ölü saat. Mesaj kaybolur, {bekle_dk} dk sonra (07:00'da) blast başlayacak.")
                     await asyncio.sleep(bekle_dk * 60)
                     continue  # Döngü başına dön, saati tekrar kontrol et
                 elif saat_durumu == 'peak':
