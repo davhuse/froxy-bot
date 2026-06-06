@@ -343,13 +343,18 @@ async def auto_scrape_groups(client, client_name):
         "kozmetik", "toptan", "e-ticaret", "yapay zeka", "ai",
     ]
     
-    # 5 random keyword seç ve ara (3'ten artırıldı)
-    selected_keywords = random.sample(keywords_list, min(5, len(keywords_list)))
-    print(f"🔎 [{client_name}] Seçilen anahtar kelimeler ({len(selected_keywords)}): {selected_keywords}")
+    # Günde 1 kez çalıştığı için TÜM keyword'leri tara (karıştırarak)
+    DAILY_GROUP_LIMIT = 50  # Günlük maksimum yeni grup sayısı
+    selected_keywords = keywords_list.copy()
+    random.shuffle(selected_keywords)
+    print(f"🔎 [{client_name}] Günlük tarama: {len(selected_keywords)} anahtar kelime, max {DAILY_GROUP_LIMIT} yeni grup hedefi")
     
     from telethon.tl.types import Channel, Chat
     
     for keyword in selected_keywords:
+        if new_found >= DAILY_GROUP_LIMIT:
+            print(f"🎯 [{client_name}] Günlük limit ({DAILY_GROUP_LIMIT} grup) doldu, tarama durduruluyor.")
+            break
         print(f"🔎 [{client_name}] Aranıyor: '{keyword}'")
         try:
             result = await client(SearchRequest(q=keyword, limit=50))
@@ -1337,10 +1342,10 @@ async def main():
                 print(f"⚠️ [Firestore Sync] Hata: {e}")
 
     async def periodic_scraper(client, client_name):
-        print("🔍 [Scraper Task] Periyodik grup tarama görevi başlatıldı (1 saat aralıklarla).")
+        print("🔍 [Scraper Task] Günlük grup tarama görevi başlatıldı (24 saat aralıklarla).")
         while True:
-            # 1 saat bekleyelim ama her 15 saniyede bir flag dosyasını kontrol edelim
-            kalan = 3600
+            # 24 saat bekle ama her 15 saniyede bir flag dosyasını kontrol et (acil tetikleyici)
+            kalan = 86400  # 24 saat = 86400 saniye
             while kalan > 0:
                 if os.path.exists("trigger_scraper.flag"):
                     print("⚡ [Scraper Task] TETİKLEYİCİ: 'trigger_scraper.flag' tespit edildi! Anlık tarama başlatılıyor...")
@@ -1352,7 +1357,8 @@ async def main():
                 await asyncio.sleep(15)
                 kalan -= 15
             
-            # Normal periyodik tarama
+            # Günlük periyodik tarama
+            print("🔄 [Scraper Task] 24 saat doldu, günlük tarama başlıyor...")
             await auto_scrape_groups(client, client_name)
 
     # Workers ve arka plan görevlerini başlat
