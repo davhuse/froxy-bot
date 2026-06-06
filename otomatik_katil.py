@@ -962,14 +962,10 @@ async def main():
                 except:
                     pass
             
-            # Cooldown verilerini yükle
-            cooldowns = load_cooldowns()
-            
-            # Önbellekte olan + kara listede olmayan + cooldown'da olmayan hedef gruplar
+            # Önbellekte olan + kara listede olmayan hedef gruplar
             blast_targets = []
             debug_blacklisted = 0
             debug_not_cached = 0
-            debug_on_cooldown = 0
             for username_lower in hedef_set:
                 if username_lower in blacklist_lower:
                     debug_blacklisted += 1
@@ -978,15 +974,11 @@ async def main():
                     entity = joined_dialogs[username_lower]
                     if getattr(entity, 'broadcast', False):
                         continue
-                    # Cooldown kontrolü: son 24 saatte mesaj gittiyse atla
-                    if is_on_cooldown(username_lower, cooldowns):
-                        debug_on_cooldown += 1
-                        continue
                     blast_targets.append(username_lower)
                 else:
                     debug_not_cached += 1
             
-            print(f"[{client_name}] 📊 Hedef: {len(hedef_set)} | Gönderilecek: {len(blast_targets)} | Cooldown: {debug_on_cooldown} | Kara liste: {debug_blacklisted} | Üye değil: {debug_not_cached}")
+            print(f"[{client_name}] 📊 Hedef: {len(hedef_set)} | Gönderilecek: {len(blast_targets)} | Kara liste: {debug_blacklisted} | Üye değil: {debug_not_cached}")
             
             if not blast_targets:
                 print(f"[{client_name}] ⚠️ Önbellekte mesaj atılacak grup yok. Yeni gruplara katılma aşamasına geçiliyor...")
@@ -1108,7 +1100,7 @@ async def main():
                             print(f"[{client_name}] ✅ @{grup_name} → Gönderildi! ({sent_count+1}) [Şablon: {chosen_name}]")
                             
                         sent_count += 1
-                        set_cooldown(grup_name, cooldowns)  # 24 saat cooldown başlat
+
                         update_stats(sent=1)
                         await reset_failure(grup_name)
                         async with state_lock:
@@ -1122,7 +1114,7 @@ async def main():
                                 else:
                                     await client.send_message(entity, msg)
                                 sent_count += 1
-                                set_cooldown(grup_name, cooldowns)  # 24 saat cooldown başlat
+
                                 print(f"[{client_name}] ✅ @{grup_name} → Gönderildi (flood sonrası)!")
                                 update_stats(sent=1)
                                 await reset_failure(grup_name)
@@ -1159,9 +1151,8 @@ async def main():
                         print(f"[{client_name}] ⏳ Sonraki grup için {delay} saniye bekleniyor...")
                         await asyncio.sleep(delay)
                 
-                # Mesaj geçmişini ve cooldown'ları kaydet
+                # Mesaj geçmişini kaydet
                 save_msg_history(msg_history)
-                save_cooldowns(cooldowns)
                 
                 print(f"\n[{client_name}] 📊 BLAST SONUÇ: {sent_count} başarılı, {fail_count} başarısız / {len(blast_targets)} toplam")
 
@@ -1270,7 +1261,7 @@ async def main():
                 except:
                     pass
             
-            # Dinamik bekleme: grup sayısına göre (cooldown zaten tekrarı engelliyor)
+            # Dinamik bekleme: grup sayısına göre
             grup_sayisi = len(blast_targets) if blast_targets else 0
             if grup_sayisi <= 10:
                 bekleme = random.randint(600, 720)      # 10-12 dk
