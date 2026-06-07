@@ -325,7 +325,7 @@ SCRAPE_KEYWORDS = [
     "toptan satış türkiye", "pazar yeri",
 ]
 
-async def auto_scrape_groups(client, client_name):
+async def auto_scrape_groups(client, client_name, joined_usernames=None):
     """Telegram global aramasıyla yeni, aktif ve kaliteli Türkçe satış grupları keşfeder."""
     print(f"\n🔍 [{client_name}] Gelişmiş Grup Keşfi (Auto-Scraper v2) başlıyor...")
     
@@ -352,6 +352,8 @@ async def auto_scrape_groups(client, client_name):
         return 0
         
     existing_groups = set(g.lower() for g in gruplar)
+    if joined_usernames:
+        existing_groups.update(joined_usernames)
     blacklist = get_list(BLACKLIST_FILE)
     blacklist_lower = set(b.lower() for b in blacklist)
     new_found = 0
@@ -741,7 +743,21 @@ async def main():
 
     # --- AUTO-SCRAPE: AKTİF ---
     first_client, first_name, _ = active_clients[0]
-    scrape_count = await auto_scrape_groups(first_client, first_name)
+    
+    # Get currently joined group usernames to avoid finding them
+    joined_usernames = set()
+    print("🔄 Mevcut gruplarınız taranıyor (tekrar keşfetmemek için)...")
+    try:
+        async for dialog in first_client.iter_dialogs():
+            if dialog.is_group or dialog.is_channel:
+                username = getattr(dialog.entity, 'username', None)
+                if username:
+                    joined_usernames.add(username.lower())
+        print(f"✅ {len(joined_usernames)} adet mevcut grup tespit edildi. Bunlar aramada es geçilecek.")
+    except Exception as e:
+        print(f"⚠️ Mevcut gruplar alınırken hata: {e}")
+
+    scrape_count = await auto_scrape_groups(first_client, first_name, joined_usernames)
     if scrape_count > 0:
         print(f"🎉 Auto-Scraper toplamda {scrape_count} yeni grup ekledi. Liste güncellendi!")
 
@@ -1221,13 +1237,31 @@ async def main():
                         os.remove("trigger_scraper.flag")
                     except:
                         pass
-                    await auto_scrape_groups(client, client_name)
+                    joined_usernames = set()
+                    try:
+                        async for dialog in client.iter_dialogs():
+                            if dialog.is_group or dialog.is_channel:
+                                username = getattr(dialog.entity, 'username', None)
+                                if username:
+                                    joined_usernames.add(username.lower())
+                    except:
+                        pass
+                    await auto_scrape_groups(client, client_name, joined_usernames)
                 await asyncio.sleep(15)
                 kalan -= 15
             
             # Günlük periyodik tarama
             print("🔄 [Scraper Task] 24 saat doldu, günlük tarama başlıyor...")
-            await auto_scrape_groups(client, client_name)
+            joined_usernames = set()
+            try:
+                async for dialog in client.iter_dialogs():
+                    if dialog.is_group or dialog.is_channel:
+                        username = getattr(dialog.entity, 'username', None)
+                        if username:
+                            joined_usernames.add(username.lower())
+            except:
+                pass
+            await auto_scrape_groups(client, client_name, joined_usernames)
 
     # Workers ve arka plan görevlerini başlat
     tasks = []
