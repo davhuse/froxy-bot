@@ -175,6 +175,9 @@ NEGATIVE_KEYWORDS = [
     "escort", "sex", "porno", "ifşa", "ifsa", "adult", "travesti",
     "film", "dizi", "izle", "sinema", "warez",
     "bahis", "iddaa", "casino", "kumar", "rulet", "bet", "kazan", "tahmin",
+    "araba", "oto", "motor", "vasıta", "toptan", "tekstil", "diş", "hekim", "medikal", 
+    "kitap", "ders", "gayrimenkul", "emlak", "ev", "daire", "kiralık", "arazi", "arsa",
+    "telefon", "cihaz", "parça", "donanım", "pc"
 ]
 
 # --- Auto-DM: Yanıt veren kullanıcıları takip et ---
@@ -299,14 +302,15 @@ def minutes_until_active():
 
 # --- Auto-Scrape: Anahtar kelimeler (genişletilmiş) ---
 SCRAPE_KEYWORDS = [
-    # Genel ticaret
+    # Genel ticaret (Dijital Odaklı)
     "kupon satış", "kod satış", "kupon çek", "kupon satis",
     "alım satım", "ticaret grubu", "satış grubu", "ilan grubu",
     "hesap satış", "dijital ilan", "smm panel",
     "indirim kupon", "fırsat indirim", "reklam grubu",
-    "ikinci el", "2.el satış", "alim satim",
-    "e-ticaret satış", "trendyol satıcı", "freelance iş",
-    "referans reklam", "satılık ilan", "epin satış",
+    "alim satim", "e-ticaret satış", "dijital satış",
+    "referans reklam", "epin satış", "program satış",
+    "yazılım ticaret", "dijital lisans", "reklam pazar",
+    "reklam referans", "dijital pazar", "sosyal medya bayilik",
     # AI ve yazılım
     "yapay zeka", "chatgpt türkçe", "ai araçları", "ai tools",
     "adobe lisans", "canva pro", "premium hesap",
@@ -315,14 +319,13 @@ SCRAPE_KEYWORDS = [
     "trendyol indirim", "trendyol kupon", "yemek kuponu",
     "indirim kodu", "promosyon kodu", "kampanya kodu",
     # Freelance ve dijital
-    "freelancer türkiye", "dijital pazarlama", "sosyal medya yönetimi",
+    "dijital pazarlama", "sosyal medya yönetimi",
     "instagram takipçi", "youtube abone", "tiktok takipçi",
     # Oyun hesapları
     "pubg hesap", "brawl stars hesap", "valorant hesap",
     "oyun hesap satış", "game account",
     # Genel satış
-    "telefon satış", "elektronik satış", "kozmetik satış",
-    "toptan satış türkiye", "pazar yeri",
+    "pazar yeri"
 ]
 
 async def auto_scrape_groups(client, client_name, joined_usernames=None):
@@ -363,10 +366,9 @@ async def auto_scrape_groups(client, client_name, joined_usernames=None):
     sales_keywords = [
         "satış", "satis", "ticaret", "ilan", "reklam", "kupon", "indirim",
         "shopier", "hesap", "alım", "satım", "alim", "satim", "smm", "kod",
-        "ucuz", "ref", "pazar", "ikinci el", "brawl", "pubg", "takipçi",
-        "lisans", "premium", "freelance", "dijital", "adobe", "canva",
-        "trendyol", "kampanya", "fırsat", "firsat", "oyun", "epin",
-        "kozmetik", "toptan", "e-ticaret", "yapay zeka", "ai",
+        "ucuz", "ref", "pazar", "lisans", "premium", "dijital", "adobe", "canva",
+        "trendyol", "kampanya", "fırsat", "firsat", "epin", "yazılım", "yazilim", 
+        "yapay zeka", "ai", "chatgpt"
     ]
     
     # Günde 1 kez çalıştığı için TÜM keyword'leri tara (karıştırarak)
