@@ -897,6 +897,17 @@ def keep_alive():
             pass
         time.sleep(600)  # 10 dakika
 
+@app.route('/api/scraped-groups')
+def get_scraped_groups():
+    groups = []
+    if os.path.exists("scraped_groups.txt"):
+        try:
+            with open("scraped_groups.txt", "r", encoding="utf-8") as f:
+                groups = [line.strip() for line in f if line.strip()]
+        except Exception as e:
+            return jsonify({"error": str(e)})
+    return jsonify({"groups": groups})
+
 if __name__ == '__main__':
     # Start the watchdog thread
     t = threading.Thread(target=bot_watchdog, daemon=True)
