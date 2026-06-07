@@ -24,12 +24,13 @@ def print(*args, **kwargs):
     builtins.print(*args, **kwargs)
 
 gruplar = [
-    # Kullanıcının verdiği 17 spesifik grup
+    # Kullanıcının verdiği 17 spesifik grup + yeni eklenenler
     "ilanticaret", "Nightsatis", "alimsatimmerkezii", "kuponceking",
     "-1001572316417", "kuponsatimalim", "indirimkodusatis", "ticaretsaha",
     "ticaretforumofficial", "ticaretguvenilir", "kuponsatisgrup",
     "kuponhesapsatis", "kuponsatislari0", "TsmTicaret", "reklamreferans",
-    "sosyalmedyaalimsatimticaret", "YuceKuponSatis"
+    "sosyalmedyaalimsatimticaret", "YuceKuponSatis", "ReklamOnliene",
+    "letgoilanlari", "alcaponesat"
 ]
 
 
