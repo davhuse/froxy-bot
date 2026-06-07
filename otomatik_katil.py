@@ -24,12 +24,12 @@ def print(*args, **kwargs):
     builtins.print(*args, **kwargs)
 
 gruplar = [
-    # Kullanıcının verdiği gruplar
-    "kuponceking", "kuponsatislari0", "sosyalmedyaalimsatimticaret", "ticaretguvenilir",
-    "kuponsatisgrup", "dijitalilan", "kuponceksatis", "ticaretsaha", "IWEfTGD7OCBjY2I8",
-    "satilikilanlar", "diyarbakirikincielarac", "smmpanelgrup", "kuponhesapsatis",
-    "YuceKuponSatis", "ticaretforumofficial", "referansreklam1", "Nightsatis",
-    "kuponsat", "indirimkodusatis", "dolapdestek0",
+    # Kullanıcının verdiği 17 spesifik grup
+    "ilanticaret", "Nightsatis", "alimsatimmerkezii", "kuponceking",
+    "-1001572316417", "kuponsatimalim", "indirimkodusatis", "ticaretsaha",
+    "ticaretforumofficial", "ticaretguvenilir", "kuponsatisgrup",
+    "kuponhesapsatis", "kuponsatislari0", "TsmTicaret", "reklamreferans",
+    "sosyalmedyaalimsatimticaret", "YuceKuponSatis"
 ]
 
 
@@ -493,13 +493,14 @@ async def auto_scrape_groups(client, client_name):
                     pass
                     
                 # === TÜM FİLTRELERİ GEÇTİ — KALİTELİ GRUP ===
-                with open(AUTO_GROUPS_FILE, 'a', encoding='utf-8') as f:
-                    f.write(chat.username + '\n')
-                existing_groups.add(username)
-                gruplar.append(chat.username)
+                try:
+                    with open("scraped_groups.txt", 'a', encoding='utf-8') as f:
+                        f.write(chat.username + '\n')
+                except:
+                    pass
                 new_found += 1
                 keyword_found += 1
-                print(f"  🆕 KALİTELİ GRUP: @{chat.username} (Üye: {member_count or '?'}, Başlık: '{chat.title}')")
+                print(f"  🆕 KALİTELİ GRUP KEŞFEDİLDİ (Katılınmadı): @{chat.username} (Üye: {member_count or '?'}, Başlık: '{chat.title}')")
                 
             summary = f"'{keyword}': +{keyword_found} yeni"
             if keyword_blacklisted > 0:
@@ -763,38 +764,46 @@ async def main():
                 
                 async for dialog in client.iter_dialogs():
                     if dialog.is_group or dialog.is_channel:
-                        if hasattr(dialog.entity, 'username') and dialog.entity.username:
-                            username_lower = dialog.entity.username.lower()
-                            title = getattr(dialog.entity, 'title', '') or ''
-                            member_count = getattr(dialog.entity, 'participants_count', None)
-                            is_broadcast = getattr(dialog.entity, 'broadcast', False)
+                        username_lower = dialog.entity.username.lower() if (hasattr(dialog.entity, 'username') and dialog.entity.username) else None
+                        title = getattr(dialog.entity, 'title', '') or ''
+                        member_count = getattr(dialog.entity, 'participants_count', None)
+                        is_broadcast = getattr(dialog.entity, 'broadcast', False)
+                        
+                        dialog_id_str = str(dialog.id)
+                        is_protected = False
+                        if username_lower and username_lower in protected_groups:
+                            is_protected = True
+                        elif dialog_id_str in protected_groups:
+                            is_protected = True
                             
-                            is_protected = username_lower in protected_groups
-                            
-                            # Korumalı grupları (sabit hedef listesi) doğrudan önbelleğe ekle ve geç
-                            if is_protected:
-                                joined_dialogs[username_lower] = dialog.entity
-                                # Katılım isteği onaylandıysa bekleme listesinden temizle
-                                if username_lower in pending_invites:
-                                    pending_invites.remove(username_lower)
-                                all_groups_info.append({
-                                    "username": dialog.entity.username,
-                                    "title": title,
-                                    "members": member_count,
-                                    "broadcast": is_broadcast,
-                                    "days_inactive": 0
-                                })
-                                continue
-                            
-                            # Otomatik Çıkma/Kara Liste Mantığı Kaldırıldı. Tüm grupları direkt ekle.
+                        # Save in joined_dialogs under username (if any) and ID string
+                        if username_lower:
                             joined_dialogs[username_lower] = dialog.entity
+                        joined_dialogs[dialog_id_str] = dialog.entity
+                        
+                        # Korumalı grupları (sabit hedef listesi) doğrudan önbelleğe ekle ve geç
+                        if is_protected:
+                            if username_lower and username_lower in pending_invites:
+                                pending_invites.remove(username_lower)
+                            if dialog_id_str in pending_invites:
+                                pending_invites.remove(dialog_id_str)
                             all_groups_info.append({
-                                "username": dialog.entity.username,
+                                "username": dialog.entity.username or dialog_id_str,
                                 "title": title,
                                 "members": member_count,
                                 "broadcast": is_broadcast,
                                 "days_inactive": 0
                             })
+                            continue
+                        
+                        # Otomatik Çıkma/Kara Liste Mantığı Kaldırıldı. Tüm grupları direkt ekle.
+                        all_groups_info.append({
+                            "username": dialog.entity.username or dialog_id_str,
+                            "title": title,
+                            "members": member_count,
+                            "broadcast": is_broadcast,
+                            "days_inactive": 0
+                        })
                             
                 # Grup bilgilerini dosyaya kaydet
                 groups_file = f"cached_groups_{client_name.replace(' ', '_').replace('#', '')}.json"
@@ -897,19 +906,10 @@ async def main():
                 elif saat_durumu == 'normal':
                     print(f"[{client_name}] 📤 TR saati {tr_time.strftime('%H:%M')} — normal saat, gönderim devam ediyor.")
                 
-                # Mesaj rotasyonu: hangi hesap için hangi şablonlar?
+                # Sadece tek mesaj şablonu kullan (rotasyonu devre dışı bırak)
                 is_keyvadi = "2" in client_name
-                msg_files = KEYVADI_MESSAGES if is_keyvadi else FROXY_MESSAGES
-                
-                # Mevcut şablonları kontrol et, yoksa eski dosyaya fallback
-                available_files = [f for f in msg_files if os.path.exists(f)]
-                if not available_files:
-                    # Fallback: eski mesaj dosyası
-                    fallback = "message_2.txt" if is_keyvadi else "message.txt"
-                    if os.path.exists(fallback):
-                        available_files = [fallback]
-                    else:
-                        available_files = []
+                fallback = "message_2.txt" if is_keyvadi else "message.txt"
+                available_files = [fallback] if os.path.exists(fallback) else []
                 
                 msg_history = load_msg_history()
 
@@ -977,12 +977,9 @@ async def main():
                         is_keyvadi = "2" in client_name
                         msg = process_marketing_features(msg, is_keyvadi)
                         
-                        # Görsel/Banner gönderimi (Grup izin veriyorsa)
+                        # Görsel/Banner gönderimi (Görseller kapatıldı)
                         banner_file = "keyvadi_banner.png" if is_keyvadi else "froxy_banner.png"
-                        allows_media = True
-                        if hasattr(entity, 'default_banned_rights') and entity.default_banned_rights:
-                            if getattr(entity.default_banned_rights, 'send_media', False):
-                                allows_media = False
+                        allows_media = False
                                 
                         if allows_media and os.path.exists(banner_file) and len(msg) <= 1024:
                             await client.send_message(entity, msg, file=banner_file)
@@ -1055,7 +1052,7 @@ async def main():
             # ═══════════════════════════════════════════════════
             blacklist = get_list(BLACKLIST_FILE)
             blacklist_lower = set(b.lower() for b in blacklist)
-            not_joined = [g for g in gruplar if g.lower() not in blacklist_lower and g.lower() not in joined_dialogs and g.lower() not in pending_invites]
+            not_joined = []  # Otomatik katılma devre dışı bırakıldı
             
             if not_joined:
                 join_count = 0
@@ -1145,32 +1142,10 @@ async def main():
                 except:
                     pass
             
-            # Dinamik bekleme: grup sayısı + saat dilimine göre
+            # Sabit 30 dakika bekleme süresi
             grup_sayisi = len(blast_targets) if blast_targets else 0
-            saat_durumu = is_active_hours()
-            
-            if saat_durumu == 'peak':
-                # Peak saatlerde daha sık blast (etkileşim yüksek)
-                if grup_sayisi <= 10:
-                    bekleme = random.randint(480, 600)      # 8-10 dk
-                elif grup_sayisi <= 30:
-                    bekleme = random.randint(540, 720)       # 9-12 dk
-                elif grup_sayisi <= 50:
-                    bekleme = random.randint(600, 900)       # 10-15 dk
-                else:
-                    bekleme = random.randint(900, 1200)       # 15-20 dk
-                print(f"\n[{client_name}] 🔥 PEAK SAAT — {grup_sayisi} gruba blast atıldı → Sonraki blast {bekleme // 60} dk sonra")
-            else:
-                # Normal saatlerde standart aralık
-                if grup_sayisi <= 10:
-                    bekleme = random.randint(600, 720)      # 10-12 dk
-                elif grup_sayisi <= 30:
-                    bekleme = random.randint(600, 900)       # 10-15 dk
-                elif grup_sayisi <= 50:
-                    bekleme = random.randint(900, 1200)      # 15-20 dk
-                else:
-                    bekleme = random.randint(1200, 1500)      # 20-25 dk
-                print(f"\n[{client_name}] ⏳ {grup_sayisi} gruba blast atıldı → Sonraki blast {bekleme // 60} dk sonra")
+            bekleme = 1800
+            print(f"\n[{client_name}] ⏳ {grup_sayisi} gruba blast atıldı → Sonraki blast 30 dakika sonra")
             # Geri sayım (her dakika yazdır)
             kalan = bekleme
             while kalan > 0:
