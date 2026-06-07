@@ -398,11 +398,12 @@ async def auto_scrape_groups(client, client_name, joined_usernames=None):
                     is_group = True
                     
                 # Yayın kanallarını kara listeye al
-                if not is_group or not chat.username:
-                    if isinstance(chat, Channel) and getattr(chat, 'broadcast', False) and chat.username:
-                        username = chat.username.lower()
+                username_attr = getattr(chat, 'username', None)
+                if not is_group or not username_attr:
+                    if isinstance(chat, Channel) and getattr(chat, 'broadcast', False) and username_attr:
+                        username = username_attr.lower()
                         if username not in blacklist_lower:
-                            save_to_list(chat.username, BLACKLIST_FILE)
+                            save_to_list(username_attr, BLACKLIST_FILE)
                             blacklist_lower.add(username)
                             keyword_blacklisted += 1
                     continue
