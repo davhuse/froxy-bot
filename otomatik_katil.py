@@ -435,6 +435,15 @@ async def auto_scrape_groups(client, client_name, joined_usernames=None):
                         print(f"  🚫 @{chat.username} → Alakasız/yabancı/negatif ('{chat.title}'), kara liste")
                     continue
                 
+                # === FİLTRE 2.5: İstek/Onay kontrolü (Direkt katılım olmalı) ===
+                if getattr(chat, 'join_request', False):
+                    if username not in blacklist_lower:
+                        save_to_list(chat.username, BLACKLIST_FILE)
+                        blacklist_lower.add(username)
+                        keyword_blacklisted += 1
+                        print(f"  🚫 @{chat.username} → İstek/onay gerekiyor, kara liste")
+                    continue
+                
                 # === FİLTRE 3: Derin kalite taraması (son 5 mesaj) ===
                 try:
                     recent_msgs = await client.get_messages(chat, limit=5)
