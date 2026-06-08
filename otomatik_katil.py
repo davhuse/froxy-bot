@@ -1081,14 +1081,18 @@ async def main():
             # ═══════════════════════════════════════════════════
             blacklist = get_list(BLACKLIST_FILE)
             blacklist_lower = set(b.lower() for b in blacklist)
-            not_joined = []  # Otomatik katılma devre dışı bırakıldı
+            not_joined = []
+            for g in hedef_set:
+                g_lower = g.lower()
+                if g_lower not in joined_dialogs and g_lower not in blacklist_lower:
+                    not_joined.append(g)
             
             if not_joined:
                 join_count = 0
                 print(f"\n[{client_name}] 🔍 {len(not_joined)} gruba henüz üye değiliz. Katılma başlıyor...")
                 for hedef_grup in not_joined:
-                    if join_count >= 15:
-                        print(f"[{client_name}] 🔒 Bu turda 15 gruba katılındı, durduruluyor.")
+                    if join_count >= 5:
+                        print(f"[{client_name}] 🔒 Bu turda 5 gruba katılındı (limit), durduruluyor.")
                         break
                     
                     try:
@@ -1127,7 +1131,7 @@ async def main():
                             # Katılım isteği onaylandıysa/katılım sağlandıysa pending'den çıkar
                             if hedef_grup.lower() in pending_invites:
                                 pending_invites.remove(hedef_grup.lower())
-                            await asyncio.sleep(random.randint(5, 15))
+                            await asyncio.sleep(random.randint(30, 90))
                             
                     except FloodWaitError as e:
                         if e.seconds <= 60:
