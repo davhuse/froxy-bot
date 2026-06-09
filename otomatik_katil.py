@@ -5,7 +5,7 @@ import json
 import re
 import requests
 from telethon import TelegramClient, events
-from telethon.tl.functions.channels import JoinChannelRequest
+from telethon.tl.functions.channels import JoinChannelRequest, LeaveChannelRequest
 from telethon.tl.functions.contacts import ResolveUsernameRequest, SearchRequest
 from telethon.errors import (
     FloodWaitError, SessionPasswordNeededError, UsernameNotOccupiedError, 
@@ -962,9 +962,18 @@ async def main():
                             with open("group_failures.json", "w", encoding="utf-8") as f:
                                 json.dump(failures, f, indent=4)
                             
-                            # 3 kez üst üste hata aldıysa uyar ama kara listeye alma ve gruptan çıkma
-                            if failures[g_key] >= 3:
-                                print(f"[{client_name}] ⚠️ @{grup_name} -> 3 kez üst üste hata alındı, ancak gruptan çıkılmadı ve kara listeye alınmadı.")
+                            if failures[g_key] >= 5:
+                                print(f"[{client_name}] ❌ @{grup_name} -> 5 kez üst üste hata alındı! Kara listeye ekleniyor...")
+                                save_to_list(grup_name, BLACKLIST_FILE)
+                                entity = joined_dialogs.get(g_key)
+                                if entity:
+                                    try:
+                                        await client(LeaveChannelRequest(entity))
+                                        print(f"[{client_name}] 🚪 @{grup_name} grubundan çıkıldı.")
+                                    except Exception as le:
+                                        print(f"[{client_name}] ⚠️ @{grup_name} grubundan çıkılırken hata: {le}")
+                            elif failures[g_key] >= 3:
+                                print(f"[{client_name}] ⚠️ @{grup_name} -> {failures[g_key]} kez üst üste hata alındı.")
                         except Exception as fe:
                             print(f"⚠️ Hata sayacı güncelleme hatası: {fe}")
 
@@ -1050,13 +1059,27 @@ async def main():
                             print(f"[{client_name}] ⏳ @{grup_name} → Flood {e.seconds}sn, atlanıyor...")
                             fail_count += 1
                     except UserBannedInChannelError:
-                        print(f"[{client_name}] ❌ @{grup_name} → Banlandık!")
+                        print(f"[{client_name}] ❌ @{grup_name} → Banlandık! Kara listeye ekleniyor...")
                         fail_count += 1
-                        await record_failure(grup_name)
+                        async with state_lock:
+                            save_to_list(grup_name, BLACKLIST_FILE)
+                        try:
+                            if entity:
+                                await client(LeaveChannelRequest(entity))
+                                print(f"[{client_name}] 🚪 @{grup_name} grubundan çıkıldı.")
+                        except Exception as le:
+                            print(f"[{client_name}] ⚠️ @{grup_name} grubundan çıkılırken hata: {le}")
                     except ChatWriteForbiddenError:
-                        print(f"[{client_name}] 🔒 @{grup_name} → Yazma izni yok")
+                        print(f"[{client_name}] 🔒 @{grup_name} → Yazma izni yok! Kara listeye ekleniyor...")
                         fail_count += 1
-                        await record_failure(grup_name)
+                        async with state_lock:
+                            save_to_list(grup_name, BLACKLIST_FILE)
+                        try:
+                            if entity:
+                                await client(LeaveChannelRequest(entity))
+                                print(f"[{client_name}] 🚪 @{grup_name} grubundan çıkıldı.")
+                        except Exception as le:
+                            print(f"[{client_name}] ⚠️ @{grup_name} grubundan çıkılırken hata: {le}")
                     except SlowModeWaitError:
                         print(f"[{client_name}] 🐌 @{grup_name} → SlowMode, atlanıyor.")
                         fail_count += 1
