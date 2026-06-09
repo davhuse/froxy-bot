@@ -810,6 +810,17 @@ async def main():
                         elif dialog_id_str in protected_groups:
                             is_protected = True
                             
+                        # Üye sayısı kontrolü (Korumalı değilse min 500 üye)
+                        if not is_protected and member_count is not None and member_count < 500:
+                            g_name = dialog.entity.username or dialog_id_str
+                            print(f"[{client_name}] 📉 @{g_name} -> Üye sayısı yetersiz ({member_count} < 500). Gruptan çıkılıyor...")
+                            new_blacklisted_groups.append(g_name)
+                            try:
+                                await client(LeaveChannelRequest(dialog.entity))
+                            except Exception as le:
+                                print(f"[{client_name}] ⚠️ @{g_name} gruptan çıkılırken hata: {le}")
+                            continue
+
                         # Save in joined_dialogs under username (if any) and ID string
                         if username_lower:
                             joined_dialogs[username_lower] = dialog.entity
@@ -1150,12 +1161,20 @@ async def main():
                             
                         if entity:
                             member_count = getattr(entity, 'participants_count', None)
-                            # Üye sayısı limit kontrolü (Gruptan çıkma/kara listeye alma devre dışı bırakıldı)
-                            if member_count is not None and member_count < 50:
-                                print(f"[{client_name}] 📉 @{hedef_grup} -> Üye az ({member_count}), ancak gruptan çıkılmadı.")
-                                
-                            joined_dialogs[hedef_grup.lower()] = entity
-                            join_count += 1
+                            is_protected = hedef_grup.lower() in protected_groups
+                            
+                            # Korumalı değilse ve üye sayısı 500'den azsa çık ve kara listeye al
+                            if not is_protected and member_count is not None and member_count < 500:
+                                print(f"[{client_name}] 📉 @{hedef_grup} -> Üye sayısı yetersiz ({member_count} < 500). Gruptan çıkılıyor ve kara listeye ekleniyor...")
+                                async with state_lock:
+                                    save_to_list(hedef_grup, BLACKLIST_FILE)
+                                try:
+                                    await client(LeaveChannelRequest(entity))
+                                except Exception as le:
+                                    print(f"[{client_name}] ⚠️ @{hedef_grup} gruptan çıkılırken hata: {le}")
+                            else:
+                                joined_dialogs[hedef_grup.lower()] = entity
+                                join_count += 1
                             # Katılım isteği onaylandıysa/katılım sağlandıysa pending'den çıkar
                             if hedef_grup.lower() in pending_invites:
                                 pending_invites.remove(hedef_grup.lower())
