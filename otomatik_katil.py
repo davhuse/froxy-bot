@@ -810,18 +810,31 @@ async def main():
                         elif dialog_id_str in protected_groups:
                             is_protected = True
                             
-                        # Üye sayısı kontrolü (Korumalı değilse min 500 üye)
-                        # None ise küçük/gizli grup olabilir - username yoksa zaten mesaj atamazsınız, çık
+                        # Filtreler (Korumalı gruplara uygulanmaz)
                         should_leave = False
                         leave_reason = ""
                         if not is_protected:
+                            # FILTRE 1: Min 100 üye
                             if member_count is not None and member_count < 100:
                                 should_leave = True
                                 leave_reason = f"üye sayısı yetersiz ({member_count} < 100)"
                             elif member_count is None and not (hasattr(dialog.entity, 'username') and dialog.entity.username):
-                                # Üye sayısı gizlenmiş VE username yok = ulaşamayız
                                 should_leave = True
                                 leave_reason = "üye sayısı bilinmiyor ve username yok"
+                            # FILTRE 2: Son 7 gün içinde mesaj atılmış mı? (aktif grup)
+                            if not should_leave:
+                                from datetime import datetime, timezone, timedelta
+                                last_msg_date = getattr(dialog, 'date', None)
+                                if last_msg_date is not None:
+                                    try:
+                                        if last_msg_date.tzinfo is None:
+                                            last_msg_date = last_msg_date.replace(tzinfo=timezone.utc)
+                                        days_inactive = (datetime.now(timezone.utc) - last_msg_date).days
+                                        if days_inactive > 7:
+                                            should_leave = True
+                                            leave_reason = f"inaktif grup (son mesaj {days_inactive} gün önce)"
+                                    except:
+                                        pass
                         
                         if should_leave:
                             g_name = dialog.entity.username or dialog_id_str
@@ -913,19 +926,28 @@ async def main():
             blacklist = get_list(BLACKLIST_FILE)
             blacklist_lower = set(b.lower() for b in blacklist)
             
-            # Hedef gruplar: SADECE sabit gruplar listesi (auto_groups.txt test bitene kadar devre dışı)
-            hedef_set = set(g.lower() for g in gruplar)
-            # AUTO_GROUPS DEVRE DIŞI - test bitince açılacak:
-            # if os.path.exists("auto_groups.txt"):
-            #     try:
-            #         with open("auto_groups.txt", "r", encoding="utf-8") as f:
-            #             for line in f:
-            #                 g = line.strip()
-            #                 if g:
-            #                     hedef_set.add(g.lower())
-            #     except:
-            #         pass
-
+            # Hedef gruplar: Sabit liste (max 40) + auto_groups.txt (max 40 ek grup)
+            STATIC_MAX = 40
+            AUTO_MAX = 40
+            
+            static_groups = list(set(g.lower() for g in gruplar))[:STATIC_MAX]
+            hedef_set = set(static_groups)
+            
+            # auto_groups.txt'den ek gruplar (kara listede olmayanlar, max AUTO_MAX adet)
+            if os.path.exists("auto_groups.txt"):
+                try:
+                    auto_added = 0
+                    with open("auto_groups.txt", "r", encoding="utf-8") as f:
+                        for line in f:
+                            g = line.strip().lower()
+                            if g and g not in hedef_set and g not in blacklist_lower:
+                                hedef_set.add(g)
+                                auto_added += 1
+                                if auto_added >= AUTO_MAX:
+                                    break
+                    print(f"[{client_name}] 📌 Sabit: {len(static_groups)} grup + Auto: {auto_added} grup = Toplam {len(hedef_set)} hedef")
+                except:
+                    pass
             
             # Önbellekte olan + kara listede olmayan hedef gruplar
             blast_targets = []
