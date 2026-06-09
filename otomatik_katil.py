@@ -417,7 +417,7 @@ async def auto_scrape_groups(client, client_name, joined_usernames=None):
                 title = (chat.title or "").lower()
                 
                 # === FİLTRE 1: Üye sayısı (500'den az = zaman kaybı) ===
-                if member_count is not None and member_count < 500:
+                if member_count is not None and member_count < 100:
                     if username not in blacklist_lower:
                         save_to_list(chat.username, BLACKLIST_FILE)
                         blacklist_lower.add(username)
@@ -815,9 +815,9 @@ async def main():
                         should_leave = False
                         leave_reason = ""
                         if not is_protected:
-                            if member_count is not None and member_count < 500:
+                            if member_count is not None and member_count < 100:
                                 should_leave = True
-                                leave_reason = f"üye sayısı yetersiz ({member_count} < 500)"
+                                leave_reason = f"üye sayısı yetersiz ({member_count} < 100)"
                             elif member_count is None and not (hasattr(dialog.entity, 'username') and dialog.entity.username):
                                 # Üye sayısı gizlenmiş VE username yok = ulaşamayız
                                 should_leave = True
@@ -913,17 +913,19 @@ async def main():
             blacklist = get_list(BLACKLIST_FILE)
             blacklist_lower = set(b.lower() for b in blacklist)
             
-            # Hedef gruplar: gruplar listesi + auto_groups.txt
+            # Hedef gruplar: SADECE sabit gruplar listesi (auto_groups.txt test bitene kadar devre dışı)
             hedef_set = set(g.lower() for g in gruplar)
-            if os.path.exists("auto_groups.txt"):
-                try:
-                    with open("auto_groups.txt", "r", encoding="utf-8") as f:
-                        for line in f:
-                            g = line.strip()
-                            if g:
-                                hedef_set.add(g.lower())
-                except:
-                    pass
+            # AUTO_GROUPS DEVRE DIŞI - test bitince açılacak:
+            # if os.path.exists("auto_groups.txt"):
+            #     try:
+            #         with open("auto_groups.txt", "r", encoding="utf-8") as f:
+            #             for line in f:
+            #                 g = line.strip()
+            #                 if g:
+            #                     hedef_set.add(g.lower())
+            #     except:
+            #         pass
+
             
             # Önbellekte olan + kara listede olmayan hedef gruplar
             blast_targets = []
@@ -941,7 +943,7 @@ async def main():
                     # Üye sayısı kontrolü: çok küçük grupları blast listesinden çıkar
                     member_count = getattr(entity, 'participants_count', None)
                     is_in_protected = username_lower in protected_groups
-                    if not is_in_protected and member_count is not None and member_count < 500:
+                    if not is_in_protected and member_count is not None and member_count < 100:
                         small_groups_skipped += 1
                         async with state_lock:
                             save_to_list(username_lower, BLACKLIST_FILE)
@@ -1193,8 +1195,8 @@ async def main():
                             is_protected = hedef_grup.lower() in protected_groups
                             
                             # Korumalı değilse ve üye sayısı 500'den azsa çık ve kara listeye al
-                            if not is_protected and member_count is not None and member_count < 500:
-                                print(f"[{client_name}] 📉 @{hedef_grup} -> Üye sayısı yetersiz ({member_count} < 500). Gruptan çıkılıyor ve kara listeye ekleniyor...")
+                            if not is_protected and member_count is not None and member_count < 100:
+                                print(f"[{client_name}] 📉 @{hedef_grup} -> Üye sayısı yetersiz ({member_count} < 100). Gruptan çıkılıyor ve kara listeye ekleniyor...")
                                 async with state_lock:
                                     save_to_list(hedef_grup, BLACKLIST_FILE)
                                 try:
