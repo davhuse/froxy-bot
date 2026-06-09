@@ -608,30 +608,24 @@ def fs_get_state():
 
 def fs_set_state(progress=None, blacklist=None, auto_groups=None):
     try:
-        if progress is None:
-            progress = ""
-            if os.path.exists(PROGRESS_FILE):
-                with open(PROGRESS_FILE, 'r', encoding='utf-8') as f:
-                    progress = f.read()
-                    
-        if blacklist is None:
-            blacklist = ""
-            if os.path.exists(BLACKLIST_FILE):
-                with open(BLACKLIST_FILE, 'r', encoding='utf-8') as f:
-                    blacklist = f.read()
-                    
-        if auto_groups is None:
-            auto_groups = ""
-            if os.path.exists(AUTO_GROUPS_FILE):
-                with open(AUTO_GROUPS_FILE, 'r', encoding='utf-8') as f:
-                    auto_groups = f.read()
-                    
-        url = f"{BASE_URL}/reklam/state?key={API_KEY}"
-        fields = {
-            "progress_list": {"stringValue": progress},
-            "blacklist_list": {"stringValue": blacklist},
-            "auto_groups_list": {"stringValue": auto_groups}
-        }
+        fields = {}
+        mask_parts = []
+        
+        if progress is not None:
+            fields["progress_list"] = {"stringValue": progress}
+            mask_parts.append("updateMask.fieldPaths=progress_list")
+        if blacklist is not None:
+            fields["blacklist_list"] = {"stringValue": blacklist}
+            mask_parts.append("updateMask.fieldPaths=blacklist_list")
+        if auto_groups is not None:
+            fields["auto_groups_list"] = {"stringValue": auto_groups}
+            mask_parts.append("updateMask.fieldPaths=auto_groups_list")
+            
+        if not fields:
+            return
+            
+        mask_str = "&".join(mask_parts)
+        url = f"{BASE_URL}/reklam/state?{mask_str}&key={API_KEY}"
         requests.patch(url, json={"fields": fields}, timeout=10)
     except Exception as e:
         print(f"⚠️ Firestore kaydetme hatası: {e}")
@@ -648,7 +642,18 @@ def save_to_list(grup, dosya):
     
     # Firestore durum eşitlemesi
     try:
-        fs_set_state()
+        if dosya == BLACKLIST_FILE:
+            with open(BLACKLIST_FILE, 'r', encoding='utf-8') as f:
+                content = f.read()
+            fs_set_state(blacklist=content)
+        elif dosya == PROGRESS_FILE:
+            with open(PROGRESS_FILE, 'r', encoding='utf-8') as f:
+                content = f.read()
+            fs_set_state(progress=content)
+        elif dosya == AUTO_GROUPS_FILE:
+            with open(AUTO_GROUPS_FILE, 'r', encoding='utf-8') as f:
+                content = f.read()
+            fs_set_state(auto_groups=content)
     except Exception as e:
         print(f"⚠️ Firestore güncelleme hatası: {e}")
 

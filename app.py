@@ -796,29 +796,17 @@ def save_blacklist(blacklist_list):
         with open(BLACKLIST_FILE, 'w', encoding='utf-8') as f:
             f.write('\n'.join(blacklist_list) + '\n')
         
-        # Firestore'a senkronize et
+        # Firestore'a senkronize et (sadece blacklist_list alanını güncelliyoruz)
         try:
             import requests
             API_KEY = "AIzaSyCZz54GBF4nCgP84DsTSwwMyPq70Lb_Mjo"
             PROJECT_ID = "bot-2-63772"
-            url = f"https://firestore.googleapis.com/v1/projects/{PROJECT_ID}/databases/(default)/documents/reklam/state?key={API_KEY}"
+            url = f"https://firestore.googleapis.com/v1/projects/{PROJECT_ID}/databases/(default)/documents/reklam/state?updateMask.fieldPaths=blacklist_list&key={API_KEY}"
             
-            progress_content = ""
-            if os.path.exists("progress.txt"):
-                with open("progress.txt", "r", encoding="utf-8") as pf:
-                    progress_content = pf.read()
-                    
             blacklist_content = '\n'.join(blacklist_list) + '\n'
             
-            auto_groups_content = ""
-            if os.path.exists("auto_groups.txt"):
-                with open("auto_groups.txt", "r", encoding="utf-8") as af:
-                    auto_groups_content = af.read()
-            
             fields = {
-                "progress_list": {"stringValue": progress_content},
-                "blacklist_list": {"stringValue": blacklist_content},
-                "auto_groups_list": {"stringValue": auto_groups_content}
+                "blacklist_list": {"stringValue": blacklist_content}
             }
             requests.patch(url, json={"fields": fields}, timeout=5)
         except Exception as fs_err:
