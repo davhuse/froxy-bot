@@ -782,6 +782,37 @@ async def main():
     async def run_worker(client, client_name, joined_dialogs):
         protected_groups = set(g.lower() for g in gruplar)
         
+        VERIFIED_FILE = f"verified_groups_{client_name.replace(' ', '_').replace('#', '')}.json"
+        MIN_UNIQUE_SENDERS = 10   # Grupta en az 10 farklı kişi yazmış olmalı
+        MSG_CHECK_LIMIT = 50      # Son 50 mesaja bak
+        VERIFY_TTL_HOURS = 24     # Doğrulanmış gruplar 24 saat geçerli
+
+        async def check_group_activity(entity, group_key):
+            """
+            Son MSG_CHECK_LIMIT mesajı tara:
+            - Kendi hesaplarımız hariç
+            - Ardışık aynı kişi mesajları tek sayılır
+            - Min MIN_UNIQUE_SENDERS farklı kişi yazmışsa True
+            """
+            try:
+                unique_senders = set()
+                last_sender = None
+                async for msg in client.iter_messages(entity, limit=MSG_CHECK_LIMIT):
+                    if not msg.sender_id:
+                        continue
+                    if msg.sender_id in our_user_ids:
+                        continue  # Kendi hesaplarımızı sayıntıya katma
+                    if msg.sender_id == last_sender:
+                        continue  # Ardışık mesajlar sayma
+                    last_sender = msg.sender_id
+                    unique_senders.add(msg.sender_id)
+                    if len(unique_senders) >= MIN_UNIQUE_SENDERS:
+                        return True  # Yeterli, erken çık
+                return len(unique_senders) >= MIN_UNIQUE_SENDERS
+            except Exception as ae:
+                print(f"[{client_name}] ⚠️ Aktivite kontrolü hatası ({group_key}): {ae}")
+                return True  # Hata durumunda dahil et (kayıp yapmayız)
+
         async def cache_dialogs():
             print(f"🚀 [{client_name}] Diyaloglar önbelleğe alınıyor...")
             try:
@@ -789,6 +820,19 @@ async def main():
                 now = datetime.now(timezone.utc)
                 new_blacklisted_groups = []
                 all_groups_info = []
+
+                # Doğrulanmış grupları yükle (24 saatlik TTL)
+                verified_groups = {}
+                if os.path.exists(VERIFIED_FILE):
+                    try:
+                        with open(VERIFIED_FILE, 'r', encoding='utf-8') as vf:
+                            verified_groups = json.load(vf)
+                        # Süresi dolmuş kayıtları temizle
+                        cutoff = now.timestamp() - VERIFY_TTL_HOURS * 3600
+                        verified_groups = {k: v for k, v in verified_groups.items() if v > cutoff}
+                    except:
+                        verified_groups = {}
+
                 
                 # 'id' değerini koruyarak geri kalan anahtarları temizle
                 me_id = joined_dialogs.get("id")
@@ -821,20 +865,18 @@ async def main():
                             elif member_count is None and not (hasattr(dialog.entity, 'username') and dialog.entity.username):
                                 should_leave = True
                                 leave_reason = "üye sayısı bilinmiyor ve username yok"
-                            # FILTRE 2: Son 7 gün içinde mesaj atılmış mı? (aktif grup)
+                            # FILTRE 2: Aktivite kontrolü — 10 farklı kişi yazmış mı?
                             if not should_leave:
-                                from datetime import datetime, timezone, timedelta
-                                last_msg_date = getattr(dialog, 'date', None)
-                                if last_msg_date is not None:
-                                    try:
-                                        if last_msg_date.tzinfo is None:
-                                            last_msg_date = last_msg_date.replace(tzinfo=timezone.utc)
-                                        days_inactive = (datetime.now(timezone.utc) - last_msg_date).days
-                                        if days_inactive > 7:
-                                            should_leave = True
-                                            leave_reason = f"inaktif grup (son mesaj {days_inactive} gün önce)"
-                                    except:
-                                        pass
+                                g_key = username_lower or dialog_id_str
+                                if g_key not in verified_groups:
+                                    print(f"[{client_name}] 🔍 @{g_key} aktivite kontrolü yapılıyor...")
+                                    is_active = await check_group_activity(dialog.entity, g_key)
+                                    if is_active:
+                                        verified_groups[g_key] = now.timestamp()
+                                    else:
+                                        should_leave = True
+                                        leave_reason = f"inaktif grup (<{MIN_UNIQUE_SENDERS} farklı kişi yazmış)"
+                                # else: zaten doğrulanmış, geç
                         
                         if should_leave:
                             g_name = dialog.entity.username or dialog_id_str
@@ -882,6 +924,15 @@ async def main():
                         json.dump(all_groups_info, f, ensure_ascii=False, indent=2)
                 except:
                     pass
+
+                # Doğrulanmış grupları kaydet (24h TTL cache)
+                try:
+                    with open(VERIFIED_FILE, 'w', encoding='utf-8') as vf:
+                        json.dump(verified_groups, vf, indent=2)
+                    print(f"[{client_name}] ✅ {len(verified_groups)} aktif grup doğrulandı ve kaydedildi.")
+                except:
+                    pass
+
                 
                 if new_blacklisted_groups:
                     print(f"[{client_name}] 💾 {len(new_blacklisted_groups)} inaktif/küçük grup kara listeye kaydediliyor...")
