@@ -811,9 +811,21 @@ async def main():
                             is_protected = True
                             
                         # Üye sayısı kontrolü (Korumalı değilse min 500 üye)
-                        if not is_protected and member_count is not None and member_count < 500:
+                        # None ise küçük/gizli grup olabilir - username yoksa zaten mesaj atamazsınız, çık
+                        should_leave = False
+                        leave_reason = ""
+                        if not is_protected:
+                            if member_count is not None and member_count < 500:
+                                should_leave = True
+                                leave_reason = f"üye sayısı yetersiz ({member_count} < 500)"
+                            elif member_count is None and not (hasattr(dialog.entity, 'username') and dialog.entity.username):
+                                # Üye sayısı gizlenmiş VE username yok = ulaşamayız
+                                should_leave = True
+                                leave_reason = "üye sayısı bilinmiyor ve username yok"
+                        
+                        if should_leave:
                             g_name = dialog.entity.username or dialog_id_str
-                            print(f"[{client_name}] 📉 @{g_name} -> Üye sayısı yetersiz ({member_count} < 500). Gruptan çıkılıyor...")
+                            print(f"[{client_name}] 📉 @{g_name} -> {leave_reason}. Gruptan çıkılıyor...")
                             new_blacklisted_groups.append(g_name)
                             try:
                                 await client(LeaveChannelRequest(dialog.entity))
@@ -917,6 +929,7 @@ async def main():
             blast_targets = []
             debug_blacklisted = 0
             debug_not_cached = 0
+            small_groups_skipped = 0
             for username_lower in hedef_set:
                 if username_lower in blacklist_lower:
                     debug_blacklisted += 1
@@ -925,11 +938,25 @@ async def main():
                     entity = joined_dialogs[username_lower]
                     if getattr(entity, 'broadcast', False):
                         continue
+                    # Üye sayısı kontrolü: çok küçük grupları blast listesinden çıkar
+                    member_count = getattr(entity, 'participants_count', None)
+                    is_in_protected = username_lower in protected_groups
+                    if not is_in_protected and member_count is not None and member_count < 500:
+                        small_groups_skipped += 1
+                        async with state_lock:
+                            save_to_list(username_lower, BLACKLIST_FILE)
+                        print(f"[{client_name}] 📉 @{username_lower} → {member_count} üye (<500), kara listeye eklendi.")
+                        try:
+                            await client(LeaveChannelRequest(entity))
+                        except:
+                            pass
+                        continue
                     blast_targets.append(username_lower)
                 else:
                     debug_not_cached += 1
+
             
-            print(f"[{client_name}] 📊 Hedef: {len(hedef_set)} | Gönderilecek: {len(blast_targets)} | Kara liste: {debug_blacklisted} | Üye değil: {debug_not_cached}")
+            print(f"[{client_name}] 📊 Hedef: {len(hedef_set)} | Gönderilecek: {len(blast_targets)} | Kara liste: {debug_blacklisted} | Küçük grup çıkar: {small_groups_skipped} | Üye değil: {debug_not_cached}")
             
             if not blast_targets:
                 print(f"[{client_name}] ⚠️ Önbellekte mesaj atılacak grup yok. Yeni gruplara katılma aşamasına geçiliyor...")
@@ -1091,9 +1118,11 @@ async def main():
                                 print(f"[{client_name}] 🚪 @{grup_name} grubundan çıkıldı.")
                         except Exception as le:
                             print(f"[{client_name}] ⚠️ @{grup_name} grubundan çıkılırken hata: {le}")
-                    except SlowModeWaitError:
-                        print(f"[{client_name}] 🐌 @{grup_name} → SlowMode, atlanıyor.")
+                    except SlowModeWaitError as sme:
+                        wait_sec = getattr(sme, 'seconds', 0) or 0
+                        print(f"[{client_name}] 🐌 @{grup_name} → SlowMode ({wait_sec}sn bekleme), hata sayacı artıyor...")
                         fail_count += 1
+                        await record_failure(grup_name)  # 5 kez slow mode → kara liste
                     except Exception as e:
                         err_type = type(e).__name__
                         print(f"[{client_name}] ⚠️ @{grup_name} → {err_type} (atlanıyor)")
