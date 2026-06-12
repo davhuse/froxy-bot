@@ -17,7 +17,7 @@ def fetch_logs():
             print("=" * 80)
             print("LATEST 40 LOG LINES FROM RENDER")
             print("=" * 80)
-            for line in logs[-40:]:
+            for line in logs:
                 print(line.strip())
             print("=" * 80)
     except Exception as e:
