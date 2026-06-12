@@ -11,7 +11,7 @@ def fetch_logs():
     url = "https://froxy-bot.onrender.com/api/logs"
     try:
         req = urllib.request.Request(url)
-        with urllib.request.urlopen(req, context=context, timeout=5) as response:
+        with urllib.request.urlopen(req, context=context, timeout=15) as response:
             data = json.loads(response.read().decode('utf-8'))
             logs = data.get("logs", [])
             print("=" * 80)

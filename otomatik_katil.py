@@ -929,23 +929,6 @@ async def main():
 
     # --- AUTO-SCRAPE: AKTİF ---
     first_client, first_name, _ = active_clients[0]
-    
-    # Get currently joined group usernames to avoid finding them
-    joined_usernames = set()
-    print("🔄 Mevcut gruplarınız taranıyor (tekrar keşfetmemek için)...")
-    try:
-        async for dialog in first_client.iter_dialogs():
-            if dialog.is_group or dialog.is_channel:
-                username = getattr(dialog.entity, 'username', None)
-                if username:
-                    joined_usernames.add(username.lower())
-        print(f"✅ {len(joined_usernames)} adet mevcut grup tespit edildi. Bunlar aramada es geçilecek.")
-    except Exception as e:
-        print(f"⚠️ Mevcut gruplar alınırken hata: {e}")
-
-    scrape_count = await auto_scrape_groups(first_client, first_name, joined_usernames)
-    if scrape_count > 0:
-        print(f"🎉 Auto-Scraper toplamda {scrape_count} yeni grup ekledi. Liste güncellendi!")
 
     async def run_worker(client, client_name, joined_dialogs):
         protected_groups = get_all_protected_groups()
@@ -1588,6 +1571,21 @@ async def main():
                 pass
             await auto_scrape_groups(client, client_name, joined_usernames)
 
+    async def run_startup_scraper(client, client_name):
+        await asyncio.sleep(5)  # Let workers start and cache dialogs first
+        print(f"🔍 [{client_name}] Başlangıç grup taraması arka planda başlatılıyor...")
+        joined_usernames = set()
+        try:
+            async for dialog in client.iter_dialogs():
+                if dialog.is_group or dialog.is_channel:
+                    username = getattr(dialog.entity, 'username', None)
+                    if username:
+                        joined_usernames.add(username.lower())
+            print(f"✅ [{client_name}] {len(joined_usernames)} adet mevcut grup tespit edildi. Bunlar aramada es geçilecek.")
+        except Exception as e:
+            print(f"⚠️ [{client_name}] Startup Scraper: Mevcut gruplar alınırken hata: {e}")
+        await auto_scrape_groups(client, client_name, joined_usernames)
+
     # Workers ve arka plan görevlerini başlat
     tasks = []
     for client, name, j_dialogs in active_clients:
@@ -1598,6 +1596,7 @@ async def main():
     first_client, first_name, _ = active_clients[0]
     tasks.append(periodic_scraper(first_client, first_name))
     tasks.append(periodic_firestore_sync())
+    tasks.append(run_startup_scraper(first_client, first_name))
     
     # Tüm görevleri eşzamanlı olarak çalıştır
     await asyncio.gather(*tasks)
