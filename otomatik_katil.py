@@ -547,14 +547,32 @@ async def auto_scrape_groups(client, client_name, joined_usernames=None):
                         f.write(chat.username + '\n')
                 except:
                     pass
-                
-                # Otomatik katılım ve reklam listesine ekle
-                if chat.username.lower() not in blacklist_lower:
-                    save_to_list(chat.username, AUTO_GROUPS_FILE)
 
                 new_found += 1
                 keyword_found += 1
-                print(f"  🆕 KALİTELİ GRUP KEŞFEDİLDİ (Otomatik Eklendi): @{chat.username} (Üye: {member_count or '?'}, Başlık: '{chat.title}')")
+                print(f"  🆕 KALİTELİ GRUP KEŞFEDİLDİ (Onay Bekleniyor): @{chat.username} (Üye: {member_count or '?'}, Başlık: '{chat.title}')")
+                
+                # Admin'e onay için bireysel bildirim gönder (Otomatik katılım iptal edildi)
+                try:
+                    admin_id = None
+                    if os.path.exists("bot_config.json"):
+                        with open("bot_config.json", "r", encoding="utf-8") as f_cfg:
+                            cfg = json.load(f_cfg)
+                            admin_id = cfg.get("admin_id")
+                    if admin_id:
+                        bildirim = (
+                            f"🔍 **Yeni Kaliteli Grup Keşfedildi!**\n"
+                            f"━━━━━━━━━━━━━━━━━\n"
+                            f"• Kullanıcı Adı: @{chat.username}\n"
+                            f"• Üye Sayısı: {member_count or '?'}\n"
+                            f"• Başlık: {chat.title or '?'}\n"
+                            f"━━━━━━━━━━━━━━━━━\n"
+                            f"ℹ️ Eklemek için bu mesaja **reply (yanıtla)** yaparak **ekle** veya **ok** yazabilirsin."
+                        )
+                        await client.send_message(int(admin_id), bildirim)
+                        print(f"📩 [{client_name}] Admin'e @{chat.username} için onay bildirimi gönderildi.")
+                except Exception as ne:
+                    print(f"⚠️ Bireysel admin bildirim hatası: {ne}")
                 
             summary = f"'{keyword}': +{keyword_found} yeni"
             if keyword_blacklisted > 0:
@@ -569,36 +587,10 @@ async def auto_scrape_groups(client, client_name, joined_usernames=None):
         except Exception as e:
             print(f"⚠️ [{client_name}] Auto-Scraper hatası ('{keyword}'): {type(e).__name__} - {e}")
             
-    # Scraper bitti - bulunan yeni grupları admin'e bildir
     if new_found > 0:
         update_stats(discovered=new_found)
-        try:
-            admin_id = None
-            if os.path.exists("bot_config.json"):
-                with open("bot_config.json", "r", encoding="utf-8") as f:
-                    cfg = json.load(f)
-                    admin_id = cfg.get("admin_id")
-            if admin_id:
-                # scraped_groups.txt'den son new_found grubu al
-                found_list = []
-                if os.path.exists("scraped_groups.txt"):
-                    with open("scraped_groups.txt", "r", encoding="utf-8") as f:
-                        lines = [l.strip() for l in f.readlines() if l.strip()]
-                        found_list = lines[-new_found:] if len(lines) >= new_found else lines
-                grup_listesi = "\n".join([f"• @{g}" for g in found_list]) if found_list else "(liste alınamadı)"
-                bildirim = (
-                    f"🆕 **Yeni Kaliteli Gruplar Keşfedildi ve Otomatik Eklendi!**\n"
-                    f"━━━━━━━━━━━━━━━━━\n"
-                    f"📦 Toplam: {new_found} yeni grup listeye dahil edildi:\n\n"
-                    f"{grup_listesi}\n\n"
-                    f"ℹ️ Bot bu gruplara otomatik olarak katılarak reklam atmaya başlayacaktır."
-                )
-                await client.send_message(int(admin_id), bildirim)
-                print(f"📩 [{client_name}] Admin'e {new_found} yeni grup bildirimi gönderildi.")
-        except Exception as ne:
-            print(f"⚠️ Admin bildirim hatası: {ne}")
     
-    print(f"\n📊 [{client_name}] Scraper Sonuç: {new_found} yeni kaliteli grup eklendi, {blacklisted_count} çöp grup kara listeye alındı.")
+    print(f"\n📊 [{client_name}] Scraper Sonuç: {new_found} yeni kaliteli grup onay bekliyor, {blacklisted_count} çöp grup kara listeye alındı.")
         
     return new_found
 
@@ -721,6 +713,106 @@ def save_to_list(grup, dosya):
             fs_set_state(auto_groups=content)
     except Exception as e:
         print(f"⚠️ Firestore güncelleme hatası: {e}")
+
+def register_admin_handler(client, client_name, joined_dialogs):
+    # bot_config.json'dan admin_id'yi oku
+    admin_id = None
+    if os.path.exists("bot_config.json"):
+        try:
+            with open("bot_config.json", "r", encoding="utf-8") as f:
+                cfg = json.load(f)
+                admin_id = cfg.get("admin_id")
+        except:
+            pass
+            
+    if not admin_id:
+        print(f"⚠️ [{client_name}] Uyarı: admin_id bulunamadığı için admin komut işleyicisi başlatılamadı.")
+        return
+        
+    @client.on(events.NewMessage(incoming=True, chats=int(admin_id)))
+    async def handle_admin_reply(event):
+        try:
+            msg_text = (event.raw_text or "").strip().lower()
+            
+            # 1. Bireysel grup bildirimi yanıtı (Reply-to-approve)
+            if event.is_reply and msg_text in ['ekle', 'ok', 'y', 'evet', 'confirm', 'approve']:
+                reply_msg = await event.get_reply_message()
+                if reply_msg and reply_msg.sender_id == (await client.get_me()).id:
+                    # Kullanıcı adını mesaj metninden ayıkla
+                    match = re.search(r'• Kullanıcı Adı:\s*@?(\w+)', reply_msg.raw_text)
+                    if match:
+                        grup_username = match.group(1).strip()
+                        print(f"[{client_name}] 📥 Admin onayı alındı: @{grup_username}")
+                        
+                        # Blacklist'te ise çıkar
+                        blacklist = get_list(BLACKLIST_FILE)
+                        if grup_username.lower() in set(x.lower() for x in blacklist):
+                            try:
+                                with open(BLACKLIST_FILE, 'r', encoding='utf-8') as f:
+                                    lines = f.read().splitlines()
+                                new_lines = [l for l in lines if l.strip().lower() != grup_username.lower()]
+                                with open(BLACKLIST_FILE, 'w', encoding='utf-8') as f:
+                                    f.write('\n'.join(new_lines) + '\n')
+                                print(f"[{client_name}] 🔓 @{grup_username} kara listeden çıkarıldı.")
+                            except Exception as ble:
+                                print(f"⚠️ Kara listeden çıkarma hatası: {ble}")
+                        
+                        # auto_groups.txt'ye ekle
+                        local_auto = get_list(AUTO_GROUPS_FILE)
+                        if grup_username.lower() not in set(x.lower() for x in local_auto):
+                            save_to_list(grup_username, AUTO_GROUPS_FILE)
+                            
+                        # Gruba katılmayı dene
+                        try:
+                            entity = await client.get_entity(grup_username)
+                            await client(JoinChannelRequest(entity))
+                            joined_dialogs[grup_username.lower()] = entity
+                            await event.respond(f"✅ **@{grup_username} onaylandı!**\nGruba başarıyla katıldım ve reklam listesine ekledim.")
+                        except Exception as je:
+                            await event.respond(f"⚠️ **@{grup_username}** listeye eklendi ancak gruba katılım başarısız oldu:\n`{type(je).__name__}: {je}`")
+                        return
+                    else:
+                        await event.respond("⚠️ Yanıtlanan mesajda onaylanacak grup kullanıcı adı bulunamadı.")
+                        return
+
+            # 2. Doğrudan link veya kullanıcı adı ekleme (Mesaj ile doğrudan ekleme)
+            grup_to_add = None
+            if msg_text.startswith('/ekle '):
+                grup_to_add = event.raw_text[6:].strip()
+            elif msg_text.startswith('@'):
+                grup_to_add = event.raw_text[1:].strip()
+            elif 't.me/' in msg_text or 'telegram.me/' in msg_text:
+                parts = event.raw_text.split('/')
+                grup_to_add = parts[-1].strip()
+                
+            if grup_to_add:
+                grup_to_add = re.sub(r'[^a-zA-Z0-9_]', '', grup_to_add)
+                if len(grup_to_add) >= 3:
+                    # Blacklist'ten çıkar
+                    blacklist = get_list(BLACKLIST_FILE)
+                    if grup_to_add.lower() in set(x.lower() for x in blacklist):
+                        try:
+                            with open(BLACKLIST_FILE, 'r', encoding='utf-8') as f:
+                                lines = f.read().splitlines()
+                            new_lines = [l for l in lines if l.strip().lower() != grup_to_add.lower()]
+                            with open(BLACKLIST_FILE, 'w', encoding='utf-8') as f:
+                                f.write('\n'.join(new_lines) + '\n')
+                        except:
+                            pass
+                    
+                    local_auto = get_list(AUTO_GROUPS_FILE)
+                    if grup_to_add.lower() not in set(x.lower() for x in local_auto):
+                        save_to_list(grup_to_add, AUTO_GROUPS_FILE)
+                        
+                    try:
+                        entity = await client.get_entity(grup_to_add)
+                        await client(JoinChannelRequest(entity))
+                        joined_dialogs[grup_to_add.lower()] = entity
+                        await event.respond(f"✅ **@{grup_to_add} başarıyla eklendi!**\nGruba katıldım ve reklam listesine ekledim.")
+                    except Exception as je:
+                        await event.respond(f"⚠️ **@{grup_to_add}** listeye eklendi ancak gruba katılım başarısız oldu:\n`{type(je).__name__}: {je}`")
+        except Exception as ex:
+            print(f"[{client_name}] ⚠️ Admin yanıt işleme hatası: {ex}")
 
 async def main():
     print("\n🚀 Habil Reklam Botu v2 - Akıllı Mod")
@@ -1488,6 +1580,7 @@ async def main():
     # Workers ve arka plan görevlerini başlat
     tasks = []
     for client, name, j_dialogs in active_clients:
+        register_admin_handler(client, name, j_dialogs)
         tasks.append(run_worker(client, name, j_dialogs))
     
     # Scraper ve Firestore sync'i arka planda çalıştır
