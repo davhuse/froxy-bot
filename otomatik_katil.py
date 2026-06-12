@@ -189,12 +189,12 @@ AUTO_GROUPS_FILE = 'auto_groups.txt'
 MESSAGES_DIR = 'messages'
 MSG_HISTORY_FILE = 'msg_history.json'
 COOLDOWN_FILE = 'group_cooldown.json'
-GROUP_COOLDOWN_HOURS = 12  # Varsayılan: 12 saat ortak cooldown. Config'den ezilebilir.
+GROUP_COOLDOWN_HOURS = 2  # Varsayılan: 2 saat ortak cooldown. Config'den ezilebilir.
 if os.path.exists("bot_config.json"):
     try:
         with open("bot_config.json", "r", encoding="utf-8") as f:
             cfg = json.load(f)
-            GROUP_COOLDOWN_HOURS = cfg.get("group_cooldown_hours", 12)
+            GROUP_COOLDOWN_HOURS = cfg.get("group_cooldown_hours", 2)
     except:
         pass
 
