@@ -45,8 +45,8 @@ gruplar = [
     "letgoilanlari",
     "kuponkodalsat",
     "-1001572316417",  # Serbest Ticaret Grubu (1515 üye)
+    "-3608209943",     # DERGAH (1582 üye)
     # --- Aşağıdakiler eklenecek, @username bekleniyor ---
-    # "dergah_username",
     # "lord_alimsatim",
     # "reklamturkiye",
     # "ticaretmeydani",
