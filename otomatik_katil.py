@@ -24,14 +24,35 @@ def print(*args, **kwargs):
     builtins.print(*args, **kwargs)
 
 gruplar = [
-    # Kullanıcının verdiği 17 spesifik grup + yeni eklenenler
-    "ilanticaret", "Nightsatis", "alimsatimmerkezii", "kuponceking",
-    "-1001572316417", "kuponsatimalim", "indirimkodusatis", "ticaretsaha",
-    "ticaretforumofficial", "ticaretguvenilir", "kuponsatisgrup",
-    "kuponhesapsatis", "kuponsatislari0", "TsmTicaret", "reklamreferans",
-    "sosyalmedyaalimsatimticaret", "YuceKuponSatis", "ReklamOnliene",
-    "letgoilanlari", "alcaponesat"
+    # Kullanıcının onayladığı hedef gruplar (12 Haziran 2026 güncellemesi)
+    "ticaretforumofficial",
+    "sultanbeyliikinciel0",
+    "tahaaslan11",
+    "casinox_grup",
+    "ReklamOnliene",
+    "alimsatimmerkezii",
+    "illegalalimsatimerkezi",
+    "ilanticaret",
+    "reklamreferans",
+    "sosyalmedyaalimsatimticaret",
+    "ReferansReklamYardimlasma",
+    "sanalalimsatimticaret",
+    "kuponsatisgrup",
+    "referansreklam1",
+    "referanslinkpaylasimigrup",
+    "kuponsatislari0",
+    "YuceKuponSatis",
+    "letgoilanlari",
+    "kuponkodalsat",
+    "-1001572316417",  # Serbest Ticaret Grubu (1515 üye)
+    # --- Aşağıdakiler eklenecek, @username bekleniyor ---
+    # "dergah_username",
+    # "lord_alimsatim",
+    # "reklamturkiye",
+    # "ticaretmeydani",
+    # "kodsatisi",
 ]
+
 
 
 STATS_FILE = 'stats.json'
@@ -853,7 +874,19 @@ async def main():
                             is_protected = True
                         elif dialog_id_str in protected_groups:
                             is_protected = True
-                            
+
+                        # ⚡ WHITELIST MODU: Onaylı listede olmayan her grup = çık + kara liste
+                        if not is_protected:
+                            g_name = username_lower or dialog_id_str
+                            print(f"[{client_name}] 🚫 @{g_name} → Onaylı listede yok! Kara listeye alınıp çıkılıyor...")
+                            new_blacklisted_groups.append(g_name)
+                            try:
+                                await client(LeaveChannelRequest(dialog.entity))
+                            except Exception as le:
+                                print(f"[{client_name}] ⚠️ @{g_name} gruptan çıkılırken hata: {le}")
+                            continue
+
+
                         # Filtreler (Korumalı gruplara uygulanmaz)
                         should_leave = False
                         leave_reason = ""
