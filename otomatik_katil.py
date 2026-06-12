@@ -551,8 +551,35 @@ async def auto_scrape_groups(client, client_name, joined_usernames=None):
         except Exception as e:
             print(f"⚠️ [{client_name}] Auto-Scraper hatası ('{keyword}'): {type(e).__name__} - {e}")
             
+    # Scraper bitti - bulunan yeni grupları admin'e bildir
     if new_found > 0:
         update_stats(discovered=new_found)
+        try:
+            admin_id = None
+            if os.path.exists("bot_config.json"):
+                with open("bot_config.json", "r", encoding="utf-8") as f:
+                    cfg = json.load(f)
+                    admin_id = cfg.get("admin_id")
+            if admin_id:
+                # scraped_groups.txt'den son new_found grubu al
+                found_list = []
+                if os.path.exists("scraped_groups.txt"):
+                    with open("scraped_groups.txt", "r", encoding="utf-8") as f:
+                        lines = [l.strip() for l in f.readlines() if l.strip()]
+                        found_list = lines[-new_found:] if len(lines) >= new_found else lines
+                grup_listesi = "\n".join([f"• @{g}" for g in found_list]) if found_list else "(liste alınamadı)"
+                bildirim = (
+                    f"🆕 **Yeni Grup Keşfedildi!**\n"
+                    f"━━━━━━━━━━━━━━━━━\n"
+                    f"📦 Toplam: {new_found} yeni kaliteli grup\n\n"
+                    f"{grup_listesi}\n\n"
+                    f"ℹ️ Onaylamak için gruba katılıp /ekle komutunu kullanabilirsin "
+                    f"ya da bana t.me linkini gönder."
+                )
+                await client.send_message(int(admin_id), bildirim)
+                print(f"📩 [{client_name}] Admin'e {new_found} yeni grup bildirimi gönderildi.")
+        except Exception as ne:
+            print(f"⚠️ Admin bildirim hatası: {ne}")
     
     print(f"\n📊 [{client_name}] Scraper Sonuç: {new_found} yeni kaliteli grup eklendi, {blacklisted_count} çöp grup kara listeye alındı.")
         
