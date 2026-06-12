@@ -171,14 +171,6 @@ def process_marketing_features(msg, is_keyvadi):
     return msg
 
 
-# Auto discovered groups
-if os.path.exists("auto_groups.txt"):
-    with open("auto_groups.txt", "r", encoding="utf-8") as f:
-        auto_g = [x.strip() for x in f.read().splitlines() if x.strip()]
-        for g in auto_g:
-            if g not in gruplar:
-                gruplar.append(g)
-
 
 PROGRESS_FILE = 'progress.txt'
 BLACKLIST_FILE = 'blacklist.txt'
@@ -1037,28 +1029,10 @@ async def main():
             blacklist = get_list(BLACKLIST_FILE)
             blacklist_lower = set(b.lower() for b in blacklist)
             
-            # Hedef gruplar: Sabit liste (max 40) + auto_groups.txt (max 40 ek grup)
-            STATIC_MAX = 40
-            AUTO_MAX = 40
-            
-            static_groups = list(set(g.lower() for g in gruplar))[:STATIC_MAX]
+            # Hedef gruplar: Sadece onaylanan gruplar
+            static_groups = list(set(g.lower() for g in gruplar))
             hedef_set = set(static_groups)
-            
-            # auto_groups.txt'den ek gruplar (kara listede olmayanlar, max AUTO_MAX adet)
-            if os.path.exists("auto_groups.txt"):
-                try:
-                    auto_added = 0
-                    with open("auto_groups.txt", "r", encoding="utf-8") as f:
-                        for line in f:
-                            g = line.strip().lower()
-                            if g and g not in hedef_set and g not in blacklist_lower:
-                                hedef_set.add(g)
-                                auto_added += 1
-                                if auto_added >= AUTO_MAX:
-                                    break
-                    print(f"[{client_name}] 📌 Sabit: {len(static_groups)} grup + Auto: {auto_added} grup = Toplam {len(hedef_set)} hedef")
-                except:
-                    pass
+            print(f"[{client_name}] 📌 Onaylı Hedef: {len(hedef_set)} grup")
             
             # Önbellekte olan + kara listede olmayan hedef gruplar
             blast_targets = []
@@ -1419,11 +1393,7 @@ async def main():
     if fs_auto:
         with open(AUTO_GROUPS_FILE, 'w', encoding='utf-8') as f:
             f.write(fs_auto)
-        print("📥 Otomatik keşfedilen gruplar buluttan indirildi.")
-        auto_g = [x.strip() for x in fs_auto.splitlines() if x.strip()]
-        for g in auto_g:
-            if g not in gruplar:
-                gruplar.append(g)
+        print("📥 Otomatik keşfedilen gruplar buluttan indirildi (onaylı listeye eklenmedi).")
 
     # Periyodik arka plan görevleri
     async def periodic_firestore_sync():
@@ -1440,16 +1410,8 @@ async def main():
                     with open(BLACKLIST_FILE, 'w', encoding='utf-8') as f:
                         f.write('\n'.join(merged_black) + '\n')
                 if fs_auto_new:
-                    auto_g = [x.strip() for x in fs_auto_new.splitlines() if x.strip()]
-                    new_added = 0
-                    for g in auto_g:
-                        if g not in gruplar:
-                            gruplar.append(g)
-                            new_added += 1
-                    if new_added > 0:
-                        print(f"📥 [Firestore Sync] Buluttan {new_added} yeni otomatik grup eklendi.")
-                        with open(AUTO_GROUPS_FILE, 'w', encoding='utf-8') as f:
-                            f.write(fs_auto_new)
+                    with open(AUTO_GROUPS_FILE, 'w', encoding='utf-8') as f:
+                        f.write(fs_auto_new)
             except Exception as e:
                 print(f"⚠️ [Firestore Sync] Hata: {e}")
 
