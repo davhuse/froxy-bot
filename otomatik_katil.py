@@ -51,14 +51,20 @@ gruplar = [
     "reklamvereferanss",
     "kuponvekodsatisgrubu",
     "indirimkodusatis",
-    # --- Aşağıdakiler eklenecek, @username bekleniyor ---
-    # "lord_alimsatim",
-    # "reklamturkiye",
-    # "ticaretmeydani",
-    # "kodsatisi",
 ]
 
-
+def get_all_protected_groups():
+    protected = set(g.lower() for g in gruplar)
+    if os.path.exists("auto_groups.txt"):
+        try:
+            with open("auto_groups.txt", "r", encoding="utf-8") as f:
+                for line in f:
+                    g = line.strip().lower()
+                    if g:
+                        protected.add(g)
+        except:
+            pass
+    return protected
 
 STATS_FILE = 'stats.json'
 
@@ -183,7 +189,14 @@ AUTO_GROUPS_FILE = 'auto_groups.txt'
 MESSAGES_DIR = 'messages'
 MSG_HISTORY_FILE = 'msg_history.json'
 COOLDOWN_FILE = 'group_cooldown.json'
-GROUP_COOLDOWN_HOURS = 24  # Bir gruba mesaj gönderdikten sonra kaç saat beklenecek
+GROUP_COOLDOWN_HOURS = 12  # Varsayılan: 12 saat ortak cooldown. Config'den ezilebilir.
+if os.path.exists("bot_config.json"):
+    try:
+        with open("bot_config.json", "r", encoding="utf-8") as f:
+            cfg = json.load(f)
+            GROUP_COOLDOWN_HOURS = cfg.get("group_cooldown_hours", 12)
+    except:
+        pass
 
 NEGATIVE_KEYWORDS = [
     "sigara", "vape", "puff", "tütün", "likit", "shisha", "nargile", "elektronik sigara", "elektroniksigara",
@@ -230,9 +243,10 @@ def save_cooldowns(data):
     except:
         pass
 
-def is_on_cooldown(grup_name, cooldowns):
-    """Gruba son mesaj gönderilmesinden bu yana yeterince süre geçti mi?"""
+def is_on_cooldown(grup_name):
+    """Gruba son mesaj gönderilmesinden bu yana yeterince süre geçti mi (herhangi bir hesap tarafından)?"""
     from datetime import datetime
+    cooldowns = load_cooldowns()
     key = grup_name.lower()
     if key not in cooldowns:
         return False
@@ -243,10 +257,12 @@ def is_on_cooldown(grup_name, cooldowns):
     except:
         return False
 
-def set_cooldown(grup_name, cooldowns):
+def set_cooldown(grup_name):
     """Gruba mesaj gönderildi olarak işaretle"""
     from datetime import datetime
+    cooldowns = load_cooldowns()
     cooldowns[grup_name.lower()] = datetime.now().isoformat()
+    save_cooldowns(cooldowns)
 
 # --- Mesaj Rotasyonu (6 şablon: kısa/uzun, soru/direkt, fiyat/sosyal) ---
 FROXY_MESSAGES = [
@@ -531,9 +547,14 @@ async def auto_scrape_groups(client, client_name, joined_usernames=None):
                         f.write(chat.username + '\n')
                 except:
                     pass
+                
+                # Otomatik katılım ve reklam listesine ekle
+                if chat.username.lower() not in blacklist_lower:
+                    save_to_list(chat.username, AUTO_GROUPS_FILE)
+
                 new_found += 1
                 keyword_found += 1
-                print(f"  🆕 KALİTELİ GRUP KEŞFEDİLDİ (Katılınmadı): @{chat.username} (Üye: {member_count or '?'}, Başlık: '{chat.title}')")
+                print(f"  🆕 KALİTELİ GRUP KEŞFEDİLDİ (Otomatik Eklendi): @{chat.username} (Üye: {member_count or '?'}, Başlık: '{chat.title}')")
                 
             summary = f"'{keyword}': +{keyword_found} yeni"
             if keyword_blacklisted > 0:
@@ -566,12 +587,11 @@ async def auto_scrape_groups(client, client_name, joined_usernames=None):
                         found_list = lines[-new_found:] if len(lines) >= new_found else lines
                 grup_listesi = "\n".join([f"• @{g}" for g in found_list]) if found_list else "(liste alınamadı)"
                 bildirim = (
-                    f"🆕 **Yeni Grup Keşfedildi!**\n"
+                    f"🆕 **Yeni Kaliteli Gruplar Keşfedildi ve Otomatik Eklendi!**\n"
                     f"━━━━━━━━━━━━━━━━━\n"
-                    f"📦 Toplam: {new_found} yeni kaliteli grup\n\n"
+                    f"📦 Toplam: {new_found} yeni grup listeye dahil edildi:\n\n"
                     f"{grup_listesi}\n\n"
-                    f"ℹ️ Onaylamak için gruba katılıp /ekle komutunu kullanabilirsin "
-                    f"ya da bana t.me linkini gönder."
+                    f"ℹ️ Bot bu gruplara otomatik olarak katılarak reklam atmaya başlayacaktır."
                 )
                 await client.send_message(int(admin_id), bildirim)
                 print(f"📩 [{client_name}] Admin'e {new_found} yeni grup bildirimi gönderildi.")
@@ -825,7 +845,7 @@ async def main():
         print(f"🎉 Auto-Scraper toplamda {scrape_count} yeni grup ekledi. Liste güncellendi!")
 
     async def run_worker(client, client_name, joined_dialogs):
-        protected_groups = set(g.lower() for g in gruplar)
+        protected_groups = get_all_protected_groups()
         
         VERIFIED_FILE = f"verified_groups_{client_name.replace(' ', '_').replace('#', '')}.json"
         MIN_UNIQUE_SENDERS = 10   # Grupta en az 10 farklı kişi yazmış olmalı
@@ -859,6 +879,8 @@ async def main():
                 return True  # Hata durumunda dahil et (kayıp yapmayız)
 
         async def cache_dialogs():
+            nonlocal protected_groups
+            protected_groups = get_all_protected_groups()
             print(f"🚀 [{client_name}] Diyaloglar önbelleğe alınıyor...")
             try:
                 from datetime import datetime, timezone
@@ -1026,7 +1048,7 @@ async def main():
         # ═══════════════════════════════════════════════════
         while True:
             # Dinamik olarak korumalı listeyi güncelle
-            protected_groups = set(g.lower() for g in gruplar)
+            protected_groups = get_all_protected_groups()
             
             # Her blast döngüsü başında diyalogları güncelle
             await cache_dialogs()
@@ -1034,9 +1056,8 @@ async def main():
             blacklist = get_list(BLACKLIST_FILE)
             blacklist_lower = set(b.lower() for b in blacklist)
             
-            # Hedef gruplar: Sadece onaylanan gruplar
-            static_groups = list(set(g.lower() for g in gruplar))
-            hedef_set = set(static_groups)
+            # Hedef gruplar: Korumalı / Onaylı grupların hepsi
+            hedef_set = protected_groups.copy()
             print(f"[{client_name}] 📌 Onaylı Hedef: {len(hedef_set)} grup")
             
             # Önbellekte olan + kara listede olmayan hedef gruplar
@@ -1150,6 +1171,10 @@ async def main():
                     entity = joined_dialogs.get(grup_name.lower())
                     if not entity:
                         return
+                    
+                    if is_on_cooldown(grup_name):
+                        print(f"[{client_name}] ⏳ @{grup_name} cooldown süresinde, atlanıyor...")
+                        return
                     try:
                         # Mesaj rotasyonu: bu grup için farklı mesaj seç
                         if available_files:
@@ -1186,6 +1211,7 @@ async def main():
                             print(f"[{client_name}] ✅ @{grup_name} → Gönderildi! ({sent_count+1}) [Şablon: {chosen_name}]")
                             
                         sent_count += 1
+                        set_cooldown(grup_name)
 
                         update_stats(sent=1)
                         await reset_failure(grup_name)
@@ -1200,6 +1226,7 @@ async def main():
                                 else:
                                     await client.send_message(entity, msg)
                                 sent_count += 1
+                                set_cooldown(grup_name)
 
                                 print(f"[{client_name}] ✅ @{grup_name} → Gönderildi (flood sonrası)!")
                                 update_stats(sent=1)
