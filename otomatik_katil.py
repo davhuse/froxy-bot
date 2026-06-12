@@ -189,12 +189,12 @@ AUTO_GROUPS_FILE = 'auto_groups.txt'
 MESSAGES_DIR = 'messages'
 MSG_HISTORY_FILE = 'msg_history.json'
 COOLDOWN_FILE = 'group_cooldown.json'
-GROUP_COOLDOWN_HOURS = 2  # Varsayılan: 2 saat ortak cooldown. Config'den ezilebilir.
+GROUP_COOLDOWN_HOURS = 1  # Varsayılan: 1 saat ortak cooldown. Config'den ezilebilir.
 if os.path.exists("bot_config.json"):
     try:
         with open("bot_config.json", "r", encoding="utf-8") as f:
             cfg = json.load(f)
-            GROUP_COOLDOWN_HOURS = cfg.get("group_cooldown_hours", 2)
+            GROUP_COOLDOWN_HOURS = cfg.get("group_cooldown_hours", 1)
     except:
         pass
 
@@ -246,6 +246,17 @@ def save_cooldowns(data):
 def is_on_cooldown(grup_name):
     """Gruba son mesaj gönderilmesinden bu yana yeterince süre geçti mi (herhangi bir hesap tarafından)?"""
     from datetime import datetime
+    
+    # Dinamik olarak config'den oku
+    cooldown_hours = 1
+    if os.path.exists("bot_config.json"):
+        try:
+            with open("bot_config.json", "r", encoding="utf-8") as f:
+                cfg = json.load(f)
+                cooldown_hours = cfg.get("group_cooldown_hours", 1)
+        except:
+            pass
+            
     cooldowns = load_cooldowns()
     key = grup_name.lower()
     if key not in cooldowns:
@@ -253,7 +264,7 @@ def is_on_cooldown(grup_name):
     try:
         last_sent = datetime.fromisoformat(cooldowns[key])
         elapsed = (datetime.now() - last_sent).total_seconds() / 3600
-        return elapsed < GROUP_COOLDOWN_HOURS
+        return elapsed < cooldown_hours
     except:
         return False
 
