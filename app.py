@@ -128,7 +128,7 @@ def bot_watchdog():
                     
                     file_out = open(LOG_FILE, 'a', encoding="utf-8", buffering=1)
                     ad_process = subprocess.Popen(
-                        [sys.executable, 'otomatik_katil.py'],
+                        [sys.executable, '-u', 'otomatik_katil.py'],
                         stdout=file_out,
                         stderr=subprocess.STDOUT,
                         creationflags=flags,
@@ -162,7 +162,7 @@ def bot_watchdog():
                     
                     file_out = open(SUPPORT_LOG_FILE, 'a', encoding="utf-8", buffering=1)
                     support_process = subprocess.Popen(
-                        [sys.executable, 'froxy_bot.py'],
+                        [sys.executable, '-u', 'froxy_bot.py'],
                         stdout=file_out,
                         stderr=subprocess.STDOUT,
                         creationflags=flags,
@@ -210,7 +210,7 @@ def bot_watchdog():
                     
                     file_out = open(FROXY_LOG_FILE, 'a', encoding="utf-8", buffering=1)
                     froxy_process = subprocess.Popen(
-                        [sys.executable, 'froxy_destek_bot.py'],
+                        [sys.executable, '-u', 'froxy_destek_bot.py'],
                         stdout=file_out,
                         stderr=subprocess.STDOUT,
                         creationflags=flags,
@@ -331,7 +331,7 @@ def start():
         env["PYTHONIOENCODING"] = "utf-8"
         global ad_process
         ad_process = subprocess.Popen(
-            [sys.executable, 'otomatik_katil.py'],
+            [sys.executable, '-u', 'otomatik_katil.py'],
             stdout=file_out,
             stderr=subprocess.STDOUT,
             creationflags=flags,
@@ -406,7 +406,7 @@ def support_start():
         env["PYTHONIOENCODING"] = "utf-8"
         global support_process
         support_process = subprocess.Popen(
-            [sys.executable, 'froxy_bot.py'],
+            [sys.executable, '-u', 'froxy_bot.py'],
             stdout=file_out,
             stderr=subprocess.STDOUT,
             creationflags=flags,
@@ -481,7 +481,7 @@ def froxy_start():
         env["PYTHONIOENCODING"] = "utf-8"
         global froxy_process
         froxy_process = subprocess.Popen(
-            [sys.executable, 'froxy_destek_bot.py'],
+            [sys.executable, '-u', 'froxy_destek_bot.py'],
             stdout=file_out,
             stderr=subprocess.STDOUT,
             creationflags=flags,
