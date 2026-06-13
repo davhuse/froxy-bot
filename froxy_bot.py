@@ -2,6 +2,10 @@ import os
 import json
 import logging
 import re
+import urllib.request
+import ssl
+import html
+import asyncio
 from telethon import TelegramClient, events, Button
 
 # Logging configuration
@@ -80,52 +84,118 @@ bot = TelegramClient('froxy_bot_session', API_ID, API_HASH)
 # KeyVadi Product Catalog - Shopier üzerinden satılan ürünler
 # ═══════════════════════════════════════════════════════════════
 
-CATEGORIES = {
-    "ai": {
-        "title": "🌟 Yapay Zeka (AI) Hesapları",
-        "products": {
-            "gemini_pro_1y": {"title": "Gemini Pro (1 Yıllık Hesap)", "price": "₺299.99"},
-            "gemini_pro_davet": {"title": "Gemini Pro (Davet Linki)", "price": "₺124.99"},
-            "gemini_ultra_davet": {"title": "Gemini Ultra (Davet Linki)", "price": "₺399.90"},
-            "gemini_ultra_25k": {"title": "Gemini Ultra (2.5k Kredili)", "price": "₺599.99"},
-            "grok_1m": {"title": "Super Grok — 1 Aylık", "price": "₺449.99"},
-            "grok_3m": {"title": "Super Grok — 3 Aylık", "price": "₺949.99"},
-            "grok_6m": {"title": "Super Grok — 6 Aylık", "price": "₺1499.99"},
-            "grok_12m": {"title": "Super Grok — 12 Aylık", "price": "₺2299.99"},
-            "gamma_ultra": {"title": "Gamma Ultra (1 Aylık)", "price": "₺449.99"},
-            "gamma_pro": {"title": "Gamma Pro (1 Aylık)", "price": "₺299.99"},
-            "kiro": {"title": "Kiro (10k Kredili Yapay Zeka)", "price": "₺499.99"},
-        }
-    },
-    "design": {
-        "title": "🎨 Tasarım & Lisans Hizmetleri",
-        "products": {
-            "canva": {"title": "Canva Pro (1 Yıllık Yetki)", "price": "₺79.99"},
-            "adobe_express": {"title": "Adobe Express (3 Aylık Üyelik)", "price": "₺99.99"},
-            "adobe_cc_1w": {"title": "Adobe Creative Cloud — 1 Haftalık", "price": "₺69.99"},
-            "adobe_cc_1m": {"title": "Adobe Creative Cloud — 1 Aylık", "price": "₺119.99"},
-            "adobe_cc_4m": {"title": "Adobe Creative Cloud — 4 Aylık", "price": "₺249.99"},
-            "capcut": {"title": "CapCut Pro (1 Haftalık)", "price": "₺99.99"},
-            "duolingo": {"title": "Duolingo Super Sınırsız", "price": "₺69.99"},
-            "scribd": {"title": "Scribd Premium (3 Aylık)", "price": "₺99.99"},
-        }
-    },
-    "mobile": {
-        "title": "📱 Onaylı Mobil Hesaplar",
-        "products": {
-            "whatsapp": {"title": "ABD/Kanada Karma WhatsApp Numarası", "price": "₺149.99"},
-            "apple_id": {"title": "Türk Apple ID (iCloud Etkin)", "price": "₺149.99"},
-        }
-    },
-    "deals": {
-        "title": "🍔 Yemek & Akaryakıt Fırsatları",
-        "products": {
-            "trendyol_yemek": {"title": "Trendyol Go Yemek (700₺'ye 250₺ İndirim)", "price": "₺49.99"},
-            "trendyol_market": {"title": "Trendyol Go Market (900₺'ye 250₺ İndirim)", "price": "₺49.99"},
-            "shell": {"title": "Shell 75 TL Akaryakıt Puanı", "price": "₺14.99"},
-        }
+CATEGORIES = {}
+
+def scrape_shopier():
+    logger.info("Scraping Shopier showroom at https://www.shopier.com/keyvadi ...")
+    context = ssl._create_unverified_context()
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+    req = urllib.request.Request('https://www.shopier.com/keyvadi', headers=headers)
+    
+    try:
+        with urllib.request.urlopen(req, context=context, timeout=15) as response:
+            raw_data = response.read()
+            try:
+                html_content = raw_data.decode('utf-8')
+            except UnicodeDecodeError:
+                html_content = raw_data.decode('windows-1254', errors='ignore')
+                
+            # Regex to find product cards
+            cards = html_content.split('class="product-card shopier--product-card')
+            products = []
+            
+            for card in cards[1:]:
+                # Extract link/ID
+                link_match = re.search(r'href="(https://www\.shopier\.com/keyvadi/(\d+))"', card)
+                title_match = re.search(r'class="shopier-store--store-product-card-title">([^<]+)</h3>', card)
+                price_match = re.search(r'data-price="([^"]+)"', card)
+                
+                if link_match and title_match and price_match:
+                    url = link_match.group(1)
+                    pid = link_match.group(2)
+                    title = html.unescape(title_match.group(1).strip())
+                    price = price_match.group(1).strip()
+                    
+                    price_str = price
+                    if not (price_str.endswith("TL") or price_str.endswith("₺")):
+                        price_str = f"{price_str} TL"
+                    
+                    products.append({
+                        "id": pid,
+                        "title": title,
+                        "price": price_str,
+                        "url": url
+                    })
+            
+            logger.info(f"Successfully scraped {len(products)} products from Shopier.")
+            return products
+    except Exception as e:
+        logger.error(f"Scraper error: {e}")
+        return []
+
+def rebuild_categories(products):
+    global CATEGORIES
+    
+    temp_categories = {
+        "ai": {"title": "🌟 Yapay Zeka (AI) Hesapları", "products": {}},
+        "design": {"title": "🎨 Tasarım & Lisans Hizmetleri", "products": {}},
+        "mobile": {"title": "📱 Onaylı Mobil Hesaplar", "products": {}},
+        "deals": {"title": "🍔 Yemek & Akaryakıt Fırsatları", "products": {}},
+        "other": {"title": "📦 Diğer Ürün & Hizmetler", "products": {}}
     }
-}
+    
+    for p in products:
+        title = p["title"]
+        pid = p["id"]
+        price = p["price"]
+        url = p["url"]
+        
+        t = title.lower()
+        if any(k in t for k in ["gemini", "grok", "ai", "gamma", "kiro", "chatgpt", "openai", "copilot", "claude", "midjourney"]):
+            cat_key = "ai"
+        elif any(k in t for k in ["canva", "adobe", "creative cloud", "express", "capcut", "duolingo", "scribd", "design", "tasarım", "spotify", "netflix"]):
+            cat_key = "design"
+        elif any(k in t for k in ["whatsapp", "apple id", "apple", "icloud", "numara", "mobil", "sms", "onay"]):
+            cat_key = "mobile"
+        elif any(k in t for k in ["trendyol", "yemek", "market", "shell", "akaryakıt", "indirim", "fırsat", "kampanya", "kod"]):
+            cat_key = "deals"
+        else:
+            cat_key = "other"
+            
+        temp_categories[cat_key]["products"][pid] = {
+            "title": title,
+            "price": price,
+            "url": url
+        }
+        
+    CATEGORIES = temp_categories
+    logger.info("In-memory categories rebuilt successfully.")
+
+def load_products_from_file_or_scrape():
+    products = []
+    file_path = "parsed_keyvadi_products.json"
+    
+    if os.path.exists(file_path):
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                products = json.load(f)
+            logger.info(f"Loaded {len(products)} products from local file {file_path}.")
+        except Exception as e:
+            logger.error(f"Error reading local products file: {e}")
+            
+    if not products:
+        logger.info("Local products file not found or empty. Scraping Shopier showroom...")
+        products = scrape_shopier()
+        if products:
+            try:
+                with open(file_path, "w", encoding="utf-8") as f:
+                    json.dump(products, f, indent=2, ensure_ascii=False)
+            except Exception as e:
+                logger.error(f"Error saving scraped products to file: {e}")
+                
+    # Rebuild in-memory categories
+    rebuild_categories(products)
+
 
 welcome_text = (
     "⚡ **KeyVadi Satış Paneline Hoş Geldiniz!**\n\n"
@@ -138,27 +208,55 @@ welcome_text = (
 async def start_handler(event):
     user_id = event.sender_id
     user_states[user_id] = None
-    buttons = [
-        [Button.inline("🌟 Yapay Zeka (AI) Hesapları", b"cat_ai")],
-        [Button.inline("🎨 Tasarım & Lisans Hizmetleri", b"cat_design")],
-        [Button.inline("📱 Onaylı Mobil Hesaplar", b"cat_mobile")],
-        [Button.inline("🍔 Yemek & Akaryakıt Fırsatları", b"cat_deals")],
-        [Button.inline("📞 Canlı Destek & İletişim", b"menu_support")]
-    ]
+    buttons = []
+    for cat_key, cat in CATEGORIES.items():
+        if cat["products"]:  # Only show categories with products
+            buttons.append([Button.inline(cat["title"], f"cat_{cat_key}".encode())])
+    buttons.append([Button.inline("📞 Canlı Destek & İletişim", b"menu_support")])
     await event.respond(welcome_text, buttons=buttons)
 
 @bot.on(events.CallbackQuery(data=b'menu_main'))
 async def main_menu_handler(event):
     user_id = event.sender_id
     user_states[user_id] = None
-    buttons = [
-        [Button.inline("🌟 Yapay Zeka (AI) Hesapları", b"cat_ai")],
-        [Button.inline("🎨 Tasarım & Lisans Hizmetleri", b"cat_design")],
-        [Button.inline("📱 Onaylı Mobil Hesaplar", b"cat_mobile")],
-        [Button.inline("🍔 Yemek & Akaryakıt Fırsatları", b"cat_deals")],
-        [Button.inline("📞 Canlı Destek & İletişim", b"menu_support")]
-    ]
+    buttons = []
+    for cat_key, cat in CATEGORIES.items():
+        if cat["products"]:  # Only show categories with products
+            buttons.append([Button.inline(cat["title"], f"cat_{cat_key}".encode())])
+    buttons.append([Button.inline("📞 Canlı Destek & İletişim", b"menu_support")])
     await event.edit(welcome_text, buttons=buttons)
+
+
+# Admin update handler
+@bot.on(events.NewMessage(pattern='/guncelle'))
+async def guncelle_handler(event):
+    config = load_config() or {}
+    admin_chat_id = config.get("admin_id", ADMIN_ID)
+    
+    if event.sender_id != admin_chat_id:
+        return
+        
+    await event.respond("⏳ Shopier ürün listesi güncelleniyor, lütfen bekleyin...")
+    
+    loop = asyncio.get_event_loop()
+    products = await loop.run_in_executor(None, scrape_shopier)
+    
+    if products:
+        file_path = "parsed_keyvadi_products.json"
+        try:
+            with open(file_path, "w", encoding="utf-8") as f:
+                json.dump(products, f, indent=2, ensure_ascii=False)
+            rebuild_categories(products)
+            
+            # Count products per category
+            summary = "\n".join([f"- {cat['title']}: {len(cat['products'])} ürün" for cat_key, cat in CATEGORIES.items() if cat['products']])
+            await event.respond(f"✅ Ürünler başarıyla güncellendi ve hafızaya yüklendi!\n\nToplam {len(products)} ürün bulundu:\n{summary}")
+        except Exception as e:
+            logger.error(f"Error saving updated products: {e}")
+            await event.respond(f"❌ Güncelleme yapıldı fakat dosyaya yazılamadı: {e}")
+    else:
+        await event.respond("❌ Ürün listesi güncellenemedi (Shopier sayfasından veri çekilemedi).")
+
 
 # Category handler
 @bot.on(events.CallbackQuery(pattern=r'cat_(\w+)'))
@@ -295,6 +393,8 @@ async def message_handler(event):
                     await event.reply(f"❌ Cevap iletilemedi. Hata: {e}")
 
 if __name__ == '__main__':
+    logger.info("Loading KeyVadi products cache...")
+    load_products_from_file_or_scrape()
     logger.info("Starting KeyVadi Sales Bot (@KeyVadiSatisBot)...")
     bot.start(bot_token=BOT_TOKEN)
     bot.run_until_disconnected()
