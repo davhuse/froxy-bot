@@ -983,6 +983,11 @@ async def main():
     first_client, first_name, _ = active_clients[0]
 
     async def run_worker(client, client_name, joined_dialogs):
+        # Hesap #2 için başlangıçta 15 dakika (900 saniye) gecikme ekle (çakışmayı önlemek için)
+        if "2" in client_name:
+            print(f"⏳ [{client_name}] Başlangıç gecikmesi aktif: Diğer hesapla çakışmayı önlemek için 15 dakika bekleniyor...")
+            await asyncio.sleep(900)
+            
         protected_groups = get_all_protected_groups()
         
         VERIFIED_FILE = f"verified_groups_{client_name.replace(' ', '_').replace('#', '')}.json"
@@ -1429,9 +1434,8 @@ async def main():
                             print(f"[{client_name}] ⚠️ @{grup_name} grubundan çıkılırken hata: {le}")
                     except SlowModeWaitError as sme:
                         wait_sec = getattr(sme, 'seconds', 0) or 0
-                        print(f"[{client_name}] 🐌 @{grup_name} → SlowMode ({wait_sec}sn bekleme), hata sayacı artıyor...")
-                        fail_count += 1
-                        await record_failure(grup_name)  # 5 kez slow mode → kara liste
+                        print(f"[{client_name}] 🐌 @{grup_name} → SlowMode aktif ({wait_sec}sn bekleme). Cooldown set ediliyor, pas geçildi.")
+                        set_cooldown(grup_name, client_name)
                     except Exception as e:
                         err_type = type(e).__name__
                         print(f"[{client_name}] ⚠️ @{grup_name} → {err_type} (atlanıyor)")

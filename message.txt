@@ -18,4 +18,4 @@ Sohbet, gelişmiş dosya/veri analizi ve sınırsız görsel üretimi!
 - Güvenli Shopier ödemesi sonrası anında otomatik teslimat
 
 👉 {Ücretsiz denemek ve hızlı sipariş için:|Soru, detaylı bilgi ve hemen sipariş vermek için:}
-🔗 [Buraya Tıklayarak Bota Başla](https://t.me/FroxyDestekBOT)
+🔗 Bota Başlamak İçin: @FroxyDestekBOT
