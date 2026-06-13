@@ -242,17 +242,23 @@ def save_cooldowns(data):
     except:
         pass
 
-def is_on_cooldown(grup_name):
-    """Gruba son mesaj gönderilmesinden bu yana yeterince süre geçti mi (herhangi bir hesap tarafından)?"""
+def is_on_cooldown(grup_name, client_name):
+    """
+    Gruba son mesaj gönderilmesinden bu yana yeterince süre geçti mi?
+    - Bu hesap için en az 1 saat geçmiş olmalı (GROUP_COOLDOWN_HOURS)
+    - Herhangi bir hesap için en az 20 dakika geçmiş olmalı (SPACING_COOLDOWN_MINUTES)
+    """
     from datetime import datetime
     
     # Dinamik olarak config'den oku
     cooldown_hours = 1
+    spacing_minutes = 20
     if os.path.exists("bot_config.json"):
         try:
             with open("bot_config.json", "r", encoding="utf-8") as f:
                 cfg = json.load(f)
                 cooldown_hours = cfg.get("group_cooldown_hours", 1)
+                spacing_minutes = cfg.get("spacing_cooldown_minutes", 20)
         except:
             pass
             
@@ -260,18 +266,55 @@ def is_on_cooldown(grup_name):
     key = grup_name.lower()
     if key not in cooldowns:
         return False
-    try:
-        last_sent = datetime.fromisoformat(cooldowns[key])
-        elapsed = (datetime.now() - last_sent).total_seconds() / 3600
-        return elapsed < cooldown_hours
-    except:
-        return False
+        
+    group_data = cooldowns[key]
+    
+    # Eski tip dize formatı (tek zaman damgası) uyumluluğu
+    if isinstance(group_data, str):
+        try:
+            last_sent = datetime.fromisoformat(group_data)
+            elapsed = (datetime.now() - last_sent).total_seconds() / 3600
+            return elapsed < cooldown_hours
+        except:
+            return False
+            
+    # Yeni tip sözlük formatı
+    now = datetime.now()
+    
+    # 1. Genel aralık kontrolü (herhangi bir hesap son 20 dk içinde atmış mı?)
+    for acc_name, time_str in group_data.items():
+        try:
+            last_sent = datetime.fromisoformat(time_str)
+            elapsed_min = (now - last_sent).total_seconds() / 60
+            if elapsed_min < spacing_minutes:
+                return True
+        except:
+            pass
+            
+    # 2. Bu hesap için cooldown kontrolü
+    this_acc_time = group_data.get(client_name)
+    if this_acc_time:
+        try:
+            last_sent = datetime.fromisoformat(this_acc_time)
+            elapsed_hours = (now - last_sent).total_seconds() / 3600
+            if elapsed_hours < cooldown_hours:
+                return True
+        except:
+            pass
+            
+    return False
 
-def set_cooldown(grup_name):
-    """Gruba mesaj gönderildi olarak işaretle"""
+def set_cooldown(grup_name, client_name):
+    """Gruba bu hesap tarafından mesaj gönderildi olarak işaretle"""
     from datetime import datetime
     cooldowns = load_cooldowns()
-    cooldowns[grup_name.lower()] = datetime.now().isoformat()
+    key = grup_name.lower()
+    
+    # Eski tip veri varsa veya boşsa temizle
+    if key not in cooldowns or isinstance(cooldowns[key], str):
+        cooldowns[key] = {}
+        
+    cooldowns[key][client_name] = datetime.now().isoformat()
     save_cooldowns(cooldowns)
 
 # --- Mesaj Rotasyonu (6 şablon: kısa/uzun, soru/direkt, fiyat/sosyal) ---
@@ -1257,7 +1300,7 @@ async def main():
                     if not entity:
                         return
                     
-                    if is_on_cooldown(grup_name):
+                    if is_on_cooldown(grup_name, client_name):
                         print(f"[{client_name}] ⏳ @{grup_name} cooldown süresinde, atlanıyor...")
                         return
                     try:
@@ -1296,7 +1339,7 @@ async def main():
                             print(f"[{client_name}] ✅ @{grup_name} → Gönderildi! ({sent_count+1}) [Şablon: {chosen_name}]")
                             
                         sent_count += 1
-                        set_cooldown(grup_name)
+                        set_cooldown(grup_name, client_name)
 
                         update_stats(sent=1)
                         await reset_failure(grup_name)
@@ -1311,7 +1354,7 @@ async def main():
                                 else:
                                     await client.send_message(entity, msg)
                                 sent_count += 1
-                                set_cooldown(grup_name)
+                                set_cooldown(grup_name, client_name)
 
                                 print(f"[{client_name}] ✅ @{grup_name} → Gönderildi (flood sonrası)!")
                                 update_stats(sent=1)
