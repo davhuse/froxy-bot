@@ -1335,7 +1335,7 @@ async def main():
                         is_keyvadi = "2" in client_name
                         msg = process_marketing_features(msg, is_keyvadi)
                         
-                        # Görsel/Banner gönderimi (Config'den dinamik okunur, varsayılan kapalı)
+                        # Görsel/Banner gönderimi (Grup yetki kontrolleri ve hata toleransı eklendi)
                         banner_file = "keyvadi_banner.png" if is_keyvadi else "froxy_banner.png"
                         allows_media = False
                         if os.path.exists("bot_config.json"):
@@ -1346,17 +1346,33 @@ async def main():
                             except:
                                 pass
                                 
+                        # Grup bazında görsel engeli var mı kontrol et
+                        if allows_media:
+                            try:
+                                if hasattr(entity, 'default_banned_rights') and entity.default_banned_rights:
+                                    if entity.default_banned_rights.send_media:
+                                        print(f"[{client_name}] ⚠️ @{grup_name} grubunda görsel gönderimi yasaklı! Düz metin moduna geçiliyor.")
+                                        allows_media = False
+                            except Exception as e:
+                                print(f"[{client_name}] ⚠️ @{grup_name} izin kontrol hatası: {e}")
+                                
                         if allows_media and os.path.exists(banner_file):
-                            if len(msg) <= 1024:
-                                await client.send_message(entity, msg, file=banner_file)
-                                chosen_name = os.path.basename(chosen_file) if available_files else "fallback"
-                                print(f"[{client_name}] 📸 @{grup_name} → Görselli Gönderildi! ({sent_count+1}) [Şablon: {chosen_name}]")
-                            else:
-                                # Karakter sınırı 1024'ü aşıyorsa görseli ve mesajı ardı ardına gönder
-                                await client.send_message(entity, file=banner_file)
+                            try:
+                                if len(msg) <= 1024:
+                                    await client.send_message(entity, msg, file=banner_file)
+                                    chosen_name = os.path.basename(chosen_file) if available_files else "fallback"
+                                    print(f"[{client_name}] 📸 @{grup_name} → Görselli Gönderildi! ({sent_count+1}) [Şablon: {chosen_name}]")
+                                else:
+                                    # Karakter sınırı 1024'ü aşıyorsa görseli ve mesajı ardı ardına gönder
+                                    await client.send_message(entity, file=banner_file)
+                                    await client.send_message(entity, msg)
+                                    chosen_name = os.path.basename(chosen_file) if available_files else "fallback"
+                                    print(f"[{client_name}] 📸+📝 @{grup_name} → Görsel + Mesaj Ayrı Gönderildi! ({sent_count+1}) [Şablon: {chosen_name}]")
+                            except Exception as media_err:
+                                print(f"[{client_name}] ⚠️ @{grup_name} grubuna görsel gönderilemedi ({media_err}). Düz metin olarak gönderiliyor...")
                                 await client.send_message(entity, msg)
                                 chosen_name = os.path.basename(chosen_file) if available_files else "fallback"
-                                print(f"[{client_name}] 📸+📝 @{grup_name} → Görsel + Mesaj Ayrı Gönderildi! ({sent_count+1}) [Şablon: {chosen_name}]")
+                                print(f"[{client_name}] ✅ @{grup_name} → Düz Metin Gönderildi! ({sent_count+1}) [Şablon: {chosen_name}]")
                         else:
                             await client.send_message(entity, msg)
                             chosen_name = os.path.basename(chosen_file) if available_files else "fallback"

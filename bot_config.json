@@ -6,7 +6,7 @@
   "froxy_bot_running": true,
   "ad_bot_running": true,
   "support_bot_running": true,
-  "send_images": false,
+  "send_images": true,
   "group_cooldown_hours": 1,
   "spacing_cooldown_minutes": 20,
   "ad_sleep_min": 600,
