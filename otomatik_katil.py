@@ -714,12 +714,13 @@ def fs_get_state():
             blacklist = fields.get("blacklist_list", {}).get("stringValue", "")
             auto_groups = fields.get("auto_groups_list", {}).get("stringValue", "")
             scraped_groups = fields.get("scraped_groups_list", {}).get("stringValue", "")
-            return progress, blacklist, auto_groups, scraped_groups
+            cooldowns = fields.get("cooldowns_list", {}).get("stringValue", "")
+            return progress, blacklist, auto_groups, scraped_groups, cooldowns
     except Exception as e:
         print(f"⚠️ Firestore yükleme hatası: {e}")
-    return "", "", "", ""
+    return "", "", "", "", ""
 
-def fs_set_state(progress=None, blacklist=None, auto_groups=None, scraped_groups=None):
+def fs_set_state(progress=None, blacklist=None, auto_groups=None, scraped_groups=None, cooldowns=None):
     try:
         fields = {}
         mask_parts = []
@@ -736,6 +737,9 @@ def fs_set_state(progress=None, blacklist=None, auto_groups=None, scraped_groups
         if scraped_groups is not None:
             fields["scraped_groups_list"] = {"stringValue": scraped_groups}
             mask_parts.append("updateMask.fieldPaths=scraped_groups_list")
+        if cooldowns is not None:
+            fields["cooldowns_list"] = {"stringValue": cooldowns}
+            mask_parts.append("updateMask.fieldPaths=cooldowns_list")
             
         if not fields:
             return
@@ -1581,7 +1585,7 @@ async def main():
 
     # İlk çalıştırmada Firestore'dan verileri çek
     print("🔄 Firestore'dan güncel durum yükleniyor...")
-    fs_prog, fs_black, fs_auto, fs_scraped = fs_get_state()
+    fs_prog, fs_black, fs_auto, fs_scraped, fs_cooldowns = fs_get_state()
     if fs_prog:
         with open(PROGRESS_FILE, 'w', encoding='utf-8') as f:
             f.write(fs_prog)
@@ -1605,6 +1609,10 @@ async def main():
         with open("scraped_groups.txt", 'w', encoding='utf-8') as f:
             f.write('\n'.join(merged_scraped) + '\n')
         print("📥 Keşfedilen grup geçmişi buluttan indirildi ve birleştirildi.")
+    if fs_cooldowns:
+        with open(COOLDOWN_FILE, 'w', encoding='utf-8') as f:
+            f.write(fs_cooldowns)
+        print("📥 Cooldown geçmişi buluttan indirildi.")
 
     # Periyodik arka plan görevleri
     async def periodic_firestore_sync():
@@ -1613,7 +1621,7 @@ async def main():
             await asyncio.sleep(300)
             try:
                 print("🔄 [Firestore Sync] Firestore'dan güncel durum yükleniyor...")
-                _, fs_black_new, fs_auto_new, fs_scraped_new = fs_get_state()
+                _, fs_black_new, fs_auto_new, fs_scraped_new, fs_cooldowns_new = fs_get_state()
                 if fs_black_new:
                     local_black = get_list(BLACKLIST_FILE)
                     remote_black = set(x.strip() for x in fs_black_new.splitlines() if x.strip())
@@ -1629,6 +1637,13 @@ async def main():
                     merged_scraped = local_scraped.union(remote_scraped)
                     with open("scraped_groups.txt", 'w', encoding='utf-8') as f:
                         f.write('\n'.join(merged_scraped) + '\n')
+                
+                # Cooldown listesini buluta yedekle
+                if os.path.exists(COOLDOWN_FILE):
+                    with open(COOLDOWN_FILE, 'r', encoding='utf-8') as f:
+                        cooldowns_content = f.read()
+                    fs_set_state(cooldowns=cooldowns_content)
+                    print("🔄 [Firestore Sync] Cooldown geçmişi bulutla eşitlendi.")
             except Exception as e:
                 print(f"⚠️ [Firestore Sync] Hata: {e}")
 
