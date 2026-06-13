@@ -20,6 +20,33 @@ API_HASH = '7ba4072dcf0a05a7ccf80e570866b6d8'
 CONFIG_FILE = "bot_config.json"
 
 # Load config
+def save_ticket_to_file(bot_type, user_id, first_name, last_name, username, message):
+    import datetime
+    file_path = "tickets.json"
+    new_ticket = {
+        "bot_type": bot_type,
+        "user_id": user_id,
+        "first_name": first_name,
+        "last_name": last_name,
+        "username": username,
+        "message": message,
+        "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+    tickets = []
+    if os.path.exists(file_path):
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                tickets = json.load(f)
+        except:
+            tickets = []
+    tickets.insert(0, new_ticket)
+    tickets = tickets[:200]
+    try:
+        with open(file_path, "w", encoding="utf-8") as f:
+            json.dump(tickets, f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        logger.error(f"Error saving ticket to file: {e}")
+
 def load_config():
     if not os.path.exists(CONFIG_FILE):
         return None
@@ -240,6 +267,7 @@ async def message_handler(event):
         try:
             await bot.send_message(admin_chat_id, admin_msg)
             await event.respond("✅ Mesajınız ekibimize iletildi. En kısa sürede yanıt alacaksınız.")
+            save_ticket_to_file("KeyVadi", user_id, first_name, last_name, username, event.text)
         except Exception as e:
             logger.error(f"Failed to forward message to admin: {e}")
             await event.respond("⚠️ Mesajınız iletilemedi. Lütfen daha sonra tekrar deneyiniz.")

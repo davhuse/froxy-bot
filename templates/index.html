@@ -31,6 +31,9 @@
                 <button class="tab-btn" id="tabBtnScraper" onclick="switchTab('scraper')">
                     <i class="fa-solid fa-magnifying-glass"></i> Grup Arama (Scraper)
                 </button>
+                <button class="tab-btn" id="tabBtnTickets" onclick="switchTab('tickets')">
+                    <i class="fa-solid fa-envelope"></i> Destek Talepleri
+                </button>
             </div>
         </header>
 
@@ -348,6 +351,56 @@
                         <div id="scrapeKeywordsList" style="display: flex; flex-wrap: wrap; gap: 10px;">
                             <!-- Kelimeler dinamik olarak buraya eklenecek -->
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 6: DESTEK TALEPLERİ -->
+        <div id="tab-tickets" class="tab-content">
+            <div class="controls-panel glass-panel">
+                <div class="bot-info-header">
+                    <h2><i class="fa-solid fa-envelope"></i> Müşteri Destek Talepleri</h2>
+                    <p style="color: rgba(255,255,255,0.7); margin-top: 5px;">
+                        Müşterilerin @KeyVadiSatisBot ve @FroxyDestekBOT üzerinden gönderdiği mesaj ve destek biletleri.
+                    </p>
+                </div>
+                <div class="control-actions">
+                    <button class="btn secondary" onclick="loadTickets()" style="white-space: nowrap;">
+                        <i class="fa-solid fa-rotate"></i> Yenile
+                    </button>
+                    <button class="btn danger" onclick="clearTickets()" style="white-space: nowrap;">
+                        <i class="fa-solid fa-trash"></i> Tümünü Temizle
+                    </button>
+                </div>
+            </div>
+
+            <div class="main-content" style="grid-template-columns: 1fr; width: 100%;">
+                <div class="glass-panel" style="width: 100%; padding: 25px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+                        <h2 style="margin: 0; font-size: 1.2rem; display: flex; align-items: center; gap: 10px;">
+                            <i class="fa-solid fa-list-check" style="color: var(--text-secondary);"></i> Gelen Mesajlar & Talepler
+                        </h2>
+                    </div>
+                    
+                    <div class="table-container" style="max-height: 550px; overflow-y: auto;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left; color: white;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.95rem; opacity: 0.8;">
+                                    <th style="padding: 12px 10px; font-weight: 600; width: 120px;">Kaynak Bot</th>
+                                    <th style="padding: 12px 10px; font-weight: 600; width: 180px;">Kullanıcı</th>
+                                    <th style="padding: 12px 10px; font-weight: 600;">Mesaj / Talep İçeriği</th>
+                                    <th style="padding: 12px 10px; font-weight: 600; width: 160px;">Tarih</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ticketsTableBody">
+                                <tr>
+                                    <td colspan="4" style="text-align: center; padding: 30px; color: rgba(255,255,255,0.5);">
+                                        Yükleniyor veya hiç talep yok...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>

@@ -894,7 +894,25 @@ def get_scraped_groups():
                 groups = [line.strip() for line in f if line.strip()]
         except Exception as e:
             return jsonify({"error": str(e)})
-    return jsonify({"groups": groups})
+@app.route('/api/tickets', methods=['GET'])
+def get_tickets():
+    tickets = []
+    if os.path.exists("tickets.json"):
+        try:
+            with open("tickets.json", "r", encoding="utf-8") as f:
+                tickets = json.load(f)
+        except Exception as e:
+            return jsonify({"error": str(e)})
+    return jsonify({"tickets": tickets})
+
+@app.route('/api/tickets/clear', methods=['POST'])
+def clear_tickets():
+    try:
+        if os.path.exists("tickets.json"):
+            os.remove("tickets.json")
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})
 
 if __name__ == '__main__':
     # Start the watchdog thread

@@ -63,6 +63,8 @@ function switchTab(tabName) {
         loadBlacklist();
     } else if (tabName === 'scraper') {
         loadScraperConfig();
+    } else if (tabName === 'tickets') {
+        loadTickets();
     }
 }
 
@@ -789,10 +791,88 @@ window.onload = () => {
     checkFroxyStatus();
     fetchLogs();
     fetchStats();
+    loadTickets();
     
     setInterval(checkStatus, 2000);
     setInterval(checkSupportStatus, 2000);
     setInterval(checkFroxyStatus, 2000);
     setInterval(fetchLogs, 1500);
     setInterval(fetchStats, 2000);
+    setInterval(loadTickets, 10000); // Poll tickets every 10 seconds
 };
+
+// TICKETS LOGIC
+async function loadTickets() {
+    const tbody = document.getElementById('ticketsTableBody');
+    if (!tbody) return;
+    
+    try {
+        const res = await fetch('/api/tickets');
+        const data = await res.json();
+        const tickets = data.tickets || [];
+        renderTickets(tickets);
+    } catch(e) {
+        console.error("Error loading tickets:", e);
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="4" style="text-align: center; padding: 30px; color: #ef4444;">
+                    Biletler yüklenirken hata oluştu: ${e.message}
+                </td>
+            </tr>
+        `;
+    }
+}
+
+function renderTickets(tickets) {
+    const tbody = document.getElementById('ticketsTableBody');
+    if (!tbody) return;
+    
+    if (tickets.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="4" style="text-align: center; padding: 30px; color: rgba(255,255,255,0.5); font-style: italic;">
+                    Kayıtlı destek talebi veya mesaj bulunmamaktadır.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = tickets.map(t => {
+        const badgeColor = t.bot_type === 'Froxy AI' ? 'background: #7c3aed; color: white;' : 'background: #10b981; color: white;';
+        const userDisplay = t.username !== '@Yok' && t.username !== 'Yok' && t.username !== '@' ? 
+            `<strong>${t.first_name} ${t.last_name}</strong><br><span style="color: #60a5fa; font-family: monospace; font-size: 0.85rem;">${t.username}</span>` : 
+            `<strong>${t.first_name} ${t.last_name}</strong><br><span style="color: #94a3b8; font-family: monospace; font-size: 0.85rem;">ID: ${t.user_id}</span>`;
+            
+        return `
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.95rem; vertical-align: top;">
+                <td style="padding: 12px 10px;">
+                    <span style="padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; ${badgeColor}">
+                        ${t.bot_type}
+                    </span>
+                </td>
+                <td style="padding: 12px 10px; color: #f3f4f6;">
+                    ${userDisplay}
+                </td>
+                <td style="padding: 12px 10px; color: #cbd5e1; white-space: pre-wrap; font-size: 0.9rem;">${t.message}</td>
+                <td style="padding: 12px 10px; color: #94a3b8; font-size: 0.85rem;">${t.timestamp}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+async function clearTickets() {
+    if (!confirm("Tüm destek talebi geçmişini temizlemek istediğinize emin misiniz?")) return;
+    
+    try {
+        const res = await fetch('/api/tickets/clear', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+            loadTickets();
+        } else {
+            alert("Temizleme hatası: " + data.message);
+        }
+    } catch(e) {
+        alert("Bağlantı hatası: " + e.message);
+    }
+}
