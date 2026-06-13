@@ -368,25 +368,18 @@ def is_active_hours():
     tr_time = datetime.now(timezone(timedelta(hours=3)))
     hour = tr_time.hour
     # Peak saatler: 12:00-14:00 ve 19:00-23:59 (en yüksek etkileşim)
-    # Normal saatler: 00:00-02:59 ve 07:00-11:59 ve 15:00-18:59
-    # Ölü saatler: 03:00-06:59 (mesaj kaybolur, atılmaz)
+    # Normal saatler: 00:00-01:59 ve 08:00-11:59 ve 15:00-18:59
+    # Gece saatleri: 02:00-07:59 (mesajlar saat başı atılır)
     if (12 <= hour <= 14) or (19 <= hour <= 23):
         return 'peak'
-    elif (3 <= hour <= 6):
-        return 'dead'
+    elif (2 <= hour <= 7):
+        return 'night'
     else:
         return 'normal'
 
 def minutes_until_active():
-    """Ölü saatlerden aktif saate kaç dakika kaldığını hesapla"""
-    from datetime import datetime, timezone, timedelta
-    tr_time = datetime.now(timezone(timedelta(hours=3)))
-    hour = tr_time.hour
-    minute = tr_time.minute
-    # 07:00'a kaç dakika?
-    if hour < 7:
-        return (7 - hour) * 60 - minute
-    return 0  # Zaten aktif
+    """Artık dead saatleri kullanmıyoruz, 0 döndür"""
+    return 0
 
 # --- Auto-Scrape: Anahtar kelimeler (genişletilmiş) ---
 SCRAPE_KEYWORDS = [
@@ -1257,11 +1250,8 @@ async def main():
                 tr_time = datetime.now(timezone(timedelta(hours=3)))
                 saat_durumu = is_active_hours()
                 
-                if saat_durumu == 'dead':
-                    bekle_dk = minutes_until_active()
-                    print(f"[{client_name}] 🌙 TR saati {tr_time.strftime('%H:%M')} — ölü saat. Mesaj kaybolur, {bekle_dk} dk sonra (07:00'da) blast başlayacak.")
-                    await asyncio.sleep(bekle_dk * 60)
-                    continue  # Döngü başına dön, saati tekrar kontrol et
+                if saat_durumu == 'night':
+                    print(f"[{client_name}] 🌙 TR saati {tr_time.strftime('%H:%M')} — Gece modu aktif, gönderim saat başı yapılacak.")
                 elif saat_durumu == 'peak':
                     print(f"[{client_name}] 🔥 TR saati {tr_time.strftime('%H:%M')} — PEAK SAAT! Maksimum etkileşim bekleniyor.")
                 elif saat_durumu == 'normal':
@@ -1575,10 +1565,19 @@ async def main():
                 except:
                     pass
             
-            # Sabit 30 dakika bekleme süresi
+            # TR Saatine göre bekleme süresi ayarı
+            from datetime import datetime, timezone, timedelta
+            tr_time = datetime.now(timezone(timedelta(hours=3)))
+            hour = tr_time.hour
+            
             grup_sayisi = len(blast_targets) if blast_targets else 0
-            bekleme = 1800
-            print(f"\n[{client_name}] ⏳ {grup_sayisi} gruba blast atıldı → Sonraki blast 30 dakika sonra")
+            # Gece (02:00 - 07:59) saat başı (3600 sn), diğer saatlerde 30 dakikada bir (1800 sn)
+            if 2 <= hour <= 7:
+                bekleme = 3600
+                print(f"\n[{client_name}] 🌙 Gece modu aktif (TR {tr_time.strftime('%H:%M')}) → Sonraki blast 1 saat sonra")
+            else:
+                bekleme = 1800
+                print(f"\n[{client_name}] ⏳ {grup_sayisi} gruba blast atıldı → Sonraki blast 30 dakika sonra")
             # Geri sayım (her dakika yazdır)
             kalan = bekleme
             while kalan > 0:
