@@ -447,6 +447,8 @@ async def auto_scrape_groups(client, client_name, joined_usernames=None):
         existing_groups.update(joined_usernames)
     blacklist = get_list(BLACKLIST_FILE)
     blacklist_lower = set(b.lower() for b in blacklist)
+    scraped_history = get_list("scraped_groups.txt")
+    scraped_history_lower = set(s.lower() for s in scraped_history)
     new_found = 0
     blacklisted_count = 0
     
@@ -497,7 +499,7 @@ async def auto_scrape_groups(client, client_name, joined_usernames=None):
                     continue
                     
                 username = chat.username.lower()
-                if username in existing_groups or username in blacklist_lower:
+                if username in existing_groups or username in blacklist_lower or username in scraped_history_lower:
                     continue
                     
                 member_count = getattr(chat, 'participants_count', None)
@@ -596,10 +598,10 @@ async def auto_scrape_groups(client, client_name, joined_usernames=None):
                     
                 # === TÜM FİLTRELERİ GEÇTİ — KALİTELİ GRUP ===
                 try:
-                    with open("scraped_groups.txt", 'a', encoding='utf-8') as f:
-                        f.write(chat.username + '\n')
-                except:
-                    pass
+                    save_to_list(chat.username, "scraped_groups.txt")
+                    scraped_history_lower.add(username)
+                except Exception as e:
+                    print(f"⚠️ scraped_groups.txt kaydetme hatası: {e}")
 
                 new_found += 1
                 keyword_found += 1
@@ -711,12 +713,13 @@ def fs_get_state():
             progress = fields.get("progress_list", {}).get("stringValue", "")
             blacklist = fields.get("blacklist_list", {}).get("stringValue", "")
             auto_groups = fields.get("auto_groups_list", {}).get("stringValue", "")
-            return progress, blacklist, auto_groups
+            scraped_groups = fields.get("scraped_groups_list", {}).get("stringValue", "")
+            return progress, blacklist, auto_groups, scraped_groups
     except Exception as e:
         print(f"⚠️ Firestore yükleme hatası: {e}")
-    return "", "", ""
+    return "", "", "", ""
 
-def fs_set_state(progress=None, blacklist=None, auto_groups=None):
+def fs_set_state(progress=None, blacklist=None, auto_groups=None, scraped_groups=None):
     try:
         fields = {}
         mask_parts = []
@@ -730,6 +733,9 @@ def fs_set_state(progress=None, blacklist=None, auto_groups=None):
         if auto_groups is not None:
             fields["auto_groups_list"] = {"stringValue": auto_groups}
             mask_parts.append("updateMask.fieldPaths=auto_groups_list")
+        if scraped_groups is not None:
+            fields["scraped_groups_list"] = {"stringValue": scraped_groups}
+            mask_parts.append("updateMask.fieldPaths=scraped_groups_list")
             
         if not fields:
             return
@@ -764,6 +770,10 @@ def save_to_list(grup, dosya):
             with open(AUTO_GROUPS_FILE, 'r', encoding='utf-8') as f:
                 content = f.read()
             fs_set_state(auto_groups=content)
+        elif dosya == "scraped_groups.txt":
+            with open("scraped_groups.txt", 'r', encoding='utf-8') as f:
+                content = f.read()
+            fs_set_state(scraped_groups=content)
     except Exception as e:
         print(f"⚠️ Firestore güncelleme hatası: {e}")
 
@@ -1537,7 +1547,7 @@ async def main():
 
     # İlk çalıştırmada Firestore'dan verileri çek
     print("🔄 Firestore'dan güncel durum yükleniyor...")
-    fs_prog, fs_black, fs_auto = fs_get_state()
+    fs_prog, fs_black, fs_auto, fs_scraped = fs_get_state()
     if fs_prog:
         with open(PROGRESS_FILE, 'w', encoding='utf-8') as f:
             f.write(fs_prog)
@@ -1554,6 +1564,13 @@ async def main():
         with open(AUTO_GROUPS_FILE, 'w', encoding='utf-8') as f:
             f.write(fs_auto)
         print("📥 Otomatik keşfedilen gruplar buluttan indirildi (onaylı listeye eklenmedi).")
+    if fs_scraped:
+        local_scraped = get_list("scraped_groups.txt")
+        remote_scraped = set(x.strip() for x in fs_scraped.splitlines() if x.strip())
+        merged_scraped = local_scraped.union(remote_scraped)
+        with open("scraped_groups.txt", 'w', encoding='utf-8') as f:
+            f.write('\n'.join(merged_scraped) + '\n')
+        print("📥 Keşfedilen grup geçmişi buluttan indirildi ve birleştirildi.")
 
     # Periyodik arka plan görevleri
     async def periodic_firestore_sync():
@@ -1562,7 +1579,7 @@ async def main():
             await asyncio.sleep(300)
             try:
                 print("🔄 [Firestore Sync] Firestore'dan güncel durum yükleniyor...")
-                _, fs_black_new, fs_auto_new = fs_get_state()
+                _, fs_black_new, fs_auto_new, fs_scraped_new = fs_get_state()
                 if fs_black_new:
                     local_black = get_list(BLACKLIST_FILE)
                     remote_black = set(x.strip() for x in fs_black_new.splitlines() if x.strip())
@@ -1572,6 +1589,12 @@ async def main():
                 if fs_auto_new:
                     with open(AUTO_GROUPS_FILE, 'w', encoding='utf-8') as f:
                         f.write(fs_auto_new)
+                if fs_scraped_new:
+                    local_scraped = get_list("scraped_groups.txt")
+                    remote_scraped = set(x.strip() for x in fs_scraped_new.splitlines() if x.strip())
+                    merged_scraped = local_scraped.union(remote_scraped)
+                    with open("scraped_groups.txt", 'w', encoding='utf-8') as f:
+                        f.write('\n'.join(merged_scraped) + '\n')
             except Exception as e:
                 print(f"⚠️ [Firestore Sync] Hata: {e}")
 
