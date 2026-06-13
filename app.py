@@ -640,7 +640,23 @@ DEFAULT_SCRAPE_KEYWORDS = [
     "indirim kupon", "fırsat indirim", "reklam grubu",
     "ikinci el", "2.el satış", "alim satim",
     "e-ticaret satış", "trendyol satıcı", "freelance iş",
-    "referans reklam", "satılık ilan", "epin satış"
+    "referans reklam", "satılık ilan", "epin satış",
+    "sanal ticaret", "dijital tedarik", "shopier satış", "shopier ilan",
+    "yapay zeka", "chatgpt türkçe", "ai araçları", "ai tools",
+    "adobe lisans", "canva pro", "premium hesap",
+    "lisans satış", "yazılım indirim", "midjourney türkçe",
+    "capcut pro", "chatgpt plus", "dijital araçlar",
+    "trendyol indirim", "trendyol kupon", "yemek kuponu",
+    "indirim kodu", "promosyon kodu", "kampanya kodu",
+    "trendyol indirimleri", "yemeksepeti kupon", "getir indirim",
+    "dijital pazarlama", "sosyal medya yönetimi",
+    "instagram takipçi", "youtube abone", "tiktok takipçi",
+    "grafik tasarım iş", "makale yazarı", "freelance türkiye",
+    "home office iş", "tasarımcı iş ilanları", "yazılımcı yardımlaşma",
+    "pubg hesap", "brawl stars hesap", "valorant hesap",
+    "oyun hesap satış", "game account", "steam cüzdan",
+    "ucuz uc", "pubg uc", "vp satın al", "valorant puanı",
+    "brawl stars elmas", "oyun pazarı", "epin bayilik"
 ]
 
 @app.route('/api/scraper/config', methods=['GET'])
