@@ -115,6 +115,7 @@ def scrape_shopier():
                     pid = link_match.group(2)
                     title = html.unescape(title_match.group(1).strip())
                     price = price_match.group(1).strip()
+                    price = re.sub(r'\s+', '', price)
                     
                     price_str = price
                     if not (price_str.endswith("TL") or price_str.endswith("₺")):
