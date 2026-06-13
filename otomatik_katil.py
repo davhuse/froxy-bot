@@ -1335,14 +1335,21 @@ async def main():
                         is_keyvadi = "2" in client_name
                         msg = process_marketing_features(msg, is_keyvadi)
                         
-                        # Görsel/Banner gönderimi (Görseller kapatıldı)
+                        # Görsel/Banner gönderimi (Görseller aktif edildi + fallback sınırı eklendi)
                         banner_file = "keyvadi_banner.png" if is_keyvadi else "froxy_banner.png"
-                        allows_media = False
+                        allows_media = True
                                 
-                        if allows_media and os.path.exists(banner_file) and len(msg) <= 1024:
-                            await client.send_message(entity, msg, file=banner_file)
-                            chosen_name = os.path.basename(chosen_file) if available_files else "fallback"
-                            print(f"[{client_name}] 📸 @{grup_name} → Görselli Gönderildi! ({sent_count+1}) [Şablon: {chosen_name}]")
+                        if allows_media and os.path.exists(banner_file):
+                            if len(msg) <= 1024:
+                                await client.send_message(entity, msg, file=banner_file)
+                                chosen_name = os.path.basename(chosen_file) if available_files else "fallback"
+                                print(f"[{client_name}] 📸 @{grup_name} → Görselli Gönderildi! ({sent_count+1}) [Şablon: {chosen_name}]")
+                            else:
+                                # Karakter sınırı 1024'ü aşıyorsa görseli ve mesajı ardı ardına gönder
+                                await client.send_message(entity, file=banner_file)
+                                await client.send_message(entity, msg)
+                                chosen_name = os.path.basename(chosen_file) if available_files else "fallback"
+                                print(f"[{client_name}] 📸+📝 @{grup_name} → Görsel + Mesaj Ayrı Gönderildi! ({sent_count+1}) [Şablon: {chosen_name}]")
                         else:
                             await client.send_message(entity, msg)
                             chosen_name = os.path.basename(chosen_file) if available_files else "fallback"
