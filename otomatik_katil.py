@@ -43,7 +43,6 @@ gruplar = [
     "kuponsatislari0",
     "YuceKuponSatis",
     "letgoilanlari",
-    "kuponkodalsat",
     "-1001572316417",  # Serbest Ticaret Grubu (1515 üye)
     "-3608209943",     # DERGAH (1582 üye)
     "ticar4t",

@@ -225,3 +225,4 @@ indirimlergrubu
 serenityalimsatim
 premium_hesaplar1
 temu_indirim_kodu
+kuponkodalsat
