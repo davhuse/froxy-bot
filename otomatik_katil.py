@@ -1335,9 +1335,16 @@ async def main():
                         is_keyvadi = "2" in client_name
                         msg = process_marketing_features(msg, is_keyvadi)
                         
-                        # Görsel/Banner gönderimi (Görseller aktif edildi + fallback sınırı eklendi)
+                        # Görsel/Banner gönderimi (Config'den dinamik okunur, varsayılan kapalı)
                         banner_file = "keyvadi_banner.png" if is_keyvadi else "froxy_banner.png"
-                        allows_media = True
+                        allows_media = False
+                        if os.path.exists("bot_config.json"):
+                            try:
+                                with open("bot_config.json", "r", encoding="utf-8") as f_cfg:
+                                    cfg = json.load(f_cfg)
+                                    allows_media = cfg.get("send_images", False)
+                            except:
+                                pass
                                 
                         if allows_media and os.path.exists(banner_file):
                             if len(msg) <= 1024:
