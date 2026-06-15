@@ -7,6 +7,7 @@ import ssl
 import html
 import asyncio
 from telethon import TelegramClient, events, Button
+import user_lang_helper
 
 # Logging configuration
 logging.basicConfig(
@@ -198,35 +199,136 @@ def load_products_from_file_or_scrape():
     rebuild_categories(products)
 
 
-welcome_text = (
-    "⚡ **KeyVadi Satış Paneline Hoş Geldiniz!**\n\n"
-    "Premium yapay zeka hesapları, lisanslar, onaylı mobil hesaplar ve özel fırsatlar en uygun fiyatlarla!\n\n"
-    "Lütfen yapmak istediğiniz işlemi seçin 👇"
-)
+TEXTS = {
+    "tr": {
+        "welcome": (
+            "⚡ **KeyVadi Satış Paneline Hoş Geldiniz!**\n\n"
+            "Premium yapay zeka hesapları, lisanslar, onaylı mobil hesaplar ve özel fırsatlar en uygun fiyatlarla!\n\n"
+            "Lütfen yapmak istediğiniz işlemi seçin 👇"
+        ),
+        "support_btn": "📞 Canlı Destek & İletişim",
+        "lang_btn": "🌐 Dil Seçimi / Language",
+        "main_menu": "↩️ Ana Menü",
+        "cat_title_mapping": {
+            "ai": "🌟 Yapay Zeka (AI) Hesapları",
+            "design": "🎨 Tasarım & Lisans Hizmetleri",
+            "mobile": "📱 Onaylı Mobil Hesaplar",
+            "deals": "🍔 Yemek & Akaryakıt Fırsatları",
+            "other": "📦 Diğer Ürün & Hizmetler"
+        },
+        "select_product": "Detaylarını görmek ve satın almak istediğiniz ürünü seçin:",
+        "price": "Fiyat",
+        "product_footer": "✅ Anında teslim · 7/24 destek · Güvenli ödeme\n\nSatın almak için aşağıdaki butona tıklayın. Ödeme sonrası teslimat anında gerçekleştirilir.",
+        "buy_btn": "💳 Shopier ile Güvenli Satın Al",
+        "support_title": "📞 **Destek Talebi & Sipariş Verme**",
+        "support_desc": "Satın almak istediğiniz ürün, sipariş sorunu veya destek talebinizi detaylıca yazıp bu sohbete gönderin.\n\nMesajınız doğrudan admin ekibimize iletilecektir. En kısa sürede yanıt alacaksınız.",
+        "cancel": "↩️ Vazgeç ve İptal Et",
+        "support_success": "✅ Mesajınız ekibimize iletildi. En kısa sürede yanıt alacaksınız.",
+        "support_fail": "⚠️ Mesajınız iletilemedi. Lütfen daha sonra tekrar deneyiniz.",
+        "support_inactive": "⚠️ Üzgünüz, şu anda destek sistemi aktif değil (Admin ID tanımlanmamış). Lütfen daha sonra deneyin.",
+        "reply_prefix": "📨 **KeyVadi Destek Ekibinden Cevap:**\n\n",
+        "choose_lang": "Lütfen dilinizi seçin / Please choose your language:"
+    },
+    "en": {
+        "welcome": (
+            "⚡ **Welcome to KeyVadi Sales Panel!**\n\n"
+            "Premium artificial intelligence accounts, licenses, verified mobile accounts, and special deals at the best prices!\n\n"
+            "Please select the action you want to perform 👇"
+        ),
+        "support_btn": "📞 Live Support & Contact",
+        "lang_btn": "🌐 Language / Dil",
+        "main_menu": "↩️ Main Menu",
+        "cat_title_mapping": {
+            "ai": "🌟 Artificial Intelligence (AI) Accounts",
+            "design": "🎨 Design & License Services",
+            "mobile": "📱 Verified Mobile Accounts",
+            "deals": "🍔 Food & Fuel Deals",
+            "other": "📦 Other Products & Services"
+        },
+        "select_product": "Select the product you want to view details and purchase:",
+        "price": "Price",
+        "product_footer": "✅ Instant delivery · 24/7 support · Secure payment\n\nClick the button below to purchase. Delivery is made instantly after payment.",
+        "buy_btn": "💳 Secure Purchase with Shopier",
+        "support_title": "📞 **Support Request & Ordering**",
+        "support_desc": "Please write the product you want to buy, order issue, or support request in detail and send it to this chat.\n\nYour message will be forwarded directly to our admin team. You will receive a response as soon as possible.",
+        "cancel": "↩️ Cancel & Go Back",
+        "support_success": "✅ Your message has been forwarded to our team. You will receive a response as soon as possible.",
+        "support_fail": "⚠️ Your message could not be delivered. Please try again later.",
+        "support_inactive": "⚠️ Sorry, the support system is currently offline (Admin ID not set). Please try again later.",
+        "reply_prefix": "📨 **Reply from KeyVadi Support Team:**\n\n",
+        "choose_lang": "Please choose your language / Lütfen dilinizi seçin:"
+    }
+}
+
+# Language Selection Screen Helper
+async def show_lang_selection(event, is_callback=False):
+    text = "Lütfen dilinizi seçin / Please choose your language:"
+    buttons = [
+        [Button.inline("🇹🇷 Türkçe", b"lang_tr"), Button.inline("🇺🇸 English", b"lang_en")]
+    ]
+    if is_callback:
+        await event.edit(text, buttons=buttons)
+    else:
+        await event.respond(text, buttons=buttons)
+
+# Main Menu Helper
+async def show_main_menu(event, user_id, is_callback=False):
+    lang = user_lang_helper.get_user_lang(user_id) or "tr"
+    t = TEXTS[lang]
+    
+    welcome = t["welcome"]
+    buttons = []
+    for cat_key, cat in CATEGORIES.items():
+        if cat["products"]:
+            title = t["cat_title_mapping"].get(cat_key, cat["title"])
+            buttons.append([Button.inline(title, f"cat_{cat_key}".encode())])
+            
+    buttons.append([Button.inline(t["support_btn"], b"menu_support")])
+    buttons.append([Button.inline(t["lang_btn"], b"menu_lang")])
+    
+    if is_callback:
+        await event.edit(welcome, buttons=buttons)
+    else:
+        await event.respond(welcome, buttons=buttons)
 
 # Start Handler
 @bot.on(events.NewMessage(pattern='/start'))
 async def start_handler(event):
     user_id = event.sender_id
     user_states[user_id] = None
-    buttons = []
-    for cat_key, cat in CATEGORIES.items():
-        if cat["products"]:  # Only show categories with products
-            buttons.append([Button.inline(cat["title"], f"cat_{cat_key}".encode())])
-    buttons.append([Button.inline("📞 Canlı Destek & İletişim", b"menu_support")])
-    await event.respond(welcome_text, buttons=buttons)
+    lang = user_lang_helper.get_user_lang(user_id)
+    if not lang:
+        await show_lang_selection(event)
+    else:
+        await show_main_menu(event, user_id)
+
+@bot.on(events.NewMessage(pattern=r'/lang|/dil'))
+async def lang_cmd_handler(event):
+    user_id = event.sender_id
+    user_states[user_id] = None
+    await show_lang_selection(event)
+
+@bot.on(events.CallbackQuery(pattern=r'lang_(\w+)'))
+async def lang_select_callback(event):
+    user_id = event.sender_id
+    lang = event.data.decode('utf-8').replace("lang_", "")
+    user_lang_helper.set_user_lang(user_id, lang)
+    
+    if lang == "tr":
+        await event.answer("Dil Türkçe olarak ayarlandı.", alert=False)
+    else:
+        await event.answer("Language set to English.", alert=False)
+        
+    await show_main_menu(event, user_id, is_callback=True)
+
+@bot.on(events.CallbackQuery(data=b'menu_lang'))
+async def menu_lang_callback(event):
+    await show_lang_selection(event, is_callback=True)
 
 @bot.on(events.CallbackQuery(data=b'menu_main'))
 async def main_menu_handler(event):
     user_id = event.sender_id
-    user_states[user_id] = None
-    buttons = []
-    for cat_key, cat in CATEGORIES.items():
-        if cat["products"]:  # Only show categories with products
-            buttons.append([Button.inline(cat["title"], f"cat_{cat_key}".encode())])
-    buttons.append([Button.inline("📞 Canlı Destek & İletişim", b"menu_support")])
-    await event.edit(welcome_text, buttons=buttons)
-
+    await show_main_menu(event, user_id, is_callback=True)
 
 # Admin update handler
 @bot.on(events.NewMessage(pattern='/guncelle'))
@@ -258,30 +360,43 @@ async def guncelle_handler(event):
     else:
         await event.respond("❌ Ürün listesi güncellenemedi (Shopier sayfasından veri çekilemedi).")
 
-
 # Category handler
 @bot.on(events.CallbackQuery(pattern=r'cat_(\w+)'))
 async def category_handler(event):
+    user_id = event.sender_id
+    lang = user_lang_helper.get_user_lang(user_id) or "tr"
+    t = TEXTS[lang]
+    
     cat_key = event.data.decode('utf-8').replace("cat_", "")
     cat = CATEGORIES.get(cat_key)
     if not cat:
-        await event.answer("Kategori bulunamadı!", alert=True)
+        err_msg = "Kategori bulunamadı!" if lang == "tr" else "Category not found!"
+        await event.answer(err_msg, alert=True)
         return
 
     buttons = []
     for prod_key, prod in cat["products"].items():
-        label = f"{prod['title']} — {prod['price']}"
+        price = prod['price']
+        if lang == "en":
+            price = user_lang_helper.convert_price_to_usd(price)
+            
+        label = f"{prod['title']} — {price}"
         # Truncate label to 64 chars for Telegram button limit
         if len(label) > 64:
             label = label[:61] + "..."
         buttons.append([Button.inline(label, f"prod_{prod_key}".encode())])
-    buttons.append([Button.inline("↩️ Ana Menü", b"menu_main")])
+    buttons.append([Button.inline(t["main_menu"], b"menu_main")])
 
-    await event.edit(f"{cat['title']}\n\nDetaylarını görmek ve satın almak istediğiniz ürünü seçin:", buttons=buttons)
+    cat_title = t["cat_title_mapping"].get(cat_key, cat["title"])
+    await event.edit(f"**{cat_title}**\n\n{t['select_product']}", buttons=buttons)
 
 # Product detail handler
 @bot.on(events.CallbackQuery(pattern=r'prod_(\w+)'))
 async def product_handler(event):
+    user_id = event.sender_id
+    lang = user_lang_helper.get_user_lang(user_id) or "tr"
+    t = TEXTS[lang]
+
     prod_key = event.data.decode('utf-8').replace("prod_", "")
 
     # Find product across all categories
@@ -294,42 +409,45 @@ async def product_handler(event):
             break
 
     if not product:
-        await event.answer("Ürün bulunamadı!", alert=True)
+        err_msg = "Ürün bulunamadı!" if lang == "tr" else "Product not found!"
+        await event.answer(err_msg, alert=True)
         return
 
     config = load_config() or {}
     links = config.get("shopier_links", SHOPIER_LINKS)
     shopier_url = links.get(prod_key, "https://www.shopier.com/keyvadi")
 
-    text = (
-        f"🌟 **{product['title']}**\n\n"
-        f"💰 **Fiyat:** {product['price']}\n\n"
-        f"✅ Anında teslim · 7/24 destek · Güvenli ödeme\n\n"
-        f"Satın almak için aşağıdaki butona tıklayın. Ödeme sonrası teslimat anında gerçekleştirilir."
-    )
-    buttons = [
-        [Button.url("💳 Shopier ile Güvenli Satın Al", shopier_url)],
-        [Button.inline(f"↩️ {CATEGORIES[cat_key_found]['title']}", f"cat_{cat_key_found}".encode())],
-        [Button.inline("↩️ Ana Menü", b"menu_main")]
-    ]
-    await event.edit(text, buttons=buttons)
+    price = product['price']
+    if lang == "en":
+        price = user_lang_helper.convert_price_to_usd(price)
 
+    desc_text = (
+        f"🌟 **{product['title']}**\n\n"
+        f"💰 **{t['price']}:** {price}\n\n"
+        f"{t['product_footer']}"
+    )
+    
+    cat_title = t["cat_title_mapping"].get(cat_key_found, CATEGORIES[cat_key_found]['title'])
+    buttons = [
+        [Button.url(t["buy_btn"], shopier_url)],
+        [Button.inline(f"↩️ {cat_title}", f"cat_{cat_key_found}".encode())],
+        [Button.inline(t["main_menu"], b"menu_main")]
+    ]
+    await event.edit(desc_text, buttons=buttons)
 
 # Support Menu
 @bot.on(events.CallbackQuery(data=b'menu_support'))
 async def support_menu_handler(event):
     user_id = event.sender_id
+    lang = user_lang_helper.get_user_lang(user_id) or "tr"
+    t = TEXTS[lang]
+    
     user_states[user_id] = "AWAITING_SUPPORT"
 
-    text = (
-        "📞 **Destek Talebi & Sipariş Verme**\n\n"
-        "Satın almak istediğiniz ürün, sipariş sorunu veya destek talebinizi detaylıca yazıp bu sohbete gönderin.\n\n"
-        "Mesajınız doğrudan admin ekibimize iletilecektir. En kısa sürede yanıt alacaksınız."
-    )
     buttons = [
-        [Button.inline("↩️ Vazgeç ve İptal Et", b"menu_main")]
+        [Button.inline(t["cancel"], b"menu_main")]
     ]
-    await event.edit(text, buttons=buttons)
+    await event.edit(f"{t['support_title']}\n\n{t['support_desc']}", buttons=buttons)
 
 @bot.on(events.NewMessage)
 async def message_handler(event):
@@ -342,9 +460,11 @@ async def message_handler(event):
 
         config = load_config() or {}
         admin_chat_id = config.get("admin_id", ADMIN_ID)
+        lang = user_lang_helper.get_user_lang(user_id) or "tr"
+        t = TEXTS[lang]
 
         if not admin_chat_id:
-            await event.respond("⚠️ Üzgünüz, şu anda destek sistemi aktif değil (Admin ID tanımlanmamış). Lütfen daha sonra deneyin.")
+            await event.respond(t["support_inactive"])
             user_states[user_id] = None
             return
 
@@ -358,6 +478,7 @@ async def message_handler(event):
             f"👤 **Kullanıcı ID:** `{user_id}`\n"
             f"👤 **Adı Soyadı:** {first_name} {last_name}\n"
             f"💬 **Kullanıcı Adı:** {username}\n"
+            f"🌐 **Dil/Lang:** {lang.upper()}\n"
             f"--------------------------------------\n\n"
             f"{event.text}\n\n"
             f"*(Bu mesajı yanıtlayarak (Reply) doğrudan kullanıcıya cevap gönderebilirsiniz.)*"
@@ -365,11 +486,11 @@ async def message_handler(event):
 
         try:
             await bot.send_message(admin_chat_id, admin_msg)
-            await event.respond("✅ Mesajınız ekibimize iletildi. En kısa sürede yanıt alacaksınız.")
+            await event.respond(t["support_success"])
             save_ticket_to_file("KeyVadi", user_id, first_name, last_name, username, event.text)
         except Exception as e:
             logger.error(f"Failed to forward message to admin: {e}")
-            await event.respond("⚠️ Mesajınız iletilemedi. Lütfen daha sonra tekrar deneyiniz.")
+            await event.respond(t["support_fail"])
 
         user_states[user_id] = None
         return
@@ -386,8 +507,10 @@ async def message_handler(event):
 
             if match:
                 target_user_id = int(match.group(1))
+                target_lang = user_lang_helper.get_user_lang(target_user_id) or "tr"
+                prefix = TEXTS[target_lang]["reply_prefix"]
                 try:
-                    await bot.send_message(target_user_id, f"📨 **KeyVadi Destek Ekibinden Cevap:**\n\n{event.text}")
+                    await bot.send_message(target_user_id, f"{prefix}{event.text}")
                     await event.reply("✅ Cevabınız kullanıcıya iletildi.")
                 except Exception as e:
                     logger.error(f"Failed to reply to user {target_user_id}: {e}")
