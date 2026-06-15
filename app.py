@@ -634,6 +634,7 @@ def save_config():
         return jsonify({"success": False, "message": str(e)})
 
 DEFAULT_SCRAPE_KEYWORDS = [
+    # Genel ticaret (Dijital Odaklı)
     "kupon satış", "kod satış", "kupon çek", "kupon satis",
     "alım satım", "ticaret grubu", "satış grubu", "ilan grubu",
     "hesap satış", "dijital ilan", "smm panel",
@@ -642,21 +643,36 @@ DEFAULT_SCRAPE_KEYWORDS = [
     "e-ticaret satış", "trendyol satıcı", "freelance iş",
     "referans reklam", "satılık ilan", "epin satış",
     "sanal ticaret", "dijital tedarik", "shopier satış", "shopier ilan",
+    # AI ve yazılım
     "yapay zeka", "chatgpt türkçe", "ai araçları", "ai tools",
     "adobe lisans", "canva pro", "premium hesap",
     "lisans satış", "yazılım indirim", "midjourney türkçe",
     "capcut pro", "chatgpt plus", "dijital araçlar",
+    # Kupon ve indirim
     "trendyol indirim", "trendyol kupon", "yemek kuponu",
     "indirim kodu", "promosyon kodu", "kampanya kodu",
     "trendyol indirimleri", "yemeksepeti kupon", "getir indirim",
+    # Freelance ve dijital
     "dijital pazarlama", "sosyal medya yönetimi",
     "instagram takipçi", "youtube abone", "tiktok takipçi",
     "grafik tasarım iş", "makale yazarı", "freelance türkiye",
     "home office iş", "tasarımcı iş ilanları", "yazılımcı yardımlaşma",
+    # Oyun hesapları
     "pubg hesap", "brawl stars hesap", "valorant hesap",
     "oyun hesap satış", "game account", "steam cüzdan",
     "ucuz uc", "pubg uc", "vp satın al", "valorant puanı",
-    "brawl stars elmas", "oyun pazarı", "epin bayilik"
+    "brawl stars elmas", "oyun pazarı", "epin bayilik",
+    # Yeni eklenen genişletilmiş kelimeler (100+ Kelime Hedefi)
+    "pazar yeri", "spotify premium", "netflix premium", "youtube premium",
+    "disney premium", "exxen hesap", "blutv hesap", "ucuz lisans",
+    "windows key", "office lisans", "steam key", "ucuz oyun",
+    "gta 5 hesap", "lol hesap", "league of legends", "metin2 yang",
+    "metin2 hesap", "smm bayi", "takipçi satın al", "instagram satılık",
+    "tiktok satılık", "kanal satılık", "grup satılık", "reklam alım",
+    "reklam satım", "backlink satış", "seo uzmanı", "webmaster forum",
+    "r10 davetiye", "w10 lisans", "canva tasarım", "dijital marketing",
+    "dropshipping tr", "amazon fba", "e-ticaret yardımlaşma", "ucuz vds",
+    "hosting satış", "hesap alım satım", "reklam satışı", "satis grubu"
 ]
 
 @app.route('/api/scraper/config', methods=['GET'])

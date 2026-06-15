@@ -388,10 +388,9 @@ SCRAPE_KEYWORDS = [
     "alım satım", "ticaret grubu", "satış grubu", "ilan grubu",
     "hesap satış", "dijital ilan", "smm panel",
     "indirim kupon", "fırsat indirim", "reklam grubu",
-    "alim satim", "e-ticaret satış", "dijital satış",
-    "referans reklam", "epin satış", "program satış",
-    "yazılım ticaret", "dijital lisans", "reklam pazar",
-    "reklam referans", "dijital pazar", "sosyal medya bayilik",
+    "ikinci el", "2.el satış", "alim satim",
+    "e-ticaret satış", "trendyol satıcı", "freelance iş",
+    "referans reklam", "satılık ilan", "epin satış",
     "sanal ticaret", "dijital tedarik", "shopier satış", "shopier ilan",
     # AI ve yazılım
     "yapay zeka", "chatgpt türkçe", "ai araçları", "ai tools",
@@ -412,8 +411,17 @@ SCRAPE_KEYWORDS = [
     "oyun hesap satış", "game account", "steam cüzdan",
     "ucuz uc", "pubg uc", "vp satın al", "valorant puanı",
     "brawl stars elmas", "oyun pazarı", "epin bayilik",
-    # Genel satış
-    "pazar yeri"
+    # Yeni eklenen genişletilmiş kelimeler (100+ Kelime Hedefi)
+    "pazar yeri", "spotify premium", "netflix premium", "youtube premium",
+    "disney premium", "exxen hesap", "blutv hesap", "ucuz lisans",
+    "windows key", "office lisans", "steam key", "ucuz oyun",
+    "gta 5 hesap", "lol hesap", "league of legends", "metin2 yang",
+    "metin2 hesap", "smm bayi", "takipçi satın al", "instagram satılık",
+    "tiktok satılık", "kanal satılık", "grup satılık", "reklam alım",
+    "reklam satım", "backlink satış", "seo uzmanı", "webmaster forum",
+    "r10 davetiye", "w10 lisans", "canva tasarım", "dijital marketing",
+    "dropshipping tr", "amazon fba", "e-ticaret yardımlaşma", "ucuz vds",
+    "hosting satış", "hesap alım satım", "reklam satışı", "satis grubu"
 ]
 
 async def auto_scrape_groups(client, client_name, joined_usernames=None):
