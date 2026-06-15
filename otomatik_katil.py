@@ -842,6 +842,16 @@ def register_admin_handler(client, client_name, joined_dialogs):
                         await event.respond("⚠️ Yanıtlanan mesajda onaylanacak grup kullanıcı adı bulunamadı.")
                         return
 
+            # 1.5. Manuel tarama tetikleme
+            if msg_text in ['/tara', 'tara', 'scan', '/scan']:
+                await event.respond("🔍 **Grup taraması başlatılıyor...**\nBu işlem birkaç dakika sürebilir.")
+                try:
+                    with open("trigger_scraper.flag", "w", encoding="utf-8") as f:
+                        f.write("trigger")
+                except Exception as e:
+                    await event.respond(f"⚠️ Hata: {e}")
+                return
+
             # 2. Doğrudan link veya kullanıcı adı ekleme (Mesaj ile doğrudan ekleme)
             grup_to_add = None
             if msg_text.startswith('/ekle '):
@@ -1654,10 +1664,10 @@ async def main():
                 print(f"⚠️ [Firestore Sync] Hata: {e}")
 
     async def periodic_scraper(client, client_name):
-        print("🔍 [Scraper Task] Günlük grup tarama görevi başlatıldı (24 saat aralıklarla).")
+        print("🔍 [Scraper Task] Periyodik grup tarama görevi başlatıldı (6 saat aralıklarla).")
         while True:
-            # 24 saat bekle ama her 15 saniyede bir flag dosyasını kontrol et (acil tetikleyici)
-            kalan = 86400  # 24 saat = 86400 saniye
+            # 6 saat bekle ama her 15 saniyede bir flag dosyasını kontrol et (acil tetikleyici)
+            kalan = 21600  # 6 saat = 21600 saniye
             while kalan > 0:
                 if os.path.exists("trigger_scraper.flag"):
                     print("⚡ [Scraper Task] TETİKLEYİCİ: 'trigger_scraper.flag' tespit edildi! Anlık tarama başlatılıyor...")
@@ -1678,8 +1688,8 @@ async def main():
                 await asyncio.sleep(15)
                 kalan -= 15
             
-            # Günlük periyodik tarama
-            print("🔄 [Scraper Task] 24 saat doldu, günlük tarama başlıyor...")
+            # Periyodik tarama
+            print("🔄 [Scraper Task] 6 saat doldu, periyodik tarama başlıyor...")
             joined_usernames = set()
             try:
                 async for dialog in client.iter_dialogs():
