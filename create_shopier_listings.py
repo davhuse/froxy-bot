@@ -166,54 +166,35 @@ def create_gradient_image(title, category, filename):
     
     base.save(filename, "JPEG", quality=90)
 
-def get_existing_products():
-    print("Mevcut Shopier urunleri kontrol ediliyor (https://www.shopier.com/keyvadi)...")
-    context = ssl._create_unverified_context()
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
-    req = urllib.request.Request('https://www.shopier.com/keyvadi', headers=headers)
+def get_existing_products_selenium(driver):
+    print("Mevcut Shopier urunleri tarayicidan taranıyor (https://www.shopier.com/keyvadi)...")
     existing_titles = set()
     try:
-        with urllib.request.urlopen(req, context=context, timeout=10) as response:
-            raw_data = response.read()
-            try:
-                html_content = raw_data.decode('utf-8')
-            except UnicodeDecodeError:
-                html_content = raw_data.decode('windows-1254', errors='ignore')
+        # Save current URL
+        original_url = driver.current_url
+        
+        # Navigate to the public showroom inside the active session
+        driver.get("https://www.shopier.com/keyvadi")
+        time.sleep(4) # Wait for page load
+        
+        elements = driver.find_elements(By.CLASS_NAME, "shopier-store--store-product-card-title")
+        for el in elements:
+            title = el.text.strip()
+            if title:
+                existing_titles.add(title.lower().strip())
                 
-            cards = html_content.split('class="product-card shopier--product-card')
-            for card in cards[1:]:
-                title_match = re.search(r'class="shopier-store--store-product-card-title">([^<]+)</h3>', card)
-                if title_match:
-                    title = html.unescape(title_match.group(1).strip())
-                    existing_titles.add(title.lower().strip())
-        print(f"Dukkaninizda toplam {len(existing_titles)} adet urun bulundu.")
+        print(f"Dukkaninizda toplam {len(existing_titles)} adet mevcut urun tespit edildi.")
+        
+        # Restore URL
+        driver.get(original_url)
     except Exception as e:
-        print(f"Mevcut urunleri kontrol ederken hata (atlanıyor): {e}")
+        print(f"Mevcut urunleri tararken hata olustu (atlanıyor): {e}")
     return existing_titles
 
 def main():
     print("=" * 60)
     print("SHOPIER OTOMATIK ILAN YUKLEME BOTU")
     print("=" * 60)
-    
-    # Get existing products to prevent duplicates
-    existing_titles = get_existing_products()
-    
-    # Filter products
-    filtered_products = []
-    for orig_idx, p in enumerate(products):
-        if p["name"].lower().strip() in existing_titles:
-            print(f"[-] Urun zaten dukkaninizda var, yuklenmeyecek: {p['name']}")
-        else:
-            p_copy = p.copy()
-            p_copy["orig_idx"] = orig_idx
-            filtered_products.append(p_copy)
-            
-    if not filtered_products:
-        print("Yuklenecek yeni urun bulunmadi. Tum urunler zaten dukkaninizda mevcut!")
-        return
-        
-    print(f"\n[+] Toplam {len(filtered_products)} adet yeni urun yuklenecek.")
     
     img_dir = os.path.join(os.getcwd(), "shopier_images")
     os.makedirs(img_dir, exist_ok=True)
@@ -236,10 +217,40 @@ def main():
         
     print("Basarili: Chrome baglantisi kuruldu.")
     
-    total_products = len(filtered_products)
-    
-    # Go to shopier immediately to let user see it
+    # Go to shopier immediately to let user log in
     driver.get("https://www.shopier.com/m/products.php")
+    
+    print("Lutfen acilan tarayici penceresinde Shopier hesabiniza giris yapin...")
+    
+    # Wait for user login
+    while True:
+        current_url = driver.current_url
+        if "login" not in current_url and "index.php" not in current_url:
+            break
+        time.sleep(2)
+        
+    print("Giris yapildi! Dukkaninizdaki mevcut urunler taranıyor...")
+    
+    # Get existing products to prevent duplicates
+    existing_titles = get_existing_products_selenium(driver)
+    
+    # Filter products
+    filtered_products = []
+    for orig_idx, p in enumerate(products):
+        if p["name"].lower().strip() in existing_titles:
+            print(f"[-] Urun zaten dukkaninizda var, yuklenmeyecek: {p['name']}")
+        else:
+            p_copy = p.copy()
+            p_copy["orig_idx"] = orig_idx
+            filtered_products.append(p_copy)
+            
+    if not filtered_products:
+        print("Yuklenecek yeni urun bulunmadi. Tum urunler zaten dukkaninizda mevcut!")
+        driver.quit()
+        return
+        
+    print(f"\n[+] Toplam {len(filtered_products)} adet yeni urun yuklenecek.")
+    total_products = len(filtered_products)
     
     for idx, p in enumerate(filtered_products):
         print("\n" + "-" * 50)
