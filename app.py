@@ -2,6 +2,11 @@ from flask import Flask, render_template, request, jsonify
 import subprocess
 import os
 import sys
+try:
+    sys.stdout.reconfigure(encoding='utf-8')
+    sys.stderr.reconfigure(encoding='utf-8')
+except Exception:
+    pass
 import json
 import threading
 import time
@@ -37,8 +42,7 @@ def update_config_state(key, value):
 
 # Process tracking helpers using psutil
 def get_process_by_script(script_name):
-    """Finds a running python process that executes script_name."""
-    # 1. Try checking the PID file first
+    """Finds a running python process that executes script_name using PID file."""
     pid_file = f"{script_name}.pid"
     if os.path.exists(pid_file):
         try:
@@ -51,46 +55,29 @@ def get_process_by_script(script_name):
                     return proc
         except Exception:
             pass
-
-    # 2. Fallback to process iteration
-    for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
-        try:
-            cmd = proc.info.get('cmdline') or []
-            if any(script_name in arg for arg in cmd):
-                # Save it to the PID file for future fast checks
-                try:
-                    with open(pid_file, "w") as f:
-                        f.write(str(proc.pid))
-                except:
-                    pass
-                return proc
-        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-            pass
     return None
 
 def kill_process_by_script(script_name):
-    """Kills any running python process that executes script_name."""
-    killed = False
-    for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+    """Kills any running python process that executes script_name using PID file."""
+    proc = get_process_by_script(script_name)
+    if proc:
         try:
-            cmd = proc.info.get('cmdline') or []
-            if any(script_name in arg for arg in cmd):
-                print(f"Killing orphan process {proc.info['pid']} running {script_name}")
-                for child in proc.children(recursive=True):
-                    try: child.terminate()
-                    except: pass
-                proc.terminate()
-                try: proc.wait(timeout=3)
-                except psutil.TimeoutExpired:
-                    proc.kill()
-                killed = True
-        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            print(f"Killing process {proc.pid} running {script_name} via PID file")
+            for child in proc.children(recursive=True):
+                try: child.terminate()
+                except: pass
+            proc.terminate()
+            try: proc.wait(timeout=3)
+            except psutil.TimeoutExpired:
+                proc.kill()
+            return True
+        except Exception:
             pass
-    return killed
+    return False
 
 # WATCHDOG SYSTEM: Keeps both bots running 24/7 unconditionally
 def bot_watchdog():
-    global ad_process, support_process
+    global ad_process, support_process, froxy_process
     print("🛡️ [Watchdog] Bot takip sistemi başlatıldı. Botlar her 15 saniyede bir denetlenecek.")
     time.sleep(5) # Give the system some time to initialize
     
@@ -947,6 +934,22 @@ def clear_tickets():
         return jsonify({"success": False, "message": str(e)})
 
 if __name__ == '__main__':
+    # Clean up any orphaned bot processes from previous runs on startup
+    for script_name in ['otomatik_katil.py', 'froxy_bot.py', 'froxy_destek_bot.py']:
+        proc = get_process_by_script(script_name)
+        if proc:
+            print(f"🧹 Startup cleanup: Killing orphaned process {proc.pid} ({script_name})")
+            try:
+                proc.terminate()
+                proc.wait(timeout=3)
+            except:
+                try: proc.kill()
+                except: pass
+        pid_file = f"{script_name}.pid"
+        if os.path.exists(pid_file):
+            try: os.remove(pid_file)
+            except: pass
+
     # Start the watchdog thread
     t = threading.Thread(target=bot_watchdog, daemon=True)
     t.start()

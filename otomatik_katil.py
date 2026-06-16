@@ -1012,11 +1012,6 @@ async def main():
     first_client, first_name, _ = active_clients[0]
 
     async def run_worker(client, client_name, joined_dialogs):
-        # Hesap #2 için başlangıçta 15 dakika (900 saniye) gecikme ekle (çakışmayı önlemek için)
-        if "2" in client_name:
-            print(f"⏳ [{client_name}] Başlangıç gecikmesi aktif: Diğer hesapla çakışmayı önlemek için 15 dakika bekleniyor...")
-            await asyncio.sleep(900)
-            
         protected_groups = get_all_protected_groups()
         
         VERIFIED_FILE = f"verified_groups_{client_name.replace(' ', '_').replace('#', '')}.json"
@@ -1731,11 +1726,25 @@ async def main():
             print(f"⚠️ [{client_name}] Startup Scraper: Mevcut gruplar alınırken hata: {e}")
         await auto_scrape_groups(client, client_name, joined_usernames)
 
+    async def run_worker_supervisor(client, client_name, joined_dialogs):
+        if "2" in client_name:
+            print(f"⏳ [{client_name}] İlk çalıştırma gecikmesi aktif: Diğer hesapla çakışmayı önlemek için 15 dakika bekleniyor...")
+            await asyncio.sleep(900)
+        while True:
+            try:
+                await run_worker(client, client_name, joined_dialogs)
+            except Exception as e:
+                import traceback
+                print(f"🚨 [Supervisor] {client_name} çöktü: {e}")
+                traceback.print_exc()
+                print("⏳ [Supervisor] 60 saniye sonra worker yeniden başlatılıyor...")
+                await asyncio.sleep(60)
+
     # Workers ve arka plan görevlerini başlat
     tasks = []
     for client, name, j_dialogs in active_clients:
         register_admin_handler(client, name, j_dialogs)
-        tasks.append(run_worker(client, name, j_dialogs))
+        tasks.append(run_worker_supervisor(client, name, j_dialogs))
     
     # Scraper ve Firestore sync'i arka planda çalıştır
     first_client, first_name, _ = active_clients[0]

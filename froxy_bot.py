@@ -7,6 +7,7 @@ import ssl
 import html
 import asyncio
 from telethon import TelegramClient, events, Button
+from telethon.sessions import StringSession
 import user_lang_helper
 
 # Logging configuration
@@ -79,7 +80,7 @@ if not BOT_TOKEN or BOT_TOKEN == "YOUR_TELEGRAM_BOT_TOKEN":
 user_states = {}
 
 # Initialize client
-bot = TelegramClient('froxy_bot_session', API_ID, API_HASH)
+bot = TelegramClient(StringSession(), API_ID, API_HASH)
 
 # ═══════════════════════════════════════════════════════════════
 # KeyVadi Product Catalog - Shopier üzerinden satılan ürünler
