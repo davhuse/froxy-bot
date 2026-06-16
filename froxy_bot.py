@@ -153,9 +153,9 @@ def rebuild_categories(products):
         url = p["url"]
         
         t = title.lower()
-        if any(k in t for k in ["gemini", "grok", "ai", "gamma", "kiro", "chatgpt", "openai", "copilot", "claude", "midjourney"]):
+        if any(k in t for k in ["gemini", "grok", "ai", "gamma", "kiro", "chatgpt", "openai", "copilot", "claude", "midjourney", "semrush", "deepl", "quill", "ideogram", "envato", "freepik"]):
             cat_key = "ai"
-        elif any(k in t for k in ["canva", "adobe", "creative cloud", "express", "capcut", "duolingo", "scribd", "design", "tasarım", "spotify", "netflix"]):
+        elif any(k in t for k in ["canva", "adobe", "creative cloud", "express", "capcut", "duolingo", "scribd", "design", "tasarım", "spotify", "netflix", "windows", "win ", "win10", "win11", "office", "key", "lisans", "autodesk", "figma", "wordpress", "grammarly", "vpn", "antivirüs", "antivirus", "xbox", "steam", "game pass"]):
             cat_key = "design"
         elif any(k in t for k in ["whatsapp", "apple id", "apple", "icloud", "numara", "mobil", "sms", "onay"]):
             cat_key = "mobile"

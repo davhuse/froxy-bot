@@ -1,0 +1,340 @@
+import os
+import sys
+import time
+import subprocess
+import psutil
+
+def install_and_import(package):
+    try:
+        __import__(package)
+    except ImportError:
+        print(f"[{package}] bulunamadi, yukleniyor...")
+        subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+
+# Gerekli kutuphaneleri kontrol et ve yukle
+install_and_import("selenium")
+install_and_import("webdriver_manager")
+install_and_import("pillow")
+
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from webdriver_manager.chrome import ChromeDriverManager
+from PIL import Image, ImageDraw, ImageFont
+
+# 33 Products list from database
+products = [
+    # EGLENCE & MUZIK
+    {"name": "YouTube Premium (3 Aylık Kod)", "price": 44.99, "category": "Entertainment", "desc": "YouTube Premium 3 Aylık Aktivasyon Kodu. Reklamsız video izleme ve YouTube Music Premium dahildir. Kendi hesabınızda veya yeni hesapta aktifleştirebilirsiniz."},
+    {"name": "Spotify Premium (4 Aylık Kod)", "price": 34.99, "category": "Entertainment", "desc": "Spotify Premium 4 Aylık Aktivasyon Kodu. Kendi kişisel hesabınıza tanımlanır. Reklamsız ve yüksek kaliteli müzik keyfi."},
+    {"name": "Netflix 4K Ultra HD (Kişisel Profil)", "price": 89.99, "category": "Entertainment", "desc": "Kişisel Netflix 4K Ultra HD Profili. Ortak hesapta size ait özel profil ve şifreleme ile full garanti sağlanır."},
+    {"name": "Exxen Reklamsız (3 Aylık)", "price": 34.99, "category": "Entertainment", "desc": "Exxen Reklamsız 3 Aylık Üyelik. Giriş bilgileri sipariş sonrasında teslim edilir."},
+    {"name": "Crunchyroll Premium (3 Aylık)", "price": 99.00, "category": "Entertainment", "desc": "Crunchyroll Premium 3 Aylık Üyelik."},
+
+    # YAPAY ZEKA (AI)
+    {"name": "ChatGPT Plus (1 Aylık Hesap)", "price": 199.99, "category": "AI", "desc": "ChatGPT Plus 1 Aylık Kullanım Hesabı. Gelişmiş GPT-4o ve DALL-E görsel üretim özellikleri aktiftir. Giriş garantisi ve 3 gün garanti sağlanır."},
+    {"name": "Gemini Pro (1 Yıllık Hesap)", "price": 299.99, "category": "AI", "desc": "Gemini Pro 1 Yıllık Kullanım Hesabı. Gelişmiş Google AI asistanına kesintisiz erişim. Giriş garantilidir."},
+    {"name": "Gemini Pro (Davet Linki)", "price": 124.99, "category": "AI", "desc": "Gemini Pro Davet Linki ile kendi hesabınızı aktifleştirme. Giriş garantilidir."},
+    {"name": "Gemini Ultra (Davet Linki)", "price": 399.99, "category": "AI", "desc": "Gemini Ultra Davet Linki. Google'ın en gelişmiş yapay zeka modeli. Full kullanım garantisi sağlanır."},
+    {"name": "Gemini Ultra (2.5k Kredili Hesap)", "price": 599.99, "category": "AI", "desc": "Gemini Ultra 2500 Kredili Kullanım Hesabı. Full kullanım garantisi sağlanır."},
+    {"name": "Super Grok (1 Aylık Hesap)", "price": 449.99, "category": "AI", "desc": "Super Grok 1 Aylık Kullanım Hesabı. Giriş garantilidir."},
+    {"name": "Super Grok (3 Aylık Hesap)", "price": 949.99, "category": "AI", "desc": "Super Grok 3 Aylık Kullanım Hesabı. 15 gün kullanım garantisi sağlanır."},
+    {"name": "Super Grok (6 Aylık Hesap)", "price": 1499.99, "category": "AI", "desc": "Super Grok 6 Aylık Kullanım Hesabı. 3 hafta kullanım garantisi sağlanır."},
+    {"name": "Super Grok (12 Aylık Hesap)", "price": 2299.99, "category": "AI", "desc": "Super Grok 12 Aylık Kullanım Hesabı. 3 ay kullanım garantisi sağlanır."},
+    {"name": "Gamma Ultra (1 Aylık Hesap)", "price": 449.99, "category": "AI", "desc": "Gamma Ultra 1 Aylık Kullanım Hesabı. Yapay zeka ile sunum ve döküman oluşturma."},
+    {"name": "Gamma Pro (1 Aylık Hesap)", "price": 299.99, "category": "AI", "desc": "Gamma Pro 1 Aylık Kullanım Hesabı."},
+
+    # DIJITAL ARACLAR & YAZILIMLAR
+    {"name": "Canva Pro (1 Yıllık Yetki)", "price": 79.99, "category": "Design", "desc": "Canva Pro 1 Yıllık Yetkilendirme. Kendi kişisel hesabınıza Pro özellikleri tanımlanır."},
+    {"name": "Adobe Express (3 Aylık)", "price": 99.99, "category": "Design", "desc": "Adobe Express 3 Aylık Pro Üyelik. Kendi hesabınıza tanımlanır. 1 hafta garanti sağlanır."},
+    {"name": "Adobe Creative Cloud (1 Haftalık)", "price": 69.99, "category": "Design", "desc": "Adobe Creative Cloud Tüm Uygulamalar 1 Haftalık Üyelik. 1 hafta garanti sağlanır."},
+    {"name": "Adobe Creative Cloud (1 Aylık)", "price": 119.99, "category": "Design", "desc": "Adobe Creative Cloud Tüm Uygulamalar 1 Aylık Üyelik. 1 hafta garanti sağlanır."},
+    {"name": "Adobe Creative Cloud (4 Aylık)", "price": 249.99, "category": "Design", "desc": "Adobe Creative Cloud Tüm Uygulamalar 4 Aylık Üyelik. 1 hafta garanti sağlanır."},
+    {"name": "CapCut Pro (1 Haftalık Hesap)", "price": 99.99, "category": "Design", "desc": "CapCut Pro 1 Haftalık Kullanım Hesabı. 3 gün kullanım garantisi sağlanır."},
+    {"name": "Kiro (10k Kredili Hesap)", "price": 499.99, "category": "Design", "desc": "Kiro 10.000 Kredili Görsel ve Video Üretim Hesabı. Giriş garantilidir."},
+    {"name": "Duolingo Super Sınırsız", "price": 69.99, "category": "Design", "desc": "Duolingo Super Sınırsız Dil Eğitimi."},
+    {"name": "Scribd Premium (3 Aylık)", "price": 99.99, "category": "Design", "desc": "Scribd Premium 3 Aylık Üyelik."},
+    {"name": "TradingView Premium (3 Aylık)", "price": 349.99, "category": "Design", "desc": "TradingView Premium 3 Aylık Erişim. Sınırsız grafik ve indikatör yerleşimi."},
+
+    # ONAYLI NUMARA & MAIL
+    {"name": "ABD / Kanada Karma WhatsApp Numarası", "price": 149.99, "category": "Numbers", "desc": "ABD / Kanada Karma WhatsApp Onaylı Numara."},
+    {"name": "Türk Apple ID (iCloud Etkin)", "price": 149.99, "category": "Numbers", "desc": "Türk Apple ID iCloud Etkinleştirilmiş Hesap. Giriş garantilidir."},
+    {"name": "Eski Tarihli Gmail (2022-2024 Kurulu)", "price": 59.99, "category": "Numbers", "desc": "Eski Tarihli Kurulmuş Gmail Hesabı. Giriş garantilidir."},
+
+    # KUPON & INDIRIMLER
+    {"name": "Trendyol Go Yemek İndirim Kuponu (700 TL'ye 250 TL)", "price": 49.99, "category": "Coupons", "desc": "Trendyol Go Yemek siparişinde 700 TL'ye 250 TL Net indirim sağlayan tek kullanımlık kupon."},
+    {"name": "Trendyol Go Market İndirim Kuponu (900 TL'ye 250 TL)", "price": 49.99, "category": "Coupons", "desc": "Trendyol Go Market siparişinde 900 TL'ye 250 TL Net indirim sağlayan tek kullanımlık kupon."},
+    {"name": "Uber Eats Yemek İndirim Kuponu (700 TL'ye 250 TL)", "price": 49.99, "category": "Coupons", "desc": "Uber Eats Yemek siparişinde 700 TL'ye 250 TL Net indirim sağlayan tek kullanımlık kupon."},
+    {"name": "Shell 75 TL Akaryakıt Puanı", "price": 14.99, "category": "Coupons", "desc": "Shell istasyonlarında geçerli 75 TL değerinde akaryakıt puanı."},
+
+    # LISANSLAR, AI & PROGRAMLAR (YENI EKLENENLER)
+    {"name": "Windows 10/11 Pro Lisans Anahtarı (Key)", "price": 70.00, "category": "Design", "desc": "Windows 10/11 Professional işletim sistemi için %100 orijinal ve süresiz aktivasyon lisans anahtarı. 7/24 anında otomatik teslimat."},
+    {"name": "Microsoft Office 365 (1 Yıllık Hesap)", "price": 70.00, "category": "Design", "desc": "Word, Excel, PowerPoint ve tüm Office uygulamalarını içeren 1 Yıllık lisanslı Microsoft Office 365 hesabı. 7/24 anında teslimat."},
+    {"name": "Semrush Pro (14 Günlük Hesap)", "price": 150.00, "category": "AI", "desc": "Semrush Pro özellikleri aktif 14 günlük profesyonel SEO ve arama motoru analiz hesabı. Giriş garantili."},
+    {"name": "Steam İstediğiniz Oyun (Hediye/Hesap)", "price": 60.00, "category": "Entertainment", "desc": "Steam platformundaki dilediğiniz 60 TL değerindeki oyunu hediye olarak veya özel hesap şeklinde teslim alabilirsiniz."},
+    {"name": "XBOX Game Pass Ultimate (3 Aylık Üyelik)", "price": 80.00, "category": "Entertainment", "desc": "3 Aylık XBOX Game Pass Ultimate üyeliği aktif hesap. PC ve konsolda yüzlerce oyuna ücretsiz erişim sağlar."},
+    {"name": "NordVPN Premium (1 Aylık Hesap)", "price": 49.99, "category": "Design", "desc": "NordVPN Premium 1 aylık yüksek hızlı ve güvenli VPN hesabı. Giriş garantilidir."},
+    {"name": "Kaspersky Total Security (1 Yıllık Lisans)", "price": 79.99, "category": "Design", "desc": "Kaspersky Total Security en üst düzey koruma sağlayan 1 yıllık orijinal antivirüs lisansı."},
+    {"name": "Envato Elements (1 Aylık Premium Hesap)", "price": 149.99, "category": "Design", "desc": "Envato Elements üzerinden sınırsız şablon, görsel ve kod kütüphanesine erişebileceğiniz 1 aylık Premium hesap."},
+    {"name": "Freepik Premium (1 Aylık Hesap)", "price": 99.99, "category": "Design", "desc": "Freepik Premium özellikli 1 aylık tasarım ve vektör indirme hesabı."},
+    {"name": "Autodesk AutoCAD (1 Yıllık Öğrenci Lisansı)", "price": 199.99, "category": "Design", "desc": "Autodesk AutoCAD 1 yıllık orijinal lisans anahtarı. Kendi hesabınıza tanımlanabilir."},
+    {"name": "Figma Professional (1 Yıllık Yetkilendirme)", "price": 129.99, "category": "Design", "desc": "Figma Professional sürümüne sahip 1 yıllık yetki daveti. Kendi hesabınızda sınırsız proje alanı açar."},
+    {"name": "WordPress Elementor Pro (1 Yıllık Lisans)", "price": 99.99, "category": "Design", "desc": "WordPress için Elementor Pro sayfa oluşturucu eklentisinin 1 yıllık orijinal lisans anahtarı."},
+    {"name": "Grammarly Premium (1 Aylık Hesap)", "price": 69.99, "category": "Design", "desc": "Yazım ve dilbilgisi kontrolü için Grammarly Premium 1 aylık kullanım hesabı."},
+    {"name": "DeepL Pro Çeviri (1 Aylık Hesap)", "price": 89.99, "category": "AI", "desc": "DeepL Pro çeviri servisi için 1 aylık premium erişim hesabı. Belgelerinizi sınırsız çevirin."},
+    {"name": "Ideogram AI Premium (1 Aylık Hesap)", "price": 119.99, "category": "AI", "desc": "Gelişmiş metinli görsel üretici Ideogram AI premium özellikli 1 aylık kullanım hesabı."},
+    {"name": "Quillbot Premium (1 Aylık Hesap)", "price": 49.99, "category": "AI", "desc": "Metin yeniden yazma ve özetleme aracı Quillbot Premium 1 aylık kullanım hesabı."}
+]
+
+def create_gradient_image(title, category, filename):
+    w, h = 800, 800
+    
+    if category == "AI":
+        c1, c2 = (24, 18, 59), (89, 56, 172)
+        cat_turkish = "YAPAY ZEKA (AI)"
+    elif category == "Entertainment":
+        c1, c2 = (60, 6, 6), (180, 20, 20)
+        cat_turkish = "EGELENCE & MUZIK"
+    elif category == "Design":
+        c1, c2 = (10, 48, 70), (25, 120, 160)
+        cat_turkish = "TASARIM & YAZILIM"
+    elif category == "Numbers":
+        c1, c2 = (15, 60, 40), (45, 150, 90)
+        cat_turkish = "ONAYLI NUMARA & MAIL"
+    elif category == "Coupons":
+        c1, c2 = (80, 45, 10), (190, 120, 30)
+        cat_turkish = "KUPON & INDIRIM"
+    else:
+        c1, c2 = (30, 30, 30), (80, 80, 80)
+        cat_turkish = "DIJITAL URUN"
+        
+    base = Image.new("RGB", (w, h), c1)
+    draw = ImageDraw.Draw(base)
+    
+    for y in range(h):
+        r = int(c1[0] + (c2[0] - c1[0]) * y / h)
+        g = int(c1[1] + (c2[1] - c1[1]) * y / h)
+        b = int(c1[2] + (c2[2] - c1[2]) * y / h)
+        draw.line((0, y, w, y), fill=(r, g, b))
+        
+    card_margin = 85
+    draw.rounded_rectangle(
+        [(card_margin, card_margin), (w - card_margin, h - card_margin)],
+        radius=35,
+        fill=(0, 0, 0, 110),
+        outline=(255, 255, 255, 35),
+        width=3
+    )
+    
+    font_path = "arial.ttf"
+    try:
+        font_title = ImageFont.truetype(font_path, 38)
+        font_sub = ImageFont.truetype(font_path, 23)
+        font_badge = ImageFont.truetype(font_path, 17)
+    except IOError:
+        font_title = ImageFont.load_default()
+        font_sub = ImageFont.load_default()
+        font_badge = ImageFont.load_default()
+        
+    draw.text((w/2, 170), cat_turkish, font=font_badge, fill=(200, 220, 255), anchor="mm")
+    
+    words = title.split()
+    lines = []
+    current_line = []
+    for word in words:
+        if len(" ".join(current_line + [word])) * 17 < (w - card_margin * 3.5):
+            current_line.append(word)
+        else:
+            lines.append(" ".join(current_line))
+            current_line = [word]
+    if current_line:
+        lines.append(" ".join(current_line))
+        
+    y_text = 360 - (len(lines) - 1) * 25
+    for line in lines[:3]:
+        draw.text((w/2, y_text), line, font=font_title, fill=(255, 255, 255), anchor="mm")
+        y_text += 55
+        
+    draw.text((w/2, 595), "ANINDA DIJITAL TESLIMAT", font=font_sub, fill=(160, 255, 160), anchor="mm")
+    draw.text((w/2, 635), "GUVENLI ODEME | %100 GARANTILI", font=font_sub, fill=(225, 225, 225), anchor="mm")
+    
+    base.save(filename, "JPEG", quality=90)
+
+def find_chrome():
+    paths = [
+        r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+        r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+        os.path.join(os.environ.get("PROGRAMFILES", "C:\\Program Files"), r"Google\Chrome\Application\chrome.exe"),
+        os.path.join(os.environ.get("PROGRAMFILES(X86)", "C:\\Program Files (x86)"), r"Google\Chrome\Application\chrome.exe"),
+        os.path.join(os.environ.get("LOCALAPPDATA", ""), r"Google\Chrome\Application\chrome.exe")
+    ]
+    for p in paths:
+        if os.path.exists(p):
+            return p
+    return "chrome.exe"
+
+def main():
+    print("=" * 60)
+    print("SHOPIER OTOMATIK ILAN YUKLEME BOTU")
+    print("=" * 60)
+    
+    img_dir = os.path.join(os.getcwd(), "shopier_images")
+    os.makedirs(img_dir, exist_ok=True)
+    
+    print("\n[1] Urun kapak gorselleri uretiliyor...")
+    for idx, p in enumerate(products):
+        filename = os.path.join(img_dir, f"product_{idx}.jpg")
+        create_gradient_image(p["name"], p["category"], filename)
+    print(f"Basarili: Toplam {len(products)} adet gorsel '{img_dir}' klasorunde hazirlandi.")
+    
+    print("\n[2] Hata ayiklama tarayicisi baslatiliyor...")
+    chrome_path = find_chrome()
+    debug_dir = os.path.join(os.environ.get("LOCALAPPDATA", os.getcwd()), "ShopierChromeDebug")
+    os.makedirs(debug_dir, exist_ok=True)
+    
+    # Chrome'un izin verdiği özel debug profilini açıyoruz
+    chrome_cmd = f'"{chrome_path}" --remote-debugging-port=9222 --user-data-dir="{debug_dir}" --no-first-run'
+    
+    try:
+        subprocess.Popen(chrome_cmd, shell=True)
+        print("Basarili: Hata ayiklama tarayicisi tetiklendi.")
+    except Exception as e:
+        print(f"Hata: Tarayici baslatilamadi: {e}")
+        sys.exit(1)
+
+    time.sleep(3) # Tarayicinin acilmasini bekle
+    
+    print("\n[3] Selenium ile hata ayiklama oturumuna baglaniliyor...")
+    options = webdriver.ChromeOptions()
+    options.add_experimental_option("debuggerAddress", "127.0.0.1:9222")
+    
+    try:
+        service = Service(ChromeDriverManager().install())
+        driver = webdriver.Chrome(service=service, options=options)
+    except Exception as e:
+        print(f"Hata: Chrome baglantisi basarisiz! Hata: {e}")
+        sys.exit(1)
+        
+    print("Basarili: Chrome baglantisi kuruldu.")
+    
+    total_products = len(products)
+    
+    # Go to shopier immediately to let user see it
+    driver.get("https://www.shopier.com/m/products.php")
+    
+    for idx, p in enumerate(products):
+        print("\n" + "-" * 50)
+        print(f"Urun Yukleniyor [{idx + 1}/{total_products}]: {p['name']}")
+        print("-" * 50)
+        
+        # Navigate to product add page in mobile directory
+        driver.get("https://www.shopier.com/m/products.php")
+        
+        # --- SMART DETECTION & WAIT LOOP ---
+        on_add_page = False
+        wait_msg_sent = False
+        while not on_add_page:
+            try:
+                # Check if subject element exists and is editable
+                subject_inputs = driver.find_elements(By.ID, "subject")
+                if subject_inputs and subject_inputs[0].is_displayed():
+                    on_add_page = True
+                    break
+            except Exception:
+                pass
+                
+            current_url = driver.current_url
+            if "login" in current_url or "index.php" in current_url:
+                print("Lutfen acilan tarayici penceresinde Shopier hesabiniza giris yapin...")
+                time.sleep(4)
+            else:
+                if not wait_msg_sent:
+                    print(f"Urun ekleme formu bekleniyor... (Mevcut URL: {current_url})")
+                    wait_msg_sent = True
+                
+                # If they logged in but are on list/dashboard, try to force redirect
+                if "listproduct.php" in current_url or "Showroom" in current_url:
+                    try:
+                        driver.get("https://www.shopier.com/m/products.php")
+                    except Exception:
+                        pass
+                time.sleep(2)
+        # --- END OF DETECTOR LOOP ---
+        
+        try:
+            wait = WebDriverWait(driver, 10)
+            
+            # Title
+            subject_input = wait.until(EC.element_to_be_clickable((By.ID, "subject")))
+            subject_input.clear()
+            subject_input.send_keys(p["name"])
+            
+            # Price
+            price_str = f"{p['price']:.2f}".replace(".", ",")
+            price_input = driver.find_element(By.ID, "price")
+            driver.execute_script("arguments[0].value = '';", price_input)
+            price_input.send_keys(price_str)
+            
+            # Stock
+            stock_input = driver.find_element(By.ID, "stock")
+            driver.execute_script("arguments[0].value = '';", stock_input)
+            stock_input.send_keys("999")
+            
+            # Description
+            desc_input = driver.find_element(By.ID, "description")
+            desc_input.clear()
+            desc_input.send_keys(p["desc"])
+            
+            # Digital Product Type
+            digital_radio = driver.find_element(By.ID, "digital")
+            driver.execute_script("arguments[0].click();", digital_radio)
+            
+            # Cargo Price (0,00)
+            cargo_price_input = driver.find_element(By.ID, "cargo_price")
+            driver.execute_script("arguments[0].value = '0,00';", cargo_price_input)
+            
+            # Upload cover image
+            image_path = os.path.join(img_dir, f"product_{idx}.jpg")
+            file_input = driver.find_element(By.ID, "saved-image-picker")
+            file_input.send_keys(os.path.abspath(image_path))
+            
+            # Handle cropper save button if visible
+            time.sleep(2)
+            cropper_saves = driver.find_elements(By.CSS_SELECTOR, "button.js-cropper-save")
+            if cropper_saves and cropper_saves[0].is_displayed():
+                driver.execute_script("arguments[0].click();", cropper_saves[0])
+                print("Basarili: Cropper gorseli onaylandi.")
+                time.sleep(1)
+                
+            # Submit form
+            submit_btn = driver.find_element(By.ID, "list_product")
+            driver.execute_script("arguments[0].click();", submit_btn)
+            print("Basarili: Kaydet butonuna tiklandi. Yonlendirme bekleniyor...")
+            
+            # Wait for redirect indicating success
+            saved = False
+            start_time = time.time()
+            while time.time() - start_time < 12:
+                if "listproduct.php" in driver.current_url:
+                    saved = True
+                    break
+                time.sleep(0.5)
+                
+            if saved:
+                print(f"Basarili: Urun eklendi: {p['name']}")
+            else:
+                print(f"Uyari: Urun otomatik yonlendirme alamadi. Lutfen kontrol edin.")
+                input("Eger urun kaydedildiyse devam etmek icin ENTER tusuna basin (Atlamak icin tarayiciyi kontrol edin)...")
+                
+        except Exception as e:
+            print(f"Hata: Urun eklenirken sorun olustu: {e}")
+            input("Sorunu tarayicidan cozup urunu kaydettiyseniz devam etmek icin ENTER tusuna basin...")
+            
+    print("\n" + "=" * 60)
+    print("TEBRIKLER! Tum urunler basariyla yuklendi.")
+    print("=" * 60)
+
+if __name__ == "__main__":
+    main()
