@@ -793,12 +793,12 @@ window.onload = () => {
     fetchStats();
     loadTickets();
     
-    setInterval(checkStatus, 2000);
-    setInterval(checkSupportStatus, 2000);
-    setInterval(checkFroxyStatus, 2000);
-    setInterval(fetchLogs, 1500);
-    setInterval(fetchStats, 2000);
-    setInterval(loadTickets, 10000); // Poll tickets every 10 seconds
+    setInterval(checkStatus, 10000);
+    setInterval(checkSupportStatus, 10000);
+    setInterval(checkFroxyStatus, 10000);
+    setInterval(fetchLogs, 12000);
+    setInterval(fetchStats, 15000);
+    setInterval(loadTickets, 20000); // Poll tickets every 20 seconds
 };
 
 // TICKETS LOGIC
