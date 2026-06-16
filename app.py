@@ -79,7 +79,7 @@ def kill_process_by_script(script_name):
 def bot_watchdog():
     global ad_process, support_process, froxy_process
     print("🛡️ [Watchdog] Bot takip sistemi başlatıldı. Botlar her 15 saniyede bir denetlenecek.")
-    time.sleep(5) # Give the system some time to initialize
+    time.sleep(30) # Give the web server 30 seconds to bind and report healthy first
     
     while True:
         try:
@@ -126,6 +126,7 @@ def bot_watchdog():
                             f.write(str(ad_process.pid))
                     except:
                         pass
+                    time.sleep(10)  # Stagger startup to prevent RAM/CPU spikes
                 else:
                     ad_process = ad_proc_os
             else:
@@ -160,6 +161,7 @@ def bot_watchdog():
                             f.write(str(support_process.pid))
                     except:
                         pass
+                    time.sleep(10)  # Stagger startup to prevent RAM/CPU spikes
                 else:
                     support_process = support_proc_os
             else:
@@ -208,6 +210,7 @@ def bot_watchdog():
                             f.write(str(froxy_process.pid))
                     except:
                         pass
+                    time.sleep(10)  # Stagger startup to prevent RAM/CPU spikes
                 else:
                     froxy_process = froxy_proc_os
             else:
