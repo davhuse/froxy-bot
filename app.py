@@ -946,65 +946,6 @@ def clear_tickets():
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
 
-@app.route('/api/debug')
-def debug_status():
-    import psutil, os, time
-    procs = []
-    for p in psutil.process_iter(['pid', 'name', 'cmdline']):
-        try:
-            with p.oneshot():
-                status = p.status()
-                cpu = p.cpu_percent(interval=0.05)
-                mem = p.memory_info().rss
-                ctime = p.create_time()
-            procs.append({
-                "pid": p.pid,
-                "name": p.info['name'],
-                "cmdline": p.info['cmdline'],
-                "status": status,
-                "cpu_percent": cpu,
-                "memory_rss_mb": round(mem / (1024 * 1024), 2),
-                "create_time": time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ctime))
-            })
-        except Exception:
-            pass
-            
-    files = {}
-    for fn in ["bot_log.txt", "froxy_bot_log.txt", "froxy_destek_log.txt"]:
-        if os.path.exists(fn):
-            files[fn] = {
-                "exists": True,
-                "size": os.path.getsize(fn),
-                "head": ""
-            }
-            try:
-                with open(fn, "r", encoding="utf-8", errors="replace") as f:
-                    files[fn]["head"] = f.read()[-3000:]
-            except Exception as e:
-                files[fn]["head"] = f"Error reading: {e}"
-        else:
-            files[fn] = {"exists": False}
-            
-    # Include a sanitized version of bot_config.json to protect keys/tokens
-    config_sanitized = {}
-    if os.path.exists("bot_config.json"):
-        try:
-            with open("bot_config.json", "r", encoding="utf-8") as f:
-                cfg = json.load(f)
-            for k, v in cfg.items():
-                if "token" in k.lower() or "session" in k.lower():
-                    config_sanitized[k] = "REDACTED"
-                else:
-                    config_sanitized[k] = v
-        except Exception as e:
-            config_sanitized["error"] = str(e)
-
-    return jsonify({
-        "processes": procs,
-        "files": files,
-        "config": config_sanitized
-    })
-
 if __name__ == '__main__':
     # Start the watchdog thread
     t = threading.Thread(target=bot_watchdog, daemon=True)
