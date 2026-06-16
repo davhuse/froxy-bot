@@ -4,6 +4,13 @@ import os
 import json
 import re
 import requests
+import sys
+
+try:
+    sys.stdout.reconfigure(encoding='utf-8')
+    sys.stderr.reconfigure(encoding='utf-8')
+except Exception:
+    pass
 from telethon import TelegramClient, events
 from telethon.tl.functions.channels import JoinChannelRequest, LeaveChannelRequest
 from telethon.tl.functions.contacts import ResolveUsernameRequest, SearchRequest
