@@ -1256,6 +1256,17 @@ async def main():
                     blast_targets.append(username_lower)
                 else:
                     debug_not_cached += 1
+            # Split targets between Hesap 1 and Hesap 2 to prevent rate limit conflicts and spacing cooldown deadlock
+            if len(active_clients) > 1:
+                is_hesap_2 = "2" in client_name
+                import hashlib
+                def group_belongs_to_this_acc(gname):
+                    h = int(hashlib.md5(gname.encode('utf-8')).hexdigest(), 16)
+                    return (h % 2 == 1) if is_hesap_2 else (h % 2 == 0)
+                
+                original_count = len(blast_targets)
+                blast_targets = [g for g in blast_targets if group_belongs_to_this_acc(g)]
+                print(f"[{client_name}] 🔀 İş yükü bölündü: {original_count} gruptan {len(blast_targets)} tanesi bu hesaba atandı.")
 
             
             print(f"[{client_name}] 📊 Hedef: {len(hedef_set)} | Gönderilecek: {len(blast_targets)} | Kara liste: {debug_blacklisted} | Küçük grup çıkar: {small_groups_skipped} | Üye değil: {debug_not_cached}")
