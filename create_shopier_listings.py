@@ -15,13 +15,13 @@ def install_and_import(package):
 install_and_import("selenium")
 install_and_import("webdriver_manager")
 install_and_import("pillow")
+install_and_import("undetected-chromedriver")
 
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from webdriver_manager.chrome import ChromeDriverManager
+import undetected_chromedriver as uc
 from PIL import Image, ImageDraw, ImageFont
 
 # 33 Products list from database
@@ -190,13 +190,11 @@ def main():
     print(f"Basarili: Toplam {len(products)} adet gorsel '{img_dir}' klasorunde hazirlandi.")
     
     print("\n[2] Tarayici baslatiliyor...")
-    options = webdriver.ChromeOptions()
+    options = uc.ChromeOptions()
     options.add_argument("--start-maximized")
-    options.add_argument("--disable-gpu")
     
     try:
-        service = Service(ChromeDriverManager().install())
-        driver = webdriver.Chrome(service=service, options=options)
+        driver = uc.Chrome(options=options)
     except Exception as e:
         print(f"Hata: Tarayici baslatilamadi! Hata: {e}")
         sys.exit(1)
