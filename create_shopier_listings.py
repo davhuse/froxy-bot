@@ -189,32 +189,16 @@ def main():
         create_gradient_image(p["name"], p["category"], filename)
     print(f"Basarili: Toplam {len(products)} adet gorsel '{img_dir}' klasorunde hazirlandi.")
     
-    print("\n[2] Hata ayiklama tarayicisi baslatiliyor...")
-    chrome_path = find_chrome()
-    debug_dir = os.path.join(os.environ.get("LOCALAPPDATA", os.getcwd()), "ShopierChromeDebug")
-    os.makedirs(debug_dir, exist_ok=True)
-    
-    # Chrome'un izin verdiği özel debug profilini açıyoruz
-    chrome_cmd = f'"{chrome_path}" --remote-debugging-port=9222 --user-data-dir="{debug_dir}" --no-first-run'
-    
-    try:
-        subprocess.Popen(chrome_cmd, shell=True)
-        print("Basarili: Hata ayiklama tarayicisi tetiklendi.")
-    except Exception as e:
-        print(f"Hata: Tarayici baslatilamadi: {e}")
-        sys.exit(1)
-
-    time.sleep(3) # Tarayicinin acilmasini bekle
-    
-    print("\n[3] Selenium ile hata ayiklama oturumuna baglaniliyor...")
+    print("\n[2] Tarayici baslatiliyor...")
     options = webdriver.ChromeOptions()
-    options.add_experimental_option("debuggerAddress", "127.0.0.1:9222")
+    options.add_argument("--start-maximized")
+    options.add_argument("--disable-gpu")
     
     try:
         service = Service(ChromeDriverManager().install())
         driver = webdriver.Chrome(service=service, options=options)
     except Exception as e:
-        print(f"Hata: Chrome baglantisi basarisiz! Hata: {e}")
+        print(f"Hata: Tarayici baslatilamadi! Hata: {e}")
         sys.exit(1)
         
     print("Basarili: Chrome baglantisi kuruldu.")
