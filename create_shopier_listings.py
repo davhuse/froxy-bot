@@ -3,6 +3,10 @@ import sys
 import time
 import subprocess
 import psutil
+import urllib.request
+import ssl
+import re
+import html
 
 def install_and_import(package):
     try:
@@ -162,23 +166,54 @@ def create_gradient_image(title, category, filename):
     
     base.save(filename, "JPEG", quality=90)
 
-def find_chrome():
-    paths = [
-        r"C:\Program Files\Google\Chrome\Application\chrome.exe",
-        r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
-        os.path.join(os.environ.get("PROGRAMFILES", "C:\\Program Files"), r"Google\Chrome\Application\chrome.exe"),
-        os.path.join(os.environ.get("PROGRAMFILES(X86)", "C:\\Program Files (x86)"), r"Google\Chrome\Application\chrome.exe"),
-        os.path.join(os.environ.get("LOCALAPPDATA", ""), r"Google\Chrome\Application\chrome.exe")
-    ]
-    for p in paths:
-        if os.path.exists(p):
-            return p
-    return "chrome.exe"
+def get_existing_products():
+    print("Mevcut Shopier urunleri kontrol ediliyor (https://www.shopier.com/keyvadi)...")
+    context = ssl._create_unverified_context()
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+    req = urllib.request.Request('https://www.shopier.com/keyvadi', headers=headers)
+    existing_titles = set()
+    try:
+        with urllib.request.urlopen(req, context=context, timeout=10) as response:
+            raw_data = response.read()
+            try:
+                html_content = raw_data.decode('utf-8')
+            except UnicodeDecodeError:
+                html_content = raw_data.decode('windows-1254', errors='ignore')
+                
+            cards = html_content.split('class="product-card shopier--product-card')
+            for card in cards[1:]:
+                title_match = re.search(r'class="shopier-store--store-product-card-title">([^<]+)</h3>', card)
+                if title_match:
+                    title = html.unescape(title_match.group(1).strip())
+                    existing_titles.add(title.lower().strip())
+        print(f"Dukkaninizda toplam {len(existing_titles)} adet urun bulundu.")
+    except Exception as e:
+        print(f"Mevcut urunleri kontrol ederken hata (atlanıyor): {e}")
+    return existing_titles
 
 def main():
     print("=" * 60)
     print("SHOPIER OTOMATIK ILAN YUKLEME BOTU")
     print("=" * 60)
+    
+    # Get existing products to prevent duplicates
+    existing_titles = get_existing_products()
+    
+    # Filter products
+    filtered_products = []
+    for orig_idx, p in enumerate(products):
+        if p["name"].lower().strip() in existing_titles:
+            print(f"[-] Urun zaten dukkaninizda var, yuklenmeyecek: {p['name']}")
+        else:
+            p_copy = p.copy()
+            p_copy["orig_idx"] = orig_idx
+            filtered_products.append(p_copy)
+            
+    if not filtered_products:
+        print("Yuklenecek yeni urun bulunmadi. Tum urunler zaten dukkaninizda mevcut!")
+        return
+        
+    print(f"\n[+] Toplam {len(filtered_products)} adet yeni urun yuklenecek.")
     
     img_dir = os.path.join(os.getcwd(), "shopier_images")
     os.makedirs(img_dir, exist_ok=True)
@@ -201,12 +236,12 @@ def main():
         
     print("Basarili: Chrome baglantisi kuruldu.")
     
-    total_products = len(products)
+    total_products = len(filtered_products)
     
     # Go to shopier immediately to let user see it
     driver.get("https://www.shopier.com/m/products.php")
     
-    for idx, p in enumerate(products):
+    for idx, p in enumerate(filtered_products):
         print("\n" + "-" * 50)
         print(f"Urun Yukleniyor [{idx + 1}/{total_products}]: {p['name']}")
         print("-" * 50)
@@ -218,16 +253,16 @@ def main():
         on_add_page = False
         wait_msg_sent = False
         while not on_add_page:
+            current_url = driver.current_url
             try:
-                # Check if subject element exists and is editable
+                # Check if subject element exists and is editable, and we are on products.php page
                 subject_inputs = driver.find_elements(By.ID, "subject")
-                if subject_inputs and subject_inputs[0].is_displayed():
+                if "products.php" in current_url and subject_inputs and subject_inputs[0].is_displayed():
                     on_add_page = True
                     break
             except Exception:
                 pass
                 
-            current_url = driver.current_url
             if "login" in current_url or "index.php" in current_url:
                 print("Lutfen acilan tarayici penceresinde Shopier hesabiniza giris yapin...")
                 time.sleep(4)
@@ -236,8 +271,8 @@ def main():
                     print(f"Urun ekleme formu bekleniyor... (Mevcut URL: {current_url})")
                     wait_msg_sent = True
                 
-                # If they logged in but are on list/dashboard, try to force redirect
-                if "listproduct.php" in current_url or "Showroom" in current_url:
+                # If they are logged in but on a different page, force redirect to products.php
+                if "products.php" not in current_url:
                     try:
                         driver.get("https://www.shopier.com/m/products.php")
                     except Exception:
@@ -278,7 +313,7 @@ def main():
             driver.execute_script("arguments[0].value = '0,00';", cargo_price_input)
             
             # Upload cover image
-            image_path = os.path.join(img_dir, f"product_{idx}.jpg")
+            image_path = os.path.join(img_dir, f"product_{p['orig_idx']}.jpg")
             file_input = driver.find_element(By.ID, "saved-image-picker")
             file_input.send_keys(os.path.abspath(image_path))
             
