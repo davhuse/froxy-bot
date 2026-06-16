@@ -948,14 +948,23 @@ def clear_tickets():
 
 @app.route('/api/debug')
 def debug_status():
-    import psutil, os
+    import psutil, os, time
     procs = []
     for p in psutil.process_iter(['pid', 'name', 'cmdline']):
         try:
+            with p.oneshot():
+                status = p.status()
+                cpu = p.cpu_percent(interval=0.05)
+                mem = p.memory_info().rss
+                ctime = p.create_time()
             procs.append({
                 "pid": p.pid,
                 "name": p.info['name'],
-                "cmdline": p.info['cmdline']
+                "cmdline": p.info['cmdline'],
+                "status": status,
+                "cpu_percent": cpu,
+                "memory_rss_mb": round(mem / (1024 * 1024), 2),
+                "create_time": time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ctime))
             })
         except Exception:
             pass
