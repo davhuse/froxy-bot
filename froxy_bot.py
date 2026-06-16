@@ -415,7 +415,7 @@ async def product_handler(event):
 
     config = load_config() or {}
     links = config.get("shopier_links", SHOPIER_LINKS)
-    shopier_url = links.get(prod_key, "https://www.shopier.com/keyvadi")
+    shopier_url = links.get(prod_key, product.get("url", "https://www.shopier.com/keyvadi"))
 
     price = product['price']
     if lang == "en":
