@@ -7,7 +7,7 @@
   "ad_bot_running": true,
   "support_bot_running": true,
   "send_images": false,
-  "group_cooldown_hours": 1,
+  "group_cooldown_hours": 0.5,
   "spacing_cooldown_minutes": 20,
   "ad_sleep_min": 600,
   "ad_sleep_max": 1200,
