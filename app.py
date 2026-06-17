@@ -264,7 +264,7 @@ def stats():
         try:
             with open("bot_log.txt", "r", encoding="utf-8", errors="replace") as f:
                 for line in f:
-                    if "Mesaj gönderildi!" in line:
+                    if "gönderildi!" in line.lower() or "gonderildi!" in line.lower():
                         sent_count += 1
         except:
             pass
