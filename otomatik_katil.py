@@ -1104,10 +1104,10 @@ async def main():
                         should_leave = False
                         leave_reason = ""
                         if not is_protected:
-                            # FILTRE 1: Min 100 üye
-                            if member_count is not None and member_count < 100:
+                            # FILTRE 1: Min 200 üye
+                            if member_count is not None and member_count < 200:
                                 should_leave = True
-                                leave_reason = f"üye sayısı yetersiz ({member_count} < 100)"
+                                leave_reason = f"üye sayısı yetersiz ({member_count} < 200)"
                             elif member_count is None and not (hasattr(dialog.entity, 'username') and dialog.entity.username):
                                 should_leave = True
                                 leave_reason = "üye sayısı bilinmiyor ve username yok"
@@ -1538,8 +1538,8 @@ async def main():
                             is_protected = hedef_grup.lower() in protected_groups
                             
                             # Korumalı değilse ve üye sayısı 500'den azsa çık ve kara listeye al
-                            if not is_protected and member_count is not None and member_count < 100:
-                                print(f"[{client_name}] 📉 @{hedef_grup} -> Üye sayısı yetersiz ({member_count} < 100). Gruptan çıkılıyor ve kara listeye ekleniyor...")
+                            if not is_protected and member_count is not None and member_count < 200:
+                                print(f"[{client_name}] 📉 @{hedef_grup} -> Üye sayısı yetersiz ({member_count} < 200). Gruptan çıkılıyor ve kara listeye ekleniyor...")
                                 async with state_lock:
                                     save_to_list(hedef_grup, BLACKLIST_FILE)
                                 try:
