@@ -8,6 +8,25 @@ import ssl
 import re
 import html
 
+try:
+    sys.stdout.reconfigure(encoding='utf-8')
+    sys.stderr.reconfigure(encoding='utf-8')
+except Exception:
+    pass
+
+import builtins
+def print(*args, **kwargs):
+    kwargs.setdefault('flush', True)
+    msg = " ".join(str(a) for a in args)
+    builtins.print(*args, **kwargs)
+    try:
+        with open("shopier_upload_log.txt", "a", encoding="utf-8") as f:
+            f.write(msg + "\n")
+    except:
+        pass
+
+
+
 def install_and_import(package):
     try:
         __import__(package)
@@ -191,29 +210,86 @@ def get_existing_products_selenium(driver):
         print(f"Mevcut urunleri tararken hata olustu (atlanıyor): {e}")
     return existing_titles
 
+def safe_send_keys(driver, element_id, text, wait=None):
+    if wait:
+        el = wait.until(EC.presence_of_element_located((By.ID, element_id)))
+    else:
+        el = driver.find_element(By.ID, element_id)
+        
+    driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", el)
+    time.sleep(0.3)
+    driver.execute_script("arguments[0].value = '';", el)
+    time.sleep(0.2)
+    
+    try:
+        # First try normal send_keys
+        wait_click = WebDriverWait(driver, 2)
+        el_clickable = wait_click.until(EC.element_to_be_clickable((By.ID, element_id)))
+        el_clickable.send_keys(text)
+    except Exception as e:
+        print(f"Normal typing failed for {element_id}, trying JS fallback...")
+        driver.execute_script("""
+            arguments[0].value = arguments[1];
+            arguments[0].dispatchEvent(new Event('input', {bubbles: true}));
+            arguments[0].dispatchEvent(new Event('change', {bubbles: true}));
+        """, el, text)
+
 def main():
     print("=" * 60)
-    print("SHOPIER OTOMATIK ILAN YUKLEME BOTU")
+    print("SHOPIER OTOMATIK ILAN YUKLEME BOTU (AI GORSELLER)")
     print("=" * 60)
     
-    img_dir = os.path.join(os.getcwd(), "shopier_images")
-    os.makedirs(img_dir, exist_ok=True)
-    
-    print("\n[1] Urun kapak gorselleri uretiliyor...")
-    for idx, p in enumerate(products):
-        filename = os.path.join(img_dir, f"product_{idx}.jpg")
-        create_gradient_image(p["name"], p["category"], filename)
-    print(f"Basarili: Toplam {len(products)} adet gorsel '{img_dir}' klasorunde hazirlandi.")
+    img_dir = os.path.join(os.getcwd(), "shopier_ai_images")
+    if not os.path.exists(img_dir):
+        print(f"Hata: {img_dir} klasoru bulunamadi! Lutfen once gorselleri uretin.")
+        sys.exit(1)
+        
+    print("\n[1] AI uretimi gorseller hazir olarak algilandi.")
     
     print("\n[2] Tarayici baslatiliyor...")
     options = uc.ChromeOptions()
     options.add_argument("--start-maximized")
     
+    # Auto-detect Chrome version on Windows
+    main_version = None
     try:
-        driver = uc.Chrome(options=options)
+        import winreg
+        try:
+            key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Google\Chrome\BLBeacon")
+            version, _ = winreg.QueryValueEx(key, "version")
+            if version:
+                main_version = int(version.split(".")[0])
+        except Exception:
+            key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Google Chrome")
+            version, _ = winreg.QueryValueEx(key, "DisplayVersion")
+            if version:
+                main_version = int(version.split(".")[0])
+    except Exception as ev:
+        print(f"Chrome surumu kayit defterinden okunamadi: {ev}")
+
+    if main_version:
+        print(f"Tespit edilen Chrome Ana Surumu: {main_version}")
+    else:
+        print("Chrome ana surumu tespit edilemedi, varsayilan kullanilacak.")
+    
+    try:
+        if main_version:
+            driver = uc.Chrome(options=options, version_main=main_version)
+        else:
+            driver = uc.Chrome(options=options)
     except Exception as e:
         print(f"Hata: Tarayici baslatilamadi! Hata: {e}")
-        sys.exit(1)
+        # Try fallback to hardcoded version 149 if it fails
+        if main_version != 149:
+            print("149. surum ile tekrar deneniyor...")
+            try:
+                driver = uc.Chrome(options=options, version_main=149)
+            except Exception as e2:
+                print(f"Yedek deneme de basarisiz oldu: {e2}")
+                sys.exit(1)
+        else:
+            sys.exit(1)
+
         
     print("Basarili: Chrome baglantisi kuruldu.")
     
@@ -290,30 +366,23 @@ def main():
                         pass
                 time.sleep(2)
         # --- END OF DETECTOR LOOP ---
+        time.sleep(3.5) # Give the page overlay/js time to completely load and hide loading screens
         
         try:
             wait = WebDriverWait(driver, 10)
             
             # Title
-            subject_input = wait.until(EC.element_to_be_clickable((By.ID, "subject")))
-            subject_input.clear()
-            subject_input.send_keys(p["name"])
+            safe_send_keys(driver, "subject", p["name"], wait)
             
             # Price
             price_str = f"{p['price']:.2f}".replace(".", ",")
-            price_input = driver.find_element(By.ID, "price")
-            driver.execute_script("arguments[0].value = '';", price_input)
-            price_input.send_keys(price_str)
+            safe_send_keys(driver, "price", price_str)
             
             # Stock
-            stock_input = driver.find_element(By.ID, "stock")
-            driver.execute_script("arguments[0].value = '';", stock_input)
-            stock_input.send_keys("999")
+            safe_send_keys(driver, "stock", "999")
             
             # Description
-            desc_input = driver.find_element(By.ID, "description")
-            desc_input.clear()
-            desc_input.send_keys(p["desc"])
+            safe_send_keys(driver, "description", p["desc"])
             
             # Digital Product Type
             digital_radio = driver.find_element(By.ID, "digital")
