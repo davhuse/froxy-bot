@@ -499,23 +499,51 @@ async def message_handler(event):
     config = load_config() or {}
     admin_chat_id = config.get("admin_id", ADMIN_ID)
 
-    if event.sender_id == admin_chat_id and event.is_reply:
-        reply_msg = await event.get_reply_message()
-        if reply_msg and reply_msg.text:
-            match = re.search(r"Kullanıcı ID:\*\* `(\d+)`", reply_msg.text)
-            if not match:
-                match = re.search(r"Kullanıcı ID: (\d+)", reply_msg.text)
+    if event.sender_id == admin_chat_id:
+        if event.is_reply:
+            reply_msg = await event.get_reply_message()
+            if reply_msg and reply_msg.text:
+                match = re.search(r"Kullanıcı ID:\*\* `(\d+)`", reply_msg.text)
+                if not match:
+                    match = re.search(r"Kullanıcı ID: (\d+)", reply_msg.text)
 
-            if match:
-                target_user_id = int(match.group(1))
+                if match:
+                    target_user_id = int(match.group(1))
+                    target_lang = user_lang_helper.get_user_lang(target_user_id) or "tr"
+                    prefix = TEXTS[target_lang]["reply_prefix"]
+                    
+                    # Clean event.text if it starts with #reply or /reply prefix
+                    text_to_send = event.text.strip()
+                    clean_match = re.match(r"^(?:#reply|/reply)\s*(.*)$", text_to_send, re.DOTALL | re.IGNORECASE)
+                    if clean_match:
+                        text_to_send = clean_match.group(1).strip()
+                        
+                    if not text_to_send:
+                        await event.reply("⚠️ Lütfen boş mesaj göndermeyin.")
+                        return
+
+                    try:
+                        await bot.send_message(target_user_id, f"{prefix}{text_to_send}")
+                        await event.reply("✅ Cevabınız kullanıcıya iletildi.")
+                    except Exception as e:
+                        logger.error(f"Failed to reply to user {target_user_id}: {e}")
+                        await event.reply(f"❌ Cevap iletilemedi. Hata: {e}")
+        elif event.text.startswith("#reply") or event.text.startswith("/reply"):
+            # Command style: #reply <user_id> <message>
+            cmd_match = re.match(r"^(?:#reply|/reply)\s+(\d+)\s+(.+)$", event.text, re.DOTALL | re.IGNORECASE)
+            if cmd_match:
+                target_user_id = int(cmd_match.group(1))
+                message_body = cmd_match.group(2).strip()
                 target_lang = user_lang_helper.get_user_lang(target_user_id) or "tr"
                 prefix = TEXTS[target_lang]["reply_prefix"]
                 try:
-                    await bot.send_message(target_user_id, f"{prefix}{event.text}")
+                    await bot.send_message(target_user_id, f"{prefix}{message_body}")
                     await event.reply("✅ Cevabınız kullanıcıya iletildi.")
                 except Exception as e:
                     logger.error(f"Failed to reply to user {target_user_id}: {e}")
                     await event.reply(f"❌ Cevap iletilemedi. Hata: {e}")
+            else:
+                await event.reply("⚠️ Yanlış format! Kullanım: `#reply [kullanıcı_id] [mesajınız]`")
 
 if __name__ == '__main__':
     logger.info("Loading KeyVadi products cache...")
