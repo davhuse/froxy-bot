@@ -950,16 +950,59 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
             except:
                 pass
                 
+        best_product = None
+        best_score = 0
+        stop_words = {"var", "mi", "mı", "mu", "mü", "ve", "de", "da", "için", "misiniz", "miyiz", "olur", "miyim", "yok", "acaba", "hizmeti", "ürünü", "hesabı", "kodu", "kuponu", "premium"}
+        msg_words = [w.strip() for w in re.split(r'[^a-zA-Z0-9çğıöşüÇĞİÖŞÜ]', msg_text) if w.strip() and w.strip() not in stop_words]
+        
         for p in products:
-            title = p.get("title", "")
-            title_lower = title.lower()
-            keywords = ["canva", "adobe", "creative cloud", "windows", "office", "netflix", "spotify", "trendyol", "shell", "duolingo", "scribd", "capcut", "gamma", "kiro", "whatsapp", "grok", "gemini", "semrush", "freepik", "envato"]
-            for kw in keywords:
-                if kw in msg_text and kw in title_lower:
-                    matched_product = p
-                    break
-            if matched_product:
-                break
+            title_lower = p.get("title", "").lower()
+            score = 0
+            
+            for word in msg_words:
+                if len(word) > 1 and word in title_lower:
+                    score += 10
+                    
+            if len(msg_words) >= 2:
+                for i in range(len(msg_words) - 1):
+                    phrase = f"{msg_words[i]} {msg_words[i+1]}"
+                    if phrase in title_lower:
+                        score += 30
+            
+            if "ultra" in msg_text and "ultra" not in title_lower:
+                score -= 100
+            if "ultra" not in msg_text and "ultra" in title_lower:
+                score -= 50
+                
+            if "pro" in msg_text and "pro" not in title_lower:
+                score -= 50
+            if "pro" not in msg_text and "pro" in title_lower:
+                if "ultra" in msg_text:
+                    score -= 50
+            
+            if "yemek" in msg_text and "yemek" not in title_lower:
+                score -= 100
+            if "yemek" not in msg_text and "yemek" in title_lower:
+                if "market" in msg_text:
+                    score -= 100
+            
+            if "market" in msg_text and "market" not in title_lower:
+                score -= 100
+            if "market" not in msg_text and "market" in title_lower:
+                if "yemek" in msg_text:
+                    score -= 100
+                    
+            if "windows" in msg_text and "windows" not in title_lower:
+                score -= 100
+            if "office" in msg_text and "office" not in title_lower:
+                score -= 100
+                
+            if score > best_score:
+                best_score = score
+                best_product = p
+                
+        if best_score >= 10:
+            matched_product = best_product
         
         if is_keyvadi:
             if matched_product:
