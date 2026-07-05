@@ -906,6 +906,107 @@ def register_admin_handler(client, client_name, joined_dialogs):
         except Exception as ex:
             print(f"[{client_name}] ⚠️ Admin yanıt işleme hatası: {ex}")
 
+replied_users_cooldown = {}
+
+def register_auto_reply_handler(client, client_name, our_user_ids):
+    @client.on(events.NewMessage(incoming=True))
+    async def handle_private_message(event):
+        if not event.is_private:
+            return
+            
+        sender = await event.get_sender()
+        if not sender:
+            return
+            
+        sender_id = sender.id
+        if sender_id in our_user_ids:
+            return
+            
+        admin_id = None
+        if os.path.exists("bot_config.json"):
+            try:
+                with open("bot_config.json", "r", encoding="utf-8") as f:
+                    cfg = json.load(f)
+                    admin_id = cfg.get("admin_id")
+            except:
+                pass
+        if admin_id and sender_id == int(admin_id):
+            return
+
+        import time
+        now = time.time()
+        cooldown_key = (client_name, sender_id)
+        if cooldown_key in replied_users_cooldown:
+            if now - replied_users_cooldown[cooldown_key] < 3600:
+                return
+                
+        replied_users_cooldown[cooldown_key] = now
+        
+        msg_text = (event.raw_text or "").strip().lower()
+        if not msg_text:
+            return
+
+        is_keyvadi = "2" in client_name
+        
+        matched_product = None
+        products = []
+        if os.path.exists("parsed_keyvadi_products.json"):
+            try:
+                with open("parsed_keyvadi_products.json", "r", encoding="utf-8") as f:
+                    products = json.load(f)
+            except:
+                pass
+                
+        for p in products:
+            title = p.get("title", "")
+            title_lower = title.lower()
+            keywords = ["canva", "adobe", "creative cloud", "windows", "office", "netflix", "spotify", "trendyol", "shell", "duolingo", "scribd", "capcut", "gamma", "kiro", "whatsapp", "grok", "gemini", "semrush", "freepik", "envato"]
+            for kw in keywords:
+                if kw in msg_text and kw in title_lower:
+                    matched_product = p
+                    break
+            if matched_product:
+                break
+        
+        if is_keyvadi:
+            if matched_product:
+                reply_text = (
+                    f"Merhaba! Aradığınız ürün (**{matched_product['title']}**) stoklarımızda mevcuttur.\n"
+                    f"💰 Fiyatı: **{matched_product['price']}**\n\n"
+                    f"🔗 Güvenli satın almak için doğrudan sipariş linkiniz:\n"
+                    f"{matched_product['url']}\n\n"
+                    f"7/24 otomatik teslimat yapılır. Tüm ürün kataloğumuzu incelemek için botumuzu da kullanabilirsiniz: @KeyVadiSatisBot"
+                )
+            else:
+                reply_text = (
+                    "Merhaba! KeyVadi Premium Hesap & Lisans satış platformuna hoş geldiniz. 😊\n\n"
+                    "Canva Pro, Adobe Creative Cloud, Windows/Office Lisans Keyleri, GPT-4 / Gemini Pro, Netflix, Spotify, Trendyol Yemek Kuponları ve daha yüzlerce ürünümüz anında teslimatla stoklardadır.\n\n"
+                    "👉 Tüm ürün kataloğumuzu görmek, fiyatları incelemek ve anında 7/24 otomatik satın almak için resmi satış botumuzu başlatın:\n\n"
+                    "🔗 @KeyVadiSatisBot"
+                )
+        else:
+            is_lisans_question = any(kw in msg_text for kw in ["canva", "adobe", "windows", "office", "netflix", "spotify", "trendyol", "yemek", "lisans", "key"])
+            if is_lisans_question:
+                reply_text = (
+                    "Merhaba! Aradığınız premium hesap ve lisans ürünleri (Canva, Adobe, Windows/Office, Yemek Kuponları vb.) kardeş platformumuz **KeyVadi**'de satılmaktadır.\n\n"
+                    "👉 Ürünleri incelemek ve 7/24 otomatik satın almak için lütfen KeyVadi botunu başlatın:\n\n"
+                    "🔗 @KeyVadiSatisBot"
+                )
+            else:
+                reply_text = (
+                    "Merhaba! Froxy AI Yapay Zeka platformuna hoş geldiniz. 🤖\n\n"
+                    "Froxy AI ile tek bir panelden GPT-4, Claude 3.5, Gemini 1.5, Midjourney ve +18 sansürsüz yapay zeka modellerine sınırsız erişim sağlayabilirsiniz.\n\n"
+                    "🎁 Hemen bota giriş yaparak **100 ücretsiz test kredinizi** alabilir ve deneyebilirsiniz.\n\n"
+                    "👉 Bota başlamak ve paketleri incelemek için:\n\n"
+                    "🔗 @FroxyDestekBOT"
+                )
+                
+        try:
+            await event.reply(reply_text)
+            print(f"[{client_name}] ✉️ Özel mesaj otomatik yanıtlandı: @{sender.username or sender_id} -> {msg_text[:50]}")
+        except Exception as e:
+            print(f"[{client_name}] ⚠️ Özel mesaj otomatik yanıtlanırken hata: {e}")
+
 async def main():
     print("\n🚀 Habil Reklam Botu v2 - Akıllı Mod")
     print("-----------------------------------")
@@ -1755,6 +1856,7 @@ async def main():
     tasks = []
     for client, name, j_dialogs in active_clients:
         register_admin_handler(client, name, j_dialogs)
+        register_auto_reply_handler(client, name, our_user_ids)
         tasks.append(run_worker_supervisor(client, name, j_dialogs))
     
     # Scraper ve Firestore sync'i arka planda çalıştır
