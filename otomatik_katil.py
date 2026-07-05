@@ -933,14 +933,7 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         if admin_id and sender_id == int(admin_id):
             return
 
-        import time
-        now = time.time()
-        cooldown_key = (client_name, sender_id)
-        if cooldown_key in replied_users_cooldown:
-            if now - replied_users_cooldown[cooldown_key] < 3600:
-                return
-                
-        replied_users_cooldown[cooldown_key] = now
+        # Cooldown check removed by user request
         
         msg_text = (event.raw_text or "").strip().lower()
         if not msg_text:
