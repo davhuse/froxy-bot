@@ -1045,7 +1045,7 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         import firestore_helper
         presence = firestore_helper.get_document("habil_presence") or {}
         is_online = presence.get("is_online", False)
-        status_text = "🟢 **Habil Çevrimiçi:** Şu an aktifim, mesajınıza en kısa sürede yanıt vereceğim. 😊" if is_online else "🔴 **Habil Çevrimdışı:** Şu an aktif değilim ancak mesajınızı bırakırsanız giriş yaptığımda yanıtlayacağım."
+        status_text = "🟢 **Destek Çevrimiçi:** Şu an aktifiz, mesajınıza en kısa sürede yanıt vereceğiz. 😊" if is_online else "🔴 **Destek Çevrimdışı:** Şu an aktif değiliz ancak mesajınızı bırakırsanız en kısa sürede yanıtlayacağız."
 
         if is_keyvadi:
             if matched_product:

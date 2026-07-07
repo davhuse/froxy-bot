@@ -244,7 +244,7 @@ async def show_main_menu(event, user_id, is_callback=False):
     
     presence = firestore_helper.get_document("habil_presence") or {}
     is_online = presence.get("is_online", False)
-    status_emoji = "🟢 **Habil Çevrimiçi / Online**" if is_online else "🔴 **Habil Çevrimdışı / Offline**"
+    status_emoji = "🟢 **Destek Çevrimiçi / Support Online**" if is_online else "🔴 **Destek Çevrimdışı / Support Offline**"
     
     welcome_text = (
         f"{status_emoji}\n"
