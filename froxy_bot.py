@@ -278,7 +278,16 @@ async def show_main_menu(event, user_id, is_callback=False):
     lang = user_lang_helper.get_user_lang(user_id) or "tr"
     t = TEXTS[lang]
     
-    welcome = t["welcome"]
+    presence = firestore_helper.get_document("habil_presence") or {}
+    is_online = presence.get("is_online", False)
+    status_emoji = "🟢 **Habil Çevrimiçi / Online**" if is_online else "🔴 **Habil Çevrimdışı / Offline**"
+    
+    welcome = (
+        f"{status_emoji}\n"
+        f"━━━━━━━━━━━━━━━━━━━\n\n"
+        f"{t['welcome']}"
+    )
+    
     buttons = []
     for cat_key, cat in CATEGORIES.items():
         if cat["products"]:

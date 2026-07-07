@@ -242,7 +242,16 @@ async def show_main_menu(event, user_id, is_callback=False):
     lang = user_lang_helper.get_user_lang(user_id) or "tr"
     t = TEXTS[lang]
     
-    welcome_text = t["welcome"]
+    presence = firestore_helper.get_document("habil_presence") or {}
+    is_online = presence.get("is_online", False)
+    status_emoji = "🟢 **Habil Çevrimiçi / Online**" if is_online else "🔴 **Habil Çevrimdışı / Offline**"
+    
+    welcome_text = (
+        f"{status_emoji}\n"
+        f"━━━━━━━━━━━━━━━━━━━\n\n"
+        f"{t['welcome']}"
+    )
+    
     buttons = [
         [Button.inline(t["packages_btn"], b"menu_packages")],
         [Button.inline("💳 Ödememi Doğrula / Verify Payment", b"menu_verify_payment")],

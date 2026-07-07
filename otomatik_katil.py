@@ -927,6 +927,23 @@ def save_welcomed_users():
 
 load_welcomed_users()
 
+async def presence_watchdog(client):
+    from telethon.tl.types import UserStatusOnline, UserStatusRecently
+    import firestore_helper
+    import asyncio
+    print("[Presence Watchdog] Starting Habil presence tracker...")
+    while True:
+        try:
+            admin_user = await client.get_entity('Haacet')
+            is_online = False
+            if admin_user and admin_user.status:
+                is_online = isinstance(admin_user.status, (UserStatusOnline, UserStatusRecently))
+            
+            firestore_helper.set_document("habil_presence", {"is_online": is_online})
+        except Exception as e:
+            print(f"[Presence Watchdog] Habil status check error: {e}")
+        await asyncio.sleep(60)
+
 def register_auto_reply_handler(client, client_name, our_user_ids):
     @client.on(events.NewMessage(incoming=True))
     async def handle_private_message(event):
@@ -1025,16 +1042,9 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         if not matched_product and welcome_key in welcomed_users:
             return
 
-        from telethon.tl.types import UserStatusOnline, UserStatusRecently
-        is_online = False
-        target_admin_id = 6827847544  # Habil's personal Telegram ID (@Haacet)
-        try:
-            admin_user = await client.get_entity(target_admin_id)
-            if admin_user and admin_user.status:
-                is_online = isinstance(admin_user.status, (UserStatusOnline, UserStatusRecently))
-        except Exception as e:
-            print(f"[{client_name}] Habil status check error: {e}")
-            
+        import firestore_helper
+        presence = firestore_helper.get_document("habil_presence") or {}
+        is_online = presence.get("is_online", False)
         status_text = "🟢 **Habil Çevrimiçi:** Şu an aktifim, mesajınıza en kısa sürede yanıt vereceğim. 😊" if is_online else "🔴 **Habil Çevrimdışı:** Şu an aktif değilim ancak mesajınızı bırakırsanız giriş yaptığımda yanıtlayacağım."
 
         if is_keyvadi:
@@ -1123,6 +1133,7 @@ async def main():
                 me = await client1.get_me()
                 active_clients.append((client1, "Hesap #1", {"id": me.id}))
                 print(f"✅ 1. Hesap yetkilendirildi ve aktif edildi. ID: {me.id}")
+                client1.loop.create_task(presence_watchdog(client1))
             else:
                 print("❌ HATA: 1. Hesap yetkilendirilmemiş!")
         except Exception as e:
