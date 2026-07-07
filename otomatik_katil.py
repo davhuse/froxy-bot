@@ -907,6 +907,25 @@ def register_admin_handler(client, client_name, joined_dialogs):
             print(f"[{client_name}] ⚠️ Admin yanıt işleme hatası: {ex}")
 
 replied_users_cooldown = {}
+welcomed_users = set()
+
+def load_welcomed_users():
+    global welcomed_users
+    if os.path.exists("welcomed_users.json"):
+        try:
+            with open("welcomed_users.json", "r", encoding="utf-8") as f:
+                welcomed_users = set(json.load(f))
+        except:
+            pass
+
+def save_welcomed_users():
+    try:
+        with open("welcomed_users.json", "w", encoding="utf-8") as f:
+            json.dump(list(welcomed_users), f)
+    except:
+        pass
+
+load_welcomed_users()
 
 def register_auto_reply_handler(client, client_name, our_user_ids):
     @client.on(events.NewMessage(incoming=True))
@@ -933,8 +952,6 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         if admin_id and sender_id == int(admin_id):
             return
 
-        # Cooldown check removed by user request
-        
         msg_text = (event.raw_text or "").strip().lower()
         if not msg_text:
             return
@@ -1003,7 +1020,23 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                 
         if best_score >= 10:
             matched_product = best_product
-        
+            
+        welcome_key = f"{client_name}_{sender_id}"
+        if not matched_product and welcome_key in welcomed_users:
+            return
+
+        from telethon.tl.types import UserStatusOnline
+        is_online = False
+        if admin_id:
+            try:
+                admin_user = await client.get_entity(int(admin_id))
+                if admin_user and admin_user.status:
+                    is_online = isinstance(admin_user.status, UserStatusOnline)
+            except Exception as e:
+                print(f"[{client_name}] Admin status fetch error: {e}")
+                
+        status_text = "🟢 **Yönetici Çevrimiçi:** Şu an aktifiz, mesajınıza en kısa sürede yanıt vereceğiz." if is_online else "🔴 **Yönetici Çevrimdışı:** Şu an aktif değiliz ancak mesajınızı bırakırsanız en kısa sürede yanıtlayacağız."
+
         if is_keyvadi:
             if matched_product:
                 reply_text = (
@@ -1011,15 +1044,24 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                     f"💰 Fiyatı: **{matched_product['price']}**\n\n"
                     f"🔗 Güvenli satın almak için doğrudan sipariş linkiniz:\n"
                     f"{matched_product['url']}\n\n"
-                    f"7/24 otomatik teslimat yapılır. Tüm ürün kataloğumuzu incelemek için botumuzu da kullanabilirsiniz: @KeyVadiSatisBot"
+                    f"⚡ 7/24 otomatik teslimat yapılır.\n\n"
+                    f"━━━━━━━━━━━━━━━━━━━\n"
+                    f"{status_text}\n"
+                    f"━━━━━━━━━━━━━━━━━━━\n\n"
+                    f"Tüm ürün kataloğumuzu incelemek için botumuzu da kullanabilirsiniz: @KeyVadiSatisBot"
                 )
             else:
                 reply_text = (
                     "Merhaba! KeyVadi Premium Hesap & Lisans satış platformuna hoş geldiniz. 😊\n\n"
                     "Canva Pro, Adobe Creative Cloud, Windows/Office Lisans Keyleri, GPT-4 / Gemini Pro, Netflix, Spotify, Trendyol Yemek Kuponları ve daha yüzlerce ürünümüz anında teslimatla stoklardadır.\n\n"
+                    "━━━━━━━━━━━━━━━━━━━\n"
+                    f"{status_text}\n"
+                    f"━━━━━━━━━━━━━━━━━━━\n\n"
                     "👉 Tüm ürün kataloğumuzu görmek, fiyatları incelemek ve anında 7/24 otomatik satın almak için resmi satış botumuzu başlatın:\n\n"
                     "🔗 @KeyVadiSatisBot"
                 )
+                welcomed_users.add(welcome_key)
+                save_welcomed_users()
         else:
             is_lisans_question = any(kw in msg_text for kw in ["canva", "adobe", "windows", "office", "netflix", "spotify", "trendyol", "yemek", "lisans", "key"])
             if is_lisans_question:
@@ -1033,9 +1075,14 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                     "Merhaba! Froxy AI Yapay Zeka platformuna hoş geldiniz. 🤖\n\n"
                     "Froxy AI ile tek bir panelden GPT-4, Claude 3.5, Gemini 1.5, Midjourney ve +18 sansürsüz yapay zeka modellerine sınırsız erişim sağlayabilirsiniz.\n\n"
                     "🎁 Hemen bota giriş yaparak **100 ücretsiz test kredinizi** alabilir ve deneyebilirsiniz.\n\n"
+                    "━━━━━━━━━━━━━━━━━━━\n"
+                    f"{status_text}\n"
+                    f"━━━━━━━━━━━━━━━━━━━\n\n"
                     "👉 Bota başlamak ve paketleri incelemek için:\n\n"
                     "🔗 @FroxyDestekBOT"
                 )
+                welcomed_users.add(welcome_key)
+                save_welcomed_users()
                 
         try:
             await event.reply(reply_text)
