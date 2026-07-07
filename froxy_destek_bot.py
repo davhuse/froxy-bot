@@ -5,6 +5,7 @@ import re
 from telethon import TelegramClient, events, Button
 from telethon.sessions import StringSession
 import user_lang_helper
+import firestore_helper
 
 # Logging configuration
 logging.basicConfig(
@@ -244,6 +245,8 @@ async def show_main_menu(event, user_id, is_callback=False):
     welcome_text = t["welcome"]
     buttons = [
         [Button.inline(t["packages_btn"], b"menu_packages")],
+        [Button.inline("💳 Ödememi Doğrula / Verify Payment", b"menu_verify_payment")],
+        [Button.inline("👥 Arkadaşını Davet Et / Invite Friends", b"menu_referral")],
         [Button.inline(t["support_btn"], b"menu_support")],
         [Button.inline(t["lang_btn"], b"menu_lang")],
         [Button.url(t["web_btn"], "https://froxyai.com")]
@@ -254,15 +257,81 @@ async def show_main_menu(event, user_id, is_callback=False):
     else:
         await event.respond(welcome_text, buttons=buttons)
 
+@bot.on(events.CallbackQuery(data=b'menu_verify_payment'))
+async def verify_payment_callback(event):
+    user_id = event.sender_id
+    user_states[user_id] = "AWAITING_VERIFY_PAYMENT_INFO"
+    
+    text = (
+        "💳 **Shopier Ödeme Doğrulama**\n\n"
+        "Ödeme yaparken kullandığınız **E-posta** adresini veya **Telefon** numarasını yazıp bu sohbete gönderin. "
+        "Kredileriniz saniyeler içinde otomatik olarak hesabınıza tanımlanacaktır.\n\n"
+        "*(Vazgeçmek için /start yazabilirsiniz)*"
+    )
+    buttons = [
+        [Button.inline("↩️ Vazgeç ve Geri Dön", b"menu_main")]
+    ]
+    await event.edit(text, buttons=buttons)
+
 # Start Handler
 @bot.on(events.NewMessage(pattern='/start'))
 async def start_handler(event):
     user_id = event.sender_id
+    
+    ban_data = firestore_helper.get_document(f"ban_{user_id}")
+    if ban_data and ban_data.get("banned", False):
+        await event.respond("⚠️ **Hesabınız askıya alınmıştır.** İletişime geçmek için yöneticinize başvurun.")
+        return
+        
     user_states[user_id] = None
+    
+    message_text = event.message.message or ""
+    ref_id = None
+    if " " in message_text:
+        parts = message_text.split(" ", 1)
+        param = parts[1].strip()
+        if param.startswith("ref_"):
+            ref_id = param.replace("ref_", "")
+            
+    user_doc_id = f"user_{user_id}"
+    user_data = firestore_helper.get_document(user_doc_id)
+    is_new = False
+    
+    if not user_data:
+        is_new = True
+        user_data = {
+            "credits": 100,
+            "referred_by": ref_id or "",
+            "id": user_id
+        }
+        if ref_id:
+            user_data["credits"] = 200
+        firestore_helper.set_document(user_doc_id, user_data)
+        
+        if ref_id:
+            ref_doc_id = f"user_{ref_id}"
+            ref_data = firestore_helper.get_document(ref_doc_id)
+            if ref_data:
+                ref_data["credits"] = ref_data.get("credits", 100) + 500
+                firestore_helper.set_document(ref_doc_id, ref_data)
+                try:
+                    await bot.send_message(int(ref_id), "🎉 **Tebrikler!** Davet ettiğiniz bir arkadaşınız bota katıldı. Hesabınıza **+500 Kredi** yüklendi!")
+                except Exception:
+                    pass
+            else:
+                ref_data = {
+                    "credits": 600,
+                    "referred_by": "",
+                    "id": int(ref_id)
+                }
+                firestore_helper.set_document(ref_doc_id, ref_data)
+
     lang = user_lang_helper.get_user_lang(user_id)
     if not lang:
         await show_lang_selection(event)
     else:
+        if is_new and ref_id:
+            await event.respond("🎁 **Davet Bonusu:** Bota davet linkiyle katıldığınız için hesabınıza **+100 Hediye Kredi** tanımlandı! (Toplam 200 Kredi)")
         await show_main_menu(event, user_id)
 
 @bot.on(events.NewMessage(pattern=r'/lang|/dil'))
@@ -298,13 +367,41 @@ async def packages_menu_handler(event):
     user_id = event.sender_id
     lang = user_lang_helper.get_user_lang(user_id) or "tr"
     t = TEXTS[lang]
+    
+    user_data = firestore_helper.get_document(f"user_{user_id}") or {"credits": 100}
+    credits = user_data.get("credits", 100)
 
     buttons = []
     for label, pkg_key in t["pkg_btn_list"]:
         buttons.append([Button.inline(label, pkg_key.encode())])
     buttons.append([Button.inline(t["main_menu"], b"menu_main")])
 
-    await event.edit(t["pkg_menu_title"], buttons=buttons)
+    title_text = (
+        f"💰 **Mevcut Krediniz:** `{credits} Kredi`\n\n"
+        f"{t['pkg_menu_title']}"
+    )
+    await event.edit(title_text, buttons=buttons)
+
+@bot.on(events.CallbackQuery(data=b'menu_referral'))
+async def menu_referral_handler(event):
+    user_id = event.sender_id
+    user_data = firestore_helper.get_document(f"user_{user_id}") or {"credits": 100}
+    credits = user_data.get("credits", 100)
+    
+    text = (
+        "👥 **Froxy AI Davet & Kazan Sistemi**\n\n"
+        f"💰 **Mevcut Krediniz:** `{credits} Kredi`\n\n"
+        "Arkadaşlarınızı davet ederek ücretsiz krediler kazanabilirsiniz! 🎁\n\n"
+        "• Davet ettiğiniz her yeni üye için **+500 Kredi** kazanırsınız.\n"
+        "• Davet linkinizle katılan arkadaşınız **100 Hediye Kredi** kazanır.\n\n"
+        "🔗 **Sizin Davet Linkiniz:**\n"
+        f"`https://t.me/FroxyDestekBOT?start=ref_{user_id}`\n\n"
+        "*(Yukarıdaki linke tıklayarak kopyalayabilir ve arkadaşlarınıza gönderebilirsiniz.)*"
+    )
+    buttons = [
+        [Button.inline("↩️ Ana Menü", b"menu_main")]
+    ]
+    await event.edit(text, buttons=buttons)
 
 # Package detail handler
 @bot.on(events.CallbackQuery(pattern=r'pkg_(\w+)'))
@@ -356,6 +453,98 @@ async def support_menu_handler(event):
 @bot.on(events.NewMessage)
 async def message_handler(event):
     user_id = event.sender_id
+    
+    # Ban check
+    ban_data = firestore_helper.get_document(f"ban_{user_id}")
+    if ban_data and ban_data.get("banned", False):
+        return
+
+    if user_states.get(user_id) == "AWAITING_VERIFY_PAYMENT_INFO":
+        if event.text.startswith('/'):
+            user_states[user_id] = None
+            return
+            
+        input_val = event.text.strip().lower()
+        if "@" in input_val:
+            doc_id = "order_email_" + input_val.replace("@", "_").replace(".", "_")
+        else:
+            doc_id = "order_phone_" + input_val.replace("+", "").replace(" ", "")
+            
+        orders_doc = firestore_helper.get_document(doc_id)
+        if not orders_doc or not orders_doc.get("orders"):
+            await event.respond("❌ **Sipariş bulunamadı!** Girdiğiniz bilgiyi kontrol edip tekrar deneyin veya desteğe yazın. (Ödeme sonrası 1-2 dakika gecikme olabilir).")
+            user_states[user_id] = None
+            return
+            
+        orders = orders_doc.get("orders", [])
+        unclaimed_order = None
+        unclaimed_idx = -1
+        for i, o in enumerate(orders):
+            if not o.get("claimed", False):
+                unclaimed_order = o
+                unclaimed_idx = i
+                break
+                
+        if not unclaimed_order:
+            await event.respond("⚠️ **Bu bilgilere ait tüm siparişler zaten tanımlanmış!** Yardım isterseniz canlı destekten bize yazabilirsiniz.")
+            user_states[user_id] = None
+            return
+            
+        prod_name = unclaimed_order.get("product_name", "").lower()
+        credits_to_add = 0
+        pkg_title = "Bilinmeyen Paket"
+        
+        if "baslangic" in prod_name or "5.000" in prod_name or "5k" in prod_name or "starter" in prod_name:
+            credits_to_add = 5000
+            pkg_title = "🚀 Başlangıç Paketi (5.000 Kredi)"
+        elif "populer" in prod_name or "15.000" in prod_name or "15k" in prod_name or "popular" in prod_name:
+            credits_to_add = 15000
+            pkg_title = "⭐ Popüler Paket (15.000 Kredi)"
+        elif "profesyonel" in prod_name or "50.000" in prod_name or "50k" in prod_name or "professional" in prod_name:
+            credits_to_add = 50000
+            pkg_title = "💼 Profesyonel Paket (50.000 Kredi)"
+        else:
+            credits_to_add = 5000
+            pkg_title = f"Özel Paket ({unclaimed_order.get('product_name')})"
+            
+        user_doc_id = f"user_{user_id}"
+        user_data = firestore_helper.get_document(user_doc_id) or {
+            "credits": 100,
+            "referred_by": "",
+            "id": user_id
+        }
+        user_data["credits"] = user_data.get("credits", 100) + credits_to_add
+        firestore_helper.set_document(user_doc_id, user_data)
+        
+        orders[unclaimed_idx]["claimed"] = True
+        firestore_helper.set_document(doc_id, orders_doc)
+        
+        await event.respond(
+            f"✅ **Ödemeniz Başarıyla Doğrulandı!**\n\n"
+            f"📦 **Satın Alınan:** {pkg_title}\n"
+            f"🎯 **Tanımlanan Kredi:** +{credits_to_add} Kredi\n"
+            f"💰 **Yeni Kredi Bakiyeniz:** {user_data['credits']} Kredi\n\n"
+            f"Froxy AI'ı keyifle kullanın! 🤖"
+        )
+        
+        try:
+            config = load_config() or {}
+            admin_chat_id = config.get("froxy_admin_id", config.get("admin_id", ADMIN_ID))
+            if admin_chat_id:
+                await bot.send_message(
+                    admin_chat_id, 
+                    f"💰 **Shopier Otomatik Satış Bildirimi!**\n"
+                    f"👤 **Kullanıcı:** `{user_id}`\n"
+                    f"📦 **Ürün:** {pkg_title}\n"
+                    f"💵 **Tutar:** {unclaimed_order.get('amount')} ₺\n"
+                    f"🔑 **Sipariş ID:** `{unclaimed_order.get('order_id')}`\n"
+                    f"📧 **E-posta/Telefon:** {input_val}"
+                )
+        except Exception:
+            pass
+            
+        user_states[user_id] = None
+        return
 
     if user_states.get(user_id) == "AWAITING_SUPPORT":
         if event.text.startswith('/'):
@@ -388,8 +577,20 @@ async def message_handler(event):
             f"*(Bu mesajı yanıtlayarak (Reply) doğrudan kullanıcıya cevap gönderebilirsiniz.)*"
         )
 
+        # Admin action buttons
+        admin_buttons = [
+            [
+                Button.inline("➕ 100 Kredi Ekle", f"adm_add_{user_id}_100".encode()),
+                Button.inline("➕ 1.000 Kredi Ekle", f"adm_add_{user_id}_1000".encode())
+            ],
+            [
+                Button.inline("➕ 5.000 Kredi Ekle", f"adm_add_{user_id}_5000".encode()),
+                Button.inline("🚫 Kullanıcıyı Engelle (Ban)", f"adm_ban_{user_id}".encode())
+            ]
+        ]
+
         try:
-            await bot.send_message(admin_chat_id, admin_msg)
+            await bot.send_message(admin_chat_id, admin_msg, buttons=admin_buttons)
             await event.respond(t["support_success"])
             save_ticket_to_file("Froxy AI", user_id, first_name, last_name, username, event.text)
         except Exception as e:
@@ -447,6 +648,53 @@ async def message_handler(event):
                     await event.reply(f"❌ Cevap iletilemedi. Hata: {e}")
             else:
                 await event.reply("⚠️ Yanlış format! Kullanım: `#reply [kullanıcı_id] [mesajınız]`")
+
+# Admin Action Callbacks
+@bot.on(events.CallbackQuery(pattern=r'adm_add_(\d+)_(\d+)'))
+async def admin_add_credits_callback(event):
+    config = load_config() or {}
+    admin_chat_id = config.get("froxy_admin_id", config.get("admin_id", ADMIN_ID))
+    if event.sender_id != admin_chat_id:
+        await event.answer("⚠️ Bu işlem için yetkiniz yok!", alert=True)
+        return
+        
+    target_user_id = int(event.pattern_match.group(1))
+    amount = int(event.pattern_match.group(2))
+    
+    user_doc_id = f"user_{target_user_id}"
+    user_data = firestore_helper.get_document(user_doc_id) or {
+        "credits": 100,
+        "referred_by": "",
+        "id": target_user_id
+    }
+    user_data["credits"] = user_data.get("credits", 100) + amount
+    firestore_helper.set_document(user_doc_id, user_data)
+    
+    try:
+        await bot.send_message(target_user_id, f"🎁 **Yönetici Bonusu:** Hesabınıza **+{amount} Kredi** tanımlandı! Yeni bakiyeniz: `{user_data['credits']} Kredi`")
+    except Exception:
+        pass
+        
+    await event.answer(f"✅ Kullanıcıya {amount} kredi tanımlandı.", alert=True)
+    original_text = event.message.text
+    await event.edit(f"{original_text}\n\n⚙️ **Aksiyon:** Kullanıcıya {amount} kredi tanımlandı. (Yönetici: @{event.sender.username or event.sender_id})")
+
+@bot.on(events.CallbackQuery(pattern=r'adm_ban_(\d+)'))
+async def admin_ban_user_callback(event):
+    config = load_config() or {}
+    admin_chat_id = config.get("froxy_admin_id", config.get("admin_id", ADMIN_ID))
+    if event.sender_id != admin_chat_id:
+        await event.answer("⚠️ Bu işlem için yetkiniz yok!", alert=True)
+        return
+        
+    target_user_id = int(event.pattern_match.group(1))
+    
+    ban_doc_id = f"ban_{target_user_id}"
+    firestore_helper.set_document(ban_doc_id, {"banned": True, "id": target_user_id})
+    
+    await event.answer("🚫 Kullanıcı engellendi.", alert=True)
+    original_text = event.message.text
+    await event.edit(f"{original_text}\n\n⚙️ **Aksiyon:** Kullanıcı engellendi. (Yönetici: @{event.sender.username or event.sender_id})")
 
 if __name__ == '__main__':
     logger.info("Starting Froxy AI Support Bot (@FroxyDestekBOT)...")

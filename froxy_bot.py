@@ -9,6 +9,7 @@ import asyncio
 from telethon import TelegramClient, events, Button
 from telethon.sessions import StringSession
 import user_lang_helper
+import firestore_helper
 
 # Logging configuration
 logging.basicConfig(
@@ -284,6 +285,8 @@ async def show_main_menu(event, user_id, is_callback=False):
             title = t["cat_title_mapping"].get(cat_key, cat["title"])
             buttons.append([Button.inline(title, f"cat_{cat_key}".encode())])
             
+    buttons.append([Button.inline("💳 Ödememi Doğrula / Verify Payment", b"menu_verify_payment")])
+    buttons.append([Button.inline("👥 Arkadaşını Davet Et / Invite Friends", b"menu_referral")])
     buttons.append([Button.inline(t["support_btn"], b"menu_support")])
     buttons.append([Button.inline(t["lang_btn"], b"menu_lang")])
     
@@ -292,11 +295,73 @@ async def show_main_menu(event, user_id, is_callback=False):
     else:
         await event.respond(welcome, buttons=buttons)
 
+@bot.on(events.CallbackQuery(data=b'menu_verify_payment'))
+async def verify_payment_callback(event):
+    user_id = event.sender_id
+    user_states[user_id] = "AWAITING_VERIFY_PAYMENT_INFO"
+    
+    text = (
+        "💳 **Shopier Ödeme Doğrulama**\n\n"
+        "Ödeme yaparken kullandığınız **E-posta** adresini veya **Telefon** numarasını yazıp bu sohbete gönderin. "
+        "Satın aldığınız ürünün lisans kodu saniyeler içinde otomatik olarak teslim edilecektir.\n\n"
+        "*(Vazgeçmek için /start yazabilirsiniz)*"
+    )
+    buttons = [
+        [Button.inline("↩️ Vazgeç ve Geri Dön", b"menu_main")]
+    ]
+    await event.edit(text, buttons=buttons)
+
 # Start Handler
 @bot.on(events.NewMessage(pattern='/start'))
 async def start_handler(event):
     user_id = event.sender_id
+    
+    ban_data = firestore_helper.get_document(f"keyvadi_ban_{user_id}")
+    if ban_data and ban_data.get("banned", False):
+        await event.respond("⚠️ **Hesabınız askıya alınmıştır.** İletişime geçmek için yöneticinize başvurun.")
+        return
+        
     user_states[user_id] = None
+    
+    message_text = event.message.message or ""
+    ref_id = None
+    if " " in message_text:
+        parts = message_text.split(" ", 1)
+        param = parts[1].strip()
+        if param.startswith("ref_"):
+            ref_id = param.replace("ref_", "")
+            
+    user_doc_id = f"keyvadi_user_{user_id}"
+    user_data = firestore_helper.get_document(user_doc_id)
+    is_new = False
+    
+    if not user_data:
+        is_new = True
+        user_data = {
+            "referrals_count": 0,
+            "referred_by": ref_id or "",
+            "id": user_id
+        }
+        firestore_helper.set_document(user_doc_id, user_data)
+        
+        if ref_id:
+            ref_doc_id = f"keyvadi_user_{ref_id}"
+            ref_data = firestore_helper.get_document(ref_doc_id)
+            if ref_data:
+                ref_data["referrals_count"] = ref_data.get("referrals_count", 0) + 1
+                firestore_helper.set_document(ref_doc_id, ref_data)
+                try:
+                    await bot.send_message(int(ref_id), "🎉 **Tebrikler!** Bir arkadaşınız davetinizle KeyVadi'ye katıldı. Davet sayınız güncellendi!")
+                except Exception:
+                    pass
+            else:
+                ref_data = {
+                    "referrals_count": 1,
+                    "referred_by": "",
+                    "id": int(ref_id)
+                }
+                firestore_helper.set_document(ref_doc_id, ref_data)
+
     lang = user_lang_helper.get_user_lang(user_id)
     if not lang:
         await show_lang_selection(event)
@@ -321,6 +386,32 @@ async def lang_select_callback(event):
         await event.answer("Language set to English.", alert=False)
         
     await show_main_menu(event, user_id, is_callback=True)
+
+@bot.on(events.CallbackQuery(data=b'menu_referral'))
+async def menu_referral_handler(event):
+    user_id = event.sender_id
+    user_data = firestore_helper.get_document(f"keyvadi_user_{user_id}") or {"referrals_count": 0}
+    count = user_data.get("referrals_count", 0)
+    
+    coupon_info = ""
+    if count >= 5:
+        coupon_info = "🎁 **Tebrikler!** 5 referans barajını aştınız. Sizin için %15 indirim kuponunuz: **KEYVADI15**"
+    else:
+        coupon_info = f"🎁 5 arkadaşınızı davet ettiğinizde **%15 indirim kuponu** kazanırsınız! (Kalan: `{5 - count}` davet)"
+
+    text = (
+        "👥 **KeyVadi Davet & Kazan Sistemi**\n\n"
+        f"👥 **Mevcut Davet Sayınız:** `{count} / 5`\n\n"
+        f"{coupon_info}\n\n"
+        "Arkadaşlarınızı davet edin, indirim kuponları kazanın! 🛍️\n\n"
+        "🔗 **Sizin Davet Linkiniz:**\n"
+        f"`https://t.me/KeyVadiSatisBot?start=ref_{user_id}`\n\n"
+        "*(Yukarıdaki linke tıklayarak kopyalayabilir ve arkadaşlarınıza gönderebilirsiniz.)*"
+    )
+    buttons = [
+        [Button.inline("↩️ Ana Menü", b"menu_main")]
+    ]
+    await event.edit(text, buttons=buttons)
 
 @bot.on(events.CallbackQuery(data=b'menu_lang'))
 async def menu_lang_callback(event):
@@ -453,6 +544,124 @@ async def support_menu_handler(event):
 @bot.on(events.NewMessage)
 async def message_handler(event):
     user_id = event.sender_id
+    
+    ban_data = firestore_helper.get_document(f"keyvadi_ban_{user_id}")
+    if ban_data and ban_data.get("banned", False):
+        return
+
+    if user_states.get(user_id) == "AWAITING_VERIFY_PAYMENT_INFO":
+        if event.text.startswith('/'):
+            user_states[user_id] = None
+            return
+            
+        input_val = event.text.strip().lower()
+        if "@" in input_val:
+            doc_id = "order_email_" + input_val.replace("@", "_").replace(".", "_")
+        else:
+            doc_id = "order_phone_" + input_val.replace("+", "").replace(" ", "")
+            
+        orders_doc = firestore_helper.get_document(doc_id)
+        if not orders_doc or not orders_doc.get("orders"):
+            await event.respond("❌ **Sipariş bulunamadı!** Girdiğiniz bilgiyi kontrol edip tekrar deneyin veya desteğe yazın. (Ödeme sonrası 1-2 dakika gecikme olabilir).")
+            user_states[user_id] = None
+            return
+            
+        orders = orders_doc.get("orders", [])
+        unclaimed_order = None
+        unclaimed_idx = -1
+        for i, o in enumerate(orders):
+            if not o.get("claimed", False):
+                unclaimed_order = o
+                unclaimed_idx = i
+                break
+                
+        if not unclaimed_order:
+            await event.respond("⚠️ **Bu bilgilere ait tüm siparişler zaten tanımlanmış!** Yardım isterseniz canlı destekten bize yazabilirsiniz.")
+            user_states[user_id] = None
+            return
+            
+        prod_name = unclaimed_order.get("product_name", "").lower()
+        
+        # Check license category
+        cat = None
+        if "canva" in prod_name:
+            cat = "canva"
+        elif "adobe" in prod_name:
+            cat = "adobe"
+        elif "windows" in prod_name:
+            cat = "windows"
+        elif "office" in prod_name:
+            cat = "office"
+            
+        license_key = None
+        if cat:
+            try:
+                with open("licenses.json", "r", encoding="utf-8") as f:
+                    stocks = json.load(f)
+                keys = stocks.get(cat, [])
+                if keys:
+                    license_key = keys.pop(0)
+                    stocks[cat] = keys
+                    with open("licenses.json", "w", encoding="utf-8") as f:
+                        json.dump(stocks, f, indent=2, ensure_ascii=False)
+            except Exception as e:
+                print(f"Error reading/updating licenses.json: {e}")
+                
+        # Mark order as claimed
+        orders[unclaimed_idx]["claimed"] = True
+        firestore_helper.set_document(doc_id, orders_doc)
+        
+        if license_key:
+            await event.respond(
+                f"✅ **Ödemeniz Başarıyla Doğrulandı!**\n\n"
+                f"📦 **Satın Alınan Ürün:** {unclaimed_order.get('product_name')}\n"
+                f"🔑 **Lisans Anahtarınız:**\n"
+                f"`{license_key}`\n\n"
+                f"*(Lisans anahtarını kopyalamak için üzerine tıklayabilirsiniz.)*\n\n"
+                f"KeyVadi'yi tercih ettiğiniz için teşekkür ederiz! 😊"
+            )
+            
+            # Notify admin
+            try:
+                config = load_config() or {}
+                admin_chat_id = config.get("admin_id", ADMIN_ID)
+                if admin_chat_id:
+                    await bot.send_message(
+                        admin_chat_id, 
+                        f"💰 **KeyVadi Otomatik Satış Bildirimi!**\n"
+                        f"👤 **Kullanıcı:** `{user_id}`\n"
+                        f"📦 **Ürün:** {unclaimed_order.get('product_name')}\n"
+                        f"🔑 **Lisans Kodu:** `{license_key}` (Otomatik teslim edildi)\n"
+                        f"💵 **Tutar:** {unclaimed_order.get('amount')} ₺\n"
+                        f"📧 **E-posta/Telefon:** {input_val}"
+                    )
+            except Exception:
+                pass
+        else:
+            await event.respond(
+                f"✅ **Ödemeniz Başarıyla Doğrulandı!**\n\n"
+                f"📦 **Satın Alınan Ürün:** {unclaimed_order.get('product_name')}\n\n"
+                f"⚠️ **Stok Uyarısı:** Satın aldığınız ürünün lisans anahtarı stokta kalmamıştır. "
+                f"Yöneticiye bildirim gönderildi, en kısa sürede lisansınız Telegram üzerinden size iletilecektir."
+            )
+            
+            # Notify admin about stock warning
+            try:
+                config = load_config() or {}
+                admin_chat_id = config.get("admin_id", ADMIN_ID)
+                if admin_chat_id:
+                    await bot.send_message(
+                        admin_chat_id, 
+                        f"⚠️ **ACİL STOK UYARISI!**\n"
+                        f"Kullanıcı `{user_id}` Shopier'den **{unclaimed_order.get('product_name')}** satın aldı ancak stokta lisans kodu yok!\n"
+                        f"Lütfen en kısa sürede manuel teslimat yapın.\n"
+                        f"📧 **Müşteri E-posta/Telefon:** {input_val}"
+                    )
+            except Exception:
+                pass
+                
+        user_states[user_id] = None
+        return
 
     if user_states.get(user_id) == "AWAITING_SUPPORT":
         if event.text.startswith('/'):
@@ -485,8 +694,15 @@ async def message_handler(event):
             f"*(Bu mesajı yanıtlayarak (Reply) doğrudan kullanıcıya cevap gönderebilirsiniz.)*"
         )
 
+        # Admin action buttons
+        admin_buttons = [
+            [
+                Button.inline("🚫 Kullanıcıyı Engelle (Ban)", f"kv_adm_ban_{user_id}".encode())
+            ]
+        ]
+
         try:
-            await bot.send_message(admin_chat_id, admin_msg)
+            await bot.send_message(admin_chat_id, admin_msg, buttons=admin_buttons)
             await event.respond(t["support_success"])
             save_ticket_to_file("KeyVadi", user_id, first_name, last_name, username, event.text)
         except Exception as e:
@@ -544,6 +760,23 @@ async def message_handler(event):
                     await event.reply(f"❌ Cevap iletilemedi. Hata: {e}")
             else:
                 await event.reply("⚠️ Yanlış format! Kullanım: `#reply [kullanıcı_id] [mesajınız]`")
+
+@bot.on(events.CallbackQuery(pattern=r'kv_adm_ban_(\d+)'))
+async def kv_admin_ban_user_callback(event):
+    config = load_config() or {}
+    admin_chat_id = config.get("admin_id", ADMIN_ID)
+    if event.sender_id != admin_chat_id:
+        await event.answer("⚠️ Bu işlem için yetkiniz yok!", alert=True)
+        return
+        
+    target_user_id = int(event.pattern_match.group(1))
+    
+    ban_doc_id = f"keyvadi_ban_{target_user_id}"
+    firestore_helper.set_document(ban_doc_id, {"banned": True, "id": target_user_id})
+    
+    await event.answer("🚫 Kullanıcı engellendi.", alert=True)
+    original_text = event.message.text
+    await event.edit(f"{original_text}\n\n⚙️ **Aksiyon:** Kullanıcı engellendi. (Yönetici: @{event.sender.username or event.sender_id})")
 
 if __name__ == '__main__':
     logger.info("Loading KeyVadi products cache...")

@@ -1025,17 +1025,17 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         if not matched_product and welcome_key in welcomed_users:
             return
 
-        from telethon.tl.types import UserStatusOnline
+        from telethon.tl.types import UserStatusOnline, UserStatusRecently
         is_online = False
-        if admin_id:
-            try:
-                admin_user = await client.get_entity(int(admin_id))
-                if admin_user and admin_user.status:
-                    is_online = isinstance(admin_user.status, UserStatusOnline)
-            except Exception as e:
-                print(f"[{client_name}] Admin status fetch error: {e}")
-                
-        status_text = "🟢 **Yönetici Çevrimiçi:** Şu an aktifiz, mesajınıza en kısa sürede yanıt vereceğiz." if is_online else "🔴 **Yönetici Çevrimdışı:** Şu an aktif değiliz ancak mesajınızı bırakırsanız en kısa sürede yanıtlayacağız."
+        target_admin_id = 6827847544  # Habil's personal Telegram ID (@Haacet)
+        try:
+            admin_user = await client.get_entity(target_admin_id)
+            if admin_user and admin_user.status:
+                is_online = isinstance(admin_user.status, (UserStatusOnline, UserStatusRecently))
+        except Exception as e:
+            print(f"[{client_name}] Habil status check error: {e}")
+            
+        status_text = "🟢 **Habil Çevrimiçi:** Şu an aktifim, mesajınıza en kısa sürede yanıt vereceğim. 😊" if is_online else "🔴 **Habil Çevrimdışı:** Şu an aktif değilim ancak mesajınızı bırakırsanız giriş yaptığımda yanıtlayacağım."
 
         if is_keyvadi:
             if matched_product:

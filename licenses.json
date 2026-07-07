@@ -1,0 +1,15 @@
+{
+  "canva": [
+    "CANVA-PRO-TEST-KEY-1",
+    "CANVA-PRO-TEST-KEY-2"
+  ],
+  "adobe": [
+    "ADOBE-CC-TEST-KEY-1"
+  ],
+  "windows": [
+    "WIN-PRO-TEST-KEY-1"
+  ],
+  "office": [
+    "OFFICE-365-TEST-KEY-1"
+  ]
+}

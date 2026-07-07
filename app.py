@@ -936,6 +936,59 @@ def clear_tickets():
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
 
+@app.route('/api/shopier/callback', methods=['POST'])
+def shopier_callback():
+    from datetime import datetime
+    import firestore_helper
+    try:
+        data = request.form.to_dict()
+        if not data:
+            data = request.json or {}
+            
+        print(f"📥 Received Shopier Webhook: {data}")
+        
+        platform_order_id = data.get("platform_order_id")
+        email = data.get("email", "").strip().lower()
+        phone = data.get("phone", "").strip()
+        product_name = data.get("product_name", "")
+        total_amount = data.get("total_amount", "0")
+        
+        if not platform_order_id or not email:
+            return jsonify({"success": False, "message": "Missing required fields"}), 400
+            
+        phone_clean = phone.replace("+", "").replace(" ", "").strip()
+        
+        email_doc_id = "order_email_" + email.replace("@", "_").replace(".", "_")
+        email_doc = firestore_helper.get_document(email_doc_id) or {"orders": []}
+        
+        if not any(o.get("order_id") == platform_order_id for o in email_doc.get("orders", [])):
+            email_doc["orders"].append({
+                "order_id": platform_order_id,
+                "product_name": product_name,
+                "amount": total_amount,
+                "claimed": False,
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            })
+            firestore_helper.set_document(email_doc_id, email_doc)
+            
+        if phone_clean:
+            phone_doc_id = "order_phone_" + phone_clean
+            phone_doc = firestore_helper.get_document(phone_doc_id) or {"orders": []}
+            if not any(o.get("order_id") == platform_order_id for o in phone_doc.get("orders", [])):
+                phone_doc["orders"].append({
+                    "order_id": platform_order_id,
+                    "product_name": product_name,
+                    "amount": total_amount,
+                    "claimed": False,
+                    "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                })
+                firestore_helper.set_document(phone_doc_id, phone_doc)
+                
+        return "OK", 200
+    except Exception as e:
+        print(f"⚠️ Shopier webhook processing error: {e}")
+        return str(e), 500
+
 if __name__ == '__main__':
     # Clean up any orphaned bot processes from previous runs on startup
     for script_name in ['otomatik_katil.py', 'froxy_bot.py', 'froxy_destek_bot.py']:
