@@ -141,11 +141,34 @@ def rebuild_categories(products):
     global CATEGORIES
     
     temp_categories = {
+        "firsatlar": {"title": "🔥 Haftanın Dev Fırsatları", "products": {}},
         "ai": {"title": "🌟 Yapay Zeka (AI) Hesapları", "products": {}},
         "design": {"title": "🎨 Tasarım & Lisans Hizmetleri", "products": {}},
         "mobile": {"title": "📱 Onaylı Mobil Hesaplar", "products": {}},
         "deals": {"title": "🍔 Yemek & Akaryakıt Fırsatları", "products": {}},
         "other": {"title": "📦 Diğer Ürün & Hizmetler", "products": {}}
+    }
+    
+    # Injected Hot Deals (Netflix, Adobe, Youtube Premium, Gemini Pro Davet)
+    temp_categories["firsatlar"]["products"]["f1"] = {
+        "title": "📺 Netflix 4K UHD Profil",
+        "price": "49.99 TL",
+        "url": "https://www.shopier.com/keyvadi/47669117"
+    }
+    temp_categories["firsatlar"]["products"]["f2"] = {
+        "title": "🎨 Adobe Creative Cloud (1 Haftalık)",
+        "price": "49.99 TL",
+        "url": "https://www.shopier.com/keyvadi/47669341"
+    }
+    temp_categories["firsatlar"]["products"]["f3"] = {
+        "title": "🎬 YouTube Premium (3 Aylık Kod)",
+        "price": "29.99 TL",
+        "url": "https://www.shopier.com/keyvadi/47669105"
+    }
+    temp_categories["firsatlar"]["products"]["f4"] = {
+        "title": "🤖 Gemini Pro Davet Linki",
+        "price": "69.99 TL",
+        "url": "https://www.shopier.com/keyvadi/47669164"
     }
     
     for p in products:
@@ -212,6 +235,7 @@ TEXTS = {
         "lang_btn": "🌐 Dil Seçimi / Language",
         "main_menu": "↩️ Ana Menü",
         "cat_title_mapping": {
+            "firsatlar": "🔥 Kaçırılmayacak Fırsatlar",
             "ai": "🌟 Yapay Zeka (AI) Hesapları",
             "design": "🎨 Tasarım & Lisans Hizmetleri",
             "mobile": "📱 Onaylı Mobil Hesaplar",
@@ -241,6 +265,7 @@ TEXTS = {
         "lang_btn": "🌐 Language / Dil",
         "main_menu": "↩️ Main Menu",
         "cat_title_mapping": {
+            "firsatlar": "🔥 Kaçırılmayacak Fırsatlar / Super Deals",
             "ai": "🌟 Artificial Intelligence (AI) Accounts",
             "design": "🎨 Design & License Services",
             "mobile": "📱 Verified Mobile Accounts",
@@ -601,6 +626,10 @@ async def message_handler(event):
             cat = "windows"
         elif "office" in prod_name:
             cat = "office"
+        elif "netflix" in prod_name:
+            cat = "netflix"
+        elif "youtube" in prod_name or "yt " in prod_name:
+            cat = "youtube"
             
         license_key = None
         if cat:

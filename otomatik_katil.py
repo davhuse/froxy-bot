@@ -1063,7 +1063,12 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
             else:
                 reply_text = (
                     "Merhaba! KeyVadi Premium Hesap & Lisans satış platformuna hoş geldiniz. 😊\n\n"
-                    "Canva Pro, Adobe Creative Cloud, Windows/Office Lisans Keyleri, GPT-4 / Gemini Pro, Netflix, Spotify, Trendyol Yemek Kuponları ve daha yüzlerce ürünümüz anında teslimatla stoklardadır.\n\n"
+                    "🔥 **HAFTANIN DEV FIRSATLARI (SINIRLI STOK):**\n"
+                    "• 📺 Netflix 4K UHD Profil: **49.99 ₺**\n"
+                    "• 🎨 Adobe Creative Cloud (1 Haftalık): **49.99 ₺**\n"
+                    "• 🎬 YouTube Premium (3 Aylık Kod): **29.99 ₺**\n"
+                    "• 🤖 Gemini Pro Davet Linki: **69.99 ₺**\n\n"
+                    "Canva Pro, Windows/Office Lisans Keyleri ve yüzlerce ürünümüz anında otomatik teslimatla stoklardadır.\n\n"
                     "━━━━━━━━━━━━━━━━━━━\n"
                     f"{status_text}\n"
                     f"━━━━━━━━━━━━━━━━━━━\n\n"
