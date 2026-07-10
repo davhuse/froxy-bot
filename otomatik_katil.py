@@ -927,6 +927,16 @@ def save_welcomed_users():
 
 load_welcomed_users()
 
+async def async_get_document(doc_id):
+    loop = asyncio.get_event_loop()
+    import firestore_helper
+    return await loop.run_in_executor(None, firestore_helper.get_document, doc_id)
+
+async def async_set_document(doc_id, fields_dict):
+    loop = asyncio.get_event_loop()
+    import firestore_helper
+    return await loop.run_in_executor(None, firestore_helper.set_document, doc_id, fields_dict)
+
 async def presence_watchdog(client):
     from telethon.tl.types import UserStatusOnline, UserStatusRecently
     import firestore_helper
@@ -939,10 +949,124 @@ async def presence_watchdog(client):
             if admin_user and admin_user.status:
                 is_online = isinstance(admin_user.status, (UserStatusOnline, UserStatusRecently))
             
-            firestore_helper.set_document("habil_presence", {"is_online": is_online})
+            await async_set_document("habil_presence", {"is_online": is_online})
         except Exception as e:
             print(f"[Presence Watchdog] Habil status check error: {e}")
         await asyncio.sleep(60)
+
+def match_product_from_text(msg_text, all_products):
+    msg_clean = msg_text.lower().strip()
+    
+    # Aliases & normalization
+    msg_clean = msg_clean.replace("you tube", "youtube")
+    msg_clean = re.sub(r'\byt\b', 'youtube', msg_clean)
+    msg_clean = re.sub(r'\bwin\b', 'windows', msg_clean)
+    msg_clean = msg_clean.replace("win10", "windows")
+    msg_clean = msg_clean.replace("win11", "windows")
+    msg_clean = msg_clean.replace("office365", "office 365")
+    msg_clean = msg_clean.replace("gamepass", "game pass")
+    msg_clean = msg_clean.replace("cc", "creative cloud")
+    
+    def _get_words(text):
+        return re.findall(r'[a-zA-Z0-9çğıöşüÇĞİÖŞÜ]+', text.lower())
+        
+    query_words = _get_words(msg_clean)
+    
+    brand_keywords = {
+        "netflix", "youtube", "adobe", "canva", "windows", "office", "gemini", "grok",
+        "xbox", "spotify", "exxen", "trendyol", "duolingo", "semrush", "capcut",
+        "scribd", "gamma", "kiro", "steam", "shell", "whatsapp", "apple",
+        "crunchyroll", "chatgpt", "midjourney", "creative",
+        "4k", "uhd", "game", "lisans", "microsoft"
+    }
+    
+    has_brand = any(w in brand_keywords for w in query_words)
+    if not has_brand:
+        return None, 0
+        
+    skip_words = {
+        "var", "mi", "mı", "mu", "mü", "ve", "de", "da", "için", "misiniz", "miyiz",
+        "olur", "miyim", "yok", "acaba", "hizmeti", "ürünü", "hesabı", "kodu", "kuponu",
+        "premium", "alacaktım", "hocam", "knk", "kanka", "bir", "alacağım", "alacaktim",
+        "istiyorum", "lazım", "lazim", "alalım", "alalim", "kaç", "kac", "fiyat",
+        "ne", "tl", "lira", "bak", "abi", "güvenilir", "güvenilirmi",
+        "nasıl", "nasil", "nedir", "site", "link", "al", "almak", "satın"
+    }
+    
+    best_product = None
+    best_score = 0
+    
+    for p in all_products:
+        title_lower = p.get("title", "").lower()
+        title_words = set(_get_words(title_lower))
+        
+        if "bakiye" in title_lower or "keyvadi" in title_lower:
+            continue
+            
+        score = 0
+        matched_brand = False
+        
+        for i in range(len(query_words) - 1):
+            phrase = f"{query_words[i]} {query_words[i+1]}"
+            if phrase in title_lower:
+                score += 50
+                
+        for w in query_words:
+            if w in skip_words:
+                continue
+            if len(w) <= 1:
+                continue
+            if w in title_words:
+                score += 20
+                if w in brand_keywords:
+                    matched_brand = True
+            elif len(w) > 5:
+                for tw in title_words:
+                    if w in tw or tw in w:
+                        score += 8
+                        break
+                        
+        if not matched_brand and score < 50:
+            continue
+            
+        # Penalties
+        if "ultra" in query_words and "ultra" not in title_words:
+            score -= 100
+        if "ultra" not in query_words and "ultra" in title_words and "pro" in query_words:
+            score -= 100
+        if "pro" in query_words and "pro" not in title_words and "davet" not in title_words:
+            if any(bw in query_words for bw in ["gemini", "grok", "gamma"]):
+                score -= 80
+                
+        q_durations = {"haftalık", "aylık", "yıllık", "günlük"}
+        q_dur = [w for w in query_words if w in q_durations]
+        q_nums = [w for w in query_words if w.isdigit()]
+        if q_dur and q_nums:
+            dur_phrase = f"{q_nums[0]} {q_dur[0]}"
+            if dur_phrase not in title_lower and len(q_nums[0]) <= 2:
+                score -= 30
+                
+        if "yemek" in query_words and "yemek" not in title_words:
+            score -= 100
+        if "market" in query_words and "market" not in title_words:
+            score -= 100
+        if "yemek" not in query_words and "yemek" in title_words:
+            score -= 50
+        if "market" not in query_words and "market" in title_words:
+            score -= 50
+            
+        if "windows" in query_words and "windows" not in title_words:
+            score -= 80
+        if "office" in query_words and "office" not in title_words:
+            score -= 80
+            
+        if score > best_score:
+            best_score = score
+            best_product = p
+            
+    if best_score >= 20:
+        return best_product, best_score
+    return None, 0
 
 def register_auto_reply_handler(client, client_name, our_user_ids):
     @client.on(events.NewMessage(incoming=True))
@@ -975,7 +1099,27 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
 
         is_keyvadi = "2" in client_name
         
-        matched_product = None
+        # Injected products
+        INJECTED_PRODUCTS = [
+            {"id": "47669105", "title": "YouTube Premium (3 Aylık Kod)", "price": "29.99 TL", "url": "https://www.shopier.com/keyvadi/47669105"},
+            {"id": "47669117", "title": "Netflix 4K Ultra HD (Kişisel Profil)", "price": "49.99 TL", "url": "https://www.shopier.com/keyvadi/47669117"},
+            {"id": "48114807", "title": "XBOX Game Pass Ultimate (3 Aylık Üyelik)", "price": "80.00 TL", "url": "https://www.shopier.com/keyvadi/48114807"},
+            {"id": "48114802", "title": "Steam İstediğiniz Oyun (60 TL Limitli)", "price": "60.00 TL", "url": "https://www.shopier.com/keyvadi/48114802"},
+            {"id": "48114795", "title": "Semrush Pro (14 Günlük Hesap)", "price": "150.00 TL", "url": "https://www.shopier.com/keyvadi/48114795"},
+            {"id": "48114789", "title": "Microsoft Office 365 (1 Yıllık Hesap)", "price": "70.00 TL", "url": "https://www.shopier.com/keyvadi/48114789"},
+            {"id": "48114785", "title": "Windows 10/11 Pro Lisans Anahtarı (Key)", "price": "70.00 TL", "url": "https://www.shopier.com/keyvadi/48114785"},
+            {"id": "47669159", "title": "Gemini Pro (1 Yıllık Hesap)", "price": "299.99 TL", "url": "https://www.shopier.com/keyvadi/47669159"},
+            {"id": "47669164", "title": "Gemini Pro (Davet Linki)", "price": "124.99 TL", "url": "https://www.shopier.com/keyvadi/47669164"},
+            {"id": "47669192", "title": "Gemini Ultra (Davet Linki)", "price": "399.99 TL", "url": "https://www.shopier.com/keyvadi/47669192"},
+            {"id": "47669222", "title": "Gemini Ultra (2.5k Kredili Hesap)", "price": "599.99 TL", "url": "https://www.shopier.com/keyvadi/47669222"},
+            {"id": "47669248", "title": "Super Grok (1 Aylık Hesap)", "price": "449.99 TL", "url": "https://www.shopier.com/keyvadi/47669248"},
+            {"id": "47669271", "title": "Super Grok (3 Aylık Hesap)", "price": "949.99 TL", "url": "https://www.shopier.com/keyvadi/47669271"},
+            {"id": "47669295", "title": "Super Grok (6 Aylık Hesap)", "price": "1499.99 TL", "url": "https://www.shopier.com/keyvadi/47669295"},
+            {"id": "47669305", "title": "Super Grok (12 Aylık Hesap)", "price": "2299.99 TL", "url": "https://www.shopier.com/keyvadi/47669305"},
+            {"id": "47669310", "title": "Gamma Ultra (1 Aylık Hesap)", "price": "449.99 TL", "url": "https://www.shopier.com/keyvadi/47669310"},
+            {"id": "47669316", "title": "Gamma Pro (1 Aylık Hesap)", "price": "299.99 TL", "url": "https://www.shopier.com/keyvadi/47669316"},
+        ]
+        
         products = []
         if os.path.exists("parsed_keyvadi_products.json"):
             try:
@@ -984,66 +1128,19 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
             except:
                 pass
                 
-        best_product = None
-        best_score = 0
-        stop_words = {"var", "mi", "mı", "mu", "mü", "ve", "de", "da", "için", "misiniz", "miyiz", "olur", "miyim", "yok", "acaba", "hizmeti", "ürünü", "hesabı", "kodu", "kuponu", "premium"}
-        msg_words = [w.strip() for w in re.split(r'[^a-zA-Z0-9çğıöşüÇĞİÖŞÜ]', msg_text) if w.strip() and w.strip() not in stop_words]
-        
-        for p in products:
-            title_lower = p.get("title", "").lower()
-            score = 0
-            
-            for word in msg_words:
-                if len(word) > 1 and word in title_lower:
-                    score += 10
-                    
-            if len(msg_words) >= 2:
-                for i in range(len(msg_words) - 1):
-                    phrase = f"{msg_words[i]} {msg_words[i+1]}"
-                    if phrase in title_lower:
-                        score += 30
-            
-            if "ultra" in msg_text and "ultra" not in title_lower:
-                score -= 100
-            if "ultra" not in msg_text and "ultra" in title_lower:
-                score -= 50
+        # Merge products
+        existing_ids = {p["id"] for p in products}
+        for ip in INJECTED_PRODUCTS:
+            if ip["id"] not in existing_ids:
+                products.append(ip)
                 
-            if "pro" in msg_text and "pro" not in title_lower:
-                score -= 50
-            if "pro" not in msg_text and "pro" in title_lower:
-                if "ultra" in msg_text:
-                    score -= 50
-            
-            if "yemek" in msg_text and "yemek" not in title_lower:
-                score -= 100
-            if "yemek" not in msg_text and "yemek" in title_lower:
-                if "market" in msg_text:
-                    score -= 100
-            
-            if "market" in msg_text and "market" not in title_lower:
-                score -= 100
-            if "market" not in msg_text and "market" in title_lower:
-                if "yemek" in msg_text:
-                    score -= 100
-                    
-            if "windows" in msg_text and "windows" not in title_lower:
-                score -= 100
-            if "office" in msg_text and "office" not in title_lower:
-                score -= 100
-                
-            if score > best_score:
-                best_score = score
-                best_product = p
-                
-        if best_score >= 10:
-            matched_product = best_product
+        matched_product, match_score = match_product_from_text(event.raw_text, products)
             
         welcome_key = f"{client_name}_{sender_id}"
         if not matched_product and welcome_key in welcomed_users:
             return
-
-        import firestore_helper
-        presence = firestore_helper.get_document("habil_presence") or {}
+            
+        presence = await async_get_document("habil_presence") or {}
         is_online = presence.get("is_online", False)
         status_text = "🟢 **Destek Çevrimiçi:** Şu an aktifiz, mesajınıza en kısa sürede yanıt vereceğiz. 😊" if is_online else "🔴 **Destek Çevrimdışı:** Şu an aktif değiliz ancak mesajınızı bırakırsanız en kısa sürede yanıtlayacağız."
 
