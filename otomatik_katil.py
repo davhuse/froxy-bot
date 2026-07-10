@@ -977,12 +977,16 @@ def match_product_from_text(msg_text, all_products):
         "xbox", "spotify", "exxen", "trendyol", "duolingo", "semrush", "capcut",
         "scribd", "gamma", "kiro", "steam", "shell", "whatsapp", "apple",
         "crunchyroll", "chatgpt", "midjourney", "creative",
-        "4k", "uhd", "game", "lisans", "microsoft"
+        "4k", "uhd", "game", "lisans", "microsoft",
+        "tradingview", "nordvpn", "vpn", "kaspersky", "envato", "freepik",
+        "autocad", "figma", "elementor", "grammarly", "deepl", "ideogram", "quillbot"
     }
     
     has_brand = any(w in brand_keywords for w in query_words)
     if not has_brand:
         return None, 0
+        
+    query_brands = [w for w in query_words if w in brand_keywords]
         
     skip_words = {
         "var", "mi", "mı", "mu", "mü", "ve", "de", "da", "için", "misiniz", "miyiz",
@@ -1002,6 +1006,11 @@ def match_product_from_text(msg_text, all_products):
         
         if "bakiye" in title_lower or "keyvadi" in title_lower:
             continue
+            
+        # Enforce brand check
+        if query_brands:
+            if not any(b in title_words for b in query_brands):
+                continue
             
         score = 0
         matched_brand = False
@@ -1025,6 +1034,15 @@ def match_product_from_text(msg_text, all_products):
                     if w in tw or tw in w:
                         score += 8
                         break
+        
+        # Duration mismatch (Reduced penalty: only penalize if duration is specified and mismatched)
+        q_durations = {"haftalık", "aylık", "yıllık", "günlük"}
+        q_dur = [w for w in query_words if w in q_durations]
+        q_nums = [w for w in query_words if w.isdigit()]
+        if q_dur and q_nums:
+            dur_phrase = f"{q_nums[0]} {q_dur[0]}"
+            if dur_phrase not in title_lower and len(q_nums[0]) <= 2:
+                score -= 15 
                         
         if not matched_brand and score < 50:
             continue

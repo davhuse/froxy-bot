@@ -153,13 +153,17 @@ def match_product_from_text(msg_text):
         "xbox", "spotify", "exxen", "trendyol", "duolingo", "semrush", "capcut",
         "scribd", "gamma", "kiro", "steam", "shell", "whatsapp", "apple",
         "crunchyroll", "chatgpt", "midjourney", "creative",
-        "4k", "uhd", "game", "lisans", "microsoft"
+        "4k", "uhd", "game", "lisans", "microsoft",
+        "tradingview", "nordvpn", "vpn", "kaspersky", "envato", "freepik",
+        "autocad", "figma", "elementor", "grammarly", "deepl", "ideogram", "quillbot"
     }
     
     has_brand = any(w in brand_keywords for w in query_words)
     logger.info(f"Matching text: '{msg_text}' | words: {query_words} | has_brand: {has_brand}")
     if not has_brand:
         return None, 0
+        
+    query_brands = [w for w in query_words if w in brand_keywords]
     
     # Skip words — too generic to contribute to scoring
     skip_words = {
@@ -181,6 +185,11 @@ def match_product_from_text(msg_text):
         # Skip internal products
         if "bakiye" in title_lower or "keyvadi" in title_lower:
             continue
+            
+        # Enforce brand check: Matched product must contain at least one of the query's brand words
+        if query_brands:
+            if not any(b in title_words for b in query_brands):
+                continue
         
         score = 0
         matched_brand = False
@@ -229,7 +238,7 @@ def match_product_from_text(msg_text):
         if q_dur and q_nums:
             dur_phrase = f"{q_nums[0]} {q_dur[0]}"
             if dur_phrase not in title_lower and len(q_nums[0]) <= 2:
-                score -= 30
+                score -= 15
         
         # Food vs Market
         if "yemek" in query_words and "yemek" not in title_words:
