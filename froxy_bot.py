@@ -138,6 +138,7 @@ def match_product_from_text(msg_text):
     }
     
     has_brand = any(w in brand_keywords for w in query_words)
+    logger.info(f"Matching text: '{msg_text}' | words: {query_words} | has_brand: {has_brand}")
     if not has_brand:
         return None, 0
     
@@ -231,6 +232,7 @@ def match_product_from_text(msg_text):
             best_score = score
             best_product = p
             
+    logger.info(f"Best match for '{msg_text}': {best_product['title'] if best_product else 'NONE'} with score {best_score}")
     if best_score >= 20:
         return best_product, best_score
     return None, 0
@@ -736,9 +738,11 @@ async def support_menu_handler(event):
 @bot.on(events.NewMessage)
 async def message_handler(event):
     user_id = event.sender_id
+    logger.info(f"New message from user {user_id}: '{event.text}'")
     
     ban_data = firestore_helper.get_document(f"keyvadi_ban_{user_id}")
     if ban_data and ban_data.get("banned", False):
+        logger.info(f"User {user_id} is banned, ignoring.")
         return
 
     if user_states.get(user_id) == "AWAITING_VERIFY_PAYMENT_INFO":
