@@ -89,6 +89,152 @@ bot = TelegramClient(StringSession(), API_ID, API_HASH)
 
 CATEGORIES = {}
 
+# Products that are NOT in the Shopier showroom (hidden/delisted) but still active
+# These are injected into the catalog alongside scraped products
+INJECTED_PRODUCTS = [
+    {"id": "47669105", "title": "YouTube Premium (3 Aylık Kod)", "price": "29.99 TL", "url": "https://www.shopier.com/keyvadi/47669105"},
+    {"id": "47669117", "title": "Netflix 4K Ultra HD (Kişisel Profil)", "price": "49.99 TL", "url": "https://www.shopier.com/keyvadi/47669117"},
+    {"id": "48114807", "title": "XBOX Game Pass Ultimate (3 Aylık Üyelik)", "price": "80.00 TL", "url": "https://www.shopier.com/keyvadi/48114807"},
+    {"id": "48114802", "title": "Steam İstediğiniz Oyun (60 TL Limitli)", "price": "60.00 TL", "url": "https://www.shopier.com/keyvadi/48114802"},
+    {"id": "48114795", "title": "Semrush Pro (14 Günlük Hesap)", "price": "150.00 TL", "url": "https://www.shopier.com/keyvadi/48114795"},
+    {"id": "48114789", "title": "Microsoft Office 365 (1 Yıllık Hesap)", "price": "70.00 TL", "url": "https://www.shopier.com/keyvadi/48114789"},
+    {"id": "48114785", "title": "Windows 10/11 Pro Lisans Anahtarı (Key)", "price": "70.00 TL", "url": "https://www.shopier.com/keyvadi/48114785"},
+]
+
+# Flat list of all products (rebuilt when products are loaded)
+ALL_PRODUCTS_FLAT = []
+
+# ═══════════════════════════════════════════════════════════════
+# Smart Product Matching - Müşteri serbest metin yazınca ürün eşleştir
+# ═══════════════════════════════════════════════════════════════
+
+def _get_words(text):
+    """Tokenize text into lowercase words."""
+    return re.findall(r'[a-zA-Z0-9çğıöşüÇĞİÖŞÜ]+', text.lower())
+
+def match_product_from_text(msg_text):
+    """Try to match a product from free-text message. Returns (product_dict, score) or (None, 0)."""
+    msg_clean = msg_text.lower().strip()
+    
+    # Aliases & normalization
+    msg_clean = msg_clean.replace("you tube", "youtube")
+    msg_clean = re.sub(r'\byt\b', 'youtube', msg_clean)
+    msg_clean = re.sub(r'\bwin\b', 'windows', msg_clean)
+    msg_clean = msg_clean.replace("win10", "windows")
+    msg_clean = msg_clean.replace("win11", "windows")
+    msg_clean = msg_clean.replace("office365", "office 365")
+    msg_clean = msg_clean.replace("gamepass", "game pass")
+    msg_clean = msg_clean.replace("cc", "creative cloud")
+    
+    query_words = _get_words(msg_clean)
+    
+    # Brand keywords — query must contain at least one to trigger matching
+    brand_keywords = {
+        "netflix", "youtube", "adobe", "canva", "windows", "office", "gemini", "grok",
+        "xbox", "spotify", "exxen", "trendyol", "duolingo", "semrush", "capcut",
+        "scribd", "gamma", "kiro", "steam", "shell", "whatsapp", "apple",
+        "crunchyroll", "chatgpt", "midjourney", "creative",
+        "4k", "uhd", "game", "lisans", "microsoft"
+    }
+    
+    has_brand = any(w in brand_keywords for w in query_words)
+    if not has_brand:
+        return None, 0
+    
+    # Skip words — too generic to contribute to scoring
+    skip_words = {
+        "var", "mi", "mı", "mu", "mü", "ve", "de", "da", "için", "misiniz", "miyiz",
+        "olur", "miyim", "yok", "acaba", "hizmeti", "ürünü", "hesabı", "kodu", "kuponu",
+        "premium", "alacaktım", "hocam", "knk", "kanka", "bir", "alacağım", "alacaktim",
+        "istiyorum", "lazım", "lazim", "alalım", "alalim", "kaç", "kac", "fiyat",
+        "ne", "tl", "lira", "bak", "abi", "güvenilir", "güvenilirmi",
+        "nasıl", "nasil", "nedir", "site", "link", "al", "almak", "satın"
+    }
+    
+    best_product = None
+    best_score = 0
+    
+    for p in ALL_PRODUCTS_FLAT:
+        title_lower = p.get("title", "").lower()
+        title_words = set(_get_words(title_lower))
+        
+        # Skip internal products
+        if "bakiye" in title_lower or "keyvadi" in title_lower:
+            continue
+        
+        score = 0
+        matched_brand = False
+        
+        # 1. Phrase match (2 consecutive query words found in title) — very strong signal
+        for i in range(len(query_words) - 1):
+            phrase = f"{query_words[i]} {query_words[i+1]}"
+            if phrase in title_lower:
+                score += 50
+                
+        # 2. Whole-word match (query word is a standalone token in title)
+        for w in query_words:
+            if w in skip_words:
+                continue
+            if len(w) <= 1:
+                continue
+            if w in title_words:
+                score += 20
+                if w in brand_keywords:
+                    matched_brand = True
+            # Partial match only for longer words (>5 chars)
+            elif len(w) > 5:
+                for tw in title_words:
+                    if w in tw or tw in w:
+                        score += 8
+                        break
+        
+        # 3. If no brand word from the query matched this product's title, skip
+        if not matched_brand and score < 50:
+            continue
+        
+        # === PENALTIES ===
+        # Variant mismatch: ultra vs pro vs davet (for AI products)
+        if "ultra" in query_words and "ultra" not in title_words:
+            score -= 100
+        if "ultra" not in query_words and "ultra" in title_words and "pro" in query_words:
+            score -= 100
+        if "pro" in query_words and "pro" not in title_words and "davet" not in title_words:
+            if any(bw in query_words for bw in ["gemini", "grok", "gamma"]):
+                score -= 80
+                
+        # Duration mismatch
+        q_durations = {"haftalık", "aylık", "yıllık", "günlük"}
+        q_dur = [w for w in query_words if w in q_durations]
+        q_nums = [w for w in query_words if w.isdigit()]
+        if q_dur and q_nums:
+            dur_phrase = f"{q_nums[0]} {q_dur[0]}"
+            if dur_phrase not in title_lower and len(q_nums[0]) <= 2:
+                score -= 30
+        
+        # Food vs Market
+        if "yemek" in query_words and "yemek" not in title_words:
+            score -= 100
+        if "market" in query_words and "market" not in title_words:
+            score -= 100
+        if "yemek" not in query_words and "yemek" in title_words:
+            score -= 50
+        if "market" not in query_words and "market" in title_words:
+            score -= 50
+            
+        # Windows vs Office
+        if "windows" in query_words and "windows" not in title_words:
+            score -= 80
+        if "office" in query_words and "office" not in title_words:
+            score -= 80
+            
+        if score > best_score:
+            best_score = score
+            best_product = p
+            
+    if best_score >= 20:
+        return best_product, best_score
+    return None, 0
+
 def scrape_shopier():
     logger.info("Scraping Shopier showroom at https://www.shopier.com/keyvadi ...")
     context = ssl._create_unverified_context()
@@ -199,6 +345,7 @@ def rebuild_categories(products):
     logger.info("In-memory categories rebuilt successfully.")
 
 def load_products_from_file_or_scrape():
+    global ALL_PRODUCTS_FLAT
     products = []
     file_path = "parsed_keyvadi_products.json"
     
@@ -219,6 +366,17 @@ def load_products_from_file_or_scrape():
                     json.dump(products, f, indent=2, ensure_ascii=False)
             except Exception as e:
                 logger.error(f"Error saving scraped products to file: {e}")
+    
+    # Merge injected products (hidden/delisted but still active)
+    existing_ids = {p["id"] for p in products}
+    for ip in INJECTED_PRODUCTS:
+        if ip["id"] not in existing_ids:
+            products.append(ip)
+            logger.info(f"Injected hidden product: {ip['title']}")
+    
+    # Build flat product list for smart matching
+    ALL_PRODUCTS_FLAT = list(products)
+    logger.info(f"Total products available for matching: {len(ALL_PRODUCTS_FLAT)}")
                 
     # Rebuild in-memory categories
     rebuild_categories(products)
@@ -749,6 +907,31 @@ async def message_handler(event):
 
         user_states[user_id] = None
         return
+
+    # ── Smart Product Matching for free-text messages ──
+    # If user is NOT in any special state and NOT admin, try to match a product
+    if event.text and not event.text.startswith('/'):
+        matched_product, match_score = match_product_from_text(event.text)
+        if matched_product:
+            lang = user_lang_helper.get_user_lang(user_id) or "tr"
+            t = TEXTS[lang]
+            price = matched_product['price']
+            if lang == "en":
+                price = user_lang_helper.convert_price_to_usd(price)
+            
+            product_msg = (
+                f"🔍 **{matched_product['title']}**\n\n"
+                f"💰 **{t['price']}:** {price}\n\n"
+                f"{t['product_footer']}"
+            )
+            buttons = [
+                [Button.url(t["buy_btn"], matched_product.get('url', 'https://www.shopier.com/keyvadi'))],
+                [Button.inline(t["support_btn"], b"menu_support")],
+                [Button.inline("📋 Ana Menü / Main Menu", b"menu_main")]
+            ]
+            await event.respond(product_msg, buttons=buttons)
+            logger.info(f"Smart match for user {user_id}: '{event.text}' → {matched_product['title']} (score={match_score})")
+            return
 
     config = load_config() or {}
     admin_chat_id = config.get("admin_id", ADMIN_ID)
