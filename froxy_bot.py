@@ -11,6 +11,15 @@ from telethon.sessions import StringSession
 import user_lang_helper
 import firestore_helper
 
+# Async wrappers for firestore_helper to prevent event loop deadlocks/freezes
+async def async_get_document(doc_id):
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, firestore_helper.get_document, doc_id)
+
+async def async_set_document(doc_id, fields_dict):
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, firestore_helper.set_document, doc_id, fields_dict)
+
 # Logging configuration
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -89,7 +98,7 @@ bot = TelegramClient(StringSession(), API_ID, API_HASH)
 
 CATEGORIES = {}
 
-# Products that are NOT in the Shopier showroom (hidden/delisted) but still active
+# Products that are NOT in the Shopier showroom (hidden/delisted/paginated) but still active
 # These are injected into the catalog alongside scraped products
 INJECTED_PRODUCTS = [
     {"id": "47669105", "title": "YouTube Premium (3 Aylık Kod)", "price": "29.99 TL", "url": "https://www.shopier.com/keyvadi/47669105"},
@@ -99,6 +108,16 @@ INJECTED_PRODUCTS = [
     {"id": "48114795", "title": "Semrush Pro (14 Günlük Hesap)", "price": "150.00 TL", "url": "https://www.shopier.com/keyvadi/48114795"},
     {"id": "48114789", "title": "Microsoft Office 365 (1 Yıllık Hesap)", "price": "70.00 TL", "url": "https://www.shopier.com/keyvadi/48114789"},
     {"id": "48114785", "title": "Windows 10/11 Pro Lisans Anahtarı (Key)", "price": "70.00 TL", "url": "https://www.shopier.com/keyvadi/48114785"},
+    {"id": "47669159", "title": "Gemini Pro (1 Yıllık Hesap)", "price": "299.99 TL", "url": "https://www.shopier.com/keyvadi/47669159"},
+    {"id": "47669164", "title": "Gemini Pro (Davet Linki)", "price": "124.99 TL", "url": "https://www.shopier.com/keyvadi/47669164"},
+    {"id": "47669192", "title": "Gemini Ultra (Davet Linki)", "price": "399.99 TL", "url": "https://www.shopier.com/keyvadi/47669192"},
+    {"id": "47669222", "title": "Gemini Ultra (2.5k Kredili Hesap)", "price": "599.99 TL", "url": "https://www.shopier.com/keyvadi/47669222"},
+    {"id": "47669248", "title": "Super Grok (1 Aylık Hesap)", "price": "449.99 TL", "url": "https://www.shopier.com/keyvadi/47669248"},
+    {"id": "47669271", "title": "Super Grok (3 Aylık Hesap)", "price": "949.99 TL", "url": "https://www.shopier.com/keyvadi/47669271"},
+    {"id": "47669295", "title": "Super Grok (6 Aylık Hesap)", "price": "1499.99 TL", "url": "https://www.shopier.com/keyvadi/47669295"},
+    {"id": "47669305", "title": "Super Grok (12 Aylık Hesap)", "price": "2299.99 TL", "url": "https://www.shopier.com/keyvadi/47669305"},
+    {"id": "47669310", "title": "Gamma Ultra (1 Aylık Hesap)", "price": "449.99 TL", "url": "https://www.shopier.com/keyvadi/47669310"},
+    {"id": "47669316", "title": "Gamma Pro (1 Aylık Hesap)", "price": "299.99 TL", "url": "https://www.shopier.com/keyvadi/47669316"},
 ]
 
 # Flat list of all products (rebuilt when products are loaded)
@@ -463,7 +482,7 @@ async def show_main_menu(event, user_id, is_callback=False):
     lang = user_lang_helper.get_user_lang(user_id) or "tr"
     t = TEXTS[lang]
     
-    presence = firestore_helper.get_document("habil_presence") or {}
+    presence = await async_get_document("habil_presence") or {}
     is_online = presence.get("is_online", False)
     status_emoji = "🟢 **Destek Çevrimiçi / Support Online**" if is_online else "🔴 **Destek Çevrimdışı / Support Offline**"
     
@@ -510,7 +529,7 @@ async def verify_payment_callback(event):
 async def start_handler(event):
     user_id = event.sender_id
     
-    ban_data = firestore_helper.get_document(f"keyvadi_ban_{user_id}")
+    ban_data = await async_get_document(f"keyvadi_ban_{user_id}")
     if ban_data and ban_data.get("banned", False):
         await event.respond("⚠️ **Hesabınız askıya alınmıştır.** İletişime geçmek için yöneticinize başvurun.")
         return
@@ -526,7 +545,7 @@ async def start_handler(event):
             ref_id = param.replace("ref_", "")
             
     user_doc_id = f"keyvadi_user_{user_id}"
-    user_data = firestore_helper.get_document(user_doc_id)
+    user_data = await async_get_document(user_doc_id)
     is_new = False
     
     if not user_data:
@@ -536,14 +555,14 @@ async def start_handler(event):
             "referred_by": ref_id or "",
             "id": user_id
         }
-        firestore_helper.set_document(user_doc_id, user_data)
+        await async_set_document(user_doc_id, user_data)
         
         if ref_id:
             ref_doc_id = f"keyvadi_user_{ref_id}"
-            ref_data = firestore_helper.get_document(ref_doc_id)
+            ref_data = await async_get_document(ref_doc_id)
             if ref_data:
                 ref_data["referrals_count"] = ref_data.get("referrals_count", 0) + 1
-                firestore_helper.set_document(ref_doc_id, ref_data)
+                await async_set_document(ref_doc_id, ref_data)
                 try:
                     await bot.send_message(int(ref_id), "🎉 **Tebrikler!** Bir arkadaşınız davetinizle KeyVadi'ye katıldı. Davet sayınız güncellendi!")
                 except Exception:
@@ -554,7 +573,7 @@ async def start_handler(event):
                     "referred_by": "",
                     "id": int(ref_id)
                 }
-                firestore_helper.set_document(ref_doc_id, ref_data)
+                await async_set_document(ref_doc_id, ref_data)
 
     lang = user_lang_helper.get_user_lang(user_id)
     if not lang:
@@ -584,7 +603,7 @@ async def lang_select_callback(event):
 @bot.on(events.CallbackQuery(data=b'menu_referral'))
 async def menu_referral_handler(event):
     user_id = event.sender_id
-    user_data = firestore_helper.get_document(f"keyvadi_user_{user_id}") or {"referrals_count": 0}
+    user_data = await async_get_document(f"keyvadi_user_{user_id}") or {"referrals_count": 0}
     count = user_data.get("referrals_count", 0)
     
     coupon_info = ""
@@ -740,7 +759,7 @@ async def message_handler(event):
     user_id = event.sender_id
     logger.info(f"New message from user {user_id}: '{event.text}'")
     
-    ban_data = firestore_helper.get_document(f"keyvadi_ban_{user_id}")
+    ban_data = await async_get_document(f"keyvadi_ban_{user_id}")
     if ban_data and ban_data.get("banned", False):
         logger.info(f"User {user_id} is banned, ignoring.")
         return
@@ -756,7 +775,7 @@ async def message_handler(event):
         else:
             doc_id = "order_phone_" + input_val.replace("+", "").replace(" ", "")
             
-        orders_doc = firestore_helper.get_document(doc_id)
+        orders_doc = await async_get_document(doc_id)
         if not orders_doc or not orders_doc.get("orders"):
             await event.respond("❌ **Sipariş bulunamadı!** Girdiğiniz bilgiyi kontrol edip tekrar deneyin veya desteğe yazın. (Ödeme sonrası 1-2 dakika gecikme olabilir).")
             user_states[user_id] = None
@@ -809,7 +828,7 @@ async def message_handler(event):
                 
         # Mark order as claimed
         orders[unclaimed_idx]["claimed"] = True
-        firestore_helper.set_document(doc_id, orders_doc)
+        await async_set_document(doc_id, orders_doc)
         
         if license_key:
             await event.respond(
@@ -997,7 +1016,7 @@ async def kv_admin_ban_user_callback(event):
     target_user_id = int(event.pattern_match.group(1))
     
     ban_doc_id = f"keyvadi_ban_{target_user_id}"
-    firestore_helper.set_document(ban_doc_id, {"banned": True, "id": target_user_id})
+    await async_set_document(ban_doc_id, {"banned": True, "id": target_user_id})
     
     await event.answer("🚫 Kullanıcı engellendi.", alert=True)
     original_text = event.message.text
