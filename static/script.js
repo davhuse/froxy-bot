@@ -555,8 +555,8 @@ async function loadConfig() {
             UI.cfgBotToken.value = data.bot_token || '';
             UI.cfgAdminId.value = data.admin_id || '';
             UI.cfgAdStringSession.value = data.ad_string_session || '';
-            UI.cfgAdStringSession2.value = data.ad_string_session2 || '';
-            UI.cfgAdStringSession3.value = data.ad_string_session3 || '';
+            UI.cfgAdStringSession2.value = data.ad_string_session2 || data.ad_string_session_2 || '';
+            UI.cfgAdStringSession3.value = data.ad_string_session3 || data.ad_string_session_3 || '';
             UI.cfgAdSleepMin.value = data.ad_sleep_min || 180;
             UI.cfgAdSleepMax.value = data.ad_sleep_max || 300;
         }

@@ -1279,8 +1279,8 @@ async def main():
             with open("bot_config.json", "r", encoding="utf-8") as f:
                 cfg = json.load(f)
                 string_session_key = cfg.get("ad_string_session", "")
-                string_session_key_2 = cfg.get("ad_string_session2", "")
-                string_session_key_3 = cfg.get("ad_string_session3", "")
+                string_session_key_2 = cfg.get("ad_string_session2", cfg.get("ad_string_session_2", ""))
+                string_session_key_3 = cfg.get("ad_string_session3", cfg.get("ad_string_session_3", ""))
                 ad_sleep_min = cfg.get("ad_sleep_min", 600)
                 ad_sleep_max = cfg.get("ad_sleep_max", 1200)
         except:
