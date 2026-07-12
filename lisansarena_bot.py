@@ -793,13 +793,14 @@ async def get_bot_info():
     except Exception as e:
         logger.error(f"Failed to get bot info: {e}")
 
+async def main():
+    await bot.start(bot_token=BOT_TOKEN)
+    await get_bot_info()
+    await bot.run_until_disconnected()
+
 if __name__ == '__main__':
     logger.info("Loading LisansArena products cache...")
     load_products_from_links_json()
     logger.info("Starting LisansArena Sales Bot...")
     
-    loop = asyncio.get_event_loop()
-    loop.create_task(get_bot_info())
-    
-    bot.start(bot_token=BOT_TOKEN)
-    bot.run_until_disconnected()
+    bot.loop.run_until_complete(main())
