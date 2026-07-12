@@ -17,6 +17,8 @@ body {
     color: var(--text-primary);
     font-family: 'Outfit', sans-serif;
     min-height: 100vh;
+    display: flex;
+    justify-content: center;
     position: relative;
     overflow-x: hidden;
     padding: 0;
@@ -37,9 +39,8 @@ body {
 @keyframes rotate { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
 .dashboard-container {
-    width: 90%;
-    max-width: 1250px;
-    margin: 0 auto;
+    width: 92%;
+    max-width: 1300px;
     padding: 25px 0;
     display: flex;
     flex-direction: column;

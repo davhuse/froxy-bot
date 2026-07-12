@@ -129,7 +129,8 @@
             </div>
 
             <div class="main-content">
-                <!-- MESAJ ŞABLONLARI -->
+                {% if session.get('user_id') != 'habil' %}
+                <!-- MESAJ ŞABLONLARI (Sadece müşteriler için) -->
                 <div class="glass-panel" style="padding: 20px;">
                     <h2><i class="fa-solid fa-layer-group"></i> Mesaj Şablonları (Rotasyon)</h2>
                     <p class="info-note" style="margin-bottom: 15px; margin-top: 5px;">
@@ -139,6 +140,7 @@
                         <p style="color: var(--text-secondary); grid-column: 1/-1; text-align: center;">Şablonlar yükleniyor...</p>
                     </div>
                 </div>
+                {% endif %}
 
                 <!-- ESKİ TEK MESAJ EDİTÖRLERİ (Fallback) -->
                 <div class="editors-container">
