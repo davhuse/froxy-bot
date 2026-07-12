@@ -1115,44 +1115,64 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         if not msg_text:
             return
 
+        is_lisansarena = "3" in client_name
         is_keyvadi = "2" in client_name
         
-        # Injected products
-        INJECTED_PRODUCTS = [
-            {"id": "47669105", "title": "YouTube Premium (3 Aylık Kod)", "price": "29.99 TL", "url": "https://www.shopier.com/keyvadi/47669105"},
-            {"id": "47669117", "title": "Netflix 4K Ultra HD (Kişisel Profil)", "price": "49.99 TL", "url": "https://www.shopier.com/keyvadi/47669117"},
-            {"id": "48114807", "title": "XBOX Game Pass Ultimate (3 Aylık Üyelik)", "price": "80.00 TL", "url": "https://www.shopier.com/keyvadi/48114807"},
-            {"id": "48114802", "title": "Steam İstediğiniz Oyun (60 TL Limitli)", "price": "60.00 TL", "url": "https://www.shopier.com/keyvadi/48114802"},
-            {"id": "48114795", "title": "Semrush Pro (14 Günlük Hesap)", "price": "150.00 TL", "url": "https://www.shopier.com/keyvadi/48114795"},
-            {"id": "48114789", "title": "Microsoft Office 365 (1 Yıllık Hesap)", "price": "70.00 TL", "url": "https://www.shopier.com/keyvadi/48114789"},
-            {"id": "48114785", "title": "Windows 10/11 Pro Lisans Anahtarı (Key)", "price": "70.00 TL", "url": "https://www.shopier.com/keyvadi/48114785"},
-            {"id": "47669159", "title": "Gemini Pro (1 Yıllık Hesap)", "price": "299.99 TL", "url": "https://www.shopier.com/keyvadi/47669159"},
-            {"id": "47669164", "title": "Gemini Pro (Davet Linki)", "price": "124.99 TL", "url": "https://www.shopier.com/keyvadi/47669164"},
-            {"id": "47669192", "title": "Gemini Ultra (Davet Linki)", "price": "399.99 TL", "url": "https://www.shopier.com/keyvadi/47669192"},
-            {"id": "47669222", "title": "Gemini Ultra (2.5k Kredili Hesap)", "price": "599.99 TL", "url": "https://www.shopier.com/keyvadi/47669222"},
-            {"id": "47669248", "title": "Super Grok (1 Aylık Hesap)", "price": "449.99 TL", "url": "https://www.shopier.com/keyvadi/47669248"},
-            {"id": "47669271", "title": "Super Grok (3 Aylık Hesap)", "price": "949.99 TL", "url": "https://www.shopier.com/keyvadi/47669271"},
-            {"id": "47669295", "title": "Super Grok (6 Aylık Hesap)", "price": "1499.99 TL", "url": "https://www.shopier.com/keyvadi/47669295"},
-            {"id": "47669305", "title": "Super Grok (12 Aylık Hesap)", "price": "2299.99 TL", "url": "https://www.shopier.com/keyvadi/47669305"},
-            {"id": "47669310", "title": "Gamma Ultra (1 Aylık Hesap)", "price": "449.99 TL", "url": "https://www.shopier.com/keyvadi/47669310"},
-            {"id": "47669316", "title": "Gamma Pro (1 Aylık Hesap)", "price": "299.99 TL", "url": "https://www.shopier.com/keyvadi/47669316"},
-        ]
-        
         products = []
-        if os.path.exists("parsed_keyvadi_products.json"):
-            try:
-                with open("parsed_keyvadi_products.json", "r", encoding="utf-8") as f:
-                    products = json.load(f)
-            except:
-                pass
-                
-        # Merge products
-        existing_ids = {p["id"] for p in products}
-        for ip in INJECTED_PRODUCTS:
-            if ip["id"] not in existing_ids:
-                products.append(ip)
-                
-        matched_product, match_score = match_product_from_text(event.raw_text, products)
+        if is_lisansarena:
+            if os.path.exists("lisansarena_shopier_links.json"):
+                try:
+                    with open("lisansarena_shopier_links.json", "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                        for item in data:
+                            pid = item.get("id")
+                            title = item.get("title")
+                            url = item.get("url")
+                            price_val = item.get("priceData", {}).get("price", "0")
+                            price_str = f"{float(price_val):.2f} TL"
+                            products.append({
+                                "id": pid,
+                                "title": title,
+                                "price": price_str,
+                                "url": url
+                            })
+                except:
+                    pass
+        elif is_keyvadi:
+            INJECTED_PRODUCTS = [
+                {"id": "47669105", "title": "YouTube Premium (3 Aylık Kod)", "price": "29.99 TL", "url": "https://www.shopier.com/keyvadi/47669105"},
+                {"id": "47669117", "title": "Netflix 4K Ultra HD (Kişisel Profil)", "price": "49.99 TL", "url": "https://www.shopier.com/keyvadi/47669117"},
+                {"id": "48114807", "title": "XBOX Game Pass Ultimate (3 Aylık Üyelik)", "price": "80.00 TL", "url": "https://www.shopier.com/keyvadi/48114807"},
+                {"id": "48114802", "title": "Steam İstediğiniz Oyun (60 TL Limitli)", "price": "60.00 TL", "url": "https://www.shopier.com/keyvadi/48114802"},
+                {"id": "48114795", "title": "Semrush Pro (14 Günlük Hesap)", "price": "150.00 TL", "url": "https://www.shopier.com/keyvadi/48114795"},
+                {"id": "48114789", "title": "Microsoft Office 365 (1 Yıllık Hesap)", "price": "70.00 TL", "url": "https://www.shopier.com/keyvadi/48114789"},
+                {"id": "48114785", "title": "Windows 10/11 Pro Lisans Anahtarı (Key)", "price": "70.00 TL", "url": "https://www.shopier.com/keyvadi/48114785"},
+                {"id": "47669159", "title": "Gemini Pro (1 Yıllık Hesap)", "price": "299.99 TL", "url": "https://www.shopier.com/keyvadi/47669159"},
+                {"id": "47669164", "title": "Gemini Pro (Davet Linki)", "price": "124.99 TL", "url": "https://www.shopier.com/keyvadi/47669164"},
+                {"id": "47669192", "title": "Gemini Ultra (Davet Linki)", "price": "399.99 TL", "url": "https://www.shopier.com/keyvadi/47669192"},
+                {"id": "47669222", "title": "Gemini Ultra (2.5k Kredili Hesap)", "price": "599.99 TL", "url": "https://www.shopier.com/keyvadi/47669222"},
+                {"id": "47669248", "title": "Super Grok (1 Aylık Hesap)", "price": "449.99 TL", "url": "https://www.shopier.com/keyvadi/47669248"},
+                {"id": "47669271", "title": "Super Grok (3 Aylık Hesap)", "price": "949.99 TL", "url": "https://www.shopier.com/keyvadi/47669271"},
+                {"id": "47669295", "title": "Super Grok (6 Aylık Hesap)", "price": "1499.99 TL", "url": "https://www.shopier.com/keyvadi/47669295"},
+                {"id": "47669305", "title": "Super Grok (12 Aylık Hesap)", "price": "2299.99 TL", "url": "https://www.shopier.com/keyvadi/47669305"},
+                {"id": "47669310", "title": "Gamma Ultra (1 Aylık Hesap)", "price": "449.99 TL", "url": "https://www.shopier.com/keyvadi/47669310"},
+                {"id": "47669316", "title": "Gamma Pro (1 Aylık Hesap)", "price": "299.99 TL", "url": "https://www.shopier.com/keyvadi/47669316"},
+            ]
+            if os.path.exists("parsed_keyvadi_products.json"):
+                try:
+                    with open("parsed_keyvadi_products.json", "r", encoding="utf-8") as f:
+                        products = json.load(f)
+                except:
+                    pass
+            existing_ids = {p["id"] for p in products}
+            for ip in INJECTED_PRODUCTS:
+                if ip["id"] not in existing_ids:
+                    products.append(ip)
+
+        matched_product = None
+        match_score = 0
+        if products:
+            matched_product, match_score = match_product_from_text(event.raw_text, products)
             
         welcome_key = f"{client_name}_{sender_id}"
         if not matched_product and welcome_key in welcomed_users:
@@ -1162,18 +1182,42 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         is_online = presence.get("is_online", False)
         status_text = "🟢 **Destek Çevrimiçi:** Şu an aktifiz, mesajınıza en kısa sürede yanıt vereceğiz. 😊" if is_online else "🔴 **Destek Çevrimdışı:** Şu an aktif değiliz ancak mesajınızı bırakırsanız en kısa sürede yanıtlayacağız."
 
-        if is_keyvadi:
+        if is_lisansarena:
             if matched_product:
                 reply_text = (
                     f"Merhaba! Aradığınız ürün (**{matched_product['title']}**) stoklarımızda mevcuttur.\n"
                     f"💰 Fiyatı: **{matched_product['price']}**\n\n"
-                    f"🔗 Güvenli satın almak için doğrudan sipariş linkiniz:\n"
-                    f"{matched_product['url']}\n\n"
-                    f"⚡ 7/24 otomatik teslimat yapılır.\n\n"
+                    f"👉 Ürünü güvenli satın almak ve 7/24 anında otomatik teslim almak için lütfen resmi satış botumuzu başlatın:\n\n"
+                    f"🔗 @LisansArenaBot\n\n"
                     f"━━━━━━━━━━━━━━━━━━━\n"
+                    f"{status_text}"
+                )
+            else:
+                reply_text = (
+                    "Merhaba! LisansArena Premium Hesap & Lisans satış platformuna hoş geldiniz. 😊\n\n"
+                    "🔥 **HAFTANIN DEV FIRSATLARI (SINIRLI STOK):**\n"
+                    "• 📺 Netflix UHD 1 Profil (1 Aylık): **99.90 ₺**\n"
+                    "• 🎨 Canva 1 Yıllık Pro Davet: **99.90 ₺**\n"
+                    "• 🎬 YouTube Premium (3 Aylık Kod): **44.90 ₺**\n"
+                    "• 🎧 Spotify Premium (4 Aylık Kod): **49.90 ₺**\n\n"
+                    "Canva Pro, Windows/Office Lisans Keyleri ve tüm ürünlerimiz anında otomatik teslimatla stoklardadır.\n\n"
+                    "━━━━━━━━━━━━━━━━━━━\n"
                     f"{status_text}\n"
                     f"━━━━━━━━━━━━━━━━━━━\n\n"
-                    f"Tüm ürün kataloğumuzu incelemek için botumuzu da kullanabilirsiniz: @KeyVadiSatisBot"
+                    "👉 Tüm ürün kataloğumuzu görmek, fiyatları incelemek ve anında 7/24 otomatik satın almak için resmi satış botumuzu başlatın:\n\n"
+                    "🔗 @LisansArenaBot"
+                )
+                welcomed_users.add(welcome_key)
+                save_welcomed_users()
+        elif is_keyvadi:
+            if matched_product:
+                reply_text = (
+                    f"Merhaba! Aradığınız ürün (**{matched_product['title']}**) stoklarımızda mevcuttur.\n"
+                    f"💰 Fiyatı: **{matched_product['price']}**\n\n"
+                    f"👉 Ürünü güvenli satın almak ve 7/24 anında otomatik teslim almak için lütfen resmi satış botumuzu başlatın:\n\n"
+                    f"🔗 @KeyVadiSatisBot\n\n"
+                    f"━━━━━━━━━━━━━━━━━━━\n"
+                    f"{status_text}"
                 )
             else:
                 reply_text = (
@@ -1226,6 +1270,7 @@ async def main():
 
     string_session_key = ""
     string_session_key_2 = ""
+    string_session_key_3 = ""
     ad_sleep_min = 600
     ad_sleep_max = 1200
     
@@ -1234,7 +1279,8 @@ async def main():
             with open("bot_config.json", "r", encoding="utf-8") as f:
                 cfg = json.load(f)
                 string_session_key = cfg.get("ad_string_session", "")
-                string_session_key_2 = cfg.get("ad_string_session_2", "")
+                string_session_key_2 = cfg.get("ad_string_session2", "")
+                string_session_key_3 = cfg.get("ad_string_session3", "")
                 ad_sleep_min = cfg.get("ad_sleep_min", 600)
                 ad_sleep_max = cfg.get("ad_sleep_max", 1200)
         except:
@@ -1255,7 +1301,7 @@ async def main():
                 print(f"✅ 1. Hesap yetkilendirildi ve aktif edildi. ID: {me.id}")
                 client1.loop.create_task(presence_watchdog(client1))
             else:
-                print("❌ HATA: 1. Hesap yetkilendirilmemiş!")
+                print("❌ HATA: 1. Hesap yetkilendirilmemsiz!")
         except Exception as e:
             print(f"❌ HATA: 1. Hesap bağlanırken hata oluştu: {type(e).__name__} - {e}")
             
@@ -1275,8 +1321,24 @@ async def main():
         except Exception as e:
             print(f"❌ HATA: 2. Hesap bağlanırken hata oluştu: {type(e).__name__} - {e}")
 
+    # Client 3
+    if string_session_key_3:
+        print("🔑 3. Hesap (LisansArena): StringSession kullanılarak bağlanılıyor...")
+        try:
+            from telethon.sessions import StringSession
+            client3 = TelegramClient(StringSession(string_session_key_3), api_id, api_hash)
+            await client3.connect()
+            if await client3.is_user_authorized():
+                me = await client3.get_me()
+                active_clients.append((client3, "Hesap #3", {"id": me.id}))
+                print(f"✅ 3. Hesap yetkilendirildi. ID: {me.id}")
+            else:
+                print("❌ HATA: 3. Hesap yetkilendirilmemiş!")
+        except Exception as e:
+            print(f"❌ HATA: 3. Hesap bağlanırken hata oluştu: {type(e).__name__} - {e}")
+
     # Fallback to local session file if no string session is configured at all
-    if not string_session_key and not string_session_key_2:
+    if not string_session_key and not string_session_key_2 and not string_session_key_3:
         print("📂 Yerel oturum dosyası kullanılarak bağlanılıyor...")
         try:
             client1 = TelegramClient(SESSION_NAME, api_id, api_hash)
@@ -1571,13 +1633,19 @@ async def main():
                     blast_targets.append(username_lower)
                 else:
                     debug_not_cached += 1
-            # Split targets between Hesap 1 and Hesap 2 to prevent rate limit conflicts and spacing cooldown deadlock
+            # Split targets dynamically among all active accounts to prevent rate limit conflicts and spacing cooldown deadlock
             if len(active_clients) > 1:
-                is_hesap_2 = "2" in client_name
+                num_clients = len(active_clients)
+                client_idx = 0
+                for idx, (c, name, _) in enumerate(active_clients):
+                    if name == client_name:
+                        client_idx = idx
+                        break
+                
                 import hashlib
                 def group_belongs_to_this_acc(gname):
                     h = int(hashlib.md5(gname.encode('utf-8')).hexdigest(), 16)
-                    return (h % 2 == 1) if is_hesap_2 else (h % 2 == 0)
+                    return (h % num_clients == client_idx)
                 
                 original_count = len(blast_targets)
                 blast_targets = [g for g in blast_targets if group_belongs_to_this_acc(g)]
@@ -1604,8 +1672,12 @@ async def main():
                     print(f"[{client_name}] 📤 TR saati {tr_time.strftime('%H:%M')} — normal saat, gönderim devam ediyor.")
                 
                 # Sadece tek mesaj şablonu kullan (rotasyonu devre dışı bırak)
-                is_keyvadi = "2" in client_name
-                fallback = "message_2.txt" if is_keyvadi else "message.txt"
+                if "3" in client_name:
+                    fallback = "message_3.txt"
+                elif "2" in client_name:
+                    fallback = "message_2.txt"
+                else:
+                    fallback = "message.txt"
                 available_files = [fallback] if os.path.exists(fallback) else []
                 
                 msg_history = load_msg_history()
@@ -1662,9 +1734,14 @@ async def main():
                     if not entity:
                         return
                     
-                    if is_on_cooldown(grup_name, client_name):
-                        print(f"[{client_name}] ⏳ @{grup_name} cooldown süresinde, atlanıyor...")
-                        return
+                    async with state_lock:
+                        if is_on_cooldown(grup_name, client_name):
+                            print(f"[{client_name}] ⏳ @{grup_name} cooldown süresinde, atlanıyor...")
+                            return
+                        # Immediately set cooldown to prevent other accounts from sending simultaneously (Race condition fix)
+                        set_cooldown(grup_name, client_name)
+                        
+
                     try:
                         # Mesaj rotasyonu: bu grup için farklı mesaj seç
                         if available_files:
@@ -1731,8 +1808,7 @@ async def main():
                             print(f"[{client_name}] ✅ @{grup_name} → Gönderildi! ({sent_count+1}) [Şablon: {chosen_name}]")
                             
                         sent_count += 1
-                        set_cooldown(grup_name, client_name)
-
+                        
                         update_stats(sent=1)
                         await reset_failure(grup_name)
                         async with state_lock:
@@ -2054,8 +2130,11 @@ async def main():
 
     async def run_worker_supervisor(client, client_name, joined_dialogs):
         if "2" in client_name:
-            print(f"⏳ [{client_name}] İlk çalıştırma gecikmesi aktif: Diğer hesapla çakışmayı önlemek için 15 dakika bekleniyor...")
-            await asyncio.sleep(900)
+            print(f"⏳ [{client_name}] İlk çalıştırma gecikmesi aktif: Diğer hesapla çakışmayı önlemek için 10 dakika bekleniyor...")
+            await asyncio.sleep(600)
+        elif "3" in client_name:
+            print(f"⏳ [{client_name}] İlk çalıştırma gecikmesi aktif: Diğer hesapla çakışmayı önlemek için 20 dakika bekleniyor...")
+            await asyncio.sleep(1200)
         while True:
             try:
                 await run_worker(client, client_name, joined_dialogs)

@@ -21,10 +21,12 @@ app = Flask(__name__,
 ad_process = None
 support_process = None
 froxy_process = None
+lisansarena_process = None
 
 LOG_FILE = "bot_log.txt"
 SUPPORT_LOG_FILE = "froxy_bot_log.txt"
 FROXY_LOG_FILE = "froxy_destek_log.txt"
+LISANSARENA_LOG_FILE = "lisansarena_bot_log.txt"
 MESSAGE_FILE = "message.txt"
 CONFIG_FILE = "bot_config.json"
 
@@ -77,7 +79,7 @@ def kill_process_by_script(script_name):
 
 # WATCHDOG SYSTEM: Keeps both bots running 24/7 unconditionally
 def bot_watchdog():
-    global ad_process, support_process, froxy_process
+    global ad_process, support_process, froxy_process, lisansarena_process
     print("🛡️ [Watchdog] Bot takip sistemi başlatıldı. Botlar her 15 saniyede bir denetlenecek.")
     time.sleep(30) # Give the web server 30 seconds to bind and report healthy first
     
@@ -221,6 +223,49 @@ def bot_watchdog():
                     try: os.remove("froxy_destek_bot.py.pid")
                     except: pass
                     froxy_process = None
+
+            # 4. Check LisansArena Bot (lisansarena_bot.py)
+            lisansarena_enabled = False
+            has_lisansarena_token = False
+            if cfg:
+                lisansarena_enabled = cfg.get("lisansarena_bot_running", False)
+                lisansarena_token = cfg.get("lisansarena_bot_token", "")
+                if lisansarena_token and lisansarena_token != "YOUR_TELEGRAM_BOT_TOKEN":
+                    has_lisansarena_token = True
+
+            if has_lisansarena_token and lisansarena_enabled:
+                la_proc_os = get_process_by_script('lisansarena_bot.py')
+                if la_proc_os is None:
+                    print("🤖 [Watchdog] LisansArena botu aktif değil veya durmuş. Başlatılıyor...")
+                    with open(LISANSARENA_LOG_FILE, "a", encoding="utf-8") as f:
+                        f.write("\n🚀 [Watchdog] LisansArena botu otomatik olarak başlatılıyor...\n")
+                    
+                    kill_process_by_script('lisansarena_bot.py')
+                    file_out = open(LISANSARENA_LOG_FILE, 'a', encoding="utf-8", buffering=1)
+                    lisansarena_process = subprocess.Popen(
+                        [sys.executable, '-u', 'lisansarena_bot.py'],
+                        stdout=file_out,
+                        stderr=file_out,
+                        cwd=base_dir,
+                        creationflags=flags,
+                        env=env
+                    )
+                    try:
+                        with open("lisansarena_bot.py.pid", "w") as f:
+                            f.write(str(lisansarena_process.pid))
+                    except:
+                        pass
+                    time.sleep(10)
+                else:
+                    lisansarena_process = la_proc_os
+            else:
+                la_proc_os = get_process_by_script('lisansarena_bot.py')
+                if la_proc_os is not None:
+                    print("🤖 [Watchdog] LisansArena botu durduruluyor (Yapılandırmada kapalı)...")
+                    kill_process_by_script('lisansarena_bot.py')
+                    try: os.remove("lisansarena_bot.py.pid")
+                    except: pass
+                    lisansarena_process = None
 
         except Exception as e:
             print(f"⚠️ [Watchdog] Genel denetleme hatası: {e}")
@@ -547,6 +592,120 @@ def save_froxy_config():
         return jsonify({"success": False, "message": str(e)})
 
 # ==========================================
+# LISANSARENA BOT API ENDPOINTS
+# ==========================================
+
+@app.route('/api/lisansarena/status', methods=['GET'])
+def lisansarena_status():
+    is_running = get_process_by_script('lisansarena_bot.py') is not None
+    return jsonify({"status": "running" if is_running else "stopped"})
+
+@app.route('/api/lisansarena/start', methods=['POST'])
+def lisansarena_start():
+    if get_process_by_script('lisansarena_bot.py') is not None:
+        return jsonify({"success": False, "message": "LisansArena botu zaten çalışıyor!"})
+        
+    cfg = {}
+    if os.path.exists(CONFIG_FILE):
+        try:
+            with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+                cfg = json.load(f)
+        except:
+            pass
+            
+    token = cfg.get("lisansarena_bot_token", "")
+    if not token or token == "YOUR_TELEGRAM_BOT_TOKEN":
+        return jsonify({"success": False, "message": "Lütfen önce geçerli bir LisansArena Bot Token kaydedin!"})
+        
+    try:
+        with open(LISANSARENA_LOG_FILE, "w", encoding="utf-8") as f:
+            f.write("🚀 LisansArena destek botu başlatılıyor...\n")
+            
+        kill_process_by_script('lisansarena_bot.py')
+        flags = subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
+        env = os.environ.copy()
+        env["PYTHONIOENCODING"] = "utf-8"
+        file_out = open(LISANSARENA_LOG_FILE, 'a', encoding="utf-8", buffering=1)
+        
+        global lisansarena_process
+        lisansarena_process = subprocess.Popen(
+            [sys.executable, '-u', 'lisansarena_bot.py'],
+            stdout=file_out,
+            stderr=file_out,
+            cwd=base_dir,
+            creationflags=flags,
+            env=env
+        )
+        try:
+            with open("lisansarena_bot.py.pid", "w") as f:
+                f.write(str(lisansarena_process.pid))
+        except:
+            pass
+        update_config_state("lisansarena_bot_running", True)
+        return jsonify({"success": True})
+    except Exception as e:
+         return jsonify({"success": False, "message": str(e)})
+
+@app.route('/api/lisansarena/stop', methods=['POST'])
+def lisansarena_stop():
+    kill_process_by_script('lisansarena_bot.py')
+    try: os.remove("lisansarena_bot.py.pid")
+    except: pass
+    with open(LISANSARENA_LOG_FILE, "a", encoding="utf-8") as f:
+        f.write("\n🛑 LisansArena destek botu kullanıcı tarafından durduruldu.\n")
+    global lisansarena_process
+    lisansarena_process = None
+    update_config_state("lisansarena_bot_running", False)
+    return jsonify({"success": True})
+
+@app.route('/api/lisansarena/logs', methods=['GET'])
+def get_lisansarena_logs():
+    if not os.path.exists(LISANSARENA_LOG_FILE):
+        return jsonify({"logs": []})
+    
+    try:
+        with open(LISANSARENA_LOG_FILE, 'r', encoding="utf-8", errors="replace") as f:
+            lines = f.readlines()
+            return jsonify({"logs": lines[-100:]})
+    except Exception as e:
+        return jsonify({"logs": [f"Log okuma hatası: {str(e)}"]})
+
+@app.route('/api/lisansarena/config', methods=['GET'])
+def get_lisansarena_config():
+    if not os.path.exists(CONFIG_FILE):
+        return jsonify({})
+    try:
+        with open(CONFIG_FILE, 'r', encoding="utf-8") as f:
+            cfg = json.load(f)
+        return jsonify({
+            "lisansarena_bot_token": cfg.get("lisansarena_bot_token", ""),
+            "admin_id": cfg.get("admin_id", "")
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
+@app.route('/api/lisansarena/config', methods=['POST'])
+def save_lisansarena_config():
+    data = request.json
+    try:
+        if os.path.exists(CONFIG_FILE):
+            with open(CONFIG_FILE, 'r', encoding="utf-8") as f:
+                cfg = json.load(f)
+        else:
+            cfg = {}
+        
+        if data.get("lisansarena_bot_token"):
+            cfg["lisansarena_bot_token"] = data["lisansarena_bot_token"]
+        if data.get("admin_id"):
+            cfg["admin_id"] = int(data["admin_id"])
+        
+        with open(CONFIG_FILE, 'w', encoding="utf-8") as f:
+            json.dump(cfg, f, indent=2, ensure_ascii=False)
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})
+
+# ==========================================
 # YAPILANDIRMA VE DİĞER YARDIMCI API'LER
 # ==========================================
 
@@ -584,6 +743,27 @@ def update_message2():
     new_message = data.get('message', '')
     try:
         with open(MESSAGE_2_FILE, 'w', encoding="utf-8") as f:
+            f.write(new_message)
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})
+
+MESSAGE_3_FILE = "message_3.txt"
+
+@app.route('/api/message3', methods=['GET'])
+def get_message3():
+    try:
+        with open(MESSAGE_3_FILE, 'r', encoding="utf-8") as f:
+            return jsonify({"message": f.read()})
+    except:
+        return jsonify({"message": ""})
+
+@app.route('/api/message3', methods=['POST'])
+def update_message3():
+    data = request.json
+    new_message = data.get('message', '')
+    try:
+        with open(MESSAGE_3_FILE, 'w', encoding="utf-8") as f:
             f.write(new_message)
         return jsonify({"success": True})
     except Exception as e:

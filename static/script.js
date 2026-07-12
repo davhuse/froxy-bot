@@ -6,6 +6,7 @@ const UI = {
     btnSave: document.getElementById('btnSave'),
     editor: document.getElementById('messageEditor'),
     editor2: document.getElementById('messageEditor2'),
+    editor3: document.getElementById('messageEditor3'),
     terminal: document.getElementById('terminalOutput'),
     
     // Stats Elements
@@ -32,11 +33,22 @@ const UI = {
     cfgFroxyAdminId: document.getElementById('cfgFroxyAdminId'),
     btnSaveFroxyConfig: document.getElementById('btnSaveFroxyConfig'),
     
+    // LisansArena Bot UI Elements
+    lisansarenaStatusBadge: document.getElementById('lisansarenaBotStatus'),
+    lisansarenaStatusText: document.querySelector('#lisansarenaBotStatus .text'),
+    btnLisansarenaStart: document.getElementById('btnLisansarenaStart'),
+    btnLisansarenaStop: document.getElementById('btnLisansarenaStop'),
+    lisansarenaTerminal: document.getElementById('lisansarenaTerminalOutput'),
+    cfgLisansarenaBotToken: document.getElementById('cfgLisansarenaBotToken'),
+    cfgLisansarenaAdminId: document.getElementById('cfgLisansarenaAdminId'),
+    btnSaveLisansarenaConfig: document.getElementById('btnSaveLisansarenaConfig'),
+    
     // Config Form Inputs
     cfgBotToken: document.getElementById('cfgBotToken'),
     cfgAdminId: document.getElementById('cfgAdminId'),
     cfgAdStringSession: document.getElementById('cfgAdStringSession'),
     cfgAdStringSession2: document.getElementById('cfgAdStringSession2'),
+    cfgAdStringSession3: document.getElementById('cfgAdStringSession3'),
     cfgAdSleepMin: document.getElementById('cfgAdSleepMin'),
     cfgAdSleepMax: document.getElementById('cfgAdSleepMax'),
     btnSaveConfig: document.getElementById('btnSaveConfig'),
@@ -220,6 +232,11 @@ async function loadMessage() {
         const data = await res.json();
         UI.editor2.value = data.message;
     } catch(e) {}
+    try {
+        const res = await fetch('/api/message3');
+        const data = await res.json();
+        UI.editor3.value = data.message;
+    } catch(e) {}
 }
 
 async function saveMessage(event) {
@@ -259,6 +276,33 @@ async function saveMessage2(event) {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ message: UI.editor2.value })
+    });
+    
+    const data = await res.json();
+    if(data.success) {
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> Kaydedildi';
+        btn.classList.add('success-state');
+        setTimeout(() => {
+            btn.innerHTML = oldHtml;
+            btn.classList.remove('success-state');
+        }, 2000);
+    } else {
+        btn.innerHTML = '<i class="fa-solid fa-xmark"></i> Hata';
+        setTimeout(() => btn.innerHTML = oldHtml, 2000);
+        alert("Mesaj kaydedilemedi: " + data.message);
+    }
+}
+
+async function saveMessage3(event) {
+    const btn = event.currentTarget;
+    const oldHtml = btn.innerHTML;
+    
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Kaydediliyor...';
+    
+    const res = await fetch('/api/message3', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ message: UI.editor3.value })
     });
     
     const data = await res.json();
@@ -412,6 +456,96 @@ async function saveFroxyConfig() {
     }
 }
 
+// LISANSARENA BOT LOGIC
+async function checkLisansarenaStatus() {
+    try {
+        const res = await fetch('/api/lisansarena/status');
+        const data = await res.json();
+        updateLisansarenaStatusUI(data.status);
+    } catch (e) {
+        updateLisansarenaStatusUI('offline');
+    }
+}
+
+function updateLisansarenaStatusUI(status) {
+    UI.lisansarenaStatusBadge.className = 'status-badge ' + status;
+    
+    if (status === 'running') {
+        UI.lisansarenaStatusText.textContent = 'Aktif';
+        UI.btnLisansarenaStart.disabled = true; UI.btnLisansarenaStart.style.opacity = '0.5';
+        UI.btnLisansarenaStop.disabled = false; UI.btnLisansarenaStop.style.opacity = '1';
+    } else if (status === 'stopped') {
+        UI.lisansarenaStatusText.textContent = 'Durduruldu';
+        UI.btnLisansarenaStart.disabled = false; UI.btnLisansarenaStart.style.opacity = '1';
+        UI.btnLisansarenaStop.disabled = true; UI.btnLisansarenaStop.style.opacity = '0.5';
+    } else {
+        UI.lisansarenaStatusText.textContent = 'Bağlantı Yok';
+        UI.btnLisansarenaStart.disabled = true; UI.btnLisansarenaStop.disabled = true;
+    }
+}
+
+async function startLisansarenaBot() {
+    UI.btnLisansarenaStart.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Başlatılıyor...';
+    const res = await fetch('/api/lisansarena/start', { method: 'POST' });
+    const data = await res.json();
+    UI.btnLisansarenaStart.innerHTML = '<i class="fa-solid fa-play"></i> Botu Aktifleştir';
+    if(data.success) checkLisansarenaStatus();
+    else alert("Hata: " + data.message);
+}
+
+async function stopLisansarenaBot() {
+    UI.btnLisansarenaStop.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Durduruluyor...';
+    const res = await fetch('/api/lisansarena/stop', { method: 'POST' });
+    const data = await res.json();
+    UI.btnLisansarenaStop.innerHTML = '<i class="fa-solid fa-stop"></i> Botu Durdur';
+    if(data.success) checkLisansarenaStatus();
+    else alert("Hata: " + data.message);
+}
+
+async function loadLisansarenaConfig() {
+    try {
+        const res = await fetch('/api/lisansarena/config');
+        const data = await res.json();
+        UI.cfgLisansarenaBotToken.value = data.lisansarena_bot_token || '';
+        UI.cfgLisansarenaAdminId.value = data.admin_id || '';
+    } catch (e) {
+        console.error("LisansArena config load error: ", e);
+    }
+}
+
+async function saveLisansarenaConfig() {
+    const oldHtml = UI.btnSaveLisansarenaConfig.innerHTML;
+    UI.btnSaveLisansarenaConfig.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Kaydediliyor...';
+    
+    const configData = {
+        lisansarena_bot_token: UI.cfgLisansarenaBotToken.value.trim(),
+        admin_id: parseInt(UI.cfgLisansarenaAdminId.value) || 0
+    };
+    
+    try {
+        const res = await fetch('/api/lisansarena/config', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(configData)
+        });
+        const data = await res.json();
+        if (data.success) {
+            UI.btnSaveLisansarenaConfig.innerHTML = '<i class="fa-solid fa-check"></i> Kaydedildi';
+            UI.btnSaveLisansarenaConfig.classList.add('success-state');
+            setTimeout(() => {
+                UI.btnSaveLisansarenaConfig.innerHTML = oldHtml;
+                UI.btnSaveLisansarenaConfig.classList.remove('success-state');
+            }, 2000);
+        } else {
+            throw new Error(data.message);
+        }
+    } catch(e) {
+        UI.btnSaveLisansarenaConfig.innerHTML = '<i class="fa-solid fa-xmark"></i> Hata';
+        setTimeout(() => UI.btnSaveLisansarenaConfig.innerHTML = oldHtml, 2000);
+        alert("Yapılandırma kaydedilemedi: " + e.message);
+    }
+}
+
 // CONFIGURATION LOGIC
 async function loadConfig() {
     try {
@@ -421,7 +555,8 @@ async function loadConfig() {
             UI.cfgBotToken.value = data.bot_token || '';
             UI.cfgAdminId.value = data.admin_id || '';
             UI.cfgAdStringSession.value = data.ad_string_session || '';
-            UI.cfgAdStringSession2.value = data.ad_string_session_2 || '';
+            UI.cfgAdStringSession2.value = data.ad_string_session2 || '';
+            UI.cfgAdStringSession3.value = data.ad_string_session3 || '';
             UI.cfgAdSleepMin.value = data.ad_sleep_min || 180;
             UI.cfgAdSleepMax.value = data.ad_sleep_max || 300;
         }
@@ -438,7 +573,8 @@ async function saveConfig() {
         bot_token: UI.cfgBotToken.value.trim(),
         admin_id: parseInt(UI.cfgAdminId.value) || 0,
         ad_string_session: UI.cfgAdStringSession.value.trim(),
-        ad_string_session_2: UI.cfgAdStringSession2.value.trim(),
+        ad_string_session2: UI.cfgAdStringSession2.value.trim(),
+        ad_string_session3: UI.cfgAdStringSession3.value.trim(),
         ad_sleep_min: parseInt(UI.cfgAdSleepMin.value) || 180,
         ad_sleep_max: parseInt(UI.cfgAdSleepMax.value) || 300,
     };
@@ -529,6 +665,23 @@ async function fetchLogs() {
         UI.froxyTerminal.innerHTML = html;
         if (isScrolledToBottom) {
             UI.froxyTerminal.scrollTop = UI.froxyTerminal.scrollHeight;
+        }
+    } catch(e) {}
+    
+    // 4. Fetch LisansArena Bot Logs
+    try {
+        const res = await fetch('/api/lisansarena/logs');
+        const data = await res.json();
+        let html = '';
+        if (data.logs.length === 0) {
+            html = '<p style="color: #666; text-align: center; margin-top: 50px;">Henüz log yok...</p>';
+        } else {
+            html = data.logs.map(line => colorizeLog(line)).join('');
+        }
+        const isScrolledToBottom = UI.lisansarenaTerminal.scrollHeight - UI.lisansarenaTerminal.clientHeight <= UI.lisansarenaTerminal.scrollTop + 50;
+        UI.lisansarenaTerminal.innerHTML = html;
+        if (isScrolledToBottom) {
+            UI.lisansarenaTerminal.scrollTop = UI.lisansarenaTerminal.scrollHeight;
         }
     } catch(e) {}
 }
@@ -782,6 +935,7 @@ window.onload = () => {
     loadMessage();
     loadConfig();
     loadFroxyConfig();
+    loadLisansarenaConfig();
     loadScraperConfig();
     loadAutoDmConfig();
     loadTemplates();
@@ -789,6 +943,7 @@ window.onload = () => {
     checkStatus();
     checkSupportStatus();
     checkFroxyStatus();
+    checkLisansarenaStatus();
     fetchLogs();
     fetchStats();
     loadTickets();
@@ -796,6 +951,7 @@ window.onload = () => {
     setInterval(checkStatus, 10000);
     setInterval(checkSupportStatus, 10000);
     setInterval(checkFroxyStatus, 10000);
+    setInterval(checkLisansarenaStatus, 10000);
     setInterval(fetchLogs, 12000);
     setInterval(fetchStats, 15000);
     setInterval(loadTickets, 20000); // Poll tickets every 20 seconds

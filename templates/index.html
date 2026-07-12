@@ -25,6 +25,9 @@
                 <button class="tab-btn" id="tabBtnFroxy" onclick="switchTab('froxy')">
                     <i class="fa-solid fa-brain"></i> Froxy AI Botu
                 </button>
+                <button class="tab-btn" id="tabBtnLisansarena" onclick="switchTab('lisansarena')">
+                    <i class="fa-solid fa-store"></i> LisansArena Botu
+                </button>
                 <button class="tab-btn" id="tabBtnBlacklist" onclick="switchTab('blacklist')">
                     <i class="fa-solid fa-ban"></i> Kara Liste
                 </button>
@@ -119,7 +122,7 @@
                 </div>
 
                 <!-- ESKİ TEK MESAJ EDİTÖRLERİ (Fallback) -->
-                <div class="editors-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; margin-bottom: 20px;">
+                <div class="editors-container" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; width: 100%; margin-bottom: 20px;">
                     <div class="editor-section glass-panel" style="margin-bottom: 0;">
                         <h2><i class="fa-solid fa-pen-to-square"></i> 1. Hesap Mesajı (message.txt)</h2>
                         <textarea id="messageEditor" spellcheck="false" style="min-height: 250px;"></textarea>
@@ -132,6 +135,14 @@
                         <h2><i class="fa-solid fa-pen-to-square"></i> 2. Hesap Mesajı (message_2.txt)</h2>
                         <textarea id="messageEditor2" spellcheck="false" style="min-height: 250px;"></textarea>
                         <button class="btn secondary" id="btnSave2" onclick="saveMessage2(event)">
+                            <i class="fa-solid fa-floppy-disk"></i> Kaydet
+                        </button>
+                    </div>
+
+                    <div class="editor-section glass-panel" style="margin-bottom: 0;">
+                        <h2><i class="fa-solid fa-pen-to-square"></i> 3. Hesap Mesajı (message_3.txt)</h2>
+                        <textarea id="messageEditor3" spellcheck="false" style="min-height: 250px;"></textarea>
+                        <button class="btn secondary" id="btnSave3" onclick="saveMessage3(event)">
                             <i class="fa-solid fa-floppy-disk"></i> Kaydet
                         </button>
                     </div>
@@ -191,6 +202,11 @@
                     <div class="form-group">
                         <label for="cfgAdStringSession2">Reklam Botu 2. Hesap StringSession Anahtarı (İsteğe Bağlı)</label>
                         <input type="text" id="cfgAdStringSession2" placeholder="Örn: 1BQWxsY..." spellcheck="false">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="cfgAdStringSession3">Reklam Botu 3. Hesap StringSession Anahtarı (İsteğe Bağlı)</label>
+                        <input type="text" id="cfgAdStringSession3" placeholder="Örn: 1BQWxsY..." spellcheck="false">
                     </div>
 
                     <h3>Reklam Botu Ayarları</h3>
@@ -265,6 +281,57 @@
                 <div class="logs-section glass-panel">
                     <h2><i class="fa-solid fa-terminal"></i> Canlı Froxy AI Bot Günlükleri</h2>
                     <div class="terminal" id="froxyTerminalOutput">
+                        <!-- Loglar buraya gelecek -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: LISANSARENA BOTU -->
+        <div id="tab-lisansarena" class="tab-content">
+            <div class="controls-panel glass-panel">
+                <div class="bot-info-header">
+                    <h2><i class="fa-solid fa-store"></i> LisansArena Bot Kontrolü</h2>
+                    <div class="status-badge stopped" id="lisansarenaBotStatus">
+                        <span class="dot"></span>
+                        <span class="text">Kontrol Ediliyor...</span>
+                    </div>
+                </div>
+                <div class="control-actions">
+                    <button id="btnLisansarenaStart" class="btn primary" onclick="startLisansarenaBot()">
+                        <i class="fa-solid fa-play"></i> Botu Aktifleştir
+                    </button>
+                    <button id="btnLisansarenaStop" class="btn danger" onclick="stopLisansarenaBot()">
+                        <i class="fa-solid fa-stop"></i> Botu Durdur
+                    </button>
+                </div>
+                <p class="info-note">
+                    <i class="fa-solid fa-circle-info"></i> Bu bot, LisansArena müşterilerinin Telegram üzerinden lisans satın almasını ve destek talebi açmasını sağlar (@LisansArenaBot).
+                </p>
+            </div>
+
+            <div class="main-content grid-layout">
+                <div class="config-section glass-panel">
+                    <h2><i class="fa-solid fa-gears"></i> LisansArena Bot Yapılandırması</h2>
+                    
+                    <div class="form-group">
+                        <label for="cfgLisansarenaBotToken">LisansArena Bot Token (@LisansArenaBot)</label>
+                        <input type="text" id="cfgLisansarenaBotToken" placeholder="Örn: 8272543860:AAGmIdyky47dOxFBmqCz..." spellcheck="false">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="cfgLisansarenaAdminId">LisansArena Admin Telegram Chat ID</label>
+                        <input type="number" id="cfgLisansarenaAdminId" placeholder="Örn: 8797763469">
+                    </div>
+
+                    <button class="btn primary" id="btnSaveLisansarenaConfig" onclick="saveLisansarenaConfig()" style="margin-top:20px; width:100%; justify-content:center;">
+                        <i class="fa-solid fa-floppy-disk"></i> Yapılandırmayı Kaydet
+                    </button>
+                </div>
+
+                <div class="logs-section glass-panel">
+                    <h2><i class="fa-solid fa-terminal"></i> Canlı LisansArena Bot Günlükleri</h2>
+                    <div class="terminal" id="lisansarenaTerminalOutput">
                         <!-- Loglar buraya gelecek -->
                     </div>
                 </div>
