@@ -1202,6 +1202,137 @@ def shopier_callback():
         print(f"⚠️ Shopier webhook processing error: {e}")
         return str(e), 500
 
+from telethon import TelegramClient
+from telethon.sessions import StringSession
+from telethon.errors import SessionPasswordNeededError
+
+telegram_logins = {}
+
+def run_async_auth(coro):
+    import asyncio
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+    return loop.run_until_complete(coro)
+
+@app.route('/api/telegram/send-code', methods=['POST'])
+@login_required
+def tg_send_code():
+    user_id = session['user_id']
+    data = request.json or {}
+    phone = data.get("phone", "").strip()
+    api_id = data.get("api_id", "").strip()
+    api_hash = data.get("api_hash", "").strip()
+    slot = data.get("slot", "1")
+    
+    if not phone or not api_id or not api_hash:
+        return jsonify({"success": False, "message": "Lütfen Telefon, API ID ve API Hash giriniz."})
+        
+    try:
+        api_id_int = int(api_id)
+    except:
+        return jsonify({"success": False, "message": "API ID geçersiz."})
+        
+    async def _send():
+        if user_id in telegram_logins:
+            try:
+                await telegram_logins[user_id]["client"].disconnect()
+            except: pass
+            
+        client = TelegramClient(StringSession(), api_id_int, api_hash)
+        await client.connect()
+        sent_code = await client.send_code_request(phone)
+        telegram_logins[user_id] = {
+            "client": client,
+            "phone": phone,
+            "phone_code_hash": sent_code.phone_code_hash,
+            "api_id": api_id_int,
+            "api_hash": api_hash,
+            "slot": slot
+        }
+        return True
+
+    try:
+        run_async_auth(_send())
+        return jsonify({"success": True, "message": "Doğrulama kodu gönderildi!"})
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Kod gönderme hatası: {str(e)}"})
+
+@app.route('/api/telegram/verify-code', methods=['POST'])
+@login_required
+def tg_verify_code():
+    user_id = session['user_id']
+    data = request.json or {}
+    code = data.get("code", "").strip()
+    
+    if user_id not in telegram_logins:
+        return jsonify({"success": False, "message": "Aktif bir giriş işlemi bulunamadı. Lütfen tekrar deneyin."})
+        
+    state = telegram_logins[user_id]
+    client = state["client"]
+    phone = state["phone"]
+    phone_code_hash = state["phone_code_hash"]
+    slot = state["slot"]
+    
+    async def _verify():
+        try:
+            await client.sign_in(phone, code, phone_code_hash=phone_code_hash)
+            return {"success": True}
+        except SessionPasswordNeededError:
+            return {"success": True, "requires_password": True}
+            
+    try:
+        res = run_async_auth(_verify())
+        if res.get("requires_password"):
+            return jsonify({"success": True, "requires_password": True, "message": "İki adımlı doğrulama şifresi gerekli."})
+            
+        session_str = client.session.save()
+        run_async_auth(client.disconnect())
+        telegram_logins.pop(user_id, None)
+        
+        cfg = user_db.get_user_config(user_id) or {}
+        key_name = "ad_string_session" if slot == "1" else f"ad_string_session{slot}"
+        cfg[key_name] = session_str
+        user_db.save_user_config(user_id, cfg)
+        
+        return jsonify({"success": True, "message": f"Hesap #{slot} başarıyla bağlandı!"})
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Doğrulama hatası: {str(e)}"})
+
+@app.route('/api/telegram/verify-password', methods=['POST'])
+@login_required
+def tg_verify_password():
+    user_id = session['user_id']
+    data = request.json or {}
+    password = data.get("password", "").strip()
+    
+    if user_id not in telegram_logins:
+        return jsonify({"success": False, "message": "Aktif bir giriş işlemi bulunamadı."})
+        
+    state = telegram_logins[user_id]
+    client = state["client"]
+    slot = state["slot"]
+    
+    async def _verify_pw():
+        await client.sign_in(password=password)
+        
+    try:
+        run_async_auth(_verify_pw())
+        session_str = client.session.save()
+        run_async_auth(client.disconnect())
+        telegram_logins.pop(user_id, None)
+        
+        cfg = user_db.get_user_config(user_id) or {}
+        key_name = "ad_string_session" if slot == "1" else f"ad_string_session{slot}"
+        cfg[key_name] = session_str
+        user_db.save_user_config(user_id, cfg)
+        
+        return jsonify({"success": True, "message": f"Hesap #{slot} iki adımlı doğrulama ile başarıyla bağlandı!"})
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Şifre doğrulama hatası: {str(e)}"})
+
 @app.route('/api/admin/licenses', methods=['GET'])
 @login_required
 def api_admin_get_licenses():
