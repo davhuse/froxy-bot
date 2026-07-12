@@ -189,20 +189,44 @@ def process_marketing_features(msg, is_keyvadi):
 
 
 
-PROGRESS_FILE = 'progress.txt'
-BLACKLIST_FILE = 'blacklist.txt'
-AUTO_GROUPS_FILE = 'auto_groups.txt'
+import sys
+USER_ID = None
+if len(sys.argv) > 1:
+    USER_ID = sys.argv[1]
+
+def get_user_file(filename):
+    if USER_ID:
+        os.makedirs("logs", exist_ok=True)
+        return f"logs/user_{USER_ID}_{filename}"
+    return filename
+
+def load_bot_config():
+    if USER_ID:
+        try:
+            import user_db
+            return user_db.get_user_config(USER_ID) or {}
+        except Exception as e:
+            print(f"Error importing user_db or loading config: {e}")
+            return {}
+    else:
+        if os.path.exists("bot_config.json"):
+            try:
+                with open("bot_config.json", "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except:
+                pass
+        return {}
+
+PROGRESS_FILE = get_user_file('progress.txt')
+BLACKLIST_FILE = get_user_file('blacklist.txt')
+AUTO_GROUPS_FILE = get_user_file('auto_groups.txt')
 MESSAGES_DIR = 'messages'
-MSG_HISTORY_FILE = 'msg_history.json'
-COOLDOWN_FILE = 'group_cooldown.json'
-GROUP_COOLDOWN_HOURS = 1  # Varsayılan: 1 saat ortak cooldown. Config'den ezilebilir.
-if os.path.exists("bot_config.json"):
-    try:
-        with open("bot_config.json", "r", encoding="utf-8") as f:
-            cfg = json.load(f)
-            GROUP_COOLDOWN_HOURS = cfg.get("group_cooldown_hours", 1)
-    except:
-        pass
+MSG_HISTORY_FILE = get_user_file('msg_history.json')
+COOLDOWN_FILE = get_user_file('group_cooldown.json')
+
+GROUP_COOLDOWN_HOURS = 1
+cfg = load_bot_config()
+GROUP_COOLDOWN_HOURS = cfg.get("group_cooldown_hours", 1)
 
 NEGATIVE_KEYWORDS = [
     "sigara", "vape", "puff", "tütün", "likit", "shisha", "nargile", "elektronik sigara", "elektroniksigara",
@@ -258,16 +282,9 @@ def is_on_cooldown(grup_name, client_name):
     from datetime import datetime
     
     # Dinamik olarak config'den oku
-    cooldown_hours = 1
-    spacing_minutes = 20
-    if os.path.exists("bot_config.json"):
-        try:
-            with open("bot_config.json", "r", encoding="utf-8") as f:
-                cfg = json.load(f)
-                cooldown_hours = cfg.get("group_cooldown_hours", 1)
-                spacing_minutes = cfg.get("spacing_cooldown_minutes", 20)
-        except:
-            pass
+    cfg = load_bot_config()
+    cooldown_hours = cfg.get("group_cooldown_hours", 1)
+    spacing_minutes = cfg.get("spacing_cooldown_minutes", 20)
             
     cooldowns = load_cooldowns()
     key = grup_name.lower()
@@ -435,19 +452,13 @@ async def auto_scrape_groups(client, client_name, joined_usernames=None):
     """Telegram global aramasıyla yeni, aktif ve kaliteli Türkçe satış grupları keşfeder."""
     print(f"\n🔍 [{client_name}] Gelişmiş Grup Keşfi (Auto-Scraper v2) başlıyor...")
     
-    # Yapılandırmayı bot_config.json dosyasından dinamik olarak oku
     scraper_active = True
     keywords_list = SCRAPE_KEYWORDS
-    if os.path.exists("bot_config.json"):
-        try:
-            with open("bot_config.json", "r", encoding="utf-8") as f:
-                cfg = json.load(f)
-                scraper_active = cfg.get("scraper_active", True)
-                custom_kw = cfg.get("scrape_keywords", None)
-                if custom_kw and len(custom_kw) > 0:
-                    keywords_list = custom_kw
-        except:
-            pass
+    cfg = load_bot_config()
+    scraper_active = cfg.get("scraper_active", True)
+    custom_kw = cfg.get("scrape_keywords", None)
+    if custom_kw and len(custom_kw) > 0:
+        keywords_list = custom_kw
             
     if not scraper_active:
         print(f"ℹ️ [{client_name}] Auto-Scraper pasif (kontrol panelinden kapatılmış).")
@@ -625,10 +636,8 @@ async def auto_scrape_groups(client, client_name, joined_usernames=None):
                 # Admin'e onay için bireysel bildirim gönder (Otomatik katılım iptal edildi)
                 try:
                     admin_id = None
-                    if os.path.exists("bot_config.json"):
-                        with open("bot_config.json", "r", encoding="utf-8") as f_cfg:
-                            cfg = json.load(f_cfg)
-                            admin_id = cfg.get("admin_id")
+                    cfg = load_bot_config()
+                    admin_id = cfg.get("admin_id")
                     if admin_id:
                         bildirim = (
                             f"🔍 **Yeni Kaliteli Grup Keşfedildi!**\n"
@@ -797,15 +806,10 @@ def save_to_list(grup, dosya):
         print(f"⚠️ Firestore güncelleme hatası: {e}")
 
 def register_admin_handler(client, client_name, joined_dialogs):
-    # bot_config.json'dan admin_id'yi oku
+    # admin_id'yi oku
     admin_id = None
-    if os.path.exists("bot_config.json"):
-        try:
-            with open("bot_config.json", "r", encoding="utf-8") as f:
-                cfg = json.load(f)
-                admin_id = cfg.get("admin_id")
-        except:
-            pass
+    cfg = load_bot_config()
+    admin_id = cfg.get("admin_id")
             
     if not admin_id:
         print(f"⚠️ [{client_name}] Uyarı: admin_id bulunamadığı için admin komut işleyicisi başlatılamadı.")
@@ -861,7 +865,7 @@ def register_admin_handler(client, client_name, joined_dialogs):
             if msg_text in ['/tara', 'tara', 'scan', '/scan']:
                 await event.respond("🔍 **Grup taraması başlatılıyor...**\nBu işlem birkaç dakika sürebilir.")
                 try:
-                    with open("trigger_scraper.flag", "w", encoding="utf-8") as f:
+                    with open(get_user_file("trigger_scraper.flag"), "w", encoding="utf-8") as f:
                         f.write("trigger")
                 except Exception as e:
                     await event.respond(f"⚠️ Hata: {e}")
@@ -1101,13 +1105,8 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
             return
             
         admin_id = None
-        if os.path.exists("bot_config.json"):
-            try:
-                with open("bot_config.json", "r", encoding="utf-8") as f:
-                    cfg = json.load(f)
-                    admin_id = cfg.get("admin_id")
-            except:
-                pass
+        cfg = load_bot_config()
+        admin_id = cfg.get("admin_id")
         if admin_id and sender_id == int(admin_id):
             return
 
@@ -1274,17 +1273,12 @@ async def main():
     ad_sleep_min = 600
     ad_sleep_max = 1200
     
-    if os.path.exists("bot_config.json"):
-        try:
-            with open("bot_config.json", "r", encoding="utf-8") as f:
-                cfg = json.load(f)
-                string_session_key = cfg.get("ad_string_session", "")
-                string_session_key_2 = cfg.get("ad_string_session2", cfg.get("ad_string_session_2", ""))
-                string_session_key_3 = cfg.get("ad_string_session3", cfg.get("ad_string_session_3", ""))
-                ad_sleep_min = cfg.get("ad_sleep_min", 600)
-                ad_sleep_max = cfg.get("ad_sleep_max", 1200)
-        except:
-            pass
+    cfg = load_bot_config()
+    string_session_key = cfg.get("ad_string_session", "")
+    string_session_key_2 = cfg.get("ad_string_session2", cfg.get("ad_string_session_2", ""))
+    string_session_key_3 = cfg.get("ad_string_session3", cfg.get("ad_string_session_3", ""))
+    ad_sleep_min = cfg.get("ad_sleep_min", 600)
+    ad_sleep_max = cfg.get("ad_sleep_max", 1200)
 
     active_clients = []
     
@@ -1366,19 +1360,14 @@ async def main():
         if "id" in info:
             our_user_ids.add(info["id"])
             
-    # bot_config.json dosyasından bot id'lerini ayıkla
-    if os.path.exists("bot_config.json"):
-        try:
-            with open("bot_config.json", "r", encoding="utf-8") as f:
-                cfg = json.load(f)
-            for key in ["bot_token", "froxy_bot_token"]:
-                token = cfg.get(key, "")
-                if token and ":" in token:
-                    bot_id = int(token.split(":")[0])
-                    our_user_ids.add(bot_id)
-            print(f"🔒 Sistem Hesap ve Bot Kimlikleri Kaydedildi: {list(our_user_ids)}")
-        except Exception as e:
-            print(f"⚠️ Bot ID'leri ayıklanırken hata: {e}")
+    # config dosyasından bot id'lerini ayıkla
+    cfg = load_bot_config()
+    for key in ["bot_token", "froxy_bot_token"]:
+        token = cfg.get(key, "")
+        if token and ":" in token:
+            bot_id = int(token.split(":")[0])
+            our_user_ids.add(bot_id)
+    print(f"🔒 Sistem Hesap ve Bot Kimlikleri Kaydedildi: {list(our_user_ids)}")
 
     state_lock = asyncio.Lock()
     active_jobs = set()
@@ -1392,6 +1381,8 @@ async def main():
         protected_groups = get_all_protected_groups()
         
         VERIFIED_FILE = f"verified_groups_{client_name.replace(' ', '_').replace('#', '')}.json"
+        if USER_ID:
+            VERIFIED_FILE = f"logs/user_{USER_ID}_{VERIFIED_FILE}"
         MIN_UNIQUE_SENDERS = 10   # Grupta en az 10 farklı kişi yazmış olmalı
         MSG_CHECK_LIMIT = 50      # Son 50 mesaja bak
         VERIFY_TTL_HOURS = 24     # Doğrulanmış gruplar 24 saat geçerli
@@ -1542,6 +1533,9 @@ async def main():
                             
                 # Grup bilgilerini dosyaya kaydet
                 groups_file = f"cached_groups_{client_name.replace(' ', '_').replace('#', '')}.json"
+                if USER_ID:
+                    os.makedirs("logs", exist_ok=True)
+                    groups_file = f"logs/user_{USER_ID}_{groups_file}"
                 try:
                     with open(groups_file, 'w', encoding='utf-8') as f:
                         json.dump(all_groups_info, f, ensure_ascii=False, indent=2)
@@ -1766,14 +1760,8 @@ async def main():
                         
                         # Görsel/Banner gönderimi (Grup yetki kontrolleri ve hata toleransı eklendi)
                         banner_file = "keyvadi_banner.png" if is_keyvadi else "froxy_banner.png"
-                        allows_media = False
-                        if os.path.exists("bot_config.json"):
-                            try:
-                                with open("bot_config.json", "r", encoding="utf-8") as f_cfg:
-                                    cfg = json.load(f_cfg)
-                                    allows_media = cfg.get("send_images", False)
-                            except:
-                                pass
+                        cfg = load_bot_config()
+                        allows_media = cfg.get("send_images", False)
                                 
                         # Grup bazında görsel engeli var mı kontrol et
                         if allows_media:
@@ -2081,10 +2069,10 @@ async def main():
             # 6 saat bekle ama her 15 saniyede bir flag dosyasını kontrol et (acil tetikleyici)
             kalan = 21600  # 6 saat = 21600 saniye
             while kalan > 0:
-                if os.path.exists("trigger_scraper.flag"):
+                if os.path.exists(get_user_file("trigger_scraper.flag")):
                     print("⚡ [Scraper Task] TETİKLEYİCİ: 'trigger_scraper.flag' tespit edildi! Anlık tarama başlatılıyor...")
                     try:
-                        os.remove("trigger_scraper.flag")
+                        os.remove(get_user_file("trigger_scraper.flag"))
                     except:
                         pass
                     joined_usernames = set()

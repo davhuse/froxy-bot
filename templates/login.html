@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telegram Bot SaaS Giriş & Kayıt</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="background-aurora"></div>
+    
+    <div class="auth-wrapper">
+        <div class="auth-card glass-panel">
+            <div class="auth-logo">
+                <i class="fa-solid fa-robot"></i>
+            </div>
+            <div class="auth-title">SaaS Portal</div>
+            <div class="auth-subtitle">Gelişmiş Telegram Reklam Otomasyonu</div>
+            
+            <div class="auth-tabs">
+                <button class="auth-tab active" id="tabLogin" onclick="switchAuthTab('login')">Giriş Yap</button>
+                <button class="auth-tab" id="tabRegister" onclick="switchAuthTab('register')">Kayıt Ol</button>
+            </div>
+            
+            <div class="auth-message" id="authMsg"></div>
+            
+            <!-- Login Form -->
+            <form class="auth-form active" id="formLogin" onsubmit="handleAuthSubmit(event, 'login')">
+                <div class="form-group">
+                    <label><i class="fa-solid fa-user"></i> Kullanıcı Adı</label>
+                    <input type="text" id="loginUsername" required placeholder="Kullanıcı adınızı girin">
+                </div>
+                <div class="form-group">
+                    <label><i class="fa-solid fa-lock"></i> Şifre</label>
+                    <input type="password" id="loginPassword" required placeholder="Şifrenizi girin">
+                </div>
+                <button type="submit" class="btn primary">Giriş Yap <i class="fa-solid fa-right-to-bracket"></i></button>
+            </form>
+            
+            <!-- Register Form -->
+            <form class="auth-form" id="formRegister" onsubmit="handleAuthSubmit(event, 'register')">
+                <div class="form-group">
+                    <label><i class="fa-solid fa-user"></i> Kullanıcı Adı</label>
+                    <input type="text" id="regUsername" required placeholder="Bir kullanıcı adı belirleyin">
+                </div>
+                <div class="form-group">
+                    <label><i class="fa-solid fa-lock"></i> Şifre</label>
+                    <input type="password" id="regPassword" required placeholder="Güçlü bir şifre belirleyin">
+                </div>
+                <div class="form-group">
+                    <label><i class="fa-solid fa-key"></i> Lisans Anahtarı</label>
+                    <input type="text" id="regLicense" required placeholder="TESTKEY-XXXXXX formatındaki anahtarınız">
+                </div>
+                <button type="submit" class="btn primary">Hesap Oluştur <i class="fa-solid fa-user-plus"></i></button>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        function switchAuthTab(type) {
+            document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+            
+            if (type === 'login') {
+                document.getElementById('tabLogin').classList.add('active');
+                document.getElementById('formLogin').classList.add('active');
+            } else {
+                document.getElementById('tabRegister').classList.add('active');
+                document.getElementById('formRegister').classList.add('active');
+            }
+            
+            // Clear messages
+            const msg = document.getElementById('authMsg');
+            msg.className = 'auth-message';
+            msg.innerText = '';
+        }
+        
+        async function handleAuthSubmit(event, type) {
+            event.preventDefault();
+            
+            const msg = document.getElementById('authMsg');
+            msg.className = 'auth-message';
+            msg.innerText = '';
+            
+            let url = '';
+            let payload = {};
+            
+            if (type === 'login') {
+                payload = {
+                    username: document.getElementById('loginUsername').value,
+                    password: document.getElementById('loginPassword').value
+                };
+                url = '/api/auth/login';
+            } else {
+                payload = {
+                    username: document.getElementById('regUsername').value,
+                    password: document.getElementById('regPassword').value,
+                    license_key: document.getElementById('regLicense').value
+                };
+                url = '/api/auth/register';
+            }
+            
+            try {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    msg.classList.add('success');
+                    msg.innerText = data.message;
+                    
+                    if (type === 'login' || data.success) {
+                        setTimeout(() => {
+                            window.location.href = '/';
+                        }, 1000);
+                    }
+                } else {
+                    msg.classList.add('error');
+                    msg.innerText = data.message;
+                }
+            } catch (e) {
+                msg.classList.add('error');
+                msg.innerText = "Bağlantı hatası oluştu: " + e.message;
+            }
+        }
+    </script>
+</body>
+</html>

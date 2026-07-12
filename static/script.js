@@ -934,27 +934,34 @@ async function saveTemplate(name) {
 window.onload = () => {
     loadMessage();
     loadConfig();
-    loadFroxyConfig();
-    loadLisansarenaConfig();
     loadScraperConfig();
     loadAutoDmConfig();
     loadTemplates();
     
     checkStatus();
-    checkSupportStatus();
-    checkFroxyStatus();
-    checkLisansarenaStatus();
     fetchLogs();
     fetchStats();
-    loadTickets();
+    
+    const isAdmin = document.getElementById('tabBtnDestek') !== null;
+    if (isAdmin) {
+        loadFroxyConfig();
+        loadLisansarenaConfig();
+        checkSupportStatus();
+        checkFroxyStatus();
+        checkLisansarenaStatus();
+        loadTickets();
+    }
     
     setInterval(checkStatus, 10000);
-    setInterval(checkSupportStatus, 10000);
-    setInterval(checkFroxyStatus, 10000);
-    setInterval(checkLisansarenaStatus, 10000);
     setInterval(fetchLogs, 12000);
     setInterval(fetchStats, 15000);
-    setInterval(loadTickets, 20000); // Poll tickets every 20 seconds
+    
+    if (isAdmin) {
+        setInterval(checkSupportStatus, 10000);
+        setInterval(checkFroxyStatus, 10000);
+        setInterval(checkLisansarenaStatus, 10000);
+        setInterval(loadTickets, 20000); // Poll tickets every 20 seconds
+    }
 };
 
 // TICKETS LOGIC

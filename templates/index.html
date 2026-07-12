@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KeyVadi Bot Dashboard</title>
+    <title>Telegram Bot Control Panel</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;600&display=swap" rel="stylesheet">
@@ -14,29 +14,41 @@
     
     <div class="dashboard-container">
         <header>
-            <h1><i class="fa-solid fa-robot"></i> KeyVadi Control Center</h1>
+            <div style="display: flex; flex-direction: column; gap: 5px; text-align: left;">
+                <h1><i class="fa-solid fa-robot"></i> Telegram Control Center</h1>
+                <div style="color: var(--text-secondary); font-size: 0.9rem; display: flex; align-items: center; gap: 10px;">
+                    <span><i class="fa-solid fa-user-circle"></i> Oturum: <strong>{{ session.get('user_id') }}</strong></span>
+                    <a href="/logout" style="color: var(--danger); text-decoration: none; font-weight: 500; transition: color 0.3s;" onmouseover="this.style.color='var(--danger-hover)'" onmouseout="this.style.color='var(--danger)'"><i class="fa-solid fa-right-from-bracket"></i> Çıkış Yap</a>
+                </div>
+            </div>
             <div class="tabs-header">
                 <button class="tab-btn active" id="tabBtnReklam" onclick="switchTab('reklam')">
                     <i class="fa-solid fa-bullhorn"></i> Reklam Botu
                 </button>
-                <button class="tab-btn" id="tabBtnDestek" onclick="switchTab('destek')">
-                    <i class="fa-solid fa-headset"></i> Destek & Satış Botu
-                </button>
-                <button class="tab-btn" id="tabBtnFroxy" onclick="switchTab('froxy')">
-                    <i class="fa-solid fa-brain"></i> Froxy AI Botu
-                </button>
-                <button class="tab-btn" id="tabBtnLisansarena" onclick="switchTab('lisansarena')">
-                    <i class="fa-solid fa-store"></i> LisansArena Botu
+                <button class="tab-btn" id="tabBtnSettings" onclick="switchTab('settings')">
+                    <i class="fa-solid fa-gears"></i> Ayarlar
                 </button>
                 <button class="tab-btn" id="tabBtnBlacklist" onclick="switchTab('blacklist')">
                     <i class="fa-solid fa-ban"></i> Kara Liste
                 </button>
                 <button class="tab-btn" id="tabBtnScraper" onclick="switchTab('scraper')">
-                    <i class="fa-solid fa-magnifying-glass"></i> Grup Arama (Scraper)
+                    <i class="fa-solid fa-magnifying-glass"></i> Grup Arama
+                </button>
+                
+                {% if session.get('user_id') == 'habil' %}
+                <button class="tab-btn" id="tabBtnDestek" onclick="switchTab('destek')">
+                    <i class="fa-solid fa-headset"></i> Satış Botu (Admin)
+                </button>
+                <button class="tab-btn" id="tabBtnFroxy" onclick="switchTab('froxy')">
+                    <i class="fa-solid fa-brain"></i> Destek Botu (Admin)
+                </button>
+                <button class="tab-btn" id="tabBtnLisansarena" onclick="switchTab('lisansarena')">
+                    <i class="fa-solid fa-store"></i> Mağaza Botu (Admin)
                 </button>
                 <button class="tab-btn" id="tabBtnTickets" onclick="switchTab('tickets')">
-                    <i class="fa-solid fa-envelope"></i> Destek Talepleri
+                    <i class="fa-solid fa-envelope"></i> Talepler (Admin)
                 </button>
+                {% endif %}
             </div>
         </header>
 
@@ -157,29 +169,8 @@
             </div>
         </div>
 
-        <!-- TAB 2: DESTEK & SATIŞ BOTU -->
-        <div id="tab-destek" class="tab-content">
-            <div class="controls-panel glass-panel">
-                <div class="bot-info-header">
-                    <h2><i class="fa-solid fa-headset"></i> Müşteri Paneli Kontrolü</h2>
-                    <div class="status-badge stopped" id="supportBotStatus">
-                        <span class="dot"></span>
-                        <span class="text">Kontrol Ediliyor...</span>
-                    </div>
-                </div>
-                <div class="control-actions">
-                    <button id="btnSupportStart" class="btn primary" onclick="startSupportBot()">
-                        <i class="fa-solid fa-play"></i> Botu Aktifleştir
-                    </button>
-                    <button id="btnSupportStop" class="btn danger" onclick="stopSupportBot()">
-                        <i class="fa-solid fa-stop"></i> Botu Durdur
-                    </button>
-                </div>
-                <p class="info-note">
-                    <i class="fa-solid fa-circle-info"></i> Bu bot, müşterilerin Telegram üzerinden paket satın almasını ve destek talebi açmasını sağlar.
-                </p>
-            </div>
-
+        <!-- TAB 8: AYARLAR (SETTINGS) -->
+        <div id="tab-settings" class="tab-content">
             <div class="main-content grid-layout">
                 <div class="config-section glass-panel">
                     <h2><i class="fa-solid fa-gears"></i> Bot Yapılandırması</h2>
@@ -190,46 +181,101 @@
                     </div>
                     
                     <div class="form-group">
-                        <label for="cfgAdminId">Admin Telegram Chat ID (Destek Mesajları İçin)</label>
+                        <label for="cfgAdminId">Admin Telegram Chat ID (Destek Bildirimleri İçin)</label>
                         <input type="number" id="cfgAdminId" placeholder="Örn: 987654321">
                     </div>
 
                     <div class="form-group">
-                        <label for="cfgAdStringSession">Reklam Botu 1. Hesap StringSession Anahtarı (Bulut Sunucu İçin)</label>
+                        <label for="cfgAdStringSession">Reklam Hesabı 1. StringSession Anahtarı</label>
                         <input type="text" id="cfgAdStringSession" placeholder="Örn: 1BQWxsY..." spellcheck="false">
                     </div>
 
                     <div class="form-group">
-                        <label for="cfgAdStringSession2">Reklam Botu 2. Hesap StringSession Anahtarı (İsteğe Bağlı)</label>
+                        <label for="cfgAdStringSession2">Reklam Hesabı 2. StringSession Anahtarı (İsteğe Bağlı)</label>
                         <input type="text" id="cfgAdStringSession2" placeholder="Örn: 1BQWxsY..." spellcheck="false">
                     </div>
 
                     <div class="form-group">
-                        <label for="cfgAdStringSession3">Reklam Botu 3. Hesap StringSession Anahtarı (İsteğe Bağlı)</label>
+                        <label for="cfgAdStringSession3">Reklam Hesabı 3. StringSession Anahtarı (İsteğe Bağlı)</label>
                         <input type="text" id="cfgAdStringSession3" placeholder="Örn: 1BQWxsY..." spellcheck="false">
                     </div>
 
-                    <h3>Reklam Botu Ayarları</h3>
+                    <h3>Zamanlama Ayarları</h3>
                     <div class="form-row">
                         <div class="form-group half">
-                            <label for="cfgAdSleepMin">Min Bekleme Süresi (Saniye)</label>
+                            <label for="cfgAdSleepMin">Min Bekleme (Saniye)</label>
                             <input type="number" id="cfgAdSleepMin" placeholder="Varsayılan: 180 (3 dk)">
                         </div>
                         <div class="form-group half">
-                            <label for="cfgAdSleepMax">Max Bekleme Süresi (Saniye)</label>
+                            <label for="cfgAdSleepMax">Max Bekleme (Saniye)</label>
                             <input type="number" id="cfgAdSleepMax" placeholder="Varsayılan: 300 (5 dk)">
                         </div>
                     </div>
-
 
                     <button class="btn primary" id="btnSaveConfig" onclick="saveConfig()" style="margin-top:20px; width:100%; justify-content:center;">
                         <i class="fa-solid fa-floppy-disk"></i> Yapılandırmayı Kaydet
                     </button>
                 </div>
 
-                <div class="logs-section glass-panel">
-                    <h2><i class="fa-solid fa-terminal"></i> Canlı Destek Botu Günlükleri</h2>
-                    <div class="terminal" id="supportTerminalOutput">
+                <div class="guide-section glass-panel" style="text-align: left;">
+                    <h2><i class="fa-solid fa-circle-question"></i> Kurulum Sihirbazı & Kılavuz</h2>
+                    <div style="display: flex; flex-direction: column; gap: 20px; margin-top: 15px;">
+                        <div>
+                            <strong style="color: var(--accent);"><i class="fa-solid fa-1"></i> Telegram API ID ve Hash Alma</strong>
+                            <p style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 5px; line-height: 1.4;">
+                                <a href="https://my.telegram.org" target="_blank" style="color: var(--accent); text-decoration: none;">my.telegram.org</a> adresine giriş yapın. API Development Tools sekmesinden yeni bir uygulama oluşturarak <strong>API ID</strong> ve <strong>API Hash</strong> değerlerinizi alın.
+                            </p>
+                        </div>
+                        <div>
+                            <strong style="color: var(--accent);"><i class="fa-solid fa-2"></i> StringSession Oluşturma</strong>
+                            <p style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 5px; line-height: 1.4;">
+                                Telegram hesabınızın bot ile bağlantısını sağlamak için StringSession oluşturmanız gerekir. Telethon kütüphanesi kullanarak local bilgisayarınızda veya session araçlarıyla oluşturduğunuz kodu StringSession kutularına yapıştırın.
+                            </p>
+                        </div>
+                        <div>
+                            <strong style="color: var(--accent);"><i class="fa-solid fa-3"></i> Bot Token Edinme</strong>
+                            <p style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 5px; line-height: 1.4;">
+                                Telegram'da <a href="https://t.me/BotFather" target="_blank" style="color: var(--accent); text-decoration: none;">@BotFather</a> botuna giderek <code>/newbot</code> komutu ile bir bot oluşturun ve verilen Token'ı en üstteki ilgili alana girin.
+                            </p>
+                        </div>
+                        <div>
+                            <strong style="color: var(--accent);"><i class="fa-solid fa-4"></i> Sistemi Başlatma</strong>
+                            <p style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 5px; line-height: 1.4;">
+                                Ayarları kaydedip "Reklam Botu" sekmesine dönün. Artık botunuz gönderim yapmaya hazır! "Başlat" butonuna basarak süreci canlı izleyebilirsiniz.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: DESTEK & SATIŞ BOTU -->
+        <div id="tab-destek" class="tab-content">
+            <div class="controls-panel glass-panel">
+                <div class="bot-info-header">
+                    <h2><i class="fa-solid fa-headset"></i> Satış Botu Kontrolü</h2>
+                    <div class="status-badge stopped" id="supportBotStatus">
+                        <span class="dot"></span>
+                        <span class="text">Kontrol Ediliyor...</span>
+                    </div>
+                </div>
+                <div class="control-actions">
+                    <button id="btnSupportStart" class="btn primary" onclick="startSupportBot()">
+                        <i class="fa-solid fa-play"></i> Botu Başlat
+                    </button>
+                    <button id="btnSupportStop" class="btn danger" onclick="stopSupportBot()">
+                        <i class="fa-solid fa-stop"></i> Botu Durdur
+                    </button>
+                </div>
+                <p class="info-note">
+                    <i class="fa-solid fa-circle-info"></i> Bu bot, müşterilerin otomatik lisans satın almasını ve destek talebi açmasını yönetir.
+                </p>
+            </div>
+
+            <div class="main-content">
+                <div class="logs-section glass-panel" style="width: 100%;">
+                    <h2><i class="fa-solid fa-terminal"></i> Canlı Satış Botu Günlükleri</h2>
+                    <div class="terminal" id="supportTerminalOutput" style="height: 450px;">
                         <!-- Loglar buraya gelecek -->
                     </div>
                 </div>

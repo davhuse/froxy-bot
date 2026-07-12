@@ -1,4 +1,5 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for
+from functools import wraps
 import subprocess
 import os
 import sys
@@ -11,11 +12,15 @@ import json
 import threading
 import time
 import psutil
+import user_db
 
 base_dir = os.path.abspath(os.path.dirname(__file__))
 app = Flask(__name__, 
             template_folder=os.path.join(base_dir, 'templates'),
             static_folder=os.path.join(base_dir, 'static'))
+
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "habil_secret_key_123!@#")
+app.config['PERMANENT_SESSION_LIFETIME'] = 86400 * 30
 
 # State variables for background processes
 ad_process = None
@@ -43,9 +48,13 @@ def update_config_state(key, value):
         print(f"Error updating config state: {e}")
 
 # Process tracking helpers using psutil
-def get_process_by_script(script_name):
+def get_process_by_script(script_name, user_id=None):
     """Finds a running python process that executes script_name using PID file."""
-    pid_file = f"{script_name}.pid"
+    if user_id and script_name == 'otomatik_katil.py':
+        pid_file = f"logs/otomatik_katil_{user_id}.pid"
+    else:
+        pid_file = f"{script_name}.pid"
+        
     if os.path.exists(pid_file):
         try:
             with open(pid_file, "r") as f:
@@ -54,17 +63,21 @@ def get_process_by_script(script_name):
                 proc = psutil.Process(pid)
                 cmd = proc.cmdline() or []
                 if any(script_name in arg for arg in cmd):
-                    return proc
+                    if user_id:
+                        if len(cmd) > 2 and user_id in cmd:
+                            return proc
+                    else:
+                        return proc
         except Exception:
             pass
     return None
 
-def kill_process_by_script(script_name):
+def kill_process_by_script(script_name, user_id=None):
     """Kills any running python process that executes script_name using PID file."""
-    proc = get_process_by_script(script_name)
+    proc = get_process_by_script(script_name, user_id)
     if proc:
         try:
-            print(f"Killing process {proc.pid} running {script_name} via PID file")
+            print(f"Killing process {proc.pid} running {script_name} (user: {user_id})")
             for child in proc.children(recursive=True):
                 try: child.terminate()
                 except: pass
@@ -79,9 +92,8 @@ def kill_process_by_script(script_name):
 
 # WATCHDOG SYSTEM: Keeps both bots running 24/7 unconditionally
 def bot_watchdog():
-    global ad_process, support_process, froxy_process, lisansarena_process
     print("🛡️ [Watchdog] Bot takip sistemi başlatıldı. Botlar her 15 saniyede bir denetlenecek.")
-    time.sleep(30) # Give the web server 30 seconds to bind and report healthy first
+    time.sleep(15) # Give the web server 15 seconds to bind and report healthy first
     
     while True:
         try:
@@ -89,225 +101,216 @@ def bot_watchdog():
             env = os.environ.copy()
             env["PYTHONIOENCODING"] = "utf-8"
 
-            ad_enabled = False
-            support_enabled = False
-            has_token = False
+            import user_db
             
-            if os.path.exists(CONFIG_FILE):
-                try:
-                    with open(CONFIG_FILE, "r", encoding="utf-8") as f:
-                        cfg = json.load(f)
-                    ad_enabled = cfg.get("ad_bot_running", False)
-                    support_enabled = cfg.get("support_bot_running", False)
-                    token = cfg.get("bot_token", "")
-                    if token and token != "YOUR_TELEGRAM_BOT_TOKEN":
-                        has_token = True
-                except Exception as ex:
-                    print(f"Error checking config: {ex}")
+            # 1. Load admin user config (for support bots)
+            habil_cfg = user_db.get_user_config("habil") or {}
+            
+            support_enabled = habil_cfg.get("support_bot_running", False)
+            token = habil_cfg.get("bot_token", "")
+            has_token = token and token != "YOUR_TELEGRAM_BOT_TOKEN"
+            
+            froxy_enabled = habil_cfg.get("froxy_bot_running", False)
+            froxy_token = habil_cfg.get("froxy_bot_token", "")
+            has_froxy_token = froxy_token and froxy_token != "YOUR_TELEGRAM_BOT_TOKEN"
+            
+            lisansarena_enabled = habil_cfg.get("lisansarena_bot_running", False)
+            lisansarena_token = habil_cfg.get("lisansarena_bot_token", "")
+            has_lisansarena_token = lisansarena_token and lisansarena_token != "YOUR_TELEGRAM_BOT_TOKEN"
 
-            # 1. Check Ad Bot (otomatik_katil.py)
-            ad_proc_os = get_process_by_script('otomatik_katil.py')
-            if ad_enabled:
-                if ad_proc_os is None:
-                    print("📢 [Watchdog] Reklam botu aktif değil veya durmuş. Başlatılıyor...")
-                    with open(LOG_FILE, "a", encoding="utf-8") as f:
-                        f.write("\n🚀 [Watchdog] Reklam botu otomatik olarak başlatılıyor...\n")
-                    
-                    kill_process_by_script('otomatik_katil.py')
-                    
-                    file_out = open(LOG_FILE, 'a', encoding="utf-8", buffering=1)
-                    ad_process = subprocess.Popen(
-                        [sys.executable, '-u', 'otomatik_katil.py'],
-                        stdout=file_out,
-                        stderr=subprocess.STDOUT,
-                        creationflags=flags,
-                        env=env
-                    )
-                    try:
-                        with open("otomatik_katil.py.pid", "w") as f:
-                            f.write(str(ad_process.pid))
-                    except:
-                        pass
-                    time.sleep(10)  # Stagger startup to prevent RAM/CPU spikes
-                else:
-                    ad_process = ad_proc_os
-            else:
-                if ad_proc_os is not None:
-                    print("📢 [Watchdog] Reklam botu durduruluyor (Yapılandırmada kapalı)...")
-                    kill_process_by_script('otomatik_katil.py')
-                    # Remove PID file
-                    try: os.remove("otomatik_katil.py.pid")
-                    except: pass
-                    ad_process = None
-
-            # 2. Check Support Bot (froxy_bot.py)
+            # Check Support Bot (froxy_bot.py)
             if has_token and support_enabled:
                 support_proc_os = get_process_by_script('froxy_bot.py')
                 if support_proc_os is None:
-                    print("🤖 [Watchdog] Destek botu aktif değil veya durmuş. Başlatılıyor...")
+                    print("🤖 [Watchdog] Destek botu aktif değil. Başlatılıyor...")
                     with open(SUPPORT_LOG_FILE, "a", encoding="utf-8") as f:
                         f.write("\n🚀 [Watchdog] Destek botu otomatik olarak başlatılıyor...\n")
-                    
                     kill_process_by_script('froxy_bot.py')
-                    
                     file_out = open(SUPPORT_LOG_FILE, 'a', encoding="utf-8", buffering=1)
-                    support_process = subprocess.Popen(
-                        [sys.executable, '-u', 'froxy_bot.py'],
-                        stdout=file_out,
-                        stderr=subprocess.STDOUT,
-                        creationflags=flags,
-                        env=env
-                    )
+                    proc = subprocess.Popen([sys.executable, '-u', 'froxy_bot.py'], stdout=file_out, stderr=subprocess.STDOUT, creationflags=flags, env=env)
                     try:
-                        with open("froxy_bot.py.pid", "w") as f:
-                            f.write(str(support_process.pid))
-                    except:
-                        pass
-                    time.sleep(10)  # Stagger startup to prevent RAM/CPU spikes
-                else:
-                    support_process = support_proc_os
+                        with open("froxy_bot.py.pid", "w") as f: f.write(str(proc.pid))
+                    except: pass
             else:
                 support_proc_os = get_process_by_script('froxy_bot.py')
                 if support_proc_os is not None:
-                    print("🤖 [Watchdog] Destek botu durduruluyor (Yapılandırmada kapalı)...")
+                    print("🤖 [Watchdog] Destek botu durduruluyor...")
                     kill_process_by_script('froxy_bot.py')
-                    # Remove PID file
                     try: os.remove("froxy_bot.py.pid")
                     except: pass
-                    support_process = None
 
-            # 3. Check Froxy AI Bot (froxy_destek_bot.py)
-            froxy_enabled = False
-            has_froxy_token = False
-            if os.path.exists(CONFIG_FILE):
-                try:
-                    with open(CONFIG_FILE, "r", encoding="utf-8") as f:
-                        cfg = json.load(f)
-                    froxy_enabled = cfg.get("froxy_bot_running", False)
-                    froxy_token = cfg.get("froxy_bot_token", "")
-                    if froxy_token and froxy_token != "YOUR_TELEGRAM_BOT_TOKEN":
-                        has_froxy_token = True
-                except Exception:
-                    pass
-
+            # Check Froxy AI Bot (froxy_destek_bot.py)
             if has_froxy_token and froxy_enabled:
                 froxy_proc_os = get_process_by_script('froxy_destek_bot.py')
                 if froxy_proc_os is None:
-                    print("🤖 [Watchdog] Froxy AI botu aktif değil veya durmuş. Başlatılıyor...")
+                    print("🤖 [Watchdog] Froxy AI botu aktif değil. Başlatılıyor...")
                     with open(FROXY_LOG_FILE, "a", encoding="utf-8") as f:
                         f.write("\n🚀 [Watchdog] Froxy AI botu otomatik olarak başlatılıyor...\n")
-                    
                     kill_process_by_script('froxy_destek_bot.py')
-                    
                     file_out = open(FROXY_LOG_FILE, 'a', encoding="utf-8", buffering=1)
-                    froxy_process = subprocess.Popen(
-                        [sys.executable, '-u', 'froxy_destek_bot.py'],
-                        stdout=file_out,
-                        stderr=subprocess.STDOUT,
-                        creationflags=flags,
-                        env=env
-                    )
+                    proc = subprocess.Popen([sys.executable, '-u', 'froxy_destek_bot.py'], stdout=file_out, stderr=subprocess.STDOUT, creationflags=flags, env=env)
                     try:
-                        with open("froxy_destek_bot.py.pid", "w") as f:
-                            f.write(str(froxy_process.pid))
-                    except:
-                        pass
-                    time.sleep(10)  # Stagger startup to prevent RAM/CPU spikes
-                else:
-                    froxy_process = froxy_proc_os
+                        with open("froxy_destek_bot.py.pid", "w") as f: f.write(str(proc.pid))
+                    except: pass
             else:
                 froxy_proc_os = get_process_by_script('froxy_destek_bot.py')
                 if froxy_proc_os is not None:
-                    print("🤖 [Watchdog] Froxy AI botu durduruluyor (Yapılandırmada kapalı)...")
+                    print("🤖 [Watchdog] Froxy AI botu durduruluyor...")
                     kill_process_by_script('froxy_destek_bot.py')
                     try: os.remove("froxy_destek_bot.py.pid")
                     except: pass
-                    froxy_process = None
 
-            # 4. Check LisansArena Bot (lisansarena_bot.py)
-            lisansarena_enabled = False
-            has_lisansarena_token = False
-            if cfg:
-                lisansarena_enabled = cfg.get("lisansarena_bot_running", False)
-                lisansarena_token = cfg.get("lisansarena_bot_token", "")
-                if lisansarena_token and lisansarena_token != "YOUR_TELEGRAM_BOT_TOKEN":
-                    has_lisansarena_token = True
-
+            # Check LisansArena Bot (lisansarena_bot.py)
             if has_lisansarena_token and lisansarena_enabled:
                 la_proc_os = get_process_by_script('lisansarena_bot.py')
                 if la_proc_os is None:
-                    print("🤖 [Watchdog] LisansArena botu aktif değil veya durmuş. Başlatılıyor...")
+                    print("🤖 [Watchdog] LisansArena botu aktif değil. Başlatılıyor...")
                     with open(LISANSARENA_LOG_FILE, "a", encoding="utf-8") as f:
                         f.write("\n🚀 [Watchdog] LisansArena botu otomatik olarak başlatılıyor...\n")
-                    
                     kill_process_by_script('lisansarena_bot.py')
                     file_out = open(LISANSARENA_LOG_FILE, 'a', encoding="utf-8", buffering=1)
-                    lisansarena_process = subprocess.Popen(
-                        [sys.executable, '-u', 'lisansarena_bot.py'],
-                        stdout=file_out,
-                        stderr=file_out,
-                        cwd=base_dir,
-                        creationflags=flags,
-                        env=env
-                    )
+                    proc = subprocess.Popen([sys.executable, '-u', 'lisansarena_bot.py'], stdout=file_out, stderr=subprocess.STDOUT, creationflags=flags, env=env)
                     try:
-                        with open("lisansarena_bot.py.pid", "w") as f:
-                            f.write(str(lisansarena_process.pid))
-                    except:
-                        pass
-                    time.sleep(10)
-                else:
-                    lisansarena_process = la_proc_os
+                        with open("lisansarena_bot.py.pid", "w") as f: f.write(str(proc.pid))
+                    except: pass
             else:
                 la_proc_os = get_process_by_script('lisansarena_bot.py')
                 if la_proc_os is not None:
-                    print("🤖 [Watchdog] LisansArena botu durduruluyor (Yapılandırmada kapalı)...")
+                    print("🤖 [Watchdog] LisansArena botu durduruluyor...")
                     kill_process_by_script('lisansarena_bot.py')
                     try: os.remove("lisansarena_bot.py.pid")
                     except: pass
-                    lisansarena_process = None
+
+            # 2. Check SaaS Users Ad Bots
+            all_configs = user_db.get_all_user_configs()
+            for user_id, user_cfg in all_configs.items():
+                ad_enabled = user_cfg.get("ad_bot_running", False)
+                ad_proc = get_process_by_script('otomatik_katil.py', user_id)
+                user_log = f"logs/user_{user_id}_bot_log.txt"
+                
+                if ad_enabled:
+                    if ad_proc is None:
+                        print(f"📢 [Watchdog] SaaS kullanıcısı {user_id} reklam botu durmuş. Başlatılıyor...")
+                        with open(user_log, "a", encoding="utf-8") as f:
+                            f.write(f"\n🚀 [Watchdog] Reklam botu {user_id} için otomatik olarak başlatılıyor...\n")
+                        
+                        kill_process_by_script('otomatik_katil.py', user_id)
+                        
+                        file_out = open(user_log, 'a', encoding="utf-8", buffering=1)
+                        proc = subprocess.Popen(
+                            [sys.executable, '-u', 'otomatik_katil.py', user_id],
+                            stdout=file_out,
+                            stderr=subprocess.STDOUT,
+                            creationflags=flags,
+                            env=env
+                        )
+                        try:
+                            pid_file = f"logs/otomatik_katil_{user_id}.pid"
+                            with open(pid_file, "w") as f:
+                                f.write(str(proc.pid))
+                        except:
+                            pass
+                else:
+                    if ad_proc is not None:
+                        print(f"📢 [Watchdog] SaaS kullanıcısı {user_id} reklam botu durduruluyor...")
+                        kill_process_by_script('otomatik_katil.py', user_id)
+                        try: os.remove(f"logs/otomatik_katil_{user_id}.pid")
+                        except: pass
 
         except Exception as e:
             print(f"⚠️ [Watchdog] Genel denetleme hatası: {e}")
             
         time.sleep(15)
 
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            if request.path.startswith('/api/'):
+                return jsonify({"success": False, "message": "Giriş yapmanız gerekmektedir."}), 401
+            return redirect(url_for('login_page'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+@app.route('/login')
+def login_page():
+    if 'user_id' in session:
+        return redirect(url_for('index'))
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.pop('user_id', None)
+    return redirect(url_for('login_page'))
+
+@app.route('/api/auth/login', methods=['POST'])
+def api_login():
+    data = request.json or {}
+    username = data.get("username", "")
+    password = data.get("password", "")
+    res = user_db.login_user(username, password)
+    if res.get("success"):
+        session['user_id'] = res["user_id"]
+        session.permanent = True
+        return jsonify({"success": True, "message": "Giriş başarılı!"})
+    return jsonify({"success": False, "message": res.get("message")})
+
+@app.route('/api/auth/register', methods=['POST'])
+def api_register():
+    data = request.json or {}
+    username = data.get("username", "")
+    password = data.get("password", "")
+    license_key = data.get("license_key", "")
+    res = user_db.register_user(username, password, license_key)
+    if res.get("success"):
+        session['user_id'] = username.strip().lower()
+        session.permanent = True
+        return jsonify({"success": True, "message": "Kayıt başarılı!"})
+    return jsonify({"success": False, "message": res.get("message")})
+
 @app.route('/')
+@login_required
 def index():
     return render_template('index.html')
 
 # ==========================================
-# REKLAM BOTU (ADVERTISING BOT) API ENDPOINTS
-# ==========================================
-
-
-@app.route('/api/status', methods=['GET'])
+# R@app.route('/api/status', methods=['GET'])
+@login_required
 def status():
-    is_running = get_process_by_script('otomatik_katil.py') is not None
+    user_id = session['user_id']
+    is_running = get_process_by_script('otomatik_katil.py', user_id) is not None
     return jsonify({"status": "running" if is_running else "stopped"})
 
 @app.route('/api/stats', methods=['GET'])
+@login_required
 def stats():
+    user_id = session['user_id']
+    
+    progress_file = f"logs/user_{user_id}_progress.txt"
+    blacklist_file = f"logs/user_{user_id}_blacklist.txt"
+    auto_groups_file = f"logs/user_{user_id}_auto_groups.txt"
+    user_log = f"logs/user_{user_id}_bot_log.txt"
+    
     done_count = 0
-    if os.path.exists("progress.txt"):
+    if os.path.exists(progress_file):
         try:
-            with open("progress.txt", "r", encoding="utf-8") as f:
+            with open(progress_file, "r", encoding="utf-8") as f:
                 done_count = len([line.strip() for line in f if line.strip()])
         except:
             pass
             
     blacklist_count = 0
-    if os.path.exists("blacklist.txt"):
+    if os.path.exists(blacklist_file):
         try:
-            with open("blacklist.txt", "r", encoding="utf-8") as f:
+            with open(blacklist_file, "r", encoding="utf-8") as f:
                 blacklist_count = len([line.strip() for line in f if line.strip()])
         except:
             pass
             
     sent_count = 0
-    if os.path.exists("bot_log.txt"):
+    if os.path.exists(user_log):
         try:
-            with open("bot_log.txt", "r", encoding="utf-8", errors="replace") as f:
+            with open(user_log, "r", encoding="utf-8", errors="replace") as f:
                 for line in f:
                     if "gönderildi!" in line.lower() or "gonderildi!" in line.lower():
                         sent_count += 1
@@ -318,25 +321,23 @@ def stats():
     try:
         with open("otomatik_katil.py", "r", encoding="utf-8") as f:
             content = f.read()
-            # gruplar listesindeki elemanları say (her satırdaki tırnak içi string)
             import re
             match = re.search(r'gruplar\s*=\s*\[([^\]]+)\]', content, re.DOTALL)
             if match:
                 items = [x.strip().strip('"').strip("'") for x in match.group(1).split(',') if x.strip().strip('"').strip("'")]
                 total_groups = len(items)
-        # auto_groups.txt'deki grupları da ekle
-        if os.path.exists("auto_groups.txt"):
-            with open("auto_groups.txt", "r", encoding="utf-8") as f:
+        if os.path.exists(auto_groups_file):
+            with open(auto_groups_file, "r", encoding="utf-8") as f:
                 auto_g = [x.strip() for x in f if x.strip()]
                 total_groups += len(auto_g)
     except Exception as e:
         print(f"Error reading total groups: {e}")
-        total_groups = 410 # Fallback default
-
+        total_groups = 410
+        
     auto_discovered = 0
-    if os.path.exists("auto_groups.txt"):
+    if os.path.exists(auto_groups_file):
         try:
-            with open("auto_groups.txt", "r", encoding="utf-8") as f:
+            with open(auto_groups_file, "r", encoding="utf-8") as f:
                 auto_discovered = len([line.strip() for line in f if line.strip()])
         except:
             pass
@@ -350,59 +351,77 @@ def stats():
     })
 
 @app.route('/api/start', methods=['POST'])
+@login_required
 def start():
-    if get_process_by_script('otomatik_katil.py') is not None:
+    user_id = session['user_id']
+    if get_process_by_script('otomatik_katil.py', user_id) is not None:
         return jsonify({"success": False, "message": "Reklam botu zaten çalışıyor!"})
     
-    with open(LOG_FILE, "w", encoding="utf-8") as f:
+    user_log = f"logs/user_{user_id}_bot_log.txt"
+    os.makedirs("logs", exist_ok=True)
+    with open(user_log, "w", encoding="utf-8") as f:
         f.write("🚀 Reklam botu başlatılıyor...\n")
         
     try:
-        kill_process_by_script('otomatik_katil.py')
+        kill_process_by_script('otomatik_katil.py', user_id)
         
         flags = subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
-        file_out = open(LOG_FILE, 'a', encoding="utf-8", buffering=1)
+        file_out = open(user_log, 'a', encoding="utf-8", buffering=1)
         env = os.environ.copy()
         env["PYTHONIOENCODING"] = "utf-8"
-        global ad_process
-        ad_process = subprocess.Popen(
-            [sys.executable, '-u', 'otomatik_katil.py'],
+        proc = subprocess.Popen(
+            [sys.executable, '-u', 'otomatik_katil.py', user_id],
             stdout=file_out,
             stderr=subprocess.STDOUT,
             creationflags=flags,
             env=env
         )
         try:
-            with open("otomatik_katil.py.pid", "w") as f:
-                f.write(str(ad_process.pid))
+            pid_file = f"logs/otomatik_katil_{user_id}.pid"
+            with open(pid_file, "w") as f:
+                f.write(str(proc.pid))
         except:
             pass
-        update_config_state("ad_bot_running", True)
+            
+        cfg = user_db.get_user_config(user_id) or {}
+        cfg["ad_bot_running"] = True
+        user_db.save_user_config(user_id, cfg)
         return jsonify({"success": True})
     except Exception as e:
          return jsonify({"success": False, "message": str(e)})
 
 @app.route('/api/stop', methods=['POST'])
+@login_required
 def stop():
-    kill_process_by_script('otomatik_katil.py')
-    try: os.remove("otomatik_katil.py.pid")
+    user_id = session['user_id']
+    kill_process_by_script('otomatik_katil.py', user_id)
+    try: os.remove(f"logs/otomatik_katil_{user_id}.pid")
     except: pass
-    with open(LOG_FILE, "a", encoding="utf-8") as f:
-        f.write("\n🛑 Reklam botu kullanıcı tarafından durduruldu.\n")
-    global ad_process
-    ad_process = None
-    update_config_state("ad_bot_running", False)
+    
+    user_log = f"logs/user_{user_id}_bot_log.txt"
+    try:
+        with open(user_log, "a", encoding="utf-8") as f:
+            f.write("\n🛑 Reklam botu kullanıcı tarafından durduruldu.\n")
+    except:
+        pass
+        
+    cfg = user_db.get_user_config(user_id) or {}
+    cfg["ad_bot_running"] = False
+    user_db.save_user_config(user_id, cfg)
     return jsonify({"success": True})
 
 @app.route('/api/logs', methods=['GET'])
+@login_required
 def get_logs():
-    if not os.path.exists(LOG_FILE):
+    user_id = session['user_id']
+    user_log = f"logs/user_{user_id}_bot_log.txt"
+    if not os.path.exists(user_log):
         return jsonify({"logs": []})
     
     try:
-        with open(LOG_FILE, 'r', encoding="utf-8", errors="replace") as f:
+        with open(user_log, 'r', encoding="utf-8", errors="replace") as f:
             lines = f.readlines()
-            return jsonify({"logs": lines[-100:]}) # Son 100 satır
+            return jsonify({"logs": lines[-100:]})
     except Exception as e:
         return jsonify({"logs": [f"Log okuma hatası: {str(e)}"]})
 
@@ -709,96 +728,116 @@ def save_lisansarena_config():
 # YAPILANDIRMA VE DİĞER YARDIMCI API'LER
 # ==========================================
 
+def get_user_msg_file(user_id, num):
+    os.makedirs("logs", exist_ok=True)
+    suffix = f"_{num}" if num > 1 else ""
+    return f"logs/user_{user_id}_message{suffix}.txt"
+
 @app.route('/api/message', methods=['GET'])
+@login_required
 def get_message():
+    user_id = session['user_id']
+    msg_file = get_user_msg_file(user_id, 1)
     try:
-        with open(MESSAGE_FILE, 'r', encoding="utf-8") as f:
+        with open(msg_file, 'r', encoding="utf-8") as f:
             return jsonify({"message": f.read()})
     except:
         return jsonify({"message": ""})
 
 @app.route('/api/message', methods=['POST'])
+@login_required
 def update_message():
+    user_id = session['user_id']
     data = request.json
     new_message = data.get('message', '')
+    msg_file = get_user_msg_file(user_id, 1)
     try:
-        with open(MESSAGE_FILE, 'w', encoding="utf-8") as f:
+        with open(msg_file, 'w', encoding="utf-8") as f:
             f.write(new_message)
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
-MESSAGE_2_FILE = "message_2.txt"
 
 @app.route('/api/message2', methods=['GET'])
+@login_required
 def get_message2():
+    user_id = session['user_id']
+    msg_file = get_user_msg_file(user_id, 2)
     try:
-        with open(MESSAGE_2_FILE, 'r', encoding="utf-8") as f:
+        with open(msg_file, 'r', encoding="utf-8") as f:
             return jsonify({"message": f.read()})
     except:
         return jsonify({"message": ""})
 
 @app.route('/api/message2', methods=['POST'])
+@login_required
 def update_message2():
+    user_id = session['user_id']
     data = request.json
     new_message = data.get('message', '')
+    msg_file = get_user_msg_file(user_id, 2)
     try:
-        with open(MESSAGE_2_FILE, 'w', encoding="utf-8") as f:
+        with open(msg_file, 'w', encoding="utf-8") as f:
             f.write(new_message)
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
 
-MESSAGE_3_FILE = "message_3.txt"
-
 @app.route('/api/message3', methods=['GET'])
+@login_required
 def get_message3():
+    user_id = session['user_id']
+    msg_file = get_user_msg_file(user_id, 3)
     try:
-        with open(MESSAGE_3_FILE, 'r', encoding="utf-8") as f:
+        with open(msg_file, 'r', encoding="utf-8") as f:
             return jsonify({"message": f.read()})
     except:
         return jsonify({"message": ""})
 
 @app.route('/api/message3', methods=['POST'])
+@login_required
 def update_message3():
+    user_id = session['user_id']
     data = request.json
     new_message = data.get('message', '')
+    msg_file = get_user_msg_file(user_id, 3)
     try:
-        with open(MESSAGE_3_FILE, 'w', encoding="utf-8") as f:
+        with open(msg_file, 'w', encoding="utf-8") as f:
             f.write(new_message)
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
+
 @app.route('/api/config', methods=['GET'])
+@login_required
 def get_config():
-    if not os.path.exists(CONFIG_FILE):
-        return jsonify({})
+    user_id = session['user_id']
     try:
-        with open(CONFIG_FILE, 'r', encoding="utf-8") as f:
-            return jsonify(json.load(f))
+        cfg = user_db.get_user_config(user_id) or {}
+        return jsonify(cfg)
     except Exception as e:
         return jsonify({"error": str(e)})
 
 @app.route('/api/config', methods=['POST'])
+@login_required
 def save_config():
+    user_id = session['user_id']
     data = request.json
     try:
-        # Keep internal running states and merge shopier links when saving config
-        if os.path.exists(CONFIG_FILE):
-            with open(CONFIG_FILE, 'r', encoding="utf-8") as f:
-                old_cfg = json.load(f)
-            data["ad_bot_running"] = old_cfg.get("ad_bot_running", False)
-            data["support_bot_running"] = old_cfg.get("support_bot_running", False)
-            
-            # Merge shopier_links to protect 24 keys
-            old_links = old_cfg.get("shopier_links", {})
-            new_links = data.get("shopier_links", {})
-            for k, v in new_links.items():
-                if v:  # Only update if a value is provided
-                    old_links[k] = v
-            data["shopier_links"] = old_links
-            
-        with open(CONFIG_FILE, 'w', encoding="utf-8") as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
+        old_cfg = user_db.get_user_config(user_id) or {}
+        data["ad_bot_running"] = old_cfg.get("ad_bot_running", False)
+        data["support_bot_running"] = old_cfg.get("support_bot_running", False)
+        data["froxy_bot_running"] = old_cfg.get("froxy_bot_running", False)
+        data["lisansarena_bot_running"] = old_cfg.get("lisansarena_bot_running", False)
+        
+        old_links = old_cfg.get("shopier_links", {})
+        new_links = data.get("shopier_links", {})
+        for k, v in new_links.items():
+            if v:
+                old_links[k] = v
+        data["shopier_links"] = old_links
+        
+        user_db.save_user_config(user_id, data)
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
@@ -846,47 +885,40 @@ DEFAULT_SCRAPE_KEYWORDS = [
 ]
 
 @app.route('/api/scraper/config', methods=['GET'])
+@login_required
 def get_scraper_config():
-    cfg = {}
-    if os.path.exists(CONFIG_FILE):
-        try:
-            with open(CONFIG_FILE, 'r', encoding="utf-8") as f:
-                cfg = json.load(f)
-        except:
-            pass
+    user_id = session['user_id']
+    cfg = user_db.get_user_config(user_id) or {}
     active = cfg.get("scraper_active", True)
     keywords = cfg.get("scrape_keywords", DEFAULT_SCRAPE_KEYWORDS)
     return jsonify({"scraper_active": active, "scrape_keywords": keywords})
 
 @app.route('/api/scraper/config', methods=['POST'])
+@login_required
 def save_scraper_config():
+    user_id = session['user_id']
     data = request.json
-    cfg = {}
-    if os.path.exists(CONFIG_FILE):
-        try:
-            with open(CONFIG_FILE, 'r', encoding="utf-8") as f:
-                cfg = json.load(f)
-        except:
-            pass
-    
-    if "scraper_active" in data:
-        cfg["scraper_active"] = bool(data["scraper_active"])
-    if "scrape_keywords" in data:
-        keywords = [k.strip() for k in data["scrape_keywords"] if k.strip()]
-        cfg["scrape_keywords"] = keywords
-        
     try:
-        with open(CONFIG_FILE, 'w', encoding="utf-8") as f:
-            json.dump(cfg, f, indent=2, ensure_ascii=False)
+        cfg = user_db.get_user_config(user_id) or {}
+        if "scraper_active" in data:
+            cfg["scraper_active"] = bool(data["scraper_active"])
+        if "scrape_keywords" in data:
+            keywords = [k.strip() for k in data["scrape_keywords"] if k.strip()]
+            cfg["scrape_keywords"] = keywords
+            
+        user_db.save_user_config(user_id, cfg)
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
 
-
 @app.route('/api/scraper/trigger', methods=['POST'])
+@login_required
 def trigger_scraper():
+    user_id = session['user_id']
+    flag_file = f"logs/user_{user_id}_trigger_scraper.flag"
+    os.makedirs("logs", exist_ok=True)
     try:
-        with open("trigger_scraper.flag", "w", encoding="utf-8") as f:
+        with open(flag_file, "w", encoding="utf-8") as f:
             f.write("trigger")
         return jsonify({"success": True})
     except Exception as e:
@@ -897,38 +929,28 @@ def trigger_scraper():
 # ==========================================
 
 @app.route('/api/autodm/config', methods=['GET'])
+@login_required
 def get_autodm_config():
-    cfg = {}
-    if os.path.exists(CONFIG_FILE):
-        try:
-            with open(CONFIG_FILE, 'r', encoding="utf-8") as f:
-                cfg = json.load(f)
-        except:
-            pass
+    user_id = session['user_id']
+    cfg = user_db.get_user_config(user_id) or {}
     return jsonify({
         "auto_dm_active": cfg.get("auto_dm_active", True),
         "max_dm_per_day": cfg.get("max_dm_per_day", 20),
     })
 
 @app.route('/api/autodm/config', methods=['POST'])
+@login_required
 def save_autodm_config():
+    user_id = session['user_id']
     data = request.json
-    cfg = {}
-    if os.path.exists(CONFIG_FILE):
-        try:
-            with open(CONFIG_FILE, 'r', encoding="utf-8") as f:
-                cfg = json.load(f)
-        except:
-            pass
-    
-    if "auto_dm_active" in data:
-        cfg["auto_dm_active"] = bool(data["auto_dm_active"])
-    if "max_dm_per_day" in data:
-        cfg["max_dm_per_day"] = int(data["max_dm_per_day"])
-    
     try:
-        with open(CONFIG_FILE, 'w', encoding="utf-8") as f:
-            json.dump(cfg, f, indent=2, ensure_ascii=False)
+        cfg = user_db.get_user_config(user_id) or {}
+        if "auto_dm_active" in data:
+            cfg["auto_dm_active"] = bool(data["auto_dm_active"])
+        if "max_dm_per_day" in data:
+            cfg["max_dm_per_day"] = int(data["max_dm_per_day"])
+        
+        user_db.save_user_config(user_id, cfg)
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
@@ -982,28 +1004,28 @@ def save_template(name):
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
 
-BLACKLIST_FILE = "blacklist.txt"
-
-def get_blacklist():
-    if os.path.exists(BLACKLIST_FILE):
+def get_blacklist(user_id):
+    blacklist_file = f"logs/user_{user_id}_blacklist.txt"
+    if os.path.exists(blacklist_file):
         try:
-            with open(BLACKLIST_FILE, 'r', encoding='utf-8') as f:
+            with open(blacklist_file, 'r', encoding='utf-8') as f:
                 return [line.strip() for line in f if line.strip()]
         except:
             pass
     return []
 
-def save_blacklist(blacklist_list):
+def save_blacklist(user_id, blacklist_list):
+    blacklist_file = f"logs/user_{user_id}_blacklist.txt"
+    os.makedirs("logs", exist_ok=True)
     try:
-        with open(BLACKLIST_FILE, 'w', encoding='utf-8') as f:
+        with open(blacklist_file, 'w', encoding='utf-8') as f:
             f.write('\n'.join(blacklist_list) + '\n')
         
-        # Firestore'a senkronize et (sadece blacklist_list alanını güncelliyoruz)
         try:
             import requests
             API_KEY = "AIzaSyCZz54GBF4nCgP84DsTSwwMyPq70Lb_Mjo"
             PROJECT_ID = "bot-2-63772"
-            url = f"https://firestore.googleapis.com/v1/projects/{PROJECT_ID}/databases/(default)/documents/reklam/state?updateMask.fieldPaths=blacklist_list&key={API_KEY}"
+            url = f"https://firestore.googleapis.com/v1/projects/{PROJECT_ID}/databases/(default)/documents/reklam/saas_state_{user_id}?updateMask.fieldPaths=blacklist_list&key={API_KEY}"
             
             blacklist_content = '\n'.join(blacklist_list) + '\n'
             
@@ -1019,49 +1041,57 @@ def save_blacklist(blacklist_list):
         return False
 
 @app.route('/api/blacklist', methods=['GET'])
+@login_required
 def api_get_blacklist():
-    return jsonify(get_blacklist())
+    user_id = session['user_id']
+    return jsonify(get_blacklist(user_id))
 
 @app.route('/api/blacklist/add', methods=['POST'])
+@login_required
 def api_add_blacklist():
+    user_id = session['user_id']
     data = request.json
     username = data.get('username', '').strip().replace('@', '')
     if not username:
         return jsonify({"success": False, "message": "Grup adı boş olamaz."})
     
-    blacklist = get_blacklist()
+    blacklist = get_blacklist(user_id)
     blacklist_lower = [b.lower() for b in blacklist]
     if username.lower() not in blacklist_lower:
         blacklist.append(username)
-        if save_blacklist(blacklist):
+        if save_blacklist(user_id, blacklist):
             return jsonify({"success": True})
         return jsonify({"success": False, "message": "Kara liste dosyası kaydedilemedi."})
     return jsonify({"success": True, "message": "Grup zaten kara listede."})
 
 @app.route('/api/blacklist/remove', methods=['POST'])
+@login_required
 def api_remove_blacklist():
+    user_id = session['user_id']
     data = request.json
     username = data.get('username', '').strip().replace('@', '')
     if not username:
         return jsonify({"success": False, "message": "Grup adı boş olamaz."})
     
-    blacklist = get_blacklist()
+    blacklist = get_blacklist(user_id)
     new_blacklist = [b for b in blacklist if b.lower() != username.lower()]
     if len(new_blacklist) != len(blacklist):
-        if save_blacklist(new_blacklist):
+        if save_blacklist(user_id, new_blacklist):
             return jsonify({"success": True})
         return jsonify({"success": False, "message": "Kara liste dosyası kaydedilemedi."})
     return jsonify({"success": False, "message": "Grup kara listede bulunamadı."})
 
 @app.route('/api/groups')
+@login_required
 def api_groups():
     """Tüm önbelleğe alınan grupları döndür"""
+    user_id = session['user_id']
     result = {}
     for fname in ["cached_groups_Hesap_1.json", "cached_groups_Hesap_2.json"]:
+        user_fname = f"logs/user_{user_id}_{fname}"
         try:
-            with open(fname, 'r', encoding='utf-8') as f:
+            with open(user_fname, 'r', encoding='utf-8') as f:
                 groups = json.load(f)
-                # Sadece broadcast olmayan grupları göster
                 groups = [g for g in groups if not g.get('broadcast', False)]
                 groups.sort(key=lambda x: x.get('members') or 0, reverse=True)
                 result[fname.replace("cached_groups_", "").replace(".json", "")] = groups
@@ -1088,14 +1118,18 @@ def keep_alive():
         time.sleep(600)  # 10 dakika
 
 @app.route('/api/scraped-groups')
+@login_required
 def get_scraped_groups():
+    user_id = session['user_id']
+    scraped_file = f"logs/user_{user_id}_scraped_groups.txt"
     groups = []
-    if os.path.exists("scraped_groups.txt"):
+    if os.path.exists(scraped_file):
         try:
-            with open("scraped_groups.txt", "r", encoding="utf-8") as f:
+            with open(scraped_file, "r", encoding="utf-8") as f:
                 groups = [line.strip() for line in f if line.strip()]
         except Exception as e:
             return jsonify({"error": str(e)})
+    return jsonify(groups)
 @app.route('/api/tickets', methods=['GET'])
 def get_tickets():
     tickets = []

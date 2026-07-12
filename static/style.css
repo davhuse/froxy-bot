@@ -338,3 +338,98 @@ textarea:focus { border-color: rgba(108, 92, 231, 0.5); box-shadow: 0 0 15px rgb
     background-color: var(--success);
     box-shadow: 0 0 10px var(--success);
 }
+
+/* SaaS Auth Styling */
+.auth-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    width: 100%;
+    padding: 20px;
+}
+.auth-card {
+    width: 100%;
+    max-width: 450px;
+    padding: 40px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+.auth-logo {
+    font-size: 3rem;
+    color: var(--accent);
+    margin-bottom: 15px;
+    text-shadow: 0 0 20px rgba(108, 92, 231, 0.4);
+}
+.auth-title {
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    letter-spacing: -0.5px;
+}
+.auth-subtitle {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    margin-bottom: 30px;
+}
+.auth-tabs {
+    display: flex;
+    background: rgba(0,0,0,0.2);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    padding: 4px;
+    margin-bottom: 25px;
+}
+.auth-tab {
+    flex: 1;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 500;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+.auth-tab.active {
+    background: var(--accent);
+    color: white;
+    box-shadow: 0 4px 12px rgba(108, 92, 231, 0.3);
+}
+.auth-form {
+    display: none;
+    flex-direction: column;
+    gap: 15px;
+    text-align: left;
+}
+.auth-form.active {
+    display: flex;
+}
+.auth-form .btn {
+    width: 100%;
+    justify-content: center;
+    margin-top: 10px;
+}
+.auth-message {
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    margin-bottom: 15px;
+    display: none;
+}
+.auth-message.success {
+    display: block;
+    background: rgba(46, 213, 115, 0.15);
+    border: 1px solid var(--success);
+    color: var(--success);
+}
+.auth-message.error {
+    display: block;
+    background: rgba(255, 71, 87, 0.15);
+    border: 1px solid var(--danger);
+    color: var(--danger);
+}
+
