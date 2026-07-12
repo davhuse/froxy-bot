@@ -1032,3 +1032,129 @@ async function clearTickets() {
         alert("Bağlantı hatası: " + e.message);
     }
 }
+
+// TELEGRAM IN-APP LOGIN WIZARD (Single Tenant)
+async function tgSendCode(e) {
+    if (e) e.preventDefault();
+    
+    const phone = document.getElementById('tgPhone').value.trim();
+    const apiId = document.getElementById('tgApiId').value.trim();
+    const apiHash = document.getElementById('tgApiHash').value.trim();
+    const slot = document.getElementById('tgSlot').value;
+    const btn = document.getElementById('btnTgSendCode');
+    
+    if (!phone || !apiId || !apiHash) {
+        alert("Lütfen Telefon, API ID ve API Hash alanlarını doldurunuz.");
+        return;
+    }
+    
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Kod Gönderiliyor...`;
+    
+    try {
+        const res = await fetch('/api/telegram/send-code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone, api_id: apiId, api_hash: apiHash, slot })
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert(data.message);
+            document.getElementById('tgCodeSection').style.display = 'block';
+            document.getElementById('tg2faSection').style.display = 'none';
+        } else {
+            alert(data.message);
+        }
+    } catch(err) {
+        alert("Kod gönderme hatası: " + err.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Telefonuma Giriş Kodu Gönder`;
+    }
+}
+
+async function tgVerifyCode(e) {
+    if (e) e.preventDefault();
+    
+    const code = document.getElementById('tgCode').value.trim();
+    const slot = document.getElementById('tgSlot').value;
+    const btn = document.getElementById('btnTgVerifyCode');
+    
+    if (!code) {
+        alert("Lütfen Telegram'dan gelen 5 haneli kodu giriniz.");
+        return;
+    }
+    
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Doğrulanıyor...`;
+    
+    try {
+        const res = await fetch('/api/telegram/verify-code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code, slot })
+        });
+        const data = await res.json();
+        if (data.success) {
+            if (data.requires_password) {
+                alert(data.message);
+                document.getElementById('tg2faSection').style.display = 'block';
+            } else {
+                alert(data.message);
+                document.getElementById('tgPhone').value = '';
+                document.getElementById('tgCode').value = '';
+                document.getElementById('tgCodeSection').style.display = 'none';
+                document.getElementById('tg2faSection').style.display = 'none';
+                loadConfig();
+            }
+        } else {
+            alert(data.message);
+        }
+    } catch(err) {
+        alert("Bağlantı hatası: " + err.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fa-solid fa-circle-check"></i> Kodu Doğrula ve Bağla`;
+    }
+}
+
+async function tgVerifyPassword(e) {
+    if (e) e.preventDefault();
+    
+    const password = document.getElementById('tg2faPassword').value.trim();
+    const slot = document.getElementById('tgSlot').value;
+    const btn = document.getElementById('btnTgVerifyPassword');
+    
+    if (!password) {
+        alert("Lütfen iki adımlı doğrulama şifrenizi giriniz.");
+        return;
+    }
+    
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Doğrulanıyor...`;
+    
+    try {
+        const res = await fetch('/api/telegram/verify-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password, slot })
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert(data.message);
+            document.getElementById('tgPhone').value = '';
+            document.getElementById('tgCode').value = '';
+            document.getElementById('tg2faPassword').value = '';
+            document.getElementById('tgCodeSection').style.display = 'none';
+            document.getElementById('tg2faSection').style.display = 'none';
+            loadConfig();
+        } else {
+            alert(data.message);
+        }
+    } catch(err) {
+        alert("Bağlantı hatası: " + err.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fa-solid fa-unlock-keyhole"></i> Şifreyi Doğrula`;
+    }
+}

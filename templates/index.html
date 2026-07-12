@@ -222,6 +222,63 @@
                     </div>
 
 
+                    <div style="margin-top: 25px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
+                        <h3 style="font-size: 1.05rem; margin-bottom: 12px; color: var(--accent);"><i class="fa-solid fa-mobile-screen-button"></i> Telefon ile Otomatik Giriş (StringSession Al)</h3>
+                        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 15px; line-height: 1.4;">
+                            API ID, Hash ve Telefon bilgilerinizi girip telefonunuza gelen kodu yazarak hesabınızı anında bağlayabilirsiniz.
+                        </p>
+                        
+                        <div class="form-row">
+                            <div class="form-group half">
+                                <label for="tgApiId" style="font-size:0.8rem;">API ID</label>
+                                <input type="text" id="tgApiId" placeholder="Örn: 1234567" spellcheck="false" style="padding: 8px 10px;">
+                            </div>
+                            <div class="form-group half">
+                                <label for="tgApiHash" style="font-size:0.8rem;">API Hash</label>
+                                <input type="text" id="tgApiHash" placeholder="Örn: 7ba4072d..." spellcheck="false" style="padding: 8px 10px;">
+                            </div>
+                        </div>
+                        <div class="form-row" style="margin-top: 10px;">
+                            <div class="form-group half">
+                                <label for="tgPhone" style="font-size:0.8rem;">Telefon Numarası</label>
+                                <input type="text" id="tgPhone" placeholder="Örn: +905321234567" spellcheck="false" style="padding: 8px 10px;">
+                            </div>
+                            <div class="form-group half">
+                                <label for="tgSlot" style="font-size:0.8rem;">Bağlanacak Hesap</label>
+                                <select id="tgSlot" style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.3); color: white; outline: none; height: 38px;">
+                                    <option value="1">Reklam Hesabı 1</option>
+                                    <option value="2">Reklam Hesabı 2</option>
+                                    <option value="3">Reklam Hesabı 3</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <button class="btn secondary" id="btnTgSendCode" onclick="tgSendCode(event)" style="width:100%; justify-content:center; padding:10px; margin-top:15px;">
+                            <i class="fa-solid fa-paper-plane"></i> Telefonuma Giriş Kodu Gönder
+                        </button>
+                        
+                        <!-- Code & 2FA fields (hidden by default) -->
+                        <div id="tgCodeSection" style="display:none; margin-top:20px; border-top:1px solid rgba(255,255,255,0.1); padding-top:15px;">
+                            <div class="form-group">
+                                <label for="tgCode" style="font-size:0.85rem; color:#f59e0b;"><i class="fa-solid fa-key"></i> Telegram'dan Gelen 5 Haneli Kod</label>
+                                <input type="text" id="tgCode" placeholder="Örn: 12345" spellcheck="false">
+                            </div>
+                            <button class="btn primary" id="btnTgVerifyCode" onclick="tgVerifyCode(event)" style="width:100%; justify-content:center; padding:10px;">
+                                <i class="fa-solid fa-circle-check"></i> Kodu Doğrula ve Bağla
+                            </button>
+                        </div>
+
+                        <div id="tg2faSection" style="display:none; margin-top:15px;">
+                            <div class="form-group">
+                                <label for="tg2faPassword" style="font-size:0.85rem; color:#f59e0b;"><i class="fa-solid fa-lock"></i> İki Adımlı Doğrulama Şifreniz</label>
+                                <input type="password" id="tg2faPassword" placeholder="Telegram 2FA Şifreniz" spellcheck="false">
+                            </div>
+                            <button class="btn primary" id="btnTgVerifyPassword" onclick="tgVerifyPassword(event)" style="width:100%; justify-content:center; padding:10px;">
+                                <i class="fa-solid fa-unlock-keyhole"></i> Şifreyi Doğrula
+                            </button>
+                        </div>
+                    </div>
+
                     <button class="btn primary" id="btnSaveConfig" onclick="saveConfig()" style="margin-top:20px; width:100%; justify-content:center;">
                         <i class="fa-solid fa-floppy-disk"></i> Yapılandırmayı Kaydet
                     </button>
