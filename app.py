@@ -1197,11 +1197,60 @@ def shopier_callback():
                     "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 })
                 firestore_helper.set_document(phone_doc_id, phone_doc)
-                
         return "OK", 200
     except Exception as e:
         print(f"⚠️ Shopier webhook processing error: {e}")
         return str(e), 500
+
+@app.route('/api/admin/licenses', methods=['GET'])
+@login_required
+def api_admin_get_licenses():
+    if session.get('user_id') != 'habil':
+        return jsonify({"success": False, "message": "Yetkisiz işlem."}), 403
+    try:
+        licenses = user_db.get_all_licenses()
+        licenses.sort(key=lambda x: (x.get("claimed", False), -x.get("created_at", 0)))
+        return jsonify({"success": True, "licenses": licenses})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})
+
+@app.route('/api/admin/licenses', methods=['POST'])
+@login_required
+def api_admin_generate_license():
+    if session.get('user_id') != 'habil':
+        return jsonify({"success": False, "message": "Yetkisiz işlem."}), 403
+    
+    data = request.json or {}
+    duration = int(data.get("duration", 30))
+    
+    import random, string
+    rand_part = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+    key = f"LIC-{rand_part[:4]}-{rand_part[4:]}"
+    
+    try:
+        if user_db.create_license(key, duration):
+            return jsonify({"success": True, "key": key})
+        return jsonify({"success": False, "message": "Lisans oluşturulamadı."})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})
+
+@app.route('/api/admin/licenses/delete', methods=['POST'])
+@login_required
+def api_admin_delete_license():
+    if session.get('user_id') != 'habil':
+        return jsonify({"success": False, "message": "Yetkisiz işlem."}), 403
+    
+    data = request.json or {}
+    key = data.get("key", "").strip()
+    if not key:
+        return jsonify({"success": False, "message": "Lisans anahtarı belirtilmedi."})
+        
+    try:
+        if user_db.delete_license(key):
+            return jsonify({"success": True})
+        return jsonify({"success": False, "message": "Lisans silinemedi."})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})
 
 if __name__ == '__main__':
     # Clean up any orphaned bot processes from previous runs on startup

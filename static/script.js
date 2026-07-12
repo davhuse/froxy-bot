@@ -77,6 +77,8 @@ function switchTab(tabName) {
         loadScraperConfig();
     } else if (tabName === 'tickets') {
         loadTickets();
+    } else if (tabName === 'licenses') {
+        loadLicenses();
     }
 }
 
@@ -1034,6 +1036,126 @@ async function clearTickets() {
             loadTickets();
         } else {
             alert("Temizleme hatası: " + data.message);
+        }
+    } catch(e) {
+        alert("Bağlantı hatası: " + e.message);
+    }
+}
+
+// LICENSE MANAGER LOGIC (ADMIN ONLY)
+async function loadLicenses() {
+    const tbody = document.getElementById('licensesTableBody');
+    if (!tbody) return;
+    
+    try {
+        const res = await fetch('/api/admin/licenses');
+        const data = await res.json();
+        if (data.success) {
+            renderLicenses(data.licenses);
+        } else {
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 20px; color: #ef4444;">${data.message}</td></tr>`;
+        }
+    } catch(e) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 20px; color: #ef4444;">Yükleme hatası: ${e.message}</td></tr>`;
+    }
+}
+
+function renderLicenses(licenses) {
+    const tbody = document.getElementById('licensesTableBody');
+    if (!tbody) return;
+    
+    if (licenses.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" style="text-align: center; padding: 30px; color: rgba(255,255,255,0.4); font-style: italic;">
+                    Hiç lisans anahtarı üretilmemiş.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = licenses.map(lic => {
+        const statusBadge = lic.claimed 
+            ? `<span style="background: rgba(239, 68, 68, 0.2); color: #f87171; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 500;">Kullanıldı</span>`
+            : `<span style="background: rgba(16, 185, 129, 0.2); color: #34d399; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 500;">Aktif (Bekliyor)</span>`;
+            
+        const claimedBy = lic.claimed_by 
+            ? `<strong style="color: #cbd5e1; font-size: 0.9rem;">${lic.claimed_by}</strong>`
+            : `<span style="color: rgba(255,255,255,0.3); font-size: 0.85rem;">—</span>`;
+            
+        return `
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <td style="padding: 12px 10px; font-family: monospace; font-size: 1rem; color: #38bdf8; font-weight: 600;">${lic.key}</td>
+                <td style="padding: 12px 10px; color: #cbd5e1; font-size: 0.9rem;">${lic.duration_label || lic.duration_days + ' Gün'}</td>
+                <td style="padding: 12px 10px;">${statusBadge}</td>
+                <td style="padding: 12px 10px;">${claimedBy}</td>
+                <td style="padding: 12px 10px; text-align: center;">
+                    <button class="btn danger" onclick="deleteLicense('${lic.key}')" style="padding: 5px 10px; font-size: 0.75rem; border-radius: 4px;">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+async function generateLicense(e) {
+    if (e) e.preventDefault();
+    const select = document.getElementById('licDuration');
+    if (!select) return;
+    
+    const duration = select.value;
+    
+    try {
+        const res = await fetch('/api/admin/licenses', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ duration: parseInt(duration) })
+        });
+        const data = await res.json();
+        if (data.success) {
+            const resultDiv = document.getElementById('generatedLicenseResult');
+            const keyText = document.getElementById('generatedKeyText');
+            if (resultDiv && keyText) {
+                keyText.innerText = data.key;
+                resultDiv.style.display = 'block';
+            }
+            loadLicenses();
+        } else {
+            alert("Lisans üretilemedi: " + data.message);
+        }
+    } catch(err) {
+        alert("Bağlantı hatası: " + err.message);
+    }
+}
+
+function copyGeneratedKey(e) {
+    if (e) e.preventDefault();
+    const text = document.getElementById('generatedKeyText');
+    if (!text) return;
+    
+    navigator.clipboard.writeText(text.innerText).then(() => {
+        alert("Lisans anahtarı panoya kopyalandı!");
+    }).catch(err => {
+        alert("Kopyalanamadı: " + err.message);
+    });
+}
+
+async function deleteLicense(key) {
+    if (!confirm(`Bu lisans anahtarını silmek istediğinize emin misiniz?\nAnahtar: ${key}`)) return;
+    
+    try {
+        const res = await fetch('/api/admin/licenses/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ key: key })
+        });
+        const data = await res.json();
+        if (data.success) {
+            loadLicenses();
+        } else {
+            alert("Lisans silinemedi: " + data.message);
         }
     } catch(e) {
         alert("Bağlantı hatası: " + e.message);

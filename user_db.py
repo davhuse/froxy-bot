@@ -174,13 +174,65 @@ def save_user_config(user_id, config_dict):
 
 # Generate a new license key (for admin use)
 def create_license(license_key, duration_days=30):
+    import time
+    labels = {
+        1: "1 Günlük",
+        3: "3 Günlük",
+        7: "1 Haftalık",
+        30: "1 Aylık",
+        90: "3 Aylık",
+        3650: "Sınırsız"
+    }
+    label = labels.get(duration_days, f"{duration_days} Günlük")
+    
     data = {
         "key": license_key,
         "duration_days": duration_days,
+        "duration_label": label,
         "claimed": False,
-        "claimed_by": ""
+        "claimed_by": "",
+        "created_at": int(time.time())
     }
     return _set_doc(f"saas_license_{license_key}", data)
+
+def delete_license(license_key):
+    url = f"{FIRESTORE_ROOT}/saas_license_{license_key}?key={API_KEY}"
+    ctx = ssl._create_unverified_context()
+    try:
+        req = urllib.request.Request(url, method="DELETE")
+        with urllib.request.urlopen(req, context=ctx, timeout=8) as r:
+            return r.status in [200, 204]
+    except Exception as e:
+        print(f"Firestore error deleting license: {e}")
+        return False
+
+def get_all_licenses():
+    url = f"{FIRESTORE_ROOT}?key={API_KEY}"
+    ctx = ssl._create_unverified_context()
+    try:
+        req = urllib.request.Request(url)
+        with urllib.request.urlopen(req, context=ctx, timeout=10) as r:
+            data = json.loads(r.read().decode('utf-8'))
+            documents = data.get("documents", [])
+            licenses = []
+            for doc in documents:
+                name = doc.get("name", "")
+                doc_id = name.split("/")[-1]
+                if doc_id.startswith("saas_license_"):
+                    fields = doc.get("fields", {})
+                    res = {}
+                    for k, v in fields.items():
+                        if "stringValue" in v:
+                            res[k] = v["stringValue"]
+                        elif "integerValue" in v:
+                            res[k] = int(v["integerValue"])
+                        elif "booleanValue" in v:
+                            res[k] = v["booleanValue"]
+                    licenses.append(res)
+            return licenses
+    except Exception as e:
+        print(f"Error listing all licenses from Firestore: {e}")
+        return []
 
 def get_all_user_configs():
     url = f"{FIRESTORE_ROOT}?key={API_KEY}"

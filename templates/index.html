@@ -36,6 +36,9 @@
                 </button>
                 
                 {% if session.get('user_id') == 'habil' %}
+                <button class="tab-btn" id="tabBtnLicenses" onclick="switchTab('licenses')">
+                    <i class="fa-solid fa-key"></i> Lisans Yönetimi (Admin)
+                </button>
                 <button class="tab-btn" id="tabBtnDestek" onclick="switchTab('destek')">
                     <i class="fa-solid fa-headset"></i> Satış Botu (Admin)
                 </button>
@@ -518,6 +521,81 @@
                 </div>
             </div>
         </div>
+
+        <!-- TAB 7: LİSANS YÖNETİMİ (ADMIN ONLY) -->
+        {% if session.get('user_id') == 'habil' %}
+        <div id="tab-licenses" class="tab-content">
+            <div class="controls-panel glass-panel">
+                <div class="bot-info-header">
+                    <h2><i class="fa-solid fa-key"></i> Lisans Anahtarı Yönetimi</h2>
+                    <p style="color: rgba(255,255,255,0.7); margin-top: 5px;">
+                        Müşterileriniz için yeni lisans anahtarları oluşturun ve mevcut lisansların durumunu takip edin.
+                    </p>
+                </div>
+            </div>
+
+            <div class="main-content" style="grid-template-columns: 1fr 2fr; gap: 20px; width: 100%;">
+                <!-- Sol Taraf: Lisans Oluşturucu -->
+                <div class="glass-panel" style="padding: 25px;">
+                    <h2 style="font-size: 1.2rem; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; color: var(--text-primary);">
+                        <i class="fa-solid fa-plus-circle" style="color: var(--text-secondary);"></i> Yeni Lisans Üret
+                    </h2>
+                    
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label for="licDuration" style="display: block; color: rgba(255,255,255,0.7); font-size: 0.9rem; margin-bottom: 8px;">Lisans Süresi</label>
+                        <select id="licDuration" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.3); color: white; outline: none; font-family: 'Outfit', sans-serif;">
+                            <option value="1">1 Günlük</option>
+                            <option value="3">3 Günlük</option>
+                            <option value="7">1 Haftalık</option>
+                            <option value="30" selected>1 Aylık</option>
+                            <option value="90">3 Aylık</option>
+                            <option value="3650">Sınırsız / Ömür Boyu</option>
+                        </select>
+                    </div>
+
+                    <button class="btn primary" onclick="generateLicense(event)" style="width: 100%; padding: 12px; font-weight: 600;">
+                        <i class="fa-solid fa-magic"></i> Lisans Anahtarı Oluştur
+                    </button>
+                    
+                    <div id="generatedLicenseResult" style="margin-top: 20px; padding: 15px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px dashed rgba(255,255,255,0.2); display: none; text-align: center;">
+                        <span style="font-size: 0.85rem; color: rgba(255,255,255,0.6); display: block; margin-bottom: 5px;">Oluşturulan Anahtar:</span>
+                        <strong id="generatedKeyText" style="font-size: 1.1rem; color: #10B981; letter-spacing: 1px; font-family: monospace; display: block; margin-bottom: 10px;"></strong>
+                        <button class="btn secondary" onclick="copyGeneratedKey(event)" style="padding: 6px 12px; font-size: 0.8rem;">
+                            <i class="fa-solid fa-copy"></i> Kopyala
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Sağ Taraf: Lisans Listesi -->
+                <div class="glass-panel" style="padding: 25px;">
+                    <h2 style="font-size: 1.2rem; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; color: var(--text-primary);">
+                        <i class="fa-solid fa-list" style="color: var(--text-secondary);"></i> Lisans Anahtarları Listesi
+                    </h2>
+                    
+                    <div class="table-container" style="max-height: 450px; overflow-y: auto;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left; color: white;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.95rem; opacity: 0.8;">
+                                    <th style="padding: 12px 10px; font-weight: 600;">Lisans Anahtarı</th>
+                                    <th style="padding: 12px 10px; font-weight: 600; width: 100px;">Süre</th>
+                                    <th style="padding: 12px 10px; font-weight: 600; width: 100px;">Durum</th>
+                                    <th style="padding: 12px 10px; font-weight: 600; width: 120px;">Kullanan</th>
+                                    <th style="padding: 12px 10px; font-weight: 600; width: 80px; text-align: center;">İşlem</th>
+                                </tr>
+                            </thead>
+                            <tbody id="licensesTableBody">
+                                <tr>
+                                    <td colspan="5" style="text-align: center; padding: 30px; color: rgba(255,255,255,0.5);">
+                                        Lisanslar yükleniyor...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
     </div>
 
     <script src="{{ url_for('static', filename='script.js') }}"></script>
