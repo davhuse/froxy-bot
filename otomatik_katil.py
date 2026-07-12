@@ -1665,14 +1665,23 @@ async def main():
                 elif saat_durumu == 'normal':
                     print(f"[{client_name}] 📤 TR saati {tr_time.strftime('%H:%M')} — normal saat, gönderim devam ediyor.")
                 
-                # Sadece tek mesaj şablonu kullan (rotasyonu devre dışı bırak)
-                if "3" in client_name:
-                    fallback = "message_3.txt"
-                elif "2" in client_name:
-                    fallback = "message_2.txt"
-                else:
-                    fallback = "message.txt"
-                available_files = [fallback] if os.path.exists(fallback) else []
+                # Mesaj şablonlarını yükle (rotasyon için)
+                user_msg_dir = os.path.join("messages", f"user_{USER_ID}") if USER_ID else "messages"
+                available_files = []
+                if os.path.exists(user_msg_dir):
+                    for fname in sorted(os.listdir(user_msg_dir)):
+                        if fname.endswith('.txt'):
+                            available_files.append(os.path.join(user_msg_dir, fname))
+                
+                # Eğer kullanıcıya ait özel şablon yoksa, eski tip tekli mesajları kullan
+                if not available_files:
+                    if "3" in client_name:
+                        fallback = get_user_file("message_3.txt")
+                    elif "2" in client_name:
+                        fallback = get_user_file("message_2.txt")
+                    else:
+                        fallback = get_user_file("message.txt")
+                    available_files = [fallback] if os.path.exists(fallback) else []
                 
                 msg_history = load_msg_history()
 

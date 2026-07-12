@@ -959,15 +959,21 @@ def save_autodm_config():
 # MESAJ ŞABLONLARI API
 # ==========================================
 
-MESSAGES_DIR = "messages"
+def get_user_messages_dir(user_id):
+    path = os.path.join("messages", f"user_{user_id}")
+    os.makedirs(path, exist_ok=True)
+    return path
 
 @app.route('/api/templates', methods=['GET'])
+@login_required
 def get_templates():
+    user_id = session['user_id']
+    user_dir = get_user_messages_dir(user_id)
     templates = []
-    if os.path.exists(MESSAGES_DIR):
-        for fname in sorted(os.listdir(MESSAGES_DIR)):
+    if os.path.exists(user_dir):
+        for fname in sorted(os.listdir(user_dir)):
             if fname.endswith('.txt'):
-                fpath = os.path.join(MESSAGES_DIR, fname)
+                fpath = os.path.join(user_dir, fname)
                 try:
                     with open(fpath, 'r', encoding='utf-8') as f:
                         content = f.read()
@@ -981,23 +987,30 @@ def get_templates():
     return jsonify({"templates": templates})
 
 @app.route('/api/templates/<name>', methods=['GET'])
+@login_required
 def get_template(name):
-    fpath = os.path.join(MESSAGES_DIR, name)
+    user_id = session['user_id']
+    user_dir = get_user_messages_dir(user_id)
+    safe_name = os.path.basename(name)
+    fpath = os.path.join(user_dir, safe_name)
     if not os.path.exists(fpath):
         return jsonify({"error": "Template not found"}), 404
     try:
         with open(fpath, 'r', encoding='utf-8') as f:
-            return jsonify({"name": name, "content": f.read()})
+            return jsonify({"name": safe_name, "content": f.read()})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/templates/<name>', methods=['POST'])
+@login_required
 def save_template(name):
+    user_id = session['user_id']
+    user_dir = get_user_messages_dir(user_id)
+    safe_name = os.path.basename(name)
     data = request.json
     content = data.get('content', '')
-    fpath = os.path.join(MESSAGES_DIR, name)
+    fpath = os.path.join(user_dir, safe_name)
     try:
-        os.makedirs(MESSAGES_DIR, exist_ok=True)
         with open(fpath, 'w', encoding='utf-8') as f:
             f.write(content)
         return jsonify({"success": True})
