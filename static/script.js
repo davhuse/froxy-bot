@@ -181,6 +181,10 @@ function filterBlacklist() {
 async function checkStatus() {
     try {
         const res = await fetch('/api/status');
+        if (res.status === 401) {
+            window.location.href = '/login';
+            return;
+        }
         const data = await res.json();
         updateStatusUI(data.status);
     } catch (e) {

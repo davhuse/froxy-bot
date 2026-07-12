@@ -57,87 +57,91 @@
 
         <!-- TAB 1: REKLAM BOTU -->
         <div id="tab-reklam" class="tab-content active">
-            <div class="controls-panel glass-panel">
-                <div class="bot-info-header">
-                    <h2><i class="fa-solid fa-circle-play"></i> Reklam Gönderim Kontrolü</h2>
-                    <div class="status-badge stopped" id="botStatus">
-                        <span class="dot"></span>
-                        <span class="text">Kontrol Ediliyor...</span>
+            <!-- 2 Column Header: Controls + Auto DM -->
+            <div class="control-row-grid">
+                <!-- Left: Controls -->
+                <div class="glass-panel" style="display: flex; flex-direction: column; justify-content: space-between; padding: 20px; min-height: 140px;">
+                    <div class="bot-info-header" style="margin-bottom: 10px;">
+                        <h2 style="font-size: 1.15rem; margin:0;"><i class="fa-solid fa-circle-play"></i> Reklam Gönderim Kontrolü</h2>
+                        <div class="status-badge stopped" id="botStatus">
+                            <span class="dot"></span>
+                            <span class="text">Kontrol Ediliyor...</span>
+                        </div>
+                    </div>
+                    <div class="control-actions" style="margin-top: 0; display: flex; gap: 10px; width: 100%;">
+                        <button id="btnStart" class="btn primary" onclick="startBot()" style="flex: 1; justify-content: center;">
+                            <i class="fa-solid fa-play"></i> Başlat
+                        </button>
+                        <button id="btnStop" class="btn danger" onclick="stopBot()" style="flex: 1; justify-content: center;">
+                            <i class="fa-solid fa-stop"></i> Durdur
+                        </button>
                     </div>
                 </div>
-                <div class="control-actions">
-                    <button id="btnStart" class="btn primary" onclick="startBot()">
-                        <i class="fa-solid fa-play"></i> Başlat
-                    </button>
-                    <button id="btnStop" class="btn danger" onclick="stopBot()">
-                        <i class="fa-solid fa-stop"></i> Durdur
-                    </button>
-                </div>
-            </div>
-
-
-            <!-- STATS BAR -->
-            <div class="stats-bar" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px; margin-bottom: 20px; width: 100%;">
-                <div class="stat-card glass-panel" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 15px; text-align: center;">
-                    <span class="stat-title" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px; font-weight: 500;">Otomatik Keşfedilen (Scraper)</span>
-                    <span class="stat-value" id="statAutoDiscovered" style="font-size: 1.8rem; font-weight: 700; color: #a78bfa;">0</span>
-                </div>
-                <div class="stat-card glass-panel" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 15px; text-align: center;">
-                    <span class="stat-title" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px; font-weight: 500;">Aktif Reklam Grubu</span>
-                    <span class="stat-value" id="statTotalGroups" style="font-size: 1.8rem; font-weight: 700; color: var(--accent);">0</span>
-                </div>
-                <div class="stat-card glass-panel" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 15px; text-align: center;">
-                    <span class="stat-title" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px; font-weight: 500;">Başarıyla Gönderilen Mesaj</span>
-                    <span class="stat-value" id="statSentMessages" style="font-size: 1.8rem; font-weight: 700; color: var(--success);">0</span>
-                </div>
-                <div class="stat-card glass-panel" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 15px; text-align: center;">
-                    <span class="stat-title" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px; font-weight: 500;">Mevcut Döngü İlerlemesi</span>
-                    <span class="stat-value" id="statProgress" style="font-size: 1.8rem; font-weight: 700; color: #60a5fa;">0%</span>
-                </div>
-                <div class="stat-card glass-panel" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 15px; text-align: center;">
-                    <span class="stat-title" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px; font-weight: 500;">Kara Listeye Alınan</span>
-                    <span class="stat-value" id="statBlacklist" style="font-size: 1.8rem; font-weight: 700; color: var(--danger);">0</span>
-                </div>
-            </div>
-
-            <div class="main-content">
-                <!-- AUTO-DM AYARLARI -->
-                <div class="glass-panel" style="margin-bottom: 20px; padding: 20px;">
-                    <h2><i class="fa-solid fa-paper-plane"></i> Auto-DM Ayarları</h2>
-                    <p class="info-note" style="margin-bottom: 15px;">
-                        <i class="fa-solid fa-circle-info"></i> Gruplarda ilgili anahtar kelimeleri yazan kullanıcılara otomatik DM gönderir (yapay zeka, chatgpt, kupon, adobe vb.)
-                    </p>
-                    <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <span style="color: var(--text-secondary);">Auto-DM:</span>
+                <!-- Right: Auto-DM -->
+                <div class="glass-panel" style="display: flex; flex-direction: column; justify-content: space-between; padding: 20px; min-height: 140px;">
+                    <div>
+                        <h2 style="font-size: 1.15rem; display: flex; align-items: center; gap: 8px; margin-bottom: 5px;"><i class="fa-solid fa-paper-plane" style="color: var(--accent);"></i> Auto-DM Ayarları</h2>
+                        <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.3; margin:0;">
+                            Gruplarda ilgili anahtar kelimeleri yazan kullanıcılara otomatik DM gönderir.
+                        </p>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 10px; flex-wrap: wrap; gap: 10px; width: 100%;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="color: var(--text-secondary); font-size: 0.85rem;">Auto-DM:</span>
                             <label class="toggle-switch">
                                 <input type="checkbox" id="autoDmToggle" onchange="saveAutoDmConfig()">
                                 <span class="toggle-slider"></span>
                             </label>
                         </div>
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <span style="color: var(--text-secondary);">Günlük Limit:</span>
-                            <input type="number" id="autoDmLimit" value="20" min="1" max="50" style="width: 80px; padding: 6px 10px; background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border); border-radius: 8px; font-size: 0.9rem;">
-                            <button class="btn secondary" onclick="saveAutoDmConfig()" style="padding: 6px 15px; font-size: 0.85rem;">
-                                <i class="fa-solid fa-floppy-disk"></i> Kaydet
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="color: var(--text-secondary); font-size: 0.85rem;">Günlük Limit:</span>
+                            <input type="number" id="autoDmLimit" value="20" min="1" max="50" style="width: 60px; padding: 5px 8px; background: rgba(0,0,0,0.3); color: white; border: 1px solid var(--glass-border); border-radius: 6px; font-size: 0.85rem; outline: none;">
+                            <button class="btn secondary" onclick="saveAutoDmConfig()" style="padding: 5px 10px; font-size: 0.8rem; margin-top: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; border: 1px solid var(--glass-border);">
+                                <i class="fa-solid fa-floppy-disk"></i>
                             </button>
                         </div>
                     </div>
                 </div>
+            </div>
 
+            <!-- STATS BAR -->
+            <div class="stats-bar">
+                <div class="stat-card glass-panel">
+                    <span class="stat-title">Otomatik Keşfedilen (Scraper)</span>
+                    <span class="stat-value" id="statAutoDiscovered" style="color: #a78bfa;">0</span>
+                </div>
+                <div class="stat-card glass-panel">
+                    <span class="stat-title">Aktif Reklam Grubu</span>
+                    <span class="stat-value" id="statTotalGroups" style="color: var(--accent);">0</span>
+                </div>
+                <div class="stat-card glass-panel">
+                    <span class="stat-title">Başarıyla Gönderilen Mesaj</span>
+                    <span class="stat-value" id="statSentMessages" style="color: var(--success);">0</span>
+                </div>
+                <div class="stat-card glass-panel">
+                    <span class="stat-title">Mevcut Döngü İlerlemesi</span>
+                    <span class="stat-value" id="statProgress" style="color: #60a5fa;">0%</span>
+                </div>
+                <div class="stat-card glass-panel">
+                    <span class="stat-title">Kara Listeye Alınan</span>
+                    <span class="stat-value" id="statBlacklist" style="color: var(--danger);">0</span>
+                </div>
+            </div>
+
+            <div class="main-content">
                 <!-- MESAJ ŞABLONLARI -->
-                <div class="glass-panel" style="margin-bottom: 20px; padding: 20px;">
+                <div class="glass-panel" style="padding: 20px;">
                     <h2><i class="fa-solid fa-layer-group"></i> Mesaj Şablonları (Rotasyon)</h2>
-                    <p class="info-note" style="margin-bottom: 15px;">
+                    <p class="info-note" style="margin-bottom: 15px; margin-top: 5px;">
                         <i class="fa-solid fa-circle-info"></i> Her blast döngüsünde gruplara farklı şablonlar gönderilir. Aynı gruba aynı mesaj arka arkaya gitmez.
                     </p>
-                    <div id="templatesContainer" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div id="templatesContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px;">
                         <p style="color: var(--text-secondary); grid-column: 1/-1; text-align: center;">Şablonlar yükleniyor...</p>
                     </div>
                 </div>
 
                 <!-- ESKİ TEK MESAJ EDİTÖRLERİ (Fallback) -->
-                <div class="editors-container" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; width: 100%; margin-bottom: 20px;">
+                <div class="editors-container">
                     <div class="editor-section glass-panel" style="margin-bottom: 0;">
                         <h2><i class="fa-solid fa-pen-to-square"></i> 1. Hesap Mesajı (message.txt)</h2>
                         <textarea id="messageEditor" spellcheck="false" style="min-height: 250px;"></textarea>
@@ -174,7 +178,7 @@
 
         <!-- TAB 8: AYARLAR (SETTINGS) -->
         <div id="tab-settings" class="tab-content">
-            <div class="main-content grid-layout">
+            <div class="control-row-grid">
                 <div class="config-section glass-panel">
                     <h2><i class="fa-solid fa-gears"></i> Bot Yapılandırması</h2>
                     
@@ -331,7 +335,7 @@
                 </p>
             </div>
 
-            <div class="main-content grid-layout">
+            <div class="control-row-grid">
                 <div class="config-section glass-panel">
                     <h2><i class="fa-solid fa-gears"></i> Froxy AI Bot Yapılandırması</h2>
                     
@@ -382,7 +386,7 @@
                 </p>
             </div>
 
-            <div class="main-content grid-layout">
+            <div class="control-row-grid">
                 <div class="config-section glass-panel">
                     <h2><i class="fa-solid fa-gears"></i> LisansArena Bot Yapılandırması</h2>
                     
