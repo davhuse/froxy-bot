@@ -274,7 +274,7 @@ def index():
     return render_template('index.html')
 
 # ==========================================
-# R@app.route('/api/status', methods=['GET'])
+@app.route('/api/status', methods=['GET'])
 @login_required
 def status():
     user_id = session['user_id']
@@ -729,6 +729,12 @@ def save_lisansarena_config():
 # ==========================================
 
 def get_user_msg_file(user_id, num):
+    # Admin (habil) uses legacy root-level message files
+    if user_id == 'habil':
+        if num == 1:
+            return "message.txt"
+        else:
+            return f"message_{num}.txt"
     os.makedirs("logs", exist_ok=True)
     suffix = f"_{num}" if num > 1 else ""
     return f"logs/user_{user_id}_message{suffix}.txt"
