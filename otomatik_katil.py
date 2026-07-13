@@ -1147,60 +1147,60 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         if is_lisansarena:
             if matched_product:
                 reply_text = (
-                    f"Merhaba! Aradığınız ürün (**{matched_product['title']}**) stoklarımızda mevcuttur.\n"
-                    f"💰 Fiyatı: **{matched_product['price']}**\n\n"
-                    f"👉 Ürünü güvenli satın almak ve 7/24 anında otomatik teslim almak için lütfen resmi satış botumuzu başlatın:\n\n"
+                    f"Merhaba, sormuş olduğunuz ürün (**{matched_product['title']}**) şu an stoklarımızda mevcuttur. 🔹\n\n"
+                    f"💵 Ürün Fiyatı: **{matched_product['price']}**\n\n"
+                    f"Ödeme işlemini tamamlamak ve lisansınızı anında otomatik teslim almak için lütfen resmi mağaza botumuzu başlatınız:\n\n"
                     f"🔗 @LisansArenaBot\n\n"
                     f"━━━━━━━━━━━━━━━━━━━\n"
                     f"{status_text}"
                 )
             else:
                 reply_text = (
-                    "Merhaba! LisansArena Premium Hesap & Lisans satış platformuna hoş geldiniz. 😊\n\n"
-                    "🔥 **HAFTANIN DEV FIRSATLARI (SINIRLI STOK):**\n"
-                    "• 📺 Netflix UHD 1 Profil (1 Aylık): **99.90 ₺**\n"
-                    "• 🎨 Canva 1 Yıllık Pro Davet: **99.90 ₺**\n"
-                    "• 🎬 YouTube Premium (3 Aylık Kod): **44.90 ₺**\n"
-                    "• 🎧 Spotify Premium (4 Aylık Kod): **49.90 ₺**\n\n"
-                    "Canva Pro, Windows/Office Lisans Keyleri ve tüm ürünlerimiz anında otomatik teslimatla stoklardadır.\n\n"
+                    "Merhaba, LisansArena Müşteri Destek hattına hoş geldiniz. 🔹\n\n"
+                    "Aradığınız tüm lisans anahtarları, premium yayın hesapları ve tasarım yazılımları anında teslimat garantisiyle stoklarımızdadır.\n\n"
+                    "⚡ **Haftalık Öne Çıkan Ürünlerimiz:**\n"
+                    "• Netflix UHD 1 Profil (1 Aylık): **99.90 ₺**\n"
+                    "• Canva 1 Yıllık Pro Davet: **99.90 ₺**\n"
+                    "• YouTube Premium Bireysel (3 Aylık Kod): **44.90 ₺**\n"
+                    "• Spotify Premium Bireysel (4 Aylık Kod): **49.90 ₺**\n\n"
+                    "Tüm ürün kataloğumuzu görmek, fiyatları incelemek ve anında 7/24 otomatik satın almak için resmi satış botumuzu başlatabilirsiniz:\n\n"
+                    "🔗 @LisansArenaBot\n\n"
                     "━━━━━━━━━━━━━━━━━━━\n"
-                    f"{status_text}\n"
-                    f"━━━━━━━━━━━━━━━━━━━\n\n"
-                    "👉 Tüm ürün kataloğumuzu görmek, fiyatları incelemek ve anında 7/24 otomatik satın almak için resmi satış botumuzu başlatın:\n\n"
-                    "🔗 @LisansArenaBot"
+                    f"{status_text}"
                 )
         elif is_keyvadi:
             if matched_product:
                 reply_text = (
-                    f"Merhaba! Aradığınız ürün (**{matched_product['title']}**) stoklarımızda mevcuttur.\n"
-                    f"💰 Fiyatı: **{matched_product['price']}**\n\n"
-                    f"👉 Ürünü güvenli satın almak ve 7/24 anında otomatik teslim almak için lütfen resmi satış botumuzu başlatın:\n\n"
-                    f"🔗 @KeyVadiSatisBot\n\n"
+                    f"Selam! İstediğin ürün (**{matched_product['title']}**) şu an stokta var dostum! 🔥\n\n"
+                    f"💰 Fiyat: **{matched_product['price']}**\n\n"
+                    f"Hemen otomatik satın almak ve anında teslim almak için şu botu başlatman yeterli:\n\n"
+                    f"👉 @KeyVadiSatisBot\n\n"
                     f"━━━━━━━━━━━━━━━━━━━\n"
                     f"{status_text}"
                 )
             else:
                 reply_text = (
-                    "Merhaba! KeyVadi Premium Hesap & Lisans satış platformuna hoş geldiniz. 😊\n\n"
-                    "🔥 **HAFTANIN DEV FIRSATLARI (SINIRLI STOK):**\n"
-                    "• 📺 Netflix 4K UHD Profil: **49.99 ₺**\n"
-                    "• 🎨 Adobe Creative Cloud (1 Haftalık): **49.99 ₺**\n"
-                    "• 🎬 YouTube Premium (3 Aylık Kod): **29.99 ₺**\n"
-                    "• 🤖 Gemini Pro Davet Linki: **69.99 ₺**\n\n"
-                    "Canva Pro, Windows/Office Lisans Keyleri ve yüzlerce ürünümüz anında otomatik teslimatla stoklardadır.\n\n"
+                    "Selam dostum! KeyVadi mağazasına hoş geldin. 🔥\n\n"
+                    "Burada en ucuz oyun keylerini, premium hesapları ve tasarım araçlarını bulabilirsin. Sistemimiz tamamen otomatik çalışıyor!\n\n"
+                    "🎮 **Günün En Popüler Fırsatları:**\n"
+                    "» Netflix 4K UHD Profil: **49.99 ₺**\n"
+                    "» Adobe Creative Cloud (1 Haftalık): **49.99 ₺**\n"
+                    "» YouTube Premium (3 Aylık Kod): **29.99 ₺**\n"
+                    "» Gemini Pro Davet Linki: **69.99 ₺**\n\n"
+                    "Hemen ürünleri incelemek ve saniyeler içinde teslim almak için aşağıdaki butona tıkla ve botu başlat:\n\n"
+                    "👉 @KeyVadiSatisBot\n\n"
                     "━━━━━━━━━━━━━━━━━━━\n"
-                    f"{status_text}\n"
-                    f"━━━━━━━━━━━━━━━━━━━\n\n"
-                    "👉 Tüm ürün kataloğumuzu görmek, fiyatları incelemek ve anında 7/24 otomatik satın almak için resmi satış botumuzu başlatın:\n\n"
-                    "🔗 @KeyVadiSatisBot"
+                    f"{status_text}"
                 )
         else:
             is_lisans_question = any(kw in msg_text for kw in ["canva", "adobe", "windows", "office", "netflix", "spotify", "trendyol", "yemek", "lisans", "key"])
             if is_lisans_question:
                 reply_text = (
-                    "Merhaba! Aradığınız premium hesap ve lisans ürünleri (Canva, Adobe, Windows/Office, Yemek Kuponları vb.) kardeş platformumuz **KeyVadi**'de satılmaktadır.\n\n"
-                    "👉 Ürünleri incelemek ve 7/24 otomatik satın almak için lütfen KeyVadi botunu başlatın:\n\n"
-                    "🔗 @KeyVadiSatisBot"
+                    "Merhaba! Froxy AI olarak yalnızca yapay zeka araçları ve API çözümleri sunmaktayız. 🤖\n\n"
+                    "Aradığınız diğer lisans ve hesap ürünleri (Canva, Netflix, Adobe vb.) için ortak çalıştığımız bağımsız lisans mağazasını ziyaret edebilirsiniz:\n\n"
+                    "🔗 @KeyVadiSatisBot\n\n"
+                    "━━━━━━━━━━━━━━━━━━━\n"
+                    f"{status_text}"
                 )
             else:
                 reply_text = (
