@@ -1163,8 +1163,7 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         else:
             reply_text = (
                 "Merhaba! Froxy AI Yapay Zeka platformuna hoş geldiniz. 🤖\n\n"
-                "Froxy AI ile tek bir panelden GPT-4, Claude 3.5, Gemini 1.5, Midjourney ve +18 sansürsüz yapay zeka modellerine sınırsız erişim sağlayabilirsiniz.\n\n"
-                "🎁 Hemen bota giriş yaparak **100 ücretsiz test kredinizi** alabilir ve deneyebilirsiniz.\n\n"
+                "Froxy AI ile tek bir panelden ChatGPT 5.5, Claude 4.7 Opus, Gemini 3.1 Pro, Midjourney v7 ve +18 sansürsüz yapay zeka modellerine sınırsız erişim sağlayabilirsiniz.\n\n"
                 "━━━━━━━━━━━━━━━━━━━\n"
                 f"{status_text}\n"
                 f"━━━━━━━━━━━━━━━━━━━\n\n"
