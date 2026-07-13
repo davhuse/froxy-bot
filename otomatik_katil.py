@@ -501,8 +501,8 @@ async def auto_scrape_groups(client, client_name, joined_usernames=None):
             try:
                 mysearch_entity = await client.get_entity("mysearch")
                 await client.send_message(mysearch_entity, keyword)
-                await asyncio.sleep(4)
-                async for msg in client.iter_messages(mysearch_entity, limit=1):
+                await asyncio.sleep(5)
+                async for msg in client.iter_messages(mysearch_entity, limit=5):
                     if not msg.out and msg.text:
                         found_usernames = re.findall(r't\.me/([a-zA-Z0-9\_]+)', msg.text)
                         for uname in found_usernames:
@@ -1124,6 +1124,11 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
             
         sender_id = sender.id
         if sender_id in our_user_ids:
+            return
+            
+        # Exclude @mysearch bot from auto-reply to prevent loop breakages
+        sender_username = getattr(sender, 'username', '') or ''
+        if sender_username.lower() in ["mysearch", "mysearchbot"]:
             return
             
         admin_id = None
