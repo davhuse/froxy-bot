@@ -111,7 +111,80 @@ def parse_spintax(text):
     return re.sub(r'\{([^\{\}]*)\}', replace, text)
 
 def process_marketing_features(msg, is_keyvadi):
-    # Dynamic marketing features disabled to send exact messages as written in templates
+    import datetime
+    import random
+    import os
+    
+    # 1. Haftalık Ürün Kampanyası (Sadece KeyVadi için)
+    if is_keyvadi:
+        weekly_campaigns = [
+            {
+                "message_addon": "🔥 **HAFTANIN DEV FIRSATI:** Adobe Creative Cloud (Tüm Uygulamalar) 1 Yıllık Yetkilendirme 149.99 TL yerine sadece **79.99 TL!**"
+            },
+            {
+                "message_addon": "🎨 **HAFTANIN DEV FIRSATI:** Canva Pro Sınırsız Tasarım Yetkisi (1 Yıllık) 79.99 TL yerine sadece **39.99 TL!**"
+            },
+            {
+                "message_addon": "🍔 **HAFTANIN FIRSATI:** Trendyol Yemek (700 TL'ye 250 TL İndirim Kuponu) 49.99 TL yerine sadece **24.99 TL!**"
+            }
+        ]
+        
+        try:
+            week_no = datetime.datetime.now().isocalendar()[1]
+            campaign = weekly_campaigns[week_no % len(weekly_campaigns)]
+            addon = campaign["message_addon"]
+            
+            lines = msg.splitlines()
+            if len(lines) >= 3:
+                lines.insert(2, "\n" + addon + "\n")
+                msg = "\n".join(lines)
+            else:
+                msg = addon + "\n\n" + msg
+        except Exception as e:
+            print(f"⚠️ Kampanya ekleme hatası: {e}")
+
+    # 2. Promosyon Kodu ve FOMO (Aciliyet) Ekleme
+    gunler = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]
+    bugun_no = datetime.datetime.now().weekday()
+    bugun_adi = gunler[bugun_no]
+    
+    if is_keyvadi:
+        kodlar = ["KEYVADI10", "KEY10", "FIRSAT10"]
+        fomolar = [
+            f"Bugün ({bugun_adi}) geçerli",
+            "Kısa süreliğine geçerli",
+            "Bu haftaya özel",
+            "Sadece bugün geçerli",
+        ]
+    else:
+        kodlar = ["FROXY20", "AI20", "REKLAM20"]
+        fomolar = [
+            f"Bugün ({bugun_adi}) geçerli",
+            "Kısa süreliğine geçerli",
+            "Bu haftaya özel",
+            "Sadece bugün geçerli",
+        ]
+        
+    chosen_kod = random.choice(kodlar)
+    chosen_fomo = random.choice(fomolar)
+    
+    # Eger sablon icinde tag'ler varsa degistir
+    has_tags = "{KOD}" in msg or "{FOMO}" in msg
+    if has_tags:
+        msg = msg.replace("{BUGUN}", bugun_adi)
+        msg = msg.replace("{KOD}", chosen_kod)
+        msg = msg.replace("{FOMO}", chosen_fomo)
+    else:
+        # Tag yoksa mesajın sonuna yeni bir satır olarak ekle
+        discount = "10%" if is_keyvadi else "20%"
+        promo_line = f"\n🎟️ **{chosen_fomo}:** `{chosen_kod}` koduyla **%{discount} indirim** fırsatını kaçırma!"
+        lines = msg.splitlines()
+        if len(lines) >= 2:
+            lines.insert(-1, promo_line)
+            msg = "\n".join(lines)
+        else:
+            msg += "\n" + promo_line
+            
     return msg
 
 
@@ -421,33 +494,7 @@ async def auto_scrape_groups(client, client_name, joined_usernames=None):
             keyword_found = 0
             keyword_blacklisted = 0
             
-            # Combine global search results with @mysearch bot results
-            scraped_chats = list(result.chats)
-            
-            # Fetch from @mysearch bot
-            try:
-                mysearch_entity = await client.get_entity("mysearch")
-                await client.send_message(mysearch_entity, keyword)
-                await asyncio.sleep(5)
-                async for msg in client.iter_messages(mysearch_entity, limit=5):
-                    if not msg.out and msg.text:
-                        found_usernames = re.findall(r't\.me/([a-zA-Z0-9\_]+)', msg.text)
-                        for uname in found_usernames:
-                            uname_lower = uname.lower()
-                            if uname_lower.isdigit() or uname_lower in ["mysearch", "mysearchann"]:
-                                continue
-                            if uname_lower in existing_groups or uname_lower in blacklist_lower or uname_lower in scraped_history_lower:
-                                continue
-                            try:
-                                chat_entity = await client.get_entity(uname)
-                                if chat_entity not in scraped_chats:
-                                    scraped_chats.append(chat_entity)
-                            except:
-                                pass
-            except Exception as mysearch_err:
-                print(f"⚠️ [{client_name}] @mysearch arama hatası: {mysearch_err}")
-                
-            for chat in scraped_chats:
+            for chat in result.chats:
                 is_group = False
                 if isinstance(chat, Channel):
                     if not getattr(chat, 'broadcast', False):
@@ -1053,15 +1100,6 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         if sender_id in our_user_ids:
             return
             
-        # Exclude @mysearch bot from auto-reply to prevent loop breakages
-        sender_username = getattr(sender, 'username', '') or ''
-        if sender_username.lower() in ["mysearch", "mysearchbot"]:
-            return
-            
-        # Ignore bots to prevent auto-replying to other bots/Welcome bots/Security bots
-        if getattr(sender, 'bot', False):
-            return
-            
         admin_id = None
         if os.path.exists("bot_config.json"):
             try:
@@ -1143,7 +1181,7 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         presence = await async_get_document("habil_presence") or {}
         is_online = presence.get("is_online", False)
         status_text = "🟢 **Destek Çevrimiçi:** Şu an aktifiz, mesajınıza en kısa sürede yanıt vereceğiz. 😊" if is_online else "🔴 **Destek Çevrimdışı:** Şu an aktif değiliz ancak mesajınızı bırakırsanız en kısa sürede yanıtlayacağız."
- 
+
         if is_lisansarena:
             if matched_product:
                 reply_text = (
@@ -1207,7 +1245,7 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                 "👉 Bota başlamak ve paketleri incelemek için:\n\n"
                 "🔗 @FroxyDestekBOT"
             )
-                
+            
         try:
             # Mark user as welcomed immediately before sending to avoid race condition/double reply
             welcomed_users.add(welcome_key)
@@ -1233,8 +1271,8 @@ async def main():
             with open("bot_config.json", "r", encoding="utf-8") as f:
                 cfg = json.load(f)
                 string_session_key = cfg.get("ad_string_session", "")
-                string_session_key_2 = cfg.get("ad_string_session2", cfg.get("ad_string_session_2", ""))
-                string_session_key_3 = cfg.get("ad_string_session3", cfg.get("ad_string_session_3", ""))
+                string_session_key_2 = cfg.get("ad_string_session2", "")
+                string_session_key_3 = cfg.get("ad_string_session3", "")
                 ad_sleep_min = cfg.get("ad_sleep_min", 600)
                 ad_sleep_max = cfg.get("ad_sleep_max", 1200)
         except:
@@ -1625,15 +1663,14 @@ async def main():
                 elif saat_durumu == 'normal':
                     print(f"[{client_name}] 📤 TR saati {tr_time.strftime('%H:%M')} — normal saat, gönderim devam ediyor.")
                 
-                # Rotation updates: pick from variation templates if they exist
+                # Sadece tek mesaj şablonu kullan (rotasyonu devre dışı bırak)
                 if "3" in client_name:
-                    variations = ["message_3.txt", "message_3a.txt", "message_3b.txt", "message_3c.txt"]
-                    available_files = [v for v in variations if os.path.exists(v)]
+                    fallback = "message_3.txt"
                 elif "2" in client_name:
-                    variations = ["message_2.txt", "message_2a.txt", "message_2b.txt", "message_2c.txt"]
-                    available_files = [v for v in variations if os.path.exists(v)]
+                    fallback = "message_2.txt"
                 else:
-                    available_files = ["message.txt"] if os.path.exists("message.txt") else []
+                    fallback = "message.txt"
+                available_files = [fallback] if os.path.exists(fallback) else []
                 
                 msg_history = load_msg_history()
 
@@ -1800,9 +1837,16 @@ async def main():
                         except Exception as le:
                             print(f"[{client_name}] ⚠️ @{grup_name} grubundan çıkılırken hata: {le}")
                     except ChatWriteForbiddenError:
-                        print(f"[{client_name}] 🔒 @{grup_name} → Yazma izni yok veya grup kilitli! Cooldown set edilerek pas geçiliyor...")
+                        print(f"[{client_name}] 🔒 @{grup_name} → Yazma izni yok! Kara listeye ekleniyor...")
                         fail_count += 1
-                        set_cooldown(grup_name, client_name)
+                        async with state_lock:
+                            save_to_list(grup_name, BLACKLIST_FILE)
+                        try:
+                            if entity:
+                                await client(LeaveChannelRequest(entity))
+                                print(f"[{client_name}] 🚪 @{grup_name} grubundan çıkıldı.")
+                        except Exception as le:
+                            print(f"[{client_name}] ⚠️ @{grup_name} grubundan çıkılırken hata: {le}")
                     except SlowModeWaitError as sme:
                         wait_sec = getattr(sme, 'seconds', 0) or 0
                         print(f"[{client_name}] 🐌 @{grup_name} → SlowMode aktif ({wait_sec}sn bekleme). Cooldown set ediliyor, pas geçildi.")
@@ -1812,9 +1856,6 @@ async def main():
                         print(f"[{client_name}] ⚠️ @{grup_name} → {err_type} (atlanıyor)")
                         fail_count += 1
                         await record_failure(grup_name)
-                        if "ConnectionError" in err_type or "Disconnected" in str(e):
-                            print(f"🚨 [{client_name}] Disconnection detected! Raising exception to force reconnection supervisor.")
-                            raise e
 
                 # Gruplara sırayla ve aralarında 20-45 saniye rastgele bekleme (daha doğal)
                 random.shuffle(blast_targets)  # Grup sırasını karıştır
@@ -2093,18 +2134,8 @@ async def main():
                 import traceback
                 print(f"🚨 [Supervisor] {client_name} çöktü: {e}")
                 traceback.print_exc()
-                print(f"🔄 [Supervisor] {client_name} için Telegram bağlantısı yeniden kuruluyor...")
-                try:
-                    if not client.is_connected():
-                        await client.connect()
-                    else:
-                        await client.disconnect()
-                        await asyncio.sleep(2)
-                        await client.connect()
-                except Exception as conn_err:
-                    print(f"⚠️ [Supervisor] Yeniden bağlanırken hata: {conn_err}")
-                print("⏳ [Supervisor] 10 saniye sonra worker yeniden başlatılıyor...")
-                await asyncio.sleep(10)
+                print("⏳ [Supervisor] 60 saniye sonra worker yeniden başlatılıyor...")
+                await asyncio.sleep(60)
 
     # Workers ve arka plan görevlerini başlat
     tasks = []
