@@ -1131,6 +1131,10 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         if sender_username.lower() in ["mysearch", "mysearchbot"]:
             return
             
+        # Ignore bots to prevent auto-replying to other bots/Welcome bots/Security bots
+        if getattr(sender, 'bot', False):
+            return
+            
         admin_id = None
         if os.path.exists("bot_config.json"):
             try:
