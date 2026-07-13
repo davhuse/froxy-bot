@@ -100,8 +100,7 @@ CATEGORIES = {}
 
 # Products that are NOT in the Shopier showroom (hidden/delisted/paginated) but still active
 # These are injected into the catalog alongside scraped products
-INJECTED_PRODUCTS = [
-    {"id": "47669105", "title": "YouTube Premium (3 Aylık Kod)", "price": "29.99 TL", "url": "https://www.shopier.com/keyvadi/47669105"},
+INJECTED_PRODUCTS = [{"id": "47669105", "title": "YouTube Premium (3 Aylık Kod)", "price": "29.99 TL", "url": "https://www.shopier.com/keyvadi/47669105"},
     {"id": "47669117", "title": "Netflix 4K Ultra HD (Kişisel Profil)", "price": "49.99 TL", "url": "https://www.shopier.com/keyvadi/47669117"},
     {"id": "48114807", "title": "XBOX Game Pass Ultimate (3 Aylık Üyelik)", "price": "80.00 TL", "url": "https://www.shopier.com/keyvadi/48114807"},
     {"id": "48114802", "title": "Steam İstediğiniz Oyun (60 TL Limitli)", "price": "60.00 TL", "url": "https://www.shopier.com/keyvadi/48114802"},
@@ -117,7 +116,18 @@ INJECTED_PRODUCTS = [
     {"id": "47669295", "title": "Super Grok (6 Aylık Hesap)", "price": "1499.99 TL", "url": "https://www.shopier.com/keyvadi/47669295"},
     {"id": "47669305", "title": "Super Grok (12 Aylık Hesap)", "price": "2299.99 TL", "url": "https://www.shopier.com/keyvadi/47669305"},
     {"id": "47669310", "title": "Gamma Ultra (1 Aylık Hesap)", "price": "449.99 TL", "url": "https://www.shopier.com/keyvadi/47669310"},
-    {"id": "47669316", "title": "Gamma Pro (1 Aylık Hesap)", "price": "299.99 TL", "url": "https://www.shopier.com/keyvadi/47669316"},
+    {"id": "47669316", "title": "Gamma Pro (1 Aylık Hesap)", "price": "299.99 TL", "url": "https://www.shopier.com/keyvadi/47669316"},,
+    {"id": "48943133", "title": "Eski Tarihli Telegram Hesabı (+1 No'lu)", "price": "149.90 TL", "url": "https://www.shopier.com/48943133"},
+    {"id": "48943136", "title": "Perplexity Pro (1 Aylık Hesap)", "price": "119.90 TL", "url": "https://www.shopier.com/48943136"},
+    {"id": "48943137", "title": "DeepL AI (1 Aylık) - Kişisel Hesap", "price": "59.90 TL", "url": "https://www.shopier.com/48943137"},
+    {"id": "48943139", "title": "DeepL AI (1 Aylık) - Ortak Hesap", "price": "29.90 TL", "url": "https://www.shopier.com/48943139"},
+    {"id": "48943141", "title": "Scribd (1 Aylık) - Kişisel Hesap", "price": "59.90 TL", "url": "https://www.shopier.com/48943141"},
+    {"id": "48943143", "title": "Scribd (1 Aylık) - Ortak Hesap", "price": "29.90 TL", "url": "https://www.shopier.com/48943143"},
+    {"id": "48943144", "title": "Magnific AI Ortak (1 Aylık Business Hesap)", "price": "49.90 TL", "url": "https://www.shopier.com/48943144"},
+    {"id": "48943146", "title": "Crunchyroll Özel Profil (1 Aylık)", "price": "59.90 TL", "url": "https://www.shopier.com/48943146"},
+    {"id": "48943148", "title": "Crunchyroll Ortak Hesap (1 Aylık)", "price": "39.90 TL", "url": "https://www.shopier.com/48943148"},
+    {"id": "48943150", "title": "Grammarly Pro (1 Haftalık) - Kendi Hesabınıza", "price": "79.90 TL", "url": "https://www.shopier.com/48943150"},
+    {"id": "48943151", "title": "Grammarly Pro (1 Aylık) - Ortak Hesap", "price": "49.90 TL", "url": "https://www.shopier.com/48943151"}
 ]
 
 # Flat list of all products (rebuilt when products are loaded)
@@ -354,9 +364,9 @@ def rebuild_categories(products):
         url = p["url"]
         
         t = title.lower()
-        if any(k in t for k in ["gemini", "grok", "ai", "gamma", "kiro", "chatgpt", "openai", "copilot", "claude", "midjourney", "semrush", "deepl", "quill", "ideogram", "envato", "freepik"]):
+        if any(k in t for k in ["gemini", "grok", "ai", "gamma", "kiro", "chatgpt", "openai", "copilot", "claude", "midjourney", "semrush", "deepl", "quill", "ideogram", "envato", "freepik", "perplexity", "magnific"]):
             cat_key = "ai"
-        elif any(k in t for k in ["canva", "adobe", "creative cloud", "express", "capcut", "duolingo", "scribd", "design", "tasarım", "spotify", "netflix", "windows", "win ", "win10", "win11", "office", "key", "lisans", "autodesk", "figma", "wordpress", "grammarly", "vpn", "antivirüs", "antivirus", "xbox", "steam", "game pass"]):
+        elif any(k in t for k in ["canva", "adobe", "creative cloud", "express", "capcut", "duolingo", "scribd", "design", "tasarım", "spotify", "netflix", "windows", "win ", "win10", "win11", "office", "key", "lisans", "autodesk", "figma", "wordpress", "grammarly", "vpn", "antivirüs", "antivirus", "xbox", "steam", "game pass", "crunchyroll", "hbo", "prime video"]):
             cat_key = "design"
         elif any(k in t for k in ["whatsapp", "apple id", "apple", "icloud", "numara", "mobil", "sms", "onay"]):
             cat_key = "mobile"
