@@ -1596,7 +1596,8 @@ async def main():
                     variations = ["message_2.txt", "message_2a.txt", "message_2b.txt", "message_2c.txt"]
                     available_files = [v for v in variations if os.path.exists(v)]
                 else:
-                    available_files = ["message.txt"] if os.path.exists("message.txt") else []
+                    variations = ["message.txt", "message_a.txt", "message_b.txt", "message_c.txt"]
+                    available_files = [v for v in variations if os.path.exists(v)]
                 
                 msg_history = load_msg_history()
 

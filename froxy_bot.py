@@ -1032,8 +1032,25 @@ async def kv_admin_ban_user_callback(event):
     await event.edit(f"{original_text}\n\n⚙️ **Aksiyon:** Kullanıcı engellendi. (Yönetici: @{event.sender.username or event.sender_id})")
 
 if __name__ == '__main__':
+    import asyncio
+    from telethon.errors import FloodWaitError
+    
     logger.info("Loading KeyVadi products cache...")
     load_products_from_file_or_scrape()
-    logger.info("Starting KeyVadi Sales Bot (@KeyVadiSatisBot)...")
-    bot.start(bot_token=BOT_TOKEN)
-    bot.run_until_disconnected()
+    
+    async def start_with_retry():
+        while True:
+            try:
+                logger.info("Starting KeyVadi Sales Bot (@KeyVadiSatisBot)...")
+                await bot.start(bot_token=BOT_TOKEN)
+                logger.info("KeyVadi Sales Bot started successfully!")
+                await bot.run_until_disconnected()
+            except FloodWaitError as e:
+                logger.warning(f"FloodWait: Telegram {e.seconds} saniye beklememizi istiyor. Bekleniyor...")
+                await asyncio.sleep(e.seconds + 5)
+                logger.info("FloodWait süresi bitti, tekrar deneniyor...")
+            except Exception as e:
+                logger.error(f"Bot başlatma hatası: {e}")
+                await asyncio.sleep(30)
+    
+    bot.loop.run_until_complete(start_with_retry())

@@ -794,11 +794,23 @@ async def get_bot_info():
         logger.error(f"Failed to get bot info: {e}")
 
 async def main():
-    await bot.start(bot_token=BOT_TOKEN)
-    await get_bot_info()
-    await bot.run_until_disconnected()
+    from telethon.errors import FloodWaitError
+    while True:
+        try:
+            await bot.start(bot_token=BOT_TOKEN)
+            await get_bot_info()
+            logger.info("LisansArena Sales Bot started successfully!")
+            await bot.run_until_disconnected()
+        except FloodWaitError as e:
+            logger.warning(f"FloodWait: Telegram {e.seconds} saniye beklememizi istiyor. Bekleniyor...")
+            await asyncio.sleep(e.seconds + 5)
+            logger.info("FloodWait süresi bitti, tekrar deneniyor...")
+        except Exception as e:
+            logger.error(f"Bot başlatma hatası: {e}")
+            await asyncio.sleep(30)
 
 if __name__ == '__main__':
+    import asyncio
     logger.info("Loading LisansArena products cache...")
     load_products_from_links_json()
     logger.info("Starting LisansArena Sales Bot...")
