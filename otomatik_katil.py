@@ -1588,14 +1588,15 @@ async def main():
                 elif saat_durumu == 'normal':
                     print(f"[{client_name}] 📤 TR saati {tr_time.strftime('%H:%M')} — normal saat, gönderim devam ediyor.")
                 
-                # Sadece tek mesaj şablonu kullan (rotasyonu devre dışı bırak)
+                # Rotation updates: pick from variation templates if they exist
                 if "3" in client_name:
-                    fallback = "message_3.txt"
+                    variations = ["message_3.txt", "message_3a.txt", "message_3b.txt", "message_3c.txt"]
+                    available_files = [v for v in variations if os.path.exists(v)]
                 elif "2" in client_name:
-                    fallback = "message_2.txt"
+                    variations = ["message_2.txt", "message_2a.txt", "message_2b.txt", "message_2c.txt"]
+                    available_files = [v for v in variations if os.path.exists(v)]
                 else:
-                    fallback = "message.txt"
-                available_files = [fallback] if os.path.exists(fallback) else []
+                    available_files = ["message.txt"] if os.path.exists("message.txt") else []
                 
                 msg_history = load_msg_history()
 

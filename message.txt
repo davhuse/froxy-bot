@@ -10,7 +10,6 @@ Tek bir üyelikle dünyanın en gelişmiş yapay zeka modellerine ve araçların
 
 🎨 **GÖRSEL VE SANATSAL ARAÇLAR**
 ⚡ Midjourney v7 & DALL-E 3 (Ultra gerçekçi resimler)
-⚡ Suno AI v4 (Yapay zeka ile profesyonel Türkçe şarkı ve müzik yapma)
 ⚡ Kararlı altyapı, yüksek hızlı sunucular ve kesintisiz yanıtlar!
 ▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬
 
