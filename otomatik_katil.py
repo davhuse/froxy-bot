@@ -494,7 +494,33 @@ async def auto_scrape_groups(client, client_name, joined_usernames=None):
             keyword_found = 0
             keyword_blacklisted = 0
             
-            for chat in result.chats:
+            # Combine global search results with @mysearch bot results
+            scraped_chats = list(result.chats)
+            
+            # Fetch from @mysearch bot
+            try:
+                mysearch_entity = await client.get_entity("mysearch")
+                await client.send_message(mysearch_entity, keyword)
+                await asyncio.sleep(4)
+                async for msg in client.iter_messages(mysearch_entity, limit=1):
+                    if not msg.out and msg.text:
+                        found_usernames = re.findall(r't\.me/([a-zA-Z0-9\_]+)', msg.text)
+                        for uname in found_usernames:
+                            uname_lower = uname.lower()
+                            if uname_lower.isdigit() or uname_lower in ["mysearch", "mysearchann"]:
+                                continue
+                            if uname_lower in existing_groups or uname_lower in blacklist_lower or uname_lower in scraped_history_lower:
+                                continue
+                            try:
+                                chat_entity = await client.get_entity(uname)
+                                if chat_entity not in scraped_chats:
+                                    scraped_chats.append(chat_entity)
+                            except:
+                                pass
+            except Exception as mysearch_err:
+                print(f"⚠️ [{client_name}] @mysearch arama hatası: {mysearch_err}")
+                
+            for chat in scraped_chats:
                 is_group = False
                 if isinstance(chat, Channel):
                     if not getattr(chat, 'broadcast', False):
