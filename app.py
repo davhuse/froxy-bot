@@ -406,6 +406,16 @@ def get_logs():
     except Exception as e:
         return jsonify({"logs": [f"Log okuma hatası: {str(e)}"]})
 
+@app.route('/api/full_logs', methods=['GET'])
+def get_full_logs():
+    if not os.path.exists(LOG_FILE):
+        return "Log file not found", 404
+    try:
+        with open(LOG_FILE, 'r', encoding="utf-8", errors="replace") as f:
+            return f.read(), 200, {'Content-Type': 'text/plain; charset=utf-8'}
+    except Exception as e:
+        return str(e), 500
+
 # ==========================================
 # DESTEK/SATIŞ BOTU (SUPPORT BOT) API ENDPOINTS
 # ==========================================
