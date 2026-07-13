@@ -1819,6 +1819,9 @@ async def main():
                         print(f"[{client_name}] ⚠️ @{grup_name} → {err_type} (atlanıyor)")
                         fail_count += 1
                         await record_failure(grup_name)
+                        if "ConnectionError" in err_type or "Disconnected" in str(e):
+                            print(f"🚨 [{client_name}] Disconnection detected! Raising exception to force reconnection supervisor.")
+                            raise e
 
                 # Gruplara sırayla ve aralarında 20-45 saniye rastgele bekleme (daha doğal)
                 random.shuffle(blast_targets)  # Grup sırasını karıştır
@@ -2097,8 +2100,18 @@ async def main():
                 import traceback
                 print(f"🚨 [Supervisor] {client_name} çöktü: {e}")
                 traceback.print_exc()
-                print("⏳ [Supervisor] 60 saniye sonra worker yeniden başlatılıyor...")
-                await asyncio.sleep(60)
+                print(f"🔄 [Supervisor] {client_name} için Telegram bağlantısı yeniden kuruluyor...")
+                try:
+                    if not client.is_connected():
+                        await client.connect()
+                    else:
+                        await client.disconnect()
+                        await asyncio.sleep(2)
+                        await client.connect()
+                except Exception as conn_err:
+                    print(f"⚠️ [Supervisor] Yeniden bağlanırken hata: {conn_err}")
+                print("⏳ [Supervisor] 10 saniye sonra worker yeniden başlatılıyor...")
+                await asyncio.sleep(10)
 
     # Workers ve arka plan görevlerini başlat
     tasks = []
