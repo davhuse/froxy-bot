@@ -1131,19 +1131,19 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                 if ip["id"] not in existing_ids:
                     products.append(ip)
 
+        welcome_key = f"{client_name}_{sender_id}"
+        if welcome_key in welcomed_users:
+            return
+            
         matched_product = None
         match_score = 0
         if products:
             matched_product, match_score = match_product_from_text(event.raw_text, products)
             
-        welcome_key = f"{client_name}_{sender_id}"
-        if not matched_product and welcome_key in welcomed_users:
-            return
-            
         presence = await async_get_document("habil_presence") or {}
         is_online = presence.get("is_online", False)
         status_text = "🟢 **Destek Çevrimiçi:** Şu an aktifiz, mesajınıza en kısa sürede yanıt vereceğiz. 😊" if is_online else "🔴 **Destek Çevrimdışı:** Şu an aktif değiliz ancak mesajınızı bırakırsanız en kısa sürede yanıtlayacağız."
-
+ 
         if is_lisansarena:
             if matched_product:
                 reply_text = (
@@ -1169,8 +1169,6 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                     "👉 Tüm ürün kataloğumuzu görmek, fiyatları incelemek ve anında 7/24 otomatik satın almak için resmi satış botumuzu başlatın:\n\n"
                     "🔗 @LisansArenaBot"
                 )
-                welcomed_users.add(welcome_key)
-                save_welcomed_users()
         elif is_keyvadi:
             if matched_product:
                 reply_text = (
@@ -1196,8 +1194,6 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                     "👉 Tüm ürün kataloğumuzu görmek, fiyatları incelemek ve anında 7/24 otomatik satın almak için resmi satış botumuzu başlatın:\n\n"
                     "🔗 @KeyVadiSatisBot"
                 )
-                welcomed_users.add(welcome_key)
-                save_welcomed_users()
         else:
             is_lisans_question = any(kw in msg_text for kw in ["canva", "adobe", "windows", "office", "netflix", "spotify", "trendyol", "yemek", "lisans", "key"])
             if is_lisans_question:
@@ -1217,10 +1213,12 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                     "👉 Bota başlamak ve paketleri incelemek için:\n\n"
                     "🔗 @FroxyDestekBOT"
                 )
-                welcomed_users.add(welcome_key)
-                save_welcomed_users()
                 
         try:
+            # Mark user as welcomed immediately before sending to avoid race condition/double reply
+            welcomed_users.add(welcome_key)
+            save_welcomed_users()
+            
             await event.reply(reply_text)
             print(f"[{client_name}] ✉️ Özel mesaj otomatik yanıtlandı: @{sender.username or sender_id} -> {msg_text[:50]}")
         except Exception as e:
@@ -1633,14 +1631,15 @@ async def main():
                 elif saat_durumu == 'normal':
                     print(f"[{client_name}] 📤 TR saati {tr_time.strftime('%H:%M')} — normal saat, gönderim devam ediyor.")
                 
-                # Sadece tek mesaj şablonu kullan (rotasyonu devre dışı bırak)
+                # Rotation updates: pick from variation templates if they exist
                 if "3" in client_name:
-                    fallback = "message_3.txt"
+                    variations = ["message_3.txt", "message_3a.txt", "message_3b.txt", "message_3c.txt"]
+                    available_files = [v for v in variations if os.path.exists(v)]
                 elif "2" in client_name:
-                    fallback = "message_2.txt"
+                    variations = ["message_2.txt", "message_2a.txt", "message_2b.txt", "message_2c.txt"]
+                    available_files = [v for v in variations if os.path.exists(v)]
                 else:
-                    fallback = "message.txt"
-                available_files = [fallback] if os.path.exists(fallback) else []
+                    available_files = ["message.txt"] if os.path.exists("message.txt") else []
                 
                 msg_history = load_msg_history()
 
