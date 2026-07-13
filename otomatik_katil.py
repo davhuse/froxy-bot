@@ -1382,51 +1382,9 @@ async def main():
                         elif dialog_id_str in protected_groups:
                             is_protected = True
 
-                        # ⚡ WHITELIST MODU: Onaylı listede olmayan her grup = çık + kara liste
-                        if not is_protected:
-                            g_name = username_lower or dialog_id_str
-                            print(f"[{client_name}] 🚫 @{g_name} → Onaylı listede yok! Kara listeye alınıp çıkılıyor...")
-                            new_blacklisted_groups.append(g_name)
-                            try:
-                                await client(LeaveChannelRequest(dialog.entity))
-                            except Exception as le:
-                                print(f"[{client_name}] ⚠️ @{g_name} gruptan çıkılırken hata: {le}")
-                            continue
-
-
-                        # Filtreler (Korumalı gruplara uygulanmaz)
-                        should_leave = False
-                        leave_reason = ""
-                        if not is_protected:
-                            # FILTRE 1: Min 200 üye
-                            if member_count is not None and member_count < 200:
-                                should_leave = True
-                                leave_reason = f"üye sayısı yetersiz ({member_count} < 200)"
-                            elif member_count is None and not (hasattr(dialog.entity, 'username') and dialog.entity.username):
-                                should_leave = True
-                                leave_reason = "üye sayısı bilinmiyor ve username yok"
-                            # FILTRE 2: Aktivite kontrolü — 10 farklı kişi yazmış mı?
-                            if not should_leave:
-                                g_key = username_lower or dialog_id_str
-                                if g_key not in verified_groups:
-                                    print(f"[{client_name}] 🔍 @{g_key} aktivite kontrolü yapılıyor...")
-                                    is_active = await check_group_activity(dialog.entity, g_key)
-                                    if is_active:
-                                        verified_groups[g_key] = now.timestamp()
-                                    else:
-                                        should_leave = True
-                                        leave_reason = f"inaktif grup (<{MIN_UNIQUE_SENDERS} farklı kişi yazmış)"
-                                # else: zaten doğrulanmış, geç
-                        
-                        if should_leave:
-                            g_name = dialog.entity.username or dialog_id_str
-                            print(f"[{client_name}] 📉 @{g_name} -> {leave_reason}. Gruptan çıkılıyor...")
-                            new_blacklisted_groups.append(g_name)
-                            try:
-                                await client(LeaveChannelRequest(dialog.entity))
-                            except Exception as le:
-                                print(f"[{client_name}] ⚠️ @{g_name} gruptan çıkılırken hata: {le}")
-                            continue
+                        # ⚡ WHITELIST MODU DEVRE DIŞI: Kullanıcı katıldığı tüm gruplara göndermek istiyor.
+                        # (Gruptan çıkma ve otomatik kara liste devre dışı bırakıldı)
+                        pass
 
                         # Save in joined_dialogs under username (if any) and ID string
                         if username_lower:
@@ -1517,9 +1475,12 @@ async def main():
             blacklist = get_list(BLACKLIST_FILE)
             blacklist_lower = set(b.lower() for b in blacklist)
             
-            # Hedef gruplar: Korumalı / Onaylı grupların hepsi
+            # Hedef gruplar: Korumalı / Onaylı grupların hepsi + Hesabın üye olduğu tüm gruplar
             hedef_set = protected_groups.copy()
-            print(f"[{client_name}] 📌 Onaylı Hedef: {len(hedef_set)} grup")
+            for g_key in joined_dialogs:
+                if g_key != "id":
+                    hedef_set.add(g_key)
+            print(f"[{client_name}] 📌 Toplam Gönderim Hedefi (Üye olunan + Korumalı): {len(hedef_set)} grup")
             
             # Önbellekte olan + kara listede olmayan hedef gruplar
             blast_targets = []
@@ -1550,23 +1511,24 @@ async def main():
                     blast_targets.append(username_lower)
                 else:
                     debug_not_cached += 1
-            # Split targets dynamically among all active accounts to prevent rate limit conflicts and spacing cooldown deadlock
-            if len(active_clients) > 1:
-                num_clients = len(active_clients)
-                client_idx = 0
-                for idx, (c, name, _) in enumerate(active_clients):
-                    if name == client_name:
-                        client_idx = idx
-                        break
-                
-                import hashlib
-                def group_belongs_to_this_acc(gname):
-                    h = int(hashlib.md5(gname.encode('utf-8')).hexdigest(), 16)
-                    return (h % num_clients == client_idx)
-                
-                original_count = len(blast_targets)
-                blast_targets = [g for g in blast_targets if group_belongs_to_this_acc(g)]
-                print(f"[{client_name}] 🔀 İş yükü bölündü: {original_count} gruptan {len(blast_targets)} tanesi bu hesaba atandı.")
+            # (Kapatıldı: Kullanıcı her hesabın katıldığı tüm gruplara göndermesini istiyor)
+            # if len(active_clients) > 1:
+            #     num_clients = len(active_clients)
+            #     client_idx = 0
+            #     for idx, (c, name, _) in enumerate(active_clients):
+            #         if name == client_name:
+            #             client_idx = idx
+            #             break
+            #     
+            #     import hashlib
+            #     def group_belongs_to_this_acc(gname):
+            #         h = int(hashlib.md5(gname.encode('utf-8')).hexdigest(), 16)
+            #         return (h % num_clients == client_idx)
+            #     
+            #     original_count = len(blast_targets)
+            #     blast_targets = [g for g in blast_targets if group_belongs_to_this_acc(g)]
+            #     print(f"[{client_name}] 🔀 İş yükü bölündü: {original_count} gruptan {len(blast_targets)} tanesi bu hesaba atandı.")
+            pass
 
             
             print(f"[{client_name}] 📊 Hedef: {len(hedef_set)} | Gönderilecek: {len(blast_targets)} | Kara liste: {debug_blacklisted} | Küçük grup çıkar: {small_groups_skipped} | Üye değil: {debug_not_cached}")

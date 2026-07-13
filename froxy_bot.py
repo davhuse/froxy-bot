@@ -80,6 +80,7 @@ if not config:
 
 BOT_TOKEN = config.get("bot_token", "")
 ADMIN_ID = config.get("admin_id", 0)
+BOT_USER_ID = None
 SHOPIER_LINKS = config.get("shopier_links", {})
 
 if not BOT_TOKEN or BOT_TOKEN == "YOUR_TELEGRAM_BOT_TOKEN":
@@ -863,15 +864,17 @@ async def message_handler(event):
             try:
                 config = load_config() or {}
                 admin_chat_id = config.get("admin_id", ADMIN_ID)
-                if admin_chat_id:
+                support_chat_id = config.get("support_chat_id", admin_chat_id)
+                if support_chat_id:
                     await bot.send_message(
-                        admin_chat_id, 
-                        f"💰 **KeyVadi Otomatik Satış Bildirimi!**\n"
+                        support_chat_id, 
+                        f"🎉 **KeyVadi Otomatik Satış Bildirimi!**\n"
                         f"👤 **Kullanıcı:** `{user_id}`\n"
                         f"📦 **Ürün:** {unclaimed_order.get('product_name')}\n"
                         f"🔑 **Lisans Kodu:** `{license_key}` (Otomatik teslim edildi)\n"
-                        f"💵 **Tutar:** {unclaimed_order.get('amount')} ₺\n"
-                        f"📧 **E-posta/Telefon:** {input_val}"
+                        f"💰 **Tutar:** {unclaimed_order.get('amount')} ₺\n"
+                        f"🛍️ **Shopier Sipariş ID:** `{unclaimed_order.get('order_id')}`\n\n"
+                        f"*(Kullanıcıya lisans teslimat bilgileri bot üzerinden iletilmiştir.)*"
                     )
             except Exception:
                 pass
@@ -908,10 +911,11 @@ async def message_handler(event):
 
         config = load_config() or {}
         admin_chat_id = config.get("admin_id", ADMIN_ID)
+        support_chat_id = config.get("support_chat_id", admin_chat_id)
         lang = user_lang_helper.get_user_lang(user_id) or "tr"
         t = TEXTS[lang]
 
-        if not admin_chat_id:
+        if not support_chat_id:
             await event.respond(t["support_inactive"])
             user_states[user_id] = None
             return
@@ -922,7 +926,7 @@ async def message_handler(event):
         last_name = user.last_name or ""
 
         admin_msg = (
-            f"📩 **Yeni Destek Talebi!**\n"
+            f"📩 **[KeyVadi] Yeni Destek Talebi!**\n"
             f"👤 **Kullanıcı ID:** `{user_id}`\n"
             f"👤 **Adı Soyadı:** {first_name} {last_name}\n"
             f"💬 **Kullanıcı Adı:** {username}\n"
@@ -940,7 +944,7 @@ async def message_handler(event):
         ]
 
         try:
-            await bot.send_message(admin_chat_id, admin_msg, buttons=admin_buttons)
+            await bot.send_message(support_chat_id, admin_msg, buttons=admin_buttons)
             await event.respond(t["support_success"])
             save_ticket_to_file("KeyVadi", user_id, first_name, last_name, username, event.text)
         except Exception as e:
@@ -977,12 +981,16 @@ async def message_handler(event):
 
     config = load_config() or {}
     admin_chat_id = config.get("admin_id", ADMIN_ID)
+    support_chat_id = config.get("support_chat_id", admin_chat_id)
 
-    if event.sender_id == admin_chat_id:
+    # Allow replies from admin in private chat OR in the support chat group
+    if event.sender_id == admin_chat_id or event.chat_id == support_chat_id:
         if event.is_reply:
             reply_msg = await event.get_reply_message()
             if reply_msg and reply_msg.text:
-                match = re.search(r"Kullanıcı ID:\*\* `(\d+)`", reply_msg.text)
+                # Ensure the replied-to message was sent by this bot itself to prevent cross-talk
+                if reply_msg.sender_id == BOT_USER_ID:
+                    match = re.search(r"Kullanıcı ID:\*\* `(\d+)`", reply_msg.text)
                 if not match:
                     match = re.search(r"Kullanıcı ID: (\d+)", reply_msg.text)
 
@@ -1049,11 +1057,14 @@ if __name__ == '__main__':
     load_products_from_file_or_scrape()
     
     async def start_with_retry():
+        global BOT_USER_ID
         while True:
             try:
                 logger.info("Starting KeyVadi Sales Bot (@KeyVadiSatisBot)...")
                 await bot.start(bot_token=BOT_TOKEN)
-                logger.info("KeyVadi Sales Bot started successfully!")
+                me = await bot.get_me()
+                BOT_USER_ID = me.id
+                logger.info(f"KeyVadi Sales Bot started successfully! Bot User ID: {BOT_USER_ID}")
                 await bot.run_until_disconnected()
             except FloodWaitError as e:
                 logger.warning(f"FloodWait: Telegram {e.seconds} saniye beklememizi istiyor. Bekleniyor...")

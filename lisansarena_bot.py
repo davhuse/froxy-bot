@@ -81,6 +81,7 @@ if not config:
 # Read token for LisansArena
 BOT_TOKEN = config.get("lisansarena_bot_token", "8272543860:AAGmIdyky47dOxFBmqCz-4mZGzvo1jknFDU")
 ADMIN_ID = config.get("admin_id", 8797763469)
+BOT_USER_ID = None
 
 if not BOT_TOKEN or BOT_TOKEN == "YOUR_TELEGRAM_BOT_TOKEN":
     logger.error("Invalid LisansArena Bot Token in config. Exiting.")
@@ -644,15 +645,17 @@ async def message_handler(event):
             
             # Notify admin
             try:
-                if ADMIN_ID:
+                support_chat_id = config.get("support_chat_id", ADMIN_ID)
+                if support_chat_id:
                     await bot.send_message(
-                        ADMIN_ID, 
-                        f"💰 **LisansArena Otomatik Satış Bildirimi!**\n"
+                        support_chat_id, 
+                        f"🎉 **LisansArena Otomatik Satış Bildirimi!**\n"
                         f"👤 **Kullanıcı:** `{user_id}`\n"
                         f"📦 **Ürün:** {unclaimed_order.get('product_name')}\n"
                         f"🔑 **Lisans Kodu:** `{license_key}` (Otomatik teslim edildi)\n"
-                        f"💵 **Tutar:** {unclaimed_order.get('amount')} ₺\n"
-                        f"📧 **E-posta/Telefon:** {input_val}"
+                        f"💰 **Tutar:** {unclaimed_order.get('amount')} ₺\n"
+                        f"🛍️ **Shopier Sipariş ID:** `{unclaimed_order.get('order_id')}`\n\n"
+                        f"*(Kullanıcıya lisans teslimat bilgileri bot üzerinden iletilmiştir.)*"
                     )
             except Exception:
                 pass
@@ -666,10 +669,11 @@ async def message_handler(event):
             
             # Notify admin about stock warning
             try:
-                if ADMIN_ID:
+                support_chat_id = config.get("support_chat_id", ADMIN_ID)
+                if support_chat_id:
                     await bot.send_message(
-                        ADMIN_ID, 
-                        f"⚠️ **ACİL STOK UYARISI!**\n"
+                        support_chat_id, 
+                        f"🚨 **ACİL STOK UYARISI!**\n"
                         f"Kullanıcı `{user_id}` Shopier'den **{unclaimed_order.get('product_name')}** satın aldı ancak stokta lisans kodu yok!\n"
                         f"Lütfen en kısa sürede manuel teslimat yapın.\n"
                         f"📧 **Müşteri E-posta/Telefon:** {input_val}"
@@ -688,7 +692,8 @@ async def message_handler(event):
         lang = user_lang_helper.get_user_lang(user_id) or "tr"
         t = TEXTS[lang]
 
-        if not ADMIN_ID:
+        support_chat_id = config.get("support_chat_id", ADMIN_ID)
+        if not support_chat_id:
             await event.respond(t["support_inactive"])
             user_states[user_id] = None
             return
@@ -699,7 +704,7 @@ async def message_handler(event):
         last_name = user.last_name or ""
 
         admin_msg = (
-            f"📩 **LisansArena Yeni Destek Talebi!**\n"
+            f"📩 **[LisansArena] Yeni Destek Talebi!**\n"
             f"👤 **Kullanıcı ID:** `{user_id}`\n"
             f"👤 **Adı Soyadı:** {first_name} {last_name}\n"
             f"💬 **Kullanıcı Adı:** {username}\n"
@@ -742,11 +747,14 @@ async def message_handler(event):
             await event.respond(product_msg, buttons=buttons)
             return
 
-    if event.sender_id == ADMIN_ID:
+    support_chat_id = config.get("support_chat_id", ADMIN_ID)
+    if event.sender_id == ADMIN_ID or event.chat_id == support_chat_id:
         if event.is_reply:
             reply_msg = await event.get_reply_message()
             if reply_msg and reply_msg.text:
-                match = re.search(r"Kullanıcı ID:\*\* `(\d+)`", reply_msg.text)
+                # Ensure the replied-to message was sent by this bot itself to prevent cross-talk
+                if reply_msg.sender_id == BOT_USER_ID:
+                    match = re.search(r"Kullanıcı ID:\*\* `(\d+)`", reply_msg.text)
                 if not match:
                     match = re.search(r"Kullanıcı ID: (\d+)", reply_msg.text)
 
@@ -785,11 +793,12 @@ async def la_admin_ban_user_callback(event):
     await event.edit(f"{original_text}\n\n⚙️ **Aksiyon:** Kullanıcı engellendi. (Yönetici: @{event.sender.username or event.sender_id})")
 
 async def get_bot_info():
-    global bot_username
+    global bot_username, BOT_USER_ID
     try:
         me = await bot.get_me()
         bot_username = me.username or "LisansArenaBot"
-        logger.info(f"Bot dynamically resolved username: @{bot_username}")
+        BOT_USER_ID = me.id
+        logger.info(f"Bot dynamically resolved username: @{bot_username} | User ID: {BOT_USER_ID}")
     except Exception as e:
         logger.error(f"Failed to get bot info: {e}")
 

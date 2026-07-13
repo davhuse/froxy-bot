@@ -67,6 +67,7 @@ if not config:
 
 BOT_TOKEN = config.get("froxy_bot_token", "")
 ADMIN_ID = config.get("froxy_admin_id", config.get("admin_id", 0))
+BOT_USER_ID = None
 
 if not BOT_TOKEN or BOT_TOKEN == "YOUR_TELEGRAM_BOT_TOKEN":
     logger.error("Invalid Froxy Bot Token in config (froxy_bot_token). Please set it via Web Panel.")
@@ -538,15 +539,15 @@ async def message_handler(event):
         
         try:
             config = load_config() or {}
-            admin_chat_id = config.get("froxy_admin_id", config.get("admin_id", ADMIN_ID))
-            if admin_chat_id:
+            support_chat_id = config.get("support_chat_id", config.get("admin_id", ADMIN_ID))
+            if support_chat_id:
                 await bot.send_message(
-                    admin_chat_id, 
-                    f"💰 **Shopier Otomatik Satış Bildirimi!**\n"
+                    support_chat_id, 
+                    f"🎉 **Shopier Otomatik Satış Bildirimi!**\n"
                     f"👤 **Kullanıcı:** `{user_id}`\n"
                     f"📦 **Ürün:** {pkg_title}\n"
-                    f"💵 **Tutar:** {unclaimed_order.get('amount')} ₺\n"
-                    f"🔑 **Sipariş ID:** `{unclaimed_order.get('order_id')}`\n"
+                    f"💰 **Tutar:** {unclaimed_order.get('amount')} ₺\n"
+                    f"🛍️ **Sipariş ID:** `{unclaimed_order.get('order_id')}`\n"
                     f"📧 **E-posta/Telefon:** {input_val}"
                 )
         except Exception:
@@ -610,13 +611,15 @@ async def message_handler(event):
         return
 
     config = load_config() or {}
-    admin_chat_id = config.get("froxy_admin_id", config.get("admin_id", ADMIN_ID))
+    support_chat_id = config.get("support_chat_id", admin_chat_id)
 
-    if event.sender_id == admin_chat_id:
+    if event.sender_id == admin_chat_id or event.chat_id == support_chat_id:
         if event.is_reply:
             reply_msg = await event.get_reply_message()
             if reply_msg and reply_msg.text:
-                match = re.search(r"Kullanıcı ID:\*\* `(\d+)`", reply_msg.text)
+                # Ensure the replied-to message was sent by this bot itself to prevent cross-talk
+                if reply_msg.sender_id == BOT_USER_ID:
+                    match = re.search(r"Kullanıcı ID:\*\* `(\d+)`", reply_msg.text)
                 if not match:
                     match = re.search(r"Kullanıcı ID: (\d+)", reply_msg.text)
 
@@ -710,11 +713,14 @@ if __name__ == '__main__':
     from telethon.errors import FloodWaitError
     
     async def start_with_retry():
+        global BOT_USER_ID
         while True:
             try:
                 logger.info("Starting Froxy AI Support Bot (@FroxyDestekBOT)...")
                 await bot.start(bot_token=BOT_TOKEN)
-                logger.info("Froxy AI Support Bot started successfully!")
+                me = await bot.get_me()
+                BOT_USER_ID = me.id
+                logger.info(f"Froxy AI Support Bot started successfully! Bot User ID: {BOT_USER_ID}")
                 await bot.run_until_disconnected()
             except FloodWaitError as e:
                 logger.warning(f"FloodWait: Telegram {e.seconds} saniye beklememizi istiyor. Bekleniyor...")
