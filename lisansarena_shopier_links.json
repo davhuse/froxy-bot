@@ -1293,5 +1293,145 @@
         "customNote": "",
         "placementScore": "",
         "dispatchDuration": 0
+    },
+    {
+        "id": "48945669",
+        "title": "Exxen Reklamsız (3 Aylık)",
+        "description": "Exxen Reklamsız 3 Aylık Üyelik. Giriş bilgileri sipariş sonrasında teslim edilir.",
+        "type": "digital",
+        "dateCreated": "2026-07-13T21:36:39+0300",
+        "dateUpdated": "2026-07-13T21:36:39+0300",
+        "url": "https://www.shopier.com/48945669",
+        "media": [
+            {
+                "id": "1",
+                "type": "image",
+                "url": "https://froxy-bot.onrender.com/static/la_exxen.png",
+                "placement": 1
+            }
+        ],
+        "priceData": {
+            "currency": "TRY",
+            "price": "36.99",
+            "discount": false,
+            "discountedPrice": "36.99",
+            "shippingPrice": "0.00"
+        },
+        "stockStatus": "inStock",
+        "stockQuantity": 999,
+        "shippingPayer": "sellerPays",
+        "categories": [],
+        "variants": [],
+        "options": [],
+        "singleOption": false,
+        "customListing": false,
+        "customNote": "",
+        "placementScore": "",
+        "dispatchDuration": 0
+    },
+    {
+        "id": "48945671",
+        "title": "Trendyol Go Yemek İndirim Kuponu (700 TL'ye 250 TL)",
+        "description": "Trendyol Go Yemek siparişinde 700 TL'ye 250 TL Net indirim sağlayan tek kullanımlık kupon.",
+        "type": "digital",
+        "dateCreated": "2026-07-13T21:36:39+0300",
+        "dateUpdated": "2026-07-13T21:36:39+0300",
+        "url": "https://www.shopier.com/48945671",
+        "media": [
+            {
+                "id": "1",
+                "type": "image",
+                "url": "https://froxy-bot.onrender.com/static/la_trendyol_yemek.png",
+                "placement": 1
+            }
+        ],
+        "priceData": {
+            "currency": "TRY",
+            "price": "52.49",
+            "discount": false,
+            "discountedPrice": "52.49",
+            "shippingPrice": "0.00"
+        },
+        "stockStatus": "inStock",
+        "stockQuantity": 999,
+        "shippingPayer": "sellerPays",
+        "categories": [],
+        "variants": [],
+        "options": [],
+        "singleOption": false,
+        "customListing": false,
+        "customNote": "",
+        "placementScore": "",
+        "dispatchDuration": 0
+    },
+    {
+        "id": "48945672",
+        "title": "Trendyol Go Market İndirim Kuponu (900 TL'ye 250 TL)",
+        "description": "Trendyol Go Market siparişinde 900 TL'ye 250 TL Net indirim sağlayan tek kullanımlık kupon.",
+        "type": "digital",
+        "dateCreated": "2026-07-13T21:36:39+0300",
+        "dateUpdated": "2026-07-13T21:36:39+0300",
+        "url": "https://www.shopier.com/48945672",
+        "media": [
+            {
+                "id": "1",
+                "type": "image",
+                "url": "https://froxy-bot.onrender.com/static/la_trendyol_market.png",
+                "placement": 1
+            }
+        ],
+        "priceData": {
+            "currency": "TRY",
+            "price": "52.49",
+            "discount": false,
+            "discountedPrice": "52.49",
+            "shippingPrice": "0.00"
+        },
+        "stockStatus": "inStock",
+        "stockQuantity": 999,
+        "shippingPayer": "sellerPays",
+        "categories": [],
+        "variants": [],
+        "options": [],
+        "singleOption": false,
+        "customListing": false,
+        "customNote": "",
+        "placementScore": "",
+        "dispatchDuration": 0
+    },
+    {
+        "id": "48945675",
+        "title": "Shell 75 TL Akaryakıt Puanı",
+        "description": "Shell istasyonlarında geçerli 75 TL değerinde akaryakıt puanı.",
+        "type": "digital",
+        "dateCreated": "2026-07-13T21:36:39+0300",
+        "dateUpdated": "2026-07-13T21:36:39+0300",
+        "url": "https://www.shopier.com/48945675",
+        "media": [
+            {
+                "id": "1",
+                "type": "image",
+                "url": "https://froxy-bot.onrender.com/static/la_shell.png",
+                "placement": 1
+            }
+        ],
+        "priceData": {
+            "currency": "TRY",
+            "price": "15.90",
+            "discount": false,
+            "discountedPrice": "15.90",
+            "shippingPrice": "0.00"
+        },
+        "stockStatus": "inStock",
+        "stockQuantity": 999,
+        "shippingPayer": "sellerPays",
+        "categories": [],
+        "variants": [],
+        "options": [],
+        "singleOption": false,
+        "customListing": false,
+        "customNote": "",
+        "placementScore": "",
+        "dispatchDuration": 0
     }
 ]
