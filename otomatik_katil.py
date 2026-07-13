@@ -1800,16 +1800,9 @@ async def main():
                         except Exception as le:
                             print(f"[{client_name}] ⚠️ @{grup_name} grubundan çıkılırken hata: {le}")
                     except ChatWriteForbiddenError:
-                        print(f"[{client_name}] 🔒 @{grup_name} → Yazma izni yok! Kara listeye ekleniyor...")
+                        print(f"[{client_name}] 🔒 @{grup_name} → Yazma izni yok veya grup kilitli! Cooldown set edilerek pas geçiliyor...")
                         fail_count += 1
-                        async with state_lock:
-                            save_to_list(grup_name, BLACKLIST_FILE)
-                        try:
-                            if entity:
-                                await client(LeaveChannelRequest(entity))
-                                print(f"[{client_name}] 🚪 @{grup_name} grubundan çıkıldı.")
-                        except Exception as le:
-                            print(f"[{client_name}] ⚠️ @{grup_name} grubundan çıkılırken hata: {le}")
+                        set_cooldown(grup_name, client_name)
                     except SlowModeWaitError as sme:
                         wait_sec = getattr(sme, 'seconds', 0) or 0
                         print(f"[{client_name}] 🐌 @{grup_name} → SlowMode aktif ({wait_sec}sn bekleme). Cooldown set ediliyor, pas geçildi.")
