@@ -1193,26 +1193,16 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                     f"{status_text}"
                 )
         else:
-            is_lisans_question = any(kw in msg_text for kw in ["canva", "adobe", "windows", "office", "netflix", "spotify", "trendyol", "yemek", "lisans", "key"])
-            if is_lisans_question:
-                reply_text = (
-                    "Merhaba! Froxy AI olarak yalnızca yapay zeka araçları ve API çözümleri sunmaktayız. 🤖\n\n"
-                    "Aradığınız diğer lisans ve hesap ürünleri (Canva, Netflix, Adobe vb.) için ortak çalıştığımız bağımsız lisans mağazasını ziyaret edebilirsiniz:\n\n"
-                    "🔗 @KeyVadiSatisBot\n\n"
-                    "━━━━━━━━━━━━━━━━━━━\n"
-                    f"{status_text}"
-                )
-            else:
-                reply_text = (
-                    "Merhaba! Froxy AI Yapay Zeka platformuna hoş geldiniz. 🤖\n\n"
-                    "Froxy AI ile tek bir panelden GPT-4, Claude 3.5, Gemini 1.5, Midjourney ve +18 sansürsüz yapay zeka modellerine sınırsız erişim sağlayabilirsiniz.\n\n"
-                    "🎁 Hemen bota giriş yaparak **100 ücretsiz test kredinizi** alabilir ve deneyebilirsiniz.\n\n"
-                    "━━━━━━━━━━━━━━━━━━━\n"
-                    f"{status_text}\n"
-                    f"━━━━━━━━━━━━━━━━━━━\n\n"
-                    "👉 Bota başlamak ve paketleri incelemek için:\n\n"
-                    "🔗 @FroxyDestekBOT"
-                )
+            reply_text = (
+                "Merhaba! Froxy AI Yapay Zeka platformuna hoş geldiniz. 🤖\n\n"
+                "Froxy AI ile tek bir panelden GPT-4, Claude 3.5, Gemini 1.5, Midjourney ve +18 sansürsüz yapay zeka modellerine sınırsız erişim sağlayabilirsiniz.\n\n"
+                "🎁 Hemen bota giriş yaparak **100 ücretsiz test kredinizi** alabilir ve deneyebilirsiniz.\n\n"
+                "━━━━━━━━━━━━━━━━━━━\n"
+                f"{status_text}\n"
+                f"━━━━━━━━━━━━━━━━━━━\n\n"
+                "👉 Bota başlamak ve paketleri incelemek için:\n\n"
+                "🔗 @FroxyDestekBOT"
+            )
                 
         try:
             # Mark user as welcomed immediately before sending to avoid race condition/double reply
