@@ -1149,7 +1149,9 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                 reply_text = (
                     f"Merhaba, sormuş olduğunuz ürün (**{matched_product['title']}**) şu an stoklarımızda mevcuttur. 🔹\n\n"
                     f"💵 Ürün Fiyatı: **{matched_product['price']}**\n\n"
-                    f"Ödeme işlemini tamamlamak ve lisansınızı anında otomatik teslim almak için lütfen resmi mağaza botumuzu başlatınız:\n\n"
+                    f"🔗 Güvenli satın almak ve anında teslim almak için doğrudan sipariş linkiniz:\n"
+                    f"{matched_product['url']}\n\n"
+                    f"Dilerseniz satın alım işlemlerinizi 7/24 resmi mağaza botumuzdan da gerçekleştirebilirsiniz:\n"
                     f"🔗 @LisansArenaBot\n\n"
                     f"━━━━━━━━━━━━━━━━━━━\n"
                     f"{status_text}"
@@ -1173,7 +1175,9 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                 reply_text = (
                     f"Selam! İstediğin ürün (**{matched_product['title']}**) şu an stokta var dostum! 🔥\n\n"
                     f"💰 Fiyat: **{matched_product['price']}**\n\n"
-                    f"Hemen otomatik satın almak ve anında teslim almak için şu botu başlatman yeterli:\n\n"
+                    f"🔗 Güvenli satın almak için doğrudan ödeme linkin:\n"
+                    f"{matched_product['url']}\n\n"
+                    f"Ayrıca tüm işlemlerini otomatik yapmak için şu botu da başlatabilirsin:\n"
                     f"👉 @KeyVadiSatisBot\n\n"
                     f"━━━━━━━━━━━━━━━━━━━\n"
                     f"{status_text}"
