@@ -60,17 +60,12 @@ gruplar = [
 ]
 
 def get_all_protected_groups():
-    protected = set(g.lower() for g in gruplar)
-    if os.path.exists("auto_groups.txt"):
-        try:
-            with open("auto_groups.txt", "r", encoding="utf-8") as f:
-                for line in f:
-                    g = line.strip().lower()
-                    if g:
-                        protected.add(g)
-        except:
-            pass
-    return protected
+    return set(g.lower() for g in gruplar)
+
+def is_group_protected(grup_name):
+    g_lower = grup_name.lower().replace('@', '').strip()
+    protected = get_all_protected_groups()
+    return g_lower in protected or f"@{g_lower}" in protected or g_lower.split('/')[-1] in protected
 
 STATS_FILE = 'stats.json'
 
@@ -656,12 +651,13 @@ def fs_get_state():
             auto_groups = fields.get("auto_groups_list", {}).get("stringValue", "")
             scraped_groups = fields.get("scraped_groups_list", {}).get("stringValue", "")
             cooldowns = fields.get("cooldowns_list", {}).get("stringValue", "")
-            return progress, blacklist, auto_groups, scraped_groups, cooldowns
+            welcomed = fields.get("welcomed_users_list", {}).get("stringValue", "")
+            return progress, blacklist, auto_groups, scraped_groups, cooldowns, welcomed
     except Exception as e:
         print(f"⚠️ Firestore yükleme hatası: {e}")
-    return "", "", "", "", ""
+    return "", "", "", "", "", ""
 
-def fs_set_state(progress=None, blacklist=None, auto_groups=None, scraped_groups=None, cooldowns=None):
+def fs_set_state(progress=None, blacklist=None, auto_groups=None, scraped_groups=None, cooldowns=None, welcomed_users=None):
     try:
         fields = {}
         mask_parts = []
@@ -681,6 +677,9 @@ def fs_set_state(progress=None, blacklist=None, auto_groups=None, scraped_groups
         if cooldowns is not None:
             fields["cooldowns_list"] = {"stringValue": cooldowns}
             mask_parts.append("updateMask.fieldPaths=cooldowns_list")
+        if welcomed_users is not None:
+            fields["welcomed_users_list"] = {"stringValue": welcomed_users}
+            mask_parts.append("updateMask.fieldPaths=welcomed_users_list")
             
         if not fields:
             return
@@ -873,8 +872,10 @@ def save_welcomed_users():
     try:
         with open("welcomed_users.json", "w", encoding="utf-8") as f:
             json.dump(list(welcomed_users), f)
-    except:
-        pass
+        content = "\n".join(welcomed_users) + "\n"
+        fs_set_state(welcomed_users=content)
+    except Exception as e:
+        print(f"⚠️ Karşılanan kullanıcılar kaydedilirken hata: {e}")
 
 load_welcomed_users()
 
@@ -1606,13 +1607,16 @@ async def main():
                             if failures[g_key] >= 5:
                                 print(f"[{client_name}] ❌ @{grup_name} -> 5 kez üst üste hata alındı! Kara listeye ekleniyor...")
                                 save_to_list(grup_name, BLACKLIST_FILE)
-                                entity = joined_dialogs.get(g_key)
-                                if entity:
-                                    try:
-                                        await client(LeaveChannelRequest(entity))
-                                        print(f"[{client_name}] 🚪 @{grup_name} grubundan çıkıldı.")
-                                    except Exception as le:
-                                        print(f"[{client_name}] ⚠️ @{grup_name} grubundan çıkılırken hata: {le}")
+                                if is_group_protected(grup_name):
+                                    print(f"⚠️ [Security] Korumalı/hedef grup @{grup_name} terk edilmesi engellendi!")
+                                else:
+                                    entity = joined_dialogs.get(g_key)
+                                    if entity:
+                                        try:
+                                            await client(LeaveChannelRequest(entity))
+                                            print(f"[{client_name}] 🚪 @{grup_name} grubundan çıkıldı.")
+                                        except Exception as le:
+                                            print(f"[{client_name}] ⚠️ @{grup_name} grubundan çıkılırken hata: {le}")
                             elif failures[g_key] >= 3:
                                 print(f"[{client_name}] ⚠️ @{grup_name} -> {failures[g_key]} kez üst üste hata alındı.")
                         except Exception as fe:
@@ -1746,8 +1750,11 @@ async def main():
                             save_to_list(grup_name, BLACKLIST_FILE)
                         try:
                             if entity:
-                                await client(LeaveChannelRequest(entity))
-                                print(f"[{client_name}] 🚪 @{grup_name} grubundan çıkıldı.")
+                                if is_group_protected(grup_name):
+                                    print(f"⚠️ [Security] Korumalı/hedef grup @{grup_name} terk edilmesi engellendi!")
+                                else:
+                                    await client(LeaveChannelRequest(entity))
+                                    print(f"[{client_name}] 🚪 @{grup_name} grubundan çıkıldı.")
                         except Exception as le:
                             print(f"[{client_name}] ⚠️ @{grup_name} grubundan çıkılırken hata: {le}")
                     except ChatWriteForbiddenError:
@@ -1757,8 +1764,11 @@ async def main():
                             save_to_list(grup_name, BLACKLIST_FILE)
                         try:
                             if entity:
-                                await client(LeaveChannelRequest(entity))
-                                print(f"[{client_name}] 🚪 @{grup_name} grubundan çıkıldı.")
+                                if is_group_protected(grup_name):
+                                    print(f"⚠️ [Security] Korumalı/hedef grup @{grup_name} terk edilmesi engellendi!")
+                                else:
+                                    await client(LeaveChannelRequest(entity))
+                                    print(f"[{client_name}] 🚪 @{grup_name} grubundan çıkıldı.")
                         except Exception as le:
                             print(f"[{client_name}] ⚠️ @{grup_name} grubundan çıkılırken hata: {le}")
                     except SlowModeWaitError as sme:
@@ -1919,7 +1929,7 @@ async def main():
 
     # İlk çalıştırmada Firestore'dan verileri çek
     print("🔄 Firestore'dan güncel durum yükleniyor...")
-    fs_prog, fs_black, fs_auto, fs_scraped, fs_cooldowns = fs_get_state()
+    fs_prog, fs_black, fs_auto, fs_scraped, fs_cooldowns, fs_welcomed = fs_get_state()
     if fs_prog:
         with open(PROGRESS_FILE, 'w', encoding='utf-8') as f:
             f.write(fs_prog)
@@ -1948,6 +1958,16 @@ async def main():
         with open(COOLDOWN_FILE, 'w', encoding='utf-8') as f:
             f.write(fs_cooldowns)
         print("📥 Cooldown geçmişi buluttan indirildi.")
+    if fs_welcomed:
+        global welcomed_users
+        try:
+            remote_welcomed = set(x.strip() for x in fs_welcomed.splitlines() if x.strip())
+            welcomed_users = welcomed_users.union(remote_welcomed)
+            with open("welcomed_users.json", "w", encoding="utf-8") as f:
+                json.dump(list(welcomed_users), f)
+            print("📥 Karşılanan kullanıcılar geçmişi buluttan indirildi.")
+        except Exception as e:
+            print(f"⚠️ Karşılanan kullanıcı yükleme hatası: {e}")
 
     # Periyodik arka plan görevleri
     async def periodic_firestore_sync():
@@ -1956,7 +1976,7 @@ async def main():
             await asyncio.sleep(300)
             try:
                 print("🔄 [Firestore Sync] Firestore'dan güncel durum yükleniyor...")
-                _, fs_black_new, fs_auto_new, fs_scraped_new, fs_cooldowns_new = fs_get_state()
+                _, fs_black_new, fs_auto_new, fs_scraped_new, fs_cooldowns_new, fs_welcomed_new = fs_get_state()
                 if fs_black_new:
                     local_black = get_list(BLACKLIST_FILE)
                     remote_black = set(x.strip() for x in fs_black_new.splitlines() if x.strip())
@@ -1974,6 +1994,15 @@ async def main():
                     merged_scraped = local_scraped.union(remote_scraped)
                     with open("scraped_groups.txt", 'w', encoding='utf-8') as f:
                         f.write('\n'.join(merged_scraped) + '\n')
+                if fs_welcomed_new:
+                    global welcomed_users
+                    try:
+                        remote_welcomed = set(x.strip() for x in fs_welcomed_new.splitlines() if x.strip())
+                        welcomed_users = welcomed_users.union(remote_welcomed)
+                        with open("welcomed_users.json", "w", encoding="utf-8") as f:
+                            json.dump(list(welcomed_users), f)
+                    except:
+                        pass
                 
                 # Cooldown listesini buluta yedekle
                 if os.path.exists(COOLDOWN_FILE):
