@@ -1,40 +1,5 @@
 [
     {
-        "id": "48901845",
-        "title": "YouTube Premium (3 Aylık Kod)",
-        "description": "YouTube Premium 3 Aylık Aktivasyon Kodu. Kendi kişisel hesabınızda veya yeni hesapta aktifleştirebilirsiniz.",
-        "type": "digital",
-        "dateCreated": "2026-07-12T02:29:00+0300",
-        "dateUpdated": "2026-07-12T02:29:00+0300",
-        "url": "https://www.shopier.com/48901845",
-        "media": [
-            {
-                "id": "1",
-                "type": "image",
-                "url": "https://cdn.shopier.app/pictures_large/lisansarena_f7a3dbf5-d732-49dd-a09b-9306be20cb28.jpg",
-                "placement": 1
-            }
-        ],
-        "priceData": {
-            "currency": "TRY",
-            "price": "44.90",
-            "discount": false,
-            "discountedPrice": "44.90",
-            "shippingPrice": "0.00"
-        },
-        "stockStatus": "inStock",
-        "stockQuantity": 999,
-        "shippingPayer": "sellerPays",
-        "categories": [],
-        "variants": [],
-        "options": [],
-        "singleOption": false,
-        "customListing": false,
-        "customNote": "",
-        "placementScore": "",
-        "dispatchDuration": 0
-    },
-    {
         "id": "48901849",
         "title": "HBO Max 1 Aylık Profil",
         "description": "HBO Max 1 Aylık Premium Profil. Size özel profil ismi ve şifreleme sağlanır.",
@@ -55,41 +20,6 @@
             "price": "49.90",
             "discount": false,
             "discountedPrice": "49.90",
-            "shippingPrice": "0.00"
-        },
-        "stockStatus": "inStock",
-        "stockQuantity": 999,
-        "shippingPayer": "sellerPays",
-        "categories": [],
-        "variants": [],
-        "options": [],
-        "singleOption": false,
-        "customListing": false,
-        "customNote": "",
-        "placementScore": "",
-        "dispatchDuration": 0
-    },
-    {
-        "id": "48901850",
-        "title": "Netflix UHD 1 Profil (1 Aylık)",
-        "description": "Netflix 4K Ultra HD Bireysel Profil. Size ait özel şifreli profil ile kesintisiz izleme.",
-        "type": "digital",
-        "dateCreated": "2026-07-12T02:29:10+0300",
-        "dateUpdated": "2026-07-12T02:29:10+0300",
-        "url": "https://www.shopier.com/48901850",
-        "media": [
-            {
-                "id": "1",
-                "type": "image",
-                "url": "https://cdn.shopier.app/pictures_large/lisansarena_635a9428-2dfd-4cdb-9cce-cf3be9a8ed0a.jpg",
-                "placement": 1
-            }
-        ],
-        "priceData": {
-            "currency": "TRY",
-            "price": "99.90",
-            "discount": false,
-            "discountedPrice": "99.90",
             "shippingPrice": "0.00"
         },
         "stockStatus": "inStock",
@@ -735,111 +665,6 @@
         "dispatchDuration": 2
     },
     {
-        "id": "48901891",
-        "title": "Spotify Premium (4 Aylık Kod)",
-        "description": "Spotify Premium 4 Aylık Aktivasyon Kodu. Kendi kişisel hesabınıza tanımlanır. Reklamsız müzik.",
-        "type": "digital",
-        "dateCreated": "2026-07-12T02:30:52+0300",
-        "dateUpdated": "2026-07-12T02:30:52+0300",
-        "url": "https://www.shopier.com/48901891",
-        "media": [
-            {
-                "id": "1",
-                "type": "image",
-                "url": "https://cdn.shopier.app/pictures_large/lisansarena_834ebd14-2b23-4ace-85af-7358614236af.jpg",
-                "placement": 1
-            }
-        ],
-        "priceData": {
-            "currency": "TRY",
-            "price": "49.90",
-            "discount": false,
-            "discountedPrice": "49.90",
-            "shippingPrice": "0.00"
-        },
-        "stockStatus": "inStock",
-        "stockQuantity": 999,
-        "shippingPayer": "sellerPays",
-        "categories": [],
-        "variants": [],
-        "options": [],
-        "singleOption": false,
-        "customListing": false,
-        "customNote": "",
-        "placementScore": "",
-        "dispatchDuration": 0
-    },
-    {
-        "id": "48901926",
-        "title": "Canva 1 Yıllık Pro Davet",
-        "description": "Canva 1 Yıllık Pro yetkilendirme daveti. Kendi kişisel hesabınıza tanımlanır.",
-        "type": "digital",
-        "dateCreated": "2026-07-12T02:34:44+0300",
-        "dateUpdated": "2026-07-12T02:34:44+0300",
-        "url": "https://www.shopier.com/48901926",
-        "media": [
-            {
-                "id": "1",
-                "type": "image",
-                "url": "https://cdn.shopier.app/pictures_large/lisansarena_3905e534-fb58-470e-ac28-bd84b7d4fed7.jpg",
-                "placement": 1
-            }
-        ],
-        "priceData": {
-            "currency": "TRY",
-            "price": "99.90",
-            "discount": false,
-            "discountedPrice": "99.90",
-            "shippingPrice": "0.00"
-        },
-        "stockStatus": "inStock",
-        "stockQuantity": 999,
-        "shippingPayer": "sellerPays",
-        "categories": [],
-        "variants": [],
-        "options": [],
-        "singleOption": false,
-        "customListing": false,
-        "customNote": "",
-        "placementScore": "",
-        "dispatchDuration": 0
-    },
-    {
-        "id": "48945471",
-        "title": "Netflix 4K Ultra HD (Kişisel Profil)",
-        "description": "Netflix 4K Ultra HD kalitesinde kişisel profil. 1 Aylık kullanım.",
-        "type": "digital",
-        "dateCreated": "2026-07-13T21:28:49+0300",
-        "dateUpdated": "2026-07-13T21:28:49+0300",
-        "url": "https://www.shopier.com/48945471",
-        "media": [
-            {
-                "id": "1",
-                "type": "image",
-                "url": "https://froxy-bot.onrender.com/static/la_placeholder.png",
-                "placement": 1
-            }
-        ],
-        "priceData": {
-            "currency": "TRY",
-            "price": "52.49",
-            "discount": false,
-            "discountedPrice": "52.49",
-            "shippingPrice": "0.00"
-        },
-        "stockStatus": "inStock",
-        "stockQuantity": 999,
-        "shippingPayer": "sellerPays",
-        "categories": [],
-        "variants": [],
-        "options": [],
-        "singleOption": false,
-        "customListing": false,
-        "customNote": "",
-        "placementScore": "",
-        "dispatchDuration": 0
-    },
-    {
         "id": "48945472",
         "title": "Microsoft Office 365 (1 Yıllık Hesap)",
         "description": "Microsoft Office 365 1 Yıllık tam lisanslı hesap. Word, Excel, PowerPoint ve tüm Office uygulamaları dahil.",
@@ -1420,6 +1245,146 @@
             "price": "15.90",
             "discount": false,
             "discountedPrice": "15.90",
+            "shippingPrice": "0.00"
+        },
+        "stockStatus": "inStock",
+        "stockQuantity": 999,
+        "shippingPayer": "sellerPays",
+        "categories": [],
+        "variants": [],
+        "options": [],
+        "singleOption": false,
+        "customListing": false,
+        "customNote": "",
+        "placementScore": "",
+        "dispatchDuration": 0
+    },
+    {
+        "id": "48973854",
+        "title": "Netflix 4K Ultra HD (Kişisel Profil)",
+        "description": "Netflix 4K Ultra HD kalitesinde kişisel profil. 1 Aylık kullanım. Giriş bilgileri sipariş sonrasında anında teslim edilir.",
+        "type": "digital",
+        "dateCreated": "2026-07-14T20:57:03+0300",
+        "dateUpdated": "2026-07-14T20:57:03+0300",
+        "url": "https://www.shopier.com/48973854",
+        "media": [
+            {
+                "id": "1",
+                "type": "image",
+                "url": "https://froxy-bot.onrender.com/static/la_netflix_4k.png",
+                "placement": 1
+            }
+        ],
+        "priceData": {
+            "currency": "TRY",
+            "price": "94.49",
+            "discount": false,
+            "discountedPrice": "94.49",
+            "shippingPrice": "0.00"
+        },
+        "stockStatus": "inStock",
+        "stockQuantity": 999,
+        "shippingPayer": "sellerPays",
+        "categories": [],
+        "variants": [],
+        "options": [],
+        "singleOption": false,
+        "customListing": false,
+        "customNote": "",
+        "placementScore": "",
+        "dispatchDuration": 0
+    },
+    {
+        "id": "48973855",
+        "title": "YouTube Premium (3 Aylık Kod)",
+        "description": "YouTube Premium 3 Aylık üyelik kodu. Kendi hesabınızda aktifleştirebilirsiniz.",
+        "type": "digital",
+        "dateCreated": "2026-07-14T20:57:03+0300",
+        "dateUpdated": "2026-07-14T20:57:03+0300",
+        "url": "https://www.shopier.com/48973855",
+        "media": [
+            {
+                "id": "1",
+                "type": "image",
+                "url": "https://froxy-bot.onrender.com/static/la_youtube.png",
+                "placement": 1
+            }
+        ],
+        "priceData": {
+            "currency": "TRY",
+            "price": "47.24",
+            "discount": false,
+            "discountedPrice": "47.24",
+            "shippingPrice": "0.00"
+        },
+        "stockStatus": "inStock",
+        "stockQuantity": 999,
+        "shippingPayer": "sellerPays",
+        "categories": [],
+        "variants": [],
+        "options": [],
+        "singleOption": false,
+        "customListing": false,
+        "customNote": "",
+        "placementScore": "",
+        "dispatchDuration": 0
+    },
+    {
+        "id": "48973857",
+        "title": "Spotify Premium (4 Aylık Kod)",
+        "description": "Spotify Premium 4 Aylık davet kodu. Kendi hesabınızda veya yeni hesapta aktifleştirebilirsiniz.",
+        "type": "digital",
+        "dateCreated": "2026-07-14T20:57:03+0300",
+        "dateUpdated": "2026-07-14T20:57:03+0300",
+        "url": "https://www.shopier.com/48973857",
+        "media": [
+            {
+                "id": "1",
+                "type": "image",
+                "url": "https://froxy-bot.onrender.com/static/la_spotify.png",
+                "placement": 1
+            }
+        ],
+        "priceData": {
+            "currency": "TRY",
+            "price": "36.74",
+            "discount": false,
+            "discountedPrice": "36.74",
+            "shippingPrice": "0.00"
+        },
+        "stockStatus": "inStock",
+        "stockQuantity": 999,
+        "shippingPayer": "sellerPays",
+        "categories": [],
+        "variants": [],
+        "options": [],
+        "singleOption": false,
+        "customListing": false,
+        "customNote": "",
+        "placementScore": "",
+        "dispatchDuration": 0
+    },
+    {
+        "id": "48973858",
+        "title": "Canva Pro (1 Yıllık Yetki)",
+        "description": "Canva Pro 1 Yıllık davet linki ile kendi hesabınızı premium yapın.",
+        "type": "digital",
+        "dateCreated": "2026-07-14T20:57:03+0300",
+        "dateUpdated": "2026-07-14T20:57:03+0300",
+        "url": "https://www.shopier.com/48973858",
+        "media": [
+            {
+                "id": "1",
+                "type": "image",
+                "url": "https://froxy-bot.onrender.com/static/la_canva.png",
+                "placement": 1
+            }
+        ],
+        "priceData": {
+            "currency": "TRY",
+            "price": "83.99",
+            "discount": false,
+            "discountedPrice": "83.99",
             "shippingPrice": "0.00"
         },
         "stockStatus": "inStock",
