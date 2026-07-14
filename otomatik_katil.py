@@ -1167,8 +1167,6 @@ async def main():
     string_session_key = ""
     string_session_key_2 = ""
     string_session_key_3 = ""
-    string_session_key_4 = ""
-    string_session_key_5 = ""
     ad_sleep_min = 600
     ad_sleep_max = 1200
     
@@ -1179,8 +1177,6 @@ async def main():
                 string_session_key = cfg.get("ad_string_session", "")
                 string_session_key_2 = cfg.get("ad_string_session2", cfg.get("ad_string_session_2", ""))
                 string_session_key_3 = cfg.get("ad_string_session3", cfg.get("ad_string_session_3", ""))
-                string_session_key_4 = cfg.get("ad_string_session4", "")
-                string_session_key_5 = cfg.get("ad_string_session5", "")
                 ad_sleep_min = cfg.get("ad_sleep_min", 600)
                 ad_sleep_max = cfg.get("ad_sleep_max", 1200)
         except:
@@ -1237,40 +1233,8 @@ async def main():
         except Exception as e:
             print(f"❌ HATA: 3. Hesap bağlanırken hata oluştu: {type(e).__name__} - {e}")
 
-    # Client 4 (KeyVadi Yeni)
-    if string_session_key_4:
-        print("🔑 4. Hesap (KeyVadi Yeni): StringSession kullanılarak bağlanılıyor...")
-        try:
-            from telethon.sessions import StringSession
-            client4 = TelegramClient(StringSession(string_session_key_4), api_id, api_hash)
-            await client4.connect()
-            if await client4.is_user_authorized():
-                me = await client4.get_me()
-                active_clients.append((client4, "Hesap #4", {"id": me.id}))
-                print(f"✅ 4. Hesap yetkilendirildi. ID: {me.id}")
-            else:
-                print("❌ HATA: 4. Hesap yetkilendirilmemiş!")
-        except Exception as e:
-            print(f"❌ HATA: 4. Hesap bağlanırken hata oluştu: {type(e).__name__} - {e}")
-
-    # Client 5 (LisansArena Yeni)
-    if string_session_key_5:
-        print("🔑 5. Hesap (LisansArena Yeni): StringSession kullanılarak bağlanılıyor...")
-        try:
-            from telethon.sessions import StringSession
-            client5 = TelegramClient(StringSession(string_session_key_5), api_id, api_hash)
-            await client5.connect()
-            if await client5.is_user_authorized():
-                me = await client5.get_me()
-                active_clients.append((client5, "Hesap #5", {"id": me.id}))
-                print(f"✅ 5. Hesap yetkilendirildi. ID: {me.id}")
-            else:
-                print("❌ HATA: 5. Hesap yetkilendirilmemiş!")
-        except Exception as e:
-            print(f"❌ HATA: 5. Hesap bağlanırken hata oluştu: {type(e).__name__} - {e}")
-
     # Fallback to local session file if no string session is configured at all
-    if not string_session_key and not string_session_key_2 and not string_session_key_3 and not string_session_key_4 and not string_session_key_5:
+    if not string_session_key and not string_session_key_2 and not string_session_key_3:
         print("📂 Yerel oturum dosyası kullanılarak bağlanılıyor...")
         try:
             client1 = TelegramClient(SESSION_NAME, api_id, api_hash)
