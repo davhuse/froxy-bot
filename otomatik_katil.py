@@ -1090,8 +1090,8 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         if not msg_text:
             return
 
-        is_lisansarena = "3" in client_name
-        is_keyvadi = "2" in client_name
+        is_lisansarena = "3" in client_name or "5" in client_name or "lisans" in client_name.lower()
+        is_keyvadi = "2" in client_name or "4" in client_name or "keyvadi" in client_name.lower()
         
         products = []
         if is_lisansarena:
@@ -1574,10 +1574,13 @@ async def main():
                     print(f"[{client_name}] 📤 TR saati {tr_time.strftime('%H:%M')} — normal saat, gönderim devam ediyor.")
                 
                 # Rotation updates: pick from variation templates if they exist
-                if "3" in client_name:
+                is_lisans = "3" in client_name or "5" in client_name or "lisans" in client_name.lower()
+                is_keyv = "2" in client_name or "4" in client_name or "keyvadi" in client_name.lower()
+                
+                if is_lisans:
                     variations = ["message_3.txt", "message_3a.txt", "message_3b.txt", "message_3c.txt"]
                     available_files = [v for v in variations if os.path.exists(v)]
-                elif "2" in client_name:
+                elif is_keyv:
                     variations = ["message_2.txt", "message_2a.txt", "message_2b.txt", "message_2c.txt"]
                     available_files = [v for v in variations if os.path.exists(v)]
                 else:
@@ -1668,11 +1671,17 @@ async def main():
                         msg = parse_spintax(msg)
                         
                         # Pazarlama özellikleri (İndirim kodları, FOMO, Haftalık kampanya) ekle
-                        is_keyvadi = "2" in client_name
+                        is_lisansarena = "3" in client_name or "5" in client_name or "lisans" in client_name.lower()
+                        is_keyvadi = "2" in client_name or "4" in client_name or "keyvadi" in client_name.lower()
                         msg = process_marketing_features(msg, is_keyvadi)
                         
                         # Görsel/Banner gönderimi (Grup yetki kontrolleri ve hata toleransı eklendi)
-                        banner_file = "keyvadi_banner.png" if is_keyvadi else "froxy_banner.png"
+                        if is_keyvadi:
+                            banner_file = "keyvadi_banner.png"
+                        elif is_lisansarena:
+                            banner_file = "lisansarena_banner.jpeg"
+                        else:
+                            banner_file = "froxy_banner.png"
                         allows_media = False
                         if os.path.exists("bot_config.json"):
                             try:
@@ -2064,10 +2073,10 @@ async def main():
         await auto_scrape_groups(client, client_name, joined_usernames)
 
     async def run_worker_supervisor(client, client_name, joined_dialogs):
-        if "2" in client_name:
+        if "2" in client_name or "4" in client_name:
             print(f"⏳ [{client_name}] İlk çalıştırma gecikmesi aktif: Diğer hesapla çakışmayı önlemek için 10 dakika bekleniyor...")
             await asyncio.sleep(600)
-        elif "3" in client_name:
+        elif "3" in client_name or "5" in client_name:
             print(f"⏳ [{client_name}] İlk çalıştırma gecikmesi aktif: Diğer hesapla çakışmayı önlemek için 20 dakika bekleniyor...")
             await asyncio.sleep(1200)
         while True:
