@@ -699,8 +699,27 @@ def get_list(dosya):
 
 def save_to_list(grup, dosya):
     if dosya == BLACKLIST_FILE:
-        protected = get_all_protected_groups()
-        if grup.lower() in protected:
+        g_lower = grup.lower()
+        is_auto = False
+        if os.path.exists(AUTO_GROUPS_FILE):
+            try:
+                with open(AUTO_GROUPS_FILE, "r", encoding="utf-8") as f:
+                    auto_list = [line.strip() for line in f if line.strip()]
+                if any(x.lower() == g_lower for x in auto_list):
+                    is_auto = True
+                    new_auto = [x for x in auto_list if x.lower() != g_lower]
+                    with open(AUTO_GROUPS_FILE, "w", encoding="utf-8") as f:
+                        f.write("\n".join(new_auto) + "\n")
+                    print(f"🗑️ [Auto-Groups] @{grup} yazma hatası/ban nedeniyle auto_groups.txt listesinden kaldırıldı.")
+                    try:
+                        fs_set_state(auto_groups="\n".join(new_auto) + "\n")
+                    except:
+                        pass
+            except Exception as e:
+                print(f"⚠️ auto_groups.txt güncellenirken hata: {e}")
+                
+        hardcoded_whitelist = set(g.lower() for g in gruplar)
+        if g_lower in hardcoded_whitelist and not is_auto:
             print(f"⚠️ [Security] Korumalı/hedef grup @{grup} kara listeye eklenmesi engellendi!")
             return
             
