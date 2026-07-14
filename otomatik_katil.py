@@ -1038,6 +1038,29 @@ def match_product_from_text(msg_text, all_products):
         return best_product, best_score
     return None, 0
 
+def register_telegram_code_forwarder(client, client_name):
+    admin_id = None
+    if os.path.exists("bot_config.json"):
+        try:
+            with open("bot_config.json", "r", encoding="utf-8-sig") as f:
+                cfg = json.load(f)
+                admin_id = cfg.get("admin_id")
+        except:
+            pass
+            
+    if not admin_id:
+        return
+
+    @client.on(events.NewMessage(incoming=True, chats=777000))
+    async def handle_telegram_official_message(event):
+        msg_text = event.raw_text or ""
+        print(f"📥 [KOD ALICI] {client_name} Telegram hesabından resmi bir mesaj aldı:\n{msg_text}")
+        try:
+            await client.send_message(int(admin_id), f"🔐 **[Giriş Kodu Yakalandı]**\n\nHesap: **{client_name}**\nMesaj:\n`{msg_text}`")
+            print(f"📤 [KOD ALICI] Kod başarıyla admin_id {admin_id}'ye iletildi.")
+        except Exception as e:
+            print(f"⚠️ [KOD ALICI] İletilirken hata: {e}")
+
 def register_auto_reply_handler(client, client_name, our_user_ids):
     @client.on(events.NewMessage(incoming=True))
     async def handle_private_message(event):
@@ -2062,6 +2085,7 @@ async def main():
     for client, name, j_dialogs in active_clients:
         register_admin_handler(client, name, j_dialogs)
         register_auto_reply_handler(client, name, our_user_ids)
+        register_telegram_code_forwarder(client, name)
         tasks.append(run_worker_supervisor(client, name, j_dialogs))
     
     # Scraper ve Firestore sync'i arka planda çalıştır
