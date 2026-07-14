@@ -105,7 +105,20 @@ def parse_spintax(text):
         return random.choice(options)
     return re.sub(r'\{([^\{\}]*)\}', replace, text)
 
-def process_marketing_features(msg, is_keyvadi):
+def process_marketing_features(msg, is_keyvadi, is_lisansarena):
+    msg = msg.strip()
+    if is_keyvadi:
+        bot_uname = "@KeyVadiSatisBot"
+        if bot_uname not in msg:
+            msg += f"\n\n🤖 **Hızlı Sipariş & Canlı Destek Botumuz:** {bot_uname}"
+    elif is_lisansarena:
+        bot_uname = "@LisansArenaBot"
+        if bot_uname not in msg:
+            msg += f"\n\n🤖 **Hızlı Sipariş & Canlı Destek Botumuz:** {bot_uname}"
+    else:
+        bot_uname = "@FroxyDestekBOT"
+        if bot_uname not in msg:
+            msg += f"\n\n🤖 **Yapay Zeka Platformu Botumuz:** {bot_uname}"
     return msg
 
 
@@ -1637,7 +1650,7 @@ async def main():
                         # Pazarlama özellikleri (İndirim kodları, FOMO, Haftalık kampanya) ekle
                         is_lisansarena = "3" in client_name or "5" in client_name or "lisans" in client_name.lower()
                         is_keyvadi = "2" in client_name or "4" in client_name or "keyvadi" in client_name.lower()
-                        msg = process_marketing_features(msg, is_keyvadi)
+                        msg = process_marketing_features(msg, is_keyvadi, is_lisansarena)
                         
                         # Görsel/Banner gönderimi (Grup yetki kontrolleri ve hata toleransı eklendi)
                         if is_keyvadi:
@@ -1672,11 +1685,10 @@ async def main():
                                     chosen_name = os.path.basename(chosen_file) if available_files else "fallback"
                                     print(f"[{client_name}] 📸 @{grup_name} → Görselli Gönderildi! ({sent_count+1}) [Şablon: {chosen_name}]")
                                 else:
-                                    # Karakter sınırı 1024'ü aşıyorsa görseli ve mesajı ardı ardına gönder
-                                    await client.send_message(entity, file=banner_file)
+                                    # Karakter sınırı 1024'ü aşıyorsa görsel gönderme, sadece tek parça düz metin gönder
                                     await client.send_message(entity, msg)
                                     chosen_name = os.path.basename(chosen_file) if available_files else "fallback"
-                                    print(f"[{client_name}] 📸+📝 @{grup_name} → Görsel + Mesaj Ayrı Gönderildi! ({sent_count+1}) [Şablon: {chosen_name}]")
+                                    print(f"[{client_name}] 📝 @{grup_name} → Karakter sınırı aşıldığı için görsel atlanarak Düz Metin Gönderildi! ({sent_count+1}) [Şablon: {chosen_name}]")
                             except Exception as media_err:
                                 print(f"[{client_name}] ⚠️ @{grup_name} grubuna görsel gönderilemedi ({media_err}). Düz metin olarak gönderiliyor...")
                                 await client.send_message(entity, msg)
