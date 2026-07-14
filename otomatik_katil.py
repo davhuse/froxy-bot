@@ -698,6 +698,12 @@ def get_list(dosya):
     return set()
 
 def save_to_list(grup, dosya):
+    if dosya == BLACKLIST_FILE:
+        protected = get_all_protected_groups()
+        if grup.lower() in protected:
+            print(f"⚠️ [Security] Korumalı/hedef grup @{grup} kara listeye eklenmesi engellendi!")
+            return
+            
     with open(dosya, 'a', encoding='utf-8') as f:
         f.write(grup + '\n')
     
@@ -1900,13 +1906,14 @@ async def main():
             f.write(fs_prog)
         print("📥 İlerleme durumu buluttan indirildi.")
     if fs_black:
-        # Sadece birleştirip kaydediyoruz, sabit grupları silme mantığı KALDIRILDI
         local_black = get_list(BLACKLIST_FILE)
         remote_black = set(x.strip() for x in fs_black.splitlines() if x.strip())
         merged_black = local_black.union(remote_black)
+        protected = get_all_protected_groups()
+        merged_black = {g for g in merged_black if g.lower() not in protected}
         with open(BLACKLIST_FILE, 'w', encoding='utf-8') as f:
             f.write('\n'.join(merged_black) + '\n')
-        print("📥 Kara liste buluttan indirildi ve birleştirildi.")
+        print("📥 Kara liste buluttan indirildi, korumalılar filtrelendi ve birleştirildi.")
     if fs_auto:
         with open(AUTO_GROUPS_FILE, 'w', encoding='utf-8') as f:
             f.write(fs_auto)
@@ -1935,6 +1942,8 @@ async def main():
                     local_black = get_list(BLACKLIST_FILE)
                     remote_black = set(x.strip() for x in fs_black_new.splitlines() if x.strip())
                     merged_black = local_black.union(remote_black)
+                    protected = get_all_protected_groups()
+                    merged_black = {g for g in merged_black if g.lower() not in protected}
                     with open(BLACKLIST_FILE, 'w', encoding='utf-8') as f:
                         f.write('\n'.join(merged_black) + '\n')
                 if fs_auto_new:
