@@ -1121,89 +1121,19 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                 if ip["id"] not in existing_ids:
                     products.append(ip)
 
-        welcome_key = f"{client_name}_{sender_id}"
-        if welcome_key in welcomed_users:
-            return
-            
         matched_product = None
         match_score = 0
         if products:
             matched_product, match_score = match_product_from_text(event.raw_text, products)
             
-        presence = await async_get_document("habil_presence") or {}
-        is_online = presence.get("is_online", False)
-        status_text = "🟢 **Destek Çevrimiçi:** Şu an aktifiz, mesajınıza en kısa sürede yanıt vereceğiz. 😊" if is_online else "🔴 **Destek Çevrimdışı:** Şu an aktif değiliz ancak mesajınızı bırakırsanız en kısa sürede yanıtlayacağız."
-
-        if is_lisansarena:
-            if matched_product:
-                reply_text = (
-                    f"Merhaba, sormuş olduğunuz ürün (**{matched_product['title']}**) şu an stoklarımızda mevcuttur. 🔹\n\n"
-                    f"💵 Ürün Fiyatı: **{matched_product['price']}**\n\n"
-                    f"🔗 Güvenli satın almak ve anında teslim almak için doğrudan sipariş linkiniz:\n"
-                    f"{matched_product['url']}\n\n"
-                    f"Dilerseniz satın alım işlemlerinizi 7/24 resmi mağaza botumuzdan da gerçekleştirebilirsiniz:\n"
-                    f"🔗 @LisansArenaBot\n\n"
-                    f"━━━━━━━━━━━━━━━━━━━\n"
-                    f"{status_text}"
-                )
-            else:
-                reply_text = (
-                    "Merhaba, LisansArena Müşteri Destek hattına hoş geldiniz. 🔹\n\n"
-                    "Aradığınız tüm lisans anahtarları, premium yayın hesapları ve tasarım yazılımları anında teslimat garantisiyle stoklarımızdadır.\n\n"
-                    "⚡ **Haftalık Öne Çıkan Ürünlerimiz:**\n"
-                    "• Netflix UHD 1 Profil (1 Aylık): **99.90 ₺**\n"
-                    "• Canva 1 Yıllık Pro Davet: **99.90 ₺**\n"
-                    "• YouTube Premium Bireysel (3 Aylık Kod): **44.90 ₺**\n"
-                    "• Spotify Premium Bireysel (4 Aylık Kod): **49.90 ₺**\n\n"
-                    "Tüm ürün kataloğumuzu görmek, fiyatları incelemek ve anında 7/24 otomatik satın almak için resmi satış botumuzu başlatabilirsiniz:\n\n"
-                    "🔗 @LisansArenaBot\n\n"
-                    "━━━━━━━━━━━━━━━━━━━\n"
-                    f"{status_text}"
-                )
-        elif is_keyvadi:
-            if matched_product:
-                reply_text = (
-                    f"Selam! İstediğin ürün (**{matched_product['title']}**) şu an stokta var dostum! 🔥\n\n"
-                    f"💰 Fiyat: **{matched_product['price']}**\n\n"
-                    f"🔗 Güvenli satın almak için doğrudan ödeme linkin:\n"
-                    f"{matched_product['url']}\n\n"
-                    f"Ayrıca tüm işlemlerini otomatik yapmak için şu botu da başlatabilirsin:\n"
-                    f"👉 @KeyVadiSatisBot\n\n"
-                    f"━━━━━━━━━━━━━━━━━━━\n"
-                    f"{status_text}"
-                )
-            else:
-                reply_text = (
-                    "Selam dostum! KeyVadi mağazasına hoş geldin. 🔥\n\n"
-                    "Burada en ucuz oyun keylerini, premium hesapları ve tasarım araçlarını bulabilirsin. Sistemimiz tamamen otomatik çalışıyor!\n\n"
-                    "🎮 **Günün En Popüler Fırsatları:**\n"
-                    "» Netflix 4K UHD Profil: **49.99 ₺**\n"
-                    "» Adobe Creative Cloud (1 Haftalık): **49.99 ₺**\n"
-                    "» YouTube Premium (3 Aylık Kod): **29.99 ₺**\n"
-                    "» Gemini Pro Davet Linki: **69.99 ₺**\n\n"
-                    "Hemen ürünleri incelemek ve saniyeler içinde teslim almak için aşağıdaki butona tıkla ve botu başlat:\n\n"
-                    "👉 @KeyVadiSatisBot\n\n"
-                    "━━━━━━━━━━━━━━━━━━━\n"
-                    f"{status_text}"
-                )
-        else:
-            reply_text = (
-                "Merhaba! Froxy AI Yapay Zeka platformuna hoş geldiniz. 🤖\n\n"
-                "Froxy AI ile tek bir panelden ChatGPT 5.5, Claude 4.7 Opus, Gemini 3.1 Pro, Midjourney v7 ve +18 sansürsüz yapay zeka modellerine sınırsız erişim sağlayabilirsiniz.\n\n"
-                "━━━━━━━━━━━━━━━━━━━\n"
-                f"{status_text}\n"
-                f"━━━━━━━━━━━━━━━━━━━\n\n"
-                "👉 Bota başlamak ve paketleri incelemek için:\n\n"
-                "🔗 @FroxyDestekBOT"
-            )
+        if not matched_product:
+            return
+            
+        reply_text = matched_product['url']
             
         try:
-            # Mark user as welcomed immediately before sending to avoid race condition/double reply
-            welcomed_users.add(welcome_key)
-            save_welcomed_users()
-            
             await event.reply(reply_text)
-            print(f"[{client_name}] ✉️ Özel mesaj otomatik yanıtlandı: @{sender.username or sender_id} -> {msg_text[:50]}")
+            print(f"[{client_name}] ✉️ Özel mesaj otomatik yanıtlandı (Ürün Linki): @{sender.username or sender_id} -> {matched_product['title']}")
         except Exception as e:
             print(f"[{client_name}] ⚠️ Özel mesaj otomatik yanıtlanırken hata: {e}")
 
