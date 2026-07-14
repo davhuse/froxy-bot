@@ -1309,19 +1309,27 @@ async def main():
         if "id" in info:
             our_user_ids.add(info["id"])
             
-    # bot_config.json dosyasından bot id'lerini ayıkla
+    # bot_config.json dosyasından bot id'lerini ve admin id'lerini ayıkla
     if os.path.exists("bot_config.json"):
         try:
             with open("bot_config.json", "r", encoding="utf-8") as f:
                 cfg = json.load(f)
-            for key in ["bot_token", "froxy_bot_token"]:
-                token = cfg.get(key, "")
-                if token and ":" in token:
-                    bot_id = int(token.split(":")[0])
-                    our_user_ids.add(bot_id)
-            print(f"🔒 Sistem Hesap ve Bot Kimlikleri Kaydedildi: {list(our_user_ids)}")
+            for key, val in cfg.items():
+                if ("token" in key.lower()) and isinstance(val, str) and ":" in val:
+                    try:
+                        bot_id = int(val.split(":")[0])
+                        our_user_ids.add(bot_id)
+                    except:
+                        pass
+            admin_id = cfg.get("admin_id")
+            if admin_id:
+                our_user_ids.add(int(admin_id))
+            froxy_admin_id = cfg.get("froxy_admin_id")
+            if froxy_admin_id:
+                our_user_ids.add(int(froxy_admin_id))
+            print(f"🔒 Sistem Hesap, Bot ve Admin Kimlikleri Kaydedildi: {list(our_user_ids)}")
         except Exception as e:
-            print(f"⚠️ Bot ID'leri ayıklanırken hata: {e}")
+            print(f"⚠️ Bot/Admin ID'leri ayıklanırken hata: {e}")
 
     state_lock = asyncio.Lock()
     active_jobs = set()
