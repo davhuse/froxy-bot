@@ -1083,11 +1083,8 @@ def api_groups():
 def keep_alive():
     import urllib.request, ssl
     time.sleep(30)  # App'in ayağa kalkmasını bekle
-    render_url = os.environ.get("RENDER_EXTERNAL_URL", "")
-    if not render_url:
-        print("[KeepAlive] RENDER_EXTERNAL_URL bulunamadı, keep-alive devre dışı.")
-        return
-    ping_url = render_url + "/api/status"
+    render_url = os.environ.get("RENDER_EXTERNAL_URL", "https://froxy-bot.onrender.com")
+    ping_url = render_url.rstrip('/') + "/api/status"
     print(f"[KeepAlive] Başlatıldı. Her 10dk {ping_url} adresine ping atılacak.")
     ctx = ssl._create_unverified_context()
     while True:
