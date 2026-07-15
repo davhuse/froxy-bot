@@ -129,9 +129,9 @@ INJECTED_PRODUCTS = [{"id": "47669105", "title": "YouTube Premium (3 Aylık Kod)
     {"id": "48943148", "title": "Crunchyroll Ortak Hesap (1 Aylık)", "price": "39.90 TL", "url": "https://www.shopier.com/48943148"},
     {"id": "48943150", "title": "Grammarly Pro (1 Haftalık) - Kendi Hesabınıza", "price": "79.90 TL", "url": "https://www.shopier.com/48943150"},
     {"id": "48943151", "title": "Grammarly Pro (1 Aylık) - Ortak Hesap", "price": "49.90 TL", "url": "https://www.shopier.com/48943151"},
-    {"id": "49002084", "title": "HBO Max 1 Aylık Profil", "price": "39.90 TL", "url": "https://www.shopier.com/49002084"},
-    {"id": "49002085", "title": "Prime Video (1 Aylık) - Özel Profil", "price": "29.90 TL", "url": "https://www.shopier.com/49002085"},
-    {"id": "49002088", "title": "Prime Video (1 Aylık) - Ortak Profil", "price": "19.90 TL", "url": "https://www.shopier.com/49002088"}
+    {"id": "49002143", "title": "HBO Max 1 Aylık Profil", "price": "39.90 TL", "url": "https://www.shopier.com/49002143"},
+    {"id": "49002144", "title": "Prime Video (1 Aylık) - Özel Profil", "price": "29.90 TL", "url": "https://www.shopier.com/49002144"},
+    {"id": "49002145", "title": "Prime Video (1 Aylık) - Ortak Profil", "price": "19.90 TL", "url": "https://www.shopier.com/49002145"}
 ]
 
 # Flat list of all products (rebuilt when products are loaded)
