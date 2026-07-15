@@ -128,7 +128,10 @@ INJECTED_PRODUCTS = [{"id": "47669105", "title": "YouTube Premium (3 Aylık Kod)
     {"id": "48943146", "title": "Crunchyroll Özel Profil (1 Aylık)", "price": "59.90 TL", "url": "https://www.shopier.com/48943146"},
     {"id": "48943148", "title": "Crunchyroll Ortak Hesap (1 Aylık)", "price": "39.90 TL", "url": "https://www.shopier.com/48943148"},
     {"id": "48943150", "title": "Grammarly Pro (1 Haftalık) - Kendi Hesabınıza", "price": "79.90 TL", "url": "https://www.shopier.com/48943150"},
-    {"id": "48943151", "title": "Grammarly Pro (1 Aylık) - Ortak Hesap", "price": "49.90 TL", "url": "https://www.shopier.com/48943151"}
+    {"id": "48943151", "title": "Grammarly Pro (1 Aylık) - Ortak Hesap", "price": "49.90 TL", "url": "https://www.shopier.com/48943151"},
+    {"id": "48901849", "title": "HBO Max 1 Aylık Profil", "price": "39.90 TL", "url": "https://www.shopier.com/48901849"},
+    {"id": "48901864", "title": "Prime Video (1 Aylık) - Özel Profil", "price": "29.90 TL", "url": "https://www.shopier.com/48901864"},
+    {"id": "48901866", "title": "Prime Video (1 Aylık) - Ortak Profil", "price": "29.90 TL", "url": "https://www.shopier.com/48901866"}
 ]
 
 # Flat list of all products (rebuilt when products are loaded)
@@ -328,12 +331,11 @@ def rebuild_categories(products):
     global CATEGORIES
     
     temp_categories = {
-        "firsatlar": {"title": "🔥 Haftanın Dev Fırsatları", "products": {}},
-        "ai": {"title": "🌟 Yapay Zeka (AI) Hesapları", "products": {}},
-        "design": {"title": "🎨 Tasarım & Lisans Hizmetleri", "products": {}},
-        "mobile": {"title": "📱 Onaylı Mobil Hesaplar", "products": {}},
-        "deals": {"title": "🍔 Yemek & Akaryakıt Fırsatları", "products": {}},
-        "other": {"title": "📦 Diğer Ürün & Hizmetler", "products": {}}
+        "firsatlar": {"title": "🔥 Kaçırılmayacak Fırsatlar", "products": {}},
+        "ai": {"title": "🌟 Yapay Zeka (AI) Çözümleri", "products": {}},
+        "streaming": {"title": "📺 Dizi & Film Platformları", "products": {}},
+        "design": {"title": "🎨 Tasarım & Eğlence Üyelikleri", "products": {}},
+        "license": {"title": "🔑 Lisans, Oyun & Diğer", "products": {}}
     }
     
     # Injected Hot Deals (Netflix, Adobe, Youtube Premium, Gemini Pro Davet)
@@ -365,16 +367,19 @@ def rebuild_categories(products):
         url = p["url"]
         
         t = title.lower()
-        if any(k in t for k in ["gemini", "grok", "ai", "gamma", "kiro", "chatgpt", "openai", "copilot", "claude", "midjourney", "semrush", "deepl", "quill", "ideogram", "envato", "freepik", "perplexity", "magnific"]):
+        
+        # 1. Yapay Zeka (AI) Çözümleri
+        if any(k in t for k in ["gemini", "grok", "ai", "gamma", "kiro", "chatgpt", "openai", "copilot", "claude", "midjourney", "semrush", "deepl", "quill", "ideogram", "perplexity", "magnific"]):
             cat_key = "ai"
-        elif any(k in t for k in ["canva", "adobe", "creative cloud", "express", "capcut", "duolingo", "scribd", "design", "tasarım", "spotify", "netflix", "windows", "win ", "win10", "win11", "office", "key", "lisans", "autodesk", "figma", "wordpress", "grammarly", "vpn", "antivirüs", "antivirus", "xbox", "steam", "game pass", "crunchyroll", "hbo", "prime video"]):
+        # 2. Dizi & Film Platformları
+        elif any(k in t for k in ["netflix", "prime video", "hbo max", "hbo", "crunchyroll", "exxen", "blutv", "disney"]):
+            cat_key = "streaming"
+        # 3. Tasarım & Eğlence Üyelikleri
+        elif any(k in t for k in ["canva", "adobe", "creative cloud", "express", "capcut", "duolingo", "scribd", "design", "tasarım", "spotify", "youtube", "music"]):
             cat_key = "design"
-        elif any(k in t for k in ["whatsapp", "apple id", "apple", "icloud", "numara", "mobil", "sms", "onay"]):
-            cat_key = "mobile"
-        elif any(k in t for k in ["trendyol", "yemek", "market", "shell", "akaryakıt", "indirim", "fırsat", "kampanya", "kod"]):
-            cat_key = "deals"
+        # 4. Lisans, Oyun & Diğer
         else:
-            cat_key = "other"
+            cat_key = "license"
             
         temp_categories[cat_key]["products"][pid] = {
             "title": title,
@@ -435,11 +440,10 @@ TEXTS = {
         "main_menu": "↩️ Ana Menü",
         "cat_title_mapping": {
             "firsatlar": "🔥 Kaçırılmayacak Fırsatlar",
-            "ai": "🌟 Yapay Zeka (AI) Hesapları",
-            "design": "🎨 Tasarım & Lisans Hizmetleri",
-            "mobile": "📱 Onaylı Mobil Hesaplar",
-            "deals": "🍔 Yemek & Akaryakıt Fırsatları",
-            "other": "📦 Diğer Ürün & Hizmetler"
+            "ai": "🌟 Yapay Zeka (AI) Çözümleri",
+            "streaming": "📺 Dizi & Film Platformları",
+            "design": "🎨 Tasarım & Eğlence Üyelikleri",
+            "license": "🔑 Lisans, Oyun & Diğer"
         },
         "select_product": "Detaylarını görmek ve satın almak istediğiniz ürünü seçin:",
         "price": "Fiyat",
@@ -465,11 +469,10 @@ TEXTS = {
         "main_menu": "↩️ Main Menu",
         "cat_title_mapping": {
             "firsatlar": "🔥 Kaçırılmayacak Fırsatlar / Super Deals",
-            "ai": "🌟 Artificial Intelligence (AI) Accounts",
-            "design": "🎨 Design & License Services",
-            "mobile": "📱 Verified Mobile Accounts",
-            "deals": "🍔 Food & Fuel Deals",
-            "other": "📦 Other Products & Services"
+            "ai": "🌟 Yapay Zeka (AI) Çözümleri / AI Solutions",
+            "streaming": "📺 Dizi & Film Platformları / Streaming Platforms",
+            "design": "🎨 Tasarım & Eğlence Üyelikleri / Design & Fun",
+            "license": "🔑 Lisans, Oyun & Diğer / Licenses & Games"
         },
         "select_product": "Select the product you want to view details and purchase:",
         "price": "Price",

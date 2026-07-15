@@ -131,9 +131,11 @@ def load_products_from_links_json():
     
     # Rebuild categories
     temp_categories = {
-        "ai": {"title": "🌟 Yapay Zeka (AI) Paketleri", "products": {}},
+        "firsatlar": {"title": "🔥 Kaçırılmayacak Fırsatlar", "products": {}},
+        "ai": {"title": "🌟 Yapay Zeka (AI) Çözümleri", "products": {}},
+        "streaming": {"title": "📺 Dizi & Film Platformları", "products": {}},
         "design": {"title": "🎨 Tasarım & Eğlence Üyelikleri", "products": {}},
-        "mobile": {"title": "📱 Onaylı Hesaplar & Lisanslar", "products": {}}
+        "license": {"title": "🔑 Lisans, Oyun & Diğer", "products": {}}
     }
     
     for p in products:
@@ -143,12 +145,19 @@ def load_products_from_links_json():
         url = p["url"]
         
         t = title.lower()
-        if any(k in t for k in ["gemini", "perplexity", "magnific", "deepl", "ai", "grok", "chatgpt"]):
+        
+        # 1. Yapay Zeka (AI) Çözümleri
+        if any(k in t for k in ["gemini", "perplexity", "magnific", "deepl", "ai", "grok", "chatgpt", "openai", "copilot", "claude", "midjourney", "semrush", "gamma", "quill", "ideogram"]):
             cat_key = "ai"
-        elif any(k in t for k in ["canva", "youtube", "netflix", "spotify", "prime video", "hbo max", "crunchyroll", "scribd", "duolingo"]):
+        # 2. Dizi & Film Platformları
+        elif any(k in t for k in ["netflix", "prime video", "hbo max", "hbo", "crunchyroll", "exxen", "blutv", "disney"]):
+            cat_key = "streaming"
+        # 3. Tasarım & Eğlence Üyelikleri
+        elif any(k in t for k in ["canva", "adobe", "creative cloud", "express", "capcut", "duolingo", "scribd", "design", "tasarım", "spotify", "youtube", "music"]):
             cat_key = "design"
+        # 4. Lisans, Oyun & Diğer
         else:
-            cat_key = "mobile"
+            cat_key = "license"
             
         temp_categories[cat_key]["products"][pid] = {
             "title": title,
@@ -156,6 +165,21 @@ def load_products_from_links_json():
             "url": url,
             "desc": p["desc"]
         }
+        
+    # Inject popular deals into firsatlar
+    f_count = 0
+    for p in products:
+        if f_count >= 4:
+            break
+        t = p["title"].lower()
+        if "netflix" in t or "canva" in t or "youtube" in t or "office" in t:
+            temp_categories["firsatlar"]["products"][p["id"]] = {
+                "title": p["title"],
+                "price": p["price"],
+                "url": p["url"],
+                "desc": p["desc"]
+            }
+            f_count += 1
         
     CATEGORIES = temp_categories
     logger.info("In-memory categories rebuilt successfully.")
@@ -261,9 +285,11 @@ TEXTS = {
         "lang_btn": "🌍 Dil Değiştir / Language",
         "main_menu": "🏠 Ana Menüye Dön",
         "cat_title_mapping": {
-            "ai": "🧠 Yapay Zeka Çözümleri",
-            "design": "🎨 Tasarım & Medya Araçları",
-            "mobile": "🔑 Lisanslar & Üyelikler"
+            "firsatlar": "🔥 Kaçırılmayacak Fırsatlar",
+            "ai": "🌟 Yapay Zeka (AI) Çözümleri",
+            "streaming": "📺 Dizi & Film Platformları",
+            "design": "🎨 Tasarım & Eğlence Üyelikleri",
+            "license": "🔑 Lisans, Oyun & Diğer"
         },
         "select_product": "İncelemek veya satın almak istediğiniz ürünü seçiniz:",
         "price": "Fiyatımız",
@@ -288,9 +314,11 @@ TEXTS = {
         "lang_btn": "🌍 Language / Dil Değiştir",
         "main_menu": "🏠 Back to Main Menu",
         "cat_title_mapping": {
-            "ai": "🧠 Artificial Intelligence Solutions",
-            "design": "🎨 Design & Media Tools",
-            "mobile": "🔑 Licenses & Memberships"
+            "firsatlar": "🔥 Kaçırılmayacak Fırsatlar / Super Deals",
+            "ai": "🌟 Yapay Zeka (AI) Çözümleri / AI Solutions",
+            "streaming": "📺 Dizi & Film Platformları / Streaming Platforms",
+            "design": "🎨 Tasarım & Eğlence Üyelikleri / Design & Fun",
+            "license": "🔑 Lisans, Oyun & Diğer / Licenses & Games"
         },
         "select_product": "Select the product you'd like to review or purchase:",
         "price": "Our Price",

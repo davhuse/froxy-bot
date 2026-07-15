@@ -44,7 +44,9 @@ def update_config_state(key, value):
 
 # Process tracking helpers using psutil
 def get_process_by_script(script_name):
-    """Finds a running python process that executes script_name using PID file."""
+    """Finds a running python process that executes script_name by scanning all processes."""
+    import psutil
+    # Try using PID file first for speed
     pid_file = f"{script_name}.pid"
     if os.path.exists(pid_file):
         try:
@@ -57,6 +59,18 @@ def get_process_by_script(script_name):
                     return proc
         except Exception:
             pass
+    # Fallback to scanning all processes if PID file is not present or invalid
+    try:
+        for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+            try:
+                cmd = proc.info.get('cmdline') or []
+                if any(script_name in arg for arg in cmd):
+                    if any('python' in arg.lower() for arg in cmd) or proc.info.get('name') in ['python', 'python.exe']:
+                        return proc
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                pass
+    except Exception:
+        pass
     return None
 
 def kill_process_by_script(script_name):
@@ -1316,7 +1330,7 @@ def tg_verify_password():
 
 if __name__ == '__main__':
     # Clean up any orphaned bot processes from previous runs on startup
-    for script_name in ['otomatik_katil.py', 'froxy_bot.py', 'froxy_destek_bot.py']:
+    for script_name in ['otomatik_katil.py', 'froxy_bot.py', 'froxy_destek_bot.py', 'lisansarena_bot.py']:
         proc = get_process_by_script(script_name)
         if proc:
             print(f"🧹 Startup cleanup: Killing orphaned process {proc.pid} ({script_name})")
