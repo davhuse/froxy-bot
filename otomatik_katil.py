@@ -2050,11 +2050,11 @@ async def main():
 
     async def run_worker_supervisor(client, client_name, joined_dialogs):
         if "2" in client_name or "4" in client_name:
-            print(f"⏳ [{client_name}] İlk çalıştırma gecikmesi aktif: Diğer hesapla çakışmayı önlemek için 10 dakika bekleniyor...")
-            await asyncio.sleep(600)
+            print(f"⏳ [{client_name}] İlk çalıştırma gecikmesi aktif: 5 saniye bekleniyor...")
+            await asyncio.sleep(5)
         elif "3" in client_name or "5" in client_name:
-            print(f"⏳ [{client_name}] İlk çalıştırma gecikmesi aktif: Diğer hesapla çakışmayı önlemek için 20 dakika bekleniyor...")
-            await asyncio.sleep(1200)
+            print(f"⏳ [{client_name}] İlk çalıştırma gecikmesi aktif: 10 saniye bekleniyor...")
+            await asyncio.sleep(10)
         while True:
             try:
                 await run_worker(client, client_name, joined_dialogs)
