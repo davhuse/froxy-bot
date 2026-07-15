@@ -15,7 +15,7 @@ def fetch_logs():
             data = json.loads(response.read().decode('utf-8'))
             logs = data.get("logs", [])
             print("=" * 80)
-            print("LATEST 40 LOG LINES FROM RENDER")
+            print(f"LATEST {len(logs)} LOG LINES FROM RENDER")
             print("=" * 80)
             for line in logs:
                 print(line.strip())
