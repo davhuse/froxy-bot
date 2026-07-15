@@ -1127,35 +1127,23 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                 except:
                     pass
         elif is_keyvadi:
-            INJECTED_PRODUCTS = [
-                {"id": "47669105", "title": "YouTube Premium (3 Aylık Kod)", "price": "29.99 TL", "url": "https://www.shopier.com/keyvadi/47669105"},
-                {"id": "47669117", "title": "Netflix 4K Ultra HD (Kişisel Profil)", "price": "49.99 TL", "url": "https://www.shopier.com/keyvadi/47669117"},
-                {"id": "48114807", "title": "XBOX Game Pass Ultimate (3 Aylık Üyelik)", "price": "80.00 TL", "url": "https://www.shopier.com/keyvadi/48114807"},
-                {"id": "48114802", "title": "Steam İstediğiniz Oyun (60 TL Limitli)", "price": "60.00 TL", "url": "https://www.shopier.com/keyvadi/48114802"},
-                {"id": "48114795", "title": "Semrush Pro (14 Günlük Hesap)", "price": "150.00 TL", "url": "https://www.shopier.com/keyvadi/48114795"},
-                {"id": "48114789", "title": "Microsoft Office 365 (1 Yıllık Hesap)", "price": "70.00 TL", "url": "https://www.shopier.com/keyvadi/48114789"},
-                {"id": "48114785", "title": "Windows 10/11 Pro Lisans Anahtarı (Key)", "price": "70.00 TL", "url": "https://www.shopier.com/keyvadi/48114785"},
-                {"id": "47669159", "title": "Gemini Pro (1 Yıllık Hesap)", "price": "299.99 TL", "url": "https://www.shopier.com/keyvadi/47669159"},
-                {"id": "47669164", "title": "Gemini Pro (Davet Linki)", "price": "124.99 TL", "url": "https://www.shopier.com/keyvadi/47669164"},
-                {"id": "47669192", "title": "Gemini Ultra (Davet Linki)", "price": "399.99 TL", "url": "https://www.shopier.com/keyvadi/47669192"},
-                {"id": "47669222", "title": "Gemini Ultra (2.5k Kredili Hesap)", "price": "599.99 TL", "url": "https://www.shopier.com/keyvadi/47669222"},
-                {"id": "47669248", "title": "Super Grok (1 Aylık Hesap)", "price": "449.99 TL", "url": "https://www.shopier.com/keyvadi/47669248"},
-                {"id": "47669271", "title": "Super Grok (3 Aylık Hesap)", "price": "949.99 TL", "url": "https://www.shopier.com/keyvadi/47669271"},
-                {"id": "47669295", "title": "Super Grok (6 Aylık Hesap)", "price": "1499.99 TL", "url": "https://www.shopier.com/keyvadi/47669295"},
-                {"id": "47669305", "title": "Super Grok (12 Aylık Hesap)", "price": "2299.99 TL", "url": "https://www.shopier.com/keyvadi/47669305"},
-                {"id": "47669310", "title": "Gamma Ultra (1 Aylık Hesap)", "price": "449.99 TL", "url": "https://www.shopier.com/keyvadi/47669310"},
-                {"id": "47669316", "title": "Gamma Pro (1 Aylık Hesap)", "price": "299.99 TL", "url": "https://www.shopier.com/keyvadi/47669316"},
-            ]
-            if os.path.exists("parsed_keyvadi_products.json"):
+            if os.path.exists("keyvadi_shopier_links.json"):
                 try:
-                    with open("parsed_keyvadi_products.json", "r", encoding="utf-8") as f:
-                        products = json.load(f)
+                    with open("keyvadi_shopier_links.json", "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                        for item in data:
+                            pid = item.get("id")
+                            title = item.get("title")
+                            url = item.get("url")
+                            price_val = item.get("price", "0")
+                            products.append({
+                                "id": pid,
+                                "title": title,
+                                "price": price_val,
+                                "url": url
+                            })
                 except:
                     pass
-            existing_ids = {p["id"] for p in products}
-            for ip in INJECTED_PRODUCTS:
-                if ip["id"] not in existing_ids:
-                    products.append(ip)
 
         matched_product = None
         match_score = 0
