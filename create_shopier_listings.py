@@ -111,7 +111,7 @@ products = [
     {"name": "Quillbot Premium (1 Aylık Hesap)", "price": 49.99, "category": "AI", "desc": "Metin yeniden yazma ve özetleme aracı Quillbot Premium 1 aylık kullanım hesabı."},
     {"name": "HBO Max 1 Aylık Profil", "price": 39.90, "category": "Entertainment", "desc": "HBO Max 1 Aylık Premium Profil. Size özel profil ismi ve şifreleme sağlanır."},
     {"name": "Prime Video (1 Aylık) - Özel Profil", "price": 29.90, "category": "Entertainment", "desc": "Amazon Prime Video 1 Aylık Kişisel Profil. Özel şifreli profil ile kesintisiz izleme."},
-    {"name": "Prime Video (1 Aylık) - Ortak Profil", "price": 29.90, "category": "Entertainment", "desc": "Amazon Prime Video 1 Aylık Ortak Kullanım Hesabı. Giriş garantilidir."}
+    {"name": "Prime Video (1 Aylık) - Ortak Profil", "price": 19.90, "category": "Entertainment", "desc": "Amazon Prime Video 1 Aylık Ortak Kullanım Hesabı. Giriş garantilidir."}
 ]
 
 def create_gradient_image(title, category, filename):

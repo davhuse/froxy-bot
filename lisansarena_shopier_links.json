@@ -297,9 +297,9 @@
     ],
     "priceData": {
       "currency": "TRY",
-      "price": "29.90",
+      "price": "19.90",
       "discount": false,
-      "discountedPrice": "29.90",
+      "discountedPrice": "19.90",
       "shippingPrice": "0.00"
     },
     "stockStatus": "inStock",
