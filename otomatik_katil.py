@@ -944,7 +944,8 @@ def match_product_from_text(msg_text, all_products):
         "crunchyroll", "chatgpt", "midjourney", "creative",
         "4k", "uhd", "game", "lisans", "microsoft",
         "tradingview", "nordvpn", "vpn", "kaspersky", "envato", "freepik",
-        "autocad", "figma", "elementor", "grammarly", "deepl", "ideogram", "quillbot"
+        "autocad", "figma", "elementor", "grammarly", "deepl", "ideogram", "quillbot",
+        "hbo", "prime", "perplexity", "magnific", "telegram", "tg"
     }
     
     has_brand = any(w in brand_keywords for w in query_words)
