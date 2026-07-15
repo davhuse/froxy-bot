@@ -1,17 +1,17 @@
 [
   {
-    "id": "49000419",
+    "id": "49000910",
     "title": "HBO Max 1 Aylık Profil",
     "description": "HBO Max 1 Aylık Premium Profil. Size özel profil ismi ve şifreleme sağlanır.",
     "type": "digital",
     "dateCreated": "2026-07-12T02:29:05+0300",
     "dateUpdated": "2026-07-12T02:29:05+0300",
-    "url": "https://www.shopier.com/49000419",
+    "url": "https://www.shopier.com/49000910",
     "media": [
       {
         "id": "1",
         "type": "image",
-        "url": "https://cdn.shopier.app/pictures_large/lisansarena_57e9c577-4af1-4604-9507-508819f30434.jpg",
+        "url": "https://veridia-bot.onrender.com/static/la_hbo.png",
         "placement": 1
       }
     ],
@@ -245,18 +245,18 @@
     "dispatchDuration": 0
   },
   {
-    "id": "49000421",
+    "id": "49000911",
     "title": "Prime Video (1 Aylık) - Özel Profil",
     "description": "Amazon Prime Video 1 Aylık Kişisel Profil. Özel şifreli profil ile kesintisiz izleme.",
     "type": "digital",
     "dateCreated": "2026-07-12T02:29:45+0300",
     "dateUpdated": "2026-07-12T02:29:45+0300",
-    "url": "https://www.shopier.com/49000421",
+    "url": "https://www.shopier.com/49000911",
     "media": [
       {
         "id": "1",
         "type": "image",
-        "url": "https://cdn.shopier.app/pictures_large/lisansarena_ff16b7bd-8bfa-47b1-8e4f-e0734a56e6a2.jpg",
+        "url": "https://veridia-bot.onrender.com/static/la_prime.png",
         "placement": 1
       }
     ],
@@ -280,18 +280,18 @@
     "dispatchDuration": 0
   },
   {
-    "id": "49000422",
+    "id": "49000912",
     "title": "Prime Video (1 Aylık) - Ortak Profil",
     "description": "Amazon Prime Video 1 Aylık Ortak Kullanım Hesabı. Giriş garantilidir.",
     "type": "digital",
     "dateCreated": "2026-07-12T02:29:48+0300",
     "dateUpdated": "2026-07-12T02:29:48+0300",
-    "url": "https://www.shopier.com/49000422",
+    "url": "https://www.shopier.com/49000912",
     "media": [
       {
         "id": "1",
         "type": "image",
-        "url": "https://cdn.shopier.app/pictures_large/lisansarena_7198942b-93aa-4db7-9b7a-bfd8935e847d.jpg",
+        "url": "https://veridia-bot.onrender.com/static/la_prime.png",
         "placement": 1
       }
     ],
