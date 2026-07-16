@@ -1085,6 +1085,18 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         if not sender:
             return
             
+        if getattr(sender, 'bot', False):
+            return
+            
+        if event.sender_id == 777000:
+            return
+            
+        # Acil çözüm: "creator" isimli veya kullanıcı adlı hesapları yoksay
+        fname = getattr(sender, 'first_name', '') or ''
+        uname = getattr(sender, 'username', '') or ''
+        if 'creator' in fname.lower() or 'creator' in uname.lower():
+            return
+            
         sender_id = sender.id
         if sender_id in our_user_ids:
             return
