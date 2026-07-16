@@ -1630,10 +1630,18 @@ async def main():
                         else:
                             base_msg = "Merhaba! Detaylar için @FroxyDestekBOT"
                         
+                        is_lisansarena = "3" in client_name or "5" in client_name or "lisans" in client_name.lower()
+                        is_keyvadi = "2" in client_name or "4" in client_name or "keyvadi" in client_name.lower()
+
                         msg = base_msg
                         if grup_name.lower() == "ticaretforumofficial":
+                            short_file = "message_ticaret_froxy.txt"
+                            if is_keyvadi:
+                                short_file = "message_ticaret_keyvadi.txt"
+                            elif is_lisansarena:
+                                short_file = "message_ticaret_lisansarena.txt"
                             try:
-                                with open("message_ticaret.txt", 'r', encoding='utf-8') as fm:
+                                with open(short_file, 'r', encoding='utf-8') as fm:
                                     msg = fm.read()
                             except:
                                 pass
@@ -1643,8 +1651,6 @@ async def main():
                         msg = parse_spintax(msg)
                         
                         # Pazarlama özellikleri (İndirim kodları, FOMO, Haftalık kampanya) ekle
-                        is_lisansarena = "3" in client_name or "5" in client_name or "lisans" in client_name.lower()
-                        is_keyvadi = "2" in client_name or "4" in client_name or "keyvadi" in client_name.lower()
                         msg = process_marketing_features(msg, is_keyvadi, is_lisansarena)
                         
                         # Görsel/Banner gönderimi (Grup yetki kontrolleri ve hata toleransı eklendi)
