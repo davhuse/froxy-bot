@@ -1631,7 +1631,13 @@ async def main():
                             base_msg = "Merhaba! Detaylar için @FroxyDestekBOT"
                         
                         msg = base_msg
-                        if grup_name.lower() == "kuponceking":
+                        if grup_name.lower() == "ticaretforumofficial":
+                            try:
+                                with open("message_ticaret.txt", 'r', encoding='utf-8') as fm:
+                                    msg = fm.read()
+                            except:
+                                pass
+                        elif grup_name.lower() == "kuponceking":
                             msg = msg.replace("bot", "sistem").replace("Bot", "Sistem") \
                                      .replace("🤖", "").strip() + "\n"
                         msg = parse_spintax(msg)
