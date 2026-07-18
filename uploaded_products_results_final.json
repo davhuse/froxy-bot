@@ -1,0 +1,26 @@
+{
+  "KeyVadi": [],
+  "LisansArena": [
+    {
+      "slug": "hbo_max",
+      "id": "49000910",
+      "url": "https://www.shopier.com/49000910",
+      "title": "HBO Max 1 Aylık Profil",
+      "price": "39.90"
+    },
+    {
+      "slug": "prime_video_ozel",
+      "id": "49000911",
+      "url": "https://www.shopier.com/49000911",
+      "title": "Prime Video (1 Aylık) - Özel Profil",
+      "price": "29.90"
+    },
+    {
+      "slug": "prime_video_ortak",
+      "id": "49000912",
+      "url": "https://www.shopier.com/49000912",
+      "title": "Prime Video (1 Aylık) - Ortak Profil",
+      "price": "19.90"
+    }
+  ]
+}

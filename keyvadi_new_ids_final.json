@@ -1,0 +1,23 @@
+[
+  {
+    "slug": "hbo_max",
+    "id": "49002143",
+    "url": "https://www.shopier.com/49002143",
+    "title": "HBO Max 1 Aylık Profil",
+    "price": "39.90"
+  },
+  {
+    "slug": "prime_video_ozel",
+    "id": "49002144",
+    "url": "https://www.shopier.com/49002144",
+    "title": "Prime Video (1 Aylık) - Özel Profil",
+    "price": "29.90"
+  },
+  {
+    "slug": "prime_video_ortak",
+    "id": "49002145",
+    "url": "https://www.shopier.com/49002145",
+    "title": "Prime Video (1 Aylık) - Ortak Profil",
+    "price": "19.90"
+  }
+]

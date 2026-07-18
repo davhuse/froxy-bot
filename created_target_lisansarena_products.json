@@ -1,0 +1,50 @@
+[
+  {
+    "id": "48944992",
+    "title": "Exxen Premium (1 Aylık Hesap)",
+    "description": "Exxen Premium 1 Aylık Reklamsız Üyelik.",
+    "url": "https://www.shopier.com/48944992",
+    "imageUrl": "https://froxy-bot.onrender.com/static/lisansarena_exxen.png?v=1783966186",
+    "price": "34.99"
+  },
+  {
+    "id": "48944996",
+    "title": "Trendyol Yemek (150/100 İndirim)",
+    "description": "Trendyol Yemek 150 TL siparişe 100 TL indirim sağlayan özel tanımlı hesap.",
+    "url": "https://www.shopier.com/48944996",
+    "imageUrl": "https://froxy-bot.onrender.com/static/lisansarena_trendyol_yemek.png?v=1783966186",
+    "price": "19.99"
+  },
+  {
+    "id": "48944997",
+    "title": "Trendyol Market (200/100 İndirim)",
+    "description": "Trendyol Market 200 TL siparişe 100 TL indirim sağlayan özel tanımlı hesap.",
+    "url": "https://www.shopier.com/48944997",
+    "imageUrl": "https://froxy-bot.onrender.com/static/lisansarena_trendyol_market.png?v=1783966186",
+    "price": "19.99"
+  },
+  {
+    "id": "48944998",
+    "title": "Shell 100 TL Yakıt Puanı",
+    "description": "Shell ClubSmart kartınıza yüklenebilir 100 TL değerinde yakıt puanı.",
+    "url": "https://www.shopier.com/48944998",
+    "imageUrl": "https://froxy-bot.onrender.com/static/lisansarena_shell.png?v=1783966186",
+    "price": "49.99"
+  },
+  {
+    "id": "48945001",
+    "title": "Steam Random Key (Gold)",
+    "description": "Steam platformunda geçerli, yüksek değerli oyun çıkma garantili Gold Random Key.",
+    "url": "https://www.shopier.com/48945001",
+    "imageUrl": "https://froxy-bot.onrender.com/static/lisansarena_steam.png?v=1783966186",
+    "price": "9.99"
+  },
+  {
+    "id": "48945004",
+    "title": "Office 365 Pro (1 Yıllık)",
+    "description": "Microsoft Office 365 1 Yıllık Bireysel Premium Lisans.",
+    "url": "https://www.shopier.com/48945004",
+    "imageUrl": "https://froxy-bot.onrender.com/static/lisansarena_office365.png?v=1783966186",
+    "price": "39.99"
+  }
+]

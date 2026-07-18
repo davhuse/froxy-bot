@@ -114,16 +114,18 @@ def process_marketing_features(msg, is_keyvadi, is_lisansarena, is_short=False):
         if is_keyvadi:
             deals = (
                 "\n\n🔥 **GÜNÜN DEV FIRSATLARI!** 🔥\n"
-                "• 🔴 **YouTube Premium (3 Aylık):** ~~44.99 TL~~ yerine **29.99 TL**!\n"
-                "• 🍿 **Netflix UHD Kişisel Profil (1 Aylık):** ~~89.99 TL~~ yerine **79.99 TL**!\n"
-                "• 🤖 **Gemini Pro 12 Aylık (Davet):** ~~124.99 TL~~ yerine **69.99 TL**!"
+                "• 🔴 **YouTube Premium (Aylık):** ~~44.99 TL~~ yerine **29.99 TL**!\n"
+                "• 🍿 **Netflix UHD Ortak Profil (1 Aylık):** ~~59.99 TL~~ yerine **39.99 TL**!\n"
+                "• 🤖 **Gemini Pro 12 Aylık (Davet):** ~~124.99 TL~~ yerine **69.99 TL**!\n"
+                "• 🔑 **Steam 200$ Random Key:** ~~49.99 TL~~ yerine **30.00 TL**!"
             )
         elif is_lisansarena:
             deals = (
                 "\n\n🔥 **GÜNÜN DEV FIRSATLARI!** 🔥\n"
-                "• 🎨 **Canva Pro (1 Yıllık Yetki):** ~~129.99 TL~~ yerine **79.99 TL**!\n"
-                "• 🦉 **Duolingo 1 Aylık (Ortak Hesap):** ~~59.99 TL~~ yerine **29.99 TL**!\n"
-                "• 🤖 **Gemini Pro Davet (12 Aylık):** ~~299.99 TL~~ yerine **99.99 TL**!"
+                "• 🔴 **YouTube Premium (Aylık):** ~~44.99 TL~~ yerine **29.99 TL**!\n"
+                "• 🍿 **Netflix UHD Ortak Profil (1 Aylık):** ~~59.99 TL~~ yerine **39.99 TL**!\n"
+                "• 🤖 **Gemini Pro 12 Aylık (Davet):** ~~299.99 TL~~ yerine **69.99 TL**!\n"
+                "• 🔑 **Steam 200$ Random Key:** ~~49.99 TL~~ yerine **30.00 TL**!"
             )
         if deals:
             msg += deals
@@ -289,12 +291,21 @@ FROXY_MESSAGES = [
     os.path.join(MESSAGES_DIR, 'froxy_price.txt'),
 ]
 KEYVADI_MESSAGES = [
-    os.path.join(MESSAGES_DIR, 'keyvadi_ai.txt'),
-    os.path.join(MESSAGES_DIR, 'keyvadi_kupon.txt'),
-    os.path.join(MESSAGES_DIR, 'keyvadi_adobe.txt'),
-    os.path.join(MESSAGES_DIR, 'keyvadi_ogrenci.txt'),
-    os.path.join(MESSAGES_DIR, 'keyvadi_deal.txt'),
-    os.path.join(MESSAGES_DIR, 'keyvadi_genel.txt'),
+    os.path.join(MESSAGES_DIR, 'keyvadi_1.txt'),
+    os.path.join(MESSAGES_DIR, 'keyvadi_2.txt'),
+    os.path.join(MESSAGES_DIR, 'keyvadi_3.txt'),
+    os.path.join(MESSAGES_DIR, 'keyvadi_4.txt'),
+    os.path.join(MESSAGES_DIR, 'keyvadi_5.txt'),
+    os.path.join(MESSAGES_DIR, 'keyvadi_6.txt'),
+]
+
+LISANSARENA_MESSAGES = [
+    os.path.join(MESSAGES_DIR, 'lisansarena_1.txt'),
+    os.path.join(MESSAGES_DIR, 'lisansarena_2.txt'),
+    os.path.join(MESSAGES_DIR, 'lisansarena_3.txt'),
+    os.path.join(MESSAGES_DIR, 'lisansarena_4.txt'),
+    os.path.join(MESSAGES_DIR, 'lisansarena_5.txt'),
+    os.path.join(MESSAGES_DIR, 'lisansarena_6.txt'),
 ]
 
 # Mesaj geçmişi (aynı gruba aynı mesaj gitmesin)
@@ -1734,13 +1745,13 @@ async def main():
                 is_keyv = not is_lisans
                 
                 if is_lisans:
-                    variations = ["message_3.txt", "message_3a.txt", "message_3b.txt", "message_3c.txt"]
+                    variations = LISANSARENA_MESSAGES
                     available_files = [v for v in variations if os.path.exists(v)]
                 elif is_keyv:
-                    variations = ["message_2.txt", "message_2a.txt", "message_2b.txt", "message_2c.txt"]
+                    variations = KEYVADI_MESSAGES
                     available_files = [v for v in variations if os.path.exists(v)]
                 else:
-                    variations = ["message.txt", "message_a.txt", "message_b.txt", "message_c.txt"]
+                    variations = FROXY_MESSAGES
                     available_files = [v for v in variations if os.path.exists(v)]
                 
                 msg_history = load_msg_history()
