@@ -124,7 +124,7 @@ def process_marketing_features(msg, is_keyvadi, is_lisansarena, is_short=False):
                 "\n\n🔥 **GÜNÜN DEV FIRSATLARI!** 🔥\n"
                 "• 🔴 **YouTube Premium (Aylık):** ~~44.99 TL~~ yerine **29.99 TL**!\n"
                 "• 🍿 **Netflix UHD Ortak Profil (1 Aylık):** ~~59.99 TL~~ yerine **39.99 TL**!\n"
-                "• 🤖 **Gemini Pro 12 Aylık (Davet):** ~~299.99 TL~~ yerine **69.99 TL**!\n"
+                "• 🤖 **Gemini Pro 12 Aylık (Davet):** ~~299.99 TL~~ yerine **99.99 TL**!\n"
                 "• 🔑 **Steam 200$ Random Key:** ~~49.99 TL~~ yerine **30.00 TL**!"
             )
         if deals:
