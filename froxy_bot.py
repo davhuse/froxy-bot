@@ -131,7 +131,8 @@ INJECTED_PRODUCTS = [{"id": "47669105", "title": "YouTube Premium (3 Aylık Kod)
     {"id": "48943151", "title": "Grammarly Pro (1 Aylık) - Ortak Hesap", "price": "49.90 TL", "url": "https://www.shopier.com/48943151"},
     {"id": "49002143", "title": "HBO Max 1 Aylık Profil", "price": "39.90 TL", "url": "https://www.shopier.com/49002143"},
     {"id": "49002144", "title": "Prime Video (1 Aylık) - Özel Profil", "price": "29.90 TL", "url": "https://www.shopier.com/49002144"},
-    {"id": "49002145", "title": "Prime Video (1 Aylık) - Ortak Profil", "price": "19.90 TL", "url": "https://www.shopier.com/49002145"}
+    {"id": "49002145", "title": "Prime Video (1 Aylık) - Ortak Profil", "price": "19.90 TL", "url": "https://www.shopier.com/49002145"},
+    {"id": "49078921", "title": "Canva Pro Öğretmen (1 Yıllık)", "price": "149.99 TL", "url": "https://www.shopier.com/49078921"}
 ]
 
 # Flat list of all products (rebuilt when products are loaded)

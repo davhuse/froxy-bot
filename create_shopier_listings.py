@@ -71,6 +71,7 @@ products = [
 
     # DIJITAL ARACLAR & YAZILIMLAR
     {"name": "Canva Pro (1 Yıllık Yetki)", "price": 79.99, "category": "Design", "desc": "Canva Pro 1 Yıllık Yetkilendirme. Kendi kişisel hesabınıza Pro özellikleri tanımlanır."},
+    {"name": "Canva Pro Öğretmen (1 Yıllık)", "price": 149.99, "category": "Design", "desc": "Canva Pro Öğretmen 1 Yıllık Üyelik. Kendi mail adresinize tanımlanır. Sınıf açıp öğrenci ekleme yetkisi mevcuttur."},
     {"name": "Adobe Express (3 Aylık)", "price": 99.99, "category": "Design", "desc": "Adobe Express 3 Aylık Pro Üyelik. Kendi hesabınıza tanımlanır. 1 hafta garanti sağlanır."},
     {"name": "Adobe Creative Cloud (1 Haftalık)", "price": 69.99, "category": "Design", "desc": "Adobe Creative Cloud Tüm Uygulamalar 1 Haftalık Üyelik. 1 hafta garanti sağlanır."},
     {"name": "Adobe Creative Cloud (1 Aylık)", "price": 119.99, "category": "Design", "desc": "Adobe Creative Cloud Tüm Uygulamalar 1 Aylık Üyelik. 1 hafta garanti sağlanır."},

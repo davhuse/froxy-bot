@@ -1,5 +1,30 @@
 [
   {
+    "id": "49078922",
+    "title": "Canva Pro Öğretmen (1 Yıllık)",
+    "description": "Canva Pro Öğretmen 1 Yıllık Üyelik. Kendi mail adresinize tanımlanır. Sınıf açıp öğrenci ekleme yetkisi mevcuttur.",
+    "type": "digital",
+    "url": "https://www.shopier.com/49078922",
+    "media": [
+      {
+        "id": "1",
+        "type": "image",
+        "url": "https://veridia-bot.onrender.com/static/la_canva_teacher.png",
+        "placement": 1
+      }
+    ],
+    "priceData": {
+      "currency": "TRY",
+      "price": "149.99",
+      "discount": false,
+      "discountedPrice": "149.99",
+      "shippingPrice": "0.00"
+    },
+    "stockStatus": "inStock",
+    "stockQuantity": 999,
+    "shippingPayer": "sellerPays"
+  },
+  {
     "id": "49000910",
     "title": "HBO Max 1 Aylık Profil",
     "description": "HBO Max 1 Aylık Premium Profil. Size özel profil ismi ve şifreleme sağlanır.",
