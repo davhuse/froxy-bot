@@ -207,13 +207,13 @@ def save_cooldowns(data):
 def is_on_cooldown(grup_name, client_name):
     """
     Gruba son mesaj gönderilmesinden bu yana yeterince süre geçti mi?
-    - Bu hesap için en az 1 saat geçmiş olmalı (GROUP_COOLDOWN_HOURS)
-    - Herhangi bir hesap için en az 20 dakika geçmiş olmalı (SPACING_COOLDOWN_MINUTES)
+    # Her bir grup için atılan son mesajın üzerinden geçmesi gereken süre (saniye)
+    GROUP_COOLDOWN_SECONDS = 7200  # 2 saat
+    # Herhangi bir hesap için en az 40 dakika geçmiş olmalı (SPACING_COOLDOWN_MINUTES)
     """
     from datetime import datetime
     
     # Dinamik olarak config'den oku
-    cooldown_hours = 1
     spacing_minutes = 20
     if os.path.exists("bot_config.json"):
         try:
