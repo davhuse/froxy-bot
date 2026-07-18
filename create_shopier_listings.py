@@ -50,8 +50,8 @@ from PIL import Image, ImageDraw, ImageFont
 # 33 Products list from database
 products = [
     # EGLENCE & MUZIK
-    {"name": "YouTube Premium (3 Aylık Kod)", "price": 44.99, "category": "Entertainment", "desc": "YouTube Premium 3 Aylık Aktivasyon Kodu. Reklamsız video izleme ve YouTube Music Premium dahildir. Kendi hesabınızda veya yeni hesapta aktifleştirebilirsiniz."},
-    {"name": "Spotify Premium (4 Aylık Kod)", "price": 34.99, "category": "Entertainment", "desc": "Spotify Premium 4 Aylık Aktivasyon Kodu. Kendi kişisel hesabınıza tanımlanır. Reklamsız ve yüksek kaliteli müzik keyfi."},
+    {"name": "YouTube Premium (3 Aylık Kod)", "price": 44.99, "category": "Entertainment", "desc": "YouTube Premium 3 Aylık Aktivasyon Kodu. Reklamsız video izleme ve YouTube Music Premium dahildir. UYARI: Yeni hesaplarda veya daha önce Premium alınmamış hesaplarda aktifleştirilmelidir."},
+    {"name": "Spotify Premium (4 Aylık Kod)", "price": 34.99, "category": "Entertainment", "desc": "Spotify Premium 4 Aylık Aktivasyon Kodu. Kendi kişisel hesabınıza tanımlanır. Reklamsız ve yüksek kaliteli müzik keyfi. UYARI: Daha önce Premium üyeliği aktif edilmemiş (yeni/bireysel) hesaplarda geçerlidir."},
     {"name": "Netflix 4K Ultra HD (Kişisel Profil)", "price": 89.99, "category": "Entertainment", "desc": "Kişisel Netflix 4K Ultra HD Profili. Ortak hesapta size ait özel profil ve şifreleme ile full garanti sağlanır."},
     {"name": "Exxen Reklamsız (3 Aylık)", "price": 34.99, "category": "Entertainment", "desc": "Exxen Reklamsız 3 Aylık Üyelik. Giriş bilgileri sipariş sonrasında teslim edilir."},
     {"name": "Crunchyroll Premium (3 Aylık)", "price": 99.00, "category": "Entertainment", "desc": "Crunchyroll Premium 3 Aylık Üyelik."},
@@ -97,7 +97,7 @@ products = [
     {"name": "Microsoft Office 365 (1 Yıllık Hesap)", "price": 70.00, "category": "Design", "desc": "Word, Excel, PowerPoint ve tüm Office uygulamalarını içeren 1 Yıllık lisanslı Microsoft Office 365 hesabı. 7/24 anında teslimat."},
     {"name": "Semrush Pro (14 Günlük Hesap)", "price": 150.00, "category": "AI", "desc": "Semrush Pro özellikleri aktif 14 günlük profesyonel SEO ve arama motoru analiz hesabı. Giriş garantili."},
     {"name": "Steam İstediğiniz Oyun (Hediye/Hesap)", "price": 60.00, "category": "Entertainment", "desc": "Steam platformundaki dilediğiniz 60 TL değerindeki oyunu hediye olarak veya özel hesap şeklinde teslim alabilirsiniz."},
-    {"name": "XBOX Game Pass Ultimate (3 Aylık Üyelik)", "price": 80.00, "category": "Entertainment", "desc": "3 Aylık XBOX Game Pass Ultimate üyeliği aktif hesap. PC ve konsolda yüzlerce oyuna ücretsiz erişim sağlar."},
+    {"name": "XBOX Game Pass Ultimate (3 Aylık Üyelik)", "price": 80.00, "category": "Entertainment", "desc": "3 Aylık XBOX Game Pass Ultimate üyeliği aktif ortak hesap. PC ve konsolda yüzlerce oyuna ücretsiz erişim sağlar. UYARI: Ortak hesaptır."},
     {"name": "NordVPN Premium (1 Aylık Hesap)", "price": 49.99, "category": "Design", "desc": "NordVPN Premium 1 aylık yüksek hızlı ve güvenli VPN hesabı. Giriş garantilidir."},
     {"name": "Kaspersky Total Security (1 Yıllık Lisans)", "price": 79.99, "category": "Design", "desc": "Kaspersky Total Security en üst düzey koruma sağlayan 1 yıllık orijinal antivirüs lisansı."},
     {"name": "Envato Elements (1 Aylık Premium Hesap)", "price": 149.99, "category": "Design", "desc": "Envato Elements üzerinden sınırsız şablon, görsel ve kod kütüphanesine erişebileceğiniz 1 aylık Premium hesap."},

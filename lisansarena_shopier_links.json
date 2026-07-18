@@ -491,8 +491,8 @@
   },
   {
     "id": "48901876",
-    "title": "Super Duolingo Sınırsız (Ortak Hesap)",
-    "description": "Super Duolingo Dil Eğitimi Premium Sınırsız Haklar (Ortak Hesap).",
+    "title": "Duolingo 1 Aylık (Ortak Hesap)",
+    "description": "Super Duolingo Premium 1 Aylık Ortak Kullanım Hesabı. UYARI: Ortak hesaptır.",
     "type": "digital",
     "dateCreated": "2026-07-12T02:30:12+0300",
     "dateUpdated": "2026-07-12T02:30:12+0300",
@@ -507,9 +507,9 @@
     ],
     "priceData": {
       "currency": "TRY",
-      "price": "59.90",
+      "price": "29.99",
       "discount": false,
-      "discountedPrice": "59.90",
+      "discountedPrice": "29.99",
       "shippingPrice": "0.00"
     },
     "stockStatus": "inStock",
@@ -527,7 +527,7 @@
   {
     "id": "48901877",
     "title": "Perplexity Pro (1 Aylık Hesap)",
-    "description": "Perplexity Pro Yapay Zeka Arama Motoru 1 Aylık Hesap. Giriş garantilidir.",
+    "description": "Perplexity Pro Yapay Zeka Arama Motoru 1 Aylık Ortak Hesap. Giriş garantilidir. UYARI: Ortak hesaptır.",
     "type": "digital",
     "dateCreated": "2026-07-12T02:30:17+0300",
     "dateUpdated": "2026-07-12T02:30:17+0300",
@@ -1052,7 +1052,7 @@
   {
     "id": "48945492",
     "title": "Gemini Pro Davet (12 Aylık)",
-    "description": "Google Gemini Pro 12 Aylık davet linki. Kendi hesabınıza tanımlanır.",
+    "description": "Gemini Pro Davet Linki ile kendi 12 aylık üyeliğinizi aktifleştirme.",
     "type": "digital",
     "dateCreated": "2026-07-13T21:28:49+0300",
     "dateUpdated": "2026-07-13T21:28:49+0300",
@@ -1067,9 +1067,9 @@
     ],
     "priceData": {
       "currency": "TRY",
-      "price": "131.24",
+      "price": "99.99",
       "discount": false,
-      "discountedPrice": "131.24",
+      "discountedPrice": "99.99",
       "shippingPrice": "0.00"
     },
     "stockStatus": "inStock",
@@ -1102,9 +1102,9 @@
     ],
     "priceData": {
       "currency": "TRY",
-      "price": "209.89",
+      "price": "99.99",
       "discount": false,
-      "discountedPrice": "209.89",
+      "discountedPrice": "99.99",
       "shippingPrice": "0.00"
     },
     "stockStatus": "inStock",
@@ -1297,7 +1297,7 @@
   {
     "id": "48973855",
     "title": "YouTube Premium (3 Aylık Kod)",
-    "description": "YouTube Premium 3 Aylık üyelik kodu. Kendi hesabınızda aktifleştirebilirsiniz.",
+    "description": "YouTube Premium 3 Aylık Aktivasyon Kodu. Reklamsız video izleme ve YouTube Music Premium dahildir. UYARI: Yeni hesaplarda veya daha önce Premium alınmamış hesaplarda aktifleştirilmelidir.",
     "type": "digital",
     "dateCreated": "2026-07-14T20:57:03+0300",
     "dateUpdated": "2026-07-14T20:57:03+0300",
@@ -1332,7 +1332,7 @@
   {
     "id": "48973857",
     "title": "Spotify Premium (4 Aylık Kod)",
-    "description": "Spotify Premium 4 Aylık davet kodu. Kendi hesabınızda veya yeni hesapta aktifleştirebilirsiniz.",
+    "description": "Spotify Premium 4 Aylık Aktivasyon Kodu. Kendi kişisel hesabınıza tanımlanır. UYARI: Daha önce Premium üyeliği aktif edilmemiş (yeni/bireysel) hesaplarda geçerlidir.",
     "type": "digital",
     "dateCreated": "2026-07-14T20:57:03+0300",
     "dateUpdated": "2026-07-14T20:57:03+0300",
@@ -1367,7 +1367,7 @@
   {
     "id": "48973858",
     "title": "Canva Pro (1 Yıllık Yetki)",
-    "description": "Canva Pro 1 Yıllık davet linki ile kendi hesabınızı premium yapın.",
+    "description": "Canva Pro 1 Yıllık Yetkilendirme. Kendi kişisel hesabınıza Pro özellikleri tanımlanır.",
     "type": "digital",
     "dateCreated": "2026-07-14T20:57:03+0300",
     "dateUpdated": "2026-07-14T20:57:03+0300",
@@ -1382,9 +1382,9 @@
     ],
     "priceData": {
       "currency": "TRY",
-      "price": "83.99",
+      "price": "79.99",
       "discount": false,
-      "discountedPrice": "83.99",
+      "discountedPrice": "79.99",
       "shippingPrice": "0.00"
     },
     "stockStatus": "inStock",

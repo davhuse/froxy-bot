@@ -102,14 +102,14 @@ CATEGORIES = {}
 # Products that are NOT in the Shopier showroom (hidden/delisted/paginated) but still active
 # These are injected into the catalog alongside scraped products
 INJECTED_PRODUCTS = [{"id": "47669105", "title": "YouTube Premium (3 Aylık Kod)", "price": "29.99 TL", "url": "https://www.shopier.com/keyvadi/47669105"},
-    {"id": "47669117", "title": "Netflix 4K Ultra HD (Kişisel Profil)", "price": "49.99 TL", "url": "https://www.shopier.com/keyvadi/47669117"},
+    {"id": "47669117", "title": "Netflix 4K Ultra HD (Kişisel Profil)", "price": "79.99 TL", "url": "https://www.shopier.com/keyvadi/47669117"},
     {"id": "48114807", "title": "XBOX Game Pass Ultimate (3 Aylık Üyelik)", "price": "80.00 TL", "url": "https://www.shopier.com/keyvadi/48114807"},
     {"id": "48114802", "title": "Steam İstediğiniz Oyun (Ortak Hesap)", "price": "60.00 TL", "url": "https://www.shopier.com/keyvadi/48114802"},
     {"id": "48114795", "title": "Semrush Pro (14 Günlük Hesap)", "price": "150.00 TL", "url": "https://www.shopier.com/keyvadi/48114795"},
     {"id": "48114789", "title": "Microsoft Office 365 (1 Yıllık Hesap)", "price": "70.00 TL", "url": "https://www.shopier.com/keyvadi/48114789"},
     {"id": "48114785", "title": "Windows 10/11 Pro Lisans Anahtarı (Key)", "price": "70.00 TL", "url": "https://www.shopier.com/keyvadi/48114785"},
     {"id": "47669159", "title": "Gemini Pro (1 Yıllık Hesap)", "price": "299.99 TL", "url": "https://www.shopier.com/keyvadi/47669159"},
-    {"id": "47669164", "title": "Gemini Pro (Davet Linki)", "price": "124.99 TL", "url": "https://www.shopier.com/keyvadi/47669164"},
+    {"id": "47669164", "title": "Gemini Pro 12 Aylık (Davet Linki)", "price": "69.99 TL", "url": "https://www.shopier.com/keyvadi/47669164"},
     {"id": "47669192", "title": "Gemini Ultra (Davet Linki)", "price": "399.99 TL", "url": "https://www.shopier.com/keyvadi/47669192"},
     {"id": "47669222", "title": "Gemini Ultra (2.5k Kredili Hesap)", "price": "599.99 TL", "url": "https://www.shopier.com/keyvadi/47669222"},
     {"id": "47669248", "title": "Super Grok (1 Aylık Hesap)", "price": "449.99 TL", "url": "https://www.shopier.com/keyvadi/47669248"},
@@ -279,6 +279,151 @@ def match_product_from_text(msg_text):
         return best_product, best_score
     return None, 0
 
+def match_multiple_products_from_text(msg_text):
+    msg_clean = msg_text.lower().strip()
+    msg_clean = msg_clean.replace("you tube", "youtube")
+    msg_clean = re.sub(r'\byt\b', 'youtube', msg_clean)
+    msg_clean = re.sub(r'\bwin\b', 'windows', msg_clean)
+    msg_clean = msg_clean.replace("win10", "windows")
+    msg_clean = msg_clean.replace("win11", "windows")
+    msg_clean = msg_clean.replace("office365", "office 365")
+    msg_clean = msg_clean.replace("gamepass", "game pass")
+    msg_clean = msg_clean.replace("cc", "creative cloud")
+    
+    query_words = _get_words(msg_clean)
+    
+    brand_keywords = {
+        "netflix", "youtube", "adobe", "canva", "windows", "office", "gemini", "grok",
+        "xbox", "spotify", "exxen", "trendyol", "duolingo", "semrush", "capcut",
+        "scribd", "gamma", "kiro", "steam", "shell", "whatsapp", "apple",
+        "crunchyroll", "chatgpt", "midjourney", "creative",
+        "4k", "uhd", "game", "lisans", "microsoft",
+        "tradingview", "nordvpn", "vpn", "kaspersky", "envato", "freepik",
+        "autocad", "figma", "elementor", "grammarly", "deepl", "ideogram", "quillbot",
+        "hbo", "prime", "perplexity", "magnific", "telegram", "tg"
+    }
+    
+    primary_brands = {
+        "netflix", "youtube", "adobe", "canva", "windows", "office", "gemini", "grok",
+        "xbox", "spotify", "exxen", "trendyol", "duolingo", "semrush", "capcut",
+        "scribd", "gamma", "kiro", "steam", "shell", "whatsapp", "apple",
+        "crunchyroll", "chatgpt", "midjourney", "tradingview", "nordvpn", "vpn",
+        "kaspersky", "envato", "freepik", "autocad", "figma", "elementor", 
+        "grammarly", "deepl", "ideogram", "quillbot", "hbo", "prime", "perplexity", 
+        "magnific"
+    }
+    
+    query_brands = [w for w in query_words if w in brand_keywords]
+    if not query_brands:
+        return []
+        
+    query_primary_brands = [w for w in query_words if w in primary_brands]
+    target_brands = list(set(query_primary_brands if query_primary_brands else query_brands))
+    
+    skip_words = {
+        "var", "mi", "mı", "mu", "mü", "ve", "de", "da", "için", "misiniz", "miyiz",
+        "olur", "miyim", "yok", "acaba", "hizmeti", "ürünü", "hesabı", "kodu", "kuponu",
+        "premium", "alacaktım", "hocam", "knk", "kanka", "bir", "alacağım", "alacaktim",
+        "istiyorum", "lazım", "lazim", "alalım", "alalim", "kaç", "kac", "fiyat",
+        "ne", "tl", "lira", "bak", "abi", "güvenilir", "güvenilirmi",
+        "nasıl", "nasil", "nedir", "site", "link", "al", "almak", "satın"
+    }
+    
+    matched_products = []
+    
+    for brand in target_brands:
+        best_product = None
+        best_score = 0
+        
+        for p in ALL_PRODUCTS_FLAT:
+            title_lower = p.get("title", "").lower()
+            title_words = set(_get_words(title_lower))
+            
+            if "bakiye" in title_lower or "keyvadi" in title_lower:
+                continue
+                
+            # Enforce brand check
+            if brand not in title_words:
+                if brand == "adobe" and "creative" in title_words:
+                    pass
+                elif brand == "creative" and "adobe" in title_words:
+                    pass
+                else:
+                    continue
+                
+            score = 0
+            matched_brand = False
+            
+            for i in range(len(query_words) - 1):
+                phrase = f"{query_words[i]} {query_words[i+1]}"
+                if phrase in title_lower:
+                    score += 50
+                    
+            for w in query_words:
+                if w in skip_words:
+                    continue
+                if len(w) <= 1:
+                    continue
+                if w in title_words:
+                    score += 20
+                    if w in brand_keywords:
+                        matched_brand = True
+                elif len(w) > 5:
+                    for tw in title_words:
+                        if w in tw or tw in w:
+                            score += 8
+                            break
+            
+            # Duration mismatch
+            q_durations = {"haftalık", "aylık", "yıllık", "günlük"}
+            q_dur = [w for w in query_words if w in q_durations]
+            q_nums = [w for w in query_words if w.isdigit()]
+            if q_dur and q_nums:
+                dur_phrase = f"{q_nums[0]} {q_dur[0]}"
+                if dur_phrase not in title_lower and len(q_nums[0]) <= 2:
+                    score -= 15
+                            
+            if not matched_brand and score < 50:
+                continue
+                
+            # Penalties
+            if "ultra" in query_words and "ultra" not in title_words:
+                score -= 100
+            if "ultra" not in query_words and "ultra" in title_words and "pro" in query_words:
+                score -= 100
+            if "pro" in query_words and "pro" not in title_words and "davet" not in title_words:
+                if any(bw in query_words for bw in ["gemini", "grok", "gamma"]):
+                    score -= 80
+                    
+            if q_dur and q_nums:
+                dur_phrase = f"{q_nums[0]} {q_dur[0]}"
+                if dur_phrase not in title_lower and len(q_nums[0]) <= 2:
+                    score -= 30
+                    
+            if "yemek" in query_words and "yemek" not in title_words:
+                score -= 100
+            if "market" in query_words and "market" not in title_words:
+                score -= 100
+            if "yemek" not in query_words and "yemek" in title_words:
+                score -= 50
+            if "market" not in query_words and "market" in title_words:
+                score -= 50
+                
+            if "windows" in query_words and "windows" not in title_words:
+                score -= 80
+            if "office" in query_words and "office" not in title_words:
+                score -= 80
+                
+            if score > best_score:
+                best_score = score
+                best_product = p
+                
+        if best_product and best_score >= 20:
+            if best_product not in matched_products:
+                matched_products.append(best_product)
+                
+    return matched_products
+
 def scrape_shopier():
     logger.info("Scraping Shopier showroom at https://www.shopier.com/keyvadi ...")
     context = ssl._create_unverified_context()
@@ -341,7 +486,7 @@ def rebuild_categories(products):
     # Injected Hot Deals (Netflix, Adobe, Youtube Premium, Gemini Pro Davet)
     temp_categories["firsatlar"]["products"]["f1"] = {
         "title": "📺 Netflix 4K UHD Profil",
-        "price": "49.99 TL",
+        "price": "79.99 TL",
         "url": "https://www.shopier.com/keyvadi/47669117"
     }
     temp_categories["firsatlar"]["products"]["f2"] = {
@@ -355,7 +500,7 @@ def rebuild_categories(products):
         "url": "https://www.shopier.com/keyvadi/47669105"
     }
     temp_categories["firsatlar"]["products"]["f4"] = {
-        "title": "🤖 Gemini Pro Davet Linki",
+        "title": "🤖 Gemini Pro 12 Aylık (Davet Linki)",
         "price": "69.99 TL",
         "url": "https://www.shopier.com/keyvadi/47669164"
     }
@@ -960,26 +1105,42 @@ async def message_handler(event):
     # ── Smart Product Matching for free-text messages ──
     # If user is NOT in any special state and NOT admin, try to match a product
     if event.text and not event.text.startswith('/'):
-        matched_product, match_score = match_product_from_text(event.text)
-        if matched_product:
+        matched_products = match_multiple_products_from_text(event.text)
+        if matched_products:
             lang = user_lang_helper.get_user_lang(user_id) or "tr"
             t = TEXTS[lang]
-            price = matched_product['price']
-            if lang == "en":
-                price = user_lang_helper.convert_price_to_usd(price)
             
-            product_msg = (
-                f"🔍 **{matched_product['title']}**\n\n"
-                f"💰 **{t['price']}:** {price}\n\n"
-                f"{t['product_footer']}"
-            )
-            buttons = [
-                [Button.url(t["buy_btn"], matched_product.get('url', 'https://www.shopier.com/keyvadi'))],
-                [Button.inline(t["support_btn"], b"menu_support")],
-                [Button.inline("📋 Ana Menü / Main Menu", b"menu_main")]
-            ]
+            if len(matched_products) == 1:
+                matched_product = matched_products[0]
+                price = matched_product['price']
+                if lang == "en":
+                    price = user_lang_helper.convert_price_to_usd(price)
+                
+                product_msg = (
+                    f"🔍 **{matched_product['title']}**\n\n"
+                    f"💰 **{t['price']}:** {price}\n\n"
+                    f"{t['product_footer']}"
+                )
+                buttons = [
+                    [Button.url(t["buy_btn"], matched_product.get('url', 'https://www.shopier.com/keyvadi'))],
+                    [Button.inline(t["support_btn"], b"menu_support")],
+                    [Button.inline("📋 Ana Menü / Main Menu", b"menu_main")]
+                ]
+            else:
+                product_msg = "🔍 **Aradığınız Ürünler / Matched Products:**\n\n"
+                buttons = []
+                for i, p in enumerate(matched_products[:4]):
+                    price = p['price']
+                    if lang == "en":
+                        price = user_lang_helper.convert_price_to_usd(price)
+                    product_msg += f"{i+1}. **{p['title']}**\n💰 {t['price']}: {price}\n👉 {p['url']}\n\n"
+                    buttons.append([Button.url(f"Satın Al / Buy ({p['title'][:20]}...)", p.get('url', ''))])
+                product_msg += f"{t['product_footer']}"
+                buttons.append([Button.inline(t["support_btn"], b"menu_support")])
+                buttons.append([Button.inline("📋 Ana Menü / Main Menu", b"menu_main")])
+                
             await event.respond(product_msg, buttons=buttons)
-            logger.info(f"Smart match for user {user_id}: '{event.text}' → {matched_product['title']} (score={match_score})")
+            logger.info(f"Smart match for user {user_id}: '{event.text}' -> matched products successfully.")
             return
 
     config = load_config() or {}
