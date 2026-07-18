@@ -1288,7 +1288,7 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
             return
 
         is_lisansarena = "3" in client_name or "5" in client_name or "lisans" in client_name.lower()
-        is_keyvadi = "2" in client_name or "4" in client_name or "keyvadi" in client_name.lower()
+        is_keyvadi = not is_lisansarena
         
         products = []
         if is_lisansarena:
@@ -1731,7 +1731,7 @@ async def main():
                 
                 # Rotation updates: pick from variation templates if they exist
                 is_lisans = "3" in client_name or "5" in client_name or "lisans" in client_name.lower()
-                is_keyv = "2" in client_name or "4" in client_name or "keyvadi" in client_name.lower()
+                is_keyv = not is_lisans
                 
                 if is_lisans:
                     variations = ["message_3.txt", "message_3a.txt", "message_3b.txt", "message_3c.txt"]
@@ -1821,7 +1821,7 @@ async def main():
                             base_msg = "Merhaba! Detaylar için @FroxyDestekBOT"
                         
                         is_lisansarena = "3" in client_name or "5" in client_name or "lisans" in client_name.lower()
-                        is_keyvadi = "2" in client_name or "4" in client_name or "keyvadi" in client_name.lower()
+                        is_keyvadi = not is_lisansarena
 
                         msg = base_msg
                         if grup_name.lower() == "ticaretforumofficial":
