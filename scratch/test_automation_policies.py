@@ -66,6 +66,10 @@ class AutomationPolicyTests(unittest.TestCase):
         self.assertEqual(automation.ACTIVE_ACCOUNT_USERNAMES,
                          {'keyvadionline', 'lisansarenaonline'})
 
+    def test_protected_group_alias_blocks_numeric_blacklist(self):
+        self.assertTrue(automation.is_group_protected('Nightsatis'))
+        self.assertTrue(automation.is_group_protected('-1003336542169'))
+
     def test_ticaret_forum_detected_by_username_or_title(self):
         self.assertTrue(automation.is_ticaret_forum_group('ticaretforumofficial'))
         entity = SimpleNamespace(username=None, title='Hashtag Ticaret Forum Official')

@@ -64,13 +64,29 @@ gruplar = [
     "mukyemek",
 ]
 
+PROTECTED_GROUP_ALIASES = {
+    "-1003336542169": "nightsatis",
+}
+
+def normalize_group_key(grup_name):
+    g_lower = str(grup_name or '').lower().replace('@', '').strip()
+    g_lower = g_lower.rstrip('/')
+    if '/' in g_lower:
+        g_lower = g_lower.split('/')[-1]
+    return g_lower
+
 def get_all_protected_groups():
-    return set(g.lower() for g in gruplar)
+    protected = {normalize_group_key(g) for g in gruplar}
+    for key, value in PROTECTED_GROUP_ALIASES.items():
+        protected.add(normalize_group_key(key))
+        protected.add(normalize_group_key(value))
+    return protected
 
 def is_group_protected(grup_name):
-    g_lower = grup_name.lower().replace('@', '').strip()
+    g_lower = normalize_group_key(grup_name)
     protected = get_all_protected_groups()
-    return g_lower in protected or f"@{g_lower}" in protected or g_lower.split('/')[-1] in protected
+    alias = PROTECTED_GROUP_ALIASES.get(g_lower)
+    return g_lower in protected or (alias and normalize_group_key(alias) in protected)
 
 STATS_FILE = 'stats.json'
 
@@ -1060,15 +1076,17 @@ def get_list(dosya):
 
 def save_to_list(grup, dosya):
     if dosya == BLACKLIST_FILE:
-        g_lower = grup.lower()
-        is_auto = False
+        g_lower = normalize_group_key(grup)
+        if is_group_protected(grup):
+            print(f"⚠️ [Security] Korumalı/hedef grup @{grup} kara listeye eklenmesi engellendi!")
+            return
+
         if os.path.exists(AUTO_GROUPS_FILE):
             try:
                 with open(AUTO_GROUPS_FILE, "r", encoding="utf-8") as f:
                     auto_list = [line.strip() for line in f if line.strip()]
-                if any(x.lower() == g_lower for x in auto_list):
-                    is_auto = True
-                    new_auto = [x for x in auto_list if x.lower() != g_lower]
+                if any(normalize_group_key(x) == g_lower for x in auto_list):
+                    new_auto = [x for x in auto_list if normalize_group_key(x) != g_lower]
                     with open(AUTO_GROUPS_FILE, "w", encoding="utf-8") as f:
                         f.write("\n".join(new_auto) + "\n")
                     print(f"🗑️ [Auto-Groups] @{grup} yazma hatası/ban nedeniyle auto_groups.txt listesinden kaldırıldı.")
@@ -1078,11 +1096,6 @@ def save_to_list(grup, dosya):
                         pass
             except Exception as e:
                 print(f"⚠️ auto_groups.txt güncellenirken hata: {e}")
-                
-        hardcoded_whitelist = set(g.lower() for g in gruplar)
-        if g_lower in hardcoded_whitelist and not is_auto:
-            print(f"⚠️ [Security] Korumalı/hedef grup @{grup} kara listeye eklenmesi engellendi!")
-            return
             
     with open(dosya, 'a', encoding='utf-8') as f:
         f.write(grup + '\n')
@@ -2504,8 +2517,7 @@ async def main():
         local_black = get_list(BLACKLIST_FILE)
         remote_black = set(x.strip() for x in fs_black.splitlines() if x.strip())
         merged_black = local_black if os.path.exists(BLACKLIST_MIGRATION_MARKER) else local_black.union(remote_black)
-        protected = get_all_protected_groups()
-        merged_black = {g for g in merged_black if g.lower() not in protected}
+        merged_black = {g for g in merged_black if not is_group_protected(g)}
         with open(BLACKLIST_FILE, 'w', encoding='utf-8') as f:
             f.write('\n'.join(merged_black) + '\n')
         print("📥 Kara liste buluttan indirildi, korumalılar filtrelendi ve birleştirildi.")
@@ -2547,8 +2559,7 @@ async def main():
                     local_black = get_list(BLACKLIST_FILE)
                     remote_black = set(x.strip() for x in fs_black_new.splitlines() if x.strip())
                     merged_black = local_black if os.path.exists(BLACKLIST_MIGRATION_MARKER) else local_black.union(remote_black)
-                    protected = get_all_protected_groups()
-                    merged_black = {g for g in merged_black if g.lower() not in protected}
+                    merged_black = {g for g in merged_black if not is_group_protected(g)}
                     with open(BLACKLIST_FILE, 'w', encoding='utf-8') as f:
                         f.write('\n'.join(merged_black) + '\n')
                 if fs_auto_new:
