@@ -64,6 +64,15 @@ class AutomationPolicyTests(unittest.TestCase):
         self.assertTrue(automation.is_on_cooldown('Nightsatis', 'KeyVadiOnline'))
         self.assertFalse(automation.is_on_cooldown('Nightsatis', 'LisansArenaOnline'))
 
+    def test_target_dedupe_prefers_chat_id(self):
+        entity = SimpleNamespace(id=12345, username='example_group')
+        self.assertEqual(automation.target_dedupe_key('example_group', entity), '12345')
+        self.assertEqual(automation.target_dedupe_key('-10012345', entity), '12345')
+        self.assertNotEqual(
+            automation.target_dedupe_key('example_group', entity),
+            automation.target_dedupe_key('example_group', None),
+        )
+
     def test_send_lock_blocks_duplicate_until_released(self):
         self.assertTrue(automation.claim_send_lock('example_group', 'KeyVadiOnline', ttl_seconds=60))
         self.assertFalse(automation.claim_send_lock('example_group', 'KeyVadiOnline', ttl_seconds=60))

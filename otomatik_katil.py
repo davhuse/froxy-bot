@@ -328,6 +328,11 @@ def cooldown_key(grup_name):
     key = normalize_group_key(grup_name)
     return normalize_group_key(PROTECTED_GROUP_ALIASES.get(key, key))
 
+
+def target_dedupe_key(group_name, entity=None):
+    chat_id = getattr(entity, 'id', None) if entity is not None else None
+    return str(chat_id) if chat_id is not None else normalize_group_key(group_name)
+
 def _load_json_file(path, default):
     try:
         if os.path.exists(path):
@@ -2131,6 +2136,7 @@ async def main():
             
             # Önbellekte olan + kara listede olmayan hedef gruplar
             blast_targets = []
+            seen_target_chat_ids = set()
             debug_blacklisted = 0
             debug_not_cached = 0
             small_groups_skipped = 0
@@ -2143,6 +2149,10 @@ async def main():
                     if getattr(entity, 'broadcast', False):
                         continue
                     member_count = getattr(entity, 'participants_count', None)
+                    dedupe_key = target_dedupe_key(username_lower, entity)
+                    if dedupe_key in seen_target_chat_ids:
+                        continue
+                    seen_target_chat_ids.add(dedupe_key)
                     blast_targets.append(username_lower)
                 else:
                     debug_not_cached += 1
