@@ -142,6 +142,11 @@ TICARET_FORUM_FALLBACKS = {
         "One cikanlar: Canva | Office 365 | Windows 11 | YouTube Premium | Netflix 4K | Gemini Pro\n\n"
         "Siparis ve guncel fiyatlar: @LisansArenaBot"
     ),
+    'froxy': (
+        "FROXY AI | Telegram otomatik reklam sistemi\n"
+        "Guvenli altyapi, bot kurulumu ve 7/24 destek.\n\n"
+        "Detay ve fiyat icin: @FroxyDestekBOT"
+    ),
 }
 
 
@@ -162,8 +167,22 @@ def is_ticaret_forum_group(grup_name, entity=None):
     return all(word in title for word in TICARET_FORUM_TITLE_WORDS)
 
 
-def ticaret_forum_message(is_keyvadi, is_lisansarena):
-    brand = 'lisansarena' if is_lisansarena else 'keyvadi'
+def account_brand(client_name):
+    name = (client_name or '').lower()
+    if 'lisans' in name or name in {'hesap #3', 'hesap #5'}:
+        return 'lisansarena'
+    if 'froxy' in name or name in {'hesap #1', 'yerel hesap'}:
+        return 'froxy'
+    return 'keyvadi'
+
+
+def account_flags(client_name):
+    brand = account_brand(client_name)
+    return brand == 'keyvadi', brand == 'lisansarena', brand == 'froxy'
+
+
+def ticaret_forum_message(is_keyvadi, is_lisansarena, is_froxy=False):
+    brand = 'froxy' if is_froxy else ('lisansarena' if is_lisansarena else 'keyvadi')
     filename = f'message_ticaret_{brand}_short.txt'
     try:
         with open(filename, 'r', encoding='utf-8') as template_file:
@@ -259,7 +278,12 @@ pending_invites = set() # Yeni: Katılım isteği gönderilen grupları takip et
 dm_count_today = 0
 dm_last_reset = ""
 MAX_DM_PER_DAY = 20
-ACTIVE_ACCOUNT_USERNAMES = {'keyvadionline', 'lisansarenaonline'}
+ACTIVE_ACCOUNT_USERNAMES = {'keyvadionline', 'lisansarenaonline', 'froxy_ai'}
+ACCOUNT_STABLE_NAMES = {
+    'keyvadionline': 'KeyVadiOnline',
+    'lisansarenaonline': 'LisansArenaOnline',
+    'froxy_ai': 'FroxyOnline',
+}
 
 # --- Auto-DM: Anahtar kelimeler ---
 DM_TRIGGER_KEYWORDS = [
@@ -1676,8 +1700,7 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         if not msg_text:
             return
 
-        is_lisansarena = "3" in client_name or "5" in client_name or "lisans" in client_name.lower()
-        is_keyvadi = not is_lisansarena
+        is_keyvadi, is_lisansarena, is_froxy = account_flags(client_name)
         
         products = []
         if is_lisansarena:
@@ -1740,7 +1763,7 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                 matched_desc = ", ".join(p['title'] for p in matched_products)
         else:
             # Yapay Zeka (AI) Yanıtlayıcı Devreye Girsin (OpenRouter / Pollinations)
-            brand_name = "LisansArena" if is_lisansarena else "KeyVadi"
+            brand_name = "Froxy" if is_froxy else ("LisansArena" if is_lisansarena else "KeyVadi")
             if not has_sales_intent(event.raw_text):
                 print(f"[{client_name}] DM satış niyeti içermiyor, AI yanıtı atlandı.")
                 return
@@ -1790,7 +1813,7 @@ async def main():
         try:
             with open("bot_config.json", "r", encoding="utf-8-sig") as f:
                 cfg = json.load(f)
-                string_session_key = cfg.get("ad_string_session", "")
+                string_session_key = os.environ.get("AD_STRING_SESSION_FROXY", "").strip() or cfg.get("ad_string_session", "")
                 string_session_key_2 = cfg.get("ad_string_session2_final", cfg.get("ad_string_session2_new", cfg.get("ad_string_session2", cfg.get("ad_string_session_2", ""))))
                 string_session_key_3 = cfg.get("ad_string_session3_final", cfg.get("ad_string_session3_new", cfg.get("ad_string_session3", cfg.get("ad_string_session_3", ""))))
                 ad_sleep_min = cfg.get("ad_sleep_min", 600)
@@ -1877,7 +1900,7 @@ async def main():
                 print(f"⚠️ @{username or 'bilinmeyen'} aktif hesap allowlist'inde değil; session bağlantısı kapatılıyor.")
                 await active_client.disconnect()
                 continue
-            stable_name = 'KeyVadiOnline' if username == 'keyvadionline' else 'LisansArenaOnline'
+            stable_name = ACCOUNT_STABLE_NAMES.get(username, username)
             allowed_clients.append((active_client, stable_name, {'id': me.id, 'username': username}))
         except Exception as e:
             print(f"⚠️ Aktif hesap doğrulanamadı, bağlantı kapatılıyor: {e}")
@@ -2163,8 +2186,7 @@ async def main():
                     print(f"[{client_name}] 📤 TR saati {tr_time.strftime('%H:%M')} — normal saat, gönderim devam ediyor.")
                 
                 # Rotation updates: pick from variation templates if they exist
-                is_lisans = "3" in client_name or "5" in client_name or "lisans" in client_name.lower()
-                is_keyv = not is_lisans
+                is_keyv, is_lisans, is_froxy = account_flags(client_name)
                 
                 if is_lisans:
                     variations = LISANSARENA_MESSAGES
@@ -2217,13 +2239,12 @@ async def main():
                         else:
                             base_msg = "Merhaba! Detaylar için @FroxyDestekBOT"
                         
-                        is_lisansarena = "3" in client_name or "5" in client_name or "lisans" in client_name.lower()
-                        is_keyvadi = not is_lisansarena
+                        is_keyvadi, is_lisansarena, is_froxy = account_flags(client_name)
 
                         msg = base_msg
                         is_ticaret_forum = is_ticaret_forum_group(grup_name, entity)
                         if is_ticaret_forum:
-                            msg = ticaret_forum_message(is_keyvadi, is_lisansarena)
+                            msg = ticaret_forum_message(is_keyvadi, is_lisansarena, is_froxy)
                         elif grup_name.lower() == "kuponceking":
                             msg = msg.replace("bot", "sistem").replace("Bot", "Sistem") \
                                      .replace("🤖", "").strip() + "\n"
@@ -2236,7 +2257,7 @@ async def main():
                         if is_ticaret_forum:
                             # Spintax sonrasinda da sert sinir uygula; bu gruba asla uzun
                             # normal-sablon veya ek kampanya blogu dusmez.
-                            msg = ticaret_forum_message(is_keyvadi, is_lisansarena)
+                            msg = ticaret_forum_message(is_keyvadi, is_lisansarena, is_froxy)
                         
                         # Görsel/Banner gönderimi (Grup yetki kontrolleri ve hata toleransı eklendi)
                         if is_keyvadi:

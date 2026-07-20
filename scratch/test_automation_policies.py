@@ -73,7 +73,10 @@ class AutomationPolicyTests(unittest.TestCase):
 
     def test_only_requested_accounts_are_allowed(self):
         self.assertEqual(automation.ACTIVE_ACCOUNT_USERNAMES,
-                         {'keyvadionline', 'lisansarenaonline'})
+                         {'keyvadionline', 'lisansarenaonline', 'froxy_ai'})
+        self.assertEqual(automation.account_brand('FroxyOnline'), 'froxy')
+        self.assertEqual(automation.account_brand('LisansArenaOnline'), 'lisansarena')
+        self.assertEqual(automation.account_brand('KeyVadiOnline'), 'keyvadi')
 
     def test_protected_group_alias_blocks_numeric_blacklist(self):
         self.assertTrue(automation.is_group_protected('Nightsatis'))
@@ -92,6 +95,9 @@ class AutomationPolicyTests(unittest.TestCase):
             automation.process_marketing_features(message, True, False, is_short=True),
             message.strip(),
         )
+        froxy_message = automation.ticaret_forum_message(False, False, True)
+        self.assertLessEqual(len(froxy_message), automation.TICARET_FORUM_MAX_CHARS)
+        self.assertIn('@FroxyDestekBOT', froxy_message)
 
 
 if __name__ == '__main__':
