@@ -595,6 +595,22 @@ def load_products_from_file_or_scrape():
             except Exception as e:
                 logger.error(f"Error saving scraped products to file: {e}")
     
+    # Merge the authoritative local Shopier catalog so products missing from
+    # the scraped cache are still searchable and return their purchase link.
+    catalog_path = "keyvadi_shopier_links.json"
+    if os.path.exists(catalog_path):
+        try:
+            with open(catalog_path, "r", encoding="utf-8") as f:
+                catalog_products = json.load(f)
+            cached_ids = {p.get("id") for p in products}
+            for catalog_product in catalog_products:
+                if catalog_product.get("id") not in cached_ids:
+                    products.append(catalog_product)
+                    cached_ids.add(catalog_product.get("id"))
+            logger.info(f"Merged {len(catalog_products)} products from {catalog_path}.")
+        except Exception as e:
+            logger.error(f"Error reading authoritative Shopier catalog: {e}")
+
     # Merge injected products (hidden/delisted but still active)
     existing_ids = {p["id"] for p in products}
     for ip in INJECTED_PRODUCTS:
