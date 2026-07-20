@@ -37,6 +37,10 @@ def start_bot(script, logfile):
     return p.pid
 
 def main():
+    if os.environ.get("RUN_LOCAL_TELEGRAM_BOTS") != "1":
+        print("Local Telegram watchdog disabled; Render is the only runtime.")
+        return
+
     print("====================================================")
     print("     HABİL REKLAM & SATIŞ BOTLARI WATCHDOG SERVİSİ   ")
     print("====================================================\n")
