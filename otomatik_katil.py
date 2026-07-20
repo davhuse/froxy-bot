@@ -60,6 +60,7 @@ gruplar = [
     "reklamvereferanss",
     "kuponvekodsatisgrubu",
     "indirimkodusatis",
+    "mukyemek",
 ]
 
 def get_all_protected_groups():
