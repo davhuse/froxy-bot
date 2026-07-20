@@ -151,6 +151,21 @@ ALL_PRODUCTS_FLAT = []
 # Smart Product Matching - Müşteri serbest metin yazınca ürün eşleştir
 # ═══════════════════════════════════════════════════════════════
 
+SALES_INTENT_KEYWORDS = {
+    "fiyat", "ücret", "tl", "satın", "almak", "alacağım", "sipariş",
+    "ürün", "stok", "link", "shopier", "ödeme", "ödemek", "kampanya",
+    "indirim", "premium", "lisans", "hesap", "abonelik", "paket", "üyelik",
+    "canva", "adobe", "netflix", "youtube", "spotify", "capcut", "chatgpt",
+    "var mı", "mevcut mu", "nasıl alırım", "satın al",
+}
+
+def has_sales_intent(text):
+    normalized = (text or "").strip().lower()
+    return bool(normalized) and any(
+        re.search(rf"(?<!\w){re.escape(keyword)}(?!\w)", normalized)
+        for keyword in SALES_INTENT_KEYWORDS
+    )
+
 def _get_words(text):
     """Tokenize text into lowercase words."""
     return re.findall(r'[a-zA-Z0-9çğıöşüÇĞİÖŞÜ]+', text.lower())
@@ -1207,6 +1222,9 @@ async def message_handler(event):
                     pass
             lang = user_lang_helper.get_user_lang(user_id) or "tr"
             t = TEXTS[lang]
+            if not has_sales_intent(event.text):
+                logger.info("Ignoring non-sales message without AI fallback: %r", event.text)
+                return
             ai_reply = get_ai_response(event.text, "KeyVadi", products)
             if ai_reply:
                 buttons = [
