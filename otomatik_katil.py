@@ -2027,11 +2027,11 @@ async def main():
 
                         msg = base_msg
                         if grup_name.lower() == "ticaretforumofficial":
-                             short_file = "message_ticaret_froxy_short.txt"
-                             if is_keyvadi:
-                                 short_file = "message_ticaret_keyvadi_short.txt"
-                             elif is_lisansarena:
-                                 short_file = "message_ticaret_lisansarena_short.txt"
+                            short_file = "message_ticaret_froxy_short.txt"
+                            if is_keyvadi:
+                                short_file = "message_ticaret_keyvadi_short.txt"
+                            elif is_lisansarena:
+                                short_file = "message_ticaret_lisansarena_short.txt"
                             try:
                                 with open(short_file, 'r', encoding='utf-8') as fm:
                                     msg = fm.read()
