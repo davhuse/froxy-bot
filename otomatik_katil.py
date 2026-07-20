@@ -1085,6 +1085,39 @@ async def presence_watchdog(client):
             print(f"[Presence Watchdog] Habil status check error: {e}")
         await asyncio.sleep(60)
 
+
+_RECONNECT_LOCKS = {}
+
+async def ensure_telegram_connection(client, client_name, force=False):
+    """Keep a Telegram client usable after transient network/DC disconnects."""
+    if not force and client.is_connected():
+        return True
+
+    lock = _RECONNECT_LOCKS.setdefault(client_name, asyncio.Lock())
+    async with lock:
+        if not force and client.is_connected():
+            return True
+        for attempt in range(1, 4):
+            try:
+                if force and client.is_connected():
+                    await client.disconnect()
+                await client.connect()
+                if client.is_connected() and await client.is_user_authorized():
+                    print(f"[{client_name}] Telegram bağlantısı yenilendi (deneme {attempt}).")
+                    return True
+            except Exception as exc:
+                print(f"[{client_name}] Telegram reconnect denemesi {attempt}/3 başarısız: {type(exc).__name__}")
+            await asyncio.sleep(min(5 * attempt, 15))
+    return False
+
+async def connection_watchdog(client, client_name):
+    while True:
+        try:
+            await ensure_telegram_connection(client, client_name)
+        except Exception as exc:
+            print(f"[{client_name}] bağlantı watchdog hatası: {type(exc).__name__}")
+        await asyncio.sleep(30)
+
 def match_product_from_text(msg_text, all_products):
     msg_clean = msg_text.lower().strip()
     
@@ -1582,7 +1615,7 @@ async def main():
         print("🔑 1. Hesap: StringSession kullanılarak bağlanılıyor...")
         try:
             from telethon.sessions import StringSession
-            client1 = TelegramClient(StringSession(string_session_key), api_id, api_hash)
+            client1 = TelegramClient(StringSession(string_session_key), api_id, api_hash, timeout=20, connection_retries=-1, auto_reconnect=True)
             await client1.connect()
             if await client1.is_user_authorized():
                 me = await client1.get_me()
@@ -1599,7 +1632,7 @@ async def main():
         print("🔑 2. Hesap: StringSession kullanılarak bağlanılıyor...")
         try:
             from telethon.sessions import StringSession
-            client2 = TelegramClient(StringSession(string_session_key_2), api_id, api_hash)
+            client2 = TelegramClient(StringSession(string_session_key_2), api_id, api_hash, timeout=20, connection_retries=-1, auto_reconnect=True)
             await client2.connect()
             if await client2.is_user_authorized():
                 me = await client2.get_me()
@@ -1615,7 +1648,7 @@ async def main():
         print("🔑 3. Hesap (LisansArena): StringSession kullanılarak bağlanılıyor...")
         try:
             from telethon.sessions import StringSession
-            client3 = TelegramClient(StringSession(string_session_key_3), api_id, api_hash)
+            client3 = TelegramClient(StringSession(string_session_key_3), api_id, api_hash, timeout=20, connection_retries=-1, auto_reconnect=True)
             await client3.connect()
             if await client3.is_user_authorized():
                 me = await client3.get_me()
@@ -1630,7 +1663,7 @@ async def main():
     if not string_session_key and not string_session_key_2 and not string_session_key_3:
         print("📂 Yerel oturum dosyası kullanılarak bağlanılıyor...")
         try:
-            client1 = TelegramClient(SESSION_NAME, api_id, api_hash)
+            client1 = TelegramClient(SESSION_NAME, api_id, api_hash, timeout=20, connection_retries=-1, auto_reconnect=True)
             await client1.connect()
             if await client1.is_user_authorized():
                 me = await client1.get_me()
@@ -1964,6 +1997,10 @@ async def main():
                 async def blast_one(grup_name):
                     """Tek bir gruba rotasyonlu mesaj gönder"""
                     nonlocal sent_count, fail_count
+                    if not await ensure_telegram_connection(client, client_name):
+                        print(f"[{client_name}] Telegram bağlantısı yok, @{grup_name} bu turda atlanıyor.")
+                        fail_count += 1
+                        return
                     entity = joined_dialogs.get(grup_name.lower())
                     if not entity:
                         return
@@ -2110,6 +2147,8 @@ async def main():
                         err_type = type(e).__name__
                         print(f"[{client_name}] ⚠️ @{grup_name} → {err_type} (atlanıyor)")
                         fail_count += 1
+                        if isinstance(e, (ConnectionError, TimeoutError)) or 'disconnected' in str(e).lower() or 'connection' in str(e).lower():
+                            await ensure_telegram_connection(client, client_name, force=True)
                         record_group_failure(grup_name, client_name, err_type, 300)
 
                 # Gruplara sırayla ve aralarında 20-45 saniye rastgele bekleme (daha doğal)
@@ -2226,7 +2265,10 @@ async def main():
             
             grup_sayisi = len(blast_targets) if blast_targets else 0
             # Gece (02:00 - 07:59) saat başı (3600 sn), diğer saatlerde 30 dakikada bir (1800 sn)
-            if 2 <= hour <= 7:
+            if sent_count == 0 and fail_count > 0:
+                bekleme = 120
+                print(f"\n[{client_name}] Bağlantı retry: bu turda başarılı gönderim yok, 2 dakika sonra tekrar denenecek.")
+            elif 2 <= hour <= 7:
                 bekleme = 3600
                 print(f"\n[{client_name}] 🌙 Gece modu aktif (TR {tr_time.strftime('%H:%M')}) → Sonraki blast 1 saat sonra")
             else:
@@ -2416,6 +2458,7 @@ async def main():
         register_auto_reply_handler(client, name, our_user_ids)
         register_telegram_code_forwarder(client, name)
         tasks.append(run_worker_supervisor(client, name, j_dialogs))
+        tasks.append(connection_watchdog(client, name))
     
     # Each active account discovers groups independently. Approval remains
     # global, but joining and delivery are tracked per account.
