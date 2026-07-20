@@ -1670,12 +1670,6 @@ async def main():
                         our_user_ids.add(bot_id)
                     except:
                         pass
-            admin_id = cfg.get("admin_id")
-            if admin_id:
-                our_user_ids.add(int(admin_id))
-            froxy_admin_id = cfg.get("froxy_admin_id")
-            if froxy_admin_id:
-                our_user_ids.add(int(froxy_admin_id))
             print(f"🔒 Sistem Hesap, Bot ve Admin Kimlikleri Kaydedildi: {list(our_user_ids)}")
         except Exception as e:
             print(f"⚠️ Bot/Admin ID'leri ayıklanırken hata: {e}")
