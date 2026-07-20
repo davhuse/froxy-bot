@@ -61,53 +61,53 @@ def update_config_state(key, value):
         print(f"Error updating config state: {e}")
 
 # Process tracking helpers using psutil
-def get_process_by_script(script_name):
-    """Finds a running python process that executes script_name by scanning all processes."""
-    import psutil
-    # Try using PID file first for speed
-    pid_file = f"{script_name}.pid"
-    if os.path.exists(pid_file):
-        try:
-            with open(pid_file, "r") as f:
-                pid = int(f.read().strip())
-            if psutil.pid_exists(pid):
-                proc = psutil.Process(pid)
-                cmd = proc.cmdline() or []
-                if any(script_name in arg for arg in cmd):
-                    return proc
-        except Exception:
-            pass
-    # Fallback to scanning all processes if PID file is not present or invalid
+def get_processes_by_script(script_name):
+    """Return every Python process running a script, including stale duplicates."""
+    found = {}
     try:
         for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
             try:
                 cmd = proc.info.get('cmdline') or []
-                if any(script_name in arg for arg in cmd):
-                    if any('python' in arg.lower() for arg in cmd) or proc.info.get('name') in ['python', 'python.exe']:
-                        return proc
+                if any(script_name in arg for arg in cmd) and (
+                    any('python' in arg.lower() for arg in cmd)
+                    or proc.info.get('name') in ['python', 'python.exe']
+                ):
+                    found[proc.info['pid']] = proc
             except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
                 pass
     except Exception:
         pass
-    return None
+    return list(found.values())
+
+def get_process_by_script(script_name):
+    """Return one process and clean up any extra copies of the same bot."""
+    processes = get_processes_by_script(script_name)
+    if len(processes) > 1:
+        print(f"[Watchdog] {script_name} için {len(processes)} kopya bulundu; fazlalıklar kapatılıyor.")
+        for proc in processes[1:]:
+            try:
+                proc.terminate()
+            except Exception:
+                pass
+    return processes[0] if processes else None
 
 def kill_process_by_script(script_name):
     """Kills any running python process that executes script_name using PID file."""
-    proc = get_process_by_script(script_name)
-    if proc:
+    processes = get_processes_by_script(script_name)
+    killed = False
+    for proc in processes:
         try:
-            print(f"Killing process {proc.pid} running {script_name} via PID file")
+            print(f"Killing process {proc.pid} running {script_name}")
             for child in proc.children(recursive=True):
                 try: child.terminate()
                 except: pass
             proc.terminate()
             try: proc.wait(timeout=3)
-            except psutil.TimeoutExpired:
-                proc.kill()
-            return True
+            except psutil.TimeoutExpired: proc.kill()
+            killed = True
         except Exception:
             pass
-    return False
+    return killed
 
 # WATCHDOG SYSTEM: Keeps both bots running 24/7 unconditionally
 def bot_watchdog():
