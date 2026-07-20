@@ -52,6 +52,22 @@ def set_document(doc_id, fields_dict):
         print(f"Firestore save error for doc {doc_id}: {e}")
         return False
 
+def delete_document(doc_id):
+    url = f"{BASE_URL}/{doc_id}?key={API_KEY}"
+    ctx = ssl._create_unverified_context()
+    try:
+        req = urllib.request.Request(url, method="DELETE")
+        with urllib.request.urlopen(req, context=ctx, timeout=10) as r:
+            return r.status in [200, 204]
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            return True
+        print(f"Firestore delete error for doc {doc_id}: HTTP {e.code}")
+        return False
+    except Exception as e:
+        print(f"Firestore delete error for doc {doc_id}: {type(e).__name__}")
+        return False
+
 def claim_document(doc_id, fields_dict=None):
     """Atomically create a document; False means another worker already claimed it."""
     url = f"{COMMIT_URL}?key={API_KEY}"

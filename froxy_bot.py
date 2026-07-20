@@ -6,6 +6,7 @@ import urllib.request
 import ssl
 import html
 import asyncio
+import time
 from telethon import TelegramClient, events, Button
 from telethon.sessions import StringSession
 import user_lang_helper
@@ -21,17 +22,55 @@ async def async_set_document(doc_id, fields_dict):
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(None, firestore_helper.set_document, doc_id, fields_dict)
 
-async def async_claim_event(event, scope):
+async def async_delete_document(doc_id):
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, firestore_helper.delete_document, doc_id)
+
+def get_event_claim_doc_id(event, scope):
     message_id = getattr(event.message, 'id', None)
     if not message_id or event.chat_id is None:
+        return None
+    return f"dm_event_{scope}_{event.chat_id}_{message_id}"
+
+async def async_claim_event(event, scope):
+    doc_id = get_event_claim_doc_id(event, scope)
+    if not doc_id:
         return True
-    doc_id = f"dm_event_{scope}_{event.chat_id}_{message_id}"
-    result = await async_run_claim(doc_id, {"scope": scope, "chat_id": event.chat_id, "message_id": message_id})
+    result = await async_run_claim(doc_id, {"scope": scope, "chat_id": event.chat_id, "message_id": getattr(event.message, 'id', None)})
     return result is not False
+
+async def async_release_event_claim(event, scope):
+    doc_id = get_event_claim_doc_id(event, scope)
+    if doc_id:
+        await async_delete_document(doc_id)
 
 async def async_run_claim(doc_id, fields):
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(None, firestore_helper.claim_document, doc_id, fields)
+
+PRODUCT_REPLY_COOLDOWN_SECONDS = 90
+PRODUCT_REPLY_COOLDOWNS = {}
+
+def _product_reply_key(user_id, products=None, fallback_key=None):
+    if products:
+        parts = []
+        for product in products[:4]:
+            parts.append(str(product.get('id') or product.get('url') or product.get('title') or '').lower())
+        product_key = '|'.join(parts)
+    else:
+        product_key = (fallback_key or 'fallback').strip().lower()[:100]
+    return f"{user_id}:{product_key}"
+
+def is_product_reply_cooling_down(user_id, products=None, fallback_key=None):
+    now = time.monotonic()
+    for key, expires in list(PRODUCT_REPLY_COOLDOWNS.items()):
+        if expires <= now:
+            PRODUCT_REPLY_COOLDOWNS.pop(key, None)
+    key = _product_reply_key(user_id, products, fallback_key)
+    return PRODUCT_REPLY_COOLDOWNS.get(key, 0) > now
+
+def mark_product_reply_sent(user_id, products=None, fallback_key=None):
+    PRODUCT_REPLY_COOLDOWNS[_product_reply_key(user_id, products, fallback_key)] = time.monotonic() + PRODUCT_REPLY_COOLDOWN_SECONDS
 
 # Logging configuration
 logging.basicConfig(
@@ -1015,15 +1054,16 @@ PROCESSED_MESSAGE_EVENTS = set()
 async def message_handler(event):
     if getattr(event, 'out', False):
         return
+    if event.text and event.text.startswith('/'):
+        return
+    claim_scope = "keyvadi_sales"
     event_key = (event.chat_id, getattr(event.message, 'id', None))
     if event_key in PROCESSED_MESSAGE_EVENTS:
         return
     PROCESSED_MESSAGE_EVENTS.add(event_key)
     if len(PROCESSED_MESSAGE_EVENTS) > 10000:
         PROCESSED_MESSAGE_EVENTS.clear()
-    if event.text and event.text.startswith('/'):
-        return
-    if not await async_claim_event(event, "keyvadi_sales"):
+    if not await async_claim_event(event, claim_scope):
         return
     user_id = event.sender_id
     logger.info(f"New message from user {user_id}: '{event.text}'")
@@ -1206,8 +1246,14 @@ async def message_handler(event):
     # ── Smart Product Matching for free-text messages ──
     # If user is NOT in any special state and NOT admin, try to match a product
     if event.text and not event.text.startswith('/'):
+        if not has_sales_intent(event.text):
+            logger.info("Ignoring non-sales message: %r", event.text)
+            return
         matched_products = match_multiple_products_from_text(event.text)
         if matched_products:
+            if is_product_reply_cooling_down(user_id, matched_products):
+                logger.info("Suppressing duplicate product reply for user %s: %r", user_id, event.text)
+                return
             lang = user_lang_helper.get_user_lang(user_id) or "tr"
             t = TEXTS[lang]
             
@@ -1240,7 +1286,13 @@ async def message_handler(event):
                 buttons.append([Button.inline(t["support_btn"], b"menu_support")])
                 buttons.append([Button.inline("📋 Ana Menü / Main Menu", b"menu_main")])
                 
-            await event.respond(product_msg, buttons=buttons)
+            try:
+                await event.respond(product_msg, buttons=buttons)
+            except Exception:
+                PROCESSED_MESSAGE_EVENTS.discard(event_key)
+                await async_release_event_claim(event, claim_scope)
+                raise
+            mark_product_reply_sent(user_id, matched_products)
             logger.info(f"Smart match for user {user_id}: '{event.text}' -> matched products successfully.")
             return
         else:
@@ -1256,8 +1308,9 @@ async def message_handler(event):
                     pass
             lang = user_lang_helper.get_user_lang(user_id) or "tr"
             t = TEXTS[lang]
-            if not has_sales_intent(event.text):
-                logger.info("Ignoring non-sales message without AI fallback: %r", event.text)
+            fallback_key = re.sub(r'\s+', ' ', event.text.strip().lower())
+            if is_product_reply_cooling_down(user_id, fallback_key=fallback_key):
+                logger.info("Suppressing duplicate AI fallback for user %s: %r", user_id, event.text)
                 return
             ai_reply = get_ai_response(event.text, "KeyVadi", products)
             if ai_reply:
@@ -1265,7 +1318,13 @@ async def message_handler(event):
                     [Button.inline(t["support_btn"], b"menu_support")],
                     [Button.inline("📋 Ana Menü / Main Menu", b"menu_main")]
                 ]
-                await event.respond(ai_reply, buttons=buttons)
+                try:
+                    await event.respond(ai_reply, buttons=buttons)
+                except Exception:
+                    PROCESSED_MESSAGE_EVENTS.discard(event_key)
+                    await async_release_event_claim(event, claim_scope)
+                    raise
+                mark_product_reply_sent(user_id, fallback_key=fallback_key)
                 logger.info(f"AI response for user {user_id}: '{event.text}'")
                 return
 
@@ -1279,6 +1338,7 @@ async def message_handler(event):
             reply_msg = await event.get_reply_message()
             if reply_msg and reply_msg.text:
                 # Ensure the replied-to message was sent by this bot itself to prevent cross-talk
+                match = None
                 if reply_msg.sender_id == BOT_USER_ID:
                     match = re.search(r"Kullanıcı ID:\*\* `(\d+)`", reply_msg.text)
                 if not match:

@@ -110,8 +110,60 @@ def parse_spintax(text):
         return random.choice(options)
     return re.sub(r'\{([^\{\}]*)\}', replace, text)
 
+TICARET_FORUM_USERNAMES = {'ticaretforumofficial'}
+TICARET_FORUM_TITLE_WORDS = ('ticaret', 'forum')
+TICARET_FORUM_MAX_CHARS = 700
+TICARET_FORUM_FALLBACKS = {
+    'keyvadi': (
+        "\u2b50 KEYVADI DIJITAL URUNLER\n"
+        "Canva, Netflix, YouTube, Adobe, yapay zeka ve oyun urunlerinde hizli teslimat.\n\n"
+        "One cikanlar: Canva Pro 1 Yil | YouTube Premium | Netflix 4K | Gemini Pro | Steam Key\n\n"
+        "Siparis ve guncel fiyatlar: @KeyVadiSatisBot"
+    ),
+    'lisansarena': (
+        "\u2728 LISANSARENA DIJITAL HIZMETLER\n"
+        "Premium hesap, lisans ve dijital urunlerde hizli teslimat.\n\n"
+        "One cikanlar: Canva | Office 365 | Windows 11 | YouTube Premium | Netflix 4K | Gemini Pro\n\n"
+        "Siparis ve guncel fiyatlar: @LisansArenaBot"
+    ),
+}
+
+
+def _normalize_group_identifier(value):
+    return str(value or '').strip().lower().lstrip('@')
+
+
+def is_ticaret_forum_group(grup_name, entity=None):
+    """Ticaret Forum'u username degisse bile basliktan guvenle ayirt et."""
+    identifiers = [_normalize_group_identifier(grup_name)]
+    title = ''
+    if entity is not None:
+        identifiers.append(_normalize_group_identifier(getattr(entity, 'username', '')))
+        title = _normalize_group_identifier(getattr(entity, 'title', ''))
+
+    if any(item in TICARET_FORUM_USERNAMES for item in identifiers):
+        return True
+    return all(word in title for word in TICARET_FORUM_TITLE_WORDS)
+
+
+def ticaret_forum_message(is_keyvadi, is_lisansarena):
+    brand = 'lisansarena' if is_lisansarena else 'keyvadi'
+    filename = f'message_ticaret_{brand}_short.txt'
+    try:
+        with open(filename, 'r', encoding='utf-8') as template_file:
+            message = template_file.read().strip()
+    except OSError:
+        message = TICARET_FORUM_FALLBACKS[brand]
+
+    # Bu grupta tek, sade metin kullanilir; uzun bir dosya yanlislikla
+    # yerlestirilse dahi reklam blogu veya banner ile gonderilmez.
+    return message if 0 < len(message) <= TICARET_FORUM_MAX_CHARS else TICARET_FORUM_FALLBACKS[brand]
+
+
 def process_marketing_features(msg, is_keyvadi, is_lisansarena, is_short=False):
     msg = msg.strip()
+    if is_short:
+        return msg
     
     # Günün Fırsatları (Daily Deals) - Sadece kısa olmayan mesajlara ekle
     if not is_short:
@@ -161,6 +213,7 @@ MSG_HISTORY_FILE = 'msg_history.json'
 COOLDOWN_FILE = 'group_cooldown.json'
 ACCOUNT_RESTRICTIONS_FILE = 'account_restrictions.json'
 GROUP_FAILURES_FILE = 'group_failures.json'
+SEND_LOCK_FILE = 'send_locks.json'
 GROUP_COOLDOWN_HOURS = 1  # Varsayılan: 1 saat ortak cooldown. Config'den ezilebilir.
 if os.path.exists("bot_config.json"):
     try:
@@ -253,39 +306,163 @@ def _save_json_file(path, data):
 def load_account_restrictions():
     return _load_json_file(ACCOUNT_RESTRICTIONS_FILE, {})
 
-def is_account_restricted(client_name):
+VALID_RESTRICTION_SCOPES = {'send', 'join', 'discover', 'account'}
+
+def _parse_utc_datetime(value):
     from datetime import datetime, timezone
-    state = load_account_restrictions().get(client_name, {})
-    until = state.get('until') if isinstance(state, dict) else None
-    if not until:
-        return False
     try:
-        expires = datetime.fromisoformat(until)
+        expires = datetime.fromisoformat(value)
         if expires.tzinfo is None:
             expires = expires.replace(tzinfo=timezone.utc)
-        if datetime.now(timezone.utc) >= expires:
-            restrictions = load_account_restrictions()
-            restrictions.pop(client_name, None)
-            _save_json_file(ACCOUNT_RESTRICTIONS_FILE, restrictions)
-            return False
-        return True
+        return expires
     except Exception:
-        return False
+        return None
 
-def set_account_restriction(client_name, seconds, reason, error_type=None):
+def _infer_restriction_scope(record):
+    scope = (record or {}).get('scope')
+    if scope in VALID_RESTRICTION_SCOPES:
+        return scope
+    reason = f"{(record or {}).get('reason', '')} {(record or {}).get('error_type', '')}".lower()
+    if any(token in reason for token in ('discover', 'scraper', 'search', 'kesfi', 'keşfi', 'keÅŸfi', 'arama')):
+        return 'discover'
+    if any(token in reason for token in ('join', 'katilim', 'katılım', 'katÄ±lÄ±m')):
+        return 'join'
+    return 'send'
+
+def _restriction_items(state):
+    if not isinstance(state, dict):
+        return []
+    scopes = state.get('scopes')
+    items = []
+    if isinstance(scopes, dict):
+        for scope, record in scopes.items():
+            if isinstance(record, dict):
+                normalized = dict(record)
+                normalized['scope'] = normalized.get('scope') or scope
+                items.append((normalized['scope'], normalized))
+    elif state.get('until'):
+        scope = _infer_restriction_scope(state)
+        normalized = dict(state)
+        normalized['scope'] = scope
+        items.append((scope, normalized))
+    return items
+
+def _restriction_applies(record_scope, requested_scope):
+    if record_scope == 'account':
+        return True
+    return record_scope == requested_scope
+
+def _cleanup_account_restrictions(client_name=None):
+    from datetime import datetime, timezone
+    restrictions = load_account_restrictions()
+    changed = False
+    names = [client_name] if client_name else list(restrictions.keys())
+    for name in names:
+        state = restrictions.get(name, {})
+        active_scopes = {}
+        for scope, record in _restriction_items(state):
+            expires = _parse_utc_datetime(record.get('until'))
+            if not expires or datetime.now(timezone.utc) >= expires:
+                changed = True
+                continue
+            scope = scope if scope in VALID_RESTRICTION_SCOPES else _infer_restriction_scope(record)
+            record = dict(record)
+            record['scope'] = scope
+            active_scopes[scope] = record
+        if active_scopes:
+            restrictions[name] = {'scopes': active_scopes}
+            if state != restrictions[name]:
+                changed = True
+        elif name in restrictions:
+            restrictions.pop(name, None)
+            changed = True
+    if changed:
+        _save_json_file(ACCOUNT_RESTRICTIONS_FILE, restrictions)
+    return restrictions
+
+def is_account_restricted(client_name, scope='send'):
+    restrictions = _cleanup_account_restrictions(client_name)
+    state = restrictions.get(client_name, {})
+    for record_scope, _record in _restriction_items(state):
+        if _restriction_applies(record_scope, scope):
+            return True
+    return False
+
+def set_account_restriction(client_name, seconds, reason, error_type=None, scope='send'):
     from datetime import datetime, timedelta, timezone
     seconds = max(1, int(seconds or 1))
-    restrictions = load_account_restrictions()
-    restrictions[client_name] = {
-        'until': (datetime.now(timezone.utc) + timedelta(seconds=seconds)).isoformat(),
+    scope = scope if scope in VALID_RESTRICTION_SCOPES else 'send'
+    restrictions = _cleanup_account_restrictions(client_name)
+    state = restrictions.get(client_name, {})
+    scopes = {}
+    for existing_scope, record in _restriction_items(state):
+        if existing_scope in VALID_RESTRICTION_SCOPES:
+            scopes[existing_scope] = record
+    now = datetime.now(timezone.utc)
+    scopes[scope] = {
+        'until': (now + timedelta(seconds=seconds)).isoformat(),
         'reason': reason,
         'error_type': error_type or reason,
-        'updated_at': datetime.now(timezone.utc).isoformat()
+        'scope': scope,
+        'updated_at': now.isoformat()
     }
+    restrictions[client_name] = {'scopes': scopes}
     _save_json_file(ACCOUNT_RESTRICTIONS_FILE, restrictions)
 
-def account_restriction_status(client_name):
-    return load_account_restrictions().get(client_name, {})
+def account_restriction_status(client_name, scope=None):
+    state = _cleanup_account_restrictions(client_name).get(client_name, {})
+    if not scope:
+        return state
+    for record_scope, record in _restriction_items(state):
+        if _restriction_applies(record_scope, scope):
+            return record
+    return {}
+
+def claim_send_lock(grup_name, client_name, ttl_seconds=600):
+    from datetime import datetime, timedelta, timezone
+    now = datetime.now(timezone.utc)
+    locks = _load_json_file(SEND_LOCK_FILE, {})
+    for key, state in list(locks.items()):
+        expires = _parse_utc_datetime((state or {}).get('until')) if isinstance(state, dict) else None
+        if not expires or now >= expires:
+            locks.pop(key, None)
+    group_key = grup_name.lower()
+    lock_key = f"{client_name}:{group_key}"
+    group_lock_key = f"group:{group_key}"
+    current = locks.get(lock_key, {})
+    current_until = _parse_utc_datetime(current.get('until')) if isinstance(current, dict) else None
+    if current_until and now < current_until:
+        return False
+    group_current = locks.get(group_lock_key, {})
+    group_current_until = _parse_utc_datetime(group_current.get('until')) if isinstance(group_current, dict) else None
+    if group_current_until and now < group_current_until:
+        return False
+    locks[lock_key] = {
+        'until': (now + timedelta(seconds=max(1, int(ttl_seconds)))).isoformat(),
+        'updated_at': now.isoformat()
+    }
+    locks[group_lock_key] = {
+        'until': (now + timedelta(seconds=max(1, int(ttl_seconds)))).isoformat(),
+        'updated_at': now.isoformat(),
+        'client': client_name
+    }
+    _save_json_file(SEND_LOCK_FILE, locks)
+    return True
+
+def release_send_lock(grup_name, client_name):
+    locks = _load_json_file(SEND_LOCK_FILE, {})
+    group_key = grup_name.lower()
+    lock_key = f"{client_name}:{group_key}"
+    group_lock_key = f"group:{group_key}"
+    changed = False
+    if lock_key in locks:
+        locks.pop(lock_key, None)
+        changed = True
+    if group_lock_key in locks:
+        locks.pop(group_lock_key, None)
+        changed = True
+    if changed:
+        _save_json_file(SEND_LOCK_FILE, locks)
 
 def record_group_failure(grup_name, client_name, reason, retry_after=300):
     """Temporary per-account/group retry state; never writes BLACKLIST_FILE."""
@@ -561,9 +738,9 @@ SCRAPE_KEYWORDS = [
 
 async def auto_scrape_groups(client, client_name, joined_usernames=None):
     """Telegram global aramasıyla yeni, aktif ve kaliteli Türkçe satış grupları keşfeder."""
-    if is_account_restricted(client_name):
-        state = account_restriction_status(client_name)
-        print(f"[{client_name}] Auto-Scraper hesap kısıtlaması bitene kadar atlandı: {state.get('until', 'belirsiz')}")
+    if is_account_restricted(client_name, scope='discover'):
+        state = account_restriction_status(client_name, scope='discover')
+        print(f"[{client_name}] Auto-Scraper discovery kısıtı bitene kadar atlandı: {state.get('until', 'belirsiz')}")
         return
 
     print(f"\n🔍 [{client_name}] Gelişmiş Grup Keşfi (Auto-Scraper v2) başlıyor...")
@@ -757,8 +934,8 @@ async def auto_scrape_groups(client, client_name, joined_usernames=None):
             await asyncio.sleep(3)
                 
         except FloodWaitError as e:
-            set_account_restriction(client_name, e.seconds, 'Telegram grup keşfi FloodWait', type(e).__name__)
-            print(f"⏳ [{client_name}] Auto-Scraper FloodWait ({e.seconds}s); hesap duraklatıldı.")
+            set_account_restriction(client_name, e.seconds, 'Telegram discovery FloodWait', type(e).__name__, scope='discover')
+            print(f"⏳ [{client_name}] Auto-Scraper FloodWait ({e.seconds}s); sadece discovery duraklatıldı.")
             break
         except Exception as e:
             print(f"⚠️ [{client_name}] Auto-Scraper hatası ('{keyword}'): {type(e).__name__} - {e}")
@@ -1891,7 +2068,7 @@ async def main():
                                 
                 print(f"✅ Worker {client_name}: {len(joined_dialogs)} diyalog önbelleğe alındı.")
             except FloodWaitError as e:
-                set_account_restriction(client_name, e.seconds, 'Telegram diyalog önbelleği FloodWait', type(e).__name__)
+                set_account_restriction(client_name, e.seconds, 'Telegram diyalog önbelleği FloodWait', type(e).__name__, scope='send')
                 print(f"🚨 Worker {client_name} önbellek aşamasında Flood yedi! Hesap {e.seconds} saniye duraklatıldı.")
             except Exception as e:
                 print(f"⚠️ Worker {client_name} önbellek hatası: {e}")
@@ -1900,8 +2077,8 @@ async def main():
         # BLAST MODE: Tüm gruplara aynı anda mesaj at
         # ═══════════════════════════════════════════════════
         while True:
-            if is_account_restricted(client_name):
-                state = account_restriction_status(client_name)
+            if is_account_restricted(client_name, scope='send'):
+                state = account_restriction_status(client_name, scope='send')
                 print(f"[{client_name}] ⏸️ Hesap kısıtlaması aktif; {state.get('until', 'belirsiz')} tarihine kadar gönderim durdu.")
                 await asyncio.sleep(60)
                 continue
@@ -2011,10 +2188,15 @@ async def main():
                     if not entity:
                         return
                     
+                    lock_claimed = False
                     async with state_lock:
                         if is_on_cooldown(grup_name, client_name):
                             print(f"[{client_name}] ⏳ @{grup_name} cooldown süresinde, atlanıyor...")
                             return
+                        if not claim_send_lock(grup_name, client_name):
+                            print(f"[{client_name}] 🔒 @{grup_name} gönderim kilidinde, bu turda atlanıyor...")
+                            return
+                        lock_claimed = True
 
                     try:
                         # Mesaj rotasyonu: bu grup için farklı mesaj seç
@@ -2032,25 +2214,22 @@ async def main():
                         is_keyvadi = not is_lisansarena
 
                         msg = base_msg
-                        if grup_name.lower() == "ticaretforumofficial":
-                            short_file = "message_ticaret_froxy_short.txt"
-                            if is_keyvadi:
-                                short_file = "message_ticaret_keyvadi_short.txt"
-                            elif is_lisansarena:
-                                short_file = "message_ticaret_lisansarena_short.txt"
-                            try:
-                                with open(short_file, 'r', encoding='utf-8') as fm:
-                                    msg = fm.read()
-                            except:
-                                pass
+                        is_ticaret_forum = is_ticaret_forum_group(grup_name, entity)
+                        if is_ticaret_forum:
+                            msg = ticaret_forum_message(is_keyvadi, is_lisansarena)
                         elif grup_name.lower() == "kuponceking":
                             msg = msg.replace("bot", "sistem").replace("Bot", "Sistem") \
                                      .replace("🤖", "").strip() + "\n"
                         msg = parse_spintax(msg)
                         
                         # Pazarlama özellikleri (İndirim kodları, FOMO, Haftalık kampanya) ekle
-                        is_short = (grup_name.lower() == "ticaretforumofficial")
-                        msg = process_marketing_features(msg, is_keyvadi, is_lisansarena, is_short=is_short)
+                        msg = process_marketing_features(
+                            msg, is_keyvadi, is_lisansarena, is_short=is_ticaret_forum
+                        )
+                        if is_ticaret_forum:
+                            # Spintax sonrasinda da sert sinir uygula; bu gruba asla uzun
+                            # normal-sablon veya ek kampanya blogu dusmez.
+                            msg = ticaret_forum_message(is_keyvadi, is_lisansarena)
                         
                         # Görsel/Banner gönderimi (Grup yetki kontrolleri ve hata toleransı eklendi)
                         if is_keyvadi:
@@ -2078,6 +2257,9 @@ async def main():
                             except Exception as e:
                                 print(f"[{client_name}] ⚠️ @{grup_name} izin kontrol hatası: {e}")
                                 
+                        if is_ticaret_forum:
+                            allows_media = False
+
                         if allows_media and os.path.exists(banner_file):
                             try:
                                 if len(msg) <= 1024:
@@ -2108,13 +2290,13 @@ async def main():
                         async with state_lock:
                             save_to_list(grup_name, PROGRESS_FILE)
                     except FloodWaitError as e:
-                        set_account_restriction(client_name, e.seconds, 'Telegram FloodWait', type(e).__name__)
+                        set_account_restriction(client_name, e.seconds, 'Telegram FloodWait', type(e).__name__, scope='send')
                         record_group_failure(grup_name, client_name, 'FloodWait', e.seconds)
                         print(f"[{client_name}] ⏳ FloodWait {e.seconds}sn; hesap duraklatıldı, grup kara listeye alınmadı.")
                         fail_count += 1
                     except (PeerFloodError, UserRestrictedError) as e:
                         restriction_seconds = 48 * 60 * 60
-                        set_account_restriction(client_name, restriction_seconds, 'Telegram hesap/spam kısıtlaması', type(e).__name__)
+                        set_account_restriction(client_name, restriction_seconds, 'Telegram hesap/spam kısıtlaması', type(e).__name__, scope='send')
                         print(f"[{client_name}] 🚫 Hesap kısıtlaması algılandı ({type(e).__name__}); 48 saat duraklatıldı.")
                         fail_count += 1
                     except UserBannedInChannelError:
@@ -2156,6 +2338,10 @@ async def main():
                         if isinstance(e, (ConnectionError, TimeoutError)) or 'disconnected' in str(e).lower() or 'connection' in str(e).lower():
                             await ensure_telegram_connection(client, client_name, force=True)
                         record_group_failure(grup_name, client_name, err_type, 300)
+                    finally:
+                        if lock_claimed:
+                            async with state_lock:
+                                release_send_lock(grup_name, client_name)
 
                 # Gruplara sırayla ve aralarında 20-45 saniye rastgele bekleme (daha doğal)
                 random.shuffle(blast_targets)  # Grup sırasını karıştır
@@ -2186,6 +2372,10 @@ async def main():
             if not_joined:
                 join_count = 0
                 print(f"\n[{client_name}] 🔍 {len(not_joined)} gruba henüz üye değiliz. Katılma başlıyor...")
+                if is_account_restricted(client_name, scope='join'):
+                    state = account_restriction_status(client_name, scope='join')
+                    print(f"[{client_name}] ⏸️ Join kısıtı aktif; {state.get('until', 'belirsiz')} tarihine kadar yeni gruba katılım atlandı.")
+                    not_joined = []
                 for hedef_grup in not_joined:
                     if join_count >= 5:
                         print(f"[{client_name}] 🔒 Bu turda 5 gruba katılındı (limit), durduruluyor.")
@@ -2225,7 +2415,7 @@ async def main():
                             await asyncio.sleep(random.randint(30, 90))
                             
                     except FloodWaitError as e:
-                        set_account_restriction(client_name, e.seconds, 'Telegram katılım FloodWait', type(e).__name__)
+                        set_account_restriction(client_name, e.seconds, 'Telegram katılım FloodWait', type(e).__name__, scope='join')
                         print(f"[{client_name}] ⚠️ Join flood {e.seconds}sn; hesap duraklatılıyor, grup kara listeye alınmadı.")
                         break
                     except (ChannelPrivateError,):

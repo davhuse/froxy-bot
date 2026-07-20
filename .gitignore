@@ -20,6 +20,7 @@ check_live_shopier.py
 *.pid
 account_restrictions.json
 group_failures.json
+send_locks.json
 blacklist_meta.json
 blacklist_migration_v2.done
 blacklist_legacy_backup_*.txt
