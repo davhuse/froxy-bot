@@ -315,8 +315,14 @@ def index():
 
 @app.route('/api/status', methods=['GET'])
 def status():
-    is_running = get_process_by_script('otomatik_katil.py') is not None
-    return jsonify({"status": "running" if is_running else "stopped"})
+    ad_processes = get_processes_by_script('otomatik_katil.py')
+    return jsonify({
+        "status": "running" if ad_processes else "stopped",
+        "build": os.environ.get("RENDER_GIT_COMMIT", "unknown")[:12],
+        "ad_processes": len(ad_processes),
+        "support_processes": len(get_processes_by_script('froxy_bot.py')),
+        "lisansarena_processes": len(get_processes_by_script('lisansarena_bot.py')),
+    })
 
 @app.route('/api/account-restrictions', methods=['GET'])
 def account_restrictions():
