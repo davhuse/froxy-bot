@@ -2606,6 +2606,9 @@ async def main():
                 print(f"⚠️ [Firestore Sync] Hata: {e}")
 
     async def periodic_scraper(client, client_name):
+        if account_brand(client_name) == 'froxy':
+            print(f"🔍 [{client_name}] Grup keşfi kapalı; Froxy yalnızca mevcut/onaylı hedefleri kullanacak.")
+            return
         print("🔍 [Scraper Task] Periyodik grup tarama görevi başlatıldı (6 saat aralıklarla).")
         while True:
             # 6 saat bekle ama her 15 saniyede bir flag dosyasını kontrol et (acil tetikleyici)
@@ -2644,6 +2647,9 @@ async def main():
             await auto_scrape_groups(client, client_name, joined_usernames)
 
     async def run_startup_scraper(client, client_name):
+        if account_brand(client_name) == 'froxy':
+            print(f"🔍 [{client_name}] Başlangıç grup taraması kapalı; mevcut/onaylı hedefler kullanılacak.")
+            return
         await asyncio.sleep(5)  # Let workers start and cache dialogs first
         print(f"🔍 [{client_name}] Başlangıç grup taraması arka planda başlatılıyor...")
         joined_usernames = set()
