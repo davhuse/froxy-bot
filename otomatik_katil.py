@@ -561,6 +561,11 @@ SCRAPE_KEYWORDS = [
 
 async def auto_scrape_groups(client, client_name, joined_usernames=None):
     """Telegram global aramasıyla yeni, aktif ve kaliteli Türkçe satış grupları keşfeder."""
+    if is_account_restricted(client_name):
+        state = account_restriction_status(client_name)
+        print(f"[{client_name}] Auto-Scraper hesap kısıtlaması bitene kadar atlandı: {state.get('until', 'belirsiz')}")
+        return
+
     print(f"\n🔍 [{client_name}] Gelişmiş Grup Keşfi (Auto-Scraper v2) başlıyor...")
     
     # Yapılandırmayı bot_config.json dosyasından dinamik olarak oku
