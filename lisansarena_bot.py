@@ -11,6 +11,7 @@ from telethon import TelegramClient, events, Button
 from telethon.sessions import StringSession
 import user_lang_helper
 import firestore_helper
+from gemini_helper import get_ai_response
 
 # Async wrappers for firestore_helper to prevent event loop deadlocks/freezes
 async def async_get_document(doc_id):
@@ -93,6 +94,14 @@ bot_username = "LisansArenaBot" # default, updated dynamically on start
 
 # Initialize client
 bot = TelegramClient(StringSession(), API_ID, API_HASH)
+
+@bot.on(events.CallbackQuery())
+async def acknowledge_callback(event):
+    """Acknowledge Telegram callbacks immediately so the first click is not stuck."""
+    try:
+        await event.answer()
+    except Exception:
+        pass
 
 # ═══════════════════════════════════════════════════════════════
 # Product Catalog - Shopier üzerinden satılan ürünler
@@ -492,6 +501,10 @@ async def show_main_menu(event, user_id, is_callback=False):
 
 @bot.on(events.CallbackQuery(data=b'menu_verify_payment'))
 async def verify_payment_callback(event):
+    try:
+        await event.answer()
+    except Exception:
+        pass
     user_id = event.sender_id
     user_states[user_id] = "AWAITING_VERIFY_PAYMENT_INFO"
     
@@ -561,6 +574,10 @@ async def lang_cmd_handler(event):
 
 @bot.on(events.CallbackQuery(pattern=r'lang_(\w+)'))
 async def lang_select_callback(event):
+    try:
+        await event.answer()
+    except Exception:
+        pass
     user_id = event.sender_id
     lang = event.data.decode('utf-8').replace("lang_", "")
     user_lang_helper.set_user_lang(user_id, lang)
@@ -574,6 +591,10 @@ async def lang_select_callback(event):
 
 @bot.on(events.CallbackQuery(data=b'menu_referral'))
 async def menu_referral_handler(event):
+    try:
+        await event.answer()
+    except Exception:
+        pass
     user_id = event.sender_id
     user_data = await async_get_document(f"lisansarena_user_{user_id}") or {"referrals_count": 0}
     count = user_data.get("referrals_count", 0)
@@ -600,10 +621,18 @@ async def menu_referral_handler(event):
 
 @bot.on(events.CallbackQuery(data=b'menu_lang'))
 async def menu_lang_callback(event):
+    try:
+        await event.answer()
+    except Exception:
+        pass
     await show_lang_selection(event, is_callback=True)
 
 @bot.on(events.CallbackQuery(data=b'menu_main'))
 async def main_menu_handler(event):
+    try:
+        await event.answer()
+    except Exception:
+        pass
     user_id = event.sender_id
     await show_main_menu(event, user_id, is_callback=True)
 
@@ -623,6 +652,10 @@ async def guncelle_handler(event):
 # Category handler
 @bot.on(events.CallbackQuery(pattern=r'cat_(\w+)'))
 async def category_handler(event):
+    try:
+        await event.answer()
+    except Exception:
+        pass
     user_id = event.sender_id
     lang = user_lang_helper.get_user_lang(user_id) or "tr"
     t = TEXTS[lang]
@@ -652,6 +685,10 @@ async def category_handler(event):
 # Product detail handler
 @bot.on(events.CallbackQuery(pattern=r'prod_(\w+)'))
 async def product_handler(event):
+    try:
+        await event.answer()
+    except Exception:
+        pass
     user_id = event.sender_id
     lang = user_lang_helper.get_user_lang(user_id) or "tr"
     t = TEXTS[lang]
@@ -695,6 +732,10 @@ async def product_handler(event):
 # Support Menu
 @bot.on(events.CallbackQuery(data=b'menu_support'))
 async def support_menu_handler(event):
+    try:
+        await event.answer()
+    except Exception:
+        pass
     user_id = event.sender_id
     lang = user_lang_helper.get_user_lang(user_id) or "tr"
     t = TEXTS[lang]
@@ -902,6 +943,33 @@ async def message_handler(event):
                 
             await event.respond(product_msg, buttons=buttons)
             return
+        else:
+            # Yapay Zeka Akıllı Satış Asistanı
+            products = []
+            if os.path.exists("lisansarena_shopier_links.json"):
+                try:
+                    with open("lisansarena_shopier_links.json", "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                        for item in data:
+                            pid = item.get("id")
+                            title = item.get("title")
+                            url = item.get("url")
+                            price_val = item.get("priceData", {}).get("price", "0")
+                            price_str = f"{float(price_val):.2f} TL"
+                            products.append({"id": pid, "title": title, "price": price_str, "url": url})
+                except:
+                    pass
+            lang = user_lang_helper.get_user_lang(user_id) or "tr"
+            t = TEXTS[lang]
+            ai_reply = get_ai_response(event.text, "LisansArena", products)
+            if ai_reply:
+                buttons = [
+                    [Button.inline(t["support_btn"], b"menu_support")],
+                    [Button.inline("📋 Ana Menü / Main Menu", b"menu_main")]
+                ]
+                await event.respond(ai_reply, buttons=buttons)
+                logger.info(f"AI response for user {user_id}: '{event.text}'")
+                return
 
     support_chat_id = config.get("support_chat_id", ADMIN_ID)
     if event.sender_id == ADMIN_ID or event.chat_id == support_chat_id:

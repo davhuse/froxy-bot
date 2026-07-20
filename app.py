@@ -17,6 +17,24 @@ app = Flask(__name__,
             template_folder=os.path.join(base_dir, 'templates'),
             static_folder=os.path.join(base_dir, 'static'))
 
+PANEL_ADMIN_TOKEN = os.environ.get('PANEL_ADMIN_TOKEN', '').strip()
+FROXY_ENABLED = False  # Temporarily disabled by operator; do not start from config.
+
+@app.before_request
+def protect_panel_api():
+    """Require an explicit Render/local environment token for panel writes."""
+    if not request.path.startswith('/api/'):
+        return None
+    public_paths = {'/api/status', '/api/account-restrictions', '/api/shopier/callback'}
+    if request.path in public_paths and request.method == 'GET' or request.path == '/api/shopier/callback':
+        return None
+    if not PANEL_ADMIN_TOKEN:
+        return jsonify({'error': 'PANEL_ADMIN_TOKEN is not configured'}), 503
+    supplied = request.headers.get('X-Admin-Token', '')
+    if supplied != PANEL_ADMIN_TOKEN:
+        return jsonify({'error': 'Unauthorized'}), 401
+    return None
+
 # State variables for background processes
 ad_process = None
 support_process = None
@@ -197,7 +215,7 @@ def bot_watchdog():
                 try:
                     with open(CONFIG_FILE, "r", encoding="utf-8") as f:
                         cfg = json.load(f)
-                    froxy_enabled = cfg.get("froxy_bot_running", False)
+                    froxy_enabled = FROXY_ENABLED and cfg.get("froxy_bot_running", False)
                     froxy_token = cfg.get("froxy_bot_token", "")
                     if froxy_token and froxy_token != "YOUR_TELEGRAM_BOT_TOKEN":
                         has_froxy_token = True
@@ -299,6 +317,17 @@ def index():
 def status():
     is_running = get_process_by_script('otomatik_katil.py') is not None
     return jsonify({"status": "running" if is_running else "stopped"})
+
+@app.route('/api/account-restrictions', methods=['GET'])
+def account_restrictions():
+    path = os.path.join(base_dir, 'account_restrictions.json')
+    try:
+        if not os.path.exists(path):
+            return jsonify({})
+        with open(path, 'r', encoding='utf-8') as f:
+            return jsonify(json.load(f))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/stats', methods=['GET'])
 def stats():
@@ -588,7 +617,7 @@ def get_froxy_config():
         with open(CONFIG_FILE, 'r', encoding="utf-8") as f:
             cfg = json.load(f)
         return jsonify({
-            "froxy_bot_token": cfg.get("froxy_bot_token", ""),
+            "froxy_bot_token": "<configured>" if cfg.get("froxy_bot_token") else "",
             "froxy_admin_id": cfg.get("froxy_admin_id", "")
         })
     except Exception as e:
@@ -604,7 +633,7 @@ def save_froxy_config():
         else:
             cfg = {}
         
-        if data.get("froxy_bot_token"):
+        if data.get("froxy_bot_token") and data.get("froxy_bot_token") != "<configured>":
             cfg["froxy_bot_token"] = data["froxy_bot_token"]
         if data.get("froxy_admin_id"):
             cfg["froxy_admin_id"] = int(data["froxy_admin_id"])
@@ -702,7 +731,7 @@ def get_lisansarena_config():
         with open(CONFIG_FILE, 'r', encoding="utf-8") as f:
             cfg = json.load(f)
         return jsonify({
-            "lisansarena_bot_token": cfg.get("lisansarena_bot_token", ""),
+            "lisansarena_bot_token": "<configured>" if cfg.get("lisansarena_bot_token") else "",
             "admin_id": cfg.get("admin_id", "")
         })
     except Exception as e:
@@ -718,7 +747,7 @@ def save_lisansarena_config():
         else:
             cfg = {}
         
-        if data.get("lisansarena_bot_token"):
+        if data.get("lisansarena_bot_token") and data.get("lisansarena_bot_token") != "<configured>":
             cfg["lisansarena_bot_token"] = data["lisansarena_bot_token"]
         if data.get("admin_id"):
             cfg["admin_id"] = int(data["admin_id"])
@@ -798,7 +827,13 @@ def get_config():
         return jsonify({})
     try:
         with open(CONFIG_FILE, 'r', encoding="utf-8") as f:
-            return jsonify(json.load(f))
+            cfg = json.load(f)
+        secret_markers = ('token', 'session', 'key', 'hash', 'secret', 'proxy')
+        safe_cfg = {
+            k: ("<configured>" if any(marker in k.lower() for marker in secret_markers) and v else v)
+            for k, v in cfg.items()
+        }
+        return jsonify(safe_cfg)
     except Exception as e:
         return jsonify({"error": str(e)})
 
@@ -820,6 +855,13 @@ def save_config():
                 if v:  # Only update if a value is provided
                     old_links[k] = v
             data["shopier_links"] = old_links
+
+            # Redacted/blank secret fields from the dashboard must not erase
+            # the stored credentials when ordinary settings are saved.
+            for key, old_value in old_cfg.items():
+                if any(marker in key.lower() for marker in ('token', 'session', 'key', 'hash', 'secret', 'proxy')):
+                    if not data.get(key) or data.get(key) == '<configured>':
+                        data[key] = old_value
             
         with open(CONFIG_FILE, 'w', encoding="utf-8") as f:
             json.dump(data, f, indent=2, ensure_ascii=False)

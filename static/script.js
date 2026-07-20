@@ -1,3 +1,20 @@
+// The panel token is never embedded in the bundle; it is supplied once by the
+// operator and kept only in browser localStorage for this session.
+const nativeFetch = window.fetch.bind(window);
+window.fetch = async (input, init = {}) => {
+    const headers = new Headers(init.headers || {});
+    const requestUrl = typeof input === 'string' ? input : input.url;
+    const requestMethod = (init.method || (typeof input !== 'string' && input.method) || 'GET').toUpperCase();
+    const publicHealth = requestMethod === 'GET' && (requestUrl.endsWith('/api/status') || requestUrl.endsWith('/api/account-restrictions'));
+    let token = localStorage.getItem('panel_admin_token');
+    if (!token && !publicHealth) {
+        token = window.prompt('Panel yönetim tokenını girin:');
+        if (token) localStorage.setItem('panel_admin_token', token);
+    }
+    if (token) headers.set('X-Admin-Token', token);
+    return nativeFetch(input, { ...init, headers });
+};
+
 const UI = {
     statusBadge: document.getElementById('botStatus'),
     statusText: document.querySelector('#botStatus .text'),

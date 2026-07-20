@@ -5,19 +5,22 @@ import json
 import re
 import requests
 import sys
+import shutil
 
 try:
     sys.stdout.reconfigure(encoding='utf-8')
     sys.stderr.reconfigure(encoding='utf-8')
 except Exception:
     pass
+from gemini_helper import get_ai_response, get_ad_variation
 from telethon import TelegramClient, events
 from telethon.tl.functions.channels import JoinChannelRequest, LeaveChannelRequest
 from telethon.tl.functions.contacts import ResolveUsernameRequest, SearchRequest
 from telethon.errors import (
     FloodWaitError, SessionPasswordNeededError, UsernameNotOccupiedError, 
     UsernameInvalidError, ChannelPrivateError, ChatWriteForbiddenError,
-    SlowModeWaitError, UserBannedInChannelError
+    SlowModeWaitError, UserBannedInChannelError, PeerFloodError,
+    UserRestrictedError
 )
 
 # --- AYARLAR ---
@@ -148,10 +151,14 @@ def process_marketing_features(msg, is_keyvadi, is_lisansarena, is_short=False):
 
 PROGRESS_FILE = 'progress.txt'
 BLACKLIST_FILE = 'blacklist.txt'
+BLACKLIST_META_FILE = 'blacklist_meta.json'
+BLACKLIST_MIGRATION_MARKER = 'blacklist_migration_v2.done'
 AUTO_GROUPS_FILE = 'auto_groups.txt'
 MESSAGES_DIR = 'messages'
 MSG_HISTORY_FILE = 'msg_history.json'
 COOLDOWN_FILE = 'group_cooldown.json'
+ACCOUNT_RESTRICTIONS_FILE = 'account_restrictions.json'
+GROUP_FAILURES_FILE = 'group_failures.json'
 GROUP_COOLDOWN_HOURS = 1  # Varsayılan: 1 saat ortak cooldown. Config'den ezilebilir.
 if os.path.exists("bot_config.json"):
     try:
@@ -181,6 +188,7 @@ pending_invites = set() # Yeni: Katılım isteği gönderilen grupları takip et
 dm_count_today = 0
 dm_last_reset = ""
 MAX_DM_PER_DAY = 20
+ACTIVE_ACCOUNT_USERNAMES = {'keyvadionline', 'lisansarenaonline'}
 
 # --- Auto-DM: Anahtar kelimeler ---
 DM_TRIGGER_KEYWORDS = [
@@ -206,6 +214,140 @@ def save_cooldowns(data):
     except:
         pass
 
+def _load_json_file(path, default):
+    try:
+        if os.path.exists(path):
+            with open(path, 'r', encoding='utf-8') as f:
+                value = json.load(f)
+                return value if isinstance(value, type(default)) else default
+    except Exception:
+        pass
+    return default
+
+def _save_json_file(path, data):
+    try:
+        with open(path, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+        return True
+    except Exception as e:
+        print(f"⚠️ {path} yazılamadı: {e}")
+        return False
+
+def load_account_restrictions():
+    return _load_json_file(ACCOUNT_RESTRICTIONS_FILE, {})
+
+def is_account_restricted(client_name):
+    from datetime import datetime, timezone
+    state = load_account_restrictions().get(client_name, {})
+    until = state.get('until') if isinstance(state, dict) else None
+    if not until:
+        return False
+    try:
+        expires = datetime.fromisoformat(until)
+        if expires.tzinfo is None:
+            expires = expires.replace(tzinfo=timezone.utc)
+        if datetime.now(timezone.utc) >= expires:
+            restrictions = load_account_restrictions()
+            restrictions.pop(client_name, None)
+            _save_json_file(ACCOUNT_RESTRICTIONS_FILE, restrictions)
+            return False
+        return True
+    except Exception:
+        return False
+
+def set_account_restriction(client_name, seconds, reason, error_type=None):
+    from datetime import datetime, timedelta, timezone
+    seconds = max(1, int(seconds or 1))
+    restrictions = load_account_restrictions()
+    restrictions[client_name] = {
+        'until': (datetime.now(timezone.utc) + timedelta(seconds=seconds)).isoformat(),
+        'reason': reason,
+        'error_type': error_type or reason,
+        'updated_at': datetime.now(timezone.utc).isoformat()
+    }
+    _save_json_file(ACCOUNT_RESTRICTIONS_FILE, restrictions)
+
+def account_restriction_status(client_name):
+    return load_account_restrictions().get(client_name, {})
+
+def record_group_failure(grup_name, client_name, reason, retry_after=300):
+    """Temporary per-account/group retry state; never writes BLACKLIST_FILE."""
+    from datetime import datetime, timedelta, timezone
+    failures = _load_json_file(GROUP_FAILURES_FILE, {})
+    key = grup_name.lower()
+    failures.setdefault(key, {})[client_name] = {
+        'reason': reason,
+        'retry_at': (datetime.now(timezone.utc) + timedelta(seconds=max(1, int(retry_after)))).isoformat(),
+        'updated_at': datetime.now(timezone.utc).isoformat()
+    }
+    _save_json_file(GROUP_FAILURES_FILE, failures)
+
+def is_group_retry_blocked(grup_name, client_name):
+    from datetime import datetime, timezone
+    failures = _load_json_file(GROUP_FAILURES_FILE, {})
+    state = failures.get(grup_name.lower(), {}).get(client_name, {})
+    retry_at = state.get('retry_at') if isinstance(state, dict) else None
+    if not retry_at:
+        return False
+    try:
+        return datetime.now(timezone.utc) < datetime.fromisoformat(retry_at)
+    except Exception:
+        return False
+
+def clear_group_failure(grup_name, client_name):
+    failures = _load_json_file(GROUP_FAILURES_FILE, {})
+    group_state = failures.get(grup_name.lower(), {})
+    if client_name in group_state:
+        group_state.pop(client_name, None)
+        if group_state:
+            failures[grup_name.lower()] = group_state
+        else:
+            failures.pop(grup_name.lower(), None)
+        _save_json_file(GROUP_FAILURES_FILE, failures)
+
+def blacklist_group(grup_name, reason, client_name):
+    """Persist a confirmed group-level blacklist with an auditable reason."""
+    from datetime import datetime, timezone
+    save_to_list(grup_name, BLACKLIST_FILE)
+    metadata = _load_json_file(BLACKLIST_META_FILE, {})
+    metadata[grup_name.lower()] = {
+        'reason': reason,
+        'client': client_name,
+        'updated_at': datetime.now(timezone.utc).isoformat()
+    }
+    _save_json_file(BLACKLIST_META_FILE, metadata)
+
+def migrate_legacy_blacklist_once():
+    """Back up legacy blacklist decisions and retain only approved groups."""
+    if os.path.exists(BLACKLIST_MIGRATION_MARKER) or not os.path.exists(BLACKLIST_FILE):
+        return False
+    try:
+        from datetime import datetime
+        stamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        backup = f'blacklist_legacy_backup_{stamp}.txt'
+        shutil.copy2(BLACKLIST_FILE, backup)
+        keep = {x.lower() for x in get_all_protected_groups() if x.strip()}
+        with open(BLACKLIST_FILE, 'r', encoding='utf-8') as f:
+            old_entries = {x.strip() for x in f if x.strip()}
+        retained = sorted(x for x in old_entries if x.lower() in keep)
+        with open(BLACKLIST_FILE, 'w', encoding='utf-8') as f:
+            f.write('\n'.join(retained) + ('\n' if retained else ''))
+        metadata = _load_json_file(BLACKLIST_META_FILE, {})
+        for group in retained:
+            metadata.setdefault(group.lower(), {'reason': 'legacy_approved_group', 'client': 'migration'})
+        _save_json_file(BLACKLIST_META_FILE, metadata)
+        with open(BLACKLIST_MIGRATION_MARKER, 'w', encoding='utf-8') as f:
+            f.write(f'v2 migrated {stamp}; backup={backup}\n')
+        try:
+            fs_set_state(blacklist='\n'.join(retained) + ('\n' if retained else ''))
+        except Exception:
+            pass
+        print(f"🧹 Legacy blacklist migrated: {len(old_entries)} -> {len(retained)}; backup={backup}")
+        return True
+    except Exception as e:
+        print(f"⚠️ Legacy blacklist migration failed; original file preserved: {e}")
+        return False
+
 def is_on_cooldown(grup_name, client_name):
     """
     Gruba son mesaj gönderilmesinden bu yana yeterince süre geçti mi?
@@ -226,6 +368,9 @@ def is_on_cooldown(grup_name, client_name):
         except:
             pass
             
+    if is_account_restricted(client_name) or is_group_retry_blocked(grup_name, client_name):
+        return True
+
     cooldowns = load_cooldowns()
     key = grup_name.lower()
     if key not in cooldowns:
@@ -451,6 +596,7 @@ async def auto_scrape_groups(client, client_name, joined_usernames=None):
     from telethon.tl.types import Channel, Chat
     
     for keyword in selected_keywords:
+        await asyncio.sleep(2.0)
         if new_found >= DAILY_GROUP_LIMIT:
             print(f"🎯 [{client_name}] Günlük limit ({DAILY_GROUP_LIMIT} grup) doldu, tarama durduruluyor.")
             break
@@ -468,15 +614,12 @@ async def auto_scrape_groups(client, client_name, joined_usernames=None):
                 elif isinstance(chat, Chat):
                     is_group = True
                     
-                # Yayın kanallarını kara listeye al
+                # Broadcast channels are skipped during discovery, but are not
+                # globally blacklisted unless Telegram confirms write denial.
                 username_attr = getattr(chat, 'username', None)
                 if not is_group or not username_attr:
                     if isinstance(chat, Channel) and getattr(chat, 'broadcast', False) and username_attr:
                         username = username_attr.lower()
-                        if username not in blacklist_lower:
-                            save_to_list(username_attr, BLACKLIST_FILE)
-                            blacklist_lower.add(username)
-                            keyword_blacklisted += 1
                     continue
                     
                 username = chat.username.lower()
@@ -488,11 +631,7 @@ async def auto_scrape_groups(client, client_name, joined_usernames=None):
                 
                 # === FİLTRE 1: Üye sayısı (500'den az = zaman kaybı) ===
                 if member_count is not None and member_count < 100:
-                    if username not in blacklist_lower:
-                        save_to_list(chat.username, BLACKLIST_FILE)
-                        blacklist_lower.add(username)
-                        keyword_blacklisted += 1
-                        print(f"  🚫 @{chat.username} → Üye az ({member_count}), kara liste")
+                    print(f"  ⏭️ @{chat.username} → Üye az ({member_count}), bu taramada atlandı")
                     continue
                 
                 # === FİLTRE 2: Başlık dil/alaka/negatif kontrolü ===
@@ -500,20 +639,12 @@ async def auto_scrape_groups(client, client_name, joined_usernames=None):
                 has_negative = any(w in title for w in NEGATIVE_KEYWORDS)
                 
                 if has_negative or not has_sales_word:
-                    if username not in blacklist_lower:
-                        save_to_list(chat.username, BLACKLIST_FILE)
-                        blacklist_lower.add(username)
-                        keyword_blacklisted += 1
-                        print(f"  🚫 @{chat.username} → Alakasız/yabancı/negatif ('{chat.title}'), kara liste")
+                    print(f"  ⏭️ @{chat.username} → Alakasız/negatif ('{chat.title}'), bu taramada atlandı")
                     continue
                 
                 # === FİLTRE 2.5: İstek/Onay kontrolü (Direkt katılım olmalı) ===
                 if getattr(chat, 'join_request', False):
-                    if username not in blacklist_lower:
-                        save_to_list(chat.username, BLACKLIST_FILE)
-                        blacklist_lower.add(username)
-                        keyword_blacklisted += 1
-                        print(f"  🚫 @{chat.username} → İstek/onay gerekiyor, kara liste")
+                    print(f"  ⏭️ @{chat.username} → Katılım isteği gerekiyor, admin onayı bekleniyor")
                     continue
                 
                 # === FİLTRE 3: Derin kalite taraması (son 5 mesaj) ===
@@ -521,11 +652,7 @@ async def auto_scrape_groups(client, client_name, joined_usernames=None):
                     recent_msgs = await client.get_messages(chat, limit=5)
                     
                     if not recent_msgs or len(recent_msgs) == 0:
-                        if username not in blacklist_lower:
-                            save_to_list(chat.username, BLACKLIST_FILE)
-                            blacklist_lower.add(username)
-                            keyword_blacklisted += 1
-                            print(f"  🚫 @{chat.username} → Boş grup (mesaj yok), kara liste")
+                        print(f"  ⏭️ @{chat.username} → Boş grup, bu taramada atlandı")
                         continue
                     
                     # İnaktiflik kontrolü (5 gün)
@@ -534,11 +661,7 @@ async def auto_scrape_groups(client, client_name, joined_usernames=None):
                     last_msg_date = recent_msgs[0].date
                     delta_days = (now_utc - last_msg_date).days
                     if delta_days >= 5:
-                        if username not in blacklist_lower:
-                            save_to_list(chat.username, BLACKLIST_FILE)
-                            blacklist_lower.add(username)
-                            keyword_blacklisted += 1
-                            print(f"  🚫 @{chat.username} → İnaktif ({delta_days} gün), kara liste")
+                        print(f"  ⏭️ @{chat.username} → İnaktif ({delta_days} gün), bu taramada atlandı")
                         continue
                     
                     # Spam çöplüğü tespiti
@@ -559,19 +682,13 @@ async def auto_scrape_groups(client, client_name, joined_usernames=None):
                     # Son 5 mesajın 3+'ü bot reklamı → spam çöplüğü
                     if bot_mention_count >= 3:
                         if username not in blacklist_lower:
-                            save_to_list(chat.username, BLACKLIST_FILE)
-                            blacklist_lower.add(username)
                             keyword_blacklisted += 1
                             print(f"  🗑️ @{chat.username} → Spam çöplüğü ({bot_mention_count}/5 bot reklamı), kara liste")
                         continue
                     
                     # Son 5 mesajda sadece 1-2 unique gönderen → ölü grup
                     if len(recent_msgs) >= 5 and len(unique_senders) <= 2:
-                        if username not in blacklist_lower:
-                            save_to_list(chat.username, BLACKLIST_FILE)
-                            blacklist_lower.add(username)
-                            keyword_blacklisted += 1
-                            print(f"  💀 @{chat.username} → Ölü grup ({len(unique_senders)} kişi aktif), kara liste")
+                        print(f"  ⏭️ @{chat.username} → Ölü grup ({len(unique_senders)} kişi aktif), bu taramada atlandı")
                         continue
                     
                 except Exception:
@@ -618,8 +735,9 @@ async def auto_scrape_groups(client, client_name, joined_usernames=None):
             await asyncio.sleep(3)
                 
         except FloodWaitError as e:
-            print(f"⏳ [{client_name}] Auto-Scraper: Flood beklenecek ({e.seconds}s)...")
-            await asyncio.sleep(e.seconds)
+            set_account_restriction(client_name, e.seconds, 'Telegram grup keşfi FloodWait', type(e).__name__)
+            print(f"⏳ [{client_name}] Auto-Scraper FloodWait ({e.seconds}s); hesap duraklatıldı.")
+            break
         except Exception as e:
             print(f"⚠️ [{client_name}] Auto-Scraper hatası ('{keyword}'): {type(e).__name__} - {e}")
             
@@ -1257,42 +1375,63 @@ def register_telegram_code_forwarder(client, client_name):
         except Exception as e:
             print(f"⚠️ [KOD ALICI] İletilirken hata: {e}")
 
+PROCESSED_DM_MSG_IDS = set()
+USER_DM_LAST_REPLY_TIME = {}
+USER_DM_LAST_REPLY_TEXT = {}
+
 def register_auto_reply_handler(client, client_name, our_user_ids):
     @client.on(events.NewMessage(incoming=True))
     async def handle_private_message(event):
-        if not event.is_private:
+        if not event.is_private or getattr(event, 'out', False):
             return
             
         sender = await event.get_sender()
         if not sender:
             return
             
-        if getattr(sender, 'bot', False):
+        sender_id = sender.id
+        msg_id = getattr(event.message, 'id', None)
+
+        # 1. Message ID Deduplication Check
+        dedupe_key = (client_name, event.chat_id, msg_id)
+        if msg_id and dedupe_key in PROCESSED_DM_MSG_IDS:
+            return
+
+        if getattr(sender, 'bot', False) or event.sender_id == 777000:
             return
             
-        if event.sender_id == 777000:
-            return
-            
-        # Acil çözüm: "creator" isimli veya kullanıcı adlı hesapları yoksay
         fname = getattr(sender, 'first_name', '') or ''
         uname = getattr(sender, 'username', '') or ''
         if 'creator' in fname.lower() or 'creator' in uname.lower():
             return
             
-        sender_id = sender.id
+        # 2. Bot-to-bot / Account loop prevention
         if sender_id in our_user_ids:
             return
-            
-        admin_id = None
-        if os.path.exists("bot_config.json"):
-            try:
-                with open("bot_config.json", "r", encoding="utf-8") as f:
-                    cfg = json.load(f)
-                    admin_id = cfg.get("admin_id")
-            except:
-                pass
-        if admin_id and sender_id == int(admin_id):
+
+        # 3. Per-User Rate Limiter (15 seconds Cooldown for ALL senders)
+        import time
+        now = time.time()
+        if False and sender_id in USER_DM_LAST_REPLY_TIME:
+            if now - USER_DM_LAST_REPLY_TIME[sender_id] < 15:
+                print(f"⏳ [{client_name}] @{getattr(sender, 'username', sender_id)} 15sn cooldown içinde, mükerrer mesaj yoksayıldı.")
+                return
+
+        # Mark message and timestamp
+        if False and msg_id:
+            PROCESSED_DM_MSG_IDS.add(msg_id)
+            if len(PROCESSED_DM_MSG_IDS) > 2000:
+                PROCESSED_DM_MSG_IDS.clear()
+        # Mark only after a reply has been accepted by Telegram.
+
+        user_key = (client_name, sender_id)
+        normalized_text = (event.raw_text or '').strip().lower()
+        previous_time = USER_DM_LAST_REPLY_TIME.get(user_key)
+        previous_text = USER_DM_LAST_REPLY_TEXT.get(user_key, '')
+        if previous_time and now - previous_time < 90 and normalized_text == previous_text:
             return
+
+        print(f"📥 [{client_name}] DM Alındı: GÖNDEREN={sender_id} (@{getattr(sender, 'username', '')}) MESAJ='{event.raw_text}'")
 
         msg_text = (event.raw_text or "").strip().lower()
         if not msg_text:
@@ -1311,16 +1450,20 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                             pid = item.get("id")
                             title = item.get("title")
                             url = item.get("url")
-                            price_val = item.get("priceData", {}).get("price", "0")
-                            price_str = f"{float(price_val):.2f} TL"
+                            pdata = item.get("priceData") or {}
+                            price_val = pdata.get("price", "0") if isinstance(pdata, dict) else "0"
+                            try:
+                                price_str = f"{float(price_val):.2f} TL"
+                            except:
+                                price_str = f"{price_val} TL"
                             products.append({
                                 "id": pid,
                                 "title": title,
                                 "price": price_str,
                                 "url": url
                             })
-                except:
-                    pass
+                except Exception as e:
+                    print(f"⚠️ Error loading LisansArena products: {e}")
         elif is_keyvadi:
             if os.path.exists("keyvadi_shopier_links.json"):
                 try:
@@ -1344,26 +1487,54 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         if products:
             matched_products = match_multiple_products_from_text(event.raw_text, products)
             
-        if not matched_products:
-            return
-            
-        if len(matched_products) == 1:
-            reply_text = matched_products[0]['url']
-            matched_desc = matched_products[0]['title']
+        reply_text = None
+        matched_desc = ""
+        if matched_products:
+            if len(matched_products) == 1:
+                reply_text = matched_products[0]['url']
+                matched_desc = matched_products[0]['title']
+            else:
+                lines = ["🔍 **Aradığınız Ürünler:**\n"]
+                for p in matched_products[:5]:
+                    lines.append(f"• **{p['title']}** ({p['price']}):\n  👉 {p['url']}")
+                reply_text = "\n".join(lines)
+                matched_desc = ", ".join(p['title'] for p in matched_products)
         else:
-            lines = ["🔍 **Aradığınız Ürünler:**\n"]
-            for p in matched_products[:5]:
-                lines.append(f"• **{p['title']}** ({p['price']}):\n  👉 {p['url']}")
-            reply_text = "\n".join(lines)
-            matched_desc = ", ".join(p['title'] for p in matched_products)
+            # Yapay Zeka (AI) Yanıtlayıcı Devreye Girsin (OpenRouter / Pollinations)
+            brand_name = "LisansArena" if is_lisansarena else "KeyVadi"
+            ai_res = get_ai_response(event.raw_text, brand_name, products)
+            if ai_res:
+                reply_text = ai_res
+                matched_desc = "🤖 AI Akıllı Yanıt"
+
+        if not reply_text:
+            return
             
         try:
             await event.reply(reply_text)
-            print(f"[{client_name}] ✉️ Özel mesaj otomatik yanıtlandı (Ürün Linkleri): @{sender.username or sender_id} -> {matched_desc}")
+            if msg_id:
+                PROCESSED_DM_MSG_IDS.add(dedupe_key)
+                if len(PROCESSED_DM_MSG_IDS) > 5000:
+                    PROCESSED_DM_MSG_IDS.clear()
+            USER_DM_LAST_REPLY_TIME[user_key] = now
+            USER_DM_LAST_REPLY_TEXT[user_key] = normalized_text
+            print(f"[{client_name}] ✉️ Özel mesaj otomatik yanıtlandı ({matched_desc}): @{sender.username or sender_id}")
         except Exception as e:
             print(f"[{client_name}] ⚠️ Özel mesaj otomatik yanıtlanırken hata: {e}")
 
 async def main():
+    import psutil, os
+    cur_pid = os.getpid()
+    for p in psutil.process_iter(['pid', 'name', 'cmdline']):
+        try:
+            if p.info['pid'] != cur_pid and 'python' in (p.info['name'] or '').lower():
+                cmd = ' '.join(p.info['cmdline'] or [])
+                if 'otomatik_katil.py' in cmd:
+                    print(f"🧹 Eski otomatik_katil.py (PID {p.info['pid']}) kapatılıyor...")
+                    p.kill()
+        except Exception:
+            pass
+
     print("\n🚀 Habil Reklam Botu v2 - Akıllı Mod")
     print("-----------------------------------")
 
@@ -1453,6 +1624,27 @@ async def main():
             import sys
             sys.exit(1)
             
+    # Resolve the actual username before starting any handlers. This prevents
+    # stale sessions in old slots from becoming advertising accounts again.
+    allowed_clients = []
+    for active_client, _, info in active_clients:
+        try:
+            me = await active_client.get_me()
+            username = (getattr(me, 'username', '') or '').lower()
+            if username not in ACTIVE_ACCOUNT_USERNAMES:
+                print(f"⚠️ @{username or 'bilinmeyen'} aktif hesap allowlist'inde değil; session bağlantısı kapatılıyor.")
+                await active_client.disconnect()
+                continue
+            stable_name = 'KeyVadiOnline' if username == 'keyvadionline' else 'LisansArenaOnline'
+            allowed_clients.append((active_client, stable_name, {'id': me.id, 'username': username}))
+        except Exception as e:
+            print(f"⚠️ Aktif hesap doğrulanamadı, bağlantı kapatılıyor: {e}")
+            try:
+                await active_client.disconnect()
+            except Exception:
+                pass
+    active_clients = allowed_clients
+
     if not active_clients:
         print("❌ HATA: Hiçbir aktif ve yetkili Telegram hesabı bulunamadı! Watchdog kilitlenmesini önlemek için 10 dakika bekleniyor...")
         await asyncio.sleep(600)
@@ -1647,8 +1839,8 @@ async def main():
                                 
                 print(f"✅ Worker {client_name}: {len(joined_dialogs)} diyalog önbelleğe alındı.")
             except FloodWaitError as e:
-                print(f"🚨 Worker {client_name} önbellek aşamasında Flood yedi! {e.seconds} saniye bekleniyor...")
-                await asyncio.sleep(e.seconds)
+                set_account_restriction(client_name, e.seconds, 'Telegram diyalog önbelleği FloodWait', type(e).__name__)
+                print(f"🚨 Worker {client_name} önbellek aşamasında Flood yedi! Hesap {e.seconds} saniye duraklatıldı.")
             except Exception as e:
                 print(f"⚠️ Worker {client_name} önbellek hatası: {e}")
 
@@ -1656,6 +1848,12 @@ async def main():
         # BLAST MODE: Tüm gruplara aynı anda mesaj at
         # ═══════════════════════════════════════════════════
         while True:
+            if is_account_restricted(client_name):
+                state = account_restriction_status(client_name)
+                print(f"[{client_name}] ⏸️ Hesap kısıtlaması aktif; {state.get('until', 'belirsiz')} tarihine kadar gönderim durdu.")
+                await asyncio.sleep(60)
+                continue
+
             # Dinamik olarak korumalı listeyi güncelle
             protected_groups = get_all_protected_groups()
             
@@ -1685,19 +1883,7 @@ async def main():
                     entity = joined_dialogs[username_lower]
                     if getattr(entity, 'broadcast', False):
                         continue
-                    # Üye sayısı kontrolü: çok küçük grupları blast listesinden çıkar
                     member_count = getattr(entity, 'participants_count', None)
-                    is_in_protected = username_lower in protected_groups
-                    if not is_in_protected and member_count is not None and member_count < 100:
-                        small_groups_skipped += 1
-                        async with state_lock:
-                            save_to_list(username_lower, BLACKLIST_FILE)
-                        print(f"[{client_name}] 📉 @{username_lower} → {member_count} üye (<500), kara listeye eklendi.")
-                        try:
-                            await client(LeaveChannelRequest(entity))
-                        except:
-                            pass
-                        continue
                     blast_targets.append(username_lower)
                 else:
                     debug_not_cached += 1
@@ -1759,50 +1945,8 @@ async def main():
                 sent_count = 0
                 fail_count = 0
                 
-                async def record_failure(grup_name):
-                    async with state_lock:
-                        try:
-                            failures = {}
-                            if os.path.exists("group_failures.json"):
-                                with open("group_failures.json", "r", encoding="utf-8") as f:
-                                    failures = json.load(f)
-                            g_key = grup_name.lower()
-                            failures[g_key] = failures.get(g_key, 0) + 1
-                            with open("group_failures.json", "w", encoding="utf-8") as f:
-                                json.dump(failures, f, indent=4)
-                            
-                            if failures[g_key] >= 5:
-                                print(f"[{client_name}] ❌ @{grup_name} -> 5 kez üst üste hata alındı! Kara listeye ekleniyor...")
-                                save_to_list(grup_name, BLACKLIST_FILE)
-                                if is_group_protected(grup_name):
-                                    print(f"⚠️ [Security] Korumalı/hedef grup @{grup_name} terk edilmesi engellendi!")
-                                else:
-                                    entity = joined_dialogs.get(g_key)
-                                    if entity:
-                                        try:
-                                            await client(LeaveChannelRequest(entity))
-                                            print(f"[{client_name}] 🚪 @{grup_name} grubundan çıkıldı.")
-                                        except Exception as le:
-                                            print(f"[{client_name}] ⚠️ @{grup_name} grubundan çıkılırken hata: {le}")
-                            elif failures[g_key] >= 3:
-                                print(f"[{client_name}] ⚠️ @{grup_name} -> {failures[g_key]} kez üst üste hata alındı.")
-                        except Exception as fe:
-                            print(f"⚠️ Hata sayacı güncelleme hatası: {fe}")
-
                 async def reset_failure(grup_name):
-                    async with state_lock:
-                        try:
-                            failures = {}
-                            if os.path.exists("group_failures.json"):
-                                with open("group_failures.json", "r", encoding="utf-8") as f:
-                                    failures = json.load(f)
-                            g_key = grup_name.lower()
-                            if g_key in failures and failures[g_key] > 0:
-                                failures[g_key] = 0
-                                with open("group_failures.json", "w", encoding="utf-8") as f:
-                                    json.dump(failures, f, indent=4)
-                        except:
-                            pass
+                    clear_group_failure(grup_name, client_name)
 
                 async def blast_one(grup_name):
                     """Tek bir gruba rotasyonlu mesaj gönder"""
@@ -1815,9 +1959,6 @@ async def main():
                         if is_on_cooldown(grup_name, client_name):
                             print(f"[{client_name}] ⏳ @{grup_name} cooldown süresinde, atlanıyor...")
                             return
-                        # Immediately set cooldown to prevent other accounts from sending simultaneously (Race condition fix)
-                        set_cooldown(grup_name, client_name)
-                        
 
                     try:
                         # Mesaj rotasyonu: bu grup için farklı mesaj seç
@@ -1903,36 +2044,28 @@ async def main():
                             print(f"[{client_name}] ✅ @{grup_name} → Gönderildi! ({sent_count+1}) [Şablon: {chosen_name}]")
                             
                         sent_count += 1
+                        # Only mark the group after Telegram accepted the message.
+                        set_cooldown(grup_name, client_name)
                         
                         update_stats(sent=1)
                         await reset_failure(grup_name)
                         async with state_lock:
                             save_to_list(grup_name, PROGRESS_FILE)
                     except FloodWaitError as e:
-                        if e.seconds <= 30:
-                            await asyncio.sleep(e.seconds)
-                            try:
-                                if allows_media and os.path.exists(banner_file) and len(msg) <= 1024:
-                                    await client.send_message(entity, msg, file=banner_file)
-                                else:
-                                    await client.send_message(entity, msg)
-                                sent_count += 1
-                                set_cooldown(grup_name, client_name)
-
-                                print(f"[{client_name}] ✅ @{grup_name} → Gönderildi (flood sonrası)!")
-                                update_stats(sent=1)
-                                await reset_failure(grup_name)
-                            except:
-                                fail_count += 1
-                                await record_failure(grup_name)
-                        else:
-                            print(f"[{client_name}] ⏳ @{grup_name} → Flood {e.seconds}sn, atlanıyor...")
-                            fail_count += 1
+                        set_account_restriction(client_name, e.seconds, 'Telegram FloodWait', type(e).__name__)
+                        record_group_failure(grup_name, client_name, 'FloodWait', e.seconds)
+                        print(f"[{client_name}] ⏳ FloodWait {e.seconds}sn; hesap duraklatıldı, grup kara listeye alınmadı.")
+                        fail_count += 1
+                    except (PeerFloodError, UserRestrictedError) as e:
+                        restriction_seconds = 48 * 60 * 60
+                        set_account_restriction(client_name, restriction_seconds, 'Telegram hesap/spam kısıtlaması', type(e).__name__)
+                        print(f"[{client_name}] 🚫 Hesap kısıtlaması algılandı ({type(e).__name__}); 48 saat duraklatıldı.")
+                        fail_count += 1
                     except UserBannedInChannelError:
                         print(f"[{client_name}] ❌ @{grup_name} → Banlandık! Kara listeye ekleniyor...")
                         fail_count += 1
                         async with state_lock:
-                            save_to_list(grup_name, BLACKLIST_FILE)
+                            blacklist_group(grup_name, 'UserBannedInChannel', client_name)
                         try:
                             if entity:
                                 if is_group_protected(grup_name):
@@ -1946,7 +2079,7 @@ async def main():
                         print(f"[{client_name}] 🔒 @{grup_name} → Yazma izni yok! Kara listeye ekleniyor...")
                         fail_count += 1
                         async with state_lock:
-                            save_to_list(grup_name, BLACKLIST_FILE)
+                            blacklist_group(grup_name, 'ChatWriteForbidden', client_name)
                         try:
                             if entity:
                                 if is_group_protected(grup_name):
@@ -1958,13 +2091,13 @@ async def main():
                             print(f"[{client_name}] ⚠️ @{grup_name} grubundan çıkılırken hata: {le}")
                     except SlowModeWaitError as sme:
                         wait_sec = getattr(sme, 'seconds', 0) or 0
-                        print(f"[{client_name}] 🐌 @{grup_name} → SlowMode aktif ({wait_sec}sn bekleme). Cooldown set ediliyor, pas geçildi.")
-                        set_cooldown(grup_name, client_name)
+                        print(f"[{client_name}] 🐌 @{grup_name} → SlowMode aktif ({wait_sec}sn bekleme); geçici grup beklemesi yazıldı.")
+                        record_group_failure(grup_name, client_name, 'SlowModeWait', wait_sec)
                     except Exception as e:
                         err_type = type(e).__name__
                         print(f"[{client_name}] ⚠️ @{grup_name} → {err_type} (atlanıyor)")
                         fail_count += 1
-                        await record_failure(grup_name)
+                        record_group_failure(grup_name, client_name, err_type, 300)
 
                 # Gruplara sırayla ve aralarında 20-45 saniye rastgele bekleme (daha doğal)
                 random.shuffle(blast_targets)  # Grup sırasını karıştır
@@ -2026,36 +2159,21 @@ async def main():
                             print(f"[{client_name}] ✅ Gruba katıldı: @{hedef_grup}")
                             
                         if entity:
-                            member_count = getattr(entity, 'participants_count', None)
-                            is_protected = hedef_grup.lower() in protected_groups
-                            
-                            # Korumalı değilse ve üye sayısı 500'den azsa çık ve kara listeye al
-                            if not is_protected and member_count is not None and member_count < 200:
-                                print(f"[{client_name}] 📉 @{hedef_grup} -> Üye sayısı yetersiz ({member_count} < 200). Gruptan çıkılıyor ve kara listeye ekleniyor...")
-                                async with state_lock:
-                                    save_to_list(hedef_grup, BLACKLIST_FILE)
-                                try:
-                                    await client(LeaveChannelRequest(entity))
-                                except Exception as le:
-                                    print(f"[{client_name}] ⚠️ @{hedef_grup} gruptan çıkılırken hata: {le}")
-                            else:
-                                joined_dialogs[hedef_grup.lower()] = entity
-                                join_count += 1
+                            joined_dialogs[hedef_grup.lower()] = entity
+                            join_count += 1
                             # Katılım isteği onaylandıysa/katılım sağlandıysa pending'den çıkar
                             if hedef_grup.lower() in pending_invites:
                                 pending_invites.remove(hedef_grup.lower())
                             await asyncio.sleep(random.randint(30, 90))
                             
                     except FloodWaitError as e:
-                        if e.seconds <= 60:
-                            await asyncio.sleep(e.seconds)
-                        else:
-                            print(f"[{client_name}] ⚠️ Join flood {e.seconds}sn, katılma durduruluyor.")
-                            break
+                        set_account_restriction(client_name, e.seconds, 'Telegram katılım FloodWait', type(e).__name__)
+                        print(f"[{client_name}] ⚠️ Join flood {e.seconds}sn; hesap duraklatılıyor, grup kara listeye alınmadı.")
+                        break
                     except (ChannelPrivateError,):
                         if hedef_grup.lower() not in protected_groups:
                             async with state_lock:
-                                save_to_list(hedef_grup, BLACKLIST_FILE)
+                                blacklist_group(hedef_grup, 'ChannelPrivate', client_name)
                             print(f"[{client_name}] ❌ @{hedef_grup} -> Kanal özel veya banlıyız, kara listeye alındı.")
                         else:
                             print(f"[{client_name}] ⚠️ Korumalı @{hedef_grup} özel/banlı, ancak korumalı olduğundan kara listeye ALINMADI.")
@@ -2068,7 +2186,7 @@ async def main():
                         elif 'no user has' in err_msg.lower() or isinstance(e, (UsernameNotOccupiedError, UsernameInvalidError, ValueError)):
                             if hedef_grup.lower() not in protected_groups:
                                 async with state_lock:
-                                    save_to_list(hedef_grup, BLACKLIST_FILE)
+                                    blacklist_group(hedef_grup, err_type, client_name)
                                 print(f"[{client_name}] ❌ @{hedef_grup} -> {err_type} (Kullanıcı/Grup yok), kara liste.")
                             else:
                                 print(f"[{client_name}] ⚠️ Korumalı @{hedef_grup} bulunamadı, ancak korumalı olduğundan kara listeye ALINMADI.")
@@ -2099,8 +2217,16 @@ async def main():
                 bekleme = 3600
                 print(f"\n[{client_name}] 🌙 Gece modu aktif (TR {tr_time.strftime('%H:%M')}) → Sonraki blast 1 saat sonra")
             else:
-                bekleme = 1800
-                print(f"\n[{client_name}] ⏳ {grup_sayisi} gruba blast atıldı → Sonraki blast 30 dakika sonra")
+                blast_wait = 3600
+                if os.path.exists("bot_config.json"):
+                    try:
+                        with open("bot_config.json", "r", encoding="utf-8") as f_cfg:
+                            cfg = json.load(f_cfg)
+                            blast_wait = cfg.get("blast_wait_seconds", 3600)
+                    except:
+                        pass
+                bekleme = blast_wait
+                print(f"\n[{client_name}] ⏳ {grup_sayisi} gruba blast atıldı → Sonraki blast {bekleme // 60} dakika (1 saat) sonra tekrarlanacak")
             # Geri sayım (her dakika yazdır)
             kalan = bekleme
             while kalan > 0:
@@ -2112,6 +2238,10 @@ async def main():
                 await asyncio.sleep(uyku)
                 kalan -= uyku
 
+    # Migrate legacy group decisions before syncing Firestore, otherwise the
+    # old cloud blacklist could immediately reintroduce invalid entries.
+    migrate_legacy_blacklist_once()
+
     # İlk çalıştırmada Firestore'dan verileri çek
     print("🔄 Firestore'dan güncel durum yükleniyor...")
     fs_prog, fs_black, fs_auto, fs_scraped, fs_cooldowns, fs_welcomed = fs_get_state()
@@ -2122,7 +2252,7 @@ async def main():
     if fs_black:
         local_black = get_list(BLACKLIST_FILE)
         remote_black = set(x.strip() for x in fs_black.splitlines() if x.strip())
-        merged_black = local_black.union(remote_black)
+        merged_black = local_black if os.path.exists(BLACKLIST_MIGRATION_MARKER) else local_black.union(remote_black)
         protected = get_all_protected_groups()
         merged_black = {g for g in merged_black if g.lower() not in protected}
         with open(BLACKLIST_FILE, 'w', encoding='utf-8') as f:
@@ -2165,7 +2295,7 @@ async def main():
                 if fs_black_new:
                     local_black = get_list(BLACKLIST_FILE)
                     remote_black = set(x.strip() for x in fs_black_new.splitlines() if x.strip())
-                    merged_black = local_black.union(remote_black)
+                    merged_black = local_black if os.path.exists(BLACKLIST_MIGRATION_MARKER) else local_black.union(remote_black)
                     protected = get_all_protected_groups()
                     merged_black = {g for g in merged_black if g.lower() not in protected}
                     with open(BLACKLIST_FILE, 'w', encoding='utf-8') as f:
@@ -2252,12 +2382,10 @@ async def main():
         await auto_scrape_groups(client, client_name, joined_usernames)
 
     async def run_worker_supervisor(client, client_name, joined_dialogs):
-        if "2" in client_name or "4" in client_name:
-            print(f"⏳ [{client_name}] İlk çalıştırma gecikmesi aktif: Diğer hesapla çakışmayı önlemek için 10 dakika bekleniyor...")
-            await asyncio.sleep(600)
-        elif "3" in client_name or "5" in client_name:
-            print(f"⏳ [{client_name}] İlk çalıştırma gecikmesi aktif: Diğer hesapla çakışmayı önlemek için 20 dakika bekleniyor...")
-            await asyncio.sleep(1200)
+        if "2" in client_name:
+            await asyncio.sleep(2)
+        elif "3" in client_name:
+            await asyncio.sleep(5)
         while True:
             try:
                 await run_worker(client, client_name, joined_dialogs)
@@ -2276,11 +2404,13 @@ async def main():
         register_telegram_code_forwarder(client, name)
         tasks.append(run_worker_supervisor(client, name, j_dialogs))
     
-    # Scraper ve Firestore sync'i arka planda çalıştır
-    first_client, first_name, _ = active_clients[0]
-    tasks.append(periodic_scraper(first_client, first_name))
+    # Each active account discovers groups independently. Approval remains
+    # global, but joining and delivery are tracked per account.
+    for scraper_client, scraper_name, _ in active_clients:
+        tasks.append(periodic_scraper(scraper_client, scraper_name))
     tasks.append(periodic_firestore_sync())
-    tasks.append(run_startup_scraper(first_client, first_name))
+    for scraper_client, scraper_name, _ in active_clients:
+        tasks.append(run_startup_scraper(scraper_client, scraper_name))
     
     # Tüm görevleri eşzamanlı olarak çalıştır
     await asyncio.gather(*tasks)
