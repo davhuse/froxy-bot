@@ -564,8 +564,8 @@ def migrate_legacy_blacklist_once():
 
 def is_on_cooldown(grup_name, client_name):
     """
-    Grup bazlı reklam aralığını kontrol eder.
-    Aynı gruba herhangi bir aktif hesap mesaj attıysa en az 1 saat beklenir.
+    Hesap + grup bazlı reklam aralığını kontrol eder.
+    Her aktif hesap aynı gruba kendi mesajını atabilir, sonra en az 1 saat bekler.
     """
     from datetime import datetime
     
@@ -605,10 +605,10 @@ def is_on_cooldown(grup_name, client_name):
     # Yeni tip sözlük formatı
     now = datetime.now()
     
-    # Genel grup cooldown'u: marka/hesap fark etmeksizin aynı gruba 1 saatten sık atma.
-    for acc_name, time_str in group_data.items():
+    this_acc_time = group_data.get(client_name)
+    if this_acc_time:
         try:
-            last_sent = datetime.fromisoformat(time_str)
+            last_sent = datetime.fromisoformat(this_acc_time)
             elapsed_hours = (now - last_sent).total_seconds() / 3600
             if elapsed_hours < cooldown_hours:
                 return True

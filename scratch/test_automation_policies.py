@@ -54,11 +54,15 @@ class AutomationPolicyTests(unittest.TestCase):
             data = json.load(f)
         self.assertIn('KeyVadiOnline', data['example_group'])
         self.assertNotIn('LisansArenaOnline', data['example_group'])
+        self.assertTrue(automation.is_on_cooldown('example_group', 'KeyVadiOnline'))
+        self.assertFalse(automation.is_on_cooldown('example_group', 'LisansArenaOnline'))
+        automation.set_cooldown('example_group', 'LisansArenaOnline')
         self.assertTrue(automation.is_on_cooldown('example_group', 'LisansArenaOnline'))
 
     def test_known_group_alias_shares_cooldown(self):
         automation.set_cooldown('-1003336542169', 'KeyVadiOnline')
-        self.assertTrue(automation.is_on_cooldown('Nightsatis', 'LisansArenaOnline'))
+        self.assertTrue(automation.is_on_cooldown('Nightsatis', 'KeyVadiOnline'))
+        self.assertFalse(automation.is_on_cooldown('Nightsatis', 'LisansArenaOnline'))
 
     def test_send_lock_blocks_duplicate_until_released(self):
         self.assertTrue(automation.claim_send_lock('example_group', 'KeyVadiOnline', ttl_seconds=60))
