@@ -300,6 +300,10 @@ def save_cooldowns(data):
     except:
         pass
 
+def cooldown_key(grup_name):
+    key = normalize_group_key(grup_name)
+    return normalize_group_key(PROTECTED_GROUP_ALIASES.get(key, key))
+
 def _load_json_file(path, default):
     try:
         if os.path.exists(path):
@@ -560,29 +564,30 @@ def migrate_legacy_blacklist_once():
 
 def is_on_cooldown(grup_name, client_name):
     """
-    Gruba son mesaj gönderilmesinden bu yana yeterince süre geçti mi?
-    # Her bir grup için atılan son mesajın üzerinden geçmesi gereken süre (saniye)
-    GROUP_COOLDOWN_SECONDS = 7200  # 2 saat
-    # Herhangi bir hesap için en az 40 dakika geçmiş olmalı (SPACING_COOLDOWN_MINUTES)
+    Grup bazlı reklam aralığını kontrol eder.
+    Aynı gruba herhangi bir aktif hesap mesaj attıysa en az 1 saat beklenir.
     """
     from datetime import datetime
     
     # Dinamik olarak config'den oku
-    spacing_minutes = 20
+    cooldown_hours = GROUP_COOLDOWN_HOURS
     if os.path.exists("bot_config.json"):
         try:
             with open("bot_config.json", "r", encoding="utf-8") as f:
                 cfg = json.load(f)
-                cooldown_hours = cfg.get("group_cooldown_hours", 1)
-                spacing_minutes = cfg.get("spacing_cooldown_minutes", 20)
+                cooldown_hours = cfg.get("group_cooldown_hours", GROUP_COOLDOWN_HOURS)
         except:
             pass
+    try:
+        cooldown_hours = max(float(cooldown_hours), 1.0)
+    except (TypeError, ValueError):
+        cooldown_hours = 1.0
             
     if is_account_restricted(client_name) or is_group_retry_blocked(grup_name, client_name):
         return True
 
     cooldowns = load_cooldowns()
-    key = grup_name.lower()
+    key = cooldown_key(grup_name)
     if key not in cooldowns:
         return False
         
@@ -600,21 +605,10 @@ def is_on_cooldown(grup_name, client_name):
     # Yeni tip sözlük formatı
     now = datetime.now()
     
-    # 1. Genel aralık kontrolü (herhangi bir hesap son 20 dk içinde atmış mı?)
+    # Genel grup cooldown'u: marka/hesap fark etmeksizin aynı gruba 1 saatten sık atma.
     for acc_name, time_str in group_data.items():
         try:
             last_sent = datetime.fromisoformat(time_str)
-            elapsed_min = (now - last_sent).total_seconds() / 60
-            if elapsed_min < spacing_minutes:
-                return True
-        except:
-            pass
-            
-    # 2. Bu hesap için cooldown kontrolü
-    this_acc_time = group_data.get(client_name)
-    if this_acc_time:
-        try:
-            last_sent = datetime.fromisoformat(this_acc_time)
             elapsed_hours = (now - last_sent).total_seconds() / 3600
             if elapsed_hours < cooldown_hours:
                 return True
@@ -627,7 +621,7 @@ def set_cooldown(grup_name, client_name):
     """Gruba bu hesap tarafından mesaj gönderildi olarak işaretle"""
     from datetime import datetime
     cooldowns = load_cooldowns()
-    key = grup_name.lower()
+    key = cooldown_key(grup_name)
     
     # Eski tip veri varsa veya boşsa temizle
     if key not in cooldowns or isinstance(cooldowns[key], str):
