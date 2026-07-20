@@ -22,6 +22,18 @@ async def async_set_document(doc_id, fields_dict):
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(None, firestore_helper.set_document, doc_id, fields_dict)
 
+async def async_claim_event(event, scope):
+    message_id = getattr(event.message, 'id', None)
+    if not message_id or event.chat_id is None:
+        return True
+    doc_id = f"dm_event_{scope}_{event.chat_id}_{message_id}"
+    result = await async_run_claim(doc_id, {"scope": scope, "chat_id": event.chat_id, "message_id": message_id})
+    return result is not False
+
+async def async_run_claim(doc_id, fields):
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, firestore_helper.claim_document, doc_id, fields)
+
 # Logging configuration
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -536,6 +548,8 @@ async def verify_payment_callback(event):
 
 @bot.on(events.NewMessage(pattern='/start'))
 async def start_handler(event):
+    if not await async_claim_event(event, "lisansarena_sales"):
+        return
     user_id = event.sender_id
     
     ban_data = await async_get_document(f"lisansarena_ban_{user_id}")
@@ -771,6 +785,10 @@ async def message_handler(event):
     PROCESSED_MESSAGE_EVENTS.add(event_key)
     if len(PROCESSED_MESSAGE_EVENTS) > 10000:
         PROCESSED_MESSAGE_EVENTS.clear()
+    if event.text and event.text.startswith('/'):
+        return
+    if not await async_claim_event(event, "lisansarena_sales"):
+        return
     user_id = event.sender_id
     
     ban_data = await async_get_document(f"lisansarena_ban_{user_id}")
