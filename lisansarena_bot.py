@@ -744,8 +744,18 @@ async def support_menu_handler(event):
     buttons = [[Button.inline(t["cancel"], b"menu_main")]]
     await event.edit(f"{t['support_title']}\n\n{t['support_desc']}", buttons=buttons)
 
-@bot.on(events.NewMessage)
+PROCESSED_MESSAGE_EVENTS = set()
+
+@bot.on(events.NewMessage(incoming=True))
 async def message_handler(event):
+    if getattr(event, 'out', False):
+        return
+    event_key = (event.chat_id, getattr(event.message, 'id', None))
+    if event_key in PROCESSED_MESSAGE_EVENTS:
+        return
+    PROCESSED_MESSAGE_EVENTS.add(event_key)
+    if len(PROCESSED_MESSAGE_EVENTS) > 10000:
+        PROCESSED_MESSAGE_EVENTS.clear()
     user_id = event.sender_id
     
     ban_data = await async_get_document(f"lisansarena_ban_{user_id}")
