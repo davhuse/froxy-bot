@@ -19,7 +19,7 @@ app = Flask(__name__,
             static_folder=os.path.join(base_dir, 'static'))
 
 PANEL_ADMIN_TOKEN = os.environ.get('PANEL_ADMIN_TOKEN', '').strip()
-FROXY_ENABLED = False  # Temporarily disabled by operator; do not start from config.
+FROXY_ENABLED = True
 
 @app.before_request
 def protect_panel_api():

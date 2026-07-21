@@ -300,12 +300,39 @@ SALES_INTENT_KEYWORDS = {
     "var mı", "mevcut mu", "nasıl alırım", "satın al",
 }
 
+EXPLICIT_SALES_INTENT_KEYWORDS = {
+    "fiyat", "ücret", "tl", "kaç para", "ne kadar", "satın", "almak",
+    "alacağım", "sipariş", "stok", "link", "shopier", "ödeme", "ödemek",
+    "kampanya", "indirim", "var mı", "mevcut mu", "nasıl alırım", "satın al",
+}
+
+NON_SALES_DM_PATTERNS = (
+    "selam", "slm", "merhaba", "günaydın", "iyi geceler", "teşekkür",
+    "sağ ol", "islam", "islami", "allah", "dua", "amin", "hayırlı",
+)
+
 def has_sales_intent(text):
     normalized = (text or "").strip().lower()
     return bool(normalized) and any(
         re.search(rf"(?<!\w){re.escape(keyword)}(?!\w)", normalized)
         for keyword in SALES_INTENT_KEYWORDS
     )
+
+def has_explicit_sales_intent(text):
+    normalized = (text or "").strip().lower()
+    return bool(normalized) and any(
+        re.search(rf"(?<!\w){re.escape(keyword)}(?!\w)", normalized)
+        for keyword in EXPLICIT_SALES_INTENT_KEYWORDS
+    )
+
+def is_obviously_non_sales_dm(text):
+    normalized = (text or "").strip().lower()
+    if not normalized:
+        return True
+    words = re.findall(r"[a-zA-Z0-9çğıöşüÇĞİÖŞÜ]+", normalized)
+    if len(words) <= 2 and any(word in NON_SALES_DM_PATTERNS for word in words):
+        return True
+    return any(pattern in normalized for pattern in NON_SALES_DM_PATTERNS if pattern in {"islam", "islami", "allah", "dua", "amin"})
 
 # --- Grup Cooldown Sistemi ---
 def load_cooldowns():
@@ -1704,6 +1731,9 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         msg_text = (event.raw_text or "").strip().lower()
         if not msg_text:
             return
+        if is_obviously_non_sales_dm(event.raw_text):
+            print(f"[{client_name}] DM satış dışı görünüyor, otomatik yanıt atlandı.")
+            return
 
         is_keyvadi, is_lisansarena, is_froxy = account_flags(client_name)
         
@@ -1769,7 +1799,7 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         else:
             # Yapay Zeka (AI) Yanıtlayıcı Devreye Girsin (OpenRouter / Pollinations)
             brand_name = "Froxy" if is_froxy else ("LisansArena" if is_lisansarena else "KeyVadi")
-            if not has_sales_intent(event.raw_text):
+            if not has_explicit_sales_intent(event.raw_text):
                 print(f"[{client_name}] DM satış niyeti içermiyor, AI yanıtı atlandı.")
                 return
             ai_res = get_ai_response(event.raw_text, brand_name, products)

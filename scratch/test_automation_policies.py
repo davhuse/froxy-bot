@@ -48,6 +48,14 @@ class AutomationPolicyTests(unittest.TestCase):
         self.assertTrue(automation.is_group_retry_blocked('example_group', 'LisansArenaOnline'))
         self.assertFalse(os.path.exists(os.path.join(self.tmp.name, 'blacklist.txt')))
 
+    def test_dm_intent_filters_skip_non_sales_text(self):
+        self.assertTrue(automation.is_obviously_non_sales_dm('selam'))
+        self.assertTrue(automation.is_obviously_non_sales_dm('Allah razı olsun amin'))
+        self.assertFalse(automation.is_obviously_non_sales_dm('canva pro var mı'))
+        self.assertTrue(automation.has_sales_intent('canva pro var mı'))
+        self.assertTrue(automation.has_explicit_sales_intent('canva pro fiyat link'))
+        self.assertFalse(automation.has_explicit_sales_intent('canva pro'))
+
     def test_success_cooldown_is_per_account(self):
         automation.set_cooldown('example_group', 'KeyVadiOnline')
         with open(automation.COOLDOWN_FILE, encoding='utf-8') as f:
