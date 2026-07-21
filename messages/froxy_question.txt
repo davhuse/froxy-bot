@@ -1,13 +1,13 @@
-Yapay zeka araçlarına ayrı ayrı üyelik almaktan sıkıldınız mı? 🤔
+Birden fazla yapay zeka aracını tek panelden kullanmak ister misiniz? 🤔
 
-Froxy AI ile ChatGPT, Claude, Gemini, DeepSeek ve görsel üretim araçları dahil 1100+ modeli tek panelden kullanabilirsiniz.
+Froxy AI; GPT-5.6, Claude Sonnet 5, Gemini 3.5 Flash, DeepSeek V4 ve 1100+ modeli aynı hesapta sunar.
 
 Neler yapabilirsiniz?
-• Kod yazdırma ve hata çözme
-• Ödev, makale, çeviri ve özet
-• Görsel üretim fikirleri ve prompt desteği
-• Sosyal medya içerikleri
-• Sansürsüz sohbet seçenekleri
+✓ Kod yazdırma, hata analizi ve proje desteği
+✓ Makale, ödev, çeviri, araştırma ve özet
+✓ PDF, görsel ve dosya analizi
+✓ Sosyal medya metni ve görsel üretimi
+✓ AI ajanları ve hazır iş araçları
 
-💰 129 TL'den başlayan paketler
-🔗 Ücretsiz denemek için: @FroxyDestekBOT
+100 ücretsiz krediyle başlayın. Paketler ₺129,99'dan itibaren.
+👉 @FroxyDestekBOT

@@ -788,47 +788,17 @@ def minutes_until_active():
     """Artık dead saatleri kullanmıyoruz, 0 döndür"""
     return 0
 
-# --- Auto-Scrape: Anahtar kelimeler (genişletilmiş) ---
+# --- Auto-Scrape: yalnızca hedef müşteri kitlesine yakın sorgular ---
 SCRAPE_KEYWORDS = [
-    # Genel ticaret (Dijital Odaklı)
-    "kupon satış", "kod satış", "kupon çek", "kupon satis",
-    "alım satım", "ticaret grubu", "satış grubu", "ilan grubu",
-    "hesap satış", "dijital ilan", "smm panel",
-    "indirim kupon", "fırsat indirim", "reklam grubu",
-    "ikinci el", "2.el satış", "alim satim",
-    "e-ticaret satış", "trendyol satıcı", "freelance iş",
-    "referans reklam", "satılık ilan", "epin satış",
-    "sanal ticaret", "dijital tedarik", "shopier satış", "shopier ilan",
-    # AI ve yazılım
-    "yapay zeka", "chatgpt türkçe", "ai araçları", "ai tools",
-    "adobe lisans", "canva pro", "premium hesap",
-    "lisans satış", "yazılım indirim", "midjourney türkçe",
-    "capcut pro", "chatgpt plus", "dijital araçlar",
-    # Kupon ve indirim
-    "trendyol indirim", "trendyol kupon", "yemek kuponu",
-    "indirim kodu", "promosyon kodu", "kampanya kodu",
-    "trendyol indirimleri", "yemeksepeti kupon", "getir indirim",
-    # Freelance ve dijital
-    "dijital pazarlama", "sosyal medya yönetimi",
-    "instagram takipçi", "youtube abone", "tiktok takipçi",
-    "grafik tasarım iş", "makale yazarı", "freelance türkiye",
-    "home office iş", "tasarımcı iş ilanları", "yazılımcı yardımlaşma",
-    # Oyun hesapları
-    "pubg hesap", "brawl stars hesap", "valorant hesap",
-    "oyun hesap satış", "game account", "steam cüzdan",
-    "ucuz uc", "pubg uc", "vp satın al", "valorant puanı",
-    "brawl stars elmas", "oyun pazarı", "epin bayilik",
-    # Yeni eklenen genişletilmiş kelimeler (100+ Kelime Hedefi)
-    "pazar yeri", "spotify premium", "netflix premium", "youtube premium",
-    "disney premium", "exxen hesap", "blutv hesap", "ucuz lisans",
-    "windows key", "office lisans", "steam key", "ucuz oyun",
-    "gta 5 hesap", "lol hesap", "league of legends", "metin2 yang",
-    "metin2 hesap", "smm bayi", "takipçi satın al", "instagram satılık",
-    "tiktok satılık", "kanal satılık", "grup satılık", "reklam alım",
-    "reklam satım", "backlink satış", "seo uzmanı", "webmaster forum",
-    "r10 davetiye", "w10 lisans", "canva tasarım", "dijital marketing",
-    "dropshipping tr", "amazon fba", "e-ticaret yardımlaşma", "ucuz vds",
-    "hosting satış", "hesap alım satım", "reklam satışı", "satis grubu"
+    "dijital ürün satış", "dijital hesap satış", "premium hesap satış",
+    "hesap alım satım", "sanal ticaret", "sanal alım satım",
+    "kupon satış", "kupon alım satım", "kod satış", "indirim kodu satış",
+    "reklam referans", "reklam grubu", "sosyal medya alım satım",
+    "smm panel satış", "lisans satış", "yazılım lisans satış",
+    "shopier satış", "epin satış", "oyun kod satış",
+    "canva pro satış", "adobe lisans", "office lisans",
+    "netflix hesap satış", "youtube premium satış", "spotify premium satış",
+    "chatgpt plus satış", "yapay zeka araçları", "ai araçları satış"
 ]
 
 async def auto_scrape_groups(client, client_name, joined_usernames=None):
@@ -849,7 +819,7 @@ async def auto_scrape_groups(client, client_name, joined_usernames=None):
                 cfg = json.load(f)
                 scraper_active = cfg.get("scraper_active", True)
                 custom_kw = cfg.get("scrape_keywords", None)
-                if custom_kw and len(custom_kw) > 0:
+                if cfg.get("use_custom_scrape_keywords", False) and custom_kw:
                     keywords_list = custom_kw
         except:
             pass
@@ -924,7 +894,7 @@ async def auto_scrape_groups(client, client_name, joined_usernames=None):
                 title = (chat.title or "").lower()
                 
                 # === FİLTRE 1: Üye sayısı (500'den az = zaman kaybı) ===
-                if member_count is not None and member_count < 100:
+                if member_count is not None and member_count < 500:
                     print(f"  ⏭️ @{chat.username} → Üye az ({member_count}), bu taramada atlandı")
                     continue
                 
@@ -2305,7 +2275,7 @@ async def main():
                 async def reset_failure(grup_name):
                     clear_group_failure(grup_name, client_name)
 
-                async def blast_one(grup_name):
+                async def blast_one(grup_name, retry_count=0):
                     """Tek bir gruba rotasyonlu mesaj gönder"""
                     nonlocal sent_count, fail_count
                     if not await ensure_telegram_connection(client, client_name):
@@ -2326,6 +2296,7 @@ async def main():
                             return
                         lock_claimed = True
 
+                    retry_after = 0
                     try:
                         # Mesaj rotasyonu: bu grup için farklı mesaj seç
                         if available_files:
@@ -2418,9 +2389,17 @@ async def main():
                             save_to_list(grup_name, PROGRESS_FILE)
                     except FloodWaitError as e:
                         set_account_restriction(client_name, e.seconds, 'Telegram FloodWait', type(e).__name__, scope='send')
-                        record_group_failure(grup_name, client_name, 'FloodWait', e.seconds)
-                        print(f"[{client_name}] ⏳ FloodWait {e.seconds}sn; hesap duraklatıldı, grup kara listeye alınmadı.")
-                        fail_count += 1
+                        if e.seconds <= 300 and retry_count < 2:
+                            retry_after = e.seconds + 2
+                            print(
+                                f"[{client_name}] ⏳ FloodWait {e.seconds}sn; "
+                                f"@{grup_name} bekleme sonrası yeniden denenecek "
+                                f"({retry_count + 1}/2)."
+                            )
+                        else:
+                            record_group_failure(grup_name, client_name, 'FloodWait', e.seconds)
+                            print(f"[{client_name}] ⏳ FloodWait {e.seconds}sn; hesap duraklatıldı, grup kara listeye alınmadı.")
+                            fail_count += 1
                     except (PeerFloodError, UserRestrictedError) as e:
                         restriction_seconds = 48 * 60 * 60
                         set_account_restriction(client_name, restriction_seconds, 'Telegram hesap/spam kısıtlaması', type(e).__name__, scope='send')
@@ -2469,6 +2448,10 @@ async def main():
                         if lock_claimed:
                             async with state_lock:
                                 release_send_lock(grup_name, client_name)
+
+                    if retry_after:
+                        await asyncio.sleep(retry_after)
+                        await blast_one(grup_name, retry_count + 1)
 
                 # Gruplara sırayla ve aralarında 20-45 saniye rastgele bekleme (daha doğal)
                 random.shuffle(blast_targets)  # Grup sırasını karıştır
