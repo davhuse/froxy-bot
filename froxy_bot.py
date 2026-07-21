@@ -77,10 +77,8 @@ def mark_product_reply_sent(user_id, products=None, fallback_key=None):
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO,
-    handlers=[
-        logging.FileHandler("froxy_bot_log.txt", encoding="utf-8"),
-        logging.StreamHandler()
-    ]
+    # app.py captures stdout into froxy_bot_log.txt in production.
+    handlers=[logging.StreamHandler()]
 )
 logger = logging.getLogger("KeyVadiBot")
 

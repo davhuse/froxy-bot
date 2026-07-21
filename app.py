@@ -323,6 +323,7 @@ def status():
         "instance": socket.gethostname(),
         "ad_processes": len(ad_processes),
         "support_processes": len(get_processes_by_script('froxy_bot.py')),
+        "froxy_support_processes": len(get_processes_by_script('froxy_destek_bot.py')),
         "lisansarena_processes": len(get_processes_by_script('lisansarena_bot.py')),
     })
 

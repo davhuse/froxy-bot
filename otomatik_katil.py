@@ -127,6 +127,8 @@ def parse_spintax(text):
     return re.sub(r'\{([^\{\}]*)\}', replace, text)
 
 TICARET_FORUM_USERNAMES = {'ticaretforumofficial'}
+EXCLUDED_REFERENCE_CHANNELS = {"froxyreferans", "keyvadireferans", "lisansarenareferans"}
+EXCLUDED_REFERENCE_CHAT_IDS = {3982754573, 4401324614, 4316589940}
 TICARET_FORUM_TITLE_WORDS = ('ticaret', 'forum')
 TICARET_FORUM_MAX_CHARS = 700
 TICARET_FORUM_FALLBACKS = {
@@ -359,6 +361,28 @@ def cooldown_key(grup_name):
 def target_dedupe_key(group_name, entity=None):
     chat_id = getattr(entity, 'id', None) if entity is not None else None
     return str(chat_id) if chat_id is not None else normalize_group_key(group_name)
+
+
+def is_reference_channel(group_name, entity=None):
+    """Recognize referral channels by username or Telegram chat ID."""
+    identifiers = {normalize_group_key(group_name)}
+    if entity is not None:
+        identifiers.add(normalize_group_key(getattr(entity, 'username', '')))
+        chat_id = getattr(entity, 'id', None)
+        if chat_id is not None:
+            try:
+                if abs(int(chat_id)) in EXCLUDED_REFERENCE_CHAT_IDS:
+                    return True
+            except (TypeError, ValueError):
+                pass
+
+    for identifier in identifiers:
+        if identifier in EXCLUDED_REFERENCE_CHANNELS:
+            return True
+        numeric = identifier.removeprefix('-100').lstrip('-')
+        if numeric.isdigit() and int(numeric) in EXCLUDED_REFERENCE_CHAT_IDS:
+            return True
+    return False
 
 def _load_json_file(path, default):
     try:
@@ -1975,8 +1999,6 @@ async def main():
     # --- AUTO-SCRAPE: AKTİF ---
     first_client, first_name, _ = active_clients[0]
 
-    EXCLUDED_REFERENCE_CHANNELS = {"froxyreferans", "keyvadireferans", "lisansarenareferans"}
-
     async def setup_reference_channels_autoclean(client, client_name):
         """Ref kanallarından ilan mesajlarını temizler ve Rose Bot ekler."""
         ref_list = ["@FroxyReferans", "@KeyVadiReferans", "@LisansArenaReferans"]
@@ -2190,9 +2212,9 @@ async def main():
             # Hedef gruplar: Korumalı / Onaylı grupların hepsi + Hesabın üye olduğu tüm gruplar (Referans kanalları hariç)
             hedef_set = protected_groups.copy()
             for g_key in joined_dialogs:
-                if g_key != "id" and g_key.lower() not in EXCLUDED_REFERENCE_CHANNELS:
+                if g_key != "id" and not is_reference_channel(g_key, joined_dialogs.get(g_key)):
                     hedef_set.add(g_key)
-            hedef_set = {g for g in hedef_set if g.lower() not in EXCLUDED_REFERENCE_CHANNELS}
+            hedef_set = {g for g in hedef_set if not is_reference_channel(g, joined_dialogs.get(g.lower()))}
             print(f"[{client_name}] 📌 Toplam Gönderim Hedefi (Üye olunan + Korumalı): {len(hedef_set)} grup")
             
             # Önbellekte olan + kara listede olmayan hedef gruplar
@@ -2202,7 +2224,8 @@ async def main():
             debug_not_cached = 0
             small_groups_skipped = 0
             for username_lower in hedef_set:
-                if username_lower in blacklist_lower or username_lower in EXCLUDED_REFERENCE_CHANNELS:
+                entity = joined_dialogs.get(username_lower)
+                if username_lower in blacklist_lower or is_reference_channel(username_lower, entity):
                     debug_blacklisted += 1
                     continue
                 if username_lower in joined_dialogs:

@@ -81,6 +81,13 @@ class AutomationPolicyTests(unittest.TestCase):
             automation.target_dedupe_key('example_group', None),
         )
 
+    def test_reference_channels_are_excluded_by_username_or_chat_id(self):
+        self.assertTrue(automation.is_reference_channel('@FroxyReferans'))
+        self.assertTrue(automation.is_reference_channel('-1004316589940'))
+        entity = SimpleNamespace(id=4401324614, username=None)
+        self.assertTrue(automation.is_reference_channel('some_numeric_alias', entity))
+        self.assertFalse(automation.is_reference_channel('ticaretforumofficial'))
+
     def test_send_lock_blocks_duplicate_until_released(self):
         self.assertTrue(automation.claim_send_lock('example_group', 'KeyVadiOnline', ttl_seconds=60))
         self.assertFalse(automation.claim_send_lock('example_group', 'KeyVadiOnline', ttl_seconds=60))

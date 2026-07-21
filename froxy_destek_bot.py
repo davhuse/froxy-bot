@@ -11,10 +11,9 @@ import firestore_helper
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO,
-    handlers=[
-        logging.FileHandler("froxy_destek_log.txt", encoding="utf-8"),
-        logging.StreamHandler()
-    ]
+    # app.py already redirects this process' stdout to froxy_destek_log.txt.
+    # A FileHandler here would write every record to the same file twice.
+    handlers=[logging.StreamHandler()]
 )
 logger = logging.getLogger("FroxyDestekBot")
 
@@ -463,6 +462,9 @@ async def support_menu_handler(event):
 @bot.on(events.NewMessage)
 async def message_handler(event):
     user_id = event.sender_id
+    config = load_config() or {}
+    admin_chat_id = config.get("froxy_admin_id", config.get("admin_id", ADMIN_ID))
+    support_chat_id = config.get("support_chat_id", admin_chat_id)
     
     # Ban check
     ban_data = firestore_helper.get_document(f"ban_{user_id}")
@@ -561,8 +563,6 @@ async def message_handler(event):
             user_states[user_id] = None
             return
 
-        config = load_config() or {}
-        admin_chat_id = config.get("froxy_admin_id", config.get("admin_id", ADMIN_ID))
         lang = user_lang_helper.get_user_lang(user_id) or "tr"
         t = TEXTS[lang]
 
@@ -610,14 +610,12 @@ async def message_handler(event):
         user_states[user_id] = None
         return
 
-    config = load_config() or {}
-    support_chat_id = config.get("support_chat_id", admin_chat_id)
-
     if event.sender_id == admin_chat_id or event.chat_id == support_chat_id:
         if event.is_reply:
             reply_msg = await event.get_reply_message()
             if reply_msg and reply_msg.text:
                 # Ensure the replied-to message was sent by this bot itself to prevent cross-talk
+                match = None
                 if reply_msg.sender_id == BOT_USER_ID:
                     match = re.search(r"Kullanıcı ID:\*\* `(\d+)`", reply_msg.text)
                 if not match:
