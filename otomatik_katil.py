@@ -37,6 +37,11 @@ gruplar = [
     # Kullanıcının onayladığı hedef gruplar (12 Haziran 2026 güncellemesi)
     "ticaretforumofficial",
     "Nightsatis",
+    "TicaretGrubuuu",
+    "kuponceking",
+    "ticaretsaha",
+    "kuponsatimalim",
+    "kuponindirimsatis",
     "sultanbeyliikinciel0",
     "tahaaslan11",
     "casinox_grup",

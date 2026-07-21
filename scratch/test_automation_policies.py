@@ -102,6 +102,13 @@ class AutomationPolicyTests(unittest.TestCase):
         self.assertEqual(automation.account_brand('LisansArenaOnline'), 'lisansarena')
         self.assertEqual(automation.account_brand('KeyVadiOnline'), 'keyvadi')
 
+    def test_manually_approved_groups_are_protected_targets(self):
+        for group in (
+            'TicaretGrubuuu', 'kuponceking', 'ticaretsaha',
+            'Nightsatis', 'kuponsatimalim', 'kuponindirimsatis',
+        ):
+            self.assertTrue(automation.is_group_protected(group), group)
+
     def test_protected_group_alias_blocks_numeric_blacklist(self):
         self.assertTrue(automation.is_group_protected('Nightsatis'))
         self.assertTrue(automation.is_group_protected('-1003336542169'))
