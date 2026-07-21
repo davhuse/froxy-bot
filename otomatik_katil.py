@@ -42,16 +42,13 @@ gruplar = [
     "ticaretsaha",
     "kuponsatimalim",
     "kuponindirimsatis",
-    "sultanbeyliikinciel0",
+    "zeroticaret",
     "tahaaslan11",
     "casinox_grup",
-    "ReklamOnliene",
     "alimsatimmerkezii",
-    "illegalalimsatimerkezi",
     "ilanticaret",
     "reklamreferans",
     "sosyalmedyaalimsatimticaret",
-    "ReferansReklamYardimlasma",
     "sanalalimsatimticaret",
     "kuponsatisgrup",
     "referansreklam1",
@@ -134,6 +131,12 @@ def parse_spintax(text):
 TICARET_FORUM_USERNAMES = {'ticaretforumofficial'}
 EXCLUDED_REFERENCE_CHANNELS = {"froxyreferans", "keyvadireferans", "lisansarenareferans"}
 EXCLUDED_REFERENCE_CHAT_IDS = {3982754573, 4401324614, 4316589940}
+MANUALLY_EXCLUDED_AD_GROUPS = {
+    "illegalalimsatimerkezi",
+    "sultanbeyliikinciel0",
+    "reklamonliene",
+    "referansreklamyardimlasma",
+}
 TICARET_FORUM_TITLE_WORDS = ('ticaret', 'forum')
 TICARET_FORUM_MAX_CHARS = 700
 TICARET_FORUM_FALLBACKS = {
@@ -388,6 +391,15 @@ def is_reference_channel(group_name, entity=None):
         if numeric.isdigit() and int(numeric) in EXCLUDED_REFERENCE_CHAT_IDS:
             return True
     return False
+
+
+def is_excluded_ad_target(group_name, entity=None):
+    if is_reference_channel(group_name, entity):
+        return True
+    identifiers = {normalize_group_key(group_name)}
+    if entity is not None:
+        identifiers.add(normalize_group_key(getattr(entity, 'username', '')))
+    return bool(identifiers.intersection(MANUALLY_EXCLUDED_AD_GROUPS))
 
 def _load_json_file(path, default):
     try:
@@ -2187,9 +2199,9 @@ async def main():
             # Hedef gruplar: Korumalı / Onaylı grupların hepsi + Hesabın üye olduğu tüm gruplar (Referans kanalları hariç)
             hedef_set = protected_groups.copy()
             for g_key in joined_dialogs:
-                if g_key != "id" and not is_reference_channel(g_key, joined_dialogs.get(g_key)):
+                if g_key != "id" and not is_excluded_ad_target(g_key, joined_dialogs.get(g_key)):
                     hedef_set.add(g_key)
-            hedef_set = {g for g in hedef_set if not is_reference_channel(g, joined_dialogs.get(g.lower()))}
+            hedef_set = {g for g in hedef_set if not is_excluded_ad_target(g, joined_dialogs.get(g.lower()))}
             print(f"[{client_name}] 📌 Toplam Gönderim Hedefi (Üye olunan + Korumalı): {len(hedef_set)} grup")
             
             # Önbellekte olan + kara listede olmayan hedef gruplar
@@ -2200,7 +2212,7 @@ async def main():
             small_groups_skipped = 0
             for username_lower in hedef_set:
                 entity = joined_dialogs.get(username_lower)
-                if username_lower in blacklist_lower or is_reference_channel(username_lower, entity):
+                if username_lower in blacklist_lower or is_excluded_ad_target(username_lower, entity):
                     debug_blacklisted += 1
                     continue
                 if username_lower in joined_dialogs:

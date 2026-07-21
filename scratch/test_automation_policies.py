@@ -88,6 +88,16 @@ class AutomationPolicyTests(unittest.TestCase):
         self.assertTrue(automation.is_reference_channel('some_numeric_alias', entity))
         self.assertFalse(automation.is_reference_channel('ticaretforumofficial'))
 
+    def test_manually_removed_groups_stay_out_of_joined_group_blasts(self):
+        for group in (
+            'illegalalimsatimerkezi', 'sultanbeyliikinciel0',
+            'ReklamOnliene', 'ReferansReklamYardimlasma',
+        ):
+            entity = SimpleNamespace(id=123, username=group)
+            self.assertTrue(automation.is_excluded_ad_target(group, entity), group)
+            self.assertFalse(automation.is_group_protected(group), group)
+        self.assertTrue(automation.is_group_protected('zeroticaret'))
+
     def test_send_lock_blocks_duplicate_until_released(self):
         self.assertTrue(automation.claim_send_lock('example_group', 'KeyVadiOnline', ttl_seconds=60))
         self.assertFalse(automation.claim_send_lock('example_group', 'KeyVadiOnline', ttl_seconds=60))
