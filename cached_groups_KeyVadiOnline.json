@@ -1,57 +1,64 @@
 [
   {
+    "username": "alimsatimmerkezii",
+    "title": "LORD- - ALIM SATIM MERKEZI",
+    "members": 4404,
+    "broadcast": false,
+    "days_inactive": 0
+  },
+  {
+    "username": "reklamvereferanss",
+    "title": "Reklam ve Referans Kasma",
+    "members": 2093,
+    "broadcast": false,
+    "days_inactive": 0
+  },
+  {
     "username": "kuponhesapsatis",
     "title": "Kupon Hesap Kod Satış",
-    "members": 3180,
+    "members": 3178,
     "broadcast": false,
     "days_inactive": 0
   },
   {
-    "username": "ticaretforumofficial",
-    "title": "TİCARET FORUM OFFİCİAL GROUP",
-    "members": 14321,
-    "broadcast": false,
-    "days_inactive": 0
-  },
-  {
-    "username": "sanalalimsatimticaret",
-    "title": "Sanal Alım satım & Ticaret",
-    "members": 2505,
-    "broadcast": false,
-    "days_inactive": 0
-  },
-  {
-    "username": "sosyalmedyaalimsatimticaret",
-    "title": "SOSYAL MEDYA ALIM , SATIM TİCARET",
-    "members": 1867,
+    "username": "ticar4t",
+    "title": "Ticaret Grubu",
+    "members": 1679,
     "broadcast": false,
     "days_inactive": 0
   },
   {
     "username": "sultanbeyliikinciel0",
     "title": "SULTANBEYLİ İKİNCİ EL ALIM SATIM",
-    "members": 3087,
+    "members": 3120,
     "broadcast": false,
     "days_inactive": 0
   },
   {
-    "username": "ReklamOnliene",
-    "title": "🔱☞ REFERANS ONLİNE ☜🔱",
-    "members": 3143,
+    "username": "sanalalimsatimticaret",
+    "title": "Sanal Alım satım & Ticaret",
+    "members": 2506,
     "broadcast": false,
     "days_inactive": 0
   },
   {
-    "username": "tarkanyasa312312321312",
-    "title": "DeepTurk | Topluluğu",
-    "members": 982,
+    "username": "tahaaslan11",
+    "title": "CHAVØ ALIM SATIM CHAT",
+    "members": 2064,
     "broadcast": false,
     "days_inactive": 0
   },
   {
-    "username": "referansreklam1",
-    "title": "Referans kasma ve reklam grubu",
-    "members": 2331,
+    "username": "ticaretforumofficial",
+    "title": "TİCARET FORUM OFFİCİAL GROUP",
+    "members": 14059,
+    "broadcast": false,
+    "days_inactive": 0
+  },
+  {
+    "username": "ticaretguvenilir",
+    "title": "Alım Satım Ticaret Grubu",
+    "members": 3007,
     "broadcast": false,
     "days_inactive": 0
   },
@@ -63,79 +70,72 @@
     "days_inactive": 0
   },
   {
-    "username": "tahaaslan11",
-    "title": "CHAVØ ALIM SATIM CHAT",
-    "members": 2063,
-    "broadcast": false,
-    "days_inactive": 0
-  },
-  {
-    "username": "reklamvereferanss",
-    "title": "Reklam ve Referans Kasma",
-    "members": 2088,
-    "broadcast": false,
-    "days_inactive": 0
-  },
-  {
-    "username": "indirimkodusatis",
-    "title": "KUPON KOD SATIŞI 🇹🇷",
-    "members": 426,
-    "broadcast": false,
-    "days_inactive": 0
-  },
-  {
-    "username": "kuponsatisgrup",
-    "title": "Kupon-Kod Satış Grubu",
-    "members": 2209,
-    "broadcast": false,
-    "days_inactive": 0
-  },
-  {
-    "username": "kuponsatislari0",
-    "title": "KOD SATIŞI 👌",
-    "members": 583,
-    "broadcast": false,
-    "days_inactive": 0
-  },
-  {
-    "username": "alimsatimmerkezii",
-    "title": "LORD- - ALIM SATIM MERKEZI",
-    "members": 4385,
+    "username": "ReferansReklamYardimlasma",
+    "title": "Referans Reklam ve Yardımlaşma",
+    "members": 1756,
     "broadcast": false,
     "days_inactive": 0
   },
   {
     "username": "reklamreferans",
     "title": "Ücretsiz Reklam & Referans Yardımlaşma",
-    "members": 1268,
+    "members": 1271,
     "broadcast": false,
     "days_inactive": 0
   },
   {
-    "username": "ReferansReklamYardimlasma",
-    "title": "Referans Reklam ve Yardımlaşma",
-    "members": 1755,
+    "username": "ReklamOnliene",
+    "title": "🔱☞ REFERANS ONLİNE ☜🔱",
+    "members": 3147,
     "broadcast": false,
     "days_inactive": 0
   },
   {
-    "username": "ticaretguvenilir",
-    "title": "Alım Satım Ticaret Grubu",
-    "members": 3005,
+    "username": "referansreklam1",
+    "title": "Referans kasma ve reklam grubu",
+    "members": 2335,
     "broadcast": false,
     "days_inactive": 0
   },
   {
-    "username": "ticar4t",
-    "title": "Ticaret Grubu",
-    "members": 1678,
+    "username": "kuponsatisgrup",
+    "title": "Kupon-Kod Satış Grubu",
+    "members": 2211,
+    "broadcast": false,
+    "days_inactive": 0
+  },
+  {
+    "username": "kuponsatislari0",
+    "title": "KOD SATIŞI 👌",
+    "members": 582,
+    "broadcast": false,
+    "days_inactive": 0
+  },
+  {
+    "username": "indirimkodusatis",
+    "title": "KUPON KOD SATIŞI 🇹🇷",
+    "members": 425,
+    "broadcast": false,
+    "days_inactive": 0
+  },
+  {
+    "username": "sosyalmedyaalimsatimticaret",
+    "title": "SOSYAL MEDYA ALIM , SATIM TİCARET",
+    "members": 1869,
+    "broadcast": false,
+    "days_inactive": 0
+  },
+  {
+    "username": "buradayiztikla",
+    "title": "DeepTurk | Topluluğu",
+    "members": 2480,
     "broadcast": false,
     "days_inactive": 0
   },
   {
     "username": "ilanticaret",
     "title": "Ticaret ve İlan Grubu - Sanal",
-    "members": 1011,
+    "members": 1010,
     "broadcast": false,
     "days_inactive": 0
   },
