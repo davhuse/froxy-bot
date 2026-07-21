@@ -1,6 +1,6 @@
 Yapay zeka araçlarına ayrı ayrı üyelik almaktan sıkıldınız mı? 🤔
 
-Froxy AI ile ChatGPT, Claude, Gemini, DeepSeek ve görsel üretim araçları dahil 125+ modeli tek panelden kullanabilirsiniz.
+Froxy AI ile ChatGPT, Claude, Gemini, DeepSeek ve görsel üretim araçları dahil 1100+ modeli tek panelden kullanabilirsiniz.
 
 Neler yapabilirsiniz?
 • Kod yazdırma ve hata çözme

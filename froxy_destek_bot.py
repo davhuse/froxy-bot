@@ -77,13 +77,13 @@ if not BOT_TOKEN or BOT_TOKEN == "YOUR_TELEGRAM_BOT_TOKEN":
 user_states = {}
 
 # Initialize client
-bot = TelegramClient(StringSession(), API_ID, API_HASH)
+bot = TelegramClient("froxy_destek_bot_session", API_ID, API_HASH)
 
 TEXTS = {
     "tr": {
         "welcome": (
             "🤖 **Froxy AI Destek Paneline Hoş Geldiniz!**\n\n"
-            "ChatGPT, Claude, Gemini ve 400+ AI modelini tek panelden kullanmanızı sağlayan "
+            "ChatGPT, Claude, Gemini ve 1100+ AI modelini tek panelden kullanmanızı sağlayan "
             "kredi paketlerimiz en uygun fiyatlarla burada!\n\n"
             "🌐 **Web Sitemiz:** froxyai.com\n\n"
             "Lütfen yapmak istediğiniz işlemi seçin 👇"
@@ -99,7 +99,7 @@ TEXTS = {
             ("💼 Profesyonel — 50K Kredi (₺449.99)", "pkg_profesyonel")
         ],
         "pkg_menu_title": "💳 **Froxy AI Kredi Paketleri**\n\n"
-                          "Tüm paketlerde ChatGPT, Claude, Gemini, DeepSeek ve 400+ AI modele erişim!\n"
+                          "Tüm paketlerde ChatGPT, Claude, Gemini, DeepSeek ve 1100+ AI modele erişim!\n"
                           "Yeni üyeler 100 ücretsiz krediyle başlar.\n\n"
                           "Detaylarını görmek istediğiniz paketi seçin:",
         "back_to_pkgs": "↩️ Paketlere Dön",
@@ -156,7 +156,7 @@ TEXTS = {
     "en": {
         "welcome": (
             "🤖 **Welcome to Froxy AI Support Panel!**\n\n"
-            "Our credit packages that allow you to use ChatGPT, Claude, Gemini, and 400+ AI models from a single panel are here at the most affordable prices!\n\n"
+            "Our credit packages that allow you to use ChatGPT, Claude, Gemini, and 1100+ AI models from a single panel are here at the most affordable prices!\n\n"
             "🌐 **Our Website:** froxyai.com\n\n"
             "Please select the action you want to perform 👇"
         ),
@@ -171,7 +171,7 @@ TEXTS = {
             ("💼 Professional — 50K Credits ($13.99)", "pkg_profesyonel")
         ],
         "pkg_menu_title": "💳 **Froxy AI Credit Packages**\n\n"
-                          "Access ChatGPT, Claude, Gemini, DeepSeek, and 400+ AI models in all packages!\n"
+                          "Access ChatGPT, Claude, Gemini, DeepSeek, and 1100+ AI models in all packages!\n"
                           "New members start with 100 free credits.\n\n"
                           "Select the package you want to view details:",
         "back_to_pkgs": "↩️ Back to Packages",

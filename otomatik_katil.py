@@ -1018,7 +1018,7 @@ DM_TEMPLATES = {
     "ai": (
         "Merhaba 👋\n\n"
         "Yapay zeka ile ilgili mesajınızı gördüm. "
-        "ChatGPT, Claude, Gemini ve 400+ AI modelini tek panelden kullanabilirsiniz — "
+        "ChatGPT, Claude, Gemini ve 1100+ AI modelini tek panelden kullanabilirsiniz — "
         "üstelik ilk 100 kredi ücretsiz!\n\n"
         "Detaylar için: @FroxyDestekBOT\n"
         "İyi günler! 🙏"
