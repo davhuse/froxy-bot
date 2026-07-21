@@ -51,6 +51,7 @@ async def async_run_claim(doc_id, fields):
 
 PRODUCT_REPLY_COOLDOWN_SECONDS = 90
 PRODUCT_REPLY_COOLDOWNS = {}
+LAST_AI_REPLY_TIME = {}
 
 def _product_reply_key(user_id, products=None, fallback_key=None):
     if products:
@@ -1060,6 +1061,14 @@ async def message_handler(event):
             if is_product_reply_cooling_down(user_id, fallback_key=fallback_key):
                 logger.info("Suppressing duplicate AI fallback for user %s: %r", user_id, event.text)
                 return
+            
+            # Global per-user AI response rate limit (15 seconds)
+            now = time.monotonic()
+            last_reply = LAST_AI_REPLY_TIME.get(user_id, 0)
+            if now - last_reply < 15:
+                logger.info("Suppressing consecutive AI response for user %s (global AI cooldown)", user_id)
+                return
+                
             ai_reply = get_ai_response(event.text, "LisansArena", products)
             if ai_reply:
                 buttons = [
@@ -1072,6 +1081,7 @@ async def message_handler(event):
                     PROCESSED_MESSAGE_EVENTS.discard(event_key)
                     await async_release_event_claim(event, claim_scope)
                     raise
+                LAST_AI_REPLY_TIME[user_id] = now
                 mark_product_reply_sent(user_id, fallback_key=fallback_key)
                 logger.info(f"AI response for user {user_id}: '{event.text}'")
                 return

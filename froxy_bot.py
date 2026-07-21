@@ -50,6 +50,7 @@ async def async_run_claim(doc_id, fields):
 
 PRODUCT_REPLY_COOLDOWN_SECONDS = 90
 PRODUCT_REPLY_COOLDOWNS = {}
+LAST_AI_REPLY_TIME = {}
 
 def _product_reply_key(user_id, products=None, fallback_key=None):
     if products:
@@ -162,7 +163,7 @@ CATEGORIES = {}
 # Products that are NOT in the Shopier showroom (hidden/delisted/paginated) but still active
 # These are injected into the catalog alongside scraped products
 INJECTED_PRODUCTS = [{"id": "47669105", "title": "YouTube Premium (3 Aylık Kod)", "price": "29.99 TL", "url": "https://www.shopier.com/keyvadi/47669105"},
-    {"id": "47669117", "title": "Netflix 4K Ultra HD (Kişisel Profil)", "price": "79.99 TL", "url": "https://www.shopier.com/keyvadi/47669117"},
+    {"id": "47669117", "title": "Netflix 4K Ultra HD (Kişisel Profil)", "price": "49.99 TL", "url": "https://www.shopier.com/keyvadi/47669117"},
     {"id": "48114807", "title": "XBOX Game Pass Ultimate (3 Aylık Üyelik)", "price": "80.00 TL", "url": "https://www.shopier.com/keyvadi/48114807"},
     {"id": "48114802", "title": "Steam İstediğiniz Oyun (Ortak Hesap)", "price": "60.00 TL", "url": "https://www.shopier.com/keyvadi/48114802"},
     {"id": "48114795", "title": "Semrush Pro (14 Günlük Hesap)", "price": "150.00 TL", "url": "https://www.shopier.com/keyvadi/48114795"},
@@ -562,7 +563,7 @@ def rebuild_categories(products):
     # Injected Hot Deals (Netflix, Adobe, Youtube Premium, Gemini Pro Davet)
     temp_categories["firsatlar"]["products"]["f1"] = {
         "title": "📺 Netflix 4K UHD Profil",
-        "price": "79.99 TL",
+        "price": "49.99 TL",
         "url": "https://www.shopier.com/keyvadi/47669117"
     }
     temp_categories["firsatlar"]["products"]["f2"] = {
@@ -1312,6 +1313,14 @@ async def message_handler(event):
             if is_product_reply_cooling_down(user_id, fallback_key=fallback_key):
                 logger.info("Suppressing duplicate AI fallback for user %s: %r", user_id, event.text)
                 return
+            
+            # Global per-user AI response rate limit (15 seconds)
+            now = time.monotonic()
+            last_reply = LAST_AI_REPLY_TIME.get(user_id, 0)
+            if now - last_reply < 15:
+                logger.info("Suppressing consecutive AI response for user %s (global AI cooldown)", user_id)
+                return
+                
             ai_reply = get_ai_response(event.text, "KeyVadi", products)
             if ai_reply:
                 buttons = [
@@ -1324,6 +1333,7 @@ async def message_handler(event):
                     PROCESSED_MESSAGE_EVENTS.discard(event_key)
                     await async_release_event_claim(event, claim_scope)
                     raise
+                LAST_AI_REPLY_TIME[user_id] = now
                 mark_product_reply_sent(user_id, fallback_key=fallback_key)
                 logger.info(f"AI response for user {user_id}: '{event.text}'")
                 return
