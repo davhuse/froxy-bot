@@ -1975,6 +1975,40 @@ async def main():
     # --- AUTO-SCRAPE: AKTİF ---
     first_client, first_name, _ = active_clients[0]
 
+    EXCLUDED_REFERENCE_CHANNELS = {"froxyreferans", "keyvadireferans", "lisansarenareferans"}
+
+    async def setup_reference_channels_autoclean(client, client_name):
+        """Ref kanallarından ilan mesajlarını temizler ve Rose Bot ekler."""
+        ref_list = ["@FroxyReferans", "@KeyVadiReferans", "@LisansArenaReferans"]
+        for ref_ch in ref_list:
+            try:
+                entity = await client.get_entity(ref_ch)
+                # 1. Reklam mesajı temizleme
+                async for msg in client.iter_messages(entity, limit=30):
+                    txt = (msg.text or "").lower()
+                    if any(kw in txt for kw in ["shopier.com", "satın alabilir", "fiyatı:", "keyvadisatisbot", "lisansarenabot", "otomatik teslimat"]):
+                        try:
+                            await client.delete_messages(entity, msg.id)
+                            print(f"[{client_name}] 🧹 {ref_ch} kanalından eski ilan mesajı (ID {msg.id}) temizlendi.")
+                        except Exception:
+                            pass
+                # 2. MissRose_bot ekleme ve admin yapma
+                try:
+                    rose = await client.get_input_entity("@MissRose_bot")
+                    await client(InviteToChannelRequest(channel=entity, users=[rose]))
+                    from telethon.tl.types import ChatAdminRights
+                    rights = ChatAdminRights(
+                        post_messages=True, delete_messages=True, ban_users=True,
+                        invite_users=True, pin_messages=True, add_admins=False,
+                        anonymous=False, manage_call=True, other=True
+                    )
+                    await client(EditAdminRequest(channel=entity, user_id=rose, admin_rights=rights, rank='Moderator'))
+                    print(f"[{client_name}] 🌹 {ref_ch} kanalına MissRose_bot eklendi ve Admin yapıldı.")
+                except Exception:
+                    pass
+            except Exception:
+                pass
+
     async def run_worker(client, client_name, joined_dialogs):
         protected_groups = get_all_protected_groups()
         
@@ -2141,39 +2175,6 @@ async def main():
                 print(f"[{client_name}] ⏸️ Hesap kısıtlaması aktif; {state.get('until', 'belirsiz')} tarihine kadar gönderim durdu.")
                 await asyncio.sleep(60)
                 continue
-
-EXCLUDED_REFERENCE_CHANNELS = {"froxyreferans", "keyvadireferans", "lisansarenareferans"}
-
-async def setup_reference_channels_autoclean(client, client_name):
-    """Ref kanallarından ilan mesajlarını temizler ve Rose Bot ekler."""
-    ref_list = ["@FroxyReferans", "@KeyVadiReferans", "@LisansArenaReferans"]
-    for ref_ch in ref_list:
-        try:
-            entity = await client.get_entity(ref_ch)
-            # 1. Reklam mesajı temizleme
-            async for msg in client.iter_messages(entity, limit=30):
-                txt = (msg.text or "").lower()
-                if any(kw in txt for kw in ["shopier.com", "satın alabilir", "fiyatı:", "keyvadisatisbot", "lisansarenabot", "otomatik teslimat"]):
-                    try:
-                        await client.delete_messages(entity, msg.id)
-                        print(f"[{client_name}] 🧹 {ref_ch} kanalından eski ilan mesajı (ID {msg.id}) temizlendi.")
-                    except Exception:
-                        pass
-            # 2. MissRose_bot ekleme ve admin yapma
-            try:
-                rose = await client.get_input_entity("@MissRose_bot")
-                await client(InviteToChannelRequest(channel=entity, users=[rose]))
-                rights = ChatAdminRights(
-                    post_messages=True, delete_messages=True, ban_users=True,
-                    invite_users=True, pin_messages=True, add_admins=False,
-                    anonymous=False, manage_call=True, other=True
-                )
-                await client(EditAdminRequest(channel=entity, user_id=rose, admin_rights=rights, rank='Moderator'))
-                print(f"[{client_name}] 🌹 {ref_ch} kanalına MissRose_bot eklendi ve Admin yapıldı.")
-            except Exception:
-                pass
-        except Exception:
-            pass
 
             # Dinamik olarak korumalı listeyi güncelle
             protected_groups = get_all_protected_groups()
