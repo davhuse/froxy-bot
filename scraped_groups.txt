@@ -363,6 +363,7 @@ PazaryeriSaticilari
 canva_pro7
 eticaret_tedarik
 kuponsatisgrup
+kuponcekkodsatis
 ticaretmeydani
 SMMBayiTR
 AmazonSellersTR

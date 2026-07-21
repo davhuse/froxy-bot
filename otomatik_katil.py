@@ -51,6 +51,7 @@ gruplar = [
     "sosyalmedyaalimsatimticaret",
     "sanalalimsatimticaret",
     "kuponsatisgrup",
+    "kuponcekkodsatis",
     "referansreklam1",
     "referanslinkpaylasimigrup",
     "kuponsatislari0",
