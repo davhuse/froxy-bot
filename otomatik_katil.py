@@ -1704,22 +1704,16 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         if sender_id in our_user_ids:
             return
 
+        user_key = (client_name, sender_id)
+
         # 3. Per-User Rate Limiter (15 seconds Cooldown for ALL senders)
         import time
         now = time.time()
-        if False and sender_id in USER_DM_LAST_REPLY_TIME:
-            if now - USER_DM_LAST_REPLY_TIME[sender_id] < 15:
+        if user_key in USER_DM_LAST_REPLY_TIME:
+            if now - USER_DM_LAST_REPLY_TIME[user_key] < 15:
                 print(f"⏳ [{client_name}] @{getattr(sender, 'username', sender_id)} 15sn cooldown içinde, mükerrer mesaj yoksayıldı.")
                 return
 
-        # Mark message and timestamp
-        if False and msg_id:
-            PROCESSED_DM_MSG_IDS.add(msg_id)
-            if len(PROCESSED_DM_MSG_IDS) > 2000:
-                PROCESSED_DM_MSG_IDS.clear()
-        # Mark only after a reply has been accepted by Telegram.
-
-        user_key = (client_name, sender_id)
         normalized_text = (event.raw_text or '').strip().lower()
         previous_time = USER_DM_LAST_REPLY_TIME.get(user_key)
         previous_text = USER_DM_LAST_REPLY_TEXT.get(user_key, '')
