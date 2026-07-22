@@ -130,6 +130,7 @@ def parse_spintax(text):
 
 SHORT_AD_GROUP_USERNAMES = {'ilanticaret'}
 SHORT_AD_GROUP_TITLES = {'ticaret ve ilan grubu - sanal'}
+SPYFORUM_GROUP_MARKER = 'spyforum'
 EXCLUDED_REFERENCE_CHANNELS = {"froxyreferans", "keyvadireferans", "lisansarenareferans"}
 EXCLUDED_REFERENCE_CHAT_IDS = {3982754573, 4401324614, 4316589940}
 MANUALLY_EXCLUDED_AD_GROUPS = {
@@ -176,6 +177,18 @@ def is_short_ad_group(grup_name, entity=None):
     if any(item in SHORT_AD_GROUP_USERNAMES for item in identifiers):
         return True
     return title in SHORT_AD_GROUP_TITLES
+
+
+def is_spyforum_group(grup_name, entity=None):
+    """SpyForum'u username veya basliktan ayirt et."""
+    values = [grup_name]
+    if entity is not None:
+        values.extend((getattr(entity, 'username', ''), getattr(entity, 'title', '')))
+    for value in values:
+        compact = re.sub(r'[^a-z0-9]', '', _normalize_group_identifier(value))
+        if SPYFORUM_GROUP_MARKER in compact:
+            return True
+    return False
 
 
 def account_brand(client_name):
@@ -2326,6 +2339,10 @@ async def main():
                             # Spintax sonrasinda da sert sinir uygula; bu gruba asla uzun
                             # normal-sablon veya ek kampanya blogu dusmez.
                             msg = short_group_message(is_keyvadi, is_lisansarena, is_froxy)
+                        if is_spyforum_group(grup_name, entity):
+                            # Grup filtresi "CC" ifadesini siliyor; yalnızca SpyForum'da
+                            # urun adini Adobe olarak gonder.
+                            msg = re.sub(r'(?i)\bAdobe\s+CC\b', 'Adobe', msg)
                         
                         # Görsel/Banner gönderimi (Grup yetki kontrolleri ve hata toleransı eklendi)
                         if is_keyvadi:
