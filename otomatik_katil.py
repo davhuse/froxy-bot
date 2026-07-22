@@ -128,7 +128,8 @@ def parse_spintax(text):
         return random.choice(options)
     return re.sub(r'\{([^\{\}]*)\}', replace, text)
 
-TICARET_FORUM_USERNAMES = {'ticaretforumofficial'}
+SHORT_AD_GROUP_USERNAMES = {'ilanticaret'}
+SHORT_AD_GROUP_TITLES = {'ticaret ve ilan grubu - sanal'}
 EXCLUDED_REFERENCE_CHANNELS = {"froxyreferans", "keyvadireferans", "lisansarenareferans"}
 EXCLUDED_REFERENCE_CHAT_IDS = {3982754573, 4401324614, 4316589940}
 MANUALLY_EXCLUDED_AD_GROUPS = {
@@ -138,7 +139,6 @@ MANUALLY_EXCLUDED_AD_GROUPS = {
     "reklamonliene",
     "referansreklamyardimlasma",
 }
-TICARET_FORUM_TITLE_WORDS = ('ticaret', 'forum')
 TICARET_FORUM_MAX_CHARS = 700
 TICARET_FORUM_FALLBACKS = {
     'keyvadi': (
@@ -165,17 +165,17 @@ def _normalize_group_identifier(value):
     return str(value or '').strip().lower().lstrip('@')
 
 
-def is_ticaret_forum_group(grup_name, entity=None):
-    """Ticaret Forum'u username degisse bile basliktan guvenle ayirt et."""
+def is_short_ad_group(grup_name, entity=None):
+    """Kisa reklam sablonu kullanacak grubu username veya tam basliktan ayirt et."""
     identifiers = [_normalize_group_identifier(grup_name)]
     title = ''
     if entity is not None:
         identifiers.append(_normalize_group_identifier(getattr(entity, 'username', '')))
         title = _normalize_group_identifier(getattr(entity, 'title', ''))
 
-    if any(item in TICARET_FORUM_USERNAMES for item in identifiers):
+    if any(item in SHORT_AD_GROUP_USERNAMES for item in identifiers):
         return True
-    return all(word in title for word in TICARET_FORUM_TITLE_WORDS)
+    return title in SHORT_AD_GROUP_TITLES
 
 
 def account_brand(client_name):
@@ -192,7 +192,7 @@ def account_flags(client_name):
     return brand == 'keyvadi', brand == 'lisansarena', brand == 'froxy'
 
 
-def ticaret_forum_message(is_keyvadi, is_lisansarena, is_froxy=False):
+def short_group_message(is_keyvadi, is_lisansarena, is_froxy=False):
     brand = 'froxy' if is_froxy else ('lisansarena' if is_lisansarena else 'keyvadi')
     filename = f'message_ticaret_{brand}_short.txt'
     try:
@@ -2310,9 +2310,9 @@ async def main():
                         is_keyvadi, is_lisansarena, is_froxy = account_flags(client_name)
 
                         msg = base_msg
-                        is_ticaret_forum = is_ticaret_forum_group(grup_name, entity)
-                        if is_ticaret_forum:
-                            msg = ticaret_forum_message(is_keyvadi, is_lisansarena, is_froxy)
+                        is_short_group = is_short_ad_group(grup_name, entity)
+                        if is_short_group:
+                            msg = short_group_message(is_keyvadi, is_lisansarena, is_froxy)
                         elif grup_name.lower() == "kuponceking":
                             msg = msg.replace("bot", "sistem").replace("Bot", "Sistem") \
                                      .replace("🤖", "").strip() + "\n"
@@ -2320,12 +2320,12 @@ async def main():
                         
                         # Pazarlama özellikleri (İndirim kodları, FOMO, Haftalık kampanya) ekle
                         msg = process_marketing_features(
-                            msg, is_keyvadi, is_lisansarena, is_short=is_ticaret_forum
+                            msg, is_keyvadi, is_lisansarena, is_short=is_short_group
                         )
-                        if is_ticaret_forum:
+                        if is_short_group:
                             # Spintax sonrasinda da sert sinir uygula; bu gruba asla uzun
                             # normal-sablon veya ek kampanya blogu dusmez.
-                            msg = ticaret_forum_message(is_keyvadi, is_lisansarena, is_froxy)
+                            msg = short_group_message(is_keyvadi, is_lisansarena, is_froxy)
                         
                         # Görsel/Banner gönderimi (Grup yetki kontrolleri ve hata toleransı eklendi)
                         if is_keyvadi:
@@ -2353,7 +2353,7 @@ async def main():
                             except Exception as e:
                                 print(f"[{client_name}] ⚠️ @{grup_name} izin kontrol hatası: {e}")
                                 
-                        if is_ticaret_forum:
+                        if is_short_group:
                             allows_media = False
 
                         if allows_media and os.path.exists(banner_file):
