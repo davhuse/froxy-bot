@@ -210,28 +210,10 @@ def process_marketing_features(msg, is_keyvadi, is_lisansarena, is_short=False):
     msg = msg.strip()
     if is_short:
         return msg
-    
-    # Günün Fırsatları (Daily Deals) - Sadece kısa olmayan mesajlara ekle
-    if not is_short:
-        deals = ""
-        if is_keyvadi:
-            deals = (
-                "\n\n🔥 **GÜNÜN DEV FIRSATLARI!** 🔥\n"
-                "• 🔴 **YouTube Premium (Aylık):** ~~44.99 TL~~ yerine **29.99 TL**!\n"
-                "• 🍿 **Netflix UHD Ortak Profil (1 Aylık):** ~~59.99 TL~~ yerine **39.99 TL**!\n"
-                "• 🤖 **Gemini Pro 12 Aylık (Davet):** ~~124.99 TL~~ yerine **69.99 TL**!\n"
-                "• 🔑 **Steam 200$ Random Key:** ~~49.99 TL~~ yerine **30.00 TL**!"
-            )
-        elif is_lisansarena:
-            deals = (
-                "\n\n🔥 **GÜNÜN DEV FIRSATLARI!** 🔥\n"
-                "• 🔴 **YouTube Premium (Aylık):** ~~44.99 TL~~ yerine **29.99 TL**!\n"
-                "• 🍿 **Netflix UHD Ortak Profil (1 Aylık):** ~~59.99 TL~~ yerine **39.99 TL**!\n"
-                "• 🤖 **Gemini Pro 12 Aylık (Davet):** ~~299.99 TL~~ yerine **99.99 TL**!\n"
-                "• 🔑 **Steam 200$ Random Key:** ~~49.99 TL~~ yerine **30.00 TL**!"
-            )
-        if deals:
-            msg += deals
+
+    # Şablonlar artık tek bir ürün ihtiyacına odaklanıyor. Her mesaja aynı
+    # uzun "günün fırsatları" bloğunu eklemek fiyat çelişkisi yaratıyor ve
+    # reklamı spam/katalog görünümüne sokuyordu; burada yalnızca CTA garanti edilir.
 
     if is_keyvadi:
         bot_uname = "@KeyVadiSatisBot"
@@ -738,12 +720,12 @@ FROXY_MESSAGES = [
     os.path.join(MESSAGES_DIR, 'froxy_price.txt'),
 ]
 KEYVADI_MESSAGES = [
-    os.path.join(MESSAGES_DIR, 'keyvadi_1.txt'),
-    os.path.join(MESSAGES_DIR, 'keyvadi_2.txt'),
-    os.path.join(MESSAGES_DIR, 'keyvadi_3.txt'),
-    os.path.join(MESSAGES_DIR, 'keyvadi_4.txt'),
-    os.path.join(MESSAGES_DIR, 'keyvadi_5.txt'),
-    os.path.join(MESSAGES_DIR, 'keyvadi_6.txt'),
+    os.path.join(MESSAGES_DIR, 'keyvadi_deal.txt'),
+    os.path.join(MESSAGES_DIR, 'keyvadi_kupon.txt'),
+    os.path.join(MESSAGES_DIR, 'keyvadi_ai.txt'),
+    os.path.join(MESSAGES_DIR, 'keyvadi_adobe.txt'),
+    os.path.join(MESSAGES_DIR, 'keyvadi_ogrenci.txt'),
+    os.path.join(MESSAGES_DIR, 'keyvadi_genel.txt'),
 ]
 
 LISANSARENA_MESSAGES = [
@@ -2298,6 +2280,9 @@ async def main():
                     entity = joined_dialogs.get(grup_name.lower())
                     if not entity:
                         return
+                    if is_group_retry_blocked(grup_name, client_name):
+                        print(f"[{client_name}] ⏸️ @{grup_name} geçici/hesaba özel gönderim engelinde, atlanıyor...")
+                        return
                     
                     lock_claimed = False
                     async with state_lock:
@@ -2423,6 +2408,7 @@ async def main():
                         fail_count += 1
                         async with state_lock:
                             blacklist_group(grup_name, 'UserBannedInChannel', client_name)
+                            record_group_failure(grup_name, client_name, 'UserBannedInChannel', 30 * 24 * 60 * 60)
                         try:
                             if entity:
                                 if is_group_protected(grup_name):
@@ -2437,6 +2423,7 @@ async def main():
                         fail_count += 1
                         async with state_lock:
                             blacklist_group(grup_name, 'ChatWriteForbidden', client_name)
+                            record_group_failure(grup_name, client_name, 'ChatWriteForbidden', 7 * 24 * 60 * 60)
                         try:
                             if entity:
                                 if is_group_protected(grup_name):

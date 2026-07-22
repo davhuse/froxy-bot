@@ -3,7 +3,7 @@
 {KeyVadi'den güvenilir ve uygun fiyatlı premium AI hesapları:|Premium yapay zeka hesaplarını en uygun fiyatlarla sunuyoruz:}
 
 • Gemini Pro (1 Yıl): 299.99 TL
-• Gemini Ultra (Davet): 399.90 TL
+• Gemini Ultra (Davet): 399.99 TL
 • Super Grok Premium (1 Ay): 449.99 TL
 • Gamma Pro: 299.99 TL
 

@@ -48,6 +48,19 @@ class AutomationPolicyTests(unittest.TestCase):
         self.assertTrue(automation.is_group_retry_blocked('example_group', 'LisansArenaOnline'))
         self.assertFalse(os.path.exists(os.path.join(self.tmp.name, 'blacklist.txt')))
 
+    def test_terminal_group_failure_blocks_only_affected_account(self):
+        automation.record_group_failure(
+            'example_group', 'FroxyOnline', 'UserBannedInChannel', 30 * 24 * 60 * 60
+        )
+        self.assertTrue(automation.is_group_retry_blocked('example_group', 'FroxyOnline'))
+        self.assertFalse(automation.is_group_retry_blocked('example_group', 'KeyVadiOnline'))
+
+    def test_marketing_features_do_not_append_repetitive_deal_catalog(self):
+        message = 'Canva Pro 1 Yıl: 83.99 TL\nSipariş: @KeyVadiSatisBot'
+        result = automation.process_marketing_features(message, True, False)
+        self.assertEqual(result, message)
+        self.assertNotIn('GÜNÜN DEV FIRSATLARI', result)
+
     def test_dm_intent_filters_skip_non_sales_text(self):
         self.assertTrue(automation.is_obviously_non_sales_dm('selam'))
         self.assertTrue(automation.is_obviously_non_sales_dm('Allah razı olsun amin'))
