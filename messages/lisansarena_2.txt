@@ -1,10 +1,22 @@
-LİSANSARENA | TASARIM VE ÜRETKENLİK
+LİSANSARENA | İŞ, EĞİTİM VE ÜRETKENLİK ARAÇLARI
 
-Tasarım, sunum ve yazım araçlarında öne çıkan seçenekler:
+Araştırma ve yapay zeka:
+Gemini Pro 12 Ay — 99.99 TL
+Perplexity Pro 1 Ay — 119.90 TL
+DeepL AI Kişisel — 59.90 TL
+Magnific AI Business Ortak — 49.90 TL
 
-• Canva Pro Öğretmen 1 Yıl: 149.99 TL
-• Adobe Creative Cloud 1 Hafta: 59.90 TL
-• Adobe Creative Cloud Ortak 1 Ay: 49.90 TL
-• Grammarly Pro 1 Hafta: 79.90 TL
+Tasarım ve içerik üretimi:
+Canva Öğretmen 1 Yıl — 149.99 TL
+Adobe Creative Cloud 1 Hafta — 59.90 TL
+Adobe CC Ortak 1 Ay — 49.90 TL
+Grammarly Pro 1 Hafta — 79.90 TL
 
-Size uygun üyelik türünü öğrenmek için @LisansArenaBot adresine ürün adını yazın.
+Ofis ve eğitim:
+Office 365 1 Yıl — 73.50 TL
+Windows 11 Pro — 73.50 TL
+Duolingo Ortak — 29.99 TL
+Scribd Ortak — 29.90 TL
+
+Shopier ödeme seçeneği ve teslimat sonrası destek mevcuttur.
+Ürün detayları: @LisansArenaBot

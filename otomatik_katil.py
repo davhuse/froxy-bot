@@ -720,12 +720,12 @@ FROXY_MESSAGES = [
     os.path.join(MESSAGES_DIR, 'froxy_price.txt'),
 ]
 KEYVADI_MESSAGES = [
-    os.path.join(MESSAGES_DIR, 'keyvadi_deal.txt'),
-    os.path.join(MESSAGES_DIR, 'keyvadi_kupon.txt'),
-    os.path.join(MESSAGES_DIR, 'keyvadi_ai.txt'),
-    os.path.join(MESSAGES_DIR, 'keyvadi_adobe.txt'),
-    os.path.join(MESSAGES_DIR, 'keyvadi_ogrenci.txt'),
-    os.path.join(MESSAGES_DIR, 'keyvadi_genel.txt'),
+    os.path.join(MESSAGES_DIR, 'keyvadi_1.txt'),
+    os.path.join(MESSAGES_DIR, 'keyvadi_2.txt'),
+    os.path.join(MESSAGES_DIR, 'keyvadi_3.txt'),
+    os.path.join(MESSAGES_DIR, 'keyvadi_4.txt'),
+    os.path.join(MESSAGES_DIR, 'keyvadi_5.txt'),
+    os.path.join(MESSAGES_DIR, 'keyvadi_6.txt'),
 ]
 
 LISANSARENA_MESSAGES = [
