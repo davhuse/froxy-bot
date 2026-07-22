@@ -35,7 +35,6 @@ def print(*args, **kwargs):
 
 gruplar = [
     # Kullanıcının onayladığı hedef gruplar (12 Haziran 2026 güncellemesi)
-    "ticaretforumofficial",
     "Nightsatis",
     "TicaretGrubuuu",
     "kuponceking",
@@ -133,6 +132,7 @@ TICARET_FORUM_USERNAMES = {'ticaretforumofficial'}
 EXCLUDED_REFERENCE_CHANNELS = {"froxyreferans", "keyvadireferans", "lisansarenareferans"}
 EXCLUDED_REFERENCE_CHAT_IDS = {3982754573, 4401324614, 4316589940}
 MANUALLY_EXCLUDED_AD_GROUPS = {
+    "ticaretforumofficial",
     "illegalalimsatimerkezi",
     "sultanbeyliikinciel0",
     "reklamonliene",
