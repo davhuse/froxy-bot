@@ -1,12 +1,14 @@
-💡 HER YAPAY ZEKAYA AYRI AYRI ÖDEMEYİN
+💡 TEK BİR MODELE DEĞİL, İŞİNE UYGUN MODELE ÇALIŞ
 
-ChatGPT, Claude, Gemini ve diğer araçlara ayrı abonelikler yerine 1100+ modeli tek Froxy AI hesabında birleştirin.
+Bir işte GPT, diğerinde Claude, araştırmada Gemini daha iyi sonuç verebilir. Froxy AI ile aynı isteği farklı modellerde karşılaştırır; en iyi çıktıyı seçer ve yalnızca kullandığın kadar kredi harcarsın.
 
-• GPT-5.6 — gelişmiş analiz, içerik ve problem çözme
+• Güncel GPT seçenekleri — analiz, içerik ve problem çözme
 • Claude Sonnet 5 — kodlama ve uzun doküman çalışmaları
-• Gemini 3.5 Flash — hızlı multimodal işlemler
-• DeepSeek V4 — hızlı Türkçe yanıt ve teknik görevler
-• Görsel modeller — tasarım, reklam ve içerik üretimi
+• Gemini 3.5 Flash — hızlı multimodal görevler
+• DeepSeek V4 ve görsel modeller — teknik işler, tasarım ve içerik
 
-100 ücretsiz krediyle test edin; paketler ₺129,99'dan başlıyor.
+ChatGPT Plus + Claude Pro + Gemini AI Pro için ayrı abonelik açmak yerine 1.100+ modeli tek panelde topla.
+
+🎁 100 ücretsiz krediyle test et
+💳 Paketler ₺129,99'dan başlıyor
 👉 @FroxyDestekBOT

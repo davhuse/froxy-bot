@@ -1,13 +1,14 @@
-Birden fazla yapay zeka aracını tek panelden kullanmak ister misiniz? 🤔
+Birden fazla yapay zeka aracına para vermek yerine, hepsini tek panelden denemek ister misiniz? 🤔
 
-Froxy AI; GPT-5.6, Claude Sonnet 5, Gemini 3.5 Flash, DeepSeek V4 ve 1100+ modeli aynı hesapta sunar.
+Froxy AI'da güncel GPT, Claude Sonnet 5, Gemini 3.5 Flash, DeepSeek V4 ve 1.100+ model aynı kredi sistemiyle çalışır.
 
 Neler yapabilirsiniz?
 ✓ Kod yazdırma, hata analizi ve proje desteği
-✓ Makale, ödev, çeviri, araştırma ve özet
+✓ Makale, özet, çeviri ve araştırma
 ✓ PDF, görsel ve dosya analizi
-✓ Sosyal medya metni ve görsel üretimi
-✓ AI ajanları ve hazır iş araçları
+✓ Reklam/sosyal medya metni ve görsel üretimi
+✓ Hazır AI ajanlarıyla daha hızlı iş akışları
 
-100 ücretsiz krediyle başlayın. Paketler ₺129,99'dan itibaren.
-👉 @FroxyDestekBOT
+ChatGPT Plus ve Claude Pro'nun her biri 20$/ay seviyesindeyken, Froxy paketleri ₺129,99'dan başlar.
+
+🎁 Önce 100 ücretsiz krediyle dene: @FroxyDestekBOT
