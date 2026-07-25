@@ -37,7 +37,6 @@ gruplar = [
     # Kullanıcının onayladığı hedef gruplar (12 Haziran 2026 güncellemesi)
     "Nightsatis",
     "TicaretGrubuuu",
-    "kuponceking",
     "ticaretsaha",
     "kuponsatimalim",
     "kuponindirimsatis",
@@ -70,6 +69,11 @@ PROTECTED_GROUP_ALIASES = {
     "-1003336542169": "nightsatis",
 }
 
+# Kullanıcı tarafından katılım talebi geri çekilen gruplar. Bu gruplar yeni
+# katılım kuyruğuna tekrar alınmaz. Hesap zaten üyeyse reklam hedefi olmaya
+# devam eder; yalnızca bekleyen talep geri çekilir.
+CANCELLED_JOIN_REQUESTS = {"kuponceking"}
+
 def normalize_group_key(grup_name):
     g_lower = str(grup_name or '').lower().replace('@', '').strip()
     g_lower = g_lower.rstrip('/')
@@ -89,6 +93,22 @@ def is_group_protected(grup_name):
     protected = get_all_protected_groups()
     alias = PROTECTED_GROUP_ALIASES.get(g_lower)
     return g_lower in protected or (alias and normalize_group_key(alias) in protected)
+
+async def cancel_pending_join_request(client, client_name, joined_dialogs, group_username):
+    """Üye olmayan hesap için bekleyen Telegram katılım isteğini geri çeker."""
+    group_key = normalize_group_key(group_username)
+    if group_key in joined_dialogs:
+        print(f"[{client_name}] ℹ️ @{group_key} hesabın zaten üye olduğu grup; katılım talebi iptali uygulanmadı.")
+        return False
+    try:
+        entity = await client.get_entity(group_key)
+        await client(LeaveChannelRequest(entity))
+        print(f"[{client_name}] ✅ @{group_key} bekleyen katılım talebi iptal edildi.")
+        return True
+    except Exception as exc:
+        # İstek daha önce iptal edilmişse veya hiç oluşmamışsa döngüyü bozma.
+        print(f"[{client_name}] ℹ️ @{group_key} için iptal gerekmiyor/uygulanamadı: {type(exc).__name__}")
+        return False
 
 STATS_FILE = 'stats.json'
 
@@ -2016,6 +2036,7 @@ async def main():
 
     async def run_worker(client, client_name, joined_dialogs):
         protected_groups = get_all_protected_groups()
+        cancelled_join_requests_handled = set()
         
         VERIFIED_FILE = f"verified_groups_{client_name.replace(' ', '_').replace('#', '')}.json"
         MIN_UNIQUE_SENDERS = 10   # Grupta en az 10 farklı kişi yazmış olmalı
@@ -2187,6 +2208,12 @@ async def main():
             # Her blast döngüsü başında diyalogları güncelle
             await cache_dialogs()
             await setup_reference_channels_autoclean(client, client_name)
+
+            # Geri çekilmesi istenen talepleri runtime başına yalnızca bir kez
+            # işle. Üye olan hesaplardan çıkış yapılmaz.
+            for cancelled_group in CANCELLED_JOIN_REQUESTS - cancelled_join_requests_handled:
+                await cancel_pending_join_request(client, client_name, joined_dialogs, cancelled_group)
+                cancelled_join_requests_handled.add(cancelled_group)
             
             blacklist = get_list(BLACKLIST_FILE)
             blacklist_lower = set(b.lower() for b in blacklist)
