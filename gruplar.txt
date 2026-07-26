@@ -7,10 +7,6 @@ kuponhesapsatis
 kuponsatisgrup
 kuponcekkodsatis
 turkiyevozolsigarasatis
-ilanticaret
-sanalalimsatimticaret
 ticar4t
 reklamreferans
 tahaaslan11
-referansreklamyardimlasma
-illegalalimsatimerkezi
