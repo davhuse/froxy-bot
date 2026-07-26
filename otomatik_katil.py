@@ -74,6 +74,11 @@ PROTECTED_GROUP_ALIASES = {
 # devam eder; yalnızca bekleyen talep geri çekilir.
 CANCELLED_JOIN_REQUESTS = {"kuponceking"}
 
+# Uyeliginden cikilacak gruplar.  Ban yedigimiz bir grupta uye kalmaya devam
+# etmek, yoneticiler hesabi tekrar fark ettiginde ikinci bir bana yol aciyor.
+# Calisma basina bir kez islenir.
+GROUPS_TO_LEAVE = {"kuponsatimalim"}
+
 def normalize_group_key(grup_name):
     g_lower = str(grup_name or '').lower().replace('@', '').strip()
     g_lower = g_lower.rstrip('/')
@@ -2152,6 +2157,7 @@ async def main():
     async def run_worker(client, client_name, joined_dialogs):
         protected_groups = get_all_protected_groups()
         cancelled_join_requests_handled = set()
+        groups_left_handled = set()
         
         VERIFIED_FILE = f"verified_groups_{client_name.replace(' ', '_').replace('#', '')}.json"
         MIN_UNIQUE_SENDERS = 10   # Grupta en az 10 farklı kişi yazmış olmalı
@@ -2329,7 +2335,24 @@ async def main():
             for cancelled_group in CANCELLED_JOIN_REQUESTS - cancelled_join_requests_handled:
                 await cancel_pending_join_request(client, client_name, joined_dialogs, cancelled_group)
                 cancelled_join_requests_handled.add(cancelled_group)
-            
+
+            # Ayrilmasi istenen gruplardan cik (calisma basina bir kez).
+            for leave_group in GROUPS_TO_LEAVE - groups_left_handled:
+                groups_left_handled.add(leave_group)
+                entity = joined_dialogs.get(normalize_group_key(leave_group))
+                if not entity:
+                    continue
+                if is_group_protected(leave_group):
+                    print(f"[{client_name}] ⚠️ @{leave_group} korumalı listede, çıkış yapılmadı.")
+                    continue
+                try:
+                    await client(LeaveChannelRequest(entity))
+                    joined_dialogs.pop(normalize_group_key(leave_group), None)
+                    print(f"[{client_name}] 🚪 @{leave_group} grubundan çıkıldı (ayrılma listesi).")
+                except Exception as le:
+                    print(f"[{client_name}] ⚠️ @{leave_group} grubundan çıkılamadı: {type(le).__name__}")
+
+
             blacklist = get_list(BLACKLIST_FILE)
             blacklist_lower = set(b.lower() for b in blacklist)
             blacklist_lower.update(EXCLUDED_REFERENCE_CHANNELS)
