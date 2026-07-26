@@ -2650,6 +2650,19 @@ async def main():
                 
                 # Mesaj geçmişini kaydet
                 save_msg_history(msg_history)
+
+                # Cooldown'lari hemen buluta yaz.  Periyodik senkron 5 dakikada
+                # bir calisiyor; tur bitisi ile o senkron arasinda bir yeniden
+                # baslatma olursa bu turun kayitlari kaybolur ve gruplara 1 saat
+                # dolmadan tekrar mesaj gidebilir.
+                try:
+                    if os.path.exists(COOLDOWN_FILE):
+                        with open(COOLDOWN_FILE, 'r', encoding='utf-8') as f_cd:
+                            fs_set_state(cooldowns=f_cd.read())
+                        print(f"[{client_name}] ☁️ Tur sonu cooldown kayıtları buluta yazıldı.")
+                except Exception as e:
+                    print(f"[{client_name}] ⚠️ Cooldown bulut yedeği alınamadı: {e}")
+
                 update_ad_account_status(
                     client_name,
                     phase='completed',
