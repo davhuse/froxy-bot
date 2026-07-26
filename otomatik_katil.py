@@ -174,12 +174,23 @@ SHORT_AD_GROUP_TITLES = {'ticaret ve ilan grubu - sanal'}
 SPYFORUM_GROUP_MARKER = 'spyforum'
 EXCLUDED_REFERENCE_CHANNELS = {"froxyreferans", "keyvadireferans", "lisansarenareferans"}
 EXCLUDED_REFERENCE_CHAT_IDS = {3982754573, 4401324614, 4316589940}
+# Reklam gonderilmeyecek gruplar.  Bu liste bilerek KOD icinde tutuluyor:
+# blacklist.txt her acilista ve her 5 dakikada bir Firestore'daki surumle
+# eziliyor, dolayisiyla dosyaya yazilan haric tutmalar kalici olmuyor.
+# Buradaki kayitlara hicbir senkron dokunamaz.
 MANUALLY_EXCLUDED_AD_GROUPS = {
     "ticaretforumofficial",
     "illegalalimsatimerkezi",
     "sultanbeyliikinciel0",
     "reklamonliene",
     "referansreklamyardimlasma",
+    # Kullanicinin 26 Temmuz 2026'da kesilmesini istedigi gruplar
+    "ilanticaret",
+    "referansreklam1",
+    "reklamvereferanss",
+    "sanalalimsatimticaret",
+    # Ban yendigi icin uyelikten de cikilan grup
+    "kuponsatimalim",
 }
 TICARET_FORUM_MAX_CHARS = 700
 TICARET_FORUM_FALLBACKS = {
