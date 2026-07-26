@@ -13,7 +13,7 @@
     "ad_proxy_2": "",
     "ad_proxy_3": "",
     "send_images": false,
-    "group_cooldown_hours": 0.4,
+    "group_cooldown_hours": 1,
     "spacing_cooldown_minutes": 5,
     "ad_sleep_min": 45,
     "ad_sleep_max": 55,

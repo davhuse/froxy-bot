@@ -404,14 +404,70 @@ def save_cooldowns(data):
     except:
         pass
 
-def cooldown_key(grup_name):
-    key = normalize_group_key(grup_name)
-    return normalize_group_key(PROTECTED_GROUP_ALIASES.get(key, key))
+def _numeric_chat_key(value):
+    """'-1001693128625', '1693128625' -> '1693128625'.
+
+    Ayni grup diyalog kimligi (-100 onekli) ve entity.id (onek siz) olmak uzere
+    iki farkli bicimde karsimiza cikiyor.  Durum kayitlarinin ayni gruba iki ayri
+    anahtarla yazilmamasi icin ikisini tek bicime indiriyoruz.
+    """
+    text = str(value or '').strip()
+    negative = text.startswith('-')
+    digits = text.lstrip('-')
+    if not digits.isdigit():
+        return ''
+    if negative and digits.startswith('100') and len(digits) >= 12:
+        digits = digits[3:]
+    return digits
+
+
+def group_state_keys(grup_name, entity=None):
+    """Bir grubun durum anahtarlari; ilki kanonik, kalanlar eski kayitlar icin.
+
+    Yazma islemleri her zaman ilk anahtari kullanir, okuma islemleri listenin
+    tamamina bakar.  Boylece diskteki eski isim/ID anahtarli kayitlar gecerli
+    kalir ve zamanla kendiliginden tek bicime doner.
+    """
+    keys = []
+
+    def ekle(value):
+        if value and value not in keys:
+            keys.append(value)
+
+    numeric = ''
+    if entity is not None:
+        numeric = _numeric_chat_key(getattr(entity, 'id', None))
+    if not numeric:
+        numeric = _numeric_chat_key(grup_name)
+    if numeric:
+        ekle('id:' + numeric)
+
+    name_key = normalize_group_key(grup_name)
+    ekle(normalize_group_key(PROTECTED_GROUP_ALIASES.get(name_key, name_key)))
+
+    if entity is not None:
+        uname = normalize_group_key(getattr(entity, 'username', '') or '')
+        if uname:
+            ekle(normalize_group_key(PROTECTED_GROUP_ALIASES.get(uname, uname)))
+        chat_id = getattr(entity, 'id', None)
+        if chat_id is not None:
+            ekle(str(chat_id))
+
+    # Eski kayitlar diyalog kimligini '-100' onekiyle tutuyordu; okuma
+    # sirasinda o bicimi de aday olarak degerlendir.
+    if numeric:
+        ekle(numeric)
+        ekle('-100' + numeric)
+
+    return keys or [normalize_group_key(grup_name)]
+
+
+def cooldown_key(grup_name, entity=None):
+    return group_state_keys(grup_name, entity)[0]
 
 
 def target_dedupe_key(group_name, entity=None):
-    chat_id = getattr(entity, 'id', None) if entity is not None else None
-    return str(chat_id) if chat_id is not None else normalize_group_key(group_name)
+    return group_state_keys(group_name, entity)[0]
 
 
 def is_reference_channel(group_name, entity=None):
@@ -578,7 +634,7 @@ def account_restriction_status(client_name, scope=None):
             return record
     return {}
 
-def claim_send_lock(grup_name, client_name, ttl_seconds=600):
+def claim_send_lock(grup_name, client_name, ttl_seconds=1800, entity=None):
     from datetime import datetime, timedelta, timezone
     now = datetime.now(timezone.utc)
     locks = _load_json_file(SEND_LOCK_FILE, {})
@@ -586,7 +642,7 @@ def claim_send_lock(grup_name, client_name, ttl_seconds=600):
         expires = _parse_utc_datetime((state or {}).get('until')) if isinstance(state, dict) else None
         if not expires or now >= expires:
             locks.pop(key, None)
-    group_key = grup_name.lower()
+    group_key = cooldown_key(grup_name, entity)
     lock_key = f"{client_name}:{group_key}"
     group_lock_key = f"group:{group_key}"
     current = locks.get(lock_key, {})
@@ -609,26 +665,23 @@ def claim_send_lock(grup_name, client_name, ttl_seconds=600):
     _save_json_file(SEND_LOCK_FILE, locks)
     return True
 
-def release_send_lock(grup_name, client_name):
+def release_send_lock(grup_name, client_name, entity=None):
     locks = _load_json_file(SEND_LOCK_FILE, {})
-    group_key = grup_name.lower()
-    lock_key = f"{client_name}:{group_key}"
-    group_lock_key = f"group:{group_key}"
     changed = False
-    if lock_key in locks:
-        locks.pop(lock_key, None)
-        changed = True
-    if group_lock_key in locks:
-        locks.pop(group_lock_key, None)
-        changed = True
+    # Kanonik anahtarin yani sira eski bicimli kilitleri de birak.
+    for group_key in set(group_state_keys(grup_name, entity)) | {grup_name.lower()}:
+        for key in (f"{client_name}:{group_key}", f"group:{group_key}"):
+            if key in locks:
+                locks.pop(key, None)
+                changed = True
     if changed:
         _save_json_file(SEND_LOCK_FILE, locks)
 
-def record_group_failure(grup_name, client_name, reason, retry_after=300):
+def record_group_failure(grup_name, client_name, reason, retry_after=300, entity=None):
     """Temporary per-account/group retry state; never writes BLACKLIST_FILE."""
     from datetime import datetime, timedelta, timezone
     failures = _load_json_file(GROUP_FAILURES_FILE, {})
-    key = grup_name.lower()
+    key = cooldown_key(grup_name, entity)
     failures.setdefault(key, {})[client_name] = {
         'reason': reason,
         'retry_at': (datetime.now(timezone.utc) + timedelta(seconds=max(1, int(retry_after)))).isoformat(),
@@ -636,27 +689,35 @@ def record_group_failure(grup_name, client_name, reason, retry_after=300):
     }
     _save_json_file(GROUP_FAILURES_FILE, failures)
 
-def is_group_retry_blocked(grup_name, client_name):
+def is_group_retry_blocked(grup_name, client_name, entity=None):
     from datetime import datetime, timezone
     failures = _load_json_file(GROUP_FAILURES_FILE, {})
-    state = failures.get(grup_name.lower(), {}).get(client_name, {})
-    retry_at = state.get('retry_at') if isinstance(state, dict) else None
-    if not retry_at:
-        return False
-    try:
-        return datetime.now(timezone.utc) < datetime.fromisoformat(retry_at)
-    except Exception:
-        return False
+    now = datetime.now(timezone.utc)
+    for key in group_state_keys(grup_name, entity):
+        state = failures.get(key, {}).get(client_name, {})
+        retry_at = state.get('retry_at') if isinstance(state, dict) else None
+        if not retry_at:
+            continue
+        try:
+            if now < datetime.fromisoformat(retry_at):
+                return True
+        except Exception:
+            continue
+    return False
 
-def clear_group_failure(grup_name, client_name):
+def clear_group_failure(grup_name, client_name, entity=None):
     failures = _load_json_file(GROUP_FAILURES_FILE, {})
-    group_state = failures.get(grup_name.lower(), {})
-    if client_name in group_state:
-        group_state.pop(client_name, None)
-        if group_state:
-            failures[grup_name.lower()] = group_state
-        else:
-            failures.pop(grup_name.lower(), None)
+    changed = False
+    for key in group_state_keys(grup_name, entity):
+        group_state = failures.get(key, {})
+        if client_name in group_state:
+            group_state.pop(client_name, None)
+            if group_state:
+                failures[key] = group_state
+            else:
+                failures.pop(key, None)
+            changed = True
+    if changed:
         _save_json_file(GROUP_FAILURES_FILE, failures)
 
 def blacklist_group(grup_name, reason, client_name):
@@ -702,13 +763,13 @@ def migrate_legacy_blacklist_once():
         print(f"⚠️ Legacy blacklist migration failed; original file preserved: {e}")
         return False
 
-def is_on_cooldown(grup_name, client_name):
+def is_on_cooldown(grup_name, client_name, entity=None):
     """
     Hesap + grup bazlı reklam aralığını kontrol eder.
     Her aktif hesap aynı gruba kendi mesajını atabilir, sonra en az 1 saat bekler.
     """
     from datetime import datetime
-    
+
     # Dinamik olarak config'den oku
     cooldown_hours = GROUP_COOLDOWN_HOURS
     if os.path.exists("bot_config.json"):
@@ -723,50 +784,49 @@ def is_on_cooldown(grup_name, client_name):
     except (TypeError, ValueError):
         cooldown_hours = 1.0
             
-    if is_account_restricted(client_name) or is_group_retry_blocked(grup_name, client_name):
+    if is_account_restricted(client_name) or is_group_retry_blocked(grup_name, client_name, entity):
         return True
 
     cooldowns = load_cooldowns()
-    key = cooldown_key(grup_name)
-    if key not in cooldowns:
-        return False
-        
-    group_data = cooldowns[key]
-    
-    # Eski tip dize formatı (tek zaman damgası) uyumluluğu
-    if isinstance(group_data, str):
-        try:
-            last_sent = datetime.fromisoformat(group_data)
-            elapsed = (datetime.now() - last_sent).total_seconds() / 3600
-            return elapsed < cooldown_hours
-        except:
-            return False
-            
-    # Yeni tip sözlük formatı
     now = datetime.now()
-    
-    this_acc_time = group_data.get(client_name)
-    if this_acc_time:
-        try:
-            last_sent = datetime.fromisoformat(this_acc_time)
-            elapsed_hours = (now - last_sent).total_seconds() / 3600
-            if elapsed_hours < cooldown_hours:
-                return True
-        except:
-            pass
-            
+
+    # Ayni grup gecmiste farkli anahtarla kaydedilmis olabilir; hepsine bak.
+    for key in group_state_keys(grup_name, entity):
+        group_data = cooldowns.get(key)
+        if not group_data:
+            continue
+
+        # Eski tip dize formatı (tek zaman damgası) uyumluluğu
+        if isinstance(group_data, str):
+            try:
+                last_sent = datetime.fromisoformat(group_data)
+                if (now - last_sent).total_seconds() / 3600 < cooldown_hours:
+                    return True
+            except:
+                pass
+            continue
+
+        this_acc_time = group_data.get(client_name)
+        if this_acc_time:
+            try:
+                last_sent = datetime.fromisoformat(this_acc_time)
+                if (now - last_sent).total_seconds() / 3600 < cooldown_hours:
+                    return True
+            except:
+                pass
+
     return False
 
-def set_cooldown(grup_name, client_name):
+def set_cooldown(grup_name, client_name, entity=None):
     """Gruba bu hesap tarafından mesaj gönderildi olarak işaretle"""
     from datetime import datetime
     cooldowns = load_cooldowns()
-    key = cooldown_key(grup_name)
-    
+    key = cooldown_key(grup_name, entity)
+
     # Eski tip veri varsa veya boşsa temizle
     if key not in cooldowns or isinstance(cooldowns[key], str):
         cooldowns[key] = {}
-        
+
     cooldowns[key][client_name] = datetime.now().isoformat()
     save_cooldowns(cooldowns)
 
@@ -2371,9 +2431,16 @@ async def main():
 
                 sent_count = 0
                 fail_count = 0
-                
+
+                # Bu turda mesaj gonderilen gruplarin kanonik anahtarlari.
+                # Her blast turunun basinda bosaltilir; ayni hesabin ayni gruba
+                # tur icinde ikinci kez gondermesini kalici cooldown dosyasindan
+                # bagimsiz olarak engeller (retry yolu dahil).
+                sent_this_cycle = set()
+
                 async def reset_failure(grup_name):
-                    clear_group_failure(grup_name, client_name)
+                    clear_group_failure(grup_name, client_name,
+                                        joined_dialogs.get(grup_name.lower()))
 
                 async def blast_one(grup_name, retry_count=0):
                     """Tek bir gruba rotasyonlu mesaj gönder"""
@@ -2385,16 +2452,23 @@ async def main():
                     entity = joined_dialogs.get(grup_name.lower())
                     if not entity:
                         return
-                    if is_group_retry_blocked(grup_name, client_name):
+                    group_key = cooldown_key(grup_name, entity)
+                    if group_key in sent_this_cycle:
+                        print(f"[{client_name}] ⏭️ @{grup_name} bu turda zaten gönderildi, atlanıyor...")
+                        return
+                    if is_group_retry_blocked(grup_name, client_name, entity):
                         print(f"[{client_name}] ⏸️ @{grup_name} geçici/hesaba özel gönderim engelinde, atlanıyor...")
                         return
-                    
+
                     lock_claimed = False
                     async with state_lock:
-                        if is_on_cooldown(grup_name, client_name):
+                        if group_key in sent_this_cycle:
+                            print(f"[{client_name}] ⏭️ @{grup_name} bu turda zaten gönderildi, atlanıyor...")
+                            return
+                        if is_on_cooldown(grup_name, client_name, entity):
                             print(f"[{client_name}] ⏳ @{grup_name} cooldown süresinde, atlanıyor...")
                             return
-                        if not claim_send_lock(grup_name, client_name):
+                        if not claim_send_lock(grup_name, client_name, entity=entity):
                             print(f"[{client_name}] 🔒 @{grup_name} gönderim kilidinde, bu turda atlanıyor...")
                             return
                         lock_claimed = True
@@ -2488,8 +2562,10 @@ async def main():
                             
                         sent_count += 1
                         # Only mark the group after Telegram accepted the message.
-                        set_cooldown(grup_name, client_name)
-                        
+                        set_cooldown(grup_name, client_name, entity)
+                        sent_this_cycle.add(group_key)
+
+
                         update_stats(sent=1)
                         await reset_failure(grup_name)
                         async with state_lock:
@@ -2504,7 +2580,7 @@ async def main():
                                 f"({retry_count + 1}/2)."
                             )
                         else:
-                            record_group_failure(grup_name, client_name, 'FloodWait', e.seconds)
+                            record_group_failure(grup_name, client_name, 'FloodWait', e.seconds, entity)
                             print(f"[{client_name}] ⏳ FloodWait {e.seconds}sn; hesap duraklatıldı, grup kara listeye alınmadı.")
                             fail_count += 1
                     except (PeerFloodError, UserRestrictedError) as e:
@@ -2517,7 +2593,7 @@ async def main():
                         fail_count += 1
                         async with state_lock:
                             blacklist_group(grup_name, 'UserBannedInChannel', client_name)
-                            record_group_failure(grup_name, client_name, 'UserBannedInChannel', 30 * 24 * 60 * 60)
+                            record_group_failure(grup_name, client_name, 'UserBannedInChannel', 30 * 24 * 60 * 60, entity)
                         try:
                             if entity:
                                 if is_group_protected(grup_name):
@@ -2532,7 +2608,7 @@ async def main():
                         fail_count += 1
                         async with state_lock:
                             blacklist_group(grup_name, 'ChatWriteForbidden', client_name)
-                            record_group_failure(grup_name, client_name, 'ChatWriteForbidden', 7 * 24 * 60 * 60)
+                            record_group_failure(grup_name, client_name, 'ChatWriteForbidden', 7 * 24 * 60 * 60, entity)
                         try:
                             if entity:
                                 if is_group_protected(grup_name):
@@ -2545,18 +2621,18 @@ async def main():
                     except SlowModeWaitError as sme:
                         wait_sec = getattr(sme, 'seconds', 0) or 0
                         print(f"[{client_name}] 🐌 @{grup_name} → SlowMode aktif ({wait_sec}sn bekleme); geçici grup beklemesi yazıldı.")
-                        record_group_failure(grup_name, client_name, 'SlowModeWait', wait_sec)
+                        record_group_failure(grup_name, client_name, 'SlowModeWait', wait_sec, entity)
                     except Exception as e:
                         err_type = type(e).__name__
                         print(f"[{client_name}] ⚠️ @{grup_name} → {err_type} (atlanıyor)")
                         fail_count += 1
                         if isinstance(e, (ConnectionError, TimeoutError)) or 'disconnected' in str(e).lower() or 'connection' in str(e).lower():
                             await ensure_telegram_connection(client, client_name, force=True)
-                        record_group_failure(grup_name, client_name, err_type, 300)
+                        record_group_failure(grup_name, client_name, err_type, 300, entity)
                     finally:
                         if lock_claimed:
                             async with state_lock:
-                                release_send_lock(grup_name, client_name)
+                                release_send_lock(grup_name, client_name, entity)
 
                     if retry_after:
                         await asyncio.sleep(retry_after)
