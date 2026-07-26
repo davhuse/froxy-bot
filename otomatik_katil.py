@@ -38,19 +38,15 @@ gruplar = [
     "Nightsatis",
     "TicaretGrubuuu",
     "ticaretsaha",
-    "kuponsatimalim",
     "kuponindirimsatis",
     "zeroticaret",
     "tahaaslan11",
     "casinox_grup",
     "alimsatimmerkezii",
-    "ilanticaret",
     "reklamreferans",
     "sosyalmedyaalimsatimticaret",
-    "sanalalimsatimticaret",
     "kuponsatisgrup",
     "kuponcekkodsatis",
-    "referansreklam1",
     "referanslinkpaylasimigrup",
     "kuponsatislari0",
     "YuceKuponSatis",
@@ -59,7 +55,6 @@ gruplar = [
     "-3608209943",     # DERGAH (1582 üye)
     "ticar4t",
     "kuponhesapsatis",
-    "reklamvereferanss",
     "kuponvekodsatisgrubu",
     "indirimkodusatis",
     "mukyemek",
@@ -2908,9 +2903,17 @@ async def main():
                     local_black = get_list(BLACKLIST_FILE)
                     remote_black = set(x.strip() for x in fs_black_new.splitlines() if x.strip())
                     merged_black = local_black if os.path.exists(BLACKLIST_MIGRATION_MARKER) else local_black.union(remote_black)
-                    merged_black = {g for g in merged_black if not is_group_protected(g)}
+                    # Korumali listeden dolayi kara liste BUDANMAZ.  Bir grubu
+                    # hem hedef listesinde hem kara listede tutmak celiskidir ve
+                    # cozumu kara listeyi silmek degil, hedeften cikarmaktir.
+                    # Onceki davranis, elle eklenen haric tutmalari 5 dakikada
+                    # bir sessizce siliyordu.
+                    celiskili = {g for g in merged_black if is_group_protected(g)}
+                    if celiskili:
+                        print(f"⚠️ [Firestore Sync] Hem hedef hem kara listede olan gruplar "
+                              f"kara listede BIRAKILDI: {sorted(celiskili)}")
                     with open(BLACKLIST_FILE, 'w', encoding='utf-8') as f:
-                        f.write('\n'.join(merged_black) + '\n')
+                        f.write('\n'.join(sorted(merged_black)) + '\n')
                 if fs_auto_new:
                     with open(AUTO_GROUPS_FILE, 'w', encoding='utf-8') as f:
                         f.write(fs_auto_new)
