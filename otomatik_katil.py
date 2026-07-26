@@ -1969,6 +1969,47 @@ def report_client_error(slot, exc):
         print(f"❌ HATA: {slot}. Hesap ({brand}) bağlanırken hata oluştu: {name} - {exc}")
 
 
+BEKLENEN_HESAPLAR = {'FroxyOnline', 'KeyVadiOnline', 'LisansArenaOnline'}
+
+
+async def uyar_eksik_hesap(ayakta, active_clients):
+    """Beklenen reklam hesaplarindan biri baglanamadiysa admine Telegram'dan yaz.
+
+    Oturum oldugunde hesap sessizce dusuyordu ve loga bakmayan biri bunu
+    gunlerce fark etmiyordu.  Bildirimi ayakta kalan hesaplardan biriyle
+    gonderiyoruz; hicbiri yoksa gonderecek arac da kalmiyor.
+    """
+    eksik = sorted(BEKLENEN_HESAPLAR - set(ayakta))
+    if not eksik or not active_clients:
+        return
+    admin_id = None
+    try:
+        if os.path.exists("bot_config.json"):
+            with open("bot_config.json", "r", encoding="utf-8") as f_cfg:
+                admin_id = json.load(f_cfg).get("admin_id")
+    except Exception:
+        pass
+    mesaj = (
+        "🚨 **Reklam hesabı düştü**\n"
+        "━━━━━━━━━━━━━━━━━\n"
+        f"• Bağlanamayan: {', '.join(eksik)}\n"
+        f"• Ayakta olan: {', '.join(sorted(ayakta)) or 'yok'}\n"
+        "━━━━━━━━━━━━━━━━━\n"
+        "Oturum anahtarı geçersizleşmiş olabilir. Yeni anahtar üretip Render'da "
+        "ilgili AD_STRING_SESSION_* değişkenini güncelleyin."
+    )
+    print(f"🚨 EKSİK HESAP: {eksik} — admine bildiriliyor.")
+    if not admin_id:
+        return
+    for client, _, _ in active_clients:
+        try:
+            await client.send_message(int(admin_id), mesaj)
+            print("📩 Eksik hesap bildirimi admine gönderildi.")
+            return
+        except Exception:
+            continue
+
+
 async def main():
     import psutil, os
     cur_pid = os.getpid()
@@ -2091,6 +2132,10 @@ async def main():
             except Exception:
                 pass
     active_clients = allowed_clients
+
+    # Bir hesap dustugunde kimse fark etmiyordu; sistem sessizce iki hesapla
+    # devam ediyordu.  Eksik hesap varsa admine Telegram'dan haber ver.
+    await uyar_eksik_hesap({name for _, name, _ in active_clients}, active_clients)
 
     if not active_clients:
         print("❌ HATA: Hiçbir aktif ve yetkili Telegram hesabı bulunamadı! Watchdog kilitlenmesini önlemek için 10 dakika bekleniyor...")
