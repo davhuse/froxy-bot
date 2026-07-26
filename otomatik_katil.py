@@ -1864,6 +1864,35 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         except Exception as e:
             print(f"[{client_name}] ⚠️ Özel mesaj otomatik yanıtlanırken hata: {e}")
 
+DEAD_SESSION_ERRORS = (
+    "AuthKeyDuplicatedError",
+    "AuthKeyUnregisteredError",
+    "SessionRevokedError",
+    "UserDeactivatedError",
+    "UserDeactivatedBanError",
+)
+
+# Slot -> (marka, Render ortam degiskeni). Oturum oldugunde hangi anahtarin
+# yenilenmesi gerektigini loglarda acikca gostermek icin kullanilir.
+SLOT_RECOVERY_HINTS = {
+    1: ("Froxy", "AD_STRING_SESSION_FROXY"),
+    2: ("KeyVadi", "AD_STRING_SESSION_KEYVADI"),
+    3: ("LisansArena", "AD_STRING_SESSION_LISANSARENA"),
+}
+
+
+def report_client_error(slot, exc):
+    """Oturum hatalarini ayirt edip ne yapilmasi gerektigini net sekilde yazar."""
+    brand, env_var = SLOT_RECOVERY_HINTS.get(slot, (f"Hesap #{slot}", ""))
+    name = type(exc).__name__
+    if name in DEAD_SESSION_ERRORS:
+        print(f"💀 {slot}. Hesap ({brand}) OTURUMU ÖLÜ: {name}")
+        print(f"   ➜ Bu StringSession bir daha kullanılamaz; hesaba yeniden giriş yapıp")
+        print(f"     yeni anahtarı Render'da {env_var} ortam değişkenine yazmanız gerekiyor.")
+    else:
+        print(f"❌ HATA: {slot}. Hesap ({brand}) bağlanırken hata oluştu: {name} - {exc}")
+
+
 async def main():
     import psutil, os
     cur_pid = os.getpid()
@@ -1892,7 +1921,7 @@ async def main():
                 cfg = json.load(f)
                 string_session_key = os.environ.get("AD_STRING_SESSION_FROXY", "").strip() or cfg.get("ad_string_session", "")
                 string_session_key_2 = os.environ.get("AD_STRING_SESSION_KEYVADI", "").strip() or cfg.get("ad_string_session2_final", cfg.get("ad_string_session2_new", cfg.get("ad_string_session2", cfg.get("ad_string_session_2", ""))))
-                string_session_key_3 = cfg.get("ad_string_session3_final", cfg.get("ad_string_session3_new", cfg.get("ad_string_session3", cfg.get("ad_string_session_3", ""))))
+                string_session_key_3 = os.environ.get("AD_STRING_SESSION_LISANSARENA", "").strip() or cfg.get("ad_string_session3_final", cfg.get("ad_string_session3_new", cfg.get("ad_string_session3", cfg.get("ad_string_session_3", ""))))
                 ad_sleep_min = cfg.get("ad_sleep_min", 600)
                 ad_sleep_max = cfg.get("ad_sleep_max", 1200)
         except:
@@ -1913,9 +1942,9 @@ async def main():
                 print(f"✅ 1. Hesap yetkilendirildi ve aktif edildi. ID: {me.id}")
                 client1.loop.create_task(presence_watchdog(client1))
             else:
-                print("❌ HATA: 1. Hesap yetkilendirilmemsiz!")
+                print("❌ HATA: 1. Hesap yetkilendirilmemiş!")
         except Exception as e:
-            print(f"❌ HATA: 1. Hesap bağlanırken hata oluştu: {type(e).__name__} - {e}")
+            report_client_error(1, e)
             
     # Client 2
     if string_session_key_2:
@@ -1929,9 +1958,9 @@ async def main():
                 active_clients.append((client2, "Hesap #2", {"id": me.id}))
                 print(f"✅ 2. Hesap yetkilendirildi. ID: {me.id}")
             else:
-                print("❌ HATA: 2. Hesap yetkilendirilmemiş!")
+                print("❌ HATA: 2. Hesap (KeyVadi) yetkilendirilmemiş!")
         except Exception as e:
-            print(f"❌ HATA: 2. Hesap bağlanırken hata oluştu: {type(e).__name__} - {e}")
+            report_client_error(2, e)
 
     # Client 3
     if string_session_key_3:
@@ -1945,9 +1974,9 @@ async def main():
                 active_clients.append((client3, "Hesap #3", {"id": me.id}))
                 print(f"✅ 3. Hesap yetkilendirildi. ID: {me.id}")
             else:
-                print("❌ HATA: 3. Hesap yetkilendirilmemiş!")
+                print("❌ HATA: 3. Hesap (LisansArena) yetkilendirilmemiş!")
         except Exception as e:
-            print(f"❌ HATA: 3. Hesap bağlanırken hata oluştu: {type(e).__name__} - {e}")
+            report_client_error(3, e)
 
     # Fallback to local session file if no string session is configured at all
     if not string_session_key and not string_session_key_2 and not string_session_key_3:

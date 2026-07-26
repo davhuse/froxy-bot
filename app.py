@@ -36,6 +36,38 @@ def protect_panel_api():
         return jsonify({'error': 'Unauthorized'}), 401
     return None
 
+# Reklam botu (otomatik_katil.py) her slot icin birden fazla config anahtarini
+# oncelik sirasiyla okur.  Panelden yeni bir oturum baglandiginda sadece taban
+# anahtari yazmak yetmiyordu: eski "_new"/"_final" kopyalari daha yuksek
+# oncelikli oldugu icin olu oturum kullanilmaya devam ediyordu.  Bu yuzden
+# yazma islemi butun varyantlari birlikte gunceller.
+SLOT_SESSION_KEYS = {
+    "1": ["ad_string_session", "ad_string_session_new", "ad_string_session_final"],
+    "2": ["ad_string_session2", "ad_string_session2_new", "ad_string_session2_final",
+          "ad_string_session_2"],
+    "3": ["ad_string_session3", "ad_string_session3_new", "ad_string_session3_final",
+          "ad_string_session_3"],
+}
+
+# Render'da kalici olan degerler bunlar; dosya sistemi her deploy'da sifirlandigi
+# icin panelden baglanan oturumun ayrica bu ortam degiskenine yazilmasi gerekir.
+SLOT_ENV_VARS = {
+    "1": "AD_STRING_SESSION_FROXY",
+    "2": "AD_STRING_SESSION_KEYVADI",
+    "3": "AD_STRING_SESSION_LISANSARENA",
+}
+
+
+def store_slot_session(cfg, slot, session_str):
+    """Yeni oturumu ilgili slotun tum varyant anahtarlarina yazar."""
+    keys = SLOT_SESSION_KEYS.get(str(slot))
+    if not keys:
+        keys = ["ad_string_session" if str(slot) == "1" else f"ad_string_session{slot}"]
+    for key in keys:
+        cfg[key] = session_str
+    return keys
+
+
 # State variables for background processes
 ad_process = None
 support_process = None
@@ -1345,12 +1377,23 @@ def tg_verify_code():
                 cfg = json.load(f)
         else:
             cfg = {}
-        key_name = "ad_string_session" if slot == "1" else f"ad_string_session{slot}"
-        cfg[key_name] = session_str
+        store_slot_session(cfg, slot, session_str)
         with open(CONFIG_FILE, "w", encoding="utf-8") as f:
             json.dump(cfg, f, indent=2, ensure_ascii=False)
-            
-        return jsonify({"success": True, "message": f"Hesap #{slot} başarıyla bağlandı!"})
+
+        env_var = SLOT_ENV_VARS.get(slot, "")
+        note = (f"\n\nÖNEMLİ: Render'da kalıcı olması için yeni anahtarı {env_var} "
+                "ortam değişkenine yapıştırın.") if env_var else ""
+        return jsonify({
+            "success": True,
+            "message": f"Hesap #{slot} başarıyla bağlandı!" + note,
+            "session_string": session_str,
+            "render_env_var": env_var,
+            "warning": (
+                f"Render'da kalıcı olması için bu anahtarı {env_var} ortam "
+                "değişkenine yapıştırın; aksi halde ilk deploy'da kaybolur."
+            ) if env_var else "",
+        })
     except Exception as e:
         return jsonify({"success": False, "message": f"Doğrulama hatası: {str(e)}"})
 
@@ -1380,12 +1423,23 @@ def tg_verify_password():
                 cfg = json.load(f)
         else:
             cfg = {}
-        key_name = "ad_string_session" if slot == "1" else f"ad_string_session{slot}"
-        cfg[key_name] = session_str
+        store_slot_session(cfg, slot, session_str)
         with open(CONFIG_FILE, "w", encoding="utf-8") as f:
             json.dump(cfg, f, indent=2, ensure_ascii=False)
-            
-        return jsonify({"success": True, "message": f"Hesap #{slot} iki adımlı doğrulama ile başarıyla bağlandı!"})
+
+        env_var = SLOT_ENV_VARS.get(slot, "")
+        note = (f"\n\nÖNEMLİ: Render'da kalıcı olması için yeni anahtarı {env_var} "
+                "ortam değişkenine yapıştırın.") if env_var else ""
+        return jsonify({
+            "success": True,
+            "message": f"Hesap #{slot} iki adımlı doğrulama ile başarıyla bağlandı!" + note,
+            "session_string": session_str,
+            "render_env_var": env_var,
+            "warning": (
+                f"Render'da kalıcı olması için bu anahtarı {env_var} ortam "
+                "değişkenine yapıştırın; aksi halde ilk deploy'da kaybolur."
+            ) if env_var else "",
+        })
     except Exception as e:
         return jsonify({"success": False, "message": f"Şifre doğrulama hatası: {str(e)}"})
 

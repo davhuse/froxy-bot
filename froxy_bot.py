@@ -191,7 +191,14 @@ INJECTED_PRODUCTS = [{"id": "47669105", "title": "YouTube Premium (3 Aylık Kod)
     {"id": "49002143", "title": "HBO Max 1 Aylık Profil", "price": "39.90 TL", "url": "https://www.shopier.com/49002143"},
     {"id": "49002144", "title": "Prime Video (1 Aylık) - Özel Profil", "price": "29.90 TL", "url": "https://www.shopier.com/49002144"},
     {"id": "49002145", "title": "Prime Video (1 Aylık) - Ortak Profil", "price": "19.90 TL", "url": "https://www.shopier.com/49002145"},
-    {"id": "49078921", "title": "Canva Pro Öğretmen (1 Yıllık)", "price": "149.99 TL", "url": "https://www.shopier.com/49078921"}
+    {"id": "49078921", "title": "Canva Pro Öğretmen (1 Yıllık)", "price": "149.99 TL", "url": "https://www.shopier.com/49078921"},
+    # Son yayinlanan ilanlar. keyvadi_shopier_links.json yeniden uretilse bile
+    # bu urunlerin katalogdan dusmemesi icin burada da tutuluyor.
+    {"id": "49099017", "title": "FC26 + Online Her Şeyi Değişen Hesap", "price": "299.99 TL", "url": "https://www.shopier.com/49099017"},
+    {"id": "49099015", "title": "Zula Random Hesap", "price": "5.00 TL", "url": "https://www.shopier.com/49099015"},
+    {"id": "49099014", "title": "Netflix 4K UHD Ortak Profil", "price": "39.99 TL", "url": "https://www.shopier.com/49099014"},
+    {"id": "49099013", "title": "Steam 200 Dolar Random Key", "price": "30.00 TL", "url": "https://www.shopier.com/49099013"},
+    {"id": "49099001", "title": "Steam 200 Dolar Random Key", "price": "30.00 TL", "url": "https://www.shopier.com/49099001"}
 ]
 
 # Flat list of all products (rebuilt when products are loaded)
