@@ -325,15 +325,14 @@ pending_invites = set() # Yeni: Katılım isteği gönderilen grupları takip et
 dm_count_today = 0
 dm_last_reset = ""
 MAX_DM_PER_DAY = 20
-# KeyVadi markasinin iki hesabi var: @KeyVadiOnline (id 8777291796) ve
-# @KeyVadiDestek (id 6196006704).  Reklam slotu 2 icin hangisine giris
-# yapilirsa yapilsin session kabul edilsin diye ikisi de allowlist'te.
-# Ikisi de ayni stabil isme dusuyor; boylece ayni marka metni, ayni katalog
-# ve ayni grup gecmisi dosyalari kullanilir.
-ACTIVE_ACCOUNT_USERNAMES = {'keyvadionline', 'keyvadidestek', 'lisansarenaonline', 'froxy_ai'}
+# Reklam atmasina izin verilen hesaplar.  Liste bilerek dar tutuluyor:
+# eski/kullanici adsiz hesaplarin ("User" isimli, id 8823916561 ve 8816312669
+# gibi) bir sekilde bir slota dusup gruplara mesaj atmasi istenmiyor.
+# Kullanici adi olmayan hesaplar zaten bu kumede yer alamaz, dolayisiyla
+# baglanti kurulsa bile acilista kapatilirlar.
+ACTIVE_ACCOUNT_USERNAMES = {'keyvadionline', 'lisansarenaonline', 'froxy_ai'}
 ACCOUNT_STABLE_NAMES = {
     'keyvadionline': 'KeyVadiOnline',
-    'keyvadidestek': 'KeyVadiOnline',
     'lisansarenaonline': 'LisansArenaOnline',
     'froxy_ai': 'FroxyOnline',
 }
@@ -2696,7 +2695,15 @@ async def main():
                     if join_count >= 5:
                         print(f"[{client_name}] 🔒 Bu turda 5 gruba katılındı (limit), durduruluyor.")
                         break
-                    
+
+                    # Kara listeyi katilim aninda tekrar oku.  Liste tur icinde
+                    # degisebiliyor ve ban yedigimiz bir gruba yeniden girmek
+                    # hesabin tekrar banlanmasina yol aciyor.
+                    if normalize_group_key(hedef_grup) in {normalize_group_key(b)
+                                                           for b in get_list(BLACKLIST_FILE)}:
+                        print(f"[{client_name}] ⛔ @{hedef_grup} kara listede, katılım atlandı.")
+                        continue
+
                     try:
                         is_hash = len(hedef_grup) == 16 and not hedef_grup.startswith('@') and not '/' in hedef_grup
                         
