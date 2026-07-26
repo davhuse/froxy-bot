@@ -2356,7 +2356,16 @@ async def main():
             blacklist = get_list(BLACKLIST_FILE)
             blacklist_lower = set(b.lower() for b in blacklist)
             blacklist_lower.update(EXCLUDED_REFERENCE_CHANNELS)
-            
+
+            # Kara listeyi kanonik anahtara cevir.  Ayni grup hedef kumesinde hem
+            # kullanici adiyla hem '-100...' diyalog kimligiyle duruyor; isim
+            # karsilastirmasi ID bicimini yakalamiyordu ve tekillestirmede o
+            # temsilci kazandiginda kara listedeki gruba reklam gidiyordu.
+            blacklist_keys = set()
+            for engelli in blacklist_lower:
+                blacklist_keys.update(
+                    group_state_keys(engelli, joined_dialogs.get(engelli)))
+
             # Hedef gruplar: Korumalı / Onaylı grupların hepsi + Hesabın üye olduğu tüm gruplar (Referans kanalları hariç)
             hedef_set = protected_groups.copy()
             for g_key in joined_dialogs:
@@ -2373,7 +2382,8 @@ async def main():
             small_groups_skipped = 0
             for username_lower in hedef_set:
                 entity = joined_dialogs.get(username_lower)
-                if username_lower in blacklist_lower or is_excluded_ad_target(username_lower, entity):
+                if (blacklist_keys.intersection(group_state_keys(username_lower, entity))
+                        or is_excluded_ad_target(username_lower, entity)):
                     debug_blacklisted += 1
                     continue
                 if username_lower in joined_dialogs:
@@ -2721,9 +2731,15 @@ async def main():
 
                     # Kara listeyi katilim aninda tekrar oku.  Liste tur icinde
                     # degisebiliyor ve ban yedigimiz bir gruba yeniden girmek
-                    # hesabin tekrar banlanmasina yol aciyor.
-                    if normalize_group_key(hedef_grup) in {normalize_group_key(b)
-                                                           for b in get_list(BLACKLIST_FILE)}:
+                    # hesabin tekrar banlanmasina yol aciyor.  Karsilastirma
+                    # kanonik anahtarla yapiliyor ki ID bicimi de yakalansin.
+                    taze_engel = set()
+                    for engelli in get_list(BLACKLIST_FILE):
+                        taze_engel.update(
+                            group_state_keys(engelli.lower(),
+                                             joined_dialogs.get(engelli.lower())))
+                    if taze_engel.intersection(
+                            group_state_keys(hedef_grup, joined_dialogs.get(hedef_grup.lower()))):
                         print(f"[{client_name}] ⛔ @{hedef_grup} kara listede, katılım atlandı.")
                         continue
 
