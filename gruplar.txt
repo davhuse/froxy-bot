@@ -2,6 +2,10 @@ kuponceksatis
 kuponindirimsatis
 satcek
 kuponsat
+ceksat
+ticaretcanavari
+alsatticarettz
+ticaretyapreklam
 letgoilanlari
 kuponhesapsatis
 kuponsatisgrup
