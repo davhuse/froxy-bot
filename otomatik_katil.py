@@ -71,7 +71,15 @@ CANCELLED_JOIN_REQUESTS = {"kuponceking"}
 # Uyeliginden cikilacak gruplar.  Ban yedigimiz bir grupta uye kalmaya devam
 # etmek, yoneticiler hesabi tekrar fark ettiginde ikinci bir bana yol aciyor.
 # Calisma basina bir kez islenir.
-GROUPS_TO_LEAVE = {"kuponsatimalim"}
+GROUPS_TO_LEAVE = {
+    "kuponsatimalim",
+    # Kullanicinin reklami kestigi ve uyelikten de cikilmasini istedigi gruplar
+    "ticaretsaha",
+    "ilanticaret",
+    "referansreklam1",
+    "reklamvereferanss",
+    "sanalalimsatimticaret",
+}
 
 def normalize_group_key(grup_name):
     g_lower = str(grup_name or '').lower().replace('@', '').strip()
