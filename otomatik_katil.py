@@ -58,6 +58,39 @@ gruplar = [
     "mukyemek",
 ]
 
+
+def _hedef_listesini_dosyadan_genislet():
+    """gruplar.txt icerigini hedef listesine ekler.
+
+    Dosya yillardir duruyordu ama uretim kodu onu hic okumuyordu: hedef listesi
+    yalnizca yukaridaki sabit liste idi.  Dosyaya grup eklemek/cikarmak hicbir
+    sey degistirmiyordu, ki bu sessizce yanlis sonuc veren bir tuzak.  Artik
+    dosya da okunuyor; sabit liste ile birlestiriliyor.
+    """
+    yol = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'gruplar.txt')
+    if not os.path.exists(yol):
+        return
+    mevcut = {str(g).lower().lstrip('@') for g in gruplar}
+    eklenen = []
+    try:
+        with open(yol, 'r', encoding='utf-8') as f:
+            for satir in f:
+                ad = satir.strip().lstrip('@')
+                if not ad or ad.startswith('#'):
+                    continue
+                if ad.lower() not in mevcut:
+                    gruplar.append(ad)
+                    mevcut.add(ad.lower())
+                    eklenen.append(ad)
+    except Exception as e:
+        print(f"⚠️ gruplar.txt okunamadı: {e}")
+        return
+    if eklenen:
+        print(f"📄 gruplar.txt'den {len(eklenen)} hedef eklendi: {', '.join(eklenen)}")
+
+
+_hedef_listesini_dosyadan_genislet()
+
 # @Nightsatis (-1003336542169) korumali listeden cikarildi: KeyVadi ve Froxy
 # orada banli, korumali kaldigi surece bot her tur mesaj deneyip ban hatasi
 # aliyor, kara listeye de ekleyemiyor, gruptan da cikamiyordu.
