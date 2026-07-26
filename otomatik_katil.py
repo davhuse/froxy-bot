@@ -2001,13 +2001,19 @@ async def uyar_eksik_hesap(ayakta, active_clients):
     print(f"🚨 EKSİK HESAP: {eksik} — admine bildiriliyor.")
     if not admin_id:
         return
-    for client, _, _ in active_clients:
+
+    # Bildirimi ayakta kalan reklam hesaplarindan biri gonderir.  KeyVadi
+    # ayaktaysa oncelik onda; degilse sirayla digerleri denenir.
+    sirali = sorted(active_clients,
+                    key=lambda c: 0 if 'KeyVadi' in (c[1] or '') else 1)
+    for client, name, _ in sirali:
         try:
             await client.send_message(int(admin_id), mesaj)
-            print("📩 Eksik hesap bildirimi admine gönderildi.")
+            print(f"📩 Eksik hesap bildirimi {name} hesabından gönderildi.")
             return
         except Exception:
             continue
+    print("⚠️ Hiçbir hesap bildirimi gönderemedi.")
 
 
 async def main():
