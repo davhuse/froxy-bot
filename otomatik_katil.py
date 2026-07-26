@@ -35,7 +35,6 @@ def print(*args, **kwargs):
 
 gruplar = [
     # Kullanıcının onayladığı hedef gruplar (12 Haziran 2026 güncellemesi)
-    "Nightsatis",
     "TicaretGrubuuu",
     "kuponindirimsatis",
     "zeroticaret",
@@ -59,9 +58,10 @@ gruplar = [
     "mukyemek",
 ]
 
-PROTECTED_GROUP_ALIASES = {
-    "-1003336542169": "nightsatis",
-}
+# @Nightsatis (-1003336542169) korumali listeden cikarildi: KeyVadi ve Froxy
+# orada banli, korumali kaldigi surece bot her tur mesaj deneyip ban hatasi
+# aliyor, kara listeye de ekleyemiyor, gruptan da cikamiyordu.
+PROTECTED_GROUP_ALIASES = {}
 
 # Kullanıcı tarafından katılım talebi geri çekilen gruplar. Bu gruplar yeni
 # katılım kuyruğuna tekrar alınmaz. Hesap zaten üyeyse reklam hedefi olmaya
@@ -79,6 +79,7 @@ GROUPS_TO_LEAVE = {
     "referansreklam1",
     "reklamvereferanss",
     "sanalalimsatimticaret",
+    "nightsatis",
 }
 
 def normalize_group_key(grup_name):
@@ -197,8 +198,13 @@ MANUALLY_EXCLUDED_AD_GROUPS = {
     "reklamvereferanss",
     "sanalalimsatimticaret",
     "ticaretsaha",
-    # Ban yendigi icin uyelikten de cikilan grup
+    # Ban yendigi icin uyelikten de cikilan gruplar.  Telegram
+    # UserBannedInChannel dondurdugu halde @Nightsatis korumali listede
+    # oldugu icin ne kara listeye alinabiliyor ne de terk edilebiliyordu;
+    # bot her tur banli gruba mesaj denemeye devam ediyordu.
     "kuponsatimalim",
+    "nightsatis",
+    "-1003336542169",
 }
 TICARET_FORUM_MAX_CHARS = 700
 TICARET_FORUM_FALLBACKS = {
