@@ -37,7 +37,6 @@ gruplar = [
     # Kullanıcının onayladığı hedef gruplar (12 Haziran 2026 güncellemesi)
     "Nightsatis",
     "TicaretGrubuuu",
-    "ticaretsaha",
     "kuponindirimsatis",
     "zeroticaret",
     "tahaaslan11",
@@ -189,6 +188,7 @@ MANUALLY_EXCLUDED_AD_GROUPS = {
     "referansreklam1",
     "reklamvereferanss",
     "sanalalimsatimticaret",
+    "ticaretsaha",
     # Ban yendigi icin uyelikten de cikilan grup
     "kuponsatimalim",
 }
