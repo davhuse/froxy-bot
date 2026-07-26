@@ -325,9 +325,15 @@ pending_invites = set() # Yeni: Katılım isteği gönderilen grupları takip et
 dm_count_today = 0
 dm_last_reset = ""
 MAX_DM_PER_DAY = 20
-ACTIVE_ACCOUNT_USERNAMES = {'keyvadionline', 'lisansarenaonline', 'froxy_ai'}
+# KeyVadi markasinin iki hesabi var: @KeyVadiOnline (id 8777291796) ve
+# @KeyVadiDestek (id 6196006704).  Reklam slotu 2 icin hangisine giris
+# yapilirsa yapilsin session kabul edilsin diye ikisi de allowlist'te.
+# Ikisi de ayni stabil isme dusuyor; boylece ayni marka metni, ayni katalog
+# ve ayni grup gecmisi dosyalari kullanilir.
+ACTIVE_ACCOUNT_USERNAMES = {'keyvadionline', 'keyvadidestek', 'lisansarenaonline', 'froxy_ai'}
 ACCOUNT_STABLE_NAMES = {
     'keyvadionline': 'KeyVadiOnline',
+    'keyvadidestek': 'KeyVadiOnline',
     'lisansarenaonline': 'LisansArenaOnline',
     'froxy_ai': 'FroxyOnline',
 }
