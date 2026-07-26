@@ -111,6 +111,27 @@ async def cancel_pending_join_request(client, client_name, joined_dialogs, group
         return False
 
 STATS_FILE = 'stats.json'
+AD_ACCOUNT_STATUS_FILE = 'ad_account_status.json'
+
+def update_ad_account_status(client_name, **fields):
+    """Persist a small, non-sensitive delivery heartbeat for the status page."""
+    from datetime import datetime, timezone
+    try:
+        state = {}
+        if os.path.exists(AD_ACCOUNT_STATUS_FILE):
+            with open(AD_ACCOUNT_STATUS_FILE, 'r', encoding='utf-8') as f:
+                state = json.load(f)
+        record = state.get(client_name, {})
+        record.update(fields)
+        record['updated_at'] = datetime.now(timezone.utc).isoformat()
+        state[client_name] = record
+        safe_name = re.sub(r'[^a-zA-Z0-9_-]', '_', client_name)
+        tmp_file = f'{AD_ACCOUNT_STATUS_FILE}.{os.getpid()}.{safe_name}.tmp'
+        with open(tmp_file, 'w', encoding='utf-8') as f:
+            json.dump(state, f, ensure_ascii=False, indent=2)
+        os.replace(tmp_file, AD_ACCOUNT_STATUS_FILE)
+    except Exception as exc:
+        print(f"[{client_name}] Ad-status heartbeat failed: {type(exc).__name__}")
 
 def update_stats(sent=0, discovered=0, blacklisted=0, active=0):
     try:
@@ -2272,6 +2293,15 @@ async def main():
             
             print(f"[{client_name}] 📊 Hedef: {len(hedef_set)} | Gönderilecek: {len(blast_targets)} | Kara liste: {debug_blacklisted} | Küçük grup çıkar: {small_groups_skipped} | Üye değil: {debug_not_cached}")
             
+            update_ad_account_status(
+                client_name,
+                phase='sending' if blast_targets else 'idle',
+                target_groups=len(hedef_set),
+                sendable_groups=len(blast_targets),
+                blacklisted_groups=debug_blacklisted,
+                not_joined_groups=debug_not_cached,
+            )
+
             if not blast_targets:
                 print(f"[{client_name}] ⚠️ Önbellekte mesaj atılacak grup yok. Yeni gruplara katılma aşamasına geçiliyor...")
             else:
@@ -2509,6 +2539,14 @@ async def main():
                 
                 # Mesaj geçmişini kaydet
                 save_msg_history(msg_history)
+                update_ad_account_status(
+                    client_name,
+                    phase='completed',
+                    target_groups=len(hedef_set),
+                    sendable_groups=len(blast_targets),
+                    sent_count=sent_count,
+                    failed_count=fail_count,
+                )
                 
                 print(f"\n[{client_name}] 📊 BLAST SONUÇ: {sent_count} başarılı, {fail_count} başarısız / {len(blast_targets)} toplam")
 

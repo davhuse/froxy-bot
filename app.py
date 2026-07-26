@@ -317,6 +317,16 @@ def index():
 @app.route('/api/status', methods=['GET'])
 def status():
     ad_processes = get_processes_by_script('otomatik_katil.py')
+    ad_accounts = {}
+    status_path = os.path.join(base_dir, 'ad_account_status.json')
+    try:
+        if os.path.exists(status_path):
+            with open(status_path, 'r', encoding='utf-8') as f:
+                ad_accounts = json.load(f)
+    except Exception:
+        # Health status must stay available even if a runtime status file is
+        # temporarily incomplete while an ad worker is writing it.
+        ad_accounts = {}
     return jsonify({
         "status": "running" if ad_processes else "stopped",
         "build": os.environ.get("RENDER_GIT_COMMIT", "unknown")[:12],
@@ -325,6 +335,7 @@ def status():
         "support_processes": len(get_processes_by_script('froxy_bot.py')),
         "froxy_support_processes": len(get_processes_by_script('froxy_destek_bot.py')),
         "lisansarena_processes": len(get_processes_by_script('lisansarena_bot.py')),
+        "ad_accounts": ad_accounts,
     })
 
 @app.route('/api/account-restrictions', methods=['GET'])
