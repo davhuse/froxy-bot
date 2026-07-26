@@ -88,6 +88,61 @@ API_HASH = '7ba4072dcf0a05a7ccf80e570866b6d8'
 CONFIG_FILE = "bot_config.json"
 LINKS_FILE = "lisansarena_shopier_links.json"
 
+# The public Shopier catalog is the source of truth.  These two Game Pass
+# listings are no longer public; the four 9999999x IDs were temporary manual
+# placeholders and therefore must never be shown as purchasable products.
+RETIRED_SHOPIER_PRODUCT_IDS = {
+    "48901882", "48901888",
+    "99999991", "99999992", "99999993", "99999994",
+}
+
+# Products that were published after the last exported Shopier catalog.  Keep
+# full Shopier IDs here so the bot always sends a real product URL, rather than
+# a synthetic fallback link.  This list is deliberately merged at load time so
+# refreshing the exported JSON later cannot create duplicate products.
+SHOPIER_CATALOG_ADDITIONS = [
+    {
+        "id": "49099069",
+        "title": "FC26 + Online Her Seyi Degisen Hesap",
+        "description": "FC26 + Online Her Seyi Degisen Hesap.",
+        "type": "digital",
+        "url": "https://www.shopier.com/49099069",
+        "priceData": {"currency": "TRY", "price": "299.99"},
+    },
+    {
+        "id": "49099023",
+        "title": "FC26 + Online Her Seyi Degisen Hesap",
+        "description": "FC26 + Online Her Seyi Degisen Hesap.",
+        "type": "digital",
+        "url": "https://www.shopier.com/49099023",
+        "priceData": {"currency": "TRY", "price": "299.99"},
+    },
+    {
+        "id": "49099022",
+        "title": "Zula Random Hesap",
+        "description": "Zula Random Hesap.",
+        "type": "digital",
+        "url": "https://www.shopier.com/49099022",
+        "priceData": {"currency": "TRY", "price": "5.00"},
+    },
+    {
+        "id": "49099021",
+        "title": "Netflix 4K UHD Ortak Profil",
+        "description": "Netflix 4K UHD Ortak Profil.",
+        "type": "digital",
+        "url": "https://www.shopier.com/49099021",
+        "priceData": {"currency": "TRY", "price": "39.99"},
+    },
+    {
+        "id": "49099018",
+        "title": "Steam 200 Dolar Random Key",
+        "description": "Steam 200 Dolar Random Key.",
+        "type": "digital",
+        "url": "https://www.shopier.com/49099018",
+        "priceData": {"currency": "TRY", "price": "30.00"},
+    },
+]
+
 def save_ticket_to_file(bot_type, user_id, first_name, last_name, username, message):
     file_path = "tickets.json"
     new_ticket = {
@@ -167,6 +222,15 @@ def load_products_from_links_json():
         try:
             with open(LINKS_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
+                data = [
+                    item for item in data
+                    if str(item.get("id", "")) not in RETIRED_SHOPIER_PRODUCT_IDS
+                ]
+                known_ids = {str(item.get("id", "")) for item in data}
+                data.extend(
+                    item for item in SHOPIER_CATALOG_ADDITIONS
+                    if item["id"] not in known_ids
+                )
                 for item in data:
                     pid = item.get("id")
                     title = item.get("title")
