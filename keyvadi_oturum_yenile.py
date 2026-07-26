@@ -7,7 +7,11 @@ bot_config.json'a YAZMAZ -- boylece anahtar yanlislikla lokalde de calisip
 tekrar iptal edilmez.
 
 Kullanim:
-    python keyvadi_oturum_yenile.py
+    python keyvadi_oturum_yenile.py                  # numarayi sorar
+    python keyvadi_oturum_yenile.py +905xxxxxxxxx    # numarayi arguman olarak alir
+
+Telefon numarasi bilerek dosyaya gomulmedi; repo herkese acik oldugu icin
+numara komut satirindan veriliyor.
 
 Sonrasinda cikan anahtari Render > Environment > AD_STRING_SESSION_KEYVADI
 degerine yapistirip deploy edin.
@@ -43,7 +47,11 @@ async def main():
     print("Ayni anahtari lokalde de calistirirsaniz Telegram iptal eder.")
     print("=" * 60)
 
-    phone = input("KeyVadiOnline telefon numarasi (ornek +905xxxxxxxxx): ").strip()
+    phone = sys.argv[1].strip() if len(sys.argv) > 1 else ''
+    if phone:
+        print(f"Telefon (argumandan): {phone}")
+    else:
+        phone = input("KeyVadiOnline telefon numarasi (ornek +905xxxxxxxxx): ").strip()
     if not phone:
         print("Telefon numarasi bos, cikiliyor.")
         return
