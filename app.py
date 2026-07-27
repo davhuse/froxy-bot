@@ -19,6 +19,7 @@ app = Flask(__name__,
             static_folder=os.path.join(base_dir, 'static'))
 
 PANEL_ADMIN_TOKEN = os.environ.get('PANEL_ADMIN_TOKEN', '').strip()
+SHOPIER_CALLBACK_SECRET = os.environ.get('SHOPIER_CALLBACK_SECRET', '').strip()
 FROXY_ENABLED = True
 
 @app.before_request
@@ -26,8 +27,26 @@ def protect_panel_api():
     """Require an explicit Render/local environment token for panel writes."""
     if not request.path.startswith('/api/'):
         return None
-    public_paths = {'/api/status', '/api/account-restrictions', '/api/shopier/callback'}
-    if request.path in public_paths and request.method == 'GET' or request.path == '/api/shopier/callback':
+    public_paths = {'/api/status', '/api/account-restrictions'}
+    if request.path in public_paths and request.method == 'GET':
+        return None
+    # Shopier bu uca kendi sunucusundan POST atiyor, panel token'i gonderemez.
+    # Onceki kosul 'A and B or C' seklindeydi ve Python'da 'and' daha siki
+    # bagladigi icin '(A and B) or C' olarak cozuluyordu: uc HER metot icin
+    # kosulsuz muaf kaliyordu.  Isteyen sahte siparis POST'layip bedava lisans
+    # aldirabiliyordu.  SHOPIER_CALLBACK_SECRET tanimliysa artik zorunlu;
+    # tanimli degilse calismaya devam eder ama her istekte uyari basar.
+    if request.path == '/api/shopier/callback':
+        if not SHOPIER_CALLBACK_SECRET:
+            print('⚠️ [Guvenlik] /api/shopier/callback korumasiz calisiyor. '
+                  'SHOPIER_CALLBACK_SECRET tanimlayin ve Shopier bildirim '
+                  'adresine ?secret=... ekleyin.')
+            return None
+        verilen = (request.args.get('secret')
+                   or request.headers.get('X-Shopier-Secret', ''))
+        if verilen != SHOPIER_CALLBACK_SECRET:
+            print('🚫 [Guvenlik] Shopier callback gecersiz secret ile reddedildi.')
+            return jsonify({'error': 'Unauthorized'}), 401
         return None
     if not PANEL_ADMIN_TOKEN:
         return jsonify({'error': 'PANEL_ADMIN_TOKEN is not configured'}), 503

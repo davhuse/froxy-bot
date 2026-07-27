@@ -355,6 +355,10 @@ ACCOUNT_RESTRICTIONS_FILE = 'account_restrictions.json'
 GROUP_FAILURES_FILE = 'group_failures.json'
 SEND_LOCK_FILE = 'send_locks.json'
 GROUP_COOLDOWN_HOURS = 1  # Varsayılan: 1 saat ortak cooldown. Config'den ezilebilir.
+# Ayni gruba iki FARKLI hesabin gonderimi arasinda birakilacak en az sure.
+# Cooldown hesap bazli oldugu icin bu olmadan uc hesap ayni gruba saniyeler
+# icinde ust uste reklam birakiyordu.
+INTER_ACCOUNT_GAP_SECONDS = 900
 if os.path.exists("bot_config.json"):
     try:
         with open("bot_config.json", "r", encoding="utf-8") as f:
@@ -454,12 +458,34 @@ def load_cooldowns():
             pass
     return {}
 
-def save_cooldowns(data):
+def _atomik_json_yaz(path, data, **dump_kwargs):
+    """Once gecici dosyaya yaz, sonra yerine tasi.
+
+    'w' modu dosyayi ANINDA sifirliyor; Render deploy sirasinda SIGTERM ya da
+    OOM tam json.dump ortasinda gelirse dosya yarim/bos kaliyor ve bir sonraki
+    aciliste sessizce {} olarak okunuyordu -- tum cooldown gecmisi silinip
+    buluta da bos hali yaziliyordu.  os.replace ayni dosya sisteminde atomik.
+    """
+    gecici = f"{path}.tmp"
     try:
-        with open(COOLDOWN_FILE, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=2)
-    except:
-        pass
+        with open(gecici, 'w', encoding='utf-8') as f:
+            json.dump(data, f, **dump_kwargs)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(gecici, path)
+        return True
+    except Exception as e:
+        print(f"⚠️ {path} yazılamadı: {e}")
+        try:
+            if os.path.exists(gecici):
+                os.remove(gecici)
+        except Exception:
+            pass
+        return False
+
+
+def save_cooldowns(data):
+    _atomik_json_yaz(COOLDOWN_FILE, data, indent=2)
 
 def _numeric_chat_key(value):
     """'-1001693128625', '1693128625' -> '1693128625'.
@@ -568,13 +594,7 @@ def _load_json_file(path, default):
     return default
 
 def _save_json_file(path, data):
-    try:
-        with open(path, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
-        return True
-    except Exception as e:
-        print(f"⚠️ {path} yazılamadı: {e}")
-        return False
+    return _atomik_json_yaz(path, data, indent=2, ensure_ascii=False)
 
 def load_account_restrictions():
     return _load_json_file(ACCOUNT_RESTRICTIONS_FILE, {})
@@ -871,6 +891,20 @@ def is_on_cooldown(grup_name, client_name, entity=None):
                     return True
             except:
                 pass
+
+        # Hesaplar arasi aralik.  Cooldown hesap bazli oldugu icin uc hesap ayni
+        # grubu saniyeler icinde pesi sira reklamla dolduruyordu: uye acisindan
+        # bu ucuncu mesajda spam gibi gorunuyor ve yoneticinin ucunu birden
+        # atmasina yol aciyor.  Baska bir hesap yeni attiysa siraya gir.
+        for diger_hesap, diger_zaman in group_data.items():
+            if diger_hesap == client_name or not diger_zaman:
+                continue
+            try:
+                gecen = (now - datetime.fromisoformat(diger_zaman)).total_seconds()
+                if gecen < INTER_ACCOUNT_GAP_SECONDS:
+                    return True
+            except Exception:
+                continue
 
     return False
 
@@ -1285,7 +1319,15 @@ def fs_set_state(progress=None, blacklist=None, auto_groups=None, scraped_groups
             
         mask_str = "&".join(mask_parts)
         url = f"{BASE_URL}/reklam/state?{mask_str}&key={API_KEY}"
-        requests.patch(url, json={"fields": fields}, timeout=10)
+        # Yanit kodu kontrol edilmeliydi: requests 4xx/5xx'te exception ATMAZ,
+        # dolayisiyla belge 1 MiB sinirini asinca ya da kota dolunca senkron
+        # sessizce oluyor, log yine 'buluta yazildi' diyordu.
+        cevap = requests.patch(url, json={"fields": fields}, timeout=10)
+        if cevap.status_code >= 400:
+            print(f"⚠️ [Firestore] Yazma reddedildi: HTTP {cevap.status_code} "
+                  f"— {cevap.text[:160]}")
+            return False
+        return True
     except Exception as e:
         print(f"⚠️ Firestore kaydetme hatası: {e}")
 
@@ -2104,7 +2146,7 @@ async def main():
         print("🔑 1. Hesap: StringSession kullanılarak bağlanılıyor...")
         try:
             from telethon.sessions import StringSession
-            client1 = TelegramClient(StringSession(string_session_key), api_id, api_hash, timeout=20, connection_retries=-1, auto_reconnect=True)
+            client1 = TelegramClient(StringSession(string_session_key), api_id, api_hash, timeout=20, connection_retries=-1, auto_reconnect=True, flood_sleep_threshold=5)
             await client1.connect()
             if await client1.is_user_authorized():
                 me = await client1.get_me()
@@ -2121,7 +2163,7 @@ async def main():
         print("🔑 2. Hesap: StringSession kullanılarak bağlanılıyor...")
         try:
             from telethon.sessions import StringSession
-            client2 = TelegramClient(StringSession(string_session_key_2), api_id, api_hash, timeout=20, connection_retries=-1, auto_reconnect=True)
+            client2 = TelegramClient(StringSession(string_session_key_2), api_id, api_hash, timeout=20, connection_retries=-1, auto_reconnect=True, flood_sleep_threshold=5)
             await client2.connect()
             if await client2.is_user_authorized():
                 me = await client2.get_me()
@@ -2137,7 +2179,7 @@ async def main():
         print("🔑 3. Hesap (LisansArena): StringSession kullanılarak bağlanılıyor...")
         try:
             from telethon.sessions import StringSession
-            client3 = TelegramClient(StringSession(string_session_key_3), api_id, api_hash, timeout=20, connection_retries=-1, auto_reconnect=True)
+            client3 = TelegramClient(StringSession(string_session_key_3), api_id, api_hash, timeout=20, connection_retries=-1, auto_reconnect=True, flood_sleep_threshold=5)
             await client3.connect()
             if await client3.is_user_authorized():
                 me = await client3.get_me()
@@ -2152,7 +2194,7 @@ async def main():
     if not string_session_key and not string_session_key_2 and not string_session_key_3:
         print("📂 Yerel oturum dosyası kullanılarak bağlanılıyor...")
         try:
-            client1 = TelegramClient(SESSION_NAME, api_id, api_hash, timeout=20, connection_retries=-1, auto_reconnect=True)
+            client1 = TelegramClient(SESSION_NAME, api_id, api_hash, timeout=20, connection_retries=-1, auto_reconnect=True, flood_sleep_threshold=5)
             await client1.connect()
             if await client1.is_user_authorized():
                 me = await client1.get_me()
@@ -2262,6 +2304,7 @@ async def main():
         protected_groups = get_all_protected_groups()
         cancelled_join_requests_handled = set()
         groups_left_handled = set()
+        ref_channels_handled = set()
         
         VERIFIED_FILE = f"verified_groups_{client_name.replace(' ', '_').replace('#', '')}.json"
         MIN_UNIQUE_SENDERS = 10   # Grupta en az 10 farklı kişi yazmış olmalı
@@ -2432,7 +2475,15 @@ async def main():
             
             # Her blast döngüsü başında diyalogları güncelle
             await cache_dialogs()
-            await setup_reference_channels_autoclean(client, client_name)
+
+            # Referans kanali bakimi calisma basina BIR KEZ.  Her turda
+            # calisirken 3 kanal x 3 hesap x 24 tur = gunde ~216 adet
+            # channels.inviteToChannel + editAdmin istegi uretiyordu;
+            # inviteToChannel Telegram'in PeerFlood'u en hizli tetikledigi
+            # cagridir ve bu kanallar zaten bizim, her saat bakim gerekmiyor.
+            if not ref_channels_handled:
+                ref_channels_handled.add(client_name)
+                await setup_reference_channels_autoclean(client, client_name)
 
             # Geri çekilmesi istenen talepleri runtime başına yalnızca bir kez
             # işle. Üye olan hesaplardan çıkış yapılmaz.
@@ -2532,6 +2583,13 @@ async def main():
                 blacklisted_groups=debug_blacklisted,
                 not_joined_groups=debug_not_cached,
             )
+
+            # Sayaclar dongu govdesinde ilklenmeli: asagida bekleme suresini
+            # belirleyen kosul bunlari okuyor ve blast_targets bos oldugunda
+            # (yeni hesap, tum gruplar cooldown'da) tanimsiz kaliyorlardi ->
+            # NameError -> worker cokup 60 saniyede bir yeniden basliyordu.
+            sent_count = 0
+            fail_count = 0
 
             if not blast_targets:
                 print(f"[{client_name}] ⚠️ Önbellekte mesaj atılacak grup yok. Yeni gruplara katılma aşamasına geçiliyor...")
@@ -2845,6 +2903,15 @@ async def main():
                     if taze_engel.intersection(
                             group_state_keys(hedef_grup, joined_dialogs.get(hedef_grup.lower()))):
                         print(f"[{client_name}] ⛔ @{hedef_grup} kara listede, katılım atlandı.")
+                        continue
+
+                    # Katilim istegi zaten gonderilmis ve admin onayi bekliyorsa
+                    # tekrar isteme.  pending_invites dolduruluyordu ama hicbir
+                    # yerde okunmuyordu: onay bekleyen tek bir grup her turda uc
+                    # hesaptan yeni istek aliyordu (gunde ~72 istek), bu da hem
+                    # grup yoneticisini rahatsiz ediyor hem PeerFlood riski.
+                    if hedef_grup.lower() in pending_invites:
+                        print(f"[{client_name}] ⏳ @{hedef_grup} katılım isteği zaten gönderilmiş, bekleniyor.")
                         continue
 
                     try:
