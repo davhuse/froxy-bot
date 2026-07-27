@@ -7,10 +7,6 @@ window.fetch = async (input, init = {}) => {
     const requestMethod = (init.method || (typeof input !== 'string' && input.method) || 'GET').toUpperCase();
     const publicHealth = requestMethod === 'GET' && (requestUrl.endsWith('/api/status') || requestUrl.endsWith('/api/account-restrictions'));
     let token = localStorage.getItem('panel_admin_token');
-    if (!token && !publicHealth) {
-        token = window.prompt('Panel yönetim tokenını girin:');
-        if (token) localStorage.setItem('panel_admin_token', token);
-    }
     if (token) headers.set('X-Admin-Token', token);
     return nativeFetch(input, { ...init, headers });
 };
@@ -242,17 +238,17 @@ async function loadMessage() {
     try {
         const res = await fetch('/api/message');
         const data = await res.json();
-        UI.editor.value = data.message;
+        if (UI.editor) UI.editor.value = data.message;
     } catch(e) {}
     try {
         const res = await fetch('/api/message2');
         const data = await res.json();
-        UI.editor2.value = data.message;
+        if (UI.editor2) UI.editor2.value = data.message;
     } catch(e) {}
     try {
         const res = await fetch('/api/message3');
         const data = await res.json();
-        UI.editor3.value = data.message;
+        if (UI.editor3) UI.editor3.value = data.message;
     } catch(e) {}
 }
 
