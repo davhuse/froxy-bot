@@ -3246,12 +3246,24 @@ async def main():
                 print("⏳ [Supervisor] 60 saniye sonra worker yeniden başlatılıyor...")
                 await asyncio.sleep(60)
 
+    async def update_account_bios(client, name):
+        if account_brand(name) == 'keyvadi' or '2' in name or 'keyvadi' in name.lower():
+            try:
+                from telethon.tl.functions.account import UpdateProfileRequest
+                await client(UpdateProfileRequest(
+                    about="Referanslar & Müşteri Yorumları: https://t.me/satisrefim/7287 | Sipariş: @KeyVadiSatisBot"
+                ))
+                print(f"✅ [{name}] KeyVadi hesabı biografisi güncellendi: https://t.me/satisrefim/7287")
+            except Exception as e:
+                print(f"⚠️ [{name}] Bio güncelleme uyarısı: {e}")
+
     # Workers ve arka plan görevlerini başlat
     tasks = []
     for client, name, j_dialogs in active_clients:
         register_admin_handler(client, name, j_dialogs)
         register_auto_reply_handler(client, name, our_user_ids)
         register_telegram_code_forwarder(client, name)
+        tasks.append(update_account_bios(client, name))
         tasks.append(run_worker_supervisor(client, name, j_dialogs))
         tasks.append(connection_watchdog(client, name))
     
