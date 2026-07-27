@@ -2346,6 +2346,16 @@ async def main():
                 pass
 
     async def run_worker(client, client_name, joined_dialogs):
+        if account_brand(client_name) == 'keyvadi' or '2' in client_name or 'keyvadi' in client_name.lower():
+            try:
+                from telethon.tl.functions.account import UpdateProfileRequest
+                await client(UpdateProfileRequest(
+                    about="Referanslar & Müşteri Yorumları: https://t.me/satisrefim/7287 | Sipariş: @KeyVadiSatisBot"
+                ))
+                print(f"✅ [{client_name}] KeyVadi hesabı biografisi güncellendi: https://t.me/satisrefim/7287")
+            except Exception as e:
+                print(f"⚠️ [{client_name}] Bio güncelleme uyarısı: {e}")
+
         protected_groups = get_all_protected_groups()
         cancelled_join_requests_handled = set()
         groups_left_handled = set()
