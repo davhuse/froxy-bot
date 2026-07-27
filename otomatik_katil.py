@@ -2350,7 +2350,7 @@ async def main():
             try:
                 from telethon.tl.functions.account import UpdateProfileRequest
                 await client(UpdateProfileRequest(
-                    about="Referanslar & Müşteri Yorumları: https://t.me/satisrefim/7287 | Sipariş: @KeyVadiSatisBot"
+                    about="Referanslar: https://t.me/satisrefim/7287 | Bot: @KeyVadiSatisBot"
                 ))
                 print(f"✅ [{client_name}] KeyVadi hesabı biografisi güncellendi: https://t.me/satisrefim/7287")
             except Exception as e:
