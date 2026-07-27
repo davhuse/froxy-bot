@@ -3065,16 +3065,19 @@ async def main():
                 bekleme = 3600
                 print(f"\n[{client_name}] 🌙 Gece modu aktif (TR {tr_time.strftime('%H:%M')}) → Sonraki blast 1 saat sonra")
             else:
-                blast_wait = 3600
+                blast_min = 2700
+                blast_max = 3300
                 if os.path.exists("bot_config.json"):
                     try:
                         with open("bot_config.json", "r", encoding="utf-8") as f_cfg:
                             cfg = json.load(f_cfg)
-                            blast_wait = cfg.get("blast_wait_seconds", 3600)
+                            blast_min = cfg.get("blast_wait_min", 2700)
+                            blast_max = cfg.get("blast_wait_max", 3300)
                     except:
                         pass
-                bekleme = blast_wait
-                print(f"\n[{client_name}] ⏳ {grup_sayisi} gruba blast atıldı → Sonraki blast {bekleme // 60} dakika (1 saat) sonra tekrarlanacak")
+                import random
+                bekleme = random.randint(blast_min, blast_max)
+                print(f"\n[{client_name}] ⏳ {grup_sayisi} gruba blast atıldı → Sonraki blast {bekleme // 60} dakika ({bekleme} saniye) sonra insansı rastgele zamanlamayla tekrarlanacak")
             # Geri sayım (her dakika yazdır)
             kalan = bekleme
             while kalan > 0:
