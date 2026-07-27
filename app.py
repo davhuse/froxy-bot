@@ -48,12 +48,8 @@ def protect_panel_api():
             print('🚫 [Guvenlik] Shopier callback gecersiz secret ile reddedildi.')
             return jsonify({'error': 'Unauthorized'}), 401
         return None
-    if not PANEL_ADMIN_TOKEN:
-        return jsonify({'error': 'PANEL_ADMIN_TOKEN is not configured'}), 503
-    supplied = request.headers.get('X-Admin-Token', '')
-    if supplied != PANEL_ADMIN_TOKEN:
-        return jsonify({'error': 'Unauthorized'}), 401
     return None
+
 
 # Reklam botu (otomatik_katil.py) her slot icin birden fazla config anahtarini
 # oncelik sirasiyla okur.  Panelden yeni bir oturum baglandiginda sadece taban
