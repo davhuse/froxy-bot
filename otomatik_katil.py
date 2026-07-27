@@ -995,14 +995,29 @@ def save_msg_history(history):
     except:
         pass
 
+_last_global_chosen_map = {}
+
 def pick_message_for_group(grup_name, msg_files, history):
-    """Grup için son gönderilen mesajdan farklı bir mesaj seç"""
+    """Grup için son gönderilen mesajdan ve peş peşe atılan son mesajdan farklı bir mesaj seç"""
+    if not msg_files:
+        return ""
+    brand_key = tuple(sorted(msg_files))
+    last_global = _last_global_chosen_map.get(brand_key, "")
+    
     last_used = history.get(grup_name.lower(), "")
     available = [f for f in msg_files if f != last_used]
     if not available:
-        available = msg_files  # Hepsi kullanıldıysa sıfırla
+        available = list(msg_files)
+    
+    # Ardışık iki grupta aynı mesaj gitmesin diye son küresel seçimden farklısını tercih et
+    if len(available) > 1 and last_global in available:
+        filtered = [f for f in available if f != last_global]
+        if filtered:
+            available = filtered
+            
     chosen = random.choice(available)
     history[grup_name.lower()] = chosen
+    _last_global_chosen_map[brand_key] = chosen
     return chosen
 
 def is_active_hours():
