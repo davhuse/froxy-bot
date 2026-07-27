@@ -1040,6 +1040,7 @@ def get_autodm_config():
             pass
     return jsonify({
         "auto_dm_active": cfg.get("auto_dm_active", True),
+        "ai_response_enabled": cfg.get("ai_response_enabled", False),
         "max_dm_per_day": cfg.get("max_dm_per_day", 20),
     })
 
@@ -1056,6 +1057,8 @@ def save_autodm_config():
     
     if "auto_dm_active" in data:
         cfg["auto_dm_active"] = bool(data["auto_dm_active"])
+    if "ai_response_enabled" in data:
+        cfg["ai_response_enabled"] = bool(data["ai_response_enabled"])
     if "max_dm_per_day" in data:
         cfg["max_dm_per_day"] = int(data["max_dm_per_day"])
     

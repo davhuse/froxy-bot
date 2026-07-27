@@ -83,6 +83,16 @@ def call_pollinations_api(system_prompt, user_prompt):
     return None
 
 def get_ai_response(user_msg, brand, products, api_key=""):
+    # Check if AI chat response is enabled in bot_config.json
+    try:
+        if os.path.exists("bot_config.json"):
+            with open("bot_config.json", "r", encoding="utf-8") as f:
+                cfg = json.load(f)
+                if not cfg.get("ai_response_enabled", False):
+                    return None
+    except Exception:
+        pass
+
     prod_lines = []
     for p in products:
         prod_lines.append(f"- Ürün: {p.get('title')}, Fiyat: {p.get('price')}, Link: {p.get('url')}")
