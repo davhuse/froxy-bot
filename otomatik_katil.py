@@ -358,7 +358,7 @@ GROUP_COOLDOWN_HOURS = 1  # Varsayılan: 1 saat ortak cooldown. Config'den ezile
 # Ayni gruba iki FARKLI hesabin gonderimi arasinda birakilacak en az sure.
 # Cooldown hesap bazli oldugu icin bu olmadan uc hesap ayni gruba saniyeler
 # icinde ust uste reklam birakiyordu.
-INTER_ACCOUNT_GAP_SECONDS = 900
+INTER_ACCOUNT_GAP_SECONDS = 60
 if os.path.exists("bot_config.json"):
     try:
         with open("bot_config.json", "r", encoding="utf-8") as f:
@@ -383,7 +383,26 @@ NEGATIVE_KEYWORDS = [
 
 # --- Auto-DM: Yanıt veren kullanıcıları takip et ---
 replied_users = set()
-pending_invites = set() # Yeni: Katılım isteği gönderilen grupları takip etmek için
+PENDING_INVITES_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pending_invites.json')
+
+def load_pending_invites():
+    if os.path.exists(PENDING_INVITES_FILE):
+        try:
+            with open(PENDING_INVITES_FILE, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                if isinstance(data, list):
+                    return set(data)
+        except Exception:
+            pass
+    return set()
+
+def save_pending_invites(data):
+    try:
+        _atomik_json_yaz(PENDING_INVITES_FILE, sorted(list(data)), indent=2)
+    except Exception as e:
+        print(f"⚠️ pending_invites kaydetme hatası: {e}")
+
+pending_invites = load_pending_invites()
 dm_count_today = 0
 dm_last_reset = ""
 MAX_DM_PER_DAY = 20
@@ -867,6 +886,15 @@ def is_on_cooldown(grup_name, client_name, entity=None):
     cooldowns = load_cooldowns()
     now = datetime.now()
 
+    legacy_mapping = {
+        'FroxyOnline': ['Hesap #1', 'froxy_ai', 'c4hex'],
+        'KeyVadiOnline': ['Hesap #2', 'keyvadionline'],
+        'LisansArenaOnline': ['Hesap #3', 'lisansarenaonline'],
+    }
+    my_aliases = set([client_name, client_name.lower()])
+    if client_name in legacy_mapping:
+        my_aliases.update(legacy_mapping[client_name])
+
     # Ayni grup gecmiste farkli anahtarla kaydedilmis olabilir; hepsine bak.
     for key in group_state_keys(grup_name, entity):
         group_data = cooldowns.get(key)
@@ -883,7 +911,12 @@ def is_on_cooldown(grup_name, client_name, entity=None):
                 pass
             continue
 
-        this_acc_time = group_data.get(client_name)
+        this_acc_time = None
+        for alias in my_aliases:
+            if alias in group_data:
+                this_acc_time = group_data[alias]
+                break
+
         if this_acc_time:
             try:
                 last_sent = datetime.fromisoformat(this_acc_time)
@@ -892,12 +925,9 @@ def is_on_cooldown(grup_name, client_name, entity=None):
             except:
                 pass
 
-        # Hesaplar arasi aralik.  Cooldown hesap bazli oldugu icin uc hesap ayni
-        # grubu saniyeler icinde pesi sira reklamla dolduruyordu: uye acisindan
-        # bu ucuncu mesajda spam gibi gorunuyor ve yoneticinin ucunu birden
-        # atmasina yol aciyor.  Baska bir hesap yeni attiysa siraya gir.
+        # Hesaplar arasi kisa aralik (ör. 60 saniye safety buffer)
         for diger_hesap, diger_zaman in group_data.items():
-            if diger_hesap == client_name or not diger_zaman:
+            if diger_hesap in my_aliases or not diger_zaman:
                 continue
             try:
                 gecen = (now - datetime.fromisoformat(diger_zaman)).total_seconds()
@@ -2945,6 +2975,7 @@ async def main():
                             # Katılım isteği onaylandıysa/katılım sağlandıysa pending'den çıkar
                             if hedef_grup.lower() in pending_invites:
                                 pending_invites.remove(hedef_grup.lower())
+                                save_pending_invites(pending_invites)
                             await asyncio.sleep(random.randint(30, 90))
                             
                     except FloodWaitError as e:
@@ -2961,8 +2992,16 @@ async def main():
                     except Exception as e:
                         err_msg = str(e)
                         err_type = type(e).__name__
-                        if 'InviteRequestSent' in err_type or 'invite' in err_msg.lower():
+                        if 'UserBannedInChannel' in err_type or 'user_banned_in_channel' in err_msg.lower():
+                            record_group_failure(hedef_grup, client_name, 'UserBannedInChannel', retry_after=86400)
+                            print(f"[{client_name}] ⛔ @{hedef_grup} -> Bu hesap bu gruptan BANLANMIŞ. 24 saat boyunca denenmeyecek.")
+                        elif 'ChannelsTooMuch' in err_type or 'channels_too_much' in err_msg.lower():
+                            set_account_restriction(client_name, 86400, 'Telegram 500 kanal limitine ulaşıldı', err_type, scope='join')
+                            print(f"[{client_name}] 🚨 Telegram 500 kanal/grup limitine ulaşıldı! Katılım aşaması durduruluyor.")
+                            break
+                        elif 'InviteRequestSent' in err_type or 'invite' in err_msg.lower():
                             pending_invites.add(hedef_grup.lower())
+                            save_pending_invites(pending_invites)
                             print(f"[{client_name}] ⏳ @{hedef_grup} -> Katılım isteği gönderildi (onay bekleniyor).")
                         elif 'no user has' in err_msg.lower() or isinstance(e, (UsernameNotOccupiedError, UsernameInvalidError, ValueError)):
                             if hedef_grup.lower() not in protected_groups:
