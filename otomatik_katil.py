@@ -3075,7 +3075,6 @@ async def main():
                             blast_max = cfg.get("blast_wait_max", 3300)
                     except:
                         pass
-                import random
                 bekleme = random.randint(blast_min, blast_max)
                 print(f"\n[{client_name}] ⏳ {grup_sayisi} gruba blast atıldı → Sonraki blast {bekleme // 60} dakika ({bekleme} saniye) sonra insansı rastgele zamanlamayla tekrarlanacak")
             # Geri sayım (her dakika yazdır)
