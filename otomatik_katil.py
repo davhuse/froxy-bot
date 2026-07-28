@@ -2177,9 +2177,9 @@ async def main():
         try:
             with open("bot_config.json", "r", encoding="utf-8-sig") as f:
                 cfg = json.load(f)
-                string_session_key = os.environ.get("AD_STRING_SESSION_FROXY", "").strip() or cfg.get("string_session_key", cfg.get("ad_string_session", ""))
-                string_session_key_2 = os.environ.get("AD_STRING_SESSION_KEYVADI", "").strip() or cfg.get("string_session_key_2", cfg.get("ad_string_session2_final", cfg.get("ad_string_session2_new", cfg.get("ad_string_session2", cfg.get("ad_string_session_2", "")))))
-                string_session_key_3 = os.environ.get("AD_STRING_SESSION_LISANSARENA", "").strip() or cfg.get("string_session_key_3", cfg.get("ad_string_session3_final", cfg.get("ad_string_session3_new", cfg.get("ad_string_session3", cfg.get("ad_string_session_3", "")))))
+                string_session_key = cfg.get("string_session_key", "") or cfg.get("ad_string_session", "") or os.environ.get("AD_STRING_SESSION_FROXY", "").strip()
+                string_session_key_2 = cfg.get("string_session_key_2", "") or cfg.get("ad_string_session2_final", "") or cfg.get("ad_string_session2_new", "") or os.environ.get("AD_STRING_SESSION_KEYVADI", "").strip()
+                string_session_key_3 = cfg.get("string_session_key_3", "") or cfg.get("ad_string_session3_final", "") or cfg.get("ad_string_session3_new", "") or os.environ.get("AD_STRING_SESSION_LISANSARENA", "").strip()
                 ad_sleep_min = cfg.get("ad_sleep_min", 600)
                 ad_sleep_max = cfg.get("ad_sleep_max", 1200)
         except:
