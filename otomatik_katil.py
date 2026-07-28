@@ -2350,9 +2350,9 @@ async def main():
             try:
                 from telethon.tl.functions.account import UpdateProfileRequest
                 await client(UpdateProfileRequest(
-                    about="Referanslar: https://t.me/satisrefim/7287 | Bot: @KeyVadiSatisBot"
+                    about="Referanslar: https://t.me/satisrefim/9615 | Bot: @KeyVadiSatisBot"
                 ))
-                print(f"✅ [{client_name}] KeyVadi hesabı biografisi güncellendi: https://t.me/satisrefim/7287")
+                print(f"✅ [{client_name}] KeyVadi hesabı biografisi güncellendi: https://t.me/satisrefim/9615")
             except Exception as e:
                 print(f"⚠️ [{client_name}] Bio güncelleme uyarısı: {e}")
 
@@ -2582,6 +2582,12 @@ async def main():
                 if g_key != "id" and not is_excluded_ad_target(g_key, joined_dialogs.get(g_key)):
                     hedef_set.add(g_key)
             hedef_set = {g for g in hedef_set if not is_excluded_ad_target(g, joined_dialogs.get(g.lower()))}
+
+            # KeyVadiOnline strictly targets ONLY user-specified 13 groups
+            if client_name.lower() in ["keyvadionline", "hesap #2"]:
+                keyvadi_allowed = {"ticaretguvenilir", "kuponsatimalim", "indirimkodusatis", "yucekuponsatis", "kuponindirimpazari", "sosyalmedyaalimsatimticaret", "nightsatis", "kuponindirimsatis", "kuponsatisgrup", "kuponhesapsatis", "kuponceking", "tahaaslan11", "alimsatimmerkezii"}
+                hedef_set = {g for g in hedef_set if normalize_group_key(g) in keyvadi_allowed}
+
             print(f"[{client_name}] 📌 Toplam Gönderim Hedefi (Üye olunan + Korumalı): {len(hedef_set)} grup")
             
             # Önbellekte olan + kara listede olmayan hedef gruplar
