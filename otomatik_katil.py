@@ -2584,12 +2584,10 @@ async def main():
                     hedef_set.add(g_key)
             hedef_set = {g for g in hedef_set if not is_excluded_ad_target(g, joined_dialogs.get(g.lower()))}
 
-            # KeyVadiOnline prioritizes user-specified 13 groups first, capped at MAX 18 groups total
+            # KeyVadiOnline is STRICTLY and EXCLUSIVELY locked ONLY to the explicit 13 user-specified target groups
             if client_name.lower() in ["keyvadionline", "hesap #2"]:
-                keyvadi_priority = ["ticaretguvenilir", "kuponsatimalim", "indirimkodusatis", "yucekuponsatis", "kuponindirimpazari", "sosyalmedyaalimsatimticaret", "nightsatis", "kuponindirimsatis", "kuponsatisgrup", "kuponhesapsatis", "kuponceking", "tahaaslan11", "alimsatimmerkezii"]
-                ordered = [g for g in keyvadi_priority if g in hedef_set]
-                remaining = [g for g in hedef_set if g not in ordered]
-                hedef_set = (ordered + remaining)[:18]
+                keyvadi_allowed = {"ticaretguvenilir", "kuponsatimalim", "indirimkodusatis", "yucekuponsatis", "kuponindirimpazari", "sosyalmedyaalimsatimticaret", "nightsatis", "kuponindirimsatis", "kuponsatisgrup", "kuponhesapsatis", "kuponceking", "tahaaslan11", "alimsatimmerkezii"}
+                hedef_set = {g for g in hedef_set if normalize_group_key(g) in keyvadi_allowed}
 
             print(f"[{client_name}] 📌 Toplam Gönderim Hedefi (Üye olunan + Korumalı): {len(hedef_set)} grup")
             
