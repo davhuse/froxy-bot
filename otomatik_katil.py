@@ -411,9 +411,10 @@ MAX_DM_PER_DAY = 20
 # gibi) bir sekilde bir slota dusup gruplara mesaj atmasi istenmiyor.
 # Kullanici adi olmayan hesaplar zaten bu kumede yer alamaz, dolayisiyla
 # baglanti kurulsa bile acilista kapatilirlar.
-ACTIVE_ACCOUNT_USERNAMES = {'keyvadionline', 'lisansarenaonline', 'froxy_ai'}
+ACTIVE_ACCOUNT_USERNAMES = {'keyvadionline', 'keyvadidestek', 'lisansarenaonline', 'froxy_ai'}
 ACCOUNT_STABLE_NAMES = {
     'keyvadionline': 'KeyVadiOnline',
+    'keyvadidestek': 'KeyVadiOnline',
     'lisansarenaonline': 'LisansArenaOnline',
     'froxy_ai': 'FroxyOnline',
 }
