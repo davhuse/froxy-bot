@@ -1386,8 +1386,9 @@ def get_list(dosya):
 def save_to_list(grup, dosya):
     if dosya == BLACKLIST_FILE:
         g_lower = normalize_group_key(grup)
-        if is_group_protected(grup):
-            print(f"⚠️ [Security] Korumalı/hedef grup @{grup} kara listeye eklenmesi engellendi!")
+        target_groups = {"kuponindirimsatis", "ticaretguvenilir", "kuponsatimalim", "indirimkodusatis", "yucekuponsatis", "kuponindirimpazari", "sosyalmedyaalimsatimticaret", "nightsatis", "kuponindirimsatis", "kuponsatisgrup", "kuponhesapsatis", "kuponceking", "tahaaslan11", "alimsatimmerkezii"}
+        if is_group_protected(grup) or g_lower in target_groups:
+            print(f"⚠️ [Security] Korumalı/hedef grup @{grup} kara listeye eklenmesi engellendi, 1 saatlik geçici bekleme süresine alındı.")
             return
 
         if os.path.exists(AUTO_GROUPS_FILE):
