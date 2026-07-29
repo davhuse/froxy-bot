@@ -952,6 +952,30 @@ def set_cooldown(grup_name, client_name, entity=None):
     cooldowns[key][client_name] = datetime.now().isoformat()
     save_cooldowns(cooldowns)
 
+def save_last_blast_time(client_name):
+    """Hesabın son blast tamamlanma zamanını kaydeder"""
+    try:
+        cooldowns = load_cooldowns()
+        cooldowns[f"__LAST_BLAST_TIME_{client_name}"] = datetime.now().isoformat()
+        save_cooldowns(cooldowns)
+    except Exception as e:
+        print(f"[{client_name}] ⚠️ Son blast zamanı kaydetme hatası: {e}")
+
+def get_last_blast_remaining_wait(client_name, target_wait_seconds=3600):
+    """Sunucu yeniden başlatıldığında hesabın kalan bekleme süresini hesaplar"""
+    try:
+        cooldowns = load_cooldowns()
+        val = cooldowns.get(f"__LAST_BLAST_TIME_{client_name}")
+        if not val or not isinstance(val, str):
+            return 0
+        last_dt = datetime.fromisoformat(val)
+        elapsed = (datetime.now() - last_dt).total_seconds()
+        if elapsed < target_wait_seconds:
+            return int(target_wait_seconds - elapsed)
+    except Exception:
+        pass
+    return 0
+
 # --- Mesaj Rotasyonu (6 şablon: kısa/uzun, soru/direkt, fiyat/sosyal) ---
 FROXY_MESSAGES = [
     os.path.join(MESSAGES_DIR, 'froxy_hook.txt'),
@@ -2527,6 +2551,22 @@ async def main():
                 await asyncio.sleep(60)
                 continue
 
+            # Sunucu/Yeniden başlatma sonrası: Son blast tamamlanmasından itibaren 1 saat geçmemişse kalan bekleme süresini tamamla
+            startup_rem_wait = get_last_blast_remaining_wait(client_name, target_wait_seconds=3600)
+            if startup_rem_wait > 0:
+                elapsed_min = (3600 - startup_rem_wait) // 60
+                rem_min = startup_rem_wait // 60
+                print(f"\n[{client_name}] ⏳ Son yayın {elapsed_min}dk önce tamamlanmış. Sunucu başlatılması sonrası kalan {rem_min}dk ({startup_rem_wait}sn) bekleme süresi tamamlanıyor...")
+                kalan_start = startup_rem_wait
+                while kalan_start > 0:
+                    dakika = kalan_start // 60
+                    saniye = kalan_start % 60
+                    if kalan_start == startup_rem_wait or kalan_start % 60 == 0:
+                        print(f"[{client_name}] ⏱️ Kalan: {dakika}dk {saniye}sn")
+                    uyku = min(15, kalan_start)
+                    await asyncio.sleep(uyku)
+                    kalan_start -= uyku
+
             # Dinamik olarak korumalı listeyi güncelle
             protected_groups = get_all_protected_groups()
             
@@ -3084,6 +3124,7 @@ async def main():
                     except:
                         pass
                 bekleme = random.randint(blast_min, blast_max)
+                save_last_blast_time(client_name)
                 print(f"\n[{client_name}] ⏳ {grup_sayisi} gruba blast atıldı → Sonraki blast {bekleme // 60} dakika ({bekleme} saniye) sonra insansı rastgele zamanlamayla tekrarlanacak")
             # Geri sayım (her dakika yazdır)
             kalan = bekleme
