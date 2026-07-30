@@ -2557,26 +2557,22 @@ async def main():
                 await asyncio.sleep(60)
                 continue
 
-            # Yeni deploy/yeniden başlatma sonrası asla doğrudan blast atma.
-            # Buluttaki son blast zamanı bulunuyorsa kalan süre, bulunamıyorsa
-            # güvenlik payı olarak tam bir saat beklenir.
-            startup_rem_wait = get_last_blast_remaining_wait(client_name, target_wait_seconds=3600)
-            if startup_rem_wait == 0:
-                startup_rem_wait = 3600
-                print(f"\n[{client_name}] ⏳ Yeni sunucu başlangıcı algılandı. İlk blast öncesi 60 dakika güvenlik beklemesi başlatılıyor...")
-            if startup_rem_wait > 0:
-                elapsed_min = (3600 - startup_rem_wait) // 60
-                rem_min = startup_rem_wait // 60
-                print(f"\n[{client_name}] ⏳ Son yayın {elapsed_min}dk önce tamamlanmış. Sunucu başlatılması sonrası kalan {rem_min}dk ({startup_rem_wait}sn) bekleme süresi tamamlanıyor...")
-                kalan_start = startup_rem_wait
-                while kalan_start > 0:
-                    dakika = kalan_start // 60
-                    saniye = kalan_start % 60
-                    if kalan_start == startup_rem_wait or kalan_start % 60 == 0:
+            # Her blast turu öncesi son blast zamanına bak.
+            # Son blast üzerinden 1 saat geçmediyse kalan süreyi bekle, 1 saat geçtiyse hemen başla.
+            rem_wait = get_last_blast_remaining_wait(client_name, target_wait_seconds=3600)
+            if rem_wait > 0:
+                elapsed_min = (3600 - rem_wait) // 60
+                rem_min = rem_wait // 60
+                print(f"\n[{client_name}] ⏳ Son yayın {elapsed_min}dk önce tamamlanmış → Kalan {rem_min}dk ({rem_wait}sn) bekleniyor...")
+                kalan_wait = rem_wait
+                while kalan_wait > 0:
+                    dakika = kalan_wait // 60
+                    saniye = kalan_wait % 60
+                    if kalan_wait == rem_wait or kalan_wait % 60 == 0:
                         print(f"[{client_name}] ⏱️ Kalan: {dakika}dk {saniye}sn")
-                    uyku = min(15, kalan_start)
+                    uyku = min(15, kalan_wait)
                     await asyncio.sleep(uyku)
-                    kalan_start -= uyku
+                    kalan_wait -= uyku
 
             # Dinamik olarak korumalı listeyi güncelle
             protected_groups = get_all_protected_groups()
@@ -3138,17 +3134,7 @@ async def main():
                         pass
                 bekleme = random.randint(blast_min, blast_max)
                 save_last_blast_time(client_name)
-                print(f"\n[{client_name}] ⏳ {grup_sayisi} gruba blast atıldı → Sonraki blast {bekleme // 60} dakika ({bekleme} saniye) sonra insansı rastgele zamanlamayla tekrarlanacak")
-            # Geri sayım (her dakika yazdır)
-            kalan = bekleme
-            while kalan > 0:
-                dakika = kalan // 60
-                saniye = kalan % 60
-                if kalan == bekleme or kalan % 60 == 0:
-                    print(f"[{client_name}] ⏱️ Kalan: {dakika}dk {saniye}sn")
-                uyku = min(15, kalan)
-                await asyncio.sleep(uyku)
-                kalan -= uyku
+                print(f"\n[{client_name}] 🎉 Blast turu başarıyla tamamlandı ({grup_sayisi} grup) → Sonraki blast 60 dakika sonra gerçekleşecek.")
 
     # Migrate legacy group decisions before syncing Firestore, otherwise the
     # old cloud blacklist could immediately reintroduce invalid entries.
