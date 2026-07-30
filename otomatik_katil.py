@@ -2625,14 +2625,13 @@ async def main():
                     hedef_set.add(g_key)
             hedef_set = {g for g in hedef_set if not is_excluded_ad_target(g, joined_dialogs.get(g.lower()))}
 
-            # KeyVadiOnline target set (Original 13 + 6 New Active Coupon/Code Trading Groups)
+            # KeyVadiOnline target set (Original 13 + strictly indirim363 and kuponkodalimsatim)
             if client_name.lower() in ["keyvadionline", "hesap #2"]:
                 keyvadi_allowed = {
                     "ticaretguvenilir", "kuponsatimalim", "indirimkodusatis", "yucekuponsatis",
                     "kuponindirimpazari", "sosyalmedyaalimsatimticaret", "nightsatis",
                     "kuponindirimsatis", "kuponsatisgrup", "kuponhesapsatis", "kuponceking",
-                    "tahaaslan11", "alimsatimmerkezii", "indirim363", "kuponkodalimsatim",
-                    "kuponceksatisi", "kuponsatislari0", "ucuzakuponsatis", "kuponvekodsatisgrubu"
+                    "tahaaslan11", "alimsatimmerkezii", "indirim363", "kuponkodalimsatim"
                 }
                 hedef_set = {g for g in hedef_set if normalize_group_key(g) in keyvadi_allowed}
 
