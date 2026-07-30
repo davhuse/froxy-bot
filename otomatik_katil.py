@@ -3328,13 +3328,8 @@ async def main():
         tasks.append(run_worker_supervisor(client, name, j_dialogs))
         tasks.append(connection_watchdog(client, name))
     
-    # Each active account discovers groups independently. Approval remains
-    # global, but joining and delivery are tracked per account.
-    for scraper_client, scraper_name, _ in active_clients:
-        tasks.append(periodic_scraper(scraper_client, scraper_name))
+    # Scraper tasks disabled: All accounts strictly use their assigned target group lists.
     tasks.append(periodic_firestore_sync())
-    for scraper_client, scraper_name, _ in active_clients:
-        tasks.append(run_startup_scraper(scraper_client, scraper_name))
     
     # Tüm görevleri eşzamanlı olarak çalıştır
     await asyncio.gather(*tasks)
