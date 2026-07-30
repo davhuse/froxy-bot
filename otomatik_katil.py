@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime, timezone, timedelta
 import random
 import os
 import json
@@ -955,19 +956,19 @@ def set_cooldown(grup_name, client_name, entity=None):
 def save_last_blast_time(client_name):
     """Hesabın son blast tamamlanma zamanını kaydeder"""
     try:
+        from datetime import datetime
         cooldowns = load_cooldowns()
         cooldowns[f"__LAST_BLAST_TIME_{client_name}"] = datetime.now().isoformat()
         save_cooldowns(cooldowns)
-        # Deploy hemen sonrasında gelse bile son blast bilgisi kaybolmasın.
-        # Periyodik 5 dakikalık sync'i beklemek, yeniden başlatmada anlık blast
-        # yapılmasına neden olabiliyordu.
         fs_set_state(cooldowns=json.dumps(cooldowns, ensure_ascii=False, indent=2))
+        print(f"[{client_name}] 💾 Son blast zamanı kaydedildi: {datetime.now().isoformat()}")
     except Exception as e:
         print(f"[{client_name}] ⚠️ Son blast zamanı kaydetme hatası: {e}")
 
 def get_last_blast_remaining_wait(client_name, target_wait_seconds=3600):
     """Sunucu yeniden başlatıldığında hesabın kalan bekleme süresini hesaplar"""
     try:
+        from datetime import datetime
         cooldowns = load_cooldowns()
         val = cooldowns.get(f"__LAST_BLAST_TIME_{client_name}")
         if not val or not isinstance(val, str):
@@ -976,8 +977,8 @@ def get_last_blast_remaining_wait(client_name, target_wait_seconds=3600):
         elapsed = (datetime.now() - last_dt).total_seconds()
         if elapsed < target_wait_seconds:
             return int(target_wait_seconds - elapsed)
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"[{client_name}] ⚠️ Kalan bekleme hesaplama hatası: {e}")
     return 0
 
 # --- Mesaj Rotasyonu (6 şablon: kısa/uzun, soru/direkt, fiyat/sosyal) ---
