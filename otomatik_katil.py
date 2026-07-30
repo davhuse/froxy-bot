@@ -971,15 +971,34 @@ def get_last_blast_remaining_wait(client_name, target_wait_seconds=3600):
         from datetime import datetime
         cooldowns = load_cooldowns()
         val = cooldowns.get(f"__LAST_BLAST_TIME_{client_name}")
+        
+        # Eğer yerel dosyada yoksa bulut Firestore'dan çekmeyi dene
+        if not val:
+            try:
+                _, _, _, _, fs_cooldowns, _ = fs_get_state()
+                if fs_cooldowns:
+                    c_dict = json.loads(fs_cooldowns)
+                    val = c_dict.get(f"__LAST_BLAST_TIME_{client_name}")
+            except Exception:
+                pass
+
+        # Eğer son blast zamanı yoksa (yeni deploy), güvenlik için tam 1 saat bekle
         if not val or not isinstance(val, str):
-            return 0
+            print(f"[{client_name}] 🛡️ Sunucu başlangıcı: Son blast zamanı kaydı yok, 60 dakika güvenlik beklemesi uygulanıyor.")
+            return target_wait_seconds
+
         last_dt = datetime.fromisoformat(val)
         elapsed = (datetime.now() - last_dt).total_seconds()
         if elapsed < target_wait_seconds:
-            return int(target_wait_seconds - elapsed)
+            rem = int(target_wait_seconds - elapsed)
+            print(f"[{client_name}] ⏳ Son blast {int(elapsed // 60)}dk önce yapılmış → Kalan {int(rem // 60)}dk ({rem}sn) bekleniyor.")
+            return rem
+        else:
+            print(f"[{client_name}] ✅ Son blast {int(elapsed // 60)}dk önce yapılmış (1 saat doldu), yeni blast zamanı geldi.")
+            return 0
     except Exception as e:
         print(f"[{client_name}] ⚠️ Kalan bekleme hesaplama hatası: {e}")
-    return 0
+        return target_wait_seconds
 
 # --- Mesaj Rotasyonu (6 şablon: kısa/uzun, soru/direkt, fiyat/sosyal) ---
 FROXY_MESSAGES = [
