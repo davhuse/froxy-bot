@@ -958,6 +958,10 @@ def save_last_blast_time(client_name):
         cooldowns = load_cooldowns()
         cooldowns[f"__LAST_BLAST_TIME_{client_name}"] = datetime.now().isoformat()
         save_cooldowns(cooldowns)
+        # Deploy hemen sonrasında gelse bile son blast bilgisi kaybolmasın.
+        # Periyodik 5 dakikalık sync'i beklemek, yeniden başlatmada anlık blast
+        # yapılmasına neden olabiliyordu.
+        fs_set_state(cooldowns=json.dumps(cooldowns, ensure_ascii=False, indent=2))
     except Exception as e:
         print(f"[{client_name}] ⚠️ Son blast zamanı kaydetme hatası: {e}")
 
@@ -2553,8 +2557,13 @@ async def main():
                 await asyncio.sleep(60)
                 continue
 
-            # Sunucu/Yeniden başlatma sonrası: Son blast tamamlanmasından itibaren 1 saat geçmemişse kalan bekleme süresini tamamla
+            # Yeni deploy/yeniden başlatma sonrası asla doğrudan blast atma.
+            # Buluttaki son blast zamanı bulunuyorsa kalan süre, bulunamıyorsa
+            # güvenlik payı olarak tam bir saat beklenir.
             startup_rem_wait = get_last_blast_remaining_wait(client_name, target_wait_seconds=3600)
+            if startup_rem_wait == 0:
+                startup_rem_wait = 3600
+                print(f"\n[{client_name}] ⏳ Yeni sunucu başlangıcı algılandı. İlk blast öncesi 60 dakika güvenlik beklemesi başlatılıyor...")
             if startup_rem_wait > 0:
                 elapsed_min = (3600 - startup_rem_wait) // 60
                 rem_min = startup_rem_wait // 60
@@ -3113,10 +3122,7 @@ async def main():
             
             grup_sayisi = len(blast_targets) if blast_targets else 0
             # Gece (02:00 - 07:59) saat başı (3600 sn), diğer saatlerde 30 dakikada bir (1800 sn)
-            if sent_count == 0 and fail_count > 0:
-                bekleme = 120
-                print(f"\n[{client_name}] Bağlantı retry: bu turda başarılı gönderim yok, 2 dakika sonra tekrar denenecek.")
-            elif 2 <= hour <= 7:
+            if 2 <= hour <= 7:
                 bekleme = 3600
                 print(f"\n[{client_name}] 🌙 Gece modu aktif (TR {tr_time.strftime('%H:%M')}) → Sonraki blast 1 saat sonra")
             else:
