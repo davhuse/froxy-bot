@@ -1462,30 +1462,24 @@ def tg_verify_password():
         return jsonify({"success": False, "message": f"Şifre doğrulama hatası: {str(e)}"})
 
 
-if __name__ == '__main__':
-    # Clean up any orphaned bot processes from previous runs on startup
-    for script_name in ['otomatik_katil.py', 'froxy_bot.py', 'froxy_destek_bot.py', 'lisansarena_bot.py']:
-        proc = get_process_by_script(script_name)
-        if proc:
-            print(f"🧹 Startup cleanup: Killing orphaned process {proc.pid} ({script_name})")
-            try:
-                proc.terminate()
-                proc.wait(timeout=3)
-            except:
-                try: proc.kill()
-                except: pass
-        pid_file = f"{script_name}.pid"
-        if os.path.exists(pid_file):
-            try: os.remove(pid_file)
-            except: pass
+# Start background threads at module load (works under Gunicorn and direct python app.py)
+_started_lock = threading.Lock()
+_bg_threads_started = False
 
-    # Start the watchdog thread
-    t = threading.Thread(target=bot_watchdog, daemon=True)
-    t.start()
-    
-    # Start keep-alive thread (Render sleep prevention)
-    ka = threading.Thread(target=keep_alive, daemon=True)
-    ka.start()
-        
+def start_background_threads():
+    global _bg_threads_started
+    with _started_lock:
+        if not _bg_threads_started:
+            _bg_threads_started = True
+            print("🚀 [App] Starting background bot watchdog & keep-alive threads...")
+            t = threading.Thread(target=bot_watchdog, daemon=True)
+            t.start()
+            ka = threading.Thread(target=keep_alive, daemon=True)
+            ka.start()
+
+start_background_threads()
+
+if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
+
