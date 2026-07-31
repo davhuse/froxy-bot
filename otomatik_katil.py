@@ -57,6 +57,7 @@ gruplar = [
     "kuponvekodsatisgrubu",
     "indirimkodusatis",
     "mukyemek",
+    "kupongrupta",
 ]
 
 
