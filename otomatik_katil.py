@@ -2611,7 +2611,7 @@ async def main():
                             if dialog_id_str in pending_invites:
                                 pending_invites.remove(dialog_id_str)
                             all_groups_info.append({
-                                "username": dialog.entity.username or dialog_id_str,
+                                "username": username_lower or dialog_id_str,
                                 "title": title,
                                 "members": member_count,
                                 "broadcast": is_broadcast,
@@ -2621,7 +2621,7 @@ async def main():
                         
                         # Otomatik Çıkma/Kara Liste Mantığı Kaldırıldı. Tüm grupları direkt ekle.
                         all_groups_info.append({
-                            "username": dialog.entity.username or dialog_id_str,
+                            "username": username_lower or dialog_id_str,
                             "title": title,
                             "members": member_count,
                             "broadcast": is_broadcast,

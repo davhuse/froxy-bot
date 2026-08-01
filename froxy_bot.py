@@ -8,10 +8,12 @@ import html
 import asyncio
 import time
 from telethon import TelegramClient, events, Button
+from telethon.errors import MessageNotModifiedError
 from telethon.sessions import StringSession
 import user_lang_helper
 import firestore_helper
 from gemini_helper import get_ai_response
+from update_keyvadi_links_json import fetch_live_catalog, write_catalog_atomic
 
 # Async wrappers for firestore_helper to prevent event loop deadlocks/freezes
 async def async_get_document(doc_id):
@@ -81,6 +83,23 @@ logging.basicConfig(
     handlers=[logging.StreamHandler()]
 )
 logger = logging.getLogger("KeyVadiBot")
+USER_EVENT_LOCKS = {}
+
+def serialize_user_events(handler):
+    async def serialized(event, *args, **kwargs):
+        lock = USER_EVENT_LOCKS.setdefault(event.sender_id, asyncio.Lock())
+        async with lock:
+            return await handler(event, *args, **kwargs)
+    return serialized
+
+async def safe_event_edit(event, *args, **kwargs):
+    """Repeated button taps are harmless; Telegram rejects identical edits."""
+    try:
+        edit_method = event.edit
+        return await edit_method(*args, **kwargs)
+    except MessageNotModifiedError:
+        logger.debug("Ignored an identical callback edit for user %s.", event.sender_id)
+        return None
 
 API_ID = 31076280
 API_HASH = '7ba4072dcf0a05a7ccf80e570866b6d8'
@@ -167,7 +186,6 @@ INJECTED_PRODUCTS = [
     {"id": "49099015", "title": "Zula Random Hesap", "price": "5.00 TL", "url": "https://www.shopier.com/49099015"},
     {"id": "49099014", "title": "Netflix 4K UHD Ortak Profil", "price": "39.99 TL", "url": "https://www.shopier.com/49099014"},
     {"id": "49099013", "title": "Steam 200 Dolar Random Key", "price": "30.00 TL", "url": "https://www.shopier.com/49099013"},
-    {"id": "49099001", "title": "Steam 200 Dolar Random Key", "price": "30.00 TL", "url": "https://www.shopier.com/49099001"}
 ]
 
 # Flat list of all products (rebuilt when products are loaded)
@@ -220,7 +238,7 @@ def match_product_from_text(msg_text):
         "crunchyroll", "chatgpt", "midjourney", "creative",
         "4k", "uhd", "game", "lisans", "microsoft",
         "tradingview", "nordvpn", "vpn", "kaspersky", "envato", "freepik",
-        "autocad", "figma", "elementor", "grammarly", "deepl", "ideogram", "quillbot"
+        "autocad", "figma", "elementor", "grammarly", "deepl", "ideogram", "quillbot", "discord"
     }
     
     has_brand = any(w in brand_keywords for w in query_words)
@@ -350,7 +368,7 @@ def match_multiple_products_from_text(msg_text):
         "crunchyroll", "chatgpt", "midjourney", "creative",
         "4k", "uhd", "game", "lisans", "microsoft",
         "tradingview", "nordvpn", "vpn", "kaspersky", "envato", "freepik",
-        "autocad", "figma", "elementor", "grammarly", "deepl", "ideogram", "quillbot",
+        "autocad", "figma", "elementor", "grammarly", "deepl", "ideogram", "quillbot", "discord",
         "hbo", "prime", "perplexity", "magnific", "telegram", "tg"
     }
     
@@ -360,7 +378,7 @@ def match_multiple_products_from_text(msg_text):
         "scribd", "gamma", "kiro", "steam", "shell", "whatsapp", "apple",
         "crunchyroll", "chatgpt", "midjourney", "tradingview", "nordvpn", "vpn",
         "kaspersky", "envato", "freepik", "autocad", "figma", "elementor", 
-        "grammarly", "deepl", "ideogram", "quillbot", "hbo", "prime", "perplexity", 
+        "grammarly", "deepl", "ideogram", "quillbot", "discord", "hbo", "prime", "perplexity",
         "magnific"
     }
     
@@ -523,72 +541,107 @@ def scrape_shopier():
         logger.error(f"Scraper error: {e}")
         return []
 
+def normalize_catalog_product(product):
+    """Shopier API, eski katalog ve scraper kayıtlarını tek biçime getir."""
+    if not isinstance(product, dict):
+        return None
+    normalized = dict(product)
+    pid = str(normalized.get("id") or "").strip()
+    title = str(normalized.get("title") or "").strip()
+    url = str(normalized.get("url") or normalized.get("link") or "").strip()
+    if not pid or not title or not url:
+        return None
+
+    price = normalized.get("price")
+    if not price:
+        price = (normalized.get("priceData") or {}).get("price", "")
+    price = re.sub(r"(?:\s*(?:TL|₺))+\s*$", "", str(price or ""), flags=re.I).strip()
+
+    normalized.update({
+        "id": pid,
+        "title": title,
+        "url": url,
+        "price": f"{price} TL" if price else "Fiyat için iletişime geçin",
+    })
+    return normalized
+
+
+def normalize_catalog_products(products):
+    normalized = []
+    seen_ids = set()
+    for product in products:
+        item = normalize_catalog_product(product)
+        if not item or item["id"] in seen_ids:
+            continue
+        seen_ids.add(item["id"])
+        normalized.append(item)
+    return normalized
+
+
 def rebuild_categories(products):
     global CATEGORIES
-    
+
     temp_categories = {
-        "firsatlar": {"title": "🔥 Kaçırılmayacak Fırsatlar", "products": {}},
         "ai": {"title": "🌟 Yapay Zeka (AI) Çözümleri", "products": {}},
-        "streaming": {"title": "📺 Dizi & Film Platformları", "products": {}},
-        "design": {"title": "🎨 Tasarım & Eğlence Üyelikleri", "products": {}},
-        "license": {"title": "🔑 Lisans, Oyun & Diğer", "products": {}}
+        "streaming": {"title": "📺 Dizi, Film & Müzik", "products": {}},
+        "design": {"title": "🎨 Tasarım, Eğitim & Verimlilik", "products": {}},
+        "social": {"title": "💬 Discord & Sosyal Platformlar", "products": {}},
+        "coupons": {"title": "🎟️ Kupon, İndirim & Bakiye", "products": {}},
+        "games": {"title": "🎮 Oyun & Game Pass", "products": {}},
+        "accounts": {"title": "📱 Telegram, WhatsApp & Mobil Hesaplar", "products": {}},
+        "license": {"title": "🔑 Windows, Office & Diğer Lisanslar", "products": {}},
     }
-    
-    # Injected Hot Deals (Netflix, Adobe, Youtube Premium, Gemini Pro Davet)
-    temp_categories["firsatlar"]["products"]["f1"] = {
-        "title": "📺 Netflix 4K UHD Profil",
-        "price": "49.99 TL",
-        "url": "https://www.shopier.com/keyvadi/47669117"
-    }
-    temp_categories["firsatlar"]["products"]["f2"] = {
-        "title": "🎨 Adobe Creative Cloud (1 Haftalık)",
-        "price": "49.99 TL",
-        "url": "https://www.shopier.com/keyvadi/47669341"
-    }
-    temp_categories["firsatlar"]["products"]["f3"] = {
-        "title": "🎬 YouTube Premium (3 Aylık Kod)",
-        "price": "29.99 TL",
-        "url": "https://www.shopier.com/keyvadi/47669105"
-    }
-    temp_categories["firsatlar"]["products"]["f4"] = {
-        "title": "🤖 Gemini Pro 12 Aylık (Davet Linki)",
-        "price": "69.99 TL",
-        "url": "https://www.shopier.com/keyvadi/47669164"
-    }
-    
-    for p in products:
-        if not isinstance(p, dict):
-            continue
-        title = p.get("title", "")
-        pid = p.get("id", "")
-        if not pid or not title:
-            continue
-        price = p.get("price", "")
-        url = p.get("url", "")
-        
-        t = title.lower()
-        
-        # 1. Yapay Zeka (AI) Çözümleri
-        if any(k in t for k in ["gemini", "grok", "ai", "gamma", "kiro", "chatgpt", "openai", "copilot", "claude", "midjourney", "semrush", "deepl", "quill", "ideogram", "perplexity", "magnific"]):
+
+    for p in normalize_catalog_products(products):
+        title = p["title"]
+        pid = p["id"]
+        t = title.casefold()
+
+        if any(k in t for k in [
+            "gemini", "grok", " ai", "ai ", "gamma", "kiro", "chatgpt",
+            "openai", "copilot", "claude", "midjourney", "semrush", "deepl",
+            "quill", "ideogram", "perplexity", "magnific", "grammarly",
+        ]):
             cat_key = "ai"
-        # 2. Dizi & Film Platformları
-        elif any(k in t for k in ["netflix", "prime video", "hbo max", "hbo", "crunchyroll", "exxen", "blutv", "disney"]):
+        elif any(k in t for k in [
+            "netflix", "prime video", "hbo", "crunchyroll", "exxen", "blutv",
+            "disney", "youtube", "spotify", "music",
+        ]):
             cat_key = "streaming"
-        # 3. Tasarım & Eğlence Üyelikleri
-        elif any(k in t for k in ["canva", "adobe", "creative cloud", "express", "capcut", "duolingo", "scribd", "design", "tasarım", "spotify", "youtube", "music"]):
+        elif any(k in t for k in [
+            "canva", "adobe", "creative cloud", "express", "capcut", "duolingo",
+            "scribd", "tasarım", "design",
+        ]):
             cat_key = "design"
-        # 4. Lisans, Oyun & Diğer
+        elif any(k in t for k in ["discord", "nitro", "sunucu boost", "server boost"]):
+            cat_key = "social"
+        elif any(k in t for k in [
+            "trendyol", "shell", "kupon", "indirim", "bakiye", "keyvadi.bond",
+            "akaryakıt", "puan",
+        ]):
+            cat_key = "coupons"
+        elif any(k in t for k in [
+            "steam", "xbox", "game pass", "gamepass", "fc26", "zula", "oyun",
+        ]):
+            cat_key = "games"
+        elif any(k in t for k in [
+            "telegram", "whatsapp", "apple id", "icloud", "numara",
+        ]):
+            cat_key = "accounts"
         else:
             cat_key = "license"
-            
+
         temp_categories[cat_key]["products"][pid] = {
             "title": title,
-            "price": price,
-            "url": url
+            "price": p["price"],
+            "url": p["url"],
         }
-        
+
     CATEGORIES = temp_categories
-    logger.info("In-memory categories rebuilt successfully.")
+    logger.info(
+        "In-memory categories rebuilt: %s",
+        {key: len(value["products"]) for key, value in CATEGORIES.items()},
+    )
 
 def load_products_from_file_or_scrape():
     global ALL_PRODUCTS_FLAT
@@ -636,12 +689,26 @@ def load_products_from_file_or_scrape():
             products.append(ip)
             logger.info(f"Injected hidden product: {ip['title']}")
     
+    # Invalid scraper satırlarını at, API/eski katalog fiyat biçimlerini düzelt.
+    products = normalize_catalog_products(products)
+
     # Build flat product list for smart matching
     ALL_PRODUCTS_FLAT = list(products)
     logger.info(f"Total products available for matching: {len(ALL_PRODUCTS_FLAT)}")
                 
     # Rebuild in-memory categories
     rebuild_categories(products)
+
+def refresh_live_catalog():
+    """Refresh all Shopier pages; retain the last valid cache on any failure."""
+    try:
+        products = fetch_live_catalog("keyvadi")
+        write_catalog_atomic(products, "keyvadi_shopier_links.json")
+        logger.info("Refreshed all %s live KeyVadi products.", len(products))
+        return products
+    except Exception as exc:
+        logger.warning("Live KeyVadi catalog refresh failed; cached catalog retained: %s", exc)
+        return None
 
 
 TEXTS = {
@@ -655,11 +722,14 @@ TEXTS = {
         "lang_btn": "🌐 Dil Seçimi / Language",
         "main_menu": "↩️ Ana Menü",
         "cat_title_mapping": {
-            "firsatlar": "🔥 Kaçırılmayacak Fırsatlar",
             "ai": "🌟 Yapay Zeka (AI) Çözümleri",
-            "streaming": "📺 Dizi & Film Platformları",
-            "design": "🎨 Tasarım & Eğlence Üyelikleri",
-            "license": "🔑 Lisans, Oyun & Diğer"
+            "streaming": "📺 Dizi, Film & Müzik",
+            "design": "🎨 Tasarım, Eğitim & Verimlilik",
+            "social": "💬 Discord & Sosyal Platformlar",
+            "coupons": "🎟️ Kupon, İndirim & Bakiye",
+            "games": "🎮 Oyun & Game Pass",
+            "accounts": "📱 Telegram, WhatsApp & Mobil Hesaplar",
+            "license": "🔑 Windows, Office & Diğer Lisanslar"
         },
         "select_product": "Detaylarını görmek ve satın almak istediğiniz ürünü seçin:",
         "price": "Fiyat",
@@ -684,11 +754,14 @@ TEXTS = {
         "lang_btn": "🌐 Language / Dil",
         "main_menu": "↩️ Main Menu",
         "cat_title_mapping": {
-            "firsatlar": "🔥 Kaçırılmayacak Fırsatlar / Super Deals",
             "ai": "🌟 Yapay Zeka (AI) Çözümleri / AI Solutions",
-            "streaming": "📺 Dizi & Film Platformları / Streaming Platforms",
-            "design": "🎨 Tasarım & Eğlence Üyelikleri / Design & Fun",
-            "license": "🔑 Lisans, Oyun & Diğer / Licenses & Games"
+            "streaming": "📺 Dizi, Film & Müzik / Streaming",
+            "design": "🎨 Tasarım, Eğitim & Verimlilik / Productivity",
+            "social": "💬 Discord & Sosyal Platformlar / Social",
+            "coupons": "🎟️ Kupon, İndirim & Bakiye / Coupons",
+            "games": "🎮 Oyun & Game Pass / Games",
+            "accounts": "📱 Telegram, WhatsApp & Mobil Hesaplar / Accounts",
+            "license": "🔑 Windows, Office & Diğer Lisanslar / Licenses"
         },
         "select_product": "Select the product you want to view details and purchase:",
         "price": "Price",
@@ -712,7 +785,7 @@ async def show_lang_selection(event, is_callback=False):
         [Button.inline("🇹🇷 Türkçe", b"lang_tr"), Button.inline("🇺🇸 English", b"lang_en")]
     ]
     if is_callback:
-        await event.edit(text, buttons=buttons)
+        await safe_event_edit(event, text, buttons=buttons)
     else:
         await event.respond(text, buttons=buttons)
 
@@ -743,7 +816,7 @@ async def show_main_menu(event, user_id, is_callback=False):
     buttons.append([Button.inline(t["lang_btn"], b"menu_lang")])
     
     if is_callback:
-        await event.edit(welcome, buttons=buttons)
+        await safe_event_edit(event, welcome, buttons=buttons)
     else:
         await event.respond(welcome, buttons=buttons)
 
@@ -765,7 +838,7 @@ async def verify_payment_callback(event):
     buttons = [
         [Button.inline("↩️ Vazgeç ve Geri Dön", b"menu_main")]
     ]
-    await event.edit(text, buttons=buttons)
+    await safe_event_edit(event, text, buttons=buttons)
 
 # Start Handler
 @bot.on(events.NewMessage(pattern='/start'))
@@ -877,7 +950,7 @@ async def menu_referral_handler(event):
     buttons = [
         [Button.inline("↩️ Ana Menü", b"menu_main")]
     ]
-    await event.edit(text, buttons=buttons)
+    await safe_event_edit(event, text, buttons=buttons)
 
 @bot.on(events.CallbackQuery(data=b'menu_lang'))
 async def menu_lang_callback(event):
@@ -908,14 +981,11 @@ async def guncelle_handler(event):
     await event.respond("⏳ Shopier ürün listesi güncelleniyor, lütfen bekleyin...")
     
     loop = asyncio.get_event_loop()
-    products = await loop.run_in_executor(None, scrape_shopier)
+    products = await loop.run_in_executor(None, refresh_live_catalog)
     
     if products:
-        file_path = "parsed_keyvadi_products.json"
         try:
-            with open(file_path, "w", encoding="utf-8") as f:
-                json.dump(products, f, indent=2, ensure_ascii=False)
-            rebuild_categories(products)
+            load_products_from_file_or_scrape()
             
             # Count products per category
             summary = "\n".join([f"- {cat['title']}: {len(cat['products'])} ürün" for cat_key, cat in CATEGORIES.items() if cat['products']])
@@ -958,7 +1028,7 @@ async def category_handler(event):
     buttons.append([Button.inline(t["main_menu"], b"menu_main")])
 
     cat_title = t["cat_title_mapping"].get(cat_key, cat["title"])
-    await event.edit(f"**{cat_title}**\n\n{t['select_product']}", buttons=buttons)
+    await safe_event_edit(event, f"**{cat_title}**\n\n{t['select_product']}", buttons=buttons)
 
 # Product detail handler
 @bot.on(events.CallbackQuery(pattern=r'prod_(\w+)'))
@@ -1007,7 +1077,7 @@ async def product_handler(event):
         [Button.inline(f"↩️ {cat_title}", f"cat_{cat_key_found}".encode())],
         [Button.inline(t["main_menu"], b"menu_main")]
     ]
-    await event.edit(desc_text, buttons=buttons)
+    await safe_event_edit(event, desc_text, buttons=buttons)
 
 # Support Menu
 @bot.on(events.CallbackQuery(data=b'menu_support'))
@@ -1025,11 +1095,12 @@ async def support_menu_handler(event):
     buttons = [
         [Button.inline(t["cancel"], b"menu_main")]
     ]
-    await event.edit(f"{t['support_title']}\n\n{t['support_desc']}", buttons=buttons)
+    await safe_event_edit(event, f"{t['support_title']}\n\n{t['support_desc']}", buttons=buttons)
 
 PROCESSED_MESSAGE_EVENTS = set()
 
 @bot.on(events.NewMessage(incoming=True))
+@serialize_user_events
 async def message_handler(event):
     if getattr(event, 'out', False):
         return
@@ -1385,13 +1456,14 @@ async def kv_admin_ban_user_callback(event):
     
     await event.answer("🚫 Kullanıcı engellendi.", alert=True)
     original_text = event.message.text
-    await event.edit(f"{original_text}\n\n⚙️ **Aksiyon:** Kullanıcı engellendi. (Yönetici: @{event.sender.username or event.sender_id})")
+    await safe_event_edit(event, f"{original_text}\n\n⚙️ **Aksiyon:** Kullanıcı engellendi. (Yönetici: @{event.sender.username or event.sender_id})")
 
 if __name__ == '__main__':
     import asyncio
     from telethon.errors import FloodWaitError
     
     logger.info("Loading KeyVadi products cache...")
+    refresh_live_catalog()
     load_products_from_file_or_scrape()
     
     async def start_with_retry():

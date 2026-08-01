@@ -1,1427 +1,266 @@
 [
-    {
-        "id": "49078922",
-        "title": "Canva Pro \u00d6\u011fretmen (1 Y\u0131ll\u0131k)",
-        "description": "Canva Pro \u00d6\u011fretmen 1 Y\u0131ll\u0131k \u00dcyelik. Kendi mail adresinize tan\u0131mlan\u0131r. S\u0131n\u0131f a\u00e7\u0131p \u00f6\u011frenci ekleme yetkisi mevcuttur.",
-        "type": "digital",
-        "url": "https://www.shopier.com/49078922",
-        "media": [
-            {
-                "id": "1",
-                "type": "image",
-                "url": "https://veridia-bot.onrender.com/static/la_canva_teacher.png",
-                "placement": 1
-            }
-        ],
-        "priceData": {
-            "currency": "TRY",
-            "price": "149.99",
-            "discount": false,
-            "discountedPrice": "149.99",
-            "shippingPrice": "0.00"
-        },
-        "stockStatus": "inStock",
-        "stockQuantity": 999,
-        "shippingPayer": "sellerPays"
-    },
-    {
-        "id": "49000910",
-        "title": "HBO Max 1 Ayl\u0131k Profil",
-        "description": "HBO Max 1 Ayl\u0131k Premium Profil. Size \u00f6zel profil ismi ve \u015fifreleme sa\u011flan\u0131r.",
-        "type": "digital",
-        "dateCreated": "2026-07-12T02:29:05+0300",
-        "dateUpdated": "2026-07-12T02:29:05+0300",
-        "url": "https://www.shopier.com/49000910",
-        "media": [
-            {
-                "id": "1",
-                "type": "image",
-                "url": "https://veridia-bot.onrender.com/static/la_hbo.png",
-                "placement": 1
-            }
-        ],
-        "priceData": {
-            "currency": "TRY",
-            "price": "39.90",
-            "discount": false,
-            "discountedPrice": "39.90",
-            "shippingPrice": "0.00"
-        },
-        "stockStatus": "inStock",
-        "stockQuantity": 999,
-        "shippingPayer": "sellerPays",
-        "categories": [],
-        "variants": [],
-        "options": [],
-        "singleOption": false,
-        "customListing": false,
-        "customNote": "",
-        "placementScore": "",
-        "dispatchDuration": 0
-    },
-    {
-        "id": "48901851",
-        "title": "Crunchyroll Ortak Hesap (1 Ayl\u0131k)",
-        "description": "Crunchyroll Premium 1 Ayl\u0131k Ortak Kullan\u0131m Hesab\u0131. Giri\u015f garantilidir.",
-        "type": "digital",
-        "dateCreated": "2026-07-12T02:29:16+0300",
-        "dateUpdated": "2026-07-12T02:29:16+0300",
-        "url": "https://www.shopier.com/48901851",
-        "media": [
-            {
-                "id": "1",
-                "type": "image",
-                "url": "https://cdn.shopier.app/pictures_large/lisansarena_420ccaec-2174-4515-91b8-87dfd5423eee.jpg",
-                "placement": 1
-            }
-        ],
-        "priceData": {
-            "currency": "TRY",
-            "price": "39.90",
-            "discount": false,
-            "discountedPrice": "39.90",
-            "shippingPrice": "0.00"
-        },
-        "stockStatus": "inStock",
-        "stockQuantity": 999,
-        "shippingPayer": "sellerPays",
-        "categories": [],
-        "variants": [],
-        "options": [],
-        "singleOption": false,
-        "customListing": false,
-        "customNote": "",
-        "placementScore": "",
-        "dispatchDuration": 2
-    },
-    {
-        "id": "48901852",
-        "title": "Crunchyroll \u00d6zel Profil (1 Ayl\u0131k)",
-        "description": "Crunchyroll Premium 1 Ayl\u0131k Ki\u015fisel Profil. Kendi izleme listenizi olu\u015fturabilirsiniz.",
-        "type": "digital",
-        "dateCreated": "2026-07-12T02:29:20+0300",
-        "dateUpdated": "2026-07-12T02:29:20+0300",
-        "url": "https://www.shopier.com/48901852",
-        "media": [
-            {
-                "id": "1",
-                "type": "image",
-                "url": "https://cdn.shopier.app/pictures_large/lisansarena_0e672770-b95a-4817-a04c-39a6d7b719cc.jpg",
-                "placement": 1
-            }
-        ],
-        "priceData": {
-            "currency": "TRY",
-            "price": "59.90",
-            "discount": false,
-            "discountedPrice": "59.90",
-            "shippingPrice": "0.00"
-        },
-        "stockStatus": "inStock",
-        "stockQuantity": 999,
-        "shippingPayer": "sellerPays",
-        "categories": [],
-        "variants": [],
-        "options": [],
-        "singleOption": false,
-        "customListing": false,
-        "customNote": "",
-        "placementScore": "",
-        "dispatchDuration": 0
-    },
-    {
-        "id": "48901856",
-        "title": "Grammarly Pro (1 Haftal\u0131k) - Kendi Hesab\u0131n\u0131za",
-        "description": "Grammarly Pro 1 haftal\u0131k bireysel \u00fcyelik. Kendi ki\u015fisel hesab\u0131n\u0131za tan\u0131mlan\u0131r.",
-        "type": "digital",
-        "dateCreated": "2026-07-12T02:29:25+0300",
-        "dateUpdated": "2026-07-12T02:29:25+0300",
-        "url": "https://www.shopier.com/48901856",
-        "media": [
-            {
-                "id": "1",
-                "type": "image",
-                "url": "https://cdn.shopier.app/pictures_large/lisansarena_86332c89-3627-4685-af58-762d4830971b.jpg",
-                "placement": 1
-            }
-        ],
-        "priceData": {
-            "currency": "TRY",
-            "price": "79.90",
-            "discount": false,
-            "discountedPrice": "79.90",
-            "shippingPrice": "0.00"
-        },
-        "stockStatus": "inStock",
-        "stockQuantity": 999,
-        "shippingPayer": "sellerPays",
-        "categories": [],
-        "variants": [],
-        "options": [],
-        "singleOption": false,
-        "customListing": false,
-        "customNote": "",
-        "placementScore": "",
-        "dispatchDuration": 0
-    },
-    {
-        "id": "48901857",
-        "title": "Grammarly Pro (1 Ayl\u0131k) - Ortak Hesap",
-        "description": "Grammarly Pro 1 Ayl\u0131k Ortak Kullan\u0131m Hesab\u0131. Hata analizi ve kelime geli\u015ftirme \u00f6zellikleri a\u00e7\u0131kt\u0131r.",
-        "type": "digital",
-        "dateCreated": "2026-07-12T02:29:27+0300",
-        "dateUpdated": "2026-07-12T02:29:27+0300",
-        "url": "https://www.shopier.com/48901857",
-        "media": [
-            {
-                "id": "1",
-                "type": "image",
-                "url": "https://cdn.shopier.app/pictures_large/lisansarena_922848ce-1eec-4311-855c-b3e0b34d69cf.jpg",
-                "placement": 1
-            }
-        ],
-        "priceData": {
-            "currency": "TRY",
-            "price": "49.90",
-            "discount": false,
-            "discountedPrice": "49.90",
-            "shippingPrice": "0.00"
-        },
-        "stockStatus": "inStock",
-        "stockQuantity": 999,
-        "shippingPayer": "sellerPays",
-        "categories": [],
-        "variants": [],
-        "options": [],
-        "singleOption": false,
-        "customListing": false,
-        "customNote": "",
-        "placementScore": "",
-        "dispatchDuration": 0
-    },
-    {
-        "id": "48901858",
-        "title": "Adobe Creative Cloud (1 Haftal\u0131k) - Kendi Hesab\u0131n\u0131za",
-        "description": "Adobe Creative Cloud 1 haftal\u0131k bireysel \u00fcyelik. Kendi ki\u015fisel hesab\u0131n\u0131za t\u00fcm uygulamalar tan\u0131mlan\u0131r.",
-        "type": "digital",
-        "dateCreated": "2026-07-12T02:29:31+0300",
-        "dateUpdated": "2026-07-12T02:29:31+0300",
-        "url": "https://www.shopier.com/48901858",
-        "media": [
-            {
-                "id": "1",
-                "type": "image",
-                "url": "https://cdn.shopier.app/pictures_large/lisansarena_d6584898-67d3-4462-b9ca-66542cb88b21.jpg",
-                "placement": 1
-            }
-        ],
-        "priceData": {
-            "currency": "TRY",
-            "price": "59.90",
-            "discount": false,
-            "discountedPrice": "59.90",
-            "shippingPrice": "0.00"
-        },
-        "stockStatus": "inStock",
-        "stockQuantity": 999,
-        "shippingPayer": "sellerPays",
-        "categories": [],
-        "variants": [],
-        "options": [],
-        "singleOption": false,
-        "customListing": false,
-        "customNote": "",
-        "placementScore": "",
-        "dispatchDuration": 0
-    },
-    {
-        "id": "48901859",
-        "title": "Adobe Creative Cloud (1 Ayl\u0131k) - Ortak Hesap",
-        "description": "Adobe Creative Cloud 1 Ayl\u0131k Ortak Kullan\u0131m Hesab\u0131. Photoshop, Illustrator, Premiere vb. t\u00fcm uygulamalar.",
-        "type": "digital",
-        "dateCreated": "2026-07-12T02:29:34+0300",
-        "dateUpdated": "2026-07-12T02:29:34+0300",
-        "url": "https://www.shopier.com/48901859",
-        "media": [
-            {
-                "id": "1",
-                "type": "image",
-                "url": "https://cdn.shopier.app/pictures_large/lisansarena_f6ae8071-f5e0-4979-8013-73af66a026dd.jpg",
-                "placement": 1
-            }
-        ],
-        "priceData": {
-            "currency": "TRY",
-            "price": "49.90",
-            "discount": false,
-            "discountedPrice": "49.90",
-            "shippingPrice": "0.00"
-        },
-        "stockStatus": "inStock",
-        "stockQuantity": 999,
-        "shippingPayer": "sellerPays",
-        "categories": [],
-        "variants": [],
-        "options": [],
-        "singleOption": false,
-        "customListing": false,
-        "customNote": "",
-        "placementScore": "",
-        "dispatchDuration": 0
-    },
-    {
-        "id": "49000911",
-        "title": "Prime Video (1 Ayl\u0131k) - \u00d6zel Profil",
-        "description": "Amazon Prime Video 1 Ayl\u0131k Ki\u015fisel Profil. \u00d6zel \u015fifreli profil ile kesintisiz izleme.",
-        "type": "digital",
-        "dateCreated": "2026-07-12T02:29:45+0300",
-        "dateUpdated": "2026-07-12T02:29:45+0300",
-        "url": "https://www.shopier.com/49000911",
-        "media": [
-            {
-                "id": "1",
-                "type": "image",
-                "url": "https://veridia-bot.onrender.com/static/la_prime.png",
-                "placement": 1
-            }
-        ],
-        "priceData": {
-            "currency": "TRY",
-            "price": "29.90",
-            "discount": false,
-            "discountedPrice": "29.90",
-            "shippingPrice": "0.00"
-        },
-        "stockStatus": "inStock",
-        "stockQuantity": 999,
-        "shippingPayer": "sellerPays",
-        "categories": [],
-        "variants": [],
-        "options": [],
-        "singleOption": false,
-        "customListing": false,
-        "customNote": "",
-        "placementScore": "",
-        "dispatchDuration": 0
-    },
-    {
-        "id": "49000912",
-        "title": "Prime Video (1 Ayl\u0131k) - Ortak Profil",
-        "description": "Amazon Prime Video 1 Ayl\u0131k Ortak Kullan\u0131m Hesab\u0131. Giri\u015f garantilidir.",
-        "type": "digital",
-        "dateCreated": "2026-07-12T02:29:48+0300",
-        "dateUpdated": "2026-07-12T02:29:48+0300",
-        "url": "https://www.shopier.com/49000912",
-        "media": [
-            {
-                "id": "1",
-                "type": "image",
-                "url": "https://veridia-bot.onrender.com/static/la_prime.png",
-                "placement": 1
-            }
-        ],
-        "priceData": {
-            "currency": "TRY",
-            "price": "19.90",
-            "discount": false,
-            "discountedPrice": "19.90",
-            "shippingPrice": "0.00"
-        },
-        "stockStatus": "inStock",
-        "stockQuantity": 999,
-        "shippingPayer": "sellerPays",
-        "categories": [],
-        "variants": [],
-        "options": [],
-        "singleOption": false,
-        "customListing": false,
-        "customNote": "",
-        "placementScore": "",
-        "dispatchDuration": 0
-    },
-    {
-        "id": "48901869",
-        "title": "Magnific AI Ortak (1 Ayl\u0131k Business Hesap)",
-        "description": "Magnific AI 1 Ayl\u0131k Ortak Business Hesab\u0131. G\u00f6rsel b\u00fcy\u00fctme ve yapay zeka ile netle\u015ftirme.",
-        "type": "digital",
-        "dateCreated": "2026-07-12T02:29:53+0300",
-        "dateUpdated": "2026-07-12T02:29:53+0300",
-        "url": "https://www.shopier.com/48901869",
-        "media": [
-            {
-                "id": "1",
-                "type": "image",
-                "url": "https://cdn.shopier.app/pictures_large/lisansarena_085af18a-f345-4c0a-bfec-3bf25480b720.jpg",
-                "placement": 1
-            }
-        ],
-        "priceData": {
-            "currency": "TRY",
-            "price": "49.90",
-            "discount": false,
-            "discountedPrice": "49.90",
-            "shippingPrice": "0.00"
-        },
-        "stockStatus": "inStock",
-        "stockQuantity": 999,
-        "shippingPayer": "sellerPays",
-        "categories": [],
-        "variants": [],
-        "options": [],
-        "singleOption": false,
-        "customListing": false,
-        "customNote": "",
-        "placementScore": "",
-        "dispatchDuration": 0
-    },
-    {
-        "id": "48901872",
-        "title": "Scribd (1 Ayl\u0131k) - Ortak Hesap",
-        "description": "Scribd Premium 1 Ayl\u0131k Ortak Kullan\u0131m Hesab\u0131. S\u0131n\u0131rs\u0131z kitap, d\u00f6k\u00fcman ve sesli kitap okuma.",
-        "type": "digital",
-        "dateCreated": "2026-07-12T02:29:58+0300",
-        "dateUpdated": "2026-07-12T02:29:58+0300",
-        "url": "https://www.shopier.com/48901872",
-        "media": [
-            {
-                "id": "1",
-                "type": "image",
-                "url": "https://cdn.shopier.app/pictures_large/lisansarena_da9a2df0-9b91-41e7-b9dc-33ea194c61d1.jpg",
-                "placement": 1
-            }
-        ],
-        "priceData": {
-            "currency": "TRY",
-            "price": "29.90",
-            "discount": false,
-            "discountedPrice": "29.90",
-            "shippingPrice": "0.00"
-        },
-        "stockStatus": "inStock",
-        "stockQuantity": 999,
-        "shippingPayer": "sellerPays",
-        "categories": [],
-        "variants": [],
-        "options": [],
-        "singleOption": false,
-        "customListing": false,
-        "customNote": "",
-        "placementScore": "",
-        "dispatchDuration": 0
-    },
-    {
-        "id": "48901873",
-        "title": "Scribd (1 Ayl\u0131k) - Ki\u015fisel Hesap",
-        "description": "Scribd Premium 1 Ayl\u0131k Ki\u015fisel Kullan\u0131m Hesab\u0131. Giri\u015f garantilidir.",
-        "type": "digital",
-        "dateCreated": "2026-07-12T02:30:00+0300",
-        "dateUpdated": "2026-07-12T02:30:00+0300",
-        "url": "https://www.shopier.com/48901873",
-        "media": [
-            {
-                "id": "1",
-                "type": "image",
-                "url": "https://cdn.shopier.app/pictures_large/lisansarena_a059eee0-ee77-416f-84f4-78f8a1efb06e.jpg",
-                "placement": 1
-            }
-        ],
-        "priceData": {
-            "currency": "TRY",
-            "price": "59.90",
-            "discount": false,
-            "discountedPrice": "59.90",
-            "shippingPrice": "0.00"
-        },
-        "stockStatus": "inStock",
-        "stockQuantity": 999,
-        "shippingPayer": "sellerPays",
-        "categories": [],
-        "variants": [],
-        "options": [],
-        "singleOption": false,
-        "customListing": false,
-        "customNote": "",
-        "placementScore": "",
-        "dispatchDuration": 0
-    },
-    {
-        "id": "48901874",
-        "title": "DeepL AI (1 Ayl\u0131k) - Ortak Hesap",
-        "description": "DeepL Pro \u00c7eviri 1 Ayl\u0131k Ortak Kullan\u0131m Hesab\u0131. S\u0131n\u0131rs\u0131z d\u00f6k\u00fcman \u00e7evirme.",
-        "type": "digital",
-        "dateCreated": "2026-07-12T02:30:05+0300",
-        "dateUpdated": "2026-07-12T02:30:05+0300",
-        "url": "https://www.shopier.com/48901874",
-        "media": [
-            {
-                "id": "1",
-                "type": "image",
-                "url": "https://cdn.shopier.app/pictures_large/lisansarena_a34afc81-f5dd-4618-b7b0-3fcb0d7c66c1.jpg",
-                "placement": 1
-            }
-        ],
-        "priceData": {
-            "currency": "TRY",
-            "price": "29.90",
-            "discount": false,
-            "discountedPrice": "29.90",
-            "shippingPrice": "0.00"
-        },
-        "stockStatus": "inStock",
-        "stockQuantity": 999,
-        "shippingPayer": "sellerPays",
-        "categories": [],
-        "variants": [],
-        "options": [],
-        "singleOption": false,
-        "customListing": false,
-        "customNote": "",
-        "placementScore": "",
-        "dispatchDuration": 0
-    },
-    {
-        "id": "48901875",
-        "title": "DeepL AI (1 Ayl\u0131k) - Ki\u015fisel Hesap",
-        "description": "DeepL Pro \u00c7eviri 1 Ayl\u0131k Ki\u015fisel Kullan\u0131m Hesab\u0131. Giri\u015f garantilidir.",
-        "type": "digital",
-        "dateCreated": "2026-07-12T02:30:07+0300",
-        "dateUpdated": "2026-07-12T02:30:07+0300",
-        "url": "https://www.shopier.com/48901875",
-        "media": [
-            {
-                "id": "1",
-                "type": "image",
-                "url": "https://cdn.shopier.app/pictures_large/lisansarena_5faa2eb9-fd2f-4925-a196-80ed79c847dd.jpg",
-                "placement": 1
-            }
-        ],
-        "priceData": {
-            "currency": "TRY",
-            "price": "59.90",
-            "discount": false,
-            "discountedPrice": "59.90",
-            "shippingPrice": "0.00"
-        },
-        "stockStatus": "inStock",
-        "stockQuantity": 999,
-        "shippingPayer": "sellerPays",
-        "categories": [],
-        "variants": [],
-        "options": [],
-        "singleOption": false,
-        "customListing": false,
-        "customNote": "",
-        "placementScore": "",
-        "dispatchDuration": 0
-    },
-    {
-        "id": "48901876",
-        "title": "Duolingo 1 Ayl\u0131k (Ortak Hesap)",
-        "description": "Super Duolingo Premium 1 Ayl\u0131k Ortak Kullan\u0131m Hesab\u0131. UYARI: Ortak hesapt\u0131r.",
-        "type": "digital",
-        "dateCreated": "2026-07-12T02:30:12+0300",
-        "dateUpdated": "2026-07-12T02:30:12+0300",
-        "url": "https://www.shopier.com/48901876",
-        "media": [
-            {
-                "id": "1",
-                "type": "image",
-                "url": "https://cdn.shopier.app/pictures_large/lisansarena_4a39a551-c237-4afa-a482-2309a3006594.jpg",
-                "placement": 1
-            }
-        ],
-        "priceData": {
-            "currency": "TRY",
-            "price": "29.99",
-            "discount": false,
-            "discountedPrice": "29.99",
-            "shippingPrice": "0.00"
-        },
-        "stockStatus": "inStock",
-        "stockQuantity": 999,
-        "shippingPayer": "sellerPays",
-        "categories": [],
-        "variants": [],
-        "options": [],
-        "singleOption": false,
-        "customListing": false,
-        "customNote": "",
-        "placementScore": "",
-        "dispatchDuration": 0
-    },
-    {
-        "id": "48901877",
-        "title": "Perplexity Pro (1 Ayl\u0131k Hesap)",
-        "description": "Perplexity Pro Yapay Zeka Arama Motoru 1 Ayl\u0131k Ortak Hesap. Giri\u015f garantilidir. UYARI: Ortak hesapt\u0131r.",
-        "type": "digital",
-        "dateCreated": "2026-07-12T02:30:17+0300",
-        "dateUpdated": "2026-07-12T02:30:17+0300",
-        "url": "https://www.shopier.com/48901877",
-        "media": [
-            {
-                "id": "1",
-                "type": "image",
-                "url": "https://cdn.shopier.app/pictures_large/lisansarena_8d39c4b1-50b9-40cf-9617-9c46fbca1765.jpg",
-                "placement": 1
-            }
-        ],
-        "priceData": {
-            "currency": "TRY",
-            "price": "119.90",
-            "discount": false,
-            "discountedPrice": "119.90",
-            "shippingPrice": "0.00"
-        },
-        "stockStatus": "inStock",
-        "stockQuantity": 999,
-        "shippingPayer": "sellerPays",
-        "categories": [],
-        "variants": [],
-        "options": [],
-        "singleOption": false,
-        "customListing": false,
-        "customNote": "",
-        "placementScore": "",
-        "dispatchDuration": 0
-    },
-    {
-        "id": "48901878",
-        "title": "Eski Tarihli Telegram Hesab\u0131 (+1 No'lu)",
-        "description": "1 Ocak veya \u00f6ncesi eski tarihli kurumlu onayl\u0131 Telegram hesab\u0131 (+1 numaral\u0131).",
-        "type": "digital",
-        "dateCreated": "2026-07-12T02:30:22+0300",
-        "dateUpdated": "2026-07-12T02:30:22+0300",
-        "url": "https://www.shopier.com/48901878",
-        "media": [
-            {
-                "id": "1",
-                "type": "image",
-                "url": "https://cdn.shopier.app/pictures_large/lisansarena_127d8953-b9ba-4840-ae8b-73a71852c1ea.jpg",
-                "placement": 1
-            }
-        ],
-        "priceData": {
-            "currency": "TRY",
-            "price": "149.90",
-            "discount": false,
-            "discountedPrice": "149.90",
-            "shippingPrice": "0.00"
-        },
-        "stockStatus": "inStock",
-        "stockQuantity": 999,
-        "shippingPayer": "sellerPays",
-        "categories": [],
-        "variants": [],
-        "options": [],
-        "singleOption": false,
-        "customListing": false,
-        "customNote": "",
-        "placementScore": "",
-        "dispatchDuration": 0
-    },
-    {
-        "id": "48901882",
-        "title": "Xbox Game Pass Ultimate (1 Ayl\u0131k) - Ortak Hesap",
-        "description": "Xbox Game Pass Ultimate 1 Ayl\u0131k Ortak \u00dcyelik. Konsol ve bilgisayarda s\u0131n\u0131rs\u0131z oyun k\u00fct\u00fcphanesi.",
-        "type": "digital",
-        "dateCreated": "2026-07-12T02:30:27+0300",
-        "dateUpdated": "2026-07-12T02:30:27+0300",
-        "url": "https://www.shopier.com/48901882",
-        "media": [
-            {
-                "id": "1",
-                "type": "image",
-                "url": "https://cdn.shopier.app/pictures_large/lisansarena_e6112e1a-7363-4504-b23b-72935b593f8a.jpg",
-                "placement": 1
-            }
-        ],
-        "priceData": {
-            "currency": "TRY",
-            "price": "39.90",
-            "discount": false,
-            "discountedPrice": "39.90",
-            "shippingPrice": "0.00"
-        },
-        "stockStatus": "inStock",
-        "stockQuantity": 999,
-        "shippingPayer": "sellerPays",
-        "categories": [],
-        "variants": [],
-        "options": [],
-        "singleOption": false,
-        "customListing": false,
-        "customNote": "",
-        "placementScore": "",
-        "dispatchDuration": 0
-    },
-    {
-        "id": "48901888",
-        "title": "Xbox Game Pass Ultimate (3 Ayl\u0131k) - Ortak Hesap",
-        "description": "Xbox Game Pass Ultimate 3 Ayl\u0131k Ortak \u00dcyelik. Konsol ve bilgisayarda y\u00fczlerce oyun.",
-        "type": "digital",
-        "dateCreated": "2026-07-12T02:30:47+0300",
-        "dateUpdated": "2026-07-12T02:30:47+0300",
-        "url": "https://www.shopier.com/48901888",
-        "media": [
-            {
-                "id": "1",
-                "type": "image",
-                "url": "https://cdn.shopier.app/pictures_large/lisansarena_394a380b-81f8-4618-801a-9f5cd33b7a46.jpg",
-                "placement": 1
-            }
-        ],
-        "priceData": {
-            "currency": "TRY",
-            "price": "89.90",
-            "discount": false,
-            "discountedPrice": "89.90",
-            "shippingPrice": "0.00"
-        },
-        "stockStatus": "inStock",
-        "stockQuantity": 999,
-        "shippingPayer": "sellerPays",
-        "categories": [],
-        "variants": [],
-        "options": [],
-        "singleOption": false,
-        "customListing": false,
-        "customNote": "",
-        "placementScore": "",
-        "dispatchDuration": 2
-    },
-    {
-        "id": "48945472",
-        "title": "Microsoft Office 365 (1 Y\u0131ll\u0131k Hesap)",
-        "description": "Microsoft Office 365 1 Y\u0131ll\u0131k tam lisansl\u0131 hesap. Word, Excel, PowerPoint ve t\u00fcm Office uygulamalar\u0131 dahil.",
-        "type": "digital",
-        "dateCreated": "2026-07-13T21:28:49+0300",
-        "dateUpdated": "2026-07-13T21:28:49+0300",
-        "url": "https://www.shopier.com/48945472",
-        "media": [
-            {
-                "id": "1",
-                "type": "image",
-                "url": "https://froxy-bot.onrender.com/static/la_placeholder.png",
-                "placement": 1
-            }
-        ],
-        "priceData": {
-            "currency": "TRY",
-            "price": "73.50",
-            "discount": false,
-            "discountedPrice": "73.50",
-            "shippingPrice": "0.00"
-        },
-        "stockStatus": "inStock",
-        "stockQuantity": 999,
-        "shippingPayer": "sellerPays",
-        "categories": [],
-        "variants": [],
-        "options": [],
-        "singleOption": false,
-        "customListing": false,
-        "customNote": "",
-        "placementScore": "",
-        "dispatchDuration": 0
-    },
-    {
-        "id": "48945473",
-        "title": "Windows 10/11 Pro Lisans Anahtar\u0131 (Key)",
-        "description": "Windows 10/11 Pro orijinal lisans anahtar\u0131. \u00d6m\u00fcr boyu ge\u00e7erli aktivasyon kodu.",
-        "type": "digital",
-        "dateCreated": "2026-07-13T21:28:49+0300",
-        "dateUpdated": "2026-07-13T21:28:49+0300",
-        "url": "https://www.shopier.com/48945473",
-        "media": [
-            {
-                "id": "1",
-                "type": "image",
-                "url": "https://froxy-bot.onrender.com/static/la_placeholder.png",
-                "placement": 1
-            }
-        ],
-        "priceData": {
-            "currency": "TRY",
-            "price": "73.50",
-            "discount": false,
-            "discountedPrice": "73.50",
-            "shippingPrice": "0.00"
-        },
-        "stockStatus": "inStock",
-        "stockQuantity": 999,
-        "shippingPayer": "sellerPays",
-        "categories": [],
-        "variants": [],
-        "options": [],
-        "singleOption": false,
-        "customListing": false,
-        "customNote": "",
-        "placementScore": "",
-        "dispatchDuration": 0
-    },
-    {
-        "id": "48945475",
-        "title": "Steam \u0130stedi\u011finiz Oyun (Ortak Hesap)",
-        "description": "Steam'de istedi\u011finiz oyunu ortak hesap \u00fczerinden oynayabilirsiniz. Hesap bilgileri teslim edilir.",
-        "type": "digital",
-        "dateCreated": "2026-07-13T21:28:49+0300",
-        "dateUpdated": "2026-07-13T21:28:49+0300",
-        "url": "https://www.shopier.com/48945475",
-        "media": [
-            {
-                "id": "1",
-                "type": "image",
-                "url": "https://froxy-bot.onrender.com/static/la_placeholder.png",
-                "placement": 1
-            }
-        ],
-        "priceData": {
-            "currency": "TRY",
-            "price": "63.00",
-            "discount": false,
-            "discountedPrice": "63.00",
-            "shippingPrice": "0.00"
-        },
-        "stockStatus": "inStock",
-        "stockQuantity": 999,
-        "shippingPayer": "sellerPays",
-        "categories": [],
-        "variants": [],
-        "options": [],
-        "singleOption": false,
-        "customListing": false,
-        "customNote": "",
-        "placementScore": "",
-        "dispatchDuration": 0
-    },
-    {
-        "id": "48945476",
-        "title": "Super Grok (1 Ayl\u0131k Hesap)",
-        "description": "xAI Super Grok 1 Ayl\u0131k premium hesap. S\u0131n\u0131rs\u0131z Grok-3 eri\u015fimi.",
-        "type": "digital",
-        "dateCreated": "2026-07-13T21:28:49+0300",
-        "dateUpdated": "2026-07-13T21:28:49+0300",
-        "url": "https://www.shopier.com/48945476",
-        "media": [
-            {
-                "id": "1",
-                "type": "image",
-                "url": "https://froxy-bot.onrender.com/static/la_placeholder.png",
-                "placement": 1
-            }
-        ],
-        "priceData": {
-            "currency": "TRY",
-            "price": "472.49",
-            "discount": false,
-            "discountedPrice": "472.49",
-            "shippingPrice": "0.00"
-        },
-        "stockStatus": "inStock",
-        "stockQuantity": 999,
-        "shippingPayer": "sellerPays",
-        "categories": [],
-        "variants": [],
-        "options": [],
-        "singleOption": false,
-        "customListing": false,
-        "customNote": "",
-        "placementScore": "",
-        "dispatchDuration": 0
-    },
-    {
-        "id": "48945480",
-        "title": "Super Grok (3 Ayl\u0131k Hesap)",
-        "description": "xAI Super Grok 3 Ayl\u0131k premium hesap. S\u0131n\u0131rs\u0131z Grok-3 eri\u015fimi.",
-        "type": "digital",
-        "dateCreated": "2026-07-13T21:28:49+0300",
-        "dateUpdated": "2026-07-13T21:28:49+0300",
-        "url": "https://www.shopier.com/48945480",
-        "media": [
-            {
-                "id": "1",
-                "type": "image",
-                "url": "https://froxy-bot.onrender.com/static/la_placeholder.png",
-                "placement": 1
-            }
-        ],
-        "priceData": {
-            "currency": "TRY",
-            "price": "997.49",
-            "discount": false,
-            "discountedPrice": "997.49",
-            "shippingPrice": "0.00"
-        },
-        "stockStatus": "inStock",
-        "stockQuantity": 999,
-        "shippingPayer": "sellerPays",
-        "categories": [],
-        "variants": [],
-        "options": [],
-        "singleOption": false,
-        "customListing": false,
-        "customNote": "",
-        "placementScore": "",
-        "dispatchDuration": 0
-    },
-    {
-        "id": "48945481",
-        "title": "Super Grok (6 Ayl\u0131k Hesap)",
-        "description": "xAI Super Grok 6 Ayl\u0131k premium hesap. S\u0131n\u0131rs\u0131z Grok-3 eri\u015fimi.",
-        "type": "digital",
-        "dateCreated": "2026-07-13T21:28:49+0300",
-        "dateUpdated": "2026-07-13T21:28:49+0300",
-        "url": "https://www.shopier.com/48945481",
-        "media": [
-            {
-                "id": "1",
-                "type": "image",
-                "url": "https://froxy-bot.onrender.com/static/la_placeholder.png",
-                "placement": 1
-            }
-        ],
-        "priceData": {
-            "currency": "TRY",
-            "price": "1574.99",
-            "discount": false,
-            "discountedPrice": "1574.99",
-            "shippingPrice": "0.00"
-        },
-        "stockStatus": "inStock",
-        "stockQuantity": 999,
-        "shippingPayer": "sellerPays",
-        "categories": [],
-        "variants": [],
-        "options": [],
-        "singleOption": false,
-        "customListing": false,
-        "customNote": "",
-        "placementScore": "",
-        "dispatchDuration": 0
-    },
-    {
-        "id": "48945482",
-        "title": "Super Grok (12 Ayl\u0131k Hesap)",
-        "description": "xAI Super Grok 12 Ayl\u0131k premium hesap. S\u0131n\u0131rs\u0131z Grok-3 eri\u015fimi.",
-        "type": "digital",
-        "dateCreated": "2026-07-13T21:28:49+0300",
-        "dateUpdated": "2026-07-13T21:28:49+0300",
-        "url": "https://www.shopier.com/48945482",
-        "media": [
-            {
-                "id": "1",
-                "type": "image",
-                "url": "https://froxy-bot.onrender.com/static/la_placeholder.png",
-                "placement": 1
-            }
-        ],
-        "priceData": {
-            "currency": "TRY",
-            "price": "2414.99",
-            "discount": false,
-            "discountedPrice": "2414.99",
-            "shippingPrice": "0.00"
-        },
-        "stockStatus": "inStock",
-        "stockQuantity": 999,
-        "shippingPayer": "sellerPays",
-        "categories": [],
-        "variants": [],
-        "options": [],
-        "singleOption": false,
-        "customListing": false,
-        "customNote": "",
-        "placementScore": "",
-        "dispatchDuration": 0
-    },
-    {
-        "id": "48945484",
-        "title": "Gamma Ultra (1 Ayl\u0131k Hesap)",
-        "description": "Gamma AI Ultra 1 Ayl\u0131k hesap. S\u0131n\u0131rs\u0131z sunum ve dok\u00fcman olu\u015fturma.",
-        "type": "digital",
-        "dateCreated": "2026-07-13T21:28:49+0300",
-        "dateUpdated": "2026-07-13T21:28:49+0300",
-        "url": "https://www.shopier.com/48945484",
-        "media": [
-            {
-                "id": "1",
-                "type": "image",
-                "url": "https://froxy-bot.onrender.com/static/la_placeholder.png",
-                "placement": 1
-            }
-        ],
-        "priceData": {
-            "currency": "TRY",
-            "price": "472.49",
-            "discount": false,
-            "discountedPrice": "472.49",
-            "shippingPrice": "0.00"
-        },
-        "stockStatus": "inStock",
-        "stockQuantity": 999,
-        "shippingPayer": "sellerPays",
-        "categories": [],
-        "variants": [],
-        "options": [],
-        "singleOption": false,
-        "customListing": false,
-        "customNote": "",
-        "placementScore": "",
-        "dispatchDuration": 0
-    },
-    {
-        "id": "48945485",
-        "title": "Gamma Pro (1 Ayl\u0131k Hesap)",
-        "description": "Gamma AI Pro 1 Ayl\u0131k hesap. Geli\u015fmi\u015f sunum ve dok\u00fcman olu\u015fturma \u00f6zellikleri.",
-        "type": "digital",
-        "dateCreated": "2026-07-13T21:28:49+0300",
-        "dateUpdated": "2026-07-13T21:28:49+0300",
-        "url": "https://www.shopier.com/48945485",
-        "media": [
-            {
-                "id": "1",
-                "type": "image",
-                "url": "https://froxy-bot.onrender.com/static/la_placeholder.png",
-                "placement": 1
-            }
-        ],
-        "priceData": {
-            "currency": "TRY",
-            "price": "314.99",
-            "discount": false,
-            "discountedPrice": "314.99",
-            "shippingPrice": "0.00"
-        },
-        "stockStatus": "inStock",
-        "stockQuantity": 999,
-        "shippingPayer": "sellerPays",
-        "categories": [],
-        "variants": [],
-        "options": [],
-        "singleOption": false,
-        "customListing": false,
-        "customNote": "",
-        "placementScore": "",
-        "dispatchDuration": 0
-    },
-    {
-        "id": "48945487",
-        "title": "Gemini Ultra (Davet Linki)",
-        "description": "Google Gemini Ultra davet linki. Kendi hesab\u0131n\u0131za tan\u0131mlan\u0131r.",
-        "type": "digital",
-        "dateCreated": "2026-07-13T21:28:49+0300",
-        "dateUpdated": "2026-07-13T21:28:49+0300",
-        "url": "https://www.shopier.com/48945487",
-        "media": [
-            {
-                "id": "1",
-                "type": "image",
-                "url": "https://froxy-bot.onrender.com/static/la_placeholder.png",
-                "placement": 1
-            }
-        ],
-        "priceData": {
-            "currency": "TRY",
-            "price": "419.99",
-            "discount": false,
-            "discountedPrice": "419.99",
-            "shippingPrice": "0.00"
-        },
-        "stockStatus": "inStock",
-        "stockQuantity": 999,
-        "shippingPayer": "sellerPays",
-        "categories": [],
-        "variants": [],
-        "options": [],
-        "singleOption": false,
-        "customListing": false,
-        "customNote": "",
-        "placementScore": "",
-        "dispatchDuration": 0
-    },
-    {
-        "id": "48945489",
-        "title": "Gemini Ultra (2.5k Kredili Hesap)",
-        "description": "Google Gemini Ultra 2500 kredi y\u00fckl\u00fc premium hesap.",
-        "type": "digital",
-        "dateCreated": "2026-07-13T21:28:49+0300",
-        "dateUpdated": "2026-07-13T21:28:49+0300",
-        "url": "https://www.shopier.com/48945489",
-        "media": [
-            {
-                "id": "1",
-                "type": "image",
-                "url": "https://froxy-bot.onrender.com/static/la_placeholder.png",
-                "placement": 1
-            }
-        ],
-        "priceData": {
-            "currency": "TRY",
-            "price": "629.99",
-            "discount": false,
-            "discountedPrice": "629.99",
-            "shippingPrice": "0.00"
-        },
-        "stockStatus": "inStock",
-        "stockQuantity": 999,
-        "shippingPayer": "sellerPays",
-        "categories": [],
-        "variants": [],
-        "options": [],
-        "singleOption": false,
-        "customListing": false,
-        "customNote": "",
-        "placementScore": "",
-        "dispatchDuration": 0
-    },
-    {
-        "id": "48945492",
-        "title": "Gemini Pro Davet (12 Ayl\u0131k)",
-        "description": "Gemini Pro Davet Linki ile kendi 12 ayl\u0131k \u00fcyeli\u011finizi aktifle\u015ftirme.",
-        "type": "digital",
-        "dateCreated": "2026-07-13T21:28:49+0300",
-        "dateUpdated": "2026-07-13T21:28:49+0300",
-        "url": "https://www.shopier.com/48945492",
-        "media": [
-            {
-                "id": "1",
-                "type": "image",
-                "url": "https://froxy-bot.onrender.com/static/la_placeholder.png",
-                "placement": 1
-            }
-        ],
-        "priceData": {
-            "currency": "TRY",
-            "price": "99.99",
-            "discount": false,
-            "discountedPrice": "99.99",
-            "shippingPrice": "0.00"
-        },
-        "stockStatus": "inStock",
-        "stockQuantity": 999,
-        "shippingPayer": "sellerPays",
-        "categories": [],
-        "variants": [],
-        "options": [],
-        "singleOption": false,
-        "customListing": false,
-        "customNote": "",
-        "placementScore": "",
-        "dispatchDuration": 0
-    },
-    {
-        "id": "48945493",
-        "title": "Gemini Pro Premium Hesap (12 Ayl\u0131k)",
-        "description": "Google Gemini Pro 12 Ayl\u0131k premium hesap.",
-        "type": "digital",
-        "dateCreated": "2026-07-13T21:28:49+0300",
-        "dateUpdated": "2026-07-13T21:28:49+0300",
-        "url": "https://www.shopier.com/48945493",
-        "media": [
-            {
-                "id": "1",
-                "type": "image",
-                "url": "https://froxy-bot.onrender.com/static/la_placeholder.png",
-                "placement": 1
-            }
-        ],
-        "priceData": {
-            "currency": "TRY",
-            "price": "209.89",
-            "discount": false,
-            "discountedPrice": "209.89",
-            "shippingPrice": "0.00"
-        },
-        "stockStatus": "inStock",
-        "stockQuantity": 999,
-        "shippingPayer": "sellerPays",
-        "categories": [],
-        "variants": [],
-        "options": [],
-        "singleOption": false,
-        "customListing": false,
-        "customNote": "",
-        "placementScore": "",
-        "dispatchDuration": 0
-    },
-    {
-        "id": "48945669",
-        "title": "Exxen Reklams\u0131z (3 Ayl\u0131k)",
-        "description": "Exxen Reklams\u0131z 3 Ayl\u0131k \u00dcyelik. Giri\u015f bilgileri sipari\u015f sonras\u0131nda teslim edilir.",
-        "type": "digital",
-        "dateCreated": "2026-07-13T21:36:39+0300",
-        "dateUpdated": "2026-07-13T21:36:39+0300",
-        "url": "https://www.shopier.com/48945669",
-        "media": [
-            {
-                "id": "1",
-                "type": "image",
-                "url": "https://froxy-bot.onrender.com/static/la_exxen.png",
-                "placement": 1
-            }
-        ],
-        "priceData": {
-            "currency": "TRY",
-            "price": "36.99",
-            "discount": false,
-            "discountedPrice": "36.99",
-            "shippingPrice": "0.00"
-        },
-        "stockStatus": "inStock",
-        "stockQuantity": 999,
-        "shippingPayer": "sellerPays",
-        "categories": [],
-        "variants": [],
-        "options": [],
-        "singleOption": false,
-        "customListing": false,
-        "customNote": "",
-        "placementScore": "",
-        "dispatchDuration": 0
-    },
-    {
-        "id": "48945671",
-        "title": "Trendyol Go Yemek \u0130ndirim Kuponu (700 TL'ye 250 TL)",
-        "description": "Trendyol Go Yemek sipari\u015finde 700 TL'ye 250 TL Net indirim sa\u011flayan tek kullan\u0131ml\u0131k kupon.",
-        "type": "digital",
-        "dateCreated": "2026-07-13T21:36:39+0300",
-        "dateUpdated": "2026-07-13T21:36:39+0300",
-        "url": "https://www.shopier.com/48945671",
-        "media": [
-            {
-                "id": "1",
-                "type": "image",
-                "url": "https://froxy-bot.onrender.com/static/la_trendyol_yemek.png",
-                "placement": 1
-            }
-        ],
-        "priceData": {
-            "currency": "TRY",
-            "price": "52.49",
-            "discount": false,
-            "discountedPrice": "52.49",
-            "shippingPrice": "0.00"
-        },
-        "stockStatus": "inStock",
-        "stockQuantity": 999,
-        "shippingPayer": "sellerPays",
-        "categories": [],
-        "variants": [],
-        "options": [],
-        "singleOption": false,
-        "customListing": false,
-        "customNote": "",
-        "placementScore": "",
-        "dispatchDuration": 0
-    },
-    {
-        "id": "48945672",
-        "title": "Trendyol Go Market \u0130ndirim Kuponu (900 TL'ye 250 TL)",
-        "description": "Trendyol Go Market sipari\u015finde 900 TL'ye 250 TL Net indirim sa\u011flayan tek kullan\u0131ml\u0131k kupon.",
-        "type": "digital",
-        "dateCreated": "2026-07-13T21:36:39+0300",
-        "dateUpdated": "2026-07-13T21:36:39+0300",
-        "url": "https://www.shopier.com/48945672",
-        "media": [
-            {
-                "id": "1",
-                "type": "image",
-                "url": "https://froxy-bot.onrender.com/static/la_trendyol_market.png",
-                "placement": 1
-            }
-        ],
-        "priceData": {
-            "currency": "TRY",
-            "price": "52.49",
-            "discount": false,
-            "discountedPrice": "52.49",
-            "shippingPrice": "0.00"
-        },
-        "stockStatus": "inStock",
-        "stockQuantity": 999,
-        "shippingPayer": "sellerPays",
-        "categories": [],
-        "variants": [],
-        "options": [],
-        "singleOption": false,
-        "customListing": false,
-        "customNote": "",
-        "placementScore": "",
-        "dispatchDuration": 0
-    },
-    {
-        "id": "48945675",
-        "title": "Shell 75 TL Akaryak\u0131t Puan\u0131",
-        "description": "Shell istasyonlar\u0131nda ge\u00e7erli 75 TL de\u011ferinde akaryak\u0131t puan\u0131.",
-        "type": "digital",
-        "dateCreated": "2026-07-13T21:36:39+0300",
-        "dateUpdated": "2026-07-13T21:36:39+0300",
-        "url": "https://www.shopier.com/48945675",
-        "media": [
-            {
-                "id": "1",
-                "type": "image",
-                "url": "https://froxy-bot.onrender.com/static/la_shell.png",
-                "placement": 1
-            }
-        ],
-        "priceData": {
-            "currency": "TRY",
-            "price": "15.90",
-            "discount": false,
-            "discountedPrice": "15.90",
-            "shippingPrice": "0.00"
-        },
-        "stockStatus": "inStock",
-        "stockQuantity": 999,
-        "shippingPayer": "sellerPays",
-        "categories": [],
-        "variants": [],
-        "options": [],
-        "singleOption": false,
-        "customListing": false,
-        "customNote": "",
-        "placementScore": "",
-        "dispatchDuration": 0
-    },
-    {
-        "id": "48973854",
-        "title": "Netflix 4K Ultra HD (Ki\u015fisel Profil)",
-        "description": "Netflix 4K Ultra HD kalitesinde ki\u015fisel profil. 1 Ayl\u0131k kullan\u0131m. Giri\u015f bilgileri sipari\u015f sonras\u0131nda an\u0131nda teslim edilir.",
-        "type": "digital",
-        "dateCreated": "2026-07-14T20:57:03+0300",
-        "dateUpdated": "2026-07-14T20:57:03+0300",
-        "url": "https://www.shopier.com/48973854",
-        "media": [
-            {
-                "id": "1",
-                "type": "image",
-                "url": "https://froxy-bot.onrender.com/static/la_netflix_4k.png",
-                "placement": 1
-            }
-        ],
-        "priceData": {
-            "currency": "TRY",
-            "price": "94.49",
-            "discount": false,
-            "discountedPrice": "94.49",
-            "shippingPrice": "0.00"
-        },
-        "stockStatus": "inStock",
-        "stockQuantity": 999,
-        "shippingPayer": "sellerPays",
-        "categories": [],
-        "variants": [],
-        "options": [],
-        "singleOption": false,
-        "customListing": false,
-        "customNote": "",
-        "placementScore": "",
-        "dispatchDuration": 0
-    },
-    {
-        "id": "48973855",
-        "title": "YouTube Premium (3 Ayl\u0131k Kod)",
-        "description": "YouTube Premium 3 Ayl\u0131k Aktivasyon Kodu. Reklams\u0131z video izleme ve YouTube Music Premium dahildir. UYARI: Yeni hesaplarda veya daha \u00f6nce Premium al\u0131nmam\u0131\u015f hesaplarda aktifle\u015ftirilmelidir.",
-        "type": "digital",
-        "dateCreated": "2026-07-14T20:57:03+0300",
-        "dateUpdated": "2026-07-14T20:57:03+0300",
-        "url": "https://www.shopier.com/48973855",
-        "media": [
-            {
-                "id": "1",
-                "type": "image",
-                "url": "https://froxy-bot.onrender.com/static/la_youtube.png",
-                "placement": 1
-            }
-        ],
-        "priceData": {
-            "currency": "TRY",
-            "price": "47.24",
-            "discount": false,
-            "discountedPrice": "47.24",
-            "shippingPrice": "0.00"
-        },
-        "stockStatus": "inStock",
-        "stockQuantity": 999,
-        "shippingPayer": "sellerPays",
-        "categories": [],
-        "variants": [],
-        "options": [],
-        "singleOption": false,
-        "customListing": false,
-        "customNote": "",
-        "placementScore": "",
-        "dispatchDuration": 0
-    },
-    {
-        "id": "48973857",
-        "title": "Spotify Premium (4 Ayl\u0131k Kod)",
-        "description": "Spotify Premium 4 Ayl\u0131k Aktivasyon Kodu. Kendi ki\u015fisel hesab\u0131n\u0131za tan\u0131mlan\u0131r. UYARI: Daha \u00f6nce Premium \u00fcyeli\u011fi aktif edilmemi\u015f (yeni/bireysel) hesaplarda ge\u00e7erlidir.",
-        "type": "digital",
-        "dateCreated": "2026-07-14T20:57:03+0300",
-        "dateUpdated": "2026-07-14T20:57:03+0300",
-        "url": "https://www.shopier.com/48973857",
-        "media": [
-            {
-                "id": "1",
-                "type": "image",
-                "url": "https://froxy-bot.onrender.com/static/la_spotify.png",
-                "placement": 1
-            }
-        ],
-        "priceData": {
-            "currency": "TRY",
-            "price": "36.74",
-            "discount": false,
-            "discountedPrice": "36.74",
-            "shippingPrice": "0.00"
-        },
-        "stockStatus": "inStock",
-        "stockQuantity": 999,
-        "shippingPayer": "sellerPays",
-        "categories": [],
-        "variants": [],
-        "options": [],
-        "singleOption": false,
-        "customListing": false,
-        "customNote": "",
-        "placementScore": "",
-        "dispatchDuration": 0
-    },
-    {
-        "id": "48973858",
-        "title": "Canva Pro (1 Y\u0131ll\u0131k Yetki)",
-        "description": "Canva Pro 1 Y\u0131ll\u0131k Yetkilendirme. Kendi ki\u015fisel hesab\u0131n\u0131za Pro \u00f6zellikleri tan\u0131mlan\u0131r.",
-        "type": "digital",
-        "dateCreated": "2026-07-14T20:57:03+0300",
-        "dateUpdated": "2026-07-14T20:57:03+0300",
-        "url": "https://www.shopier.com/48973858",
-        "media": [
-            {
-                "id": "1",
-                "type": "image",
-                "url": "https://froxy-bot.onrender.com/static/la_canva.png",
-                "placement": 1
-            }
-        ],
-        "priceData": {
-            "currency": "TRY",
-            "price": "79.99",
-            "discount": false,
-            "discountedPrice": "79.99",
-            "shippingPrice": "0.00"
-        },
-        "stockStatus": "inStock",
-        "stockQuantity": 999,
-        "shippingPayer": "sellerPays",
-        "categories": [],
-        "variants": [],
-        "options": [],
-        "singleOption": false,
-        "customListing": false,
-        "customNote": "",
-        "placementScore": "",
-        "dispatchDuration": 0
-    }
+  {
+    "id": "49099069",
+    "title": "FC26 + Online Her Seyi Degisen Hesap",
+    "price": "299,99 TL",
+    "url": "https://www.shopier.com/lisansarena/49099069"
+  },
+  {
+    "id": "49099023",
+    "title": "FC26 + Online Her Seyi Degisen Hesap",
+    "price": "299,99 TL",
+    "url": "https://www.shopier.com/lisansarena/49099023"
+  },
+  {
+    "id": "49099022",
+    "title": "Zula Random Hesap",
+    "price": "5,00 TL",
+    "url": "https://www.shopier.com/lisansarena/49099022"
+  },
+  {
+    "id": "49099018",
+    "title": "Steam 200 Dolar Random Key",
+    "price": "30,00 TL",
+    "url": "https://www.shopier.com/lisansarena/49099018"
+  },
+  {
+    "id": "49078922",
+    "title": "Canva Pro Öğretmen (1 Yıllık)",
+    "price": "149,99 TL",
+    "url": "https://www.shopier.com/lisansarena/49078922",
+    "description": "Canva Pro Öğretmen 1 Yıllık Üyelik. Kendi mail adresinize tanımlanır. Sınıf açıp öğrenci ekleme yetkisi mevcuttur.",
+    "type": "digital"
+  },
+  {
+    "id": "48973858",
+    "title": "Canva Pro (1 Yıllık Yetki)",
+    "price": "79,99 TL",
+    "url": "https://www.shopier.com/lisansarena/48973858",
+    "description": "Canva Pro 1 Yıllık Yetkilendirme. Kendi kişisel hesabınıza Pro özellikleri tanımlanır.",
+    "type": "digital"
+  },
+  {
+    "id": "48945675",
+    "title": "Shell 75 TL Akaryakıt Puanı",
+    "price": "15,90 TL",
+    "url": "https://www.shopier.com/lisansarena/48945675",
+    "description": "Shell istasyonlarında geçerli 75 TL değerinde akaryakıt puanı.",
+    "type": "digital"
+  },
+  {
+    "id": "48945493",
+    "title": "Gemini Pro Premium Hesap (12 Aylık)",
+    "price": "209,89 TL",
+    "url": "https://www.shopier.com/lisansarena/48945493",
+    "description": "Google Gemini Pro 12 Aylık premium hesap.",
+    "type": "digital"
+  },
+  {
+    "id": "48945492",
+    "title": "Gemini Pro Davet (12 Aylık)",
+    "price": "99,99 TL",
+    "url": "https://www.shopier.com/lisansarena/48945492",
+    "description": "Gemini Pro Davet Linki ile kendi 12 aylık üyeliğinizi aktifleştirme.",
+    "type": "digital"
+  },
+  {
+    "id": "48945489",
+    "title": "Gemini Ultra (2.5k Kredili Hesap)",
+    "price": "629,99 TL",
+    "url": "https://www.shopier.com/lisansarena/48945489",
+    "description": "Google Gemini Ultra 2500 kredi yüklü premium hesap.",
+    "type": "digital"
+  },
+  {
+    "id": "48945487",
+    "title": "Gemini Ultra (Davet Linki)",
+    "price": "419,99 TL",
+    "url": "https://www.shopier.com/lisansarena/48945487",
+    "description": "Google Gemini Ultra davet linki. Kendi hesabınıza tanımlanır.",
+    "type": "digital"
+  },
+  {
+    "id": "48945485",
+    "title": "Gamma Pro (1 Aylık Hesap)",
+    "price": "314,99 TL",
+    "url": "https://www.shopier.com/lisansarena/48945485",
+    "description": "Gamma AI Pro 1 Aylık hesap. Gelişmiş sunum ve doküman oluşturma özellikleri.",
+    "type": "digital"
+  },
+  {
+    "id": "48945484",
+    "title": "Gamma Ultra (1 Aylık Hesap)",
+    "price": "472,49 TL",
+    "url": "https://www.shopier.com/lisansarena/48945484",
+    "description": "Gamma AI Ultra 1 Aylık hesap. Sınırsız sunum ve doküman oluşturma.",
+    "type": "digital"
+  },
+  {
+    "id": "48945482",
+    "title": "Super Grok (12 Aylık Hesap)",
+    "price": "2.414,99 TL",
+    "url": "https://www.shopier.com/lisansarena/48945482",
+    "description": "xAI Super Grok 12 Aylık premium hesap. Sınırsız Grok-3 erişimi.",
+    "type": "digital"
+  },
+  {
+    "id": "48945481",
+    "title": "Super Grok (6 Aylık Hesap)",
+    "price": "1.574,99 TL",
+    "url": "https://www.shopier.com/lisansarena/48945481",
+    "description": "xAI Super Grok 6 Aylık premium hesap. Sınırsız Grok-3 erişimi.",
+    "type": "digital"
+  },
+  {
+    "id": "48945480",
+    "title": "Super Grok (3 Aylık Hesap)",
+    "price": "997,49 TL",
+    "url": "https://www.shopier.com/lisansarena/48945480",
+    "description": "xAI Super Grok 3 Aylık premium hesap. Sınırsız Grok-3 erişimi.",
+    "type": "digital"
+  },
+  {
+    "id": "48945476",
+    "title": "Super Grok (1 Aylık Hesap)",
+    "price": "472,49 TL",
+    "url": "https://www.shopier.com/lisansarena/48945476",
+    "description": "xAI Super Grok 1 Aylık premium hesap. Sınırsız Grok-3 erişimi.",
+    "type": "digital"
+  },
+  {
+    "id": "48945475",
+    "title": "Steam İstediğiniz Oyun (Ortak Hesap)",
+    "price": "63,00 TL",
+    "url": "https://www.shopier.com/lisansarena/48945475",
+    "description": "Steam'de istediğiniz oyunu ortak hesap üzerinden oynayabilirsiniz. Hesap bilgileri teslim edilir.",
+    "type": "digital"
+  },
+  {
+    "id": "48945473",
+    "title": "Windows 10/11 Pro Lisans Anahtarı (Key)",
+    "price": "73,50 TL",
+    "url": "https://www.shopier.com/lisansarena/48945473",
+    "description": "Windows 10/11 Pro orijinal lisans anahtarı. Ömür boyu geçerli aktivasyon kodu.",
+    "type": "digital"
+  },
+  {
+    "id": "48945472",
+    "title": "Microsoft Office 365 (1 Yıllık Hesap)",
+    "price": "73,50 TL",
+    "url": "https://www.shopier.com/lisansarena/48945472",
+    "description": "Microsoft Office 365 1 Yıllık tam lisanslı hesap. Word, Excel, PowerPoint ve tüm Office uygulamaları dahil.",
+    "type": "digital"
+  },
+  {
+    "id": "48901878",
+    "title": "Eski Tarihli Telegram Hesabı (+1 No'lu)",
+    "price": "149,90 TL",
+    "url": "https://www.shopier.com/lisansarena/48901878",
+    "description": "1 Ocak veya öncesi eski tarihli kurumlu onaylı Telegram hesabı (+1 numaralı).",
+    "type": "digital"
+  },
+  {
+    "id": "48901877",
+    "title": "Perplexity Pro (1 Aylık Hesap)",
+    "price": "119,90 TL",
+    "url": "https://www.shopier.com/lisansarena/48901877",
+    "description": "Perplexity Pro Yapay Zeka Arama Motoru 1 Aylık Ortak Hesap. Giriş garantilidir. UYARI: Ortak hesaptır.",
+    "type": "digital"
+  },
+  {
+    "id": "48901876",
+    "title": "Super Duolingo Sınırsız (Ortak Hesap)",
+    "price": "49,90 TL",
+    "url": "https://www.shopier.com/lisansarena/48901876",
+    "description": "Super Duolingo Premium 1 Aylık Ortak Kullanım Hesabı. UYARI: Ortak hesaptır.",
+    "type": "digital"
+  },
+  {
+    "id": "48901875",
+    "title": "DeepL AI (1 Aylık) - Kişisel Hesap",
+    "price": "59,90 TL",
+    "url": "https://www.shopier.com/lisansarena/48901875",
+    "description": "DeepL Pro Çeviri 1 Aylık Kişisel Kullanım Hesabı. Giriş garantilidir.",
+    "type": "digital"
+  },
+  {
+    "id": "48901874",
+    "title": "DeepL AI (1 Aylık) - Ortak Hesap",
+    "price": "29,90 TL",
+    "url": "https://www.shopier.com/lisansarena/48901874",
+    "description": "DeepL Pro Çeviri 1 Aylık Ortak Kullanım Hesabı. Sınırsız döküman çevirme.",
+    "type": "digital"
+  },
+  {
+    "id": "48901873",
+    "title": "Scribd (1 Aylık) - Kişisel Hesap",
+    "price": "59,90 TL",
+    "url": "https://www.shopier.com/lisansarena/48901873",
+    "description": "Scribd Premium 1 Aylık Kişisel Kullanım Hesabı. Giriş garantilidir.",
+    "type": "digital"
+  },
+  {
+    "id": "48901872",
+    "title": "Scribd (1 Aylık) - Ortak Hesap",
+    "price": "29,90 TL",
+    "url": "https://www.shopier.com/lisansarena/48901872",
+    "description": "Scribd Premium 1 Aylık Ortak Kullanım Hesabı. Sınırsız kitap, döküman ve sesli kitap okuma.",
+    "type": "digital"
+  },
+  {
+    "id": "48901869",
+    "title": "Magnific AI Ortak (1 Aylık Business Hesap)",
+    "price": "49,90 TL",
+    "url": "https://www.shopier.com/lisansarena/48901869",
+    "description": "Magnific AI 1 Aylık Ortak Business Hesabı. Görsel büyütme ve yapay zeka ile netleştirme.",
+    "type": "digital"
+  },
+  {
+    "id": "48901859",
+    "title": "Adobe Creative Cloud (1 Aylık) - Ortak Hesap",
+    "price": "49,90 TL",
+    "url": "https://www.shopier.com/lisansarena/48901859",
+    "description": "Adobe Creative Cloud 1 Aylık Ortak Kullanım Hesabı. Photoshop, Illustrator, Premiere vb. tüm uygulamalar.",
+    "type": "digital"
+  },
+  {
+    "id": "48901858",
+    "title": "Adobe Creative Cloud (1 Haftalık) - Kendi Hesabınıza",
+    "price": "59,90 TL",
+    "url": "https://www.shopier.com/lisansarena/48901858",
+    "description": "Adobe Creative Cloud 1 haftalık bireysel üyelik. Kendi kişisel hesabınıza tüm uygulamalar tanımlanır.",
+    "type": "digital"
+  },
+  {
+    "id": "48901857",
+    "title": "Grammarly Pro (1 Aylık) - Ortak Hesap",
+    "price": "49,90 TL",
+    "url": "https://www.shopier.com/lisansarena/48901857",
+    "description": "Grammarly Pro 1 Aylık Ortak Kullanım Hesabı. Hata analizi ve kelime geliştirme özellikleri açıktır.",
+    "type": "digital"
+  },
+  {
+    "id": "48901856",
+    "title": "Grammarly Pro (1 Haftalık) - Kendi Hesabınıza",
+    "price": "79,90 TL",
+    "url": "https://www.shopier.com/lisansarena/48901856",
+    "description": "Grammarly Pro 1 haftalık bireysel üyelik. Kendi kişisel hesabınıza tanımlanır.",
+    "type": "digital"
+  },
+  {
+    "id": "48901852",
+    "title": "Crunchyroll Özel Profil (1 Aylık)",
+    "price": "59,90 TL",
+    "url": "https://www.shopier.com/lisansarena/48901852",
+    "description": "Crunchyroll Premium 1 Aylık Kişisel Profil. Kendi izleme listenizi oluşturabilirsiniz.",
+    "type": "digital"
+  },
+  {
+    "id": "48901851",
+    "title": "Crunchyroll Ortak Hesap (1 Aylık)",
+    "price": "39,90 TL",
+    "url": "https://www.shopier.com/lisansarena/48901851",
+    "description": "Crunchyroll Premium 1 Aylık Ortak Kullanım Hesabı. Giriş garantilidir.",
+    "type": "digital"
+  }
 ]

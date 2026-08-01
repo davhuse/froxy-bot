@@ -9,10 +9,12 @@ import asyncio
 import time
 from datetime import datetime
 from telethon import TelegramClient, events, Button
+from telethon.errors import MessageNotModifiedError
 from telethon.sessions import StringSession
 import user_lang_helper
 import firestore_helper
 from gemini_helper import get_ai_response
+from update_keyvadi_links_json import fetch_live_catalog, write_catalog_atomic
 
 # Async wrappers for firestore_helper to prevent event loop deadlocks/freezes
 async def async_get_document(doc_id):
@@ -82,6 +84,23 @@ logging.basicConfig(
     handlers=[logging.StreamHandler()]
 )
 logger = logging.getLogger("LisansArenaBot")
+USER_EVENT_LOCKS = {}
+
+def serialize_user_events(handler):
+    async def serialized(event, *args, **kwargs):
+        lock = USER_EVENT_LOCKS.setdefault(event.sender_id, asyncio.Lock())
+        async with lock:
+            return await handler(event, *args, **kwargs)
+    return serialized
+
+async def safe_event_edit(event, *args, **kwargs):
+    """Repeated button taps are harmless; Telegram rejects identical edits."""
+    try:
+        edit_method = event.edit
+        return await edit_method(*args, **kwargs)
+    except MessageNotModifiedError:
+        logger.debug("Ignored an identical callback edit for user %s.", event.sender_id)
+        return None
 
 API_ID = 31076280
 API_HASH = '7ba4072dcf0a05a7ccf80e570866b6d8'
@@ -227,22 +246,17 @@ def load_products_from_links_json():
         try:
             with open(LINKS_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                data = [
-                    item for item in data
-                    if str(item.get("id", "")) not in RETIRED_SHOPIER_PRODUCT_IDS
-                ]
-                known_ids = {str(item.get("id", "")) for item in data}
-                data.extend(
-                    item for item in SHOPIER_CATALOG_ADDITIONS
-                    if item["id"] not in known_ids
-                )
                 for item in data:
                     pid = item.get("id")
                     title = item.get("title")
                     url = item.get("url")
                     
-                    price_val = item.get("priceData", {}).get("price", "0")
-                    price_str = f"{float(price_val):.2f} TL"
+                    price_val = item.get("price")
+                    if price_val is None:
+                        price_val = item.get("priceData", {}).get("price", "0")
+                    price_text = str(price_val).strip()
+                    price_text = re.sub(r"\s*(?:TL|₺)\s*$", "", price_text, flags=re.I)
+                    price_str = f"{price_text} TL"
                     
                     products.append({
                         "id": pid,
@@ -311,6 +325,17 @@ def load_products_from_links_json():
         
     CATEGORIES = temp_categories
     logger.info("In-memory categories rebuilt successfully.")
+
+def refresh_live_catalog():
+    """Refresh all Shopier pages; retain the last valid cache on any failure."""
+    try:
+        products = fetch_live_catalog("lisansarena")
+        write_catalog_atomic(products, LINKS_FILE)
+        logger.info("Refreshed all %s live LisansArena products.", len(products))
+        return products
+    except Exception as exc:
+        logger.warning("Live LisansArena catalog refresh failed; cached catalog retained: %s", exc)
+        return None
 
 # ═══════════════════════════════════════════════════════════════
 # Smart Product Matching - Müşteri serbest metin yazınca ürün eşleştir
@@ -599,7 +624,7 @@ async def show_lang_selection(event, is_callback=False):
         [Button.inline("🇹🇷 Türkçe", b"lang_tr"), Button.inline("🇺🇸 English", b"lang_en")]
     ]
     if is_callback:
-        await event.edit(text, buttons=buttons)
+        await safe_event_edit(event, text, buttons=buttons)
     else:
         await event.respond(text, buttons=buttons)
 
@@ -629,7 +654,7 @@ async def show_main_menu(event, user_id, is_callback=False):
     buttons.append([Button.inline(t["lang_btn"], b"menu_lang")])
     
     if is_callback:
-        await event.edit(welcome, buttons=buttons)
+        await safe_event_edit(event, welcome, buttons=buttons)
     else:
         await event.respond(welcome, buttons=buttons)
 
@@ -651,7 +676,7 @@ async def verify_payment_callback(event):
     buttons = [
         [Button.inline("↩️ Vazgeç ve Geri Dön", b"menu_main")]
     ]
-    await event.edit(text, buttons=buttons)
+    await safe_event_edit(event, text, buttons=buttons)
 
 @bot.on(events.NewMessage(pattern='/start'))
 async def start_handler(event):
@@ -753,7 +778,7 @@ async def menu_referral_handler(event):
     buttons = [
         [Button.inline("↩️ Ana Menü", b"menu_main")]
     ]
-    await event.edit(text, buttons=buttons)
+    await safe_event_edit(event, text, buttons=buttons)
 
 @bot.on(events.CallbackQuery(data=b'menu_lang'))
 async def menu_lang_callback(event):
@@ -779,6 +804,10 @@ async def guncelle_handler(event):
         
     await event.respond("⏳ Ürün listesi güncelleniyor, lütfen bekleyin...")
     try:
+        loop = asyncio.get_event_loop()
+        products = await loop.run_in_executor(None, refresh_live_catalog)
+        if not products:
+            raise RuntimeError("Canlı Shopier kataloğu alınamadı; eski katalog korundu.")
         load_products_from_links_json()
         summary = "\n".join([f"- {cat['title']}: {len(cat['products'])} ürün" for cat_key, cat in CATEGORIES.items() if cat['products']])
         await event.respond(f"✅ Ürünler başarıyla güncellendi ve hafızaya yüklendi!\n\nToplam {len(ALL_PRODUCTS_FLAT)} ürün bulundu:\n{summary}")
@@ -816,7 +845,7 @@ async def category_handler(event):
     buttons.append([Button.inline(t["main_menu"], b"menu_main")])
 
     cat_title = t["cat_title_mapping"].get(cat_key, cat["title"])
-    await event.edit(f"**{cat_title}**\n\n{t['select_product']}", buttons=buttons)
+    await safe_event_edit(event, f"**{cat_title}**\n\n{t['select_product']}", buttons=buttons)
 
 # Product detail handler
 @bot.on(events.CallbackQuery(pattern=r'prod_(\w+)'))
@@ -864,7 +893,7 @@ async def product_handler(event):
         [Button.inline(f"↩️ {cat_title}", f"cat_{cat_key_found}".encode())],
         [Button.inline(t["main_menu"], b"menu_main")]
     ]
-    await event.edit(desc_text, buttons=buttons)
+    await safe_event_edit(event, desc_text, buttons=buttons)
 
 
 # IBAN Ödeme Bilgileri Gösterici
@@ -907,7 +936,7 @@ async def iban_info_handler(event):
         [Button.inline("↩️ Ürün Sayfasına Dön", f"prod_{prod_key}".encode())],
         [Button.inline("🏠 Ana Menü", b"menu_main")]
     ]
-    await event.edit(iban_text, buttons=buttons)
+    await safe_event_edit(event, iban_text, buttons=buttons)
 
 # Dekont Bekleme Durumu Başlatıcı
 @bot.on(events.CallbackQuery(pattern=r'verify_iban_(\w+)'))
@@ -930,7 +959,7 @@ async def verify_iban_handler(event):
     buttons = [
         [Button.inline("↩️ Vazgeç ve Ana Menü", b"menu_main")]
     ]
-    await event.edit(text, buttons=buttons)
+    await safe_event_edit(event, text, buttons=buttons)
 
 # Support Menu
 @bot.on(events.CallbackQuery(data=b'menu_support'))
@@ -945,11 +974,12 @@ async def support_menu_handler(event):
     
     user_states[user_id] = "AWAITING_SUPPORT"
     buttons = [[Button.inline(t["cancel"], b"menu_main")]]
-    await event.edit(f"{t['support_title']}\n\n{t['support_desc']}", buttons=buttons)
+    await safe_event_edit(event, f"{t['support_title']}\n\n{t['support_desc']}", buttons=buttons)
 
 PROCESSED_MESSAGE_EVENTS = set()
 
 @bot.on(events.NewMessage(incoming=True))
+@serialize_user_events
 async def message_handler(event):
     if getattr(event, 'out', False):
         return
@@ -1176,20 +1206,7 @@ async def message_handler(event):
             return
         else:
             # Yapay Zeka Akıllı Satış Asistanı
-            products = []
-            if os.path.exists("lisansarena_shopier_links.json"):
-                try:
-                    with open("lisansarena_shopier_links.json", "r", encoding="utf-8") as f:
-                        data = json.load(f)
-                        for item in data:
-                            pid = item.get("id")
-                            title = item.get("title")
-                            url = item.get("url")
-                            price_val = item.get("priceData", {}).get("price", "0")
-                            price_str = f"{float(price_val):.2f} TL"
-                            products.append({"id": pid, "title": title, "price": price_str, "url": url})
-                except:
-                    pass
+            products = list(ALL_PRODUCTS_FLAT)
             lang = user_lang_helper.get_user_lang(user_id) or "tr"
             t = TEXTS[lang]
             fallback_key = re.sub(r'\s+', ' ', event.text.strip().lower())
@@ -1265,7 +1282,7 @@ async def la_admin_ban_user_callback(event):
     await async_set_document(ban_doc_id, {"banned": True, "id": target_user_id})
     await event.answer("🚫 Kullanıcı engellendi.", alert=True)
     original_text = event.message.text
-    await event.edit(f"{original_text}\n\n⚙️ **Aksiyon:** Kullanıcı engellendi. (Yönetici: @{event.sender.username or event.sender_id})")
+    await safe_event_edit(event, f"{original_text}\n\n⚙️ **Aksiyon:** Kullanıcı engellendi. (Yönetici: @{event.sender.username or event.sender_id})")
 
 async def get_bot_info():
     global bot_username, BOT_USER_ID
@@ -1296,6 +1313,7 @@ async def main():
 if __name__ == '__main__':
     import asyncio
     logger.info("Loading LisansArena products cache...")
+    refresh_live_catalog()
     load_products_from_links_json()
     logger.info("Starting LisansArena Sales Bot...")
     

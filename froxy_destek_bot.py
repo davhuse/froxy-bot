@@ -2,7 +2,9 @@ import os
 import json
 import logging
 import re
+import asyncio
 from telethon import TelegramClient, events, Button
+from telethon.errors import MessageNotModifiedError
 from telethon.sessions import StringSession
 import user_lang_helper
 import firestore_helper
@@ -16,6 +18,35 @@ logging.basicConfig(
     handlers=[logging.StreamHandler()]
 )
 logger = logging.getLogger("FroxyDestekBot")
+USER_EVENT_LOCKS = {}
+
+def serialize_user_events(handler):
+    async def serialized(event, *args, **kwargs):
+        lock = USER_EVENT_LOCKS.setdefault(event.sender_id, asyncio.Lock())
+        async with lock:
+            return await handler(event, *args, **kwargs)
+    return serialized
+
+async def safe_event_edit(event, *args, **kwargs):
+    """Repeated button taps are harmless; Telegram rejects identical edits."""
+    try:
+        edit_method = event.edit
+        return await edit_method(*args, **kwargs)
+    except MessageNotModifiedError:
+        logger.debug("Ignored an identical callback edit for user %s.", event.sender_id)
+        return None
+
+async def async_claim_event(event, scope):
+    message_id = getattr(event.message, "id", None)
+    if not message_id or event.chat_id is None:
+        return True
+    doc_id = f"dm_event_{scope}_{event.chat_id}_{message_id}"
+    fields = {"scope": scope, "chat_id": event.chat_id, "message_id": message_id}
+    loop = asyncio.get_event_loop()
+    result = await loop.run_in_executor(
+        None, firestore_helper.claim_document, doc_id, fields
+    )
+    return result is not False
 
 API_ID = 31076280
 API_HASH = '7ba4072dcf0a05a7ccf80e570866b6d8'
@@ -74,6 +105,7 @@ if not BOT_TOKEN or BOT_TOKEN == "YOUR_TELEGRAM_BOT_TOKEN":
 
 # In-memory user state
 user_states = {}
+PROCESSED_MESSAGE_EVENTS = set()
 
 # Initialize client
 bot = TelegramClient("froxy_destek_bot_session", API_ID, API_HASH)
@@ -256,7 +288,7 @@ async def show_lang_selection(event, is_callback=False):
         [Button.inline("🇹🇷 Türkçe", b"lang_tr"), Button.inline("🇺🇸 English", b"lang_en")]
     ]
     if is_callback:
-        await event.edit(text, buttons=buttons)
+        await safe_event_edit(event, text, buttons=buttons)
     else:
         await event.respond(text, buttons=buttons)
 
@@ -286,7 +318,7 @@ async def show_main_menu(event, user_id, is_callback=False):
     ]
     
     if is_callback:
-        await event.edit(welcome_text, buttons=buttons)
+        await safe_event_edit(event, welcome_text, buttons=buttons)
     else:
         await event.respond(welcome_text, buttons=buttons)
 
@@ -308,11 +340,13 @@ async def verify_payment_callback(event):
     buttons = [
         [Button.inline("↩️ Vazgeç ve Geri Dön", b"menu_main")]
     ]
-    await event.edit(text, buttons=buttons)
+    await safe_event_edit(event, text, buttons=buttons)
 
 # Start Handler
 @bot.on(events.NewMessage(pattern='/start'))
 async def start_handler(event):
+    if not await async_claim_event(event, "froxy_support"):
+        return
     user_id = event.sender_id
     
     ban_data = firestore_helper.get_document(f"ban_{user_id}")
@@ -422,7 +456,7 @@ async def packages_menu_handler(event):
         f"{t['pkg_menu_title']}"
     )
     try:
-        await event.edit(title_text, buttons=buttons)
+        await safe_event_edit(event, title_text, buttons=buttons)
     except Exception:
         pass
 
@@ -443,7 +477,7 @@ async def ai_tools_menu_handler(event):
 
     title_text = "🤖 **Yapay Zeka Paketleri (AI Tools)**\n\nSatın almak istediğiniz yapay zeka aracını seçin:" if lang == "tr" else "🤖 **AI Tools & Packages**\n\nSelect the AI tool you wish to purchase:"
     try:
-        await event.edit(title_text, buttons=buttons)
+        await safe_event_edit(event, title_text, buttons=buttons)
     except Exception:
         pass
 
@@ -466,7 +500,7 @@ async def menu_referral_handler(event):
     buttons = [
         [Button.inline("↩️ Ana Menü", b"menu_main")]
     ]
-    await event.edit(text, buttons=buttons)
+    await safe_event_edit(event, text, buttons=buttons)
 
 # Package detail handler
 @bot.on(events.CallbackQuery(pattern=r'pkg_(\w+)'))
@@ -501,7 +535,7 @@ async def pkg_select_handler(event):
         [Button.inline(t["back_to_pkgs"], b"menu_packages")]
     ]
     try:
-        await event.edit(text, buttons=buttons)
+        await safe_event_edit(event, text, buttons=buttons)
     except Exception:
         pass
 
@@ -517,10 +551,22 @@ async def support_menu_handler(event):
     buttons = [
         [Button.inline(t["cancel"], b"menu_main")]
     ]
-    await event.edit(f"{t['support_title']}\n\n{t['support_desc']}", buttons=buttons)
+    await safe_event_edit(event, f"{t['support_title']}\n\n{t['support_desc']}", buttons=buttons)
 
-@bot.on(events.NewMessage)
+@bot.on(events.NewMessage(incoming=True))
+@serialize_user_events
 async def message_handler(event):
+    if getattr(event, "out", False) or not event.text or event.text.startswith('/'):
+        return
+    event_key = (event.chat_id, getattr(event.message, "id", None))
+    if event_key in PROCESSED_MESSAGE_EVENTS:
+        return
+    PROCESSED_MESSAGE_EVENTS.add(event_key)
+    if len(PROCESSED_MESSAGE_EVENTS) > 10000:
+        PROCESSED_MESSAGE_EVENTS.clear()
+    if not await async_claim_event(event, "froxy_support"):
+        return
+
     user_id = event.sender_id
     config = load_config() or {}
     admin_chat_id = config.get("froxy_admin_id", config.get("admin_id", ADMIN_ID))
@@ -748,7 +794,7 @@ async def admin_add_credits_callback(event):
         
     await event.answer(f"✅ Kullanıcıya {amount} kredi tanımlandı.", alert=True)
     original_text = event.message.text
-    await event.edit(f"{original_text}\n\n⚙️ **Aksiyon:** Kullanıcıya {amount} kredi tanımlandı. (Yönetici: @{event.sender.username or event.sender_id})")
+    await safe_event_edit(event, f"{original_text}\n\n⚙️ **Aksiyon:** Kullanıcıya {amount} kredi tanımlandı. (Yönetici: @{event.sender.username or event.sender_id})")
 
 @bot.on(events.CallbackQuery(pattern=r'adm_ban_(\d+)'))
 async def admin_ban_user_callback(event):
@@ -765,7 +811,7 @@ async def admin_ban_user_callback(event):
     
     await event.answer("🚫 Kullanıcı engellendi.", alert=True)
     original_text = event.message.text
-    await event.edit(f"{original_text}\n\n⚙️ **Aksiyon:** Kullanıcı engellendi. (Yönetici: @{event.sender.username or event.sender_id})")
+    await safe_event_edit(event, f"{original_text}\n\n⚙️ **Aksiyon:** Kullanıcı engellendi. (Yönetici: @{event.sender.username or event.sender_id})")
 
 if __name__ == '__main__':
     import asyncio
