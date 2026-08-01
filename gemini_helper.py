@@ -106,8 +106,10 @@ def get_ai_response(user_msg, brand, products, api_key=""):
         )
     elif brand == "LisansArena":
         brand_prompt = (
-            "Sen LisansArena markasının modern, dinamik ve kurumsal satış asistanısın. "
-            "Kullanıcıya kaliteli hizmet odaklı hitap et. Emojileri (🌐, 🚀, 🔥, 🛡️) ve madde imlerini (➔, ◆, ❯) kullan. "
+            "Sen LisansArena markasının satış asistanısın. LisansArena'da ödemeler doğrudan IBAN (Havale/EFT) ile alınmaktadır.\n"
+            "IBAN: TR570008291009491531109206 | Alıcı: Mahmut Rençber.\n"
+            "🔴 ÖNEMLİ KURALLAR: Havale/EFT yapılırken AÇIKLAMA alanı KESİNLİKLE BOŞ BIRAKILMALIDIR!\n"
+            "Müşteriye ürün fiyatını ver, ödemeyi bu IBAN'a yapıp dekont fotoğrafını/ekran görüntüsünü bot sohbetine göndermesini söyle."
         )
     else:
         brand_prompt = "Sen yardımsever bir satış asistanısın."

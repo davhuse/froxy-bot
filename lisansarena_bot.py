@@ -185,6 +185,11 @@ if not config:
     exit(1)
 
 # Read token for LisansArena
+
+IBAN_NO = "TR570008291009491531109206"
+IBAN_ALICI = "Mahmut Rençber"
+IBAN_UYARI = "🔴 **ÖNEMLİ UYARI:** Havale / EFT ödemesi yaparken **AÇIKLAMA alanını KESİNLİKLE BOŞ BIRAKINIZ!** Açıklama kısmına hiçbir şey yazmayınız."
+
 BOT_TOKEN = config.get("lisansarena_bot_token", "8272543860:AAGmIdyky47dOxFBmqCz-4mZGzvo1jknFDU")
 ADMIN_ID = config.get("admin_id", 8797763469)
 BOT_USER_ID = None
@@ -546,8 +551,8 @@ TEXTS = {
         },
         "select_product": "İncelemek veya satın almak istediğiniz ürünü seçiniz:",
         "price": "Fiyatımız",
-        "product_footer": "✅ Güvenli İşlem · ⚡ Hızlı Teslimat · 🤝 Kesintisiz Destek\n\nÜrünü satın almak için aşağıdaki güvenli ödeme butonunu kullanabilirsiniz.",
-        "buy_btn": "💳 Güvenle Ödeme Yap (Shopier)",
+        "product_footer": "✅ Güvenli Havale/EFT Ödemesi · ⚡ Hızlı Teslimat · 🤝 Kesintisiz Destek\n\nÜrünü satın almak için aşağıdaki IBAN ödeme butonunu kullanabilirsiniz.",
+        "buy_btn": "💳 IBAN Bilgileri ile Satın Al",
         "support_title": "💬 **Müşteri Hizmetleri & İletişim**",
         "support_desc": "Sorularınızı, satın almak istediğiniz ürünü veya karşılaştığınız bir sorunu detaylıca buraya yazabilirsiniz.\n\nYetkili ekibimiz en kısa sürede size dönüş yapacaktır.",
         "cancel": "❌ İşlemi İptal Et",
@@ -576,7 +581,7 @@ TEXTS = {
         "select_product": "Select the product you'd like to review or purchase:",
         "price": "Our Price",
         "product_footer": "✅ Secure Transaction · ⚡ Fast Delivery · 🤝 Continuous Support\n\nYou can use the secure payment button below to purchase the product.",
-        "buy_btn": "💳 Pay Securely (Shopier)",
+        "buy_btn": "💳 Pay via Bank IBAN Transfer",
         "support_title": "💬 **Customer Service & Contact**",
         "support_desc": "You can write your questions, the product you want to buy, or any problem you encountered in detail here.\n\nOur authorized team will get back to you as soon as possible.",
         "cancel": "❌ Cancel Action",
@@ -854,11 +859,78 @@ async def product_handler(event):
     
     cat_title = t["cat_title_mapping"].get(cat_key_found, CATEGORIES[cat_key_found]['title'])
     buttons = [
-        [Button.url(t["buy_btn"], shopier_url)],
+        [Button.inline("💳 IBAN Bilgileri & Satın Al", f"iban_{prod_key}".encode())],
+        [Button.inline("📸 Ödemeyi Doğrula (Dekont Gönder)", f"verify_iban_{prod_key}".encode())],
         [Button.inline(f"↩️ {cat_title}", f"cat_{cat_key_found}".encode())],
         [Button.inline(t["main_menu"], b"menu_main")]
     ]
     await event.edit(desc_text, buttons=buttons)
+
+
+# IBAN Ödeme Bilgileri Gösterici
+@bot.on(events.CallbackQuery(pattern=r'iban_(\w+)'))
+async def iban_info_handler(event):
+    try:
+        await event.answer()
+    except Exception:
+        pass
+    user_id = event.sender_id
+    lang = user_lang_helper.get_user_lang(user_id) or "tr"
+    prod_key = event.data.decode('utf-8').replace("iban_", "")
+    
+    product = None
+    cat_key_found = None
+    for ck, cat in CATEGORIES.items():
+        if prod_key in cat["products"]:
+            product = cat["products"][prod_key]
+            cat_key_found = ck
+            break
+            
+    title = product['title'] if product else "Seçilen Ürün"
+    price = product['price'] if product else "0 TL"
+    
+    if lang == "en":
+        price = user_lang_helper.convert_price_to_usd(price)
+
+    iban_text = (
+        f"💳 **LisansArena IBAN Ödeme Bilgileri**\n\n"
+        f"📦 **Satın Alınacak Ürün:** {title}\n"
+        f"💰 **Ödenecek Tutar:** `{price}`\n\n"
+        f"🏦 **IBAN:**\n`{IBAN_NO}`\n\n"
+        f"👤 **Alıcı Adı Soyadı:**\n`{IBAN_ALICI}`\n\n"
+        f"{IBAN_UYARI}\n\n"
+        f"Ödemenizi yaptıktan sonra aşağıdaki **'📸 Ödemeyi Doğrula / Dekont Gönder'** butonuna tıklayarak dekont fotoğrafını bu sohbete gönderebilirsiniz.\n\n"
+        f"💬 **Destek / İletişim:** @LisansArenaAdmin"
+    )
+    buttons = [
+        [Button.inline("📸 Ödemeyi Doğrula (Dekont Gönder)", f"verify_iban_{prod_key}".encode())],
+        [Button.inline("↩️ Ürün Sayfasına Dön", f"prod_{prod_key}".encode())],
+        [Button.inline("🏠 Ana Menü", b"menu_main")]
+    ]
+    await event.edit(iban_text, buttons=buttons)
+
+# Dekont Bekleme Durumu Başlatıcı
+@bot.on(events.CallbackQuery(pattern=r'verify_iban_(\w+)'))
+async def verify_iban_handler(event):
+    try:
+        await event.answer()
+    except Exception:
+        pass
+    user_id = event.sender_id
+    prod_key = event.data.decode('utf-8').replace("verify_iban_", "")
+    user_states[user_id] = f"AWAITING_DEKONT:{prod_key}"
+    
+    text = (
+        "📸 **Ödeme Doğrulama & Dekont Gönderimi**\n\n"
+        "Lütfen Havale/EFT ödemenize ait **dekont fotoğrafını veya ekran görüntüsünü** bu sohbete gönderin.\n\n"
+        "Ödeme ve dekontunuz yetkili ekibimize anında iletilecek ve lisans kodunuz bu sohbet üzerinden tarafınıza teslim edilecektir.\n\n"
+        "💬 İletişim / Canlı Destek: @LisansArenaAdmin\n"
+        "*(Vazgeçmek için /start yazabilirsiniz)*"
+    )
+    buttons = [
+        [Button.inline("↩️ Vazgeç ve Ana Menü", b"menu_main")]
+    ]
+    await event.edit(text, buttons=buttons)
 
 # Support Menu
 @bot.on(events.CallbackQuery(data=b'menu_support'))
@@ -1079,7 +1151,8 @@ async def message_handler(event):
                     f"{t['product_footer']}"
                 )
                 buttons = [
-                    [Button.url(t["buy_btn"], matched_product.get('url', 'https://www.shopier.com/lisansarena'))],
+                    [Button.inline("💳 IBAN Bilgileri & Satın Al", f"iban_{matched_product['id']}".encode())],
+                    [Button.inline("📸 Ödemeyi Doğrula (Dekont Gönder)", f"verify_iban_{matched_product['id']}".encode())],
                     [Button.inline(t["support_btn"], b"menu_support")],
                     [Button.inline("📋 Ana Menü / Main Menu", b"menu_main")]
                 ]
