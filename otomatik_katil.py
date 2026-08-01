@@ -2703,14 +2703,30 @@ async def main():
                 rem_min = rem_wait // 60
                 print(f"\n[{client_name}] ⏳ Son yayın {elapsed_min}dk önce tamamlanmış → Kalan {rem_min}dk ({rem_wait}sn) bekleniyor...")
                 kalan_wait = rem_wait
+                waited_seconds = 0
+                last_reported_at = -60
                 while kalan_wait > 0:
                     dakika = kalan_wait // 60
                     saniye = kalan_wait % 60
-                    if kalan_wait == rem_wait or kalan_wait % 60 == 0:
+                    # rem_wait çoğunlukla 60'ın katı değildir. Eski modulo
+                    # kontrolü bu yüzden başlangıçtan sonra bir daha hiç
+                    # çalışmıyor ve hesap günlükte kaybolmuş gibi görünüyordu.
+                    if waited_seconds - last_reported_at >= 60:
                         print(f"[{client_name}] ⏱️ Kalan: {dakika}dk {saniye}sn")
+                        update_ad_account_status(
+                            client_name,
+                            phase='waiting',
+                            remaining_seconds=kalan_wait,
+                            remaining_minutes=(kalan_wait + 59) // 60,
+                            next_blast_at=(
+                                datetime.now(timezone.utc) + timedelta(seconds=kalan_wait)
+                            ).isoformat(),
+                        )
+                        last_reported_at = waited_seconds
                     uyku = min(15, kalan_wait)
                     await asyncio.sleep(uyku)
                     kalan_wait -= uyku
+                    waited_seconds += uyku
 
             # Dinamik olarak korumalı listeyi güncelle
             protected_groups = get_all_protected_groups()
