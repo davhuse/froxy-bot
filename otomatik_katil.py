@@ -410,19 +410,40 @@ pending_invites = load_pending_invites()
 dm_count_today = 0
 dm_last_reset = ""
 MAX_DM_PER_DAY = 20
-# Reklam atmasina izin verilen hesaplar.  Liste bilerek dar tutuluyor:
-# eski/kullanici adsiz hesaplarin ("User" isimli, id 8823916561 ve 8816312669
-# gibi) bir sekilde bir slota dusup gruplara mesaj atmasi istenmiyor.
-# Kullanici adi olmayan hesaplar zaten bu kumede yer alamaz, dolayisiyla
-# baglanti kurulsa bile acilista kapatilirlar.
-ACTIVE_ACCOUNT_USERNAMES = {'keyvadionline', 'keyvadidestek', 'userrrrrrrrrra', 'lisansarenaonline', 'froxy_ai'}
-ACCOUNT_STABLE_NAMES = {
-    'keyvadionline': 'KeyVadiOnline',
-    'keyvadidestek': 'KeyVadiOnline',
-    'userrrrrrrrrra': 'KeyVadiOnline',
-    'lisansarenaonline': 'LisansArenaOnline',
-    'froxy_ai': 'FroxyOnline',
+# Reklam gonderebilecek tek hesaplar. Kullanici adi ilk kilit, bilinen
+# hesaplarda telefon ikinci kilittir. Eski KeyVadiOnline/User/Uzer hesaplari
+# burada bilerek yer almaz; gecmis cooldown rumuzlari yetki vermez.
+ACTIVE_ACCOUNT_IDENTITIES = {
+    'froxy_ai': {
+        'stable_name': 'FroxyOnline',
+        'phone': '905015291021',
+        'user_id': 8797763469,
+        'slot': 1,
+    },
+    'keyvadidestek': {
+        'stable_name': 'KeyVadiOnline',
+        'phone': '905056798875',
+        'user_id': 6196006704,
+        'slot': 2,
+    },
+    'lisansarenaonline': {
+        'stable_name': 'LisansArenaOnline',
+        # Verilen telefon mevcut Telegram oturumuyla uyusmadi. Dogrulanmis,
+        # degismez Telegram ID + kullanici adi birlikte kullaniliyor.
+        'phone': None,
+        'user_id': 8879941384,
+        'slot': 3,
+    },
 }
+ACTIVE_ACCOUNT_USERNAMES = set(ACTIVE_ACCOUNT_IDENTITIES)
+ACCOUNT_STABLE_NAMES = {
+    username: identity['stable_name']
+    for username, identity in ACTIVE_ACCOUNT_IDENTITIES.items()
+}
+
+
+def normalize_phone(value):
+    return ''.join(ch for ch in str(value or '') if ch.isdigit())
 
 # --- Auto-DM: Anahtar kelimeler ---
 DM_TRIGGER_KEYWORDS = [
@@ -1012,12 +1033,14 @@ def get_last_blast_remaining_wait(client_name, target_wait_seconds=3600):
         timestamps = []
         for alias in get_account_aliases(client_name):
             k = f"__LAST_BLAST_TIME_{alias}"
-            val = cooldowns.get(k) or fs_cdata.get(k)
-            if val and isinstance(val, str):
-                try:
-                    timestamps.append(datetime.fromisoformat(val))
-                except Exception:
-                    pass
+            # Yerel ve bulut kaydindan en yenisini kullan. Eski kod yerel
+            # kayit varsa daha yeni Firestore degerini hic okumuyordu.
+            for val in (cooldowns.get(k), fs_cdata.get(k)):
+                if val and isinstance(val, str):
+                    try:
+                        timestamps.append(datetime.fromisoformat(val))
+                    except Exception:
+                        pass
 
         if not timestamps:
             print(f"[{cname}] 🛡️ Sunucu başlangıcı: Son blast kaydı bulunamadı, 60 dakika güvenlik beklemesi uygulanıyor.")
@@ -2266,9 +2289,25 @@ async def main():
                 cfg = json.load(f)
                 # Render env vars are the durable source of truth. The filesystem
                 # is replaced on every deploy and may still contain stale sessions.
-                string_session_key = os.environ.get("AD_STRING_SESSION_FROXY", "").strip() or cfg.get("string_session_key", "") or cfg.get("ad_string_session", "")
-                string_session_key_2 = os.environ.get("AD_STRING_SESSION_KEYVADI", "").strip() or cfg.get("string_session_key_2", "") or cfg.get("ad_string_session2_final", "") or cfg.get("ad_string_session2_new", "")
-                string_session_key_3 = os.environ.get("AD_STRING_SESSION_LISANSARENA", "").strip() or cfg.get("string_session_key_3", "") or cfg.get("ad_string_session3_final", "") or cfg.get("ad_string_session3_new", "")
+                # Uretimde config fallback kullanmak eski User/KeyVadiOnline
+                # oturumlarini yeniden canlandirabildigi icin Render yalnizca
+                # acikca tanimlanmis ortam degiskenlerini kabul eder.
+                is_render_runtime = bool(
+                    os.environ.get("RENDER")
+                    or os.environ.get("RENDER_SERVICE_ID")
+                    or os.environ.get("RENDER_EXTERNAL_URL")
+                )
+                env_froxy = os.environ.get("AD_STRING_SESSION_FROXY", "").strip()
+                env_keyvadi = os.environ.get("AD_STRING_SESSION_KEYVADI", "").strip()
+                env_lisans = os.environ.get("AD_STRING_SESSION_LISANSARENA", "").strip()
+                if is_render_runtime:
+                    string_session_key = env_froxy
+                    string_session_key_2 = env_keyvadi
+                    string_session_key_3 = env_lisans
+                else:
+                    string_session_key = env_froxy or cfg.get("string_session_key", "") or cfg.get("ad_string_session", "")
+                    string_session_key_2 = env_keyvadi or cfg.get("string_session_key_2", "") or cfg.get("ad_string_session2_final", "") or cfg.get("ad_string_session2_new", "")
+                    string_session_key_3 = env_lisans or cfg.get("string_session_key_3", "") or cfg.get("ad_string_session3_final", "") or cfg.get("ad_string_session3_new", "")
                 ad_sleep_min = cfg.get("ad_sleep_min", 600)
                 ad_sleep_max = cfg.get("ad_sleep_max", 1200)
         except:
@@ -2285,7 +2324,7 @@ async def main():
             await client1.connect()
             if await client1.is_user_authorized():
                 me = await client1.get_me()
-                active_clients.append((client1, "Hesap #1", {"id": me.id}))
+                active_clients.append((client1, "Hesap #1", {"id": me.id, "slot": 1}))
                 print(f"✅ 1. Hesap yetkilendirildi ve aktif edildi. ID: {me.id}")
                 client1.loop.create_task(presence_watchdog(client1))
             else:
@@ -2302,7 +2341,7 @@ async def main():
             await client2.connect()
             if await client2.is_user_authorized():
                 me = await client2.get_me()
-                active_clients.append((client2, "Hesap #2", {"id": me.id}))
+                active_clients.append((client2, "Hesap #2", {"id": me.id, "slot": 2}))
                 print(f"✅ 2. Hesap yetkilendirildi. ID: {me.id}")
             else:
                 print("❌ HATA: 2. Hesap (KeyVadi) yetkilendirilmemiş!")
@@ -2318,7 +2357,7 @@ async def main():
             await client3.connect()
             if await client3.is_user_authorized():
                 me = await client3.get_me()
-                active_clients.append((client3, "Hesap #3", {"id": me.id}))
+                active_clients.append((client3, "Hesap #3", {"id": me.id, "slot": 3}))
                 print(f"✅ 3. Hesap yetkilendirildi. ID: {me.id}")
             else:
                 print("❌ HATA: 3. Hesap (LisansArena) yetkilendirilmemiş!")
@@ -2333,7 +2372,7 @@ async def main():
             await client1.connect()
             if await client1.is_user_authorized():
                 me = await client1.get_me()
-                active_clients.append((client1, "Yerel Hesap", {"id": me.id}))
+                active_clients.append((client1, "Yerel Hesap", {"id": me.id, "slot": None}))
                 print(f"✅ Yerel hesap yetkilendirildi. ID: {me.id}")
             else:
                 print("❌ HATA: Yerel hesap yetkilendirilmemiş!")
@@ -2349,12 +2388,39 @@ async def main():
         try:
             me = await active_client.get_me()
             username = (getattr(me, 'username', '') or '').lower()
-            if username not in ACTIVE_ACCOUNT_USERNAMES:
-                print(f"⚠️ @{username or 'bilinmeyen'} aktif hesap allowlist'inde değil; session bağlantısı kapatılıyor.")
+            identity = ACTIVE_ACCOUNT_IDENTITIES.get(username)
+            if not identity:
+                print(f"⚠️ @{username or 'bilinmeyen'} reklam hesabı izin listesinde değil; session bağlantısı kapatılıyor.")
                 await active_client.disconnect()
                 continue
-            stable_name = ACCOUNT_STABLE_NAMES.get(username, username)
-            allowed_clients.append((active_client, stable_name, {'id': me.id, 'username': username}))
+
+            actual_slot = info.get('slot')
+            expected_slot = identity['slot']
+            if actual_slot is not None and actual_slot != expected_slot:
+                print(f"⛔ @{username} yanlış oturum yuvasında (gelen={actual_slot}, beklenen={expected_slot}); bağlantı kapatılıyor.")
+                await active_client.disconnect()
+                continue
+
+            expected_phone = normalize_phone(identity.get('phone'))
+            actual_phone = normalize_phone(getattr(me, 'phone', ''))
+            if expected_phone and actual_phone != expected_phone:
+                print(f"⛔ @{username} telefon kimliği doğrulanamadı; bağlantı kapatılıyor.")
+                await active_client.disconnect()
+                continue
+
+            expected_user_id = identity.get('user_id')
+            if expected_user_id and me.id != expected_user_id:
+                print(f"⛔ @{username} Telegram kullanıcı kimliği doğrulanamadı; bağlantı kapatılıyor.")
+                await active_client.disconnect()
+                continue
+
+            stable_name = identity['stable_name']
+            allowed_clients.append((active_client, stable_name, {
+                'id': me.id,
+                'username': username,
+                'slot': expected_slot,
+            }))
+            print(f"🔒 @{username} kimliği doğrulandı ve {stable_name} hesabına kilitlendi.")
         except Exception as e:
             print(f"⚠️ Aktif hesap doğrulanamadı, bağlantı kapatılıyor: {e}")
             try:
@@ -2757,6 +2823,12 @@ async def main():
 
             
             print(f"[{client_name}] 📊 Hedef: {len(hedef_set)} | Gönderilecek: {len(blast_targets)} | Kara liste: {debug_blacklisted} | Küçük grup çıkar: {small_groups_skipped} | Üye değil: {debug_not_cached}")
+
+            # Deploy/restart turun ortasinda olursa tur-sonu kaydi yazilamaz.
+            # Gonderime baslamadan once bir guvenlik zamani yazmak, yeniden
+            # acilan servisin ayni gruplara bastan blast atmasini engeller.
+            if blast_targets:
+                save_last_blast_time(client_name)
             
             update_ad_account_status(
                 client_name,
@@ -3185,6 +3257,10 @@ async def main():
             hour = tr_time.hour
             
             grup_sayisi = len(blast_targets) if blast_targets else 0
+            # Gece/gunduz ayrimindan once her tamamlanan turun kesin zamanini
+            # yaz. Onceki kod gece dalinda hic kaydetmedigi icin dongu beklemeden
+            # tekrar blast'a girebiliyordu.
+            save_last_blast_time(client_name)
             # Gece (02:00 - 07:59) saat başı (3600 sn), diğer saatlerde 30 dakikada bir (1800 sn)
             if 2 <= hour <= 7:
                 bekleme = 3600
@@ -3201,7 +3277,6 @@ async def main():
                     except:
                         pass
                 bekleme = random.randint(blast_min, blast_max)
-                save_last_blast_time(client_name)
                 print(f"\n[{client_name}] 🎉 Blast turu başarıyla tamamlandı ({grup_sayisi} grup) → Sonraki blast 60 dakika sonra gerçekleşecek.")
 
     # Migrate legacy group decisions before syncing Firestore, otherwise the
