@@ -988,13 +988,17 @@ def get_canonical_account_name(client_name):
 
 def get_account_aliases(client_name):
     cname = get_canonical_account_name(client_name)
-    aliases = {cname, client_name, client_name.lower()}
+    # Yalniz aktif kimlik ve marka anahtarlari. Eski User/Hesap/c4hex
+    # rumuzlarini burada tutmak Firestore'da yasakli hesaplar halen blast
+    # atiyormus gibi gorunmesine yol aciyordu. Kanonik marka anahtari eski
+    # cooldown gecmisini korumaya yeterlidir.
+    aliases = {cname, cname.lower()}
     if cname == 'FroxyOnline':
-        aliases.update({'Hesap #1', 'froxy_ai', 'froxyonline', 'c4hex'})
+        aliases.add('froxy_ai')
     elif cname == 'KeyVadiOnline':
-        aliases.update({'Hesap #2', 'keyvadionline', 'keyvadidestek', 'userrrrrrrrrra'})
+        aliases.add('keyvadidestek')
     elif cname == 'LisansArenaOnline':
-        aliases.update({'Hesap #3', 'lisansarenaonline'})
+        aliases.add('lisansarenaonline')
     return aliases
 
 def save_last_blast_time(client_name):
