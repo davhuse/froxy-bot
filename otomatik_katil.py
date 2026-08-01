@@ -415,10 +415,11 @@ MAX_DM_PER_DAY = 20
 # gibi) bir sekilde bir slota dusup gruplara mesaj atmasi istenmiyor.
 # Kullanici adi olmayan hesaplar zaten bu kumede yer alamaz, dolayisiyla
 # baglanti kurulsa bile acilista kapatilirlar.
-ACTIVE_ACCOUNT_USERNAMES = {'keyvadionline', 'keyvadidestek', 'lisansarenaonline', 'froxy_ai'}
+ACTIVE_ACCOUNT_USERNAMES = {'keyvadionline', 'keyvadidestek', 'userrrrrrrrrra', 'lisansarenaonline', 'froxy_ai'}
 ACCOUNT_STABLE_NAMES = {
     'keyvadionline': 'KeyVadiOnline',
     'keyvadidestek': 'KeyVadiOnline',
+    'userrrrrrrrrra': 'KeyVadiOnline',
     'lisansarenaonline': 'LisansArenaOnline',
     'froxy_ai': 'FroxyOnline',
 }
@@ -893,7 +894,7 @@ def is_on_cooldown(grup_name, client_name, entity=None):
 
     legacy_mapping = {
         'FroxyOnline': ['Hesap #1', 'froxy_ai', 'c4hex'],
-        'KeyVadiOnline': ['Hesap #2', 'keyvadionline'],
+        'KeyVadiOnline': ['Hesap #2', 'keyvadionline', 'userrrrrrrrrra'],
         'LisansArenaOnline': ['Hesap #3', 'lisansarenaonline'],
     }
     my_aliases = set([client_name, client_name.lower()])
@@ -970,7 +971,7 @@ def get_account_aliases(client_name):
     if cname == 'FroxyOnline':
         aliases.update({'Hesap #1', 'froxy_ai', 'froxyonline', 'c4hex'})
     elif cname == 'KeyVadiOnline':
-        aliases.update({'Hesap #2', 'keyvadionline', 'keyvadidestek'})
+        aliases.update({'Hesap #2', 'keyvadionline', 'keyvadidestek', 'userrrrrrrrrra'})
     elif cname == 'LisansArenaOnline':
         aliases.update({'Hesap #3', 'lisansarenaonline'})
     return aliases
