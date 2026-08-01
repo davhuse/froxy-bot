@@ -956,15 +956,40 @@ def set_cooldown(grup_name, client_name, entity=None):
     cooldowns[key][client_name] = datetime.now().isoformat()
     save_cooldowns(cooldowns)
 
+def get_canonical_account_name(client_name):
+    name = str(client_name or '').strip().lower()
+    if 'lisans' in name or name in {'hesap #3', 'hesap #5', 'lisansarenaonline'}:
+        return 'LisansArenaOnline'
+    if 'froxy' in name or name in {'hesap #1', 'froxyonline', 'froxy_ai', 'c4hex'}:
+        return 'FroxyOnline'
+    return 'KeyVadiOnline'
+
+def get_account_aliases(client_name):
+    cname = get_canonical_account_name(client_name)
+    aliases = {cname, client_name, client_name.lower()}
+    if cname == 'FroxyOnline':
+        aliases.update({'Hesap #1', 'froxy_ai', 'froxyonline', 'c4hex'})
+    elif cname == 'KeyVadiOnline':
+        aliases.update({'Hesap #2', 'keyvadionline', 'keyvadidestek'})
+    elif cname == 'LisansArenaOnline':
+        aliases.update({'Hesap #3', 'lisansarenaonline'})
+    return aliases
+
 def save_last_blast_time(client_name):
-    """Hesabın son blast tamamlanma zamanını kaydeder"""
+    """Hesabın son blast tamamlanma zamanını kaydeder (tüm rumuzlar için)"""
     try:
         from datetime import datetime
+        cname = get_canonical_account_name(client_name)
         cooldowns = load_cooldowns()
-        cooldowns[f"__LAST_BLAST_TIME_{client_name}"] = datetime.now().isoformat()
+        now_str = datetime.now().isoformat()
+        for alias in get_account_aliases(client_name):
+            cooldowns[f"__LAST_BLAST_TIME_{alias}"] = now_str
         save_cooldowns(cooldowns)
-        fs_set_state(cooldowns=json.dumps(cooldowns, ensure_ascii=False, indent=2))
-        print(f"[{client_name}] 💾 Son blast zamanı kaydedildi: {datetime.now().isoformat()}")
+        try:
+            fs_set_state(cooldowns=json.dumps(cooldowns, ensure_ascii=False, indent=2))
+        except Exception:
+            pass
+        print(f"[{cname}] 💾 Son blast zamanı kaydedildi: {now_str}")
     except Exception as e:
         print(f"[{client_name}] ⚠️ Son blast zamanı kaydetme hatası: {e}")
 
@@ -972,32 +997,39 @@ def get_last_blast_remaining_wait(client_name, target_wait_seconds=3600):
     """Sunucu yeniden başlatıldığında hesabın kalan bekleme süresini hesaplar"""
     try:
         from datetime import datetime
+        cname = get_canonical_account_name(client_name)
         cooldowns = load_cooldowns()
-        val = cooldowns.get(f"__LAST_BLAST_TIME_{client_name}")
         
-        # Eğer yerel dosyada yoksa bulut Firestore'dan çekmeyi dene
-        if not val:
-            try:
-                _, _, _, _, fs_cooldowns, _ = fs_get_state()
-                if fs_cooldowns:
-                    c_dict = json.loads(fs_cooldowns)
-                    val = c_dict.get(f"__LAST_BLAST_TIME_{client_name}")
-            except Exception:
-                pass
+        fs_cdata = {}
+        try:
+            _, _, _, _, fs_cooldowns, _ = fs_get_state()
+            if fs_cooldowns:
+                fs_cdata = json.loads(fs_cooldowns)
+        except Exception:
+            pass
 
-        # Eğer son blast zamanı yoksa (yeni deploy), güvenlik için tam 1 saat bekle
-        if not val or not isinstance(val, str):
-            print(f"[{client_name}] 🛡️ Sunucu başlangıcı: Son blast zamanı kaydı yok, 60 dakika güvenlik beklemesi uygulanıyor.")
+        timestamps = []
+        for alias in get_account_aliases(client_name):
+            k = f"__LAST_BLAST_TIME_{alias}"
+            val = cooldowns.get(k) or fs_cdata.get(k)
+            if val and isinstance(val, str):
+                try:
+                    timestamps.append(datetime.fromisoformat(val))
+                except Exception:
+                    pass
+
+        if not timestamps:
+            print(f"[{cname}] 🛡️ Sunucu başlangıcı: Son blast kaydı bulunamadı, 60 dakika güvenlik beklemesi uygulanıyor.")
             return target_wait_seconds
 
-        last_dt = datetime.fromisoformat(val)
-        elapsed = (datetime.now() - last_dt).total_seconds()
+        latest_dt = max(timestamps)
+        elapsed = (datetime.now() - latest_dt).total_seconds()
         if elapsed < target_wait_seconds:
             rem = int(target_wait_seconds - elapsed)
-            print(f"[{client_name}] ⏳ Son blast {int(elapsed // 60)}dk önce yapılmış → Kalan {int(rem // 60)}dk ({rem}sn) bekleniyor.")
+            print(f"[{cname}] ⏳ Son blast {int(elapsed // 60)}dk önce yapılmış → Kalan {int(rem // 60)}dk ({rem}sn) bekleniyor.")
             return rem
         else:
-            print(f"[{client_name}] ✅ Son blast {int(elapsed // 60)}dk önce yapılmış (1 saat doldu), yeni blast zamanı geldi.")
+            print(f"[{cname}] ✅ Son blast {int(elapsed // 60)}dk önce yapılmış (1 saat doldu), yeni blast zamanı geldi.")
             return 0
     except Exception as e:
         print(f"[{client_name}] ⚠️ Kalan bekleme hesaplama hatası: {e}")

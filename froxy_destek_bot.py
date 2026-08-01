@@ -87,12 +87,18 @@ TEXTS = {
             "🌐 **Web Sitemiz:** https://froxy.online\n\n"
             "Lütfen incelemek veya satın almak istediğiniz ürünü seçin 👇"
         ),
-        "packages_btn": "💳 Kredi Paketleri & Satın Al",
+        "packages_btn": "👑 Üyelik Paketleri (Kredi)",
+        "ai_tools_btn": "🤖 Yapay Zeka Paketleri (AI Tools)",
         "support_btn": "📞 Canlı Destek & İletişim",
         "web_btn": "🌐 froxyai.com'u Ziyaret Et",
         "lang_btn": "🌐 Dil Seçimi / Language",
         "main_menu": "↩️ Ana Menü",
         "pkg_btn_list": [
+            ("🚀 Başlangıç (5K Kredi) — ₺129.99", "pkg_baslangic"),
+            ("⭐ Popüler (15K Kredi) — ₺249.99", "pkg_populer"),
+            ("💼 Profesyonel (50K Kredi) — ₺449.99", "pkg_profesyonel")
+        ],
+        "ai_btn_list": [
             ("🤖 Gemini Pro 12 Ay Davet (₺59.99)", "pkg_gemini_12m"),
             ("🤖 Gemini Pro 18 Ay Davet (₺99.99)", "pkg_gemini_18m"),
             ("🚀 Gemini Pro + Antigravity 12 Ay (₺169.99)", "pkg_gemini_anti_12m"),
@@ -168,7 +174,8 @@ TEXTS = {
             "🌐 **Our Website:** froxyai.com\n\n"
             "Please select the action you want to perform 👇"
         ),
-        "packages_btn": "💳 Credit Packages & Purchase",
+        "packages_btn": "👑 Membership Packages (Credits)",
+        "ai_tools_btn": "🤖 AI Tools & Packages",
         "support_btn": "📞 Live Support & Contact",
         "web_btn": "🌐 Visit froxyai.com",
         "lang_btn": "🌐 Language / Dil",
@@ -177,6 +184,13 @@ TEXTS = {
             ("🚀 Starter — 5K Credits ($3.99)", "pkg_baslangic"),
             ("⭐ Popular — 15K Credits ($7.99)", "pkg_populer"),
             ("💼 Professional — 50K Credits ($13.99)", "pkg_profesyonel")
+        ],
+        "ai_btn_list": [
+            ("🤖 Gemini Pro 12M Invite ($2.00)", "pkg_gemini_12m"),
+            ("🤖 Gemini Pro 18M Invite ($3.00)", "pkg_gemini_18m"),
+            ("💬 ChatGPT Plus Personal ($3.00)", "pkg_chatgpt_kisisel"),
+            ("💬 ChatGPT Plus Shared ($1.50)", "pkg_chatgpt_ortak"),
+            ("🔍 Perplexity Pro 1M Shared ($2.50)", "pkg_perplexity_ortak")
         ],
         "pkg_menu_title": "💳 **Froxy AI Credit Packages**\n\n"
                           "Access ChatGPT, Claude, Gemini, DeepSeek, and 1100+ AI models in all packages!\n"
@@ -263,6 +277,7 @@ async def show_main_menu(event, user_id, is_callback=False):
     
     buttons = [
         [Button.inline(t["packages_btn"], b"menu_packages")],
+        [Button.inline(t.get("ai_tools_btn", "🤖 Yapay Zeka Paketleri (AI Tools)"), b"menu_ai_tools")],
         [Button.inline("💳 Ödememi Doğrula / Verify Payment", b"menu_verify_payment")],
         [Button.inline("👥 Arkadaşını Davet Et / Invite Friends", b"menu_referral")],
         [Button.inline(t["support_btn"], b"menu_support")],
@@ -277,6 +292,10 @@ async def show_main_menu(event, user_id, is_callback=False):
 
 @bot.on(events.CallbackQuery(data=b'menu_verify_payment'))
 async def verify_payment_callback(event):
+    try:
+        await event.answer()
+    except:
+        pass
     user_id = event.sender_id
     user_states[user_id] = "AWAITING_VERIFY_PAYMENT_INFO"
     
@@ -382,6 +401,10 @@ async def main_menu_handler(event):
 
 @bot.on(events.CallbackQuery(data=b'menu_packages'))
 async def packages_menu_handler(event):
+    try:
+        await event.answer()
+    except:
+        pass
     user_id = event.sender_id
     lang = user_lang_helper.get_user_lang(user_id) or "tr"
     t = TEXTS[lang]
@@ -398,6 +421,24 @@ async def packages_menu_handler(event):
         f"💰 **Mevcut Krediniz:** `{credits} Kredi`\n\n"
         f"{t['pkg_menu_title']}"
     )
+    await event.edit(title_text, buttons=buttons)
+
+@bot.on(events.CallbackQuery(data=b'menu_ai_tools'))
+async def ai_tools_menu_handler(event):
+    try:
+        await event.answer()
+    except:
+        pass
+    user_id = event.sender_id
+    lang = user_lang_helper.get_user_lang(user_id) or "tr"
+    t = TEXTS[lang]
+
+    buttons = []
+    for label, pkg_key in t.get("ai_btn_list", []):
+        buttons.append([Button.inline(label, pkg_key.encode())])
+    buttons.append([Button.inline(t["main_menu"], b"menu_main")])
+
+    title_text = "🤖 **Yapay Zeka Paketleri (AI Tools)**\n\nSatın almak istediğiniz yapay zeka aracını seçin:" if lang == "tr" else "🤖 **AI Tools & Packages**\n\nSelect the AI tool you wish to purchase:"
     await event.edit(title_text, buttons=buttons)
 
 @bot.on(events.CallbackQuery(data=b'menu_referral'))
@@ -424,6 +465,10 @@ async def menu_referral_handler(event):
 # Package detail handler
 @bot.on(events.CallbackQuery(pattern=r'pkg_(\w+)'))
 async def pkg_select_handler(event):
+    try:
+        await event.answer()
+    except:
+        pass
     user_id = event.sender_id
     lang = user_lang_helper.get_user_lang(user_id) or "tr"
     t = TEXTS[lang]
@@ -431,9 +476,7 @@ async def pkg_select_handler(event):
     pkg_key = event.data.decode('utf-8').replace("pkg_", "")
     p_data = t["products"].get(pkg_key)
     if not p_data:
-        err_msg = "Paket bulunamadı!" if lang == "tr" else "Package not found!"
-        await event.answer(err_msg, alert=True)
-        return
+        p_data = {"title": pkg_key.replace("pkg_", "").replace("_", " ").title(), "price": "", "credits": "", "desc": "Harici ürün (Shopier sayfasından inceleyin)."}
 
     # Get Shopier link from config
     config = load_config() or {}
@@ -547,6 +590,7 @@ async def message_handler(event):
             f"💰 **Yeni Kredi Bakiyeniz:** {user_data['credits']} Kredi\n\n"
             f"Froxy AI'ı keyifle kullanın! 🤖"
         )
+        user_states[user_id] = None
         
         try:
             config = load_config() or {}
