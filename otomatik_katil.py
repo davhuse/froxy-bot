@@ -2192,16 +2192,18 @@ def report_client_error(slot, exc):
 BEKLENEN_HESAPLAR = {'FroxyOnline', 'KeyVadiOnline', 'LisansArenaOnline'}
 
 
-async def uyar_eksik_hesap(ayakta, active_clients):
-    """Beklenen reklam hesaplarindan biri baglanamadiysa admine Telegram'dan yaz.
+_last_eksik_alert_time = 0
 
-    Oturum oldugunde hesap sessizce dusuyordu ve loga bakmayan biri bunu
-    gunlerce fark etmiyordu.  Bildirimi ayakta kalan hesaplardan biriyle
-    gonderiyoruz; hicbiri yoksa gonderecek arac da kalmiyor.
-    """
+async def uyar_eksik_hesap(ayakta, active_clients):
+    global _last_eksik_alert_time
+    import time
     eksik = sorted(BEKLENEN_HESAPLAR - set(ayakta))
     if not eksik or not active_clients:
         return
+    # Throttle to once per 60 minutes max
+    if time.time() - _last_eksik_alert_time < 3600:
+        return
+    _last_eksik_alert_time = time.time()
     admin_id = None
     try:
         if os.path.exists("bot_config.json"):
@@ -2607,6 +2609,16 @@ async def main():
         # BLAST MODE: Tüm gruplara aynı anda mesaj at
         # ═══════════════════════════════════════════════════
         while True:
+            if os.path.exists("bot_config.json"):
+                try:
+                    with open("bot_config.json", "r", encoding="utf-8") as f:
+                        cfg_chk = json.load(f)
+                    if not cfg_chk.get("ad_bot_running", True):
+                        print(f"🛑 [{client_name}] Panelde Reklam Botu kapatıldı (ad_bot_running=False). Döngü sonlandırılıyor.")
+                        break
+                except Exception:
+                    pass
+
             if is_account_restricted(client_name, scope='send'):
                 state = account_restriction_status(client_name, scope='send')
                 print(f"[{client_name}] ⏸️ Hesap kısıtlaması aktif; {state.get('until', 'belirsiz')} tarihine kadar gönderim durdu.")

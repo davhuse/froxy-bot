@@ -557,10 +557,14 @@ def rebuild_categories(products):
     }
     
     for p in products:
-        title = p["title"]
-        pid = p["id"]
-        price = p["price"]
-        url = p["url"]
+        if not isinstance(p, dict):
+            continue
+        title = p.get("title", "")
+        pid = p.get("id", "")
+        if not pid or not title:
+            continue
+        price = p.get("price", "")
+        url = p.get("url", "")
         
         t = title.lower()
         
