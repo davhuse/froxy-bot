@@ -1,12 +1,25 @@
-🤖 FROXY AI — YENİ NESİL AI ARAÇLARI TEK PANELDE
+Birden fazla yapay zeka aracına para vermek yerine, hepsini tek panelden denemek ister misiniz?
 
-GPT-5.6, Claude Sonnet 5, Gemini 3.5 Flash, DeepSeek V4 ve görsel üretim modellerini tek üyelikte kullanın. Aynı soruyu farklı modellerde karşılaştırın, en iyi sonucu seçin.
+Froxy AI'da güncel GPT, Claude Sonnet 5, Gemini 3.5 Flash, DeepSeek V4 ve 1.100+ model aynı kredi sistemiyle çalışır.
 
-• Sohbet, kodlama, araştırma ve dosya analizi
-• Görsel üretim, reklam metni ve sosyal medya araçları
-• AI ajanları ve kredi bazlı şeffaf kullanım
+Neler yapabilirsiniz?
+✓ Kod yazdırma, hata analizi ve proje desteği
+✓ Makale, özet, çeviri ve araştırma
+✓ PDF, görsel ve dosya analizi
+✓ Reklam/sosyal medya metni ve görsel üretimi
+✓ Hazır AI ajanlarıyla daha hızlı iş akışları
 
-✓ ChatGPT Plus 30 Gün Kişisel: 250 TL | Ortak: 69.90 TL
+🛒 GÜNCEL ÜRÜN VE FİYAT LİSTESİ:
+• Gemini Pro (12 Ay Davet: 59.99₺ | 18 Ay Davet: 99.99₺)*
+• Gemini Pro + Antigravity (12 Ay: 169.99₺ | 18 Ay: 249.99₺)*
+• ChatGPT Plus (Kişisel: 99.99₺ | Ortak: 39.99₺ | + Codex: 199.99₺)**
+• Codex SMS Doğrulama Kodu: 29.99₺
+• Gemini Ultra (1 Ay Kredisiz: 299.99₺ | 2.5K Kredili: 399.99₺)*
+• ChatGPT Go (3 Aylık İndirim Kodu): 49.99₺
+• Perplexity Pro (Ortak: 69.99₺ | Özel Profil: 79.99₺)
 
-🎁 100 ücretsiz kredi · Paketler ₺129,99'dan başlıyor
-👉 Ücretsiz deneme: @FroxyDestekBOT
+*(Not: Tüm Gemini ürünlerinde maksimum 1 ay garanti mevcuttur.)
+**(Not: ChatGPT ürünlerinde garanti bulunmamaktadır.)
+
+⚡ 7/24 Anında Otomatik Teslimat
+Önce 100 ücretsiz krediyle dene: @FroxyDestekBOT
