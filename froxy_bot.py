@@ -616,9 +616,9 @@ def load_products_from_file_or_scrape():
         try:
             with open(catalog_path, "r", encoding="utf-8") as f:
                 catalog_products = json.load(f)
-            cached_ids = {p.get("id") for p in products}
+            cached_ids = {p.get("id") for p in products if p.get("id")}
             for catalog_product in catalog_products:
-                if catalog_product.get("id") not in cached_ids:
+                if catalog_product.get("id") and catalog_product.get("id") not in cached_ids:
                     products.append(catalog_product)
                     cached_ids.add(catalog_product.get("id"))
             logger.info(f"Merged {len(catalog_products)} products from {catalog_path}.")
@@ -626,9 +626,9 @@ def load_products_from_file_or_scrape():
             logger.error(f"Error reading authoritative Shopier catalog: {e}")
 
     # Merge injected products (hidden/delisted but still active)
-    existing_ids = {p["id"] for p in products}
+    existing_ids = {p.get("id") for p in products if p.get("id")}
     for ip in INJECTED_PRODUCTS:
-        if ip["id"] not in existing_ids:
+        if ip.get("id") and ip.get("id") not in existing_ids:
             products.append(ip)
             logger.info(f"Injected hidden product: {ip['title']}")
     

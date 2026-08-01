@@ -421,7 +421,10 @@ async def packages_menu_handler(event):
         f"💰 **Mevcut Krediniz:** `{credits} Kredi`\n\n"
         f"{t['pkg_menu_title']}"
     )
-    await event.edit(title_text, buttons=buttons)
+    try:
+        await event.edit(title_text, buttons=buttons)
+    except Exception:
+        pass
 
 @bot.on(events.CallbackQuery(data=b'menu_ai_tools'))
 async def ai_tools_menu_handler(event):
@@ -439,7 +442,10 @@ async def ai_tools_menu_handler(event):
     buttons.append([Button.inline(t["main_menu"], b"menu_main")])
 
     title_text = "🤖 **Yapay Zeka Paketleri (AI Tools)**\n\nSatın almak istediğiniz yapay zeka aracını seçin:" if lang == "tr" else "🤖 **AI Tools & Packages**\n\nSelect the AI tool you wish to purchase:"
-    await event.edit(title_text, buttons=buttons)
+    try:
+        await event.edit(title_text, buttons=buttons)
+    except Exception:
+        pass
 
 @bot.on(events.CallbackQuery(data=b'menu_referral'))
 async def menu_referral_handler(event):
@@ -492,10 +498,12 @@ async def pkg_select_handler(event):
     
     buttons = [
         [Button.url(t["buy_shopier"], shopier_url)],
-        [Button.url(t["buy_web"], "https://froxyai.com")],
         [Button.inline(t["back_to_pkgs"], b"menu_packages")]
     ]
-    await event.edit(text, buttons=buttons)
+    try:
+        await event.edit(text, buttons=buttons)
+    except Exception:
+        pass
 
 # Support Menu
 @bot.on(events.CallbackQuery(data=b'menu_support'))
