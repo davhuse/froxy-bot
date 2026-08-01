@@ -158,6 +158,10 @@ async def cancel_pending_join_request(client, client_name, joined_dialogs, group
 STATS_FILE = 'stats.json'
 AD_ACCOUNT_STATUS_FILE = 'ad_account_status.json'
 
+def utc_after_seconds_iso(seconds):
+    """Return a UTC timestamp without depending on worker-local imports."""
+    return (datetime.now(timezone.utc) + timedelta(seconds=seconds)).isoformat()
+
 def update_ad_account_status(client_name, **fields):
     """Persist a small, non-sensitive delivery heartbeat for the status page."""
     from datetime import datetime, timezone
@@ -2718,9 +2722,7 @@ async def main():
                             phase='waiting',
                             remaining_seconds=kalan_wait,
                             remaining_minutes=(kalan_wait + 59) // 60,
-                            next_blast_at=(
-                                datetime.now(timezone.utc) + timedelta(seconds=kalan_wait)
-                            ).isoformat(),
+                            next_blast_at=utc_after_seconds_iso(kalan_wait),
                         )
                         last_reported_at = waited_seconds
                     uyku = min(15, kalan_wait)
