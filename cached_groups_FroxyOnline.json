@@ -2,7 +2,14 @@
   {
     "username": "sultanbeyliikinciel0",
     "title": "SULTANBEYLİ İKİNCİ EL ALIM SATIM",
-    "members": 3650,
+    "members": 3647,
+    "broadcast": false,
+    "days_inactive": 0
+  },
+  {
+    "username": "-1001572316417",
+    "title": "Serbest Ticaret Grubu",
+    "members": 1569,
     "broadcast": false,
     "days_inactive": 0
   },
@@ -23,35 +30,42 @@
   {
     "username": "ReferansReklamYardimlasma",
     "title": "Referans Reklam ve Yardımlaşma",
-    "members": 1956,
+    "members": 1957,
+    "broadcast": false,
+    "days_inactive": 0
+  },
+  {
+    "username": "dolapilanlari",
+    "title": "Dolap İlan ve Satış Grubu",
+    "members": 775,
     "broadcast": false,
     "days_inactive": 0
   },
   {
     "username": "alimsatimmerkezii",
     "title": "LORD- - ALIM SATIM MERKEZI",
-    "members": 4776,
+    "members": 4777,
     "broadcast": false,
     "days_inactive": 0
   },
   {
     "username": "kuponsatisgrup",
     "title": "Kupon-Kod Satış Grubu",
-    "members": 2232,
+    "members": 2233,
     "broadcast": false,
     "days_inactive": 0
   },
   {
     "username": "tahaaslan11",
     "title": "CHAVØ ALIM SATIM CHAT",
-    "members": 2273,
+    "members": 2275,
     "broadcast": false,
     "days_inactive": 0
   },
   {
     "username": "ReklamOnliene",
     "title": "🔱☞ REFERANS ONLİNE ☜🔱",
-    "members": 3380,
+    "members": 3381,
     "broadcast": false,
     "days_inactive": 0
   },
@@ -84,13 +98,6 @@
     "days_inactive": 0
   },
   {
-    "username": "buradayiztikla",
-    "title": "DeepTurk | Topluluğu",
-    "members": 332,
-    "broadcast": false,
-    "days_inactive": 0
-  },
-  {
     "username": "zeroticaret",
     "title": "Zero | Ticaret Grubu",
     "members": 1001,
@@ -98,16 +105,23 @@
     "days_inactive": 0
   },
   {
-    "username": "ticaretgruptr",
-    "title": "TICARET GRUBU TR",
-    "members": 255,
+    "username": "takipcisatiyor",
+    "title": "İnstagram Tiktok Takipçi Satışı",
+    "members": 340,
+    "broadcast": false,
+    "days_inactive": 0
+  },
+  {
+    "username": "ttingalimsatim",
+    "title": "Tiktok Instagram hesap ve takipçi satış",
+    "members": 212,
     "broadcast": false,
     "days_inactive": 0
   },
   {
     "username": "sosyalmedyaalimsatimticaret",
     "title": "SOSYAL MEDYA ALIM , SATIM TİCARET",
-    "members": 1885,
+    "members": 1886,
     "broadcast": false,
     "days_inactive": 0
   },
@@ -126,16 +140,23 @@
     "days_inactive": 0
   },
   {
+    "username": "kuponceksatisi",
+    "title": "KUPON ÇEK KOD SATIŞI",
+    "members": 330,
+    "broadcast": false,
+    "days_inactive": 0
+  },
+  {
     "username": "freeteamxz",
     "title": "公益Team通知群",
-    "members": 108444,
+    "members": 108437,
     "broadcast": true,
     "days_inactive": 0
   },
   {
-    "username": "LisansArenaReferans",
-    "title": "LisansArena Referans Grubu",
-    "members": 1,
+    "username": "FroxyReferans",
+    "title": "Froxy Referans Grubu",
+    "members": 2,
     "broadcast": false,
     "days_inactive": 0
   }

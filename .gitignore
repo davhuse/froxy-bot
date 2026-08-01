@@ -19,7 +19,8 @@ verify_shopier_mapping.py
 check_live_shopier.py
 *.pid
 code_input_*.txt
-keyvadi_session_output.txt
+password_input_*.txt
+*_session_output.txt
 account_restrictions.json
 group_failures.json
 send_locks.json

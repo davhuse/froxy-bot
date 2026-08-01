@@ -1,4 +1,9 @@
-Birden fazla yapay zeka aracına para vermek yerine, hepsini tek panelden denemek ister misiniz?
+import glob
+import sys
+
+sys.stdout.reconfigure(encoding='utf-8')
+
+master_froxy_text = """Birden fazla yapay zeka aracına para vermek yerine, hepsini tek panelden denemek ister misiniz?
 
 Froxy AI'da güncel GPT, Claude Sonnet 5, Gemini 3.5 Flash, DeepSeek V4 ve 1.100+ model aynı kredi sistemiyle çalışır.
 
@@ -22,4 +27,13 @@ Neler yapabilirsiniz?
 **(Not: ChatGPT ürünlerinde garanti bulunmamaktadır.)
 
 ⚡ 7/24 Anında Otomatik Teslimat
-Önce 100 ücretsiz krediyle dene: @FroxyDestekBOT
+Önce 100 ücretsiz krediyle dene: @FroxyDestekBOT"""
+
+froxy_files = sorted(glob.glob("messages/froxy_*.txt"))
+
+for fpath in froxy_files:
+    with open(fpath, "w", encoding="utf-8") as fh:
+        fh.write(master_froxy_text)
+    print(f"✅ Updated Froxy Template: {fpath}")
+
+print("SUCCESS: Updated all Froxy message templates (Perplexity Special Profile removed)!")

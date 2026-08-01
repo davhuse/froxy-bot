@@ -1,0 +1,32 @@
+{
+  "LisansArenaOnline": {
+    "phase": "completed",
+    "target_groups": 49,
+    "sendable_groups": 13,
+    "blacklisted_groups": 2,
+    "not_joined_groups": 19,
+    "updated_at": "2026-07-30T15:54:27.652862+00:00",
+    "sent_count": 8,
+    "failed_count": 0
+  },
+  "FroxyOnline": {
+    "phase": "completed",
+    "target_groups": 53,
+    "sendable_groups": 13,
+    "blacklisted_groups": 8,
+    "not_joined_groups": 18,
+    "updated_at": "2026-07-30T15:53:53.868062+00:00",
+    "sent_count": 10,
+    "failed_count": 0
+  },
+  "KeyVadiOnline": {
+    "phase": "completed",
+    "target_groups": 11,
+    "sendable_groups": 11,
+    "blacklisted_groups": 0,
+    "not_joined_groups": 0,
+    "updated_at": "2026-07-30T15:53:24.144839+00:00",
+    "sent_count": 7,
+    "failed_count": 2
+  }
+}
