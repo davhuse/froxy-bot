@@ -2899,24 +2899,13 @@ async def main():
                 blacklist_keys.update(
                     group_state_keys(engelli, joined_dialogs.get(engelli)))
 
-            # Hedef gruplar: Korumalı / Onaylı grupların hepsi + Hesabın üye olduğu tüm gruplar (Referans kanalları hariç)
-            hedef_set = protected_groups.copy()
-            for g_key in joined_dialogs:
-                if g_key != "id" and not is_excluded_ad_target(g_key, joined_dialogs.get(g_key)):
-                    hedef_set.add(g_key)
-            hedef_set = {g for g in hedef_set if not is_excluded_ad_target(g, joined_dialogs.get(g.lower()))}
+            # All three accounts use only the user-approved target list.
+            hedef_set = {
+                g for g in protected_groups
+                if not is_excluded_ad_target(g, joined_dialogs.get(normalize_group_key(g)))
+            }
 
-            # KeyVadi, eski sabit 15-grup filtresi yerine yalnızca kullanıcı
-            # tarafından onaylanmış/korumalı hedeflere gönderir. Böylece hem
-            # yeni onaylı gruplar üç hesapta da çalışır hem de hesabın üye
-            # olduğu alakasız sohbetlere reklam gitmez.
-            if client_name.lower() in ["keyvadionline", "hesap #2"]:
-                hedef_set = {
-                    g for g in protected_groups
-                    if not is_excluded_ad_target(g, joined_dialogs.get(normalize_group_key(g)))
-                }
-
-            print(f"[{client_name}] 📌 Toplam Gönderim Hedefi (Üye olunan + Korumalı): {len(hedef_set)} grup")
+            print(f"[{client_name}] Approved send targets: {len(hedef_set)} groups")
             
             # Önbellekte olan + kara listede olmayan hedef gruplar
             blast_targets = []
