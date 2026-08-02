@@ -2308,6 +2308,23 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
 
         if not reply_text:
             return
+
+        # KeyVadi must never send an automatic reply wave into one customer's
+        # private chat. Persist one claim per customer so restarts or repeated
+        # incoming messages cannot create another automatic reply.
+        if is_keyvadi:
+            one_reply_claim_id = f"keyvadi_dm_first_reply_{sender_id}"
+            one_reply_claimed = await async_claim_document(one_reply_claim_id, {
+                "account": client_name,
+                "chat_id": int(event.chat_id),
+                "sender_id": int(sender_id),
+            })
+            if one_reply_claimed is not True:
+                print(
+                    f"[AutoReply] [{client_name}] @{getattr(sender, 'username', sender_id)} "
+                    "already received an automatic DM reply; suppressing duplicate."
+                )
+                return
             
         try:
             await event.reply(reply_text)
