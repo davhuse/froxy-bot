@@ -3141,6 +3141,9 @@ async def main():
                             print(f"[{client_name}] ✅ @{grup_name} → Gönderildi! ({sent_count+1}) [Şablon: {chosen_name}]")
                             
                         sent_count += 1
+                        # Keep the restart-safe wait anchored to the most
+                        # recent accepted Telegram message, not blast start.
+                        save_last_blast_time(client_name)
                         # Only mark the group after Telegram accepted the message.
                         set_cooldown(grup_name, client_name, entity)
                         sent_this_cycle.add(group_key)
