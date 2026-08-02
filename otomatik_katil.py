@@ -230,6 +230,7 @@ EXCLUDED_REFERENCE_CHAT_IDS = {3982754573, 4401324614, 4316589940}
 # eziliyor, dolayisiyla dosyaya yazilan haric tutmalar kalici olmuyor.
 # Buradaki kayitlara hicbir senkron dokunamaz.
 MANUALLY_EXCLUDED_AD_GROUPS = {
+    "kuponceksatisi",
     "kuponkodalsat",
     "reklamreferans",
     "ticar4t",
