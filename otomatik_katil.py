@@ -42,7 +42,6 @@ gruplar = [
     "zeroticaret",
     "tahaaslan11",
     "alimsatimmerkezii",
-    "reklamreferans",
     "sosyalmedyaalimsatimticaret",
     "kuponsatisgrup",
     "kuponcekkodsatis",
@@ -52,7 +51,6 @@ gruplar = [
     "letgoilanlari",
     "-1001572316417",  # Serbest Ticaret Grubu (1515 üye)
     "-3608209943",     # DERGAH (1582 üye)
-    "ticar4t",
     "kuponhesapsatis",
     "kuponvekodsatisgrubu",
     "indirimkodusatis",
@@ -232,6 +230,11 @@ EXCLUDED_REFERENCE_CHAT_IDS = {3982754573, 4401324614, 4316589940}
 # eziliyor, dolayisiyla dosyaya yazilan haric tutmalar kalici olmuyor.
 # Buradaki kayitlara hicbir senkron dokunamaz.
 MANUALLY_EXCLUDED_AD_GROUPS = {
+    "kuponkodalsat",
+    "reklamreferans",
+    "ticar4t",
+    "ticaretyapreklam",
+    "ticaretguvenilir",
     "kuponceksatis",
     "ticaretforumofficial",
     "illegalalimsatimerkezi",
