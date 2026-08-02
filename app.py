@@ -96,6 +96,12 @@ LISANSARENA_LOG_FILE = "lisansarena_bot_log.txt"
 MESSAGE_FILE = "message.txt"
 CONFIG_FILE = "bot_config.json"
 
+
+def bot_runtime_enabled():
+    """Allow a Render service to host the dashboard/assets without running bots."""
+    value = os.environ.get("BOT_RUNTIME_ENABLED", "true").strip().lower()
+    return value not in {"0", "false", "no", "off"}
+
 def update_config_state(key, value):
     if not os.path.exists(CONFIG_FILE):
         return
@@ -160,6 +166,9 @@ def kill_process_by_script(script_name):
 # WATCHDOG SYSTEM: Keeps both bots running 24/7 unconditionally
 def bot_watchdog():
     global ad_process, support_process, froxy_process, lisansarena_process
+    if not bot_runtime_enabled():
+        print("[Watchdog] BOT_RUNTIME_ENABLED=false; Telegram processes will not be started.")
+        return
     print("🛡️ [Watchdog] Bot takip sistemi başlatıldı. Botlar her 15 saniyede bir denetlenecek.")
     time.sleep(30) # Give the web server 30 seconds to bind and report healthy first
     
@@ -376,6 +385,7 @@ def status():
         ad_accounts = {}
     return jsonify({
         "status": "running" if ad_processes else "stopped",
+        "bot_runtime_enabled": bot_runtime_enabled(),
         "build": os.environ.get("RENDER_GIT_COMMIT", "unknown")[:12],
         "instance": socket.gethostname(),
         "ad_processes": len(ad_processes),
@@ -461,6 +471,8 @@ def stats():
 
 @app.route('/api/start', methods=['POST'])
 def start():
+    if not bot_runtime_enabled():
+        return jsonify({"success": False, "message": "Bu serviste Telegram bot çalışma zamanı kapalı."}), 409
     if get_process_by_script('otomatik_katil.py') is not None:
         return jsonify({"success": False, "message": "Reklam botu zaten çalışıyor!"})
     
@@ -537,6 +549,8 @@ def support_status():
 
 @app.route('/api/support/start', methods=['POST'])
 def support_start():
+    if not bot_runtime_enabled():
+        return jsonify({"success": False, "message": "Bu serviste Telegram bot çalışma zamanı kapalı."}), 409
     if get_process_by_script('froxy_bot.py') is not None:
         return jsonify({"success": False, "message": "Destek botu zaten çalışıyor!"})
     
@@ -612,6 +626,8 @@ def froxy_status():
 
 @app.route('/api/froxy/start', methods=['POST'])
 def froxy_start():
+    if not bot_runtime_enabled():
+        return jsonify({"success": False, "message": "Bu serviste Telegram bot çalışma zamanı kapalı."}), 409
     if get_process_by_script('froxy_destek_bot.py') is not None:
         return jsonify({"success": False, "message": "Froxy AI botu zaten çalışıyor!"})
     
@@ -722,6 +738,8 @@ def lisansarena_status():
 
 @app.route('/api/lisansarena/start', methods=['POST'])
 def lisansarena_start():
+    if not bot_runtime_enabled():
+        return jsonify({"success": False, "message": "Bu serviste Telegram bot çalışma zamanı kapalı."}), 409
     if get_process_by_script('lisansarena_bot.py') is not None:
         return jsonify({"success": False, "message": "LisansArena botu zaten çalışıyor!"})
         
@@ -1471,9 +1489,12 @@ def start_background_threads():
     with _started_lock:
         if not _bg_threads_started:
             _bg_threads_started = True
-            print("🚀 [App] Starting background bot watchdog & keep-alive threads...")
-            t = threading.Thread(target=bot_watchdog, daemon=True)
-            t.start()
+            if bot_runtime_enabled():
+                print("🚀 [App] Starting background bot watchdog & keep-alive threads...")
+                t = threading.Thread(target=bot_watchdog, daemon=True)
+                t.start()
+            else:
+                print("🌐 [App] Web/static-only mode; Telegram watchdog is disabled.")
             ka = threading.Thread(target=keep_alive, daemon=True)
             ka.start()
 
@@ -1482,4 +1503,3 @@ start_background_threads()
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
-

@@ -41,7 +41,6 @@ gruplar = [
     "kuponindirimsatis",
     "zeroticaret",
     "tahaaslan11",
-    "casinox_grup",
     "alimsatimmerkezii",
     "reklamreferans",
     "sosyalmedyaalimsatimticaret",
@@ -118,6 +117,10 @@ GROUPS_TO_LEAVE = {
     "reklamvereferanss",
     "sanalalimsatimticaret",
     "nightsatis",
+    # Hedef kitleyle ilgisiz veya marka riski taşıyan eski keşifler.
+    "casinox_grup",
+    "turkiyevozolsigarasatis",
+    "gurcistanticaret",
 }
 
 def normalize_group_key(grup_name):
@@ -247,6 +250,10 @@ MANUALLY_EXCLUDED_AD_GROUPS = {
     "kuponsatimalim",
     "nightsatis",
     "-1003336542169",
+    # Satış odağıyla ilgisiz ve marka açısından riskli gruplar.
+    "casinox_grup",
+    "turkiyevozolsigarasatis",
+    "gurcistanticaret",
 }
 TICARET_FORUM_MAX_CHARS = 700
 TICARET_FORUM_FALLBACKS = {
@@ -2895,15 +2902,15 @@ async def main():
                     hedef_set.add(g_key)
             hedef_set = {g for g in hedef_set if not is_excluded_ad_target(g, joined_dialogs.get(g.lower()))}
 
-            # KeyVadiOnline target set (Original 13 + strictly indirim363 and kuponkodalimsatim)
+            # KeyVadi, eski sabit 15-grup filtresi yerine yalnızca kullanıcı
+            # tarafından onaylanmış/korumalı hedeflere gönderir. Böylece hem
+            # yeni onaylı gruplar üç hesapta da çalışır hem de hesabın üye
+            # olduğu alakasız sohbetlere reklam gitmez.
             if client_name.lower() in ["keyvadionline", "hesap #2"]:
-                keyvadi_allowed = {
-                    "ticaretguvenilir", "kuponsatimalim", "indirimkodusatis", "yucekuponsatis",
-                    "kuponindirimpazari", "sosyalmedyaalimsatimticaret", "nightsatis",
-                    "kuponindirimsatis", "kuponsatisgrup", "kuponhesapsatis", "kuponceking",
-                    "tahaaslan11", "alimsatimmerkezii", "indirim363", "kuponkodalimsatim"
+                hedef_set = {
+                    g for g in protected_groups
+                    if not is_excluded_ad_target(g, joined_dialogs.get(normalize_group_key(g)))
                 }
-                hedef_set = {g for g in hedef_set if normalize_group_key(g) in keyvadi_allowed}
 
             print(f"[{client_name}] 📌 Toplam Gönderim Hedefi (Üye olunan + Korumalı): {len(hedef_set)} grup")
             
