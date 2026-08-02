@@ -7,6 +7,7 @@ import re
 import requests
 import sys
 import shutil
+import time
 
 try:
     sys.stdout.reconfigure(encoding='utf-8')
@@ -1689,6 +1690,14 @@ async def async_set_document(doc_id, fields_dict):
     import firestore_helper
     return await loop.run_in_executor(None, firestore_helper.set_document, doc_id, fields_dict)
 
+async def async_claim_document(doc_id, fields_dict):
+    """Atomically claim a Telegram update across overlapping worker processes."""
+    loop = asyncio.get_event_loop()
+    import firestore_helper
+    return await loop.run_in_executor(
+        None, firestore_helper.claim_document, doc_id, fields_dict
+    )
+
 async def presence_watchdog(client):
     from telethon.tl.types import UserStatusOnline, UserStatusRecently
     import firestore_helper
@@ -2048,6 +2057,86 @@ def register_telegram_code_forwarder(client, client_name):
 PROCESSED_DM_MSG_IDS = set()
 USER_DM_LAST_REPLY_TIME = {}
 USER_DM_LAST_REPLY_TEXT = {}
+USER_DM_SALES_CONTEXT = {}
+SALES_FOLLOWUP_TTL_SECONDS = 15 * 60
+
+KEYVADI_REFERENCE_URL = "https://t.me/satisrefim/9615"
+
+def active_sales_context(user_key, now=None):
+    """Return a recent product conversation, expiring it after 15 minutes."""
+    now = time.time() if now is None else now
+    context = USER_DM_SALES_CONTEXT.get(user_key)
+    if not context:
+        return None
+    if context.get("expires_at", 0) <= now:
+        USER_DM_SALES_CONTEXT.pop(user_key, None)
+        return None
+    return context
+
+def remember_sales_context(user_key, products, now=None):
+    now = time.time() if now is None else now
+    USER_DM_SALES_CONTEXT[user_key] = {
+        "products": [dict(product) for product in products[:4]],
+        "expires_at": now + SALES_FOLLOWUP_TTL_SECONDS,
+    }
+
+def keyvadi_product_reply(product):
+    """Add verified trust details without changing any blast/ad template."""
+    return (
+        f"{product['url']}\n\n"
+        "🛡️ Ödeme Shopier üzerinden alınır.\n"
+        f"⭐ Müşteri referansları: {KEYVADI_REFERENCE_URL}\n"
+        "💬 Teslimat ve garanti koşulları ürün türüne göre değişebilir; "
+        "satın almadan önce bu sohbetten sorabilirsiniz."
+    )
+
+def sales_followup_reply(context, text):
+    """Answer only from catalog facts; route policy questions to a human."""
+    products = context.get("products") or []
+    if not products:
+        return None
+    product = products[0]
+    normalized = (text or "").strip().lower()
+    if any(term in normalized for term in (
+        "fiyat", "ücret", "kaç para", "ne kadar", "link", "shopier",
+        "nasıl al", "satın al", "ödeme"
+    )):
+        return (
+            f"📌 **{product.get('title', 'Ürün')}**\n"
+            f"💰 Fiyat: {product.get('price', 'Bilgi için yazın')}\n"
+            f"🛒 {product.get('url', '')}"
+        )
+    return (
+        f"📌 **{product.get('title', 'Ürün')}** için sorunuzu aldım.\n\n"
+        "Garanti, hesap değişikliği ve teslimat ayrıntıları ürün türüne göre "
+        "değişebilir. Yanlış bilgi vermemek için satıcı bu sohbetten net "
+        "olarak yanıtlayacak."
+    )
+
+async def claim_dm_reply_event(client_name, chat_id, msg_id):
+    """Return False when this exact incoming DM is already being processed."""
+    if not msg_id:
+        return True
+    dedupe_key = (client_name, chat_id, msg_id)
+    if dedupe_key in PROCESSED_DM_MSG_IDS:
+        return False
+    if len(PROCESSED_DM_MSG_IDS) >= 5000:
+        PROCESSED_DM_MSG_IDS.clear()
+    # No await before this add: concurrent handlers in this process cannot both
+    # pass the check above.
+    PROCESSED_DM_MSG_IDS.add(dedupe_key)
+    claim_id = re.sub(
+        r'[^a-zA-Z0-9_-]+', '_',
+        f"dm_reply_{client_name}_{chat_id}_{msg_id}"
+    )
+    claimed = await async_claim_document(claim_id, {
+        "account": client_name,
+        "chat_id": int(chat_id),
+        "message_id": int(msg_id),
+    })
+    # None means Firestore was temporarily unavailable. The local claim still
+    # protects the normal single-worker runtime, so do not drop a sales lead.
+    return claimed is not False
 
 def register_auto_reply_handler(client, client_name, our_user_ids):
     @client.on(events.NewMessage(incoming=True))
@@ -2062,7 +2151,7 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         sender_id = sender.id
         msg_id = getattr(event.message, 'id', None)
 
-        # 1. Message ID Deduplication Check
+        # 1. Fast Message ID Deduplication Check
         dedupe_key = (client_name, event.chat_id, msg_id)
         if msg_id and dedupe_key in PROCESSED_DM_MSG_IDS:
             return
@@ -2079,14 +2168,28 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         if sender_id in our_user_ids:
             return
 
+        # Claim the update before product matching or AI work. Previously the
+        # message was added to PROCESSED_DM_MSG_IDS only after event.reply(). If
+        # Telethon delivered the same update twice while the first handler was
+        # still working (or two Render workers briefly overlapped), both paths
+        # could send the same Shopier link. The in-memory claim closes the local
+        # race; Firestore's create-only claim closes the cross-process race.
+        if not await claim_dm_reply_event(client_name, event.chat_id, msg_id):
+            print(
+                f"⏭️ [{client_name}] Aynı DM olayı daha önce işlendi; "
+                f"mükerrer ürün linki engellendi ({event.chat_id}/{msg_id})."
+            )
+            return
+
         user_key = (client_name, sender_id)
 
         # 3. Per-User Rate Limiter (15 seconds Cooldown for ALL senders)
-        import time
         now = time.time()
+        sales_context = active_sales_context(user_key, now)
         if user_key in USER_DM_LAST_REPLY_TIME:
-            if now - USER_DM_LAST_REPLY_TIME[user_key] < 15:
-                print(f"⏳ [{client_name}] @{getattr(sender, 'username', sender_id)} 15sn cooldown içinde, mükerrer mesaj yoksayıldı.")
+            reply_cooldown = 2 if sales_context else 15
+            if now - USER_DM_LAST_REPLY_TIME[user_key] < reply_cooldown:
+                print(f"⏳ [{client_name}] @{getattr(sender, 'username', sender_id)} {reply_cooldown}sn cooldown içinde, mükerrer mesaj yoksayıldı.")
                 return
 
         normalized_text = (event.raw_text or '').strip().lower()
@@ -2100,7 +2203,7 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         msg_text = (event.raw_text or "").strip().lower()
         if not msg_text:
             return
-        if is_obviously_non_sales_dm(event.raw_text):
+        if not sales_context and is_obviously_non_sales_dm(event.raw_text):
             print(f"[{client_name}] DM satış dışı görünüyor, otomatik yanıt atlandı.")
             return
 
@@ -2157,7 +2260,10 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         matched_desc = ""
         if matched_products:
             if len(matched_products) == 1:
-                reply_text = matched_products[0]['url']
+                reply_text = (
+                    keyvadi_product_reply(matched_products[0])
+                    if is_keyvadi else matched_products[0]['url']
+                )
                 matched_desc = matched_products[0]['title']
             else:
                 lines = ["🔍 **Aradığınız Ürünler:**\n"]
@@ -2165,6 +2271,9 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                     lines.append(f"• **{p['title']}** ({p['price']}):\n  👉 {p['url']}")
                 reply_text = "\n".join(lines)
                 matched_desc = ", ".join(p['title'] for p in matched_products)
+        elif sales_context:
+            reply_text = sales_followup_reply(sales_context, event.raw_text)
+            matched_desc = "Satış takip sorusu"
         else:
             # Yapay Zeka (AI) Yanıtlayıcı Devreye Girsin (OpenRouter / Pollinations)
             brand_name = "Froxy" if is_froxy else ("LisansArena" if is_lisansarena else "KeyVadi")
@@ -2181,12 +2290,10 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
             
         try:
             await event.reply(reply_text)
-            if msg_id:
-                PROCESSED_DM_MSG_IDS.add(dedupe_key)
-                if len(PROCESSED_DM_MSG_IDS) > 5000:
-                    PROCESSED_DM_MSG_IDS.clear()
             USER_DM_LAST_REPLY_TIME[user_key] = now
             USER_DM_LAST_REPLY_TEXT[user_key] = normalized_text
+            if matched_products:
+                remember_sales_context(user_key, matched_products, now)
             print(f"[{client_name}] ✉️ Özel mesaj otomatik yanıtlandı ({matched_desc}): @{sender.username or sender_id}")
         except Exception as e:
             print(f"[{client_name}] ⚠️ Özel mesaj otomatik yanıtlanırken hata: {e}")
