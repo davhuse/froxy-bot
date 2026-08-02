@@ -194,7 +194,7 @@ def update_stats(sent=0, discovered=0, blacklisted=0, active=0):
                 except:
                     pass
         
-        from datetime import datetime
+        from datetime import datetime, timezone
         today = datetime.now().strftime("%Y-%m-%d")
         
         if stats.get("last_reset") != today:
@@ -1022,10 +1022,10 @@ def get_account_aliases(client_name):
 def save_last_blast_time(client_name):
     """Hesabın son blast tamamlanma zamanını kaydeder (tüm rumuzlar için)"""
     try:
-        from datetime import datetime
+        from datetime import datetime, timezone
         cname = get_canonical_account_name(client_name)
         cooldowns = load_cooldowns()
-        now_str = datetime.now().isoformat()
+        now_str = datetime.now(timezone.utc).isoformat()
         for alias in get_account_aliases(client_name):
             cooldowns[f"__LAST_BLAST_TIME_{alias}"] = now_str
         save_cooldowns(cooldowns)
@@ -1040,7 +1040,7 @@ def save_last_blast_time(client_name):
 def get_last_blast_remaining_wait(client_name, target_wait_seconds=3600):
     """Sunucu yeniden başlatıldığında hesabın kalan bekleme süresini hesaplar"""
     try:
-        from datetime import datetime
+        from datetime import datetime, timezone
         cname = get_canonical_account_name(client_name)
         cooldowns = load_cooldowns()
         
@@ -1060,7 +1060,12 @@ def get_last_blast_remaining_wait(client_name, target_wait_seconds=3600):
             for val in (cooldowns.get(k), fs_cdata.get(k)):
                 if val and isinstance(val, str):
                     try:
-                        timestamps.append(datetime.fromisoformat(val))
+                        timestamp = datetime.fromisoformat(val)
+                        # Legacy values were written by Render without an
+                        # offset; Render uses UTC, so interpret them as UTC.
+                        if timestamp.tzinfo is None:
+                            timestamp = timestamp.replace(tzinfo=timezone.utc)
+                        timestamps.append(timestamp)
                     except Exception:
                         pass
 
@@ -1069,7 +1074,10 @@ def get_last_blast_remaining_wait(client_name, target_wait_seconds=3600):
             return target_wait_seconds
 
         latest_dt = max(timestamps)
-        elapsed = (datetime.now() - latest_dt).total_seconds()
+        elapsed = (datetime.now(timezone.utc) - latest_dt).total_seconds()
+        if elapsed < 0:
+            print(f"[{cname}] ⚠️ Future blast timestamp detected; applying a full safety wait.")
+            return target_wait_seconds
         if elapsed < target_wait_seconds:
             rem = int(target_wait_seconds - elapsed)
             print(f"[{cname}] ⏳ Son blast {int(elapsed // 60)}dk önce yapılmış → Kalan {int(rem // 60)}dk ({rem}sn) bekleniyor.")
