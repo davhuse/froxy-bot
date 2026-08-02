@@ -53,6 +53,10 @@ async def async_run_claim(doc_id, fields):
 PRODUCT_REPLY_COOLDOWN_SECONDS = 90
 PRODUCT_REPLY_COOLDOWNS = {}
 LAST_AI_REPLY_TIME = {}
+AUTO_REPLY_COOLDOWN_SECONDS = 300
+LAST_AUTO_REPLY_TIME = {}
+MESSAGE_BURST_DEBOUNCE_SECONDS = 1.5
+LATEST_USER_MESSAGE_IDS = {}
 
 def _product_reply_key(user_id, products=None, fallback_key=None):
     if products:
@@ -75,6 +79,12 @@ def is_product_reply_cooling_down(user_id, products=None, fallback_key=None):
 def mark_product_reply_sent(user_id, products=None, fallback_key=None):
     PRODUCT_REPLY_COOLDOWNS[_product_reply_key(user_id, products, fallback_key)] = time.monotonic() + PRODUCT_REPLY_COOLDOWN_SECONDS
 
+def is_auto_reply_cooling_down(user_id):
+    return time.monotonic() - LAST_AUTO_REPLY_TIME.get(user_id, 0) < AUTO_REPLY_COOLDOWN_SECONDS
+
+def mark_auto_reply_sent(user_id):
+    LAST_AUTO_REPLY_TIME[user_id] = time.monotonic()
+
 # Logging configuration
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -87,7 +97,16 @@ USER_EVENT_LOCKS = {}
 
 def serialize_user_events(handler):
     async def serialized(event, *args, **kwargs):
-        lock = USER_EVENT_LOCKS.setdefault(event.sender_id, asyncio.Lock())
+        user_id = event.sender_id
+        message_id = getattr(event.message, 'id', None)
+        text = getattr(event, 'text', None)
+        if user_id and message_id and text and not text.startswith('/'):
+            LATEST_USER_MESSAGE_IDS[user_id] = message_id
+            await asyncio.sleep(MESSAGE_BURST_DEBOUNCE_SECONDS)
+            if LATEST_USER_MESSAGE_IDS.get(user_id) != message_id:
+                logger.info("Ignoring superseded burst message for user %s (message %s)", user_id, message_id)
+                return
+        lock = USER_EVENT_LOCKS.setdefault(user_id, asyncio.Lock())
         async with lock:
             return await handler(event, *args, **kwargs)
     return serialized
@@ -1299,6 +1318,9 @@ async def message_handler(event):
         if not has_sales_intent(event.text):
             logger.info("Ignoring non-sales message: %r", event.text)
             return
+        if is_auto_reply_cooling_down(user_id):
+            logger.info("Suppressing automatic sales reply for user %s (global 5-minute cooldown)", user_id)
+            return
         matched_products = match_multiple_products_from_text(event.text)
         if matched_products:
             if is_product_reply_cooling_down(user_id, matched_products):
@@ -1343,6 +1365,7 @@ async def message_handler(event):
                 await async_release_event_claim(event, claim_scope)
                 raise
             mark_product_reply_sent(user_id, matched_products)
+            mark_auto_reply_sent(user_id)
             logger.info(f"Smart match for user {user_id}: '{event.text}' -> matched products successfully.")
             return
         else:
@@ -1384,6 +1407,7 @@ async def message_handler(event):
                     raise
                 LAST_AI_REPLY_TIME[user_id] = now
                 mark_product_reply_sent(user_id, fallback_key=fallback_key)
+                mark_auto_reply_sent(user_id)
                 logger.info(f"AI response for user {user_id}: '{event.text}'")
                 return
 
