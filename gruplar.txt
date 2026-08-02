@@ -29,3 +29,8 @@ kuponkodhesapilan
 kodkuponmarketi
 xalimsatiim
 satiskodtakasi
+kuponkodalimsatimm
+ceksatkupon
+kuponceksatisi
+wishx_2
+kuponkodalsat
