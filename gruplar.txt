@@ -1,4 +1,3 @@
-kuponceksatis
 kuponindirimsatis
 satcek
 kuponsat
