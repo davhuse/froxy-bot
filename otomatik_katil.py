@@ -2368,6 +2368,14 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         elif sales_context:
             reply_text = sales_followup_reply(sales_context, event.raw_text)
             matched_desc = "Satış takip sorusu"
+        elif is_lisansarena and has_explicit_sales_intent(event.raw_text):
+            # Katalog eslesmese bile LisansArena'da AI'nin Shopier URL'si
+            # uretmesine izin verme; satis sorusunu IBAN destek akisina aktar.
+            reply_text = (
+                "Shopier kullanılmadan satış yapıyoruz. Ürün ve ödeme bilgisi için "
+                "@LisansArenaBot'a, IBAN/dekont desteği için @LisansArenaAdmin'e yazabilirsiniz."
+            )
+            matched_desc = "LisansArena destek yönlendirmesi"
         else:
             # Yapay Zeka (AI) Yanıtlayıcı Devreye Girsin (OpenRouter / Pollinations)
             brand_name = "Froxy" if is_froxy else ("LisansArena" if is_lisansarena else "KeyVadi")
