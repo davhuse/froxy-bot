@@ -4,6 +4,7 @@ import random
 import os
 import json
 import re
+import unicodedata
 import requests
 import sys
 import shutil
@@ -482,6 +483,14 @@ EXPLICIT_SALES_INTENT_KEYWORDS = {
     "fiyat", "ücret", "tl", "kaç para", "ne kadar", "satın", "almak",
     "alacağım", "sipariş", "stok", "link", "shopier", "ödeme", "ödemek",
     "kampanya", "indirim", "var mı", "mevcut mu", "nasıl alırım", "satın al",
+}
+
+# LisansArena'da Shopier kullanilmiyor. Urun/odeme sorulari bu terimlerle
+# tespit edilip dogrudan destek akisina yonlendirilir.
+LISANSARENA_SUPPORT_TERMS = {
+    "temin", "nasil al", "nereden al", "hangi bot", "botta", "iban",
+    "dekont", "havale", "eft", "papara", "odeme yapt", "odeme yap",
+    "attim", "gonderdim", "gecmiyor", "gecersiz", "odemek", "satin",
 }
 
 NON_SALES_DM_PATTERNS = (
@@ -1719,6 +1728,15 @@ async def async_claim_document(doc_id, fields_dict):
         None, firestore_helper.claim_document, doc_id, fields_dict
     )
 
+def _ascii_fold(text):
+    """Turkce karakterleri sadeleştirerek sesli mesaj yazim hatalarini yakalar."""
+    value = unicodedata.normalize("NFKD", text or "")
+    return "".join(ch for ch in value if not unicodedata.combining(ch)).lower()
+
+def is_lisansarena_support_message(text):
+    normalized = _ascii_fold(text)
+    return bool(normalized) and any(term in normalized for term in LISANSARENA_SUPPORT_TERMS)
+
 async def presence_watchdog(client):
     from telethon.tl.types import UserStatusOnline, UserStatusRecently
     import firestore_helper
@@ -2079,6 +2097,7 @@ PROCESSED_DM_MSG_IDS = set()
 USER_DM_LAST_REPLY_TIME = {}
 USER_DM_LAST_REPLY_TEXT = {}
 USER_DM_SALES_CONTEXT = {}
+LISANSARENA_SUPPORT_NOTICE_TIME = {}
 SALES_FOLLOWUP_TTL_SECONDS = 15 * 60
 
 KEYVADI_REFERENCE_URL = "https://t.me/satisrefim/9615"
@@ -2229,6 +2248,48 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
             return
 
         is_keyvadi, is_lisansarena, is_froxy = account_flags(client_name)
+
+        # LisansArena odeme/IBAN sorularini Shopier'e cevirmeden destek ekibine
+        # aktar. Tekrarlanan mesajlarda hem musteriye hem admin'e dalga halinde
+        # mesaj gitmesini engellemek icin 15 dakikalik yerel bildirim kilidi var.
+        if is_lisansarena and is_lisansarena_support_message(event.raw_text):
+            support_notice_key = (client_name, sender_id)
+            last_notice = LISANSARENA_SUPPORT_NOTICE_TIME.get(support_notice_key, 0)
+            if now - last_notice >= SALES_FOLLOWUP_TTL_SECONDS:
+                admin_id = None
+                try:
+                    with open("bot_config.json", "r", encoding="utf-8-sig") as f_cfg:
+                        admin_id = json.load(f_cfg).get("admin_id")
+                except Exception:
+                    pass
+                if admin_id:
+                    admin_message = (
+                        "📩 **LisansArena ödeme/destek talebi**\n\n"
+                        f"Müşteri: @{getattr(sender, 'username', '') or sender_id}\n"
+                        f"ID: `{sender_id}`\n"
+                        f"Mesaj: {event.raw_text}\n\n"
+                        "Shopier kullanılmadan IBAN/dekont desteği gerekiyor."
+                    )
+                    try:
+                        await client.send_message(int(admin_id), admin_message)
+                        LISANSARENA_SUPPORT_NOTICE_TIME[support_notice_key] = now
+                    except Exception as exc:
+                        print(f"[{client_name}] LisansArena destek bildirimi gönderilemedi: {exc}")
+            if now - USER_DM_LAST_REPLY_TIME.get(user_key, 0) < SALES_FOLLOWUP_TTL_SECONDS:
+                print(f"[{client_name}] LisansArena destek yanıtı 15dk kilitli; tekrar mesaj atılmadı.")
+                return
+            reply_text = (
+                "Mesajınızı LisansArena destek ekibine ilettim. "
+                "IBAN ve dekont kontrolü için @LisansArenaAdmin sizinle ilgilenecek."
+            )
+            try:
+                await event.reply(reply_text)
+                USER_DM_LAST_REPLY_TIME[user_key] = now
+                USER_DM_LAST_REPLY_TEXT[user_key] = normalized_text
+                print(f"[{client_name}] LisansArena destek akışına yönlendirildi: @{getattr(sender, 'username', sender_id)}")
+            except Exception as exc:
+                print(f"[{client_name}] LisansArena destek yanıtı gönderilemedi: {exc}")
+            return
         
         products = []
         if is_lisansarena:
@@ -2283,14 +2344,26 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
             if len(matched_products) == 1:
                 reply_text = (
                     keyvadi_product_reply(matched_products[0])
-                    if is_keyvadi else matched_products[0]['url']
+                    if is_keyvadi else (
+                        "Ürün ve ödeme işlemleri Shopier kullanılmadan yürütülüyor. "
+                        "Ürünü almak için @LisansArenaBot üzerinden ilerleyebilir, "
+                        "IBAN/dekont desteği için @LisansArenaAdmin'e yazabilirsiniz."
+                        if is_lisansarena else matched_products[0]['url']
+                    )
                 )
                 matched_desc = matched_products[0]['title']
             else:
-                lines = ["🔍 **Aradığınız Ürünler:**\n"]
-                for p in matched_products[:5]:
-                    lines.append(f"• **{p['title']}** ({p['price']}):\n  👉 {p['url']}")
-                reply_text = "\n".join(lines)
+                if is_lisansarena:
+                    reply_text = (
+                        "Birden fazla ürün eşleşti. Shopier kullanılmadan satış için "
+                        "@LisansArenaBot'a yazabilirsiniz; IBAN/dekont desteğini "
+                        "@LisansArenaAdmin sağlıyor."
+                    )
+                else:
+                    lines = ["🔍 **Aradığınız Ürünler:**\n"]
+                    for p in matched_products[:5]:
+                        lines.append(f"• **{p['title']}** ({p['price']}):\n  👉 {p['url']}")
+                    reply_text = "\n".join(lines)
                 matched_desc = ", ".join(p['title'] for p in matched_products)
         elif sales_context:
             reply_text = sales_followup_reply(sales_context, event.raw_text)
