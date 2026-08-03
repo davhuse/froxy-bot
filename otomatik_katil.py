@@ -2598,11 +2598,22 @@ async def main():
         except Exception as e:
             report_client_error(3, e)
 
-    # Eski c4hex_session gibi yerel oturumlara geri donme. Yalnizca Render
-    # ortam degiskenleriyle tanimlanan ve asagida kimligi dogrulanan uc hesap
-    # reklam hesabi olabilir.
+    # Fallback to local session file if no string session is configured at all
     if not string_session_key and not string_session_key_2 and not string_session_key_3:
-        print("⚠️ Reklam oturumu tanımlı değil; eski yerel hesap kesinlikle kullanılmayacak.")
+        print("📂 Yerel oturum dosyası kullanılarak bağlanılıyor...")
+        try:
+            client1 = TelegramClient(SESSION_NAME, api_id, api_hash, timeout=20, connection_retries=-1, auto_reconnect=True, flood_sleep_threshold=5)
+            await client1.connect()
+            if await client1.is_user_authorized():
+                me = await client1.get_me()
+                active_clients.append((client1, "Yerel Hesap", {"id": me.id, "slot": None}))
+                print(f"✅ Yerel hesap yetkilendirildi. ID: {me.id}")
+            else:
+                print("❌ HATA: Yerel hesap yetkilendirilmemiş!")
+        except Exception as e:
+            print(f"❌ HATA: Yerel hesap bağlanırken hata oluştu: {type(e).__name__} - {e}")
+            import sys
+            sys.exit(1)
             
     # Resolve the actual username before starting any handlers. This prevents
     # stale sessions in old slots from becoming advertising accounts again.
