@@ -313,6 +313,81 @@ def is_spyforum_group(grup_name, entity=None):
     return False
 
 
+STRICT_MARKET_GROUPS = {
+    "kupongrupta": 25,
+    "satcek": 18,
+    "kuponceking": 18,
+}
+
+STRICT_GROUP_FORBIDDEN = {
+    # Kupon Kod Indirim Ilanlari kurallarinda acikca yasaklanan urun/icerikler.
+    "kupongrupta": (
+        "trendyol bakiye", "amazon bakiye", "hepsiburada bakiye", "domino",
+        "sahibinden hesap", "aliexpress hesap", "pubg hesap", "sms onay",
+        "sanal numara", "whatsapp hesap", "telegram hesap", "davet",
+        "bedava", "ücretsiz", "çalıntı", "klon", "metot", "taktik",
+        "espressolab", "d&r", "etstur",
+    ),
+    # Cek Satis kurallarinda Netflix/BluTV/Aliexpress, yemek indirimi ve
+    # hesap/SMS/WhatsApp/Telegram satisi yasak.
+    "satcek": (
+        "netflix", "blu tv", "blutv", "aliexpress", "trendyol bakiye",
+        "sahibinden", "getir", "sms onay", "sanal numara", "whatsapp hesap",
+        "telegram hesap", "yemeksepeti", "yemek indirimi",
+    ),
+    "kuponceking": (),
+}
+
+
+def sanitize_strict_market_message(msg, grup_name, is_keyvadi, is_lisansarena, is_froxy):
+    """Katı kupon gruplarının ilan kurallarına uygun kısa metin üretir."""
+    group_key = _normalize_group_identifier(grup_name)
+    max_lines = STRICT_MARKET_GROUPS.get(group_key)
+    if not max_lines:
+        return msg
+
+    folded = _ascii_fold(msg)
+    forbidden = STRICT_GROUP_FORBIDDEN.get(group_key, ())
+    if any(term in folded for term in forbidden):
+        # Yasakli urunu kelime oyunu ile gizlemek yerine ilani gonderme;
+        # urun adi/icerigi belirsiz bir ilana donusmesin.
+        brand = "KeyVadi" if is_keyvadi else ("LisansArena" if is_lisansarena else "Froxy AI")
+        msg = (
+            f"{brand} dijital urun ve lisans ilanı\n"
+            "Güncel ürün ve fiyat bilgisi için özel mesaj."
+        )
+
+    # Bu gruplarda link/@etiket, emoji, sohbet ve soru formatı siliniyor.
+    msg = re.sub(r"https?://\S+|t\.me/\S+|@[A-Za-z0-9_]+", "", msg)
+    msg = re.sub(r"(?i)\bAdobe\s+CC\b", "Adobe", msg)
+    msg = re.sub(r"[*_`~]", "", msg)
+    msg = "".join(ch for ch in msg if unicodedata.category(ch) not in {"So", "Sk", "Cs"})
+
+    lines = []
+    for raw_line in msg.splitlines():
+        line = re.sub(r"\s+", " ", raw_line).strip(" -•|:")
+        if not line or line.endswith("?") or line.lower().startswith(("soru:", "yorum:")):
+            continue
+        letters = [ch for ch in line if ch.isalpha()]
+        if letters and sum(ch.isupper() for ch in letters) / len(letters) > 0.75:
+            line = line.lower().capitalize()
+        lines.append(line)
+    lines = lines[:max_lines]
+    cleaned = "\n".join(lines).strip()
+    if not cleaned:
+        cleaned = "Dijital ürün ve lisans ilanı\nGüncel fiyat bilgisi için özel mesaj."
+    return cleaned
+
+
+def sanitize_global_ad_message(msg):
+    """Telegram grup moderasyonlarÄ±nda sorun Ã§Ä±karan sÃ¼sleri kaldÄ±r."""
+    msg = re.sub(r"(?i)\bAdobe\s+CC\b", "Adobe", msg or "")
+    return "".join(
+        ch for ch in msg
+        if unicodedata.category(ch) not in {"So", "Sk", "Cs"}
+    )
+
+
 def account_brand(client_name):
     name = (client_name or '').lower()
     if 'lisans' in name or name in {'hesap #3', 'hesap #5'}:
@@ -3195,6 +3270,10 @@ async def main():
                             # Grup filtresi "CC" ifadesini siliyor; yalnızca SpyForum'da
                             # urun adini Adobe olarak gonder.
                             msg = re.sub(r'(?i)\bAdobe\s+CC\b', 'Adobe', msg)
+                        msg = sanitize_global_ad_message(msg)
+                        msg = sanitize_strict_market_message(
+                            msg, grup_name, is_keyvadi, is_lisansarena, is_froxy
+                        )
                         
                         # Görsel/Banner gönderimi (Grup yetki kontrolleri ve hata toleransı eklendi)
                         if is_keyvadi:

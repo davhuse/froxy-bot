@@ -538,6 +538,26 @@ def get_full_logs():
     except Exception as e:
         return str(e), 500
 
+@app.route('/api/dm-logs', methods=['GET'])
+def get_dm_logs():
+    """Tum destek botlarindaki DM olaylarini tek akista gosterir."""
+    try:
+        limit = min(max(int(request.args.get('lines', 200)), 20), 2000)
+        markers = (
+            'New message from user', 'New Support', 'DM Alındı',
+            'Smart match for user', 'AI response for user',
+            'Ignoring non-sales message', 'Yeni Destek Talebi',
+        )
+        result = []
+        for log_path in (LOG_FILE, SUPPORT_LOG_FILE, FROXY_LOG_FILE, LISANSARENA_LOG_FILE):
+            if not os.path.exists(log_path):
+                continue
+            with open(log_path, 'r', encoding='utf-8', errors='replace') as f:
+                result.extend(line for line in f if any(marker in line for marker in markers))
+        return jsonify({"logs": result[-limit:]})
+    except Exception as e:
+        return jsonify({"logs": [f"DM log okuma hatasi: {str(e)}"]})
+
 # ==========================================
 # DESTEK/SATIŞ BOTU (SUPPORT BOT) API ENDPOINTS
 # ==========================================

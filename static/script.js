@@ -637,6 +637,16 @@ async function fetchLogs() {
         } else {
             html = data.logs.map(line => colorizeLog(line)).join('');
         }
+
+        // Reklam gunlugunde destek hesaplarinin son DM akislarini da goster.
+        try {
+            const dmRes = await fetch('/api/dm-logs?lines=80');
+            const dmData = await dmRes.json();
+            if (dmData.logs && dmData.logs.length) {
+                html += '<p class="info">--- Son DM akislarÄ± ---</p>';
+                html += dmData.logs.map(line => colorizeLog(line)).join('');
+            }
+        } catch(e) {}
         
         const isScrolledToBottom = UI.terminal.scrollHeight - UI.terminal.clientHeight <= UI.terminal.scrollTop + 50;
         UI.terminal.innerHTML = html;
