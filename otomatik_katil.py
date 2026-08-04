@@ -339,12 +339,38 @@ STRICT_GROUP_FORBIDDEN = {
 }
 
 
+def strict_group_safe_copy(group_key, is_keyvadi, is_lisansarena, is_froxy):
+    """Kurallari kati kupon gruplari icin marka bazli, anlamli kisa ilan."""
+    if is_keyvadi:
+        return (
+            "KeyVadi dijital urun ilanı\n"
+            "Canva Pro, Adobe, YouTube Premium, Gemini Pro ve oyun kodlari.\n"
+            "Hizli teslimat ve guncel fiyat bilgisi icin ozel mesaj."
+        )
+    if is_lisansarena:
+        return (
+            "LisansArena dijital urun ilanı\n"
+            "Canva Pro, Adobe, Office, Windows ve YouTube Premium secenekleri.\n"
+            "Guncel fiyat ve teslimat bilgisi icin ozel mesaj."
+        )
+    return (
+        "Froxy AI otomasyon hizmeti\n"
+        "Isletmeler icin Telegram otomasyonu, teknik destek ve kurulum.\n"
+        "Detayli bilgi ve fiyat icin ozel mesaj."
+    )
+
+
 def sanitize_strict_market_message(msg, grup_name, is_keyvadi, is_lisansarena, is_froxy):
     """Katı kupon gruplarının ilan kurallarına uygun kısa metin üretir."""
     group_key = _normalize_group_identifier(grup_name)
     max_lines = STRICT_MARKET_GROUPS.get(group_key)
     if not max_lines:
         return msg
+
+    # Normal sablonlar emoji/link/uzun katalog icerdigi icin bu gruplarda
+    # moderasyona takiliyordu. Her marka kendi kisa ve kurala uygun ilaniyla
+    # gider; uc hesap ayni anlamsiz metni gondermez.
+    msg = strict_group_safe_copy(group_key, is_keyvadi, is_lisansarena, is_froxy)
 
     folded = _ascii_fold(msg)
     forbidden = STRICT_GROUP_FORBIDDEN.get(group_key, ())
