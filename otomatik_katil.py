@@ -340,24 +340,43 @@ STRICT_GROUP_FORBIDDEN = {
 
 
 def strict_group_safe_copy(group_key, is_keyvadi, is_lisansarena, is_froxy):
-    """Kurallari kati kupon gruplari icin marka bazli, anlamli kisa ilan."""
+    """Normal ilanlardan kisaltilmis, kurala uygun marka metni."""
+    is_satcek = group_key == "satcek"
     if is_keyvadi:
-        return (
-            "KeyVadi dijital urun ilanı\n"
-            "Canva Pro, Adobe, YouTube Premium, Gemini Pro ve oyun kodlari.\n"
-            "Hizli teslimat ve guncel fiyat bilgisi icin ozel mesaj."
-        )
+        lines = [
+            "KeyVadi dijital ürünler",
+            "Canva Pro 1 yıl 49,99 TL",
+            "Gemini Pro 3 ay 59,90 TL | 12 ay 69,99 TL",
+            "ChatGPT Plus kişisel 250 TL | ortak 69,90 TL",
+            "Adobe 1 hafta 49,99 TL | 1 ay 119,99 TL",
+            "Windows 10/11 Pro 70 TL | Office 365 1 yıl 70 TL",
+            "YouTube Premium 1 ay 30 TL | Steam oyun ürünleri mevcut",
+        ]
+        if not is_satcek:
+            lines.insert(4, "Netflix 4K kişisel profil 79,99 TL")
+        lines.append("Hızlı teslimat ve güncel fiyat bilgisi için özel mesaj.")
+        return "\n".join(lines)
     if is_lisansarena:
-        return (
-            "LisansArena dijital urun ilanı\n"
-            "Canva Pro, Adobe, Office, Windows ve YouTube Premium secenekleri.\n"
-            "Guncel fiyat ve teslimat bilgisi icin ozel mesaj."
-        )
-    return (
-        "Froxy AI otomasyon hizmeti\n"
-        "Isletmeler icin Telegram otomasyonu, teknik destek ve kurulum.\n"
-        "Detayli bilgi ve fiyat icin ozel mesaj."
-    )
+        lines = [
+            "LisansArena dijital ürünler",
+            "ChatGPT Plus kişisel 250 TL | ortak 69,90 TL",
+            "Gemini Pro 3 ay 59,90 TL | 12 ay 99,99 TL",
+            "Canva Pro 1 yıl 83,99 TL | Adobe 1 hafta 59,90 TL",
+            "Windows 10/11 Pro 70 TL | Office 365 1 yıl 70 TL",
+            "YouTube Premium 3 ay 47,24 TL | Spotify 4 ay 36,74 TL",
+            "Xbox Game Pass 3 ay 89,90 TL | Steam oyun 63 TL",
+        ]
+        if not is_satcek:
+            lines.insert(5, "Netflix 4K kişisel 94,49 TL | Prime Video 29,90 TL")
+        lines.append("Güncel fiyat ve teslimat bilgisi için özel mesaj.")
+        return "\n".join(lines)
+    return "\n".join([
+        "Froxy AI tek panel otomasyon hizmeti",
+        "GPT, Claude, Gemini ve DeepSeek modelleri",
+        "Görsel üretimi, dosya analizi ve teknik kurulum",
+        "Paketler 129,99 TL'den başlıyor",
+        "Detaylı bilgi ve fiyat için özel mesaj.",
+    ])
 
 
 def sanitize_strict_market_message(msg, grup_name, is_keyvadi, is_lisansarena, is_froxy):
