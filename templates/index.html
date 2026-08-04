@@ -19,6 +19,9 @@
                 <button class="tab-btn active" id="tabBtnReklam" onclick="switchTab('reklam')">
                     <i class="fa-solid fa-bullhorn"></i> Reklam Botu
                 </button>
+                <button class="tab-btn" id="tabBtnDm" onclick="switchTab('dm')">
+                    <i class="fa-solid fa-comments"></i> DM'ler
+                </button>
                 <button class="tab-btn" id="tabBtnDestek" onclick="switchTab('destek')">
                     <i class="fa-solid fa-headset"></i> Destek & Satış Botu
                 </button>
@@ -99,6 +102,22 @@
         </div>
 
         <!-- TAB 2: DESTEK & SATIŞ BOTU -->
+        <div id="tab-dm" class="tab-content">
+            <div class="controls-panel glass-panel">
+                <div class="bot-info-header">
+                    <h2><i class="fa-solid fa-comments"></i> Gelen DM Günlükleri</h2>
+                    <p style="color: rgba(255,255,255,0.7); margin-top: 5px;">Destek, Froxy AI ve LisansArena hesaplarına gelen özel mesajlar.</p>
+                </div>
+                <div class="control-actions">
+                    <button class="btn secondary" onclick="loadDMLogs()"><i class="fa-solid fa-rotate"></i> Yenile</button>
+                    <button class="btn danger" onclick="document.getElementById('dmTerminalOutput').innerHTML=''" ><i class="fa-solid fa-trash-can"></i> Temizle</button>
+                </div>
+            </div>
+            <div class="logs-section glass-panel" style="width: 100%; margin-top: 10px;">
+                <div class="terminal" id="dmTerminalOutput" style="height: 620px; width: 100%;"><p style="color:#666; text-align:center; margin-top:50px;">DM günlükleri yükleniyor...</p></div>
+            </div>
+        </div>
+
         <div id="tab-destek" class="tab-content">
             <div class="controls-panel glass-panel">
                 <div class="bot-info-header">

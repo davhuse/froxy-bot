@@ -21,6 +21,7 @@ const UI = {
     editor2: document.getElementById('messageEditor2'),
     editor3: document.getElementById('messageEditor3'),
     terminal: document.getElementById('terminalOutput'),
+    dmTerminal: document.getElementById('dmTerminalOutput'),
     
     // Stats Elements
     statTotalGroups: document.getElementById('statTotalGroups'),
@@ -84,7 +85,9 @@ function switchTab(tabName) {
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
     document.getElementById('tab-' + tabName).classList.add('active');
     document.getElementById('tabBtn' + tabName.charAt(0).toUpperCase() + tabName.slice(1)).classList.add('active');
-    if (tabName === 'blacklist') {
+    if (tabName === 'dm') {
+        loadDMLogs();
+    } else if (tabName === 'blacklist') {
         loadBlacklist();
     } else if (tabName === 'scraper') {
         loadScraperConfig();
@@ -640,11 +643,11 @@ async function fetchLogs() {
 
         // Reklam gunlugunde destek hesaplarinin son DM akislarini da goster.
         try {
-            const dmRes = await fetch('/api/dm-logs?lines=80');
-            const dmData = await dmRes.json();
+            const dmRes = null; // DM akışı ayrı DM sekmesinde gösterilir.
+            const dmData = {logs: []};
             if (dmData.logs && dmData.logs.length) {
                 html += '<p class="info">--- Son DM akislarÄ± ---</p>';
-                html += dmData.logs.map(line => colorizeLog(line)).join('');
+                // DM günlükleri ayrı sekmede gösterilir.
             }
         } catch(e) {}
         
@@ -707,6 +710,21 @@ async function fetchLogs() {
             UI.lisansarenaTerminal.scrollTop = UI.lisansarenaTerminal.scrollHeight;
         }
     } catch(e) {}
+}
+
+async function loadDMLogs() {
+    if (!UI.dmTerminal) return;
+    try {
+        const res = await fetch('/api/dm-logs?lines=200');
+        const data = await res.json();
+        const logs = data.logs || [];
+        UI.dmTerminal.innerHTML = logs.length
+            ? logs.map(line => colorizeLog(line)).join('')
+            : '<p style="color: #666; text-align: center; margin-top: 50px;">Henüz DM günlüğü yok...</p>';
+        UI.dmTerminal.scrollTop = UI.dmTerminal.scrollHeight;
+    } catch (e) {
+        UI.dmTerminal.innerHTML = '<p class="error">DM günlükleri yüklenemedi.</p>';
+    }
 }
 
 async function fetchStats() {
