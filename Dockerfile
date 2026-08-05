@@ -15,6 +15,4 @@ COPY . .
 
 EXPOSE 5000
 
-# Render ana paneli varsayilan olarak app.py ile calisir. Railway'deki bagimsiz
-# servisler SERVICE_ENTRYPOINT ile kendi islem dosyasini secebilir.
-CMD ["sh", "-c", "python ${SERVICE_ENTRYPOINT:-app.py}"]
+CMD ["python", "app.py"]
