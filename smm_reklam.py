@@ -21,14 +21,28 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 log = logging.getLogger("smm-reklam")
 
 STATE_FILE = Path("smm_delivery_state.json")
+CONFIG_FILE = Path("bot_config.json")
 MIN_INTERVAL_SECONDS = 60 * 15  # En az 15 dakika
 app = Flask(__name__)
 status = {"state": "starting", "last_cycle": None, "last_error": None, "sent": 0}
 
 
-def groups_from_env():
-    raw = os.environ.get("SMM_TARGET_GROUPS", "")
-    return list(dict.fromkeys(item.strip().lstrip("@") for item in raw.split(",") if item.strip()))
+def load_bot_config():
+    try:
+        if CONFIG_FILE.exists():
+            return json.loads(CONFIG_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        pass
+    return {}
+
+
+def groups_from_env(cfg):
+    raw = os.environ.get("SMM_TARGET_GROUPS", "").strip() or cfg.get("smm_target_groups", "")
+    if isinstance(raw, list):
+        items = raw
+    else:
+        items = raw.split(",")
+    return list(dict.fromkeys(str(item).strip().lstrip("@") for item in items if str(item).strip()))
 
 
 def load_state():
@@ -52,13 +66,14 @@ async def run_publisher():
     api_hash = os.environ.get("TELEGRAM_API_HASH", "7ba4072dcf0a05a7ccf80e570866b6d8").strip()
 
     while True:
-        session = os.environ.get("SMM_STRING_SESSION", "").strip()
-        message = os.environ.get("SMM_MESSAGE", "").strip()
-        groups = groups_from_env()
+        cfg = load_bot_config()
+        session = os.environ.get("SMM_STRING_SESSION", "").strip() or cfg.get("smm_string_session", "").strip()
+        message = os.environ.get("SMM_MESSAGE", "").strip() or cfg.get("smm_message", "").strip()
+        groups = groups_from_env(cfg)
 
         if not session:
             status.update(state="configuration_error", last_error="SMM_STRING_SESSION degiskeni eksik")
-            log.warning("SMM_STRING_SESSION bekleniyor...")
+            log.warning("SMM_STRING_SESSION bekleniyor (Render Environment Variables veya bot_config.json)...")
             await asyncio.sleep(30)
             continue
 
@@ -84,8 +99,9 @@ async def run_publisher():
             log.info("SMM yayincisi basladi. Hedef grup sayisi: %d, Aralik: %d sn", len(groups), interval)
 
             while True:
-                current_groups = groups_from_env() or groups
-                current_message = os.environ.get("SMM_MESSAGE", "").strip() or message
+                cfg_loop = load_bot_config()
+                current_groups = groups_from_env(cfg_loop) or groups
+                current_message = os.environ.get("SMM_MESSAGE", "").strip() or cfg_loop.get("smm_message", "").strip() or message
 
                 delivery_state = load_state()
                 now = time.time()
