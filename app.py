@@ -10,6 +10,7 @@ except Exception:
 import json
 import threading
 import time
+import asyncio
 import psutil
 import socket
 
@@ -1346,13 +1347,14 @@ from telethon.errors import SessionPasswordNeededError
 telegram_logins = {}
 
 # Helper to run async functions safely in Flask threads
-def run_async_auth(coro):
+def run_async_auth(coro, loop=None):
     import asyncio
-    try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
+    if loop is None:
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     return loop.run_until_complete(coro)
 
 @app.route('/api/telegram/send-code', methods=['POST'])
@@ -1371,6 +1373,8 @@ def tg_send_code():
     except:
         return jsonify({"success": False, "message": "API ID geçersiz."})
         
+    auth_loop = asyncio.new_event_loop()
+
     async def _send():
         # Disconnect previous temporary client if exists
         if slot in telegram_logins:
@@ -1387,12 +1391,16 @@ def tg_send_code():
             "phone_code_hash": sent_code.phone_code_hash,
             "api_id": api_id_int,
             "api_hash": api_hash,
-            "slot": slot
+            "slot": slot,
+            # Telethon clients must be verified on the same event loop that
+            # opened their temporary connection. Flask may handle the next
+            # request on another thread, so keep this loop with the login.
+            "loop": auth_loop,
         }
         return True
 
     try:
-        run_async_auth(_send())
+        run_async_auth(_send(), auth_loop)
         return jsonify({"success": True, "message": "Doğrulama kodu gönderildi!"})
     except Exception as e:
         return jsonify({"success": False, "message": f"Kod gönderme hatası: {str(e)}"})
@@ -1419,13 +1427,15 @@ def tg_verify_code():
             return {"success": True, "requires_password": True}
             
     try:
-        res = run_async_auth(_verify())
+        res = run_async_auth(_verify(), state.get("loop"))
         if res.get("requires_password"):
             return jsonify({"success": True, "requires_password": True, "message": "İki adımlı doğrulama şifresi gerekli."})
             
         session_str = client.session.save()
-        run_async_auth(client.disconnect())
+        run_async_auth(client.disconnect(), state.get("loop"))
         telegram_logins.pop(slot, None)
+        if state.get("loop") and not state["loop"].is_closed():
+            state["loop"].close()
         
         # Save to single-tenant config (bot_config.json)
         if os.path.exists(CONFIG_FILE):
@@ -1469,10 +1479,12 @@ def tg_verify_password():
         await client.sign_in(password=password)
         
     try:
-        run_async_auth(_verify_pw())
+        run_async_auth(_verify_pw(), state.get("loop"))
         session_str = client.session.save()
-        run_async_auth(client.disconnect())
+        run_async_auth(client.disconnect(), state.get("loop"))
         telegram_logins.pop(slot, None)
+        if state.get("loop") and not state["loop"].is_closed():
+            state["loop"].close()
         
         if os.path.exists(CONFIG_FILE):
             with open(CONFIG_FILE, "r", encoding="utf-8") as f:
