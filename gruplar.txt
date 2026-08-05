@@ -27,3 +27,6 @@ kuponkodalimsatimm
 ceksatkupon
 wishx_2
 kuponindirimpazari
+zeroticaret
+indirim363
+ticaretgruptr
