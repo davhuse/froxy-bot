@@ -1357,6 +1357,13 @@ def run_async_auth(coro, loop=None):
     asyncio.set_event_loop(loop)
     return loop.run_until_complete(coro)
 
+
+async def disconnect_auth_client(client):
+    """Telethon disconnect may be sync or awaitable depending on its loop state."""
+    result = client.disconnect()
+    if hasattr(result, "__await__"):
+        await result
+
 @app.route('/api/telegram/send-code', methods=['POST'])
 def tg_send_code():
     data = request.json or {}
@@ -1432,7 +1439,7 @@ def tg_verify_code():
             return jsonify({"success": True, "requires_password": True, "message": "İki adımlı doğrulama şifresi gerekli."})
             
         session_str = client.session.save()
-        run_async_auth(client.disconnect(), state.get("loop"))
+        run_async_auth(disconnect_auth_client(client), state.get("loop"))
         telegram_logins.pop(slot, None)
         if state.get("loop") and not state["loop"].is_closed():
             state["loop"].close()
@@ -1481,7 +1488,7 @@ def tg_verify_password():
     try:
         run_async_auth(_verify_pw(), state.get("loop"))
         session_str = client.session.save()
-        run_async_auth(client.disconnect(), state.get("loop"))
+        run_async_auth(disconnect_auth_client(client), state.get("loop"))
         telegram_logins.pop(slot, None)
         if state.get("loop") and not state["loop"].is_closed():
             state["loop"].close()
