@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: froxy-bot-main
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+
+  - type: web
+    name: smm-reklam-bot
+    env: docker
+    dockerfilePath: ./smm-service/Dockerfile
+    dockerContext: ./smm-service
+    plan: free
