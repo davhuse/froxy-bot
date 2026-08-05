@@ -667,7 +667,6 @@ async def show_main_menu(event, user_id, is_callback=False):
             title = t["cat_title_mapping"].get(cat_key, cat["title"])
             buttons.append([Button.inline(title, f"cat_{cat_key}".encode())])
             
-    buttons.append([Button.inline("💳 Ödememi Doğrula / Verify Payment", b"menu_verify_payment")])
     buttons.append([Button.inline("👥 Arkadaşını Davet Et / Invite Friends", b"menu_referral")])
     buttons.append([Button.inline(t["support_btn"], b"menu_support")])
     buttons.append([Button.inline(t["lang_btn"], b"menu_lang")])
@@ -683,19 +682,9 @@ async def verify_payment_callback(event):
         await event.answer()
     except Exception:
         pass
-    user_id = event.sender_id
-    user_states[user_id] = "AWAITING_VERIFY_PAYMENT_INFO"
-    
-    text = (
-        "💳 **Shopier Ödeme Doğrulama**\n\n"
-        "Ödeme yaparken kullandığınız **E-posta** adresini veya **Telefon** numarasını yazıp bu sohbete gönderin. "
-        "Satın aldığınız ürünün lisans kodu saniyeler içinde otomatik olarak teslim edilecektir.\n\n"
-        "*(Vazgeçmek için /start yazabilirsiniz)*"
-    )
-    buttons = [
-        [Button.inline("↩️ Vazgeç ve Geri Dön", b"menu_main")]
-    ]
-    await safe_event_edit(event, text, buttons=buttons)
+    user_states[event.sender_id] = None
+    await event.answer("LisansArena ödemeleri yalnızca IBAN ve dekont ile alınır.", alert=True)
+    await show_main_menu(event, event.sender_id, is_callback=True)
 
 @bot.on(events.NewMessage(pattern='/start'))
 async def start_handler(event):
@@ -1019,7 +1008,13 @@ async def message_handler(event):
     if ban_data and ban_data.get("banned", False):
         return
 
+    # LisansArena Shopier doğrulama akışı kapatıldı; eski state'ler de IBAN'a yönlendirilir.
     if user_states.get(user_id) == "AWAITING_VERIFY_PAYMENT_INFO":
+        user_states[user_id] = None
+        await event.respond("LisansArena ödemeleri yalnızca IBAN ile alınır. Ürünü menüden seçip IBAN bilgileri veya dekont gönderme adımını kullanabilirsiniz.")
+        return
+
+    if False and user_states.get(user_id) == "AWAITING_VERIFY_PAYMENT_INFO":
         if event.text.startswith('/'):
             user_states[user_id] = None
             return
