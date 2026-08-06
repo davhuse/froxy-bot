@@ -204,7 +204,11 @@ def bot_watchdog():
                 try:
                     with open(CONFIG_FILE, "r", encoding="utf-8") as f:
                         cfg = json.load(f)
-                    ad_enabled = cfg.get("ad_bot_running", False)
+                    # Render is the sole live Telegram owner. A stale
+                    # repository config must not disable the three-account
+                    # advertising worker after a deploy; local runtime still
+                    # remains disabled by bot_runtime_enabled().
+                    ad_enabled = cfg.get("ad_bot_running", False) or bot_runtime_enabled()
                     support_enabled = cfg.get("support_bot_running", False)
                     token = cfg.get("bot_token", "")
                     if token and token != "YOUR_TELEGRAM_BOT_TOKEN":
