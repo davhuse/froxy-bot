@@ -9,6 +9,7 @@ import requests
 import sys
 import shutil
 import time
+import threading
 
 try:
     sys.stdout.reconfigure(encoding='utf-8')
@@ -502,6 +503,13 @@ GROUP_COOLDOWN_HOURS = 1  # Varsayılan: 1 saat ortak cooldown. Config'den ezile
 # Cooldown hesap bazli oldugu icin bu olmadan uc hesap ayni gruba saniyeler
 # icinde ust uste reklam birakiyordu.
 INTER_ACCOUNT_GAP_SECONDS = 60
+# All three live advertising accounts use the same restart-safe scheduler.
+# The last accepted blast is read from local state + Firestore and the next
+# blast is always exactly one hour later; per-account remaining minutes can
+# differ because each account finished its previous blast at a different time.
+BLAST_INTERVAL_SECONDS = 60 * 60
+BLAST_SCHEDULER_MODE = 'firestore_fixed_1h'
+COOLDOWN_IO_LOCK = threading.RLock()
 if os.path.exists("bot_config.json"):
     try:
         with open("bot_config.json", "r", encoding="utf-8") as f:
@@ -643,12 +651,13 @@ def is_obviously_non_sales_dm(text):
 
 # --- Grup Cooldown Sistemi ---
 def load_cooldowns():
-    if os.path.exists(COOLDOWN_FILE):
-        try:
-            with open(COOLDOWN_FILE, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except:
-            pass
+    with COOLDOWN_IO_LOCK:
+        if os.path.exists(COOLDOWN_FILE):
+            try:
+                with open(COOLDOWN_FILE, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except:
+                pass
     return {}
 
 def _atomik_json_yaz(path, data, **dump_kwargs):
@@ -678,7 +687,8 @@ def _atomik_json_yaz(path, data, **dump_kwargs):
 
 
 def save_cooldowns(data):
-    _atomik_json_yaz(COOLDOWN_FILE, data, indent=2)
+    with COOLDOWN_IO_LOCK:
+        _atomik_json_yaz(COOLDOWN_FILE, data, indent=2)
 
 def _numeric_chat_key(value):
     """'-1001693128625', '1693128625' -> '1693128625'.
@@ -1166,7 +1176,7 @@ def save_last_blast_time(client_name):
     except Exception as e:
         print(f"[{client_name}] ⚠️ Son blast zamanı kaydetme hatası: {e}")
 
-def get_last_blast_remaining_wait(client_name, target_wait_seconds=3600):
+def get_last_blast_remaining_wait(client_name, target_wait_seconds=BLAST_INTERVAL_SECONDS):
     """Sunucu yeniden başlatıldığında hesabın kalan bekleme süresini hesaplar"""
     try:
         from datetime import datetime, timezone
@@ -3118,9 +3128,12 @@ async def main():
 
             # Her blast turu öncesi son blast zamanına bak.
             # Son blast üzerinden 1 saat geçmediyse kalan süreyi bekle, 1 saat geçtiyse hemen başla.
-            rem_wait = get_last_blast_remaining_wait(client_name, target_wait_seconds=3600)
+            rem_wait = get_last_blast_remaining_wait(
+                client_name,
+                target_wait_seconds=BLAST_INTERVAL_SECONDS,
+            )
             if rem_wait > 0:
-                elapsed_min = (3600 - rem_wait) // 60
+                elapsed_min = (BLAST_INTERVAL_SECONDS - rem_wait) // 60
                 rem_min = rem_wait // 60
                 print(f"\n[{client_name}] ⏳ Son yayın {elapsed_min}dk önce tamamlanmış → Kalan {rem_min}dk ({rem_wait}sn) bekleniyor...")
                 kalan_wait = rem_wait
@@ -3733,7 +3746,9 @@ async def main():
                             blast_max = cfg.get("blast_wait_max", 3600)
                     except:
                         pass
-                bekleme = random.randint(blast_min, blast_max)
+                # Legacy blast_wait_min/max values must not create a second
+                # scheduler; all accounts follow the Firestore fixed 1h wait.
+                bekleme = BLAST_INTERVAL_SECONDS
                 print(f"\n[{client_name}] 🎉 Blast turu başarıyla tamamlandı ({grup_sayisi} grup) → Sonraki blast 60 dakika sonra gerçekleşecek.")
 
     # Migrate legacy group decisions before syncing Firestore, otherwise the
