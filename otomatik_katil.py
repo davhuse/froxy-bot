@@ -2452,20 +2452,13 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                         LISANSARENA_SUPPORT_NOTICE_TIME[support_notice_key] = now
                     except Exception as exc:
                         print(f"[{client_name}] LisansArena destek bildirimi gönderilemedi: {exc}")
-            if now - USER_DM_LAST_REPLY_TIME.get(user_key, 0) < SALES_FOLLOWUP_TTL_SECONDS:
-                print(f"[{client_name}] LisansArena destek yanıtı 15dk kilitli; tekrar mesaj atılmadı.")
-                return
-            reply_text = (
-                "Mesajınızı LisansArena destek ekibine ilettim. "
-                "IBAN ve dekont kontrolü için @LisansArenaAdmin sizinle ilgilenecek."
+            # The customer-facing Shopier/IBAN handoff was explicitly disabled.
+            # Keep the optional internal admin notice above, but never send the
+            # old "@LisansArenaAdmin" reply back to the customer.
+            print(
+                f"[{client_name}] LisansArena ödeme/destek otomatik müşteri yanıtı kapalı; "
+                f"yanıt gönderilmedi (@{getattr(sender, 'username', sender_id)})."
             )
-            try:
-                await event.reply(reply_text)
-                USER_DM_LAST_REPLY_TIME[user_key] = now
-                USER_DM_LAST_REPLY_TEXT[user_key] = normalized_text
-                print(f"[{client_name}] LisansArena destek akışına yönlendirildi: @{getattr(sender, 'username', sender_id)}")
-            except Exception as exc:
-                print(f"[{client_name}] LisansArena destek yanıtı gönderilemedi: {exc}")
             return
         
         products = []
@@ -2566,6 +2559,17 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
 
         if not reply_text:
             return
+
+        # Do not let an old product/AI template reintroduce the disabled
+        # Shopier/IBAN/Admin handoff under a different branch.
+        if is_lisansarena and reply_text:
+            blocked_payment_terms = ("shopier", "lisansarenaadmin", "iban", "dekont")
+            if any(term in reply_text.casefold() for term in blocked_payment_terms):
+                print(
+                    f"[{client_name}] LisansArena Shopier/IBAN otomatik yanıtı engellendi; "
+                    f"müşteriye mesaj gönderilmedi (@{getattr(sender, 'username', sender_id)})."
+                )
+                return
 
         lisansarena_reply_claim_id = None
         if is_lisansarena:
