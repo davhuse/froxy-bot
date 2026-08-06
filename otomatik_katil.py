@@ -1848,6 +1848,63 @@ async def async_claim_document(doc_id, fields_dict):
         None, firestore_helper.claim_document, doc_id, fields_dict
     )
 
+async def async_delete_document(doc_id):
+    """Delete a temporary distributed claim after Telegram rejected a send."""
+    loop = asyncio.get_event_loop()
+    import firestore_helper
+    return await loop.run_in_executor(None, firestore_helper.delete_document, doc_id)
+
+async def claim_lisansarena_auto_reply(client_name, sender_id, chat_id):
+    """Allow only one automatic DM reply per LisansArena customer.
+
+    Unlike the in-memory cooldown this survives restarts and arbitrates two
+    overlapping workers.  The claim is removed if the actual Telegram send
+    fails, so a transient network error does not consume the customer's one
+    reply.
+    """
+    safe_account = re.sub(r'[^a-zA-Z0-9_-]+', '_', str(client_name))
+    doc_id = f"lisansarena_auto_reply_{safe_account}_{int(sender_id)}"
+    result = await async_claim_document(doc_id, {
+        'account': client_name,
+        'sender_id': int(sender_id),
+        'chat_id': int(chat_id),
+        'created_at': datetime.now(timezone.utc).isoformat(),
+    })
+    if result is True:
+        return doc_id
+    if result is False:
+        print(f"[AutoReply] [{client_name}] {sender_id} için kalıcı tek-yanıt kilidi mevcut; tekrar atlanıyor.")
+    else:
+        print(f"[AutoReply] [{client_name}] dağıtık DM kilidi kullanılamıyor; güvenlik için yanıt atlanıyor.")
+    return None
+
+async def claim_distributed_group_send(grup_name, client_name, entity=None):
+    """Claim this account/group/hour in Firestore before touching Telegram.
+
+    The local JSON lock protects one worker; this create-only Firestore claim
+    protects overlapping Render instances and an accidentally running local
+    copy.  A Firestore outage fails closed so it cannot turn into a duplicate
+    blast.  The hour bucket also makes old claims self-expiring without a
+    cleanup job.
+    """
+    group_key = re.sub(r'[^a-zA-Z0-9_-]+', '_', cooldown_key(grup_name, entity))
+    account_key = re.sub(r'[^a-zA-Z0-9_-]+', '_', client_name)
+    hour_bucket = datetime.now(timezone.utc).strftime('%Y%m%d%H')
+    doc_id = f"blast_send_{account_key}_{group_key}_{hour_bucket}"
+    result = await async_claim_document(doc_id, {
+        'account': client_name,
+        'group': str(grup_name),
+        'bucket': hour_bucket,
+        'created_at': datetime.now(timezone.utc).isoformat(),
+    })
+    if result is True:
+        return doc_id
+    if result is False:
+        print(f"[{client_name}] 🔒 @{grup_name} dağıtık saatlik gönderim kilidinde, atlanıyor...")
+    else:
+        print(f"[{client_name}] ⚠️ Firestore gönderim kilidi kullanılamıyor; güvenlik için atlanıyor: @{grup_name}")
+    return None
+
 def _ascii_fold(text):
     """Turkce karakterleri sadeleştirerek sesli mesaj yazim hatalarini yakalar."""
     value = unicodedata.normalize("NFKD", text or "")
@@ -2510,6 +2567,14 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         if not reply_text:
             return
 
+        lisansarena_reply_claim_id = None
+        if is_lisansarena:
+            lisansarena_reply_claim_id = await claim_lisansarena_auto_reply(
+                client_name, sender_id, event.chat_id
+            )
+            if not lisansarena_reply_claim_id:
+                return
+
         # KeyVadi must never send an automatic reply wave into one customer's
         # private chat. Persist one claim per customer so restarts or repeated
         # incoming messages cannot create another automatic reply.
@@ -2535,6 +2600,8 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                 remember_sales_context(user_key, matched_products, now)
             print(f"[{client_name}] ✉️ Özel mesaj otomatik yanıtlandı ({matched_desc}): @{sender.username or sender_id}")
         except Exception as e:
+            if lisansarena_reply_claim_id:
+                await async_delete_document(lisansarena_reply_claim_id)
             print(f"[{client_name}] ⚠️ Özel mesaj otomatik yanıtlanırken hata: {e}")
 
 DEAD_SESSION_ERRORS = (
@@ -3267,6 +3334,8 @@ async def main():
                         return
 
                     lock_claimed = False
+                    distributed_claim_id = None
+                    telegram_accepted = False
                     async with state_lock:
                         if group_key in sent_this_cycle:
                             print(f"[{client_name}] ⏭️ @{grup_name} bu turda zaten gönderildi, atlanıyor...")
@@ -3278,6 +3347,17 @@ async def main():
                             print(f"[{client_name}] 🔒 @{grup_name} gönderim kilidinde, bu turda atlanıyor...")
                             return
                         lock_claimed = True
+
+                    # JSON locks are process-local.  Claim the same account /
+                    # group / UTC-hour in Firestore before sending so a
+                    # second Render instance cannot send a duplicate.
+                    distributed_claim_id = await claim_distributed_group_send(
+                        grup_name, client_name, entity
+                    )
+                    if not distributed_claim_id:
+                        async with state_lock:
+                            release_send_lock(grup_name, client_name, entity)
+                        return
 
                     retry_after = 0
                     try:
@@ -3353,20 +3433,24 @@ async def main():
                             try:
                                 if len(msg) <= 1024:
                                     await client.send_message(entity, msg, file=banner_file)
+                                    telegram_accepted = True
                                     chosen_name = os.path.basename(chosen_file) if available_files else "fallback"
                                     print(f"[{client_name}] 📸 @{grup_name} → Görselli Gönderildi! ({sent_count+1}) [Şablon: {chosen_name}]")
                                 else:
                                     # Karakter sınırı 1024'ü aşıyorsa görsel gönderme, sadece tek parça düz metin gönder
                                     await client.send_message(entity, msg)
+                                    telegram_accepted = True
                                     chosen_name = os.path.basename(chosen_file) if available_files else "fallback"
                                     print(f"[{client_name}] 📝 @{grup_name} → Karakter sınırı aşıldığı için görsel atlanarak Düz Metin Gönderildi! ({sent_count+1}) [Şablon: {chosen_name}]")
                             except Exception as media_err:
                                 print(f"[{client_name}] ⚠️ @{grup_name} grubuna görsel gönderilemedi ({media_err}). Düz metin olarak gönderiliyor...")
                                 await client.send_message(entity, msg)
+                                telegram_accepted = True
                                 chosen_name = os.path.basename(chosen_file) if available_files else "fallback"
                                 print(f"[{client_name}] ✅ @{grup_name} → Düz Metin Gönderildi! ({sent_count+1}) [Şablon: {chosen_name}]")
                         else:
                             await client.send_message(entity, msg)
+                            telegram_accepted = True
                             chosen_name = os.path.basename(chosen_file) if available_files else "fallback"
                             print(f"[{client_name}] ✅ @{grup_name} → Gönderildi! ({sent_count+1}) [Şablon: {chosen_name}]")
                             
@@ -3433,8 +3517,9 @@ async def main():
                             print(f"[{client_name}] ⚠️ @{grup_name} grubundan çıkılırken hata: {le}")
                     except SlowModeWaitError as sme:
                         wait_sec = getattr(sme, 'seconds', 0) or 0
-                        print(f"[{client_name}] 🐌 @{grup_name} → SlowMode aktif ({wait_sec}sn bekleme); geçici grup beklemesi yazıldı.")
-                        record_group_failure(grup_name, client_name, 'SlowModeWait', wait_sec, entity)
+                        retry_after = max(60, wait_sec + 30)
+                        print(f"[{client_name}] 🐌 @{grup_name} → SlowMode aktif ({wait_sec}sn bekleme); {retry_after}sn kilitleniyor.")
+                        record_group_failure(grup_name, client_name, 'SlowModeWait', retry_after, entity)
                     except Exception as e:
                         err_type = type(e).__name__
                         print(f"[{client_name}] ⚠️ @{grup_name} → {err_type} (atlanıyor)")
@@ -3443,6 +3528,10 @@ async def main():
                             await ensure_telegram_connection(client, client_name, force=True)
                         record_group_failure(grup_name, client_name, err_type, 300, entity)
                     finally:
+                        if distributed_claim_id and not telegram_accepted:
+                            # Telegram rejected the attempt; allow a later
+                            # retry after the recorded slow-mode/failure wait.
+                            await async_delete_document(distributed_claim_id)
                         if lock_claimed:
                             async with state_lock:
                                 release_send_lock(grup_name, client_name, entity)

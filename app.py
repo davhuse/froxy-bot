@@ -99,9 +99,26 @@ CONFIG_FILE = "bot_config.json"
 
 
 def bot_runtime_enabled():
-    """Allow a Render service to host the dashboard/assets without running bots."""
-    value = os.environ.get("BOT_RUNTIME_ENABLED", "true").strip().lower()
-    return value not in {"0", "false", "no", "off"}
+    """Run Telegram workers only from the configured owner platform.
+
+    The local Antigravity checkout is intentionally a dashboard/control
+    surface.  Starting the same Telegram sessions locally and on Render
+    causes AuthKeyDuplicatedError and duplicate replies.  A deployment can
+    opt in explicitly with BOT_RUNTIME_ENABLED=true; Render is the default
+    owner for production.
+    """
+    value = os.environ.get("BOT_RUNTIME_ENABLED", "").strip().lower()
+    if value in {"0", "false", "no", "off"}:
+        return False
+    if value in {"1", "true", "yes", "on"}:
+        return True
+
+    owner = os.environ.get("BOT_RUNTIME_OWNER", "render").strip().lower()
+    if owner != "render":
+        return False
+    # Render exposes RENDER=true.  Keep an explicit opt-in fallback for
+    # future Render runtimes without making local execution the default.
+    return os.environ.get("RENDER", "").strip().lower() == "true"
 
 def update_config_state(key, value):
     if not os.path.exists(CONFIG_FILE):
