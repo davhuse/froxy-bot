@@ -15,6 +15,15 @@ BOT_SCRIPTS = [
 
 processes = {}
 
+
+def render_runtime_enabled():
+    """Only Render may automatically own Telegram worker processes."""
+    owner = os.environ.get("BOT_RUNTIME_OWNER", "render").strip().lower()
+    enabled = os.environ.get("BOT_RUNTIME_ENABLED", "").strip().lower()
+    if enabled in {"0", "false", "no", "off"}:
+        return False
+    return owner == "render" and os.environ.get("RENDER", "").strip().lower() == "true"
+
 def get_running_cmdlines():
     running = {}
     for p in psutil.process_iter(['pid', 'name', 'cmdline']):
@@ -37,7 +46,7 @@ def start_bot(script, logfile):
     return p.pid
 
 def main():
-    if os.environ.get("RUN_LOCAL_TELEGRAM_BOTS") != "1":
+    if not render_runtime_enabled():
         print("Local Telegram watchdog disabled; Render is the only runtime.")
         return
 
