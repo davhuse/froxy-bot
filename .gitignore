@@ -29,3 +29,6 @@ blacklist_meta.json
 # baslatmasinda migration tekrar calisip kara listeyi bosaltiyor.
 # blacklist_migration_v2.done
 blacklist_legacy_backup_*.txt
+
+# Seven-day sales funnel runtime journal
+sales_metrics.jsonl

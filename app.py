@@ -13,6 +13,7 @@ import time
 import asyncio
 import psutil
 import socket
+from sales_metrics import record_event, summarize as summarize_sales
 
 base_dir = os.path.abspath(os.path.dirname(__file__))
 app = Flask(__name__, 
@@ -116,9 +117,14 @@ def bot_runtime_enabled():
     owner = os.environ.get("BOT_RUNTIME_OWNER", "render").strip().lower()
     if owner != "render":
         return False
-    # Render exposes RENDER=true.  Keep an explicit opt-in fallback for
-    # future Render runtimes without making local execution the default.
-    return os.environ.get("RENDER", "").strip().lower() == "true"
+    # Render normally exposes RENDER=true, but older services only expose one
+    # of the service URL/ID variables.  Accept those Render-only signals while
+    # keeping a local checkout disabled by default.
+    return bool(
+        os.environ.get("RENDER", "").strip().lower() == "true"
+        or os.environ.get("RENDER_SERVICE_ID", "").strip()
+        or os.environ.get("RENDER_EXTERNAL_URL", "").strip()
+    )
 
 def update_config_state(key, value):
     if not os.path.exists(CONFIG_FILE):
@@ -199,12 +205,20 @@ def bot_watchdog():
             ad_enabled = False
             support_enabled = False
             has_token = False
+            cfg = {}
             
             if os.path.exists(CONFIG_FILE):
                 try:
                     with open(CONFIG_FILE, "r", encoding="utf-8") as f:
                         cfg = json.load(f)
                     ad_enabled = cfg.get("ad_bot_running", False)
+                    # Production ownership is Render-only.  If the legacy
+                    # local config still has the old false flag, Render may
+                    # opt in through BOT_AD_ENABLED (true by default); local
+                    # watchdogs remain disabled by bot_runtime_enabled().
+                    render_ad_flag = os.environ.get("BOT_AD_ENABLED", "1").strip().lower()
+                    if bot_runtime_enabled() and render_ad_flag not in {"0", "false", "no", "off"}:
+                        ad_enabled = True
                     support_enabled = cfg.get("support_bot_running", False)
                     token = cfg.get("bot_token", "")
                     if token and token != "YOUR_TELEGRAM_BOT_TOKEN":
@@ -410,6 +424,7 @@ def status():
         "support_processes": len(get_processes_by_script('froxy_bot.py')),
         "froxy_support_processes": len(get_processes_by_script('froxy_destek_bot.py')),
         "lisansarena_processes": len(get_processes_by_script('lisansarena_bot.py')),
+        "sales_7d": summarize_sales(7),
         "ad_accounts": ad_accounts,
     })
 
@@ -486,6 +501,15 @@ def stats():
         "sent_messages": sent_count,
         "auto_discovered": auto_discovered
     })
+
+@app.route('/api/sales/summary', methods=['GET'])
+def sales_summary():
+    """Return the privacy-preserving funnel journal for the dashboard."""
+    try:
+        days = min(max(int(request.args.get('days', 7)), 1), 30)
+    except (TypeError, ValueError):
+        days = 7
+    return jsonify(summarize_sales(days))
 
 @app.route('/api/start', methods=['POST'])
 def start():
@@ -1339,6 +1363,17 @@ def shopier_callback():
                 "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             })
             firestore_helper.set_document(email_doc_id, email_doc)
+            try:
+                amount = float(str(total_amount).replace(',', '.'))
+            except (TypeError, ValueError):
+                amount = 0.0
+            record_event(
+                "shopier_order",
+                data.get("shop_slug") or data.get("shop") or "Shopier",
+                amount=amount,
+                product=product_name,
+                status="paid",
+            )
             
         if phone_clean:
             phone_doc_id = "order_phone_" + phone_clean

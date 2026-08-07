@@ -13,6 +13,8 @@ from telethon.sessions import StringSession
 import user_lang_helper
 import firestore_helper
 from gemini_helper import get_ai_response
+from sales_catalog import filter_keyvadi_products
+from sales_metrics import record_event
 from update_keyvadi_links_json import fetch_live_catalog, write_catalog_atomic
 
 # Async wrappers for firestore_helper to prevent event loop deadlocks/freezes
@@ -710,6 +712,7 @@ def load_products_from_file_or_scrape():
     
     # Invalid scraper satırlarını at, API/eski katalog fiyat biçimlerini düzelt.
     products = normalize_catalog_products(products)
+    products = filter_keyvadi_products(products)
 
     # Build flat product list for smart matching
     ALL_PRODUCTS_FLAT = list(products)
@@ -1136,6 +1139,7 @@ async def message_handler(event):
         return
     user_id = event.sender_id
     logger.info(f"New message from user {user_id}: '{event.text}'")
+    record_event("dm_received", "KeyVadi", source="telegram_private")
     
     ban_data = await async_get_document(f"keyvadi_ban_{user_id}")
     if ban_data and ban_data.get("banned", False):
@@ -1366,6 +1370,7 @@ async def message_handler(event):
                 raise
             mark_product_reply_sent(user_id, matched_products)
             mark_auto_reply_sent(user_id)
+            record_event("dm_reply_sent", "KeyVadi", source="telegram_private", product=matched_products[0].get('title', '') if matched_products else '')
             logger.info(f"Smart match for user {user_id}: '{event.text}' -> matched products successfully.")
             return
         else:
@@ -1377,6 +1382,7 @@ async def message_handler(event):
                         data = json.load(f)
                         for item in data:
                             products.append({'title': item.get('title'), 'price': item.get('price'), 'url': item.get('url')})
+                    products = filter_keyvadi_products(products)
                 except:
                     pass
             lang = user_lang_helper.get_user_lang(user_id) or "tr"
@@ -1408,6 +1414,7 @@ async def message_handler(event):
                 LAST_AI_REPLY_TIME[user_id] = now
                 mark_product_reply_sent(user_id, fallback_key=fallback_key)
                 mark_auto_reply_sent(user_id)
+                record_event("dm_reply_sent", "KeyVadi", source="telegram_private", product="AI")
                 logger.info(f"AI response for user {user_id}: '{event.text}'")
                 return
 

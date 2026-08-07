@@ -16,6 +16,8 @@ try:
 except Exception:
     pass
 from gemini_helper import get_ai_response, get_ad_variation
+from sales_catalog import filter_keyvadi_products
+from sales_metrics import record_event
 from telethon import TelegramClient, events
 from telethon.tl.functions.channels import JoinChannelRequest, LeaveChannelRequest
 from telethon.tl.functions.contacts import ResolveUsernameRequest, SearchRequest
@@ -2416,6 +2418,7 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
             return
 
         print(f"📥 [{client_name}] DM Alındı: GÖNDEREN={sender_id} (@{getattr(sender, 'username', '')}) MESAJ='{event.raw_text}'")
+        record_event("dm_received", client_name, source="telegram_private")
 
         msg_text = (event.raw_text or "").strip().lower()
         if not msg_text:
@@ -2503,6 +2506,7 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                             })
                 except:
                     pass
+            products = filter_keyvadi_products(products)
 
         matched_products = []
         if products:
@@ -2598,6 +2602,12 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
             
         try:
             await event.reply(reply_text)
+            record_event(
+                "dm_reply_sent",
+                client_name,
+                product=matched_desc[:160] if matched_desc else "",
+                source="telegram_private",
+            )
             USER_DM_LAST_REPLY_TIME[user_key] = now
             USER_DM_LAST_REPLY_TEXT[user_key] = normalized_text
             if matched_products:
@@ -3252,12 +3262,6 @@ async def main():
             
             print(f"[{client_name}] 📊 Hedef: {len(hedef_set)} | Gönderilecek: {len(blast_targets)} | Kara liste: {debug_blacklisted} | Küçük grup çıkar: {small_groups_skipped} | Üye değil: {debug_not_cached}")
 
-            # Deploy/restart turun ortasinda olursa tur-sonu kaydi yazilamaz.
-            # Gonderime baslamadan once bir guvenlik zamani yazmak, yeniden
-            # acilan servisin ayni gruplara bastan blast atmasini engeller.
-            if blast_targets:
-                save_last_blast_time(client_name)
-            
             update_ad_account_status(
                 client_name,
                 phase='sending' if blast_targets else 'idle',
@@ -3459,6 +3463,13 @@ async def main():
                             print(f"[{client_name}] ✅ @{grup_name} → Gönderildi! ({sent_count+1}) [Şablon: {chosen_name}]")
                             
                         sent_count += 1
+                        record_event(
+                            "ad_sent",
+                            client_name,
+                            group=normalize_group_key(grup_name),
+                            source="telegram_group",
+                            template=os.path.basename(chosen_file) if available_files else "fallback",
+                        )
                         # Keep the restart-safe wait anchored to the most
                         # recent accepted Telegram message, not blast start.
                         save_last_blast_time(client_name)
@@ -3472,6 +3483,7 @@ async def main():
                         async with state_lock:
                             save_to_list(grup_name, PROGRESS_FILE)
                     except FloodWaitError as e:
+                        record_event("ad_failed", client_name, group=normalize_group_key(grup_name), error=type(e).__name__)
                         set_account_restriction(client_name, e.seconds, 'Telegram FloodWait', type(e).__name__, scope='send')
                         if e.seconds <= 300 and retry_count < 2:
                             retry_after = e.seconds + 2
@@ -3485,11 +3497,13 @@ async def main():
                             print(f"[{client_name}] ⏳ FloodWait {e.seconds}sn; hesap duraklatıldı, grup kara listeye alınmadı.")
                             fail_count += 1
                     except (PeerFloodError, UserRestrictedError) as e:
+                        record_event("ad_failed", client_name, group=normalize_group_key(grup_name), error=type(e).__name__)
                         restriction_seconds = 48 * 60 * 60
                         set_account_restriction(client_name, restriction_seconds, 'Telegram hesap/spam kısıtlaması', type(e).__name__, scope='send')
                         print(f"[{client_name}] 🚫 Hesap kısıtlaması algılandı ({type(e).__name__}); 48 saat duraklatıldı.")
                         fail_count += 1
                     except UserBannedInChannelError:
+                        record_event("ad_failed", client_name, group=normalize_group_key(grup_name), error="UserBannedInChannelError")
                         print(f"[{client_name}] ❌ @{grup_name} → Banlandık! Kara listeye ekleniyor...")
                         fail_count += 1
                         async with state_lock:
@@ -3505,6 +3519,7 @@ async def main():
                         except Exception as le:
                             print(f"[{client_name}] ⚠️ @{grup_name} grubundan çıkılırken hata: {le}")
                     except ChatWriteForbiddenError:
+                        record_event("ad_failed", client_name, group=normalize_group_key(grup_name), error="ChatWriteForbiddenError")
                         print(f"[{client_name}] 🔒 @{grup_name} → Yazma izni yok! Kara listeye ekleniyor...")
                         fail_count += 1
                         async with state_lock:
@@ -3520,11 +3535,13 @@ async def main():
                         except Exception as le:
                             print(f"[{client_name}] ⚠️ @{grup_name} grubundan çıkılırken hata: {le}")
                     except SlowModeWaitError as sme:
+                        record_event("ad_failed", client_name, group=normalize_group_key(grup_name), error="SlowModeWaitError")
                         wait_sec = getattr(sme, 'seconds', 0) or 0
                         retry_after = max(60, wait_sec + 30)
                         print(f"[{client_name}] 🐌 @{grup_name} → SlowMode aktif ({wait_sec}sn bekleme); {retry_after}sn kilitleniyor.")
                         record_group_failure(grup_name, client_name, 'SlowModeWait', retry_after, entity)
                     except Exception as e:
+                        record_event("ad_failed", client_name, group=normalize_group_key(grup_name), error=type(e).__name__)
                         err_type = type(e).__name__
                         print(f"[{client_name}] ⚠️ @{grup_name} → {err_type} (atlanıyor)")
                         fail_count += 1
@@ -3714,10 +3731,6 @@ async def main():
             hour = tr_time.hour
             
             grup_sayisi = len(blast_targets) if blast_targets else 0
-            # Gece/gunduz ayrimindan once her tamamlanan turun kesin zamanini
-            # yaz. Onceki kod gece dalinda hic kaydetmedigi icin dongu beklemeden
-            # tekrar blast'a girebiliyordu.
-            save_last_blast_time(client_name)
             # Gece (02:00 - 07:59) saat başı (3600 sn), diğer saatlerde 30 dakikada bir (1800 sn)
             if 2 <= hour <= 7:
                 bekleme = 3600
