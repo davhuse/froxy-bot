@@ -3114,7 +3114,24 @@ async def main():
                 try:
                     with open("bot_config.json", "r", encoding="utf-8") as f:
                         cfg_chk = json.load(f)
-                    if not cfg_chk.get("ad_bot_running", True):
+                    # Render is the single production owner.  The checked-in
+                    # panel config may still carry the old local
+                    # ``ad_bot_running=false`` flag; do not let that stale
+                    # value immediately kill the Render worker.  An explicit
+                    # BOT_AD_ENABLED=false remains an emergency stop.
+                    is_render_runtime = bool(
+                        os.environ.get("RENDER")
+                        or os.environ.get("RENDER_SERVICE_ID")
+                        or os.environ.get("RENDER_EXTERNAL_URL")
+                    )
+                    render_ad_flag = os.environ.get("BOT_AD_ENABLED", "1").strip().lower()
+                    if (
+                        not cfg_chk.get("ad_bot_running", True)
+                        and not is_render_runtime
+                    ) or (
+                        is_render_runtime
+                        and render_ad_flag in {"0", "false", "no", "off"}
+                    ):
                         print(f"🛑 [{client_name}] Panelde Reklam Botu kapatıldı (ad_bot_running=False). Döngü sonlandırılıyor.")
                         break
                 except Exception:
