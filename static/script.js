@@ -192,11 +192,60 @@ function filterBlacklist() {
 
 
 // AD ADVERTISING BOT LOGIC
+const adCountdownState = {};
+
+function formatAdCountdown(seconds) {
+    const total = Math.max(0, Math.ceil(Number(seconds) || 0));
+    const hours = Math.floor(total / 3600);
+    const minutes = Math.floor((total % 3600) / 60);
+    const secs = total % 60;
+    if (hours > 0) return `${hours}s ${String(minutes).padStart(2, '0')}dk`;
+    return `${minutes}dk ${String(secs).padStart(2, '0')}sn`;
+}
+
+function renderAdCountdowns() {
+    Object.entries(adCountdownState).forEach(([account, state]) => {
+        const card = document.getElementById(`countdown${account}`);
+        if (!card) return;
+        const value = card.querySelector('.countdown-value');
+        const meta = card.querySelector('.countdown-meta');
+        const seconds = Math.max(0, Math.ceil((state.targetAt - Date.now()) / 1000));
+        if (state.hasCountdown && seconds > 0) {
+            value.textContent = formatAdCountdown(seconds);
+            value.style.color = '#fbbf24';
+            meta.textContent = state.phase === 'sending' ? 'Blast gönderiliyor' : 'Sonraki blast için bekliyor';
+        } else if (state.phase === 'sending') {
+            value.textContent = 'Gönderiliyor';
+            value.style.color = '#60a5fa';
+            meta.textContent = 'Aktif gönderim turu';
+        } else {
+            value.textContent = 'Hazır';
+            value.style.color = '#4ade80';
+            meta.textContent = 'Yeni blast için uygun';
+        }
+    });
+}
+
+function updateAdCountdowns(accounts) {
+    ['FroxyOnline', 'KeyVadiOnline', 'LisansArenaOnline'].forEach(account => {
+        const data = accounts && accounts[account];
+        if (!data) return;
+        const remaining = Number(data.remaining_seconds);
+        adCountdownState[account] = {
+            phase: data.phase || '',
+            hasCountdown: Number.isFinite(remaining) && remaining > 0,
+            targetAt: Date.now() + (Number.isFinite(remaining) ? Math.max(0, remaining) * 1000 : 0)
+        };
+    });
+    renderAdCountdowns();
+}
+
 async function checkStatus() {
     try {
         const res = await fetch('/api/status');
         const data = await res.json();
         updateStatusUI(data.status);
+        updateAdCountdowns(data.ad_accounts || {});
     } catch (e) {
         updateStatusUI('offline');
     }
@@ -993,6 +1042,7 @@ window.onload = () => {
     setInterval(checkSupportStatus, 10000);
     setInterval(checkFroxyStatus, 10000);
     setInterval(checkLisansarenaStatus, 10000);
+    setInterval(renderAdCountdowns, 1000);
     setInterval(fetchLogs, 12000);
     setInterval(fetchStats, 15000);
     setInterval(loadTickets, 20000); // Poll tickets every 20 seconds
