@@ -218,6 +218,10 @@ function renderAdCountdowns() {
             value.textContent = 'Gönderiliyor';
             value.style.color = '#60a5fa';
             meta.textContent = 'Aktif gönderim turu';
+        } else if (state.phase === 'preparing') {
+            value.textContent = 'Hazırlanıyor';
+            value.style.color = '#60a5fa';
+            meta.textContent = 'Blast öncesi grup kontrolü';
         } else {
             value.textContent = 'Hazır';
             value.style.color = '#4ade80';

@@ -3174,6 +3174,16 @@ async def main():
                     kalan_wait -= uyku
                     waited_seconds += uyku
 
+            # Countdown belongs to the waiting phase only. Clear it before
+            # potentially slow dialog/cache/join preparation.
+            update_ad_account_status(
+                client_name,
+                phase='preparing',
+                remaining_seconds=0,
+                remaining_minutes=0,
+                next_blast_at=utc_after_seconds_iso(0),
+            )
+
             # Dinamik olarak korumalı listeyi güncelle
             protected_groups = get_all_protected_groups()
             
@@ -3282,6 +3292,9 @@ async def main():
             update_ad_account_status(
                 client_name,
                 phase='sending' if blast_targets else 'idle',
+                remaining_seconds=0,
+                remaining_minutes=0,
+                next_blast_at=utc_after_seconds_iso(0),
                 target_groups=len(hedef_set),
                 sendable_groups=len(blast_targets),
                 blacklisted_groups=debug_blacklisted,
