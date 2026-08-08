@@ -30,3 +30,6 @@ kuponindirimpazari
 zeroticaret
 indirim363
 ticaretgruptr
+kuponkodceksatis
+kodindirimsatis
+kuponkodualsat
