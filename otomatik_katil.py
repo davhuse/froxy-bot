@@ -1917,38 +1917,11 @@ def is_lisansarena_support_message(text):
     return bool(normalized) and any(term in normalized for term in LISANSARENA_SUPPORT_TERMS)
 
 async def presence_watchdog(client):
-    from telethon.tl.types import UserStatusOnline, UserStatusRecently
-    # Resolving a username every minute is a high-level Telegram request and
-    # caused repeated ResolveUsername flood errors.  Presence is informative
-    # only, so it must never compete with advertising traffic or keep retrying
-    # while Telegram has explicitly asked us to wait.
-    next_check_at = 0.0
-    normal_interval = 15 * 60
-    print("[Presence Watchdog] Starting Habil presence tracker...")
-    while True:
-        now = time.time()
-        if now < next_check_at:
-            await asyncio.sleep(min(300, next_check_at - now))
-            continue
-        try:
-            admin_user = await client.get_entity('Haacet')
-            is_online = False
-            if admin_user and admin_user.status:
-                is_online = isinstance(admin_user.status, (UserStatusOnline, UserStatusRecently))
-            await async_set_document("habil_presence", {"is_online": is_online})
-            next_check_at = time.time() + normal_interval
-        except FloodWaitError as exc:
-            # Honour Telegram's requested wait exactly (with a small buffer).
-            next_check_at = time.time() + exc.seconds + 60
-            print(
-                "[Presence Watchdog] Presence sorgusu Telegram tarafından "
-                f"{exc.seconds}sn sınırlandı; {exc.seconds + 60}sn boyunca yeniden denenmeyecek."
-            )
-        except Exception as exc:
-            # Do not turn a non-critical status indicator into a one-minute
-            # retry loop.  Advertising workers retain their own reconnects.
-            next_check_at = time.time() + normal_interval
-            print(f"[Presence Watchdog] Habil status check error: {type(exc).__name__}; 15dk bekleniyor.")
+    # This was only a dashboard convenience, but its username resolution is a
+    # high-level Telegram request.  It caused a 16-hour FloodWait and can make
+    # a healthy advertising account look broken.  Do not poll a Telegram user
+    # merely for presence; publishing and support traffic take priority.
+    print("[Presence Watchdog] Güvenlik için devre dışı: Telegram presence sorgusu yapılmayacak.")
 
 
 _RECONNECT_LOCKS = {}
