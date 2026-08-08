@@ -1918,20 +1918,37 @@ def is_lisansarena_support_message(text):
 
 async def presence_watchdog(client):
     from telethon.tl.types import UserStatusOnline, UserStatusRecently
-    import firestore_helper
-    import asyncio
+    # Resolving a username every minute is a high-level Telegram request and
+    # caused repeated ResolveUsername flood errors.  Presence is informative
+    # only, so it must never compete with advertising traffic or keep retrying
+    # while Telegram has explicitly asked us to wait.
+    next_check_at = 0.0
+    normal_interval = 15 * 60
     print("[Presence Watchdog] Starting Habil presence tracker...")
     while True:
+        now = time.time()
+        if now < next_check_at:
+            await asyncio.sleep(min(300, next_check_at - now))
+            continue
         try:
             admin_user = await client.get_entity('Haacet')
             is_online = False
             if admin_user and admin_user.status:
                 is_online = isinstance(admin_user.status, (UserStatusOnline, UserStatusRecently))
-            
             await async_set_document("habil_presence", {"is_online": is_online})
-        except Exception as e:
-            print(f"[Presence Watchdog] Habil status check error: {e}")
-        await asyncio.sleep(60)
+            next_check_at = time.time() + normal_interval
+        except FloodWaitError as exc:
+            # Honour Telegram's requested wait exactly (with a small buffer).
+            next_check_at = time.time() + exc.seconds + 60
+            print(
+                "[Presence Watchdog] Presence sorgusu Telegram tarafından "
+                f"{exc.seconds}sn sınırlandı; {exc.seconds + 60}sn boyunca yeniden denenmeyecek."
+            )
+        except Exception as exc:
+            # Do not turn a non-critical status indicator into a one-minute
+            # retry loop.  Advertising workers retain their own reconnects.
+            next_check_at = time.time() + normal_interval
+            print(f"[Presence Watchdog] Habil status check error: {type(exc).__name__}; 15dk bekleniyor.")
 
 
 _RECONNECT_LOCKS = {}
@@ -2647,6 +2664,28 @@ def report_client_error(slot, exc):
         print(f"❌ HATA: {slot}. Hesap ({brand}) bağlanırken hata oluştu: {name} - {exc}")
 
 
+def is_dead_session_error(exc):
+    """A revoked/duplicated Telegram auth key cannot be healed by retries."""
+    return type(exc).__name__ in DEAD_SESSION_ERRORS
+
+
+def mark_dead_ad_session(client_name, exc):
+    """Expose a terminal session failure and stop this account's worker safely."""
+    error_name = type(exc).__name__
+    update_ad_account_status(
+        client_name,
+        phase='session_invalid',
+        session_error=error_name,
+        remaining_seconds=0,
+        remaining_minutes=0,
+        next_blast_at=None,
+    )
+    print(
+        f"💀 [{client_name}] Oturum geçersiz: {error_name}. "
+        "Bu hesap için gönderim/katılım durduruldu; yeni Render StringSession bekleniyor."
+    )
+
+
 BEKLENEN_HESAPLAR = {'FroxyOnline', 'KeyVadiOnline', 'LisansArenaOnline'}
 
 
@@ -3104,6 +3143,9 @@ async def main():
                 set_account_restriction(client_name, e.seconds, 'Telegram diyalog önbelleği FloodWait', type(e).__name__, scope='send')
                 print(f"🚨 Worker {client_name} önbellek aşamasında Flood yedi! Hesap {e.seconds} saniye duraklatıldı.")
             except Exception as e:
+                if is_dead_session_error(e):
+                    mark_dead_ad_session(client_name, e)
+                    raise
                 print(f"⚠️ Worker {client_name} önbellek hatası: {e}")
 
         # ═══════════════════════════════════════════════════
@@ -3573,6 +3615,9 @@ async def main():
                     except Exception as e:
                         record_event("ad_failed", client_name, group=normalize_group_key(grup_name), error=type(e).__name__)
                         err_type = type(e).__name__
+                        if is_dead_session_error(e):
+                            mark_dead_ad_session(client_name, e)
+                            raise
                         print(f"[{client_name}] ⚠️ @{grup_name} → {err_type} (atlanıyor)")
                         fail_count += 1
                         if isinstance(e, (ConnectionError, TimeoutError)) or 'disconnected' in str(e).lower() or 'connection' in str(e).lower():
@@ -3943,6 +3988,14 @@ async def main():
             try:
                 await run_worker(client, client_name, joined_dialogs)
             except Exception as e:
+                if is_dead_session_error(e):
+                    mark_dead_ad_session(client_name, e)
+                    try:
+                        await client.disconnect()
+                    except Exception:
+                        pass
+                    print(f"🛑 [Supervisor] {client_name} yeni oturum anahtarı gelene kadar yeniden başlatılmayacak.")
+                    return
                 import traceback
                 print(f"🚨 [Supervisor] {client_name} çöktü: {e}")
                 traceback.print_exc()
