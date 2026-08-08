@@ -2650,6 +2650,11 @@ SLOT_RECOVERY_HINTS = {
     2: ("KeyVadi", "AD_STRING_SESSION_KEYVADI"),
     3: ("LisansArena", "AD_STRING_SESSION_LISANSARENA"),
 }
+SLOT_ACCOUNT_NAMES = {
+    1: "FroxyOnline",
+    2: "KeyVadiOnline",
+    3: "LisansArenaOnline",
+}
 
 
 def report_client_error(slot, exc):
@@ -2657,6 +2662,16 @@ def report_client_error(slot, exc):
     brand, env_var = SLOT_RECOVERY_HINTS.get(slot, (f"Hesap #{slot}", ""))
     name = type(exc).__name__
     if name in DEAD_SESSION_ERRORS:
+        account_name = SLOT_ACCOUNT_NAMES.get(slot)
+        if account_name:
+            update_ad_account_status(
+                account_name,
+                phase='session_invalid',
+                session_error=name,
+                remaining_seconds=0,
+                remaining_minutes=0,
+                next_blast_at=None,
+            )
         print(f"💀 {slot}. Hesap ({brand}) OTURUMU ÖLÜ: {name}")
         print(f"   ➜ Bu StringSession bir daha kullanılamaz; hesaba yeniden giriş yapıp")
         print(f"     yeni anahtarı Render'da {env_var} ortam değişkenine yazmanız gerekiyor.")
