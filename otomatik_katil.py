@@ -9,6 +9,7 @@ import requests
 import sys
 import shutil
 import time
+import signal
 
 try:
     sys.stdout.reconfigure(encoding='utf-8')
@@ -29,8 +30,8 @@ from telethon.errors import (
 )
 
 # --- AYARLAR ---
-api_id = 31076280
-api_hash = '7ba4072dcf0a05a7ccf80e570866b6d8'
+api_id = int(os.environ.get('TELEGRAM_API_ID', '0') or 0)
+api_hash = os.environ.get('TELEGRAM_API_HASH', '').strip()
 SESSION_NAME = 'c4hex_session' # Masaüstündeki hazır oturumu kullan
 
 import builtins
@@ -347,15 +348,16 @@ def strict_group_safe_copy(group_key, is_keyvadi, is_lisansarena, is_froxy):
     if is_keyvadi:
         lines = [
             "KeyVadi dijital ürünler",
-            "Canva Pro 1 yıl 49,99 TL",
-            "Gemini Pro 3 ay 59,90 TL | 12 ay 69,99 TL",
+            "Canva Pro 1 yıl 49,90 TL",
+            "Gemini Pro 3 ay 59,90 TL | 18 ay 99,90 TL",
             "ChatGPT Plus kişisel 250 TL | ortak 69,90 TL",
+            "Disney+ UHD reklamsız 1 ay 99,90 TL",
             "Adobe 1 hafta 49,99 TL | 1 ay 119,99 TL",
             "Windows 10/11 Pro 70 TL | Office 365 1 yıl 70 TL",
             "YouTube Premium 1 ay 30 TL | Steam oyun ürünleri mevcut",
         ]
         if not is_satcek:
-            lines.insert(4, "Netflix 4K kişisel profil 79,99 TL")
+            lines.insert(4, "Netflix 4K kişisel profil 59,99 TL")
         lines.append("Hızlı teslimat ve güncel fiyat bilgisi için özel mesaj.")
         return "\n".join(lines)
     if is_lisansarena:
@@ -498,6 +500,14 @@ MSG_HISTORY_FILE = 'msg_history.json'
 COOLDOWN_FILE = 'group_cooldown.json'
 ACCOUNT_RESTRICTIONS_FILE = 'account_restrictions.json'
 GROUP_FAILURES_FILE = 'group_failures.json'
+ACCOUNT_GROUP_BLOCKS_FILE = 'account_group_blocks.json'
+
+# Telegram confirmed this account-specific ban in the live log.  Keeping the
+# seed in code makes the decision survive Render's ephemeral filesystem while
+# leaving KeyVadi/LisansArena free to be evaluated independently.
+SEEDED_ACCOUNT_GROUP_BLOCKS = {
+    ('FroxyOnline', 'ceksatkupon'): 'UserBannedInChannel',
+}
 SEND_LOCK_FILE = 'send_locks.json'
 GROUP_COOLDOWN_HOURS = 1  # Varsayılan: 1 saat ortak cooldown. Config'den ezilebilir.
 # Ayni gruba iki FARKLI hesabin gonderimi arasinda birakilacak en az sure.
@@ -954,12 +964,50 @@ def record_group_failure(grup_name, client_name, reason, retry_after=300, entity
     from datetime import datetime, timedelta, timezone
     failures = _load_json_file(GROUP_FAILURES_FILE, {})
     key = cooldown_key(grup_name, entity)
+    previous = failures.setdefault(key, {}).get(client_name, {})
+    now = datetime.now(timezone.utc)
     failures.setdefault(key, {})[client_name] = {
         'reason': reason,
-        'retry_at': (datetime.now(timezone.utc) + timedelta(seconds=max(1, int(retry_after)))).isoformat(),
-        'updated_at': datetime.now(timezone.utc).isoformat()
+        'status': 'temporary',
+        'retry_at': (now + timedelta(seconds=max(1, int(retry_after)))).isoformat(),
+        'first_error_at': previous.get('first_error_at', now.isoformat()),
+        'last_error_at': now.isoformat(),
+        'attempt_count': int(previous.get('attempt_count', 0) or 0) + 1,
+        'updated_at': now.isoformat()
     }
     _save_json_file(GROUP_FAILURES_FILE, failures)
+
+def record_account_group_block(grup_name, client_name, reason, entity=None):
+    """Persist a Telegram-confirmed permanent block for one account only."""
+    from datetime import datetime, timezone
+    blocks = _load_json_file(ACCOUNT_GROUP_BLOCKS_FILE, {})
+    key = cooldown_key(grup_name, entity)
+    account = get_canonical_account_name(client_name)
+    previous = blocks.setdefault(key, {}).get(account, {})
+    now = datetime.now(timezone.utc).isoformat()
+    blocks.setdefault(key, {})[account] = {
+        'status': 'permanent',
+        'reason': reason,
+        'first_error_at': previous.get('first_error_at', now),
+        'last_error_at': now,
+        'attempt_count': int(previous.get('attempt_count', 0) or 0) + 1,
+        'updated_at': now,
+    }
+    _save_json_file(ACCOUNT_GROUP_BLOCKS_FILE, blocks)
+
+def is_account_group_blocked(grup_name, client_name, entity=None):
+    blocks = _load_json_file(ACCOUNT_GROUP_BLOCKS_FILE, {})
+    account = get_canonical_account_name(client_name)
+    for key in group_state_keys(grup_name, entity):
+        state = blocks.get(key, {}).get(account, {})
+        if isinstance(state, dict) and state.get('status') == 'permanent':
+            return True
+    return False
+
+def ensure_seeded_account_group_blocks():
+    for (account, group), reason in SEEDED_ACCOUNT_GROUP_BLOCKS.items():
+        if not is_account_group_blocked(group, account):
+            record_account_group_block(group, account, reason)
 
 def is_group_retry_blocked(grup_name, client_name, entity=None):
     from datetime import datetime, timezone
@@ -1056,7 +1104,9 @@ def is_on_cooldown(grup_name, client_name, entity=None):
     except (TypeError, ValueError):
         cooldown_hours = 1.0
             
-    if is_account_restricted(client_name) or is_group_retry_blocked(grup_name, client_name, entity):
+    if (is_account_restricted(client_name)
+            or is_group_retry_blocked(grup_name, client_name, entity)
+            or is_account_group_blocked(grup_name, client_name, entity)):
         return True
 
     cooldowns = load_cooldowns()
@@ -1583,7 +1633,7 @@ def get_dm_category(text):
 
 
 # Firestore Ayarları
-API_KEY    = "AIzaSyCZz54GBF4nCgP84DsTSwwMyPq70Lb_Mjo"
+API_KEY    = os.environ.get("FIREBASE_API_KEY", "").strip()
 PROJECT_ID = "bot-2-63772"
 BASE_URL   = f"https://firestore.googleapis.com/v1/projects/{PROJECT_ID}/databases/(default)/documents"
 
@@ -2639,8 +2689,12 @@ def report_client_error(slot, exc):
         if account_name:
             update_ad_account_status(
                 account_name,
+                process_running=True,
+                telegram_connected=False,
+                telegram_authorized=False,
                 phase='session_invalid',
                 session_error=name,
+                last_error=name,
                 remaining_seconds=0,
                 remaining_minutes=0,
                 next_blast_at=None,
@@ -2662,8 +2716,12 @@ def mark_dead_ad_session(client_name, exc):
     error_name = type(exc).__name__
     update_ad_account_status(
         client_name,
+        process_running=True,
+        telegram_connected=False,
+        telegram_authorized=False,
         phase='session_invalid',
         session_error=error_name,
+        last_error=error_name,
         remaining_seconds=0,
         remaining_minutes=0,
         next_blast_at=None,
@@ -2723,8 +2781,115 @@ async def uyar_eksik_hesap(ayakta, active_clients):
     print("⚠️ Hiçbir hesap bildirimi gönderemedi.")
 
 
+async def update_persistent_account_health_alerts(alive_names, active_clients):
+    """Send one alert per health transition, persisted across Render deploys."""
+    missing = sorted(BEKLENEN_HESAPLAR - set(alive_names))
+    state = await async_get_document('ad_health_alert_state') or {}
+    previous_missing = sorted(
+        item for item in str(state.get('missing_accounts', '')).split(',') if item
+    )
+    if missing == previous_missing:
+        return
+
+    admin_id = None
+    try:
+        with open('bot_config.json', 'r', encoding='utf-8') as config_file:
+            admin_id = json.load(config_file).get('admin_id')
+    except Exception:
+        pass
+
+    if missing:
+        message = (
+            "🚨 Reklam hesabı bağlantısı kesildi\n"
+            f"• Bağlanamayan: {', '.join(missing)}\n"
+            f"• Yetkili ve ayakta: {', '.join(sorted(alive_names)) or 'yok'}\n"
+            "Panel süreç sayısını değil Telegram yetkilendirmesini göstermektedir."
+        )
+        for account_name in missing:
+            current = _load_json_file(AD_ACCOUNT_STATUS_FILE, {}).get(account_name, {})
+            update_ad_account_status(
+                account_name,
+                process_running=True,
+                telegram_connected=False,
+                telegram_authorized=False,
+                phase=current.get('phase', 'unavailable'),
+                last_error=current.get('last_error') or 'Telegram account unavailable',
+                next_blast_at=None,
+            )
+    else:
+        message = (
+            "✅ Reklam hesapları yeniden bağlandı\n"
+            f"• Yetkili hesaplar: {', '.join(sorted(alive_names))}"
+        )
+
+    delivered = not admin_id
+    if admin_id:
+        for client, name, _ in sorted(
+            active_clients,
+            key=lambda item: 0 if item[1] == 'KeyVadiOnline' else 1,
+        ):
+            try:
+                await client.send_message(int(admin_id), message)
+                print(f"[HealthAlert] transition notification sent by {name}.")
+                delivered = True
+                break
+            except Exception as exc:
+                print(f"[HealthAlert] {name} could not send: {type(exc).__name__}")
+
+    if delivered:
+        await async_set_document('ad_health_alert_state', {
+            'missing_accounts': ','.join(missing),
+            'alive_accounts': ','.join(sorted(alive_names)),
+            'updated_at': datetime.now(timezone.utc).isoformat(),
+        })
+
+
 async def main():
     import psutil, os
+    from runtime_lease import RuntimeLease
+
+    ensure_seeded_account_group_blocks()
+    if not api_id or not api_hash:
+        for account_name in BEKLENEN_HESAPLAR:
+            update_ad_account_status(
+                account_name,
+                process_running=True,
+                telegram_connected=False,
+                telegram_authorized=False,
+                phase='configuration_error',
+                last_error='TELEGRAM_API_ID/TELEGRAM_API_HASH missing',
+                next_blast_at=None,
+            )
+        print("Telegram API credentials are missing; worker will not connect.")
+        return
+
+    runtime_lease = RuntimeLease(ttl_seconds=120)
+    if not await runtime_lease.acquire():
+        for account_name in BEKLENEN_HESAPLAR:
+            update_ad_account_status(
+                account_name,
+                process_running=True,
+                telegram_connected=False,
+                telegram_authorized=False,
+                phase='standby_owner',
+                last_error='Another Render instance owns the Telegram runtime lease',
+                next_blast_at=None,
+            )
+        print("[RuntimeLease] Another instance owns Telegram; no sessions were opened.")
+        return
+
+    stop_event = asyncio.Event()
+    loop = asyncio.get_running_loop()
+    for signal_name in ('SIGTERM', 'SIGINT'):
+        sig = getattr(signal, signal_name, None)
+        if sig is None:
+            continue
+        try:
+            loop.add_signal_handler(sig, stop_event.set)
+        except (NotImplementedError, RuntimeError):
+            pass
+    lease_task = asyncio.create_task(runtime_lease.heartbeat(stop_event, 30))
+
     cur_pid = os.getpid()
     for p in psutil.process_iter(['pid', 'name', 'cmdline']):
         try:
@@ -2793,6 +2958,10 @@ async def main():
                 print("❌ HATA: 1. Hesap yetkilendirilmemiş!")
         except Exception as e:
             report_client_error(1, e)
+            try:
+                await client1.disconnect()
+            except Exception:
+                pass
             
     # Client 2
     if string_session_key_2:
@@ -2809,6 +2978,10 @@ async def main():
                 print("❌ HATA: 2. Hesap (KeyVadi) yetkilendirilmemiş!")
         except Exception as e:
             report_client_error(2, e)
+            try:
+                await client2.disconnect()
+            except Exception:
+                pass
 
     # Client 3
     if string_session_key_3:
@@ -2825,6 +2998,10 @@ async def main():
                 print("❌ HATA: 3. Hesap (LisansArena) yetkilendirilmemiş!")
         except Exception as e:
             report_client_error(3, e)
+            try:
+                await client3.disconnect()
+            except Exception:
+                pass
 
     # Fallback to local session file if no string session is configured at all
     if not string_session_key and not string_session_key_2 and not string_session_key_3:
@@ -2882,6 +3059,16 @@ async def main():
                 'username': username,
                 'slot': expected_slot,
             }))
+            update_ad_account_status(
+                stable_name,
+                process_running=True,
+                telegram_connected=True,
+                telegram_authorized=True,
+                phase='preparing',
+                last_success_at=datetime.now(timezone.utc).isoformat(),
+                last_error=None,
+                session_error=None,
+            )
             print(f"🔒 @{username} kimliği doğrulandı ve {stable_name} hesabına kilitlendi.")
         except Exception as e:
             print(f"⚠️ Aktif hesap doğrulanamadı, bağlantı kapatılıyor: {e}")
@@ -2893,11 +3080,16 @@ async def main():
 
     # Bir hesap dustugunde kimse fark etmiyordu; sistem sessizce iki hesapla
     # devam ediyordu.  Eksik hesap varsa admine Telegram'dan haber ver.
-    await uyar_eksik_hesap({name for _, name, _ in active_clients}, active_clients)
+    await update_persistent_account_health_alerts(
+        {name for _, name, _ in active_clients}, active_clients
+    )
 
     if not active_clients:
         print("❌ HATA: Hiçbir aktif ve yetkili Telegram hesabı bulunamadı! Watchdog kilitlenmesini önlemek için 10 dakika bekleniyor...")
-        await asyncio.sleep(600)
+        await stop_event.wait()
+        lease_task.cancel()
+        await asyncio.gather(lease_task, return_exceptions=True)
+        await runtime_lease.release()
         import sys
         sys.exit(1)
 
@@ -3285,6 +3477,9 @@ async def main():
                         or is_excluded_ad_target(username_lower, entity)):
                     debug_blacklisted += 1
                     continue
+                if is_account_group_blocked(username_lower, client_name, entity):
+                    debug_blacklisted += 1
+                    continue
                 if username_lower in joined_dialogs:
                     entity = joined_dialogs[username_lower]
                     if getattr(entity, 'broadcast', False):
@@ -3399,6 +3594,10 @@ async def main():
                         return
                     if is_group_retry_blocked(grup_name, client_name, entity):
                         print(f"[{client_name}] ⏸️ @{grup_name} geçici/hesaba özel gönderim engelinde, atlanıyor...")
+                        return
+
+                    if is_account_group_blocked(grup_name, client_name, entity):
+                        print(f"[{client_name}] account-specific permanent block: @{grup_name}")
                         return
 
                     lock_claimed = False
@@ -3523,6 +3722,15 @@ async def main():
                             print(f"[{client_name}] ✅ @{grup_name} → Gönderildi! ({sent_count+1}) [Şablon: {chosen_name}]")
                             
                         sent_count += 1
+                        update_ad_account_status(
+                            client_name,
+                            process_running=True,
+                            telegram_connected=True,
+                            telegram_authorized=True,
+                            last_success_at=datetime.now(timezone.utc).isoformat(),
+                            last_error=None,
+                            session_error=None,
+                        )
                         record_event(
                             "ad_sent",
                             client_name,
@@ -3567,8 +3775,9 @@ async def main():
                         print(f"[{client_name}] ❌ @{grup_name} → Banlandık! Kara listeye ekleniyor...")
                         fail_count += 1
                         async with state_lock:
-                            blacklist_group(grup_name, 'UserBannedInChannel', client_name)
-                            record_group_failure(grup_name, client_name, 'UserBannedInChannel', 30 * 24 * 60 * 60, entity)
+                            record_account_group_block(
+                                grup_name, client_name, 'UserBannedInChannel', entity
+                            )
                         try:
                             if entity:
                                 if is_group_protected(grup_name):
@@ -3583,8 +3792,9 @@ async def main():
                         print(f"[{client_name}] 🔒 @{grup_name} → Yazma izni yok! Kara listeye ekleniyor...")
                         fail_count += 1
                         async with state_lock:
-                            blacklist_group(grup_name, 'ChatWriteForbidden', client_name)
-                            record_group_failure(grup_name, client_name, 'ChatWriteForbidden', 7 * 24 * 60 * 60, entity)
+                            record_account_group_block(
+                                grup_name, client_name, 'ChatWriteForbidden', entity
+                            )
                         try:
                             if entity:
                                 if is_group_protected(grup_name):
@@ -3745,6 +3955,12 @@ async def main():
                         print(f"[{client_name}] ⚠️ Join flood {e.seconds}sn; hesap duraklatılıyor, grup kara listeye alınmadı.")
                         break
                     except (ChannelPrivateError,):
+                        record_group_failure(
+                            hedef_grup, client_name, 'ChannelPrivateReview',
+                            retry_after=7 * 24 * 60 * 60,
+                        )
+                        print(f"[{client_name}] @{hedef_grup} private/access review; not permanently blocked.")
+                        continue
                         if hedef_grup.lower() not in protected_groups:
                             async with state_lock:
                                 blacklist_group(hedef_grup, 'ChannelPrivate', client_name)
@@ -3755,6 +3971,11 @@ async def main():
                         err_msg = str(e)
                         err_type = type(e).__name__
                         if 'UserBannedInChannel' in err_type or 'user_banned_in_channel' in err_msg.lower():
+                            record_account_group_block(
+                                hedef_grup, client_name, 'UserBannedInChannel'
+                            )
+                            print(f"[{client_name}] @{hedef_grup} permanently blocked for this account.")
+                            continue
                             record_group_failure(hedef_grup, client_name, 'UserBannedInChannel', retry_after=86400)
                             print(f"[{client_name}] ⛔ @{hedef_grup} -> Bu hesap bu gruptan BANLANMIŞ. 24 saat boyunca denenmeyecek.")
                         elif 'ChannelsTooMuch' in err_type or 'channels_too_much' in err_msg.lower():
@@ -3766,6 +3987,12 @@ async def main():
                             save_pending_invites(pending_invites)
                             print(f"[{client_name}] ⏳ @{hedef_grup} -> Katılım isteği gönderildi (onay bekleniyor).")
                         elif 'no user has' in err_msg.lower() or isinstance(e, (UsernameNotOccupiedError, UsernameInvalidError, ValueError)):
+                            record_group_failure(
+                                hedef_grup, client_name, f'{err_type}Review',
+                                retry_after=7 * 24 * 60 * 60,
+                            )
+                            print(f"[{client_name}] @{hedef_grup} invalid/private review; not permanently blocked.")
+                            continue
                             if hedef_grup.lower() not in protected_groups:
                                 async with state_lock:
                                     blacklist_group(hedef_grup, err_type, client_name)
@@ -4015,7 +4242,28 @@ async def main():
     tasks.append(periodic_firestore_sync())
     
     # Tüm görevleri eşzamanlı olarak çalıştır
-    await asyncio.gather(*tasks)
+    running_tasks = [asyncio.create_task(task) for task in tasks]
+    try:
+        await stop_event.wait()
+    finally:
+        for task in running_tasks:
+            task.cancel()
+        lease_task.cancel()
+        await asyncio.gather(*running_tasks, return_exceptions=True)
+        await asyncio.gather(lease_task, return_exceptions=True)
+        for client, name, _ in active_clients:
+            try:
+                await client.disconnect()
+                update_ad_account_status(
+                    name,
+                    process_running=False,
+                    telegram_connected=False,
+                    telegram_authorized=False,
+                    phase='stopped',
+                )
+            except Exception as exc:
+                print(f"[{name}] disconnect during shutdown failed: {type(exc).__name__}")
+        await runtime_lease.release()
 
 if __name__ == '__main__':
     asyncio.run(main())

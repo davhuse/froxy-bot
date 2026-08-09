@@ -122,8 +122,8 @@ async def safe_event_edit(event, *args, **kwargs):
         logger.debug("Ignored an identical callback edit for user %s.", event.sender_id)
         return None
 
-API_ID = 31076280
-API_HASH = '7ba4072dcf0a05a7ccf80e570866b6d8'
+API_ID = int(os.environ.get("TELEGRAM_API_ID", "0") or 0)
+API_HASH = os.environ.get("TELEGRAM_API_HASH", "").strip()
 CONFIG_FILE = "bot_config.json"
 
 # Load config
@@ -169,13 +169,13 @@ if not config:
     logger.error("bot_config.json could not be loaded. Exiting.")
     exit(1)
 
-BOT_TOKEN = config.get("bot_token", "")
-ADMIN_ID = config.get("admin_id", 0)
+BOT_TOKEN = os.environ.get("KEYVADI_SUPPORT_BOT_TOKEN", "").strip()
+ADMIN_ID = int(os.environ.get("TELEGRAM_ADMIN_ID", config.get("admin_id", 0)) or 0)
 BOT_USER_ID = None
 SHOPIER_LINKS = config.get("shopier_links", {})
 
 if not BOT_TOKEN or BOT_TOKEN == "YOUR_TELEGRAM_BOT_TOKEN":
-    logger.error("Invalid Bot Token in config. Please set it via Web Panel.")
+    logger.error("KEYVADI_SUPPORT_BOT_TOKEN is not configured. Exiting.")
     exit(1)
 
 # In-memory user state
@@ -516,12 +516,11 @@ def match_multiple_products_from_text(msg_text):
 
 def scrape_shopier():
     logger.info("Scraping Shopier showroom at https://www.shopier.com/keyvadi ...")
-    context = ssl._create_unverified_context()
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
     req = urllib.request.Request('https://www.shopier.com/keyvadi', headers=headers)
     
     try:
-        with urllib.request.urlopen(req, context=context, timeout=15) as response:
+        with urllib.request.urlopen(req, timeout=15) as response:
             raw_data = response.read()
             try:
                 html_content = raw_data.decode('utf-8')

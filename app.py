@@ -13,6 +13,8 @@ import time
 import asyncio
 import psutil
 import socket
+import hmac
+import atexit
 from sales_metrics import record_event, summarize as summarize_sales
 
 base_dir = os.path.abspath(os.path.dirname(__file__))
@@ -24,33 +26,54 @@ PANEL_ADMIN_TOKEN = os.environ.get('PANEL_ADMIN_TOKEN', '').strip()
 SHOPIER_CALLBACK_SECRET = os.environ.get('SHOPIER_CALLBACK_SECRET', '').strip()
 FROXY_ENABLED = True
 
+app.config.update(
+    MAX_CONTENT_LENGTH=1024 * 1024,
+    MAX_FORM_MEMORY_SIZE=256 * 1024,
+    MAX_FORM_PARTS=100,
+)
+
 @app.before_request
 def protect_panel_api():
-    """Require an explicit Render/local environment token for panel writes."""
+    """Fail closed for every privileged panel API."""
     if not request.path.startswith('/api/'):
         return None
-    public_paths = {'/api/status', '/api/account-restrictions'}
-    if request.path in public_paths and request.method == 'GET':
+    if request.path == '/api/status' and request.method == 'GET':
         return None
-    # Shopier bu uca kendi sunucusundan POST atiyor, panel token'i gonderemez.
-    # Onceki kosul 'A and B or C' seklindeydi ve Python'da 'and' daha siki
-    # bagladigi icin '(A and B) or C' olarak cozuluyordu: uc HER metot icin
-    # kosulsuz muaf kaliyordu.  Isteyen sahte siparis POST'layip bedava lisans
-    # aldirabiliyordu.  SHOPIER_CALLBACK_SECRET tanimliysa artik zorunlu;
-    # tanimli degilse calismaya devam eder ama her istekte uyari basar.
     if request.path == '/api/shopier/callback':
         if not SHOPIER_CALLBACK_SECRET:
-            print('⚠️ [Guvenlik] /api/shopier/callback korumasiz calisiyor. '
-                  'SHOPIER_CALLBACK_SECRET tanimlayin ve Shopier bildirim '
-                  'adresine ?secret=... ekleyin.')
-            return None
-        verilen = (request.args.get('secret')
-                   or request.headers.get('X-Shopier-Secret', ''))
-        if verilen != SHOPIER_CALLBACK_SECRET:
-            print('🚫 [Guvenlik] Shopier callback gecersiz secret ile reddedildi.')
+            print('[Security] Shopier callback is disabled: secret is missing.')
+            return jsonify({'error': 'Callback is not configured'}), 503
+        supplied = (request.args.get('secret')
+                    or request.headers.get('X-Shopier-Secret', ''))
+        if not hmac.compare_digest(str(supplied), SHOPIER_CALLBACK_SECRET):
+            print('[Security] Shopier callback rejected an invalid secret.')
             return jsonify({'error': 'Unauthorized'}), 401
         return None
+
+    if not PANEL_ADMIN_TOKEN:
+        return jsonify({'error': 'Panel authentication is not configured'}), 503
+    supplied = request.headers.get('X-Admin-Token', '')
+    authorization = request.headers.get('Authorization', '')
+    if not supplied and authorization.lower().startswith('bearer '):
+        supplied = authorization[7:].strip()
+    if not supplied or not hmac.compare_digest(str(supplied), PANEL_ADMIN_TOKEN):
+        return jsonify({'error': 'Unauthorized'}), 401
     return None
+
+
+@app.after_request
+def add_security_headers(response):
+    response.headers.setdefault('X-Content-Type-Options', 'nosniff')
+    response.headers.setdefault('X-Frame-Options', 'SAMEORIGIN')
+    response.headers.setdefault('Referrer-Policy', 'same-origin')
+    response.headers.setdefault('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+    response.headers.setdefault('Cache-Control', 'no-store')
+    return response
+
+
+@app.route('/health', methods=['GET'])
+def health():
+    return jsonify({'status': 'ok'}), 200
 
 
 # Reklam botu (otomatik_katil.py) her slot icin birden fazla config anahtarini
@@ -75,14 +98,24 @@ SLOT_ENV_VARS = {
 }
 
 
-def store_slot_session(cfg, slot, session_str):
-    """Yeni oturumu ilgili slotun tum varyant anahtarlarina yazar."""
-    keys = SLOT_SESSION_KEYS.get(str(slot))
-    if not keys:
-        keys = ["ad_string_session" if str(slot) == "1" else f"ad_string_session{slot}"]
-    for key in keys:
-        cfg[key] = session_str
-    return keys
+def persist_render_session(slot, session_string):
+    """Write a session directly to Render without returning or logging it."""
+    import urllib.request
+    env_var = SLOT_ENV_VARS.get(str(slot), '')
+    api_key = os.environ.get('RENDER_API_KEY', '').strip()
+    service_id = os.environ.get('RENDER_SERVICE_ID', '').strip()
+    if not env_var or not api_key or not service_id:
+        raise RuntimeError('Render session persistence is not configured')
+    url = f'https://api.render.com/v1/services/{service_id}/env-vars/{env_var}'
+    payload = json.dumps({'value': session_string}).encode('utf-8')
+    req = urllib.request.Request(url, data=payload, method='PUT')
+    req.add_header('Authorization', f'Bearer {api_key}')
+    req.add_header('Accept', 'application/json')
+    req.add_header('Content-Type', 'application/json')
+    with urllib.request.urlopen(req, timeout=20) as response:
+        if response.status not in (200, 201):
+            raise RuntimeError('Render rejected the session update')
+    return env_var
 
 
 # State variables for background processes
@@ -97,6 +130,7 @@ FROXY_LOG_FILE = "froxy_destek_log.txt"
 LISANSARENA_LOG_FILE = "lisansarena_bot_log.txt"
 MESSAGE_FILE = "message.txt"
 CONFIG_FILE = "bot_config.json"
+AD_STOP_FILE = "ad_worker.disabled"
 
 
 def bot_runtime_enabled():
@@ -125,6 +159,13 @@ def bot_runtime_enabled():
         or os.environ.get("RENDER_SERVICE_ID", "").strip()
         or os.environ.get("RENDER_EXTERNAL_URL", "").strip()
     )
+
+
+def ad_runtime_enabled():
+    if not bot_runtime_enabled() or os.path.exists(AD_STOP_FILE):
+        return False
+    value = os.environ.get("BOT_AD_ENABLED", "1").strip().lower()
+    return value not in {"0", "false", "no", "off"}
 
 def update_config_state(key, value):
     if not os.path.exists(CONFIG_FILE):
@@ -216,11 +257,12 @@ def bot_watchdog():
                     # local config still has the old false flag, Render may
                     # opt in through BOT_AD_ENABLED (true by default); local
                     # watchdogs remain disabled by bot_runtime_enabled().
-                    render_ad_flag = os.environ.get("BOT_AD_ENABLED", "1").strip().lower()
-                    if bot_runtime_enabled() and render_ad_flag not in {"0", "false", "no", "off"}:
+                    if ad_runtime_enabled():
                         ad_enabled = True
+                    elif bot_runtime_enabled():
+                        ad_enabled = False
                     support_enabled = cfg.get("support_bot_running", False)
-                    token = cfg.get("bot_token", "")
+                    token = os.environ.get("KEYVADI_SUPPORT_BOT_TOKEN", "").strip()
                     if token and token != "YOUR_TELEGRAM_BOT_TOKEN":
                         has_token = True
                 except Exception as ex:
@@ -305,7 +347,7 @@ def bot_watchdog():
                     with open(CONFIG_FILE, "r", encoding="utf-8") as f:
                         cfg = json.load(f)
                     froxy_enabled = FROXY_ENABLED and cfg.get("froxy_bot_running", False)
-                    froxy_token = cfg.get("froxy_bot_token", "")
+                    froxy_token = os.environ.get("FROXY_SUPPORT_BOT_TOKEN", "").strip()
                     if froxy_token and froxy_token != "YOUR_TELEGRAM_BOT_TOKEN":
                         has_froxy_token = True
                 except Exception:
@@ -350,7 +392,7 @@ def bot_watchdog():
             has_lisansarena_token = False
             if cfg:
                 lisansarena_enabled = cfg.get("lisansarena_bot_running", False)
-                lisansarena_token = cfg.get("lisansarena_bot_token", "")
+                lisansarena_token = os.environ.get("LISANSARENA_BOT_TOKEN", "").strip()
                 if lisansarena_token and lisansarena_token != "YOUR_TELEGRAM_BOT_TOKEN":
                     has_lisansarena_token = True
 
@@ -409,24 +451,86 @@ def status():
     status_path = os.path.join(base_dir, 'ad_account_status.json')
     try:
         if os.path.exists(status_path):
-            with open(status_path, 'r', encoding='utf-8') as f:
-                ad_accounts = json.load(f)
+            with open(status_path, 'r', encoding='utf-8') as handle:
+                ad_accounts = json.load(handle)
     except Exception:
-        # Health status must stay available even if a runtime status file is
-        # temporarily incomplete while an ad worker is writing it.
         ad_accounts = {}
+
+    process_running = bool(ad_processes)
+    expected_accounts = ('FroxyOnline', 'KeyVadiOnline', 'LisansArenaOnline')
+    for account_name in expected_accounts:
+        account = ad_accounts.setdefault(account_name, {})
+        account['process_running'] = process_running
+        if not process_running:
+            account['telegram_connected'] = False
+            account['telegram_authorized'] = False
+            if account.get('phase') not in {'session_invalid', 'configuration_error'}:
+                account['phase'] = 'stopped'
+        else:
+            account.setdefault('telegram_connected', False)
+            account.setdefault('telegram_authorized', False)
+    authorized_count = sum(
+        1 for account in ad_accounts.values()
+        if account.get('telegram_authorized') is True
+    )
+    overall_status = (
+        'running' if process_running and authorized_count == len(expected_accounts)
+        else 'degraded' if process_running
+        else 'stopped'
+    )
     return jsonify({
-        "status": "running" if ad_processes else "stopped",
-        "bot_runtime_enabled": bot_runtime_enabled(),
-        "build": os.environ.get("RENDER_GIT_COMMIT", "unknown")[:12],
-        "instance": socket.gethostname(),
-        "ad_processes": len(ad_processes),
-        "support_processes": len(get_processes_by_script('froxy_bot.py')),
-        "froxy_support_processes": len(get_processes_by_script('froxy_destek_bot.py')),
-        "lisansarena_processes": len(get_processes_by_script('lisansarena_bot.py')),
-        "sales_7d": summarize_sales(7),
-        "ad_accounts": ad_accounts,
+        'status': overall_status,
+        'bot_runtime_enabled': bot_runtime_enabled(),
+        'ad_runtime_enabled': ad_runtime_enabled(),
+        'build': os.environ.get('RENDER_GIT_COMMIT', 'unknown')[:12],
+        'ad_processes': len(ad_processes),
+        'support_processes': len(get_processes_by_script('froxy_bot.py')),
+        'froxy_support_processes': len(get_processes_by_script('froxy_destek_bot.py')),
+        'lisansarena_processes': len(get_processes_by_script('lisansarena_bot.py')),
+        'ad_accounts': ad_accounts,
     })
+
+
+@app.route('/api/group-status', methods=['GET'])
+def group_status():
+    def load_json_file(path, default):
+        try:
+            if os.path.exists(path):
+                with open(path, 'r', encoding='utf-8') as handle:
+                    return json.load(handle)
+        except Exception:
+            pass
+        return default
+
+    global_blacklist = []
+    try:
+        with open('blacklist.txt', 'r', encoding='utf-8') as handle:
+            global_blacklist = sorted({line.strip() for line in handle if line.strip()})
+    except FileNotFoundError:
+        pass
+    def flatten(states):
+        rows = []
+        for group, accounts in states.items():
+            if not isinstance(accounts, dict):
+                continue
+            for account, state in accounts.items():
+                if not isinstance(state, dict):
+                    continue
+                rows.append({'group': group, 'account': account, **state})
+        return rows
+
+    permanent = flatten(load_json_file('account_group_blocks.json', {}))
+    failures = flatten(load_json_file('group_failures.json', {}))
+    review_reasons = {'ChannelPrivateReview', 'UsernameInvalidReview', 'AccessReview'}
+    review = [row for row in failures if row.get('reason') in review_reasons]
+    temporary = [row for row in failures if row.get('reason') not in review_reasons]
+    return jsonify({
+        'global_blacklist': global_blacklist,
+        'permanent': permanent,
+        'temporary': temporary,
+        'review': review,
+    })
+
 
 @app.route('/api/account-restrictions', methods=['GET'])
 def account_restrictions():
@@ -513,6 +617,12 @@ def sales_summary():
 
 @app.route('/api/start', methods=['POST'])
 def start():
+    if os.environ.get("BOT_AD_ENABLED", "1").strip().lower() in {"0", "false", "no", "off"}:
+        return jsonify({"success": False, "message": "Render maintenance lock keeps the ad worker disabled."}), 409
+    try:
+        os.remove(AD_STOP_FILE)
+    except FileNotFoundError:
+        pass
     if not bot_runtime_enabled():
         return jsonify({"success": False, "message": "Bu serviste Telegram bot çalışma zamanı kapalı."}), 409
     if get_process_by_script('otomatik_katil.py') is not None:
@@ -548,6 +658,8 @@ def start():
 
 @app.route('/api/stop', methods=['POST'])
 def stop():
+    with open(AD_STOP_FILE, "w", encoding="utf-8") as marker:
+        marker.write("disabled by panel\n")
     kill_process_by_script('otomatik_katil.py')
     try: os.remove("otomatik_katil.py.pid")
     except: pass
@@ -619,7 +731,7 @@ def support_start():
     try:
         with open(CONFIG_FILE, "r", encoding="utf-8") as f:
             cfg = json.load(f)
-        token = cfg.get("bot_token", "")
+        token = os.environ.get("KEYVADI_SUPPORT_BOT_TOKEN", "").strip()
         if not token or token == "YOUR_TELEGRAM_BOT_TOKEN":
             return jsonify({"success": False, "message": "Lütfen önce geçerli bir Telegram Bot Token kaydedin!"})
     except Exception as e:
@@ -696,7 +808,7 @@ def froxy_start():
     try:
         with open(CONFIG_FILE, "r", encoding="utf-8") as f:
             cfg = json.load(f)
-        token = cfg.get("froxy_bot_token", "")
+        token = os.environ.get("FROXY_SUPPORT_BOT_TOKEN", "").strip()
         if not token or token == "YOUR_TELEGRAM_BOT_TOKEN":
             return jsonify({"success": False, "message": "Lütfen önce geçerli bir Froxy Bot Token kaydedin!"})
     except Exception as e:
@@ -761,10 +873,7 @@ def get_froxy_config():
     try:
         with open(CONFIG_FILE, 'r', encoding="utf-8") as f:
             cfg = json.load(f)
-        return jsonify({
-            "froxy_bot_token": "<configured>" if cfg.get("froxy_bot_token") else "",
-            "froxy_admin_id": cfg.get("froxy_admin_id", "")
-        })
+        return jsonify({"froxy_admin_id": cfg.get("froxy_admin_id", "")})
     except Exception as e:
         return jsonify({"error": str(e)})
 
@@ -778,8 +887,8 @@ def save_froxy_config():
         else:
             cfg = {}
         
-        if data.get("froxy_bot_token") and data.get("froxy_bot_token") != "<configured>":
-            cfg["froxy_bot_token"] = data["froxy_bot_token"]
+        if any(marker in key.lower() for key in data for marker in ('token', 'session', 'secret', 'key', 'hash')):
+            return jsonify({"success": False, "message": "Secret değerleri panelden değiştirilemez."}), 400
         if data.get("froxy_admin_id"):
             cfg["froxy_admin_id"] = int(data["froxy_admin_id"])
         
@@ -813,7 +922,7 @@ def lisansarena_start():
         except:
             pass
             
-    token = cfg.get("lisansarena_bot_token", "")
+    token = os.environ.get("LISANSARENA_BOT_TOKEN", "").strip()
     if not token or token == "YOUR_TELEGRAM_BOT_TOKEN":
         return jsonify({"success": False, "message": "Lütfen önce geçerli bir LisansArena Bot Token kaydedin!"})
         
@@ -877,10 +986,7 @@ def get_lisansarena_config():
     try:
         with open(CONFIG_FILE, 'r', encoding="utf-8") as f:
             cfg = json.load(f)
-        return jsonify({
-            "lisansarena_bot_token": "<configured>" if cfg.get("lisansarena_bot_token") else "",
-            "admin_id": cfg.get("admin_id", "")
-        })
+        return jsonify({"admin_id": cfg.get("admin_id", "")})
     except Exception as e:
         return jsonify({"error": str(e)})
 
@@ -894,8 +1000,8 @@ def save_lisansarena_config():
         else:
             cfg = {}
         
-        if data.get("lisansarena_bot_token") and data.get("lisansarena_bot_token") != "<configured>":
-            cfg["lisansarena_bot_token"] = data["lisansarena_bot_token"]
+        if any(marker in key.lower() for key in data for marker in ('token', 'session', 'secret', 'key', 'hash')):
+            return jsonify({"success": False, "message": "Secret değerleri panelden değiştirilemez."}), 400
         if data.get("admin_id"):
             cfg["admin_id"] = int(data["admin_id"])
         
@@ -975,43 +1081,29 @@ def get_config():
     try:
         with open(CONFIG_FILE, 'r', encoding="utf-8") as f:
             cfg = json.load(f)
-        secret_markers = ('token', 'session', 'key', 'hash', 'secret', 'proxy')
-        safe_cfg = {
-            k: ("<configured>" if any(marker in k.lower() for marker in secret_markers) and v else v)
-            for k, v in cfg.items()
-        }
+        safe_keys = {'admin_id', 'ad_sleep_min', 'ad_sleep_max'}
+        safe_cfg = {key: cfg.get(key) for key in safe_keys if key in cfg}
         return jsonify(safe_cfg)
     except Exception as e:
         return jsonify({"error": str(e)})
 
 @app.route('/api/config', methods=['POST'])
 def save_config():
-    data = request.json
+    data = request.json or {}
     try:
-        # Keep internal running states and merge shopier links when saving config
+        if any(marker in key.lower() for key in data for marker in ('token', 'session', 'secret', 'key', 'hash', 'proxy')):
+            return jsonify({"success": False, "message": "Secret değerleri panelden değiştirilemez."}), 400
+        allowed = {'admin_id', 'ad_sleep_min', 'ad_sleep_max'}
         if os.path.exists(CONFIG_FILE):
             with open(CONFIG_FILE, 'r', encoding="utf-8") as f:
                 old_cfg = json.load(f)
-            data["ad_bot_running"] = old_cfg.get("ad_bot_running", False)
-            data["support_bot_running"] = old_cfg.get("support_bot_running", False)
-            
-            # Merge shopier_links to protect 24 keys
-            old_links = old_cfg.get("shopier_links", {})
-            new_links = data.get("shopier_links", {})
-            for k, v in new_links.items():
-                if v:  # Only update if a value is provided
-                    old_links[k] = v
-            data["shopier_links"] = old_links
-
-            # Redacted/blank secret fields from the dashboard must not erase
-            # the stored credentials when ordinary settings are saved.
-            for key, old_value in old_cfg.items():
-                if any(marker in key.lower() for marker in ('token', 'session', 'key', 'hash', 'secret', 'proxy')):
-                    if not data.get(key) or data.get(key) == '<configured>':
-                        data[key] = old_value
-            
+        else:
+            old_cfg = {}
+        for key in allowed:
+            if key in data:
+                old_cfg[key] = data[key]
         with open(CONFIG_FILE, 'w', encoding="utf-8") as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
+            json.dump(old_cfg, f, indent=2, ensure_ascii=False)
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
@@ -1217,7 +1309,9 @@ def save_blacklist(blacklist_list):
         # Firestore'a senkronize et (sadece blacklist_list alanını güncelliyoruz)
         try:
             import requests
-            API_KEY = "AIzaSyCZz54GBF4nCgP84DsTSwwMyPq70Lb_Mjo"
+            API_KEY = os.environ.get("FIREBASE_API_KEY", "").strip()
+            if not API_KEY:
+                raise RuntimeError("FIREBASE_API_KEY is not configured")
             PROJECT_ID = "bot-2-63772"
             url = f"https://firestore.googleapis.com/v1/projects/{PROJECT_ID}/databases/(default)/documents/reklam/state?updateMask.fieldPaths=blacklist_list&key={API_KEY}"
             
@@ -1287,15 +1381,14 @@ def api_groups():
 
 # KEEP-ALIVE: Render free tier uyku modunu engelle (her 10dk kendine ping at)
 def keep_alive():
-    import urllib.request, ssl
+    import urllib.request
     time.sleep(30)  # App'in ayağa kalkmasını bekle
     render_url = os.environ.get("RENDER_EXTERNAL_URL", "https://froxy-bot.onrender.com")
     ping_url = render_url.rstrip('/') + "/api/status"
     print(f"[KeepAlive] Başlatıldı. Her 10dk {ping_url} adresine ping atılacak.")
-    ctx = ssl._create_unverified_context()
     while True:
         try:
-            urllib.request.urlopen(ping_url, context=ctx, timeout=10)
+            urllib.request.urlopen(ping_url, timeout=10)
         except Exception:
             pass
         time.sleep(600)  # 10 dakika
@@ -1337,9 +1430,6 @@ def shopier_callback():
         data = request.form.to_dict()
         if not data:
             data = request.json or {}
-            
-        print(f"📥 Received Shopier Webhook: {data}")
-        
         platform_order_id = data.get("platform_order_id")
         email = data.get("email", "").strip().lower()
         phone = data.get("phone", "").strip()
@@ -1348,6 +1438,8 @@ def shopier_callback():
         
         if not platform_order_id or not email:
             return jsonify({"success": False, "message": "Missing required fields"}), 400
+
+        print(f"[Shopier] Received order callback: {platform_order_id}")
             
         phone_clean = phone.replace("+", "").replace(" ", "").strip()
         
@@ -1420,12 +1512,14 @@ async def disconnect_auth_client(client):
 def tg_send_code():
     data = request.json or {}
     phone = data.get("phone", "").strip()
-    api_id = data.get("api_id", "").strip()
-    api_hash = data.get("api_hash", "").strip()
+    api_id = os.environ.get('TELEGRAM_API_ID', '').strip()
+    api_hash = os.environ.get('TELEGRAM_API_HASH', '').strip()
     slot = data.get("slot", "1") # "1", "2", "3"
     
-    if not phone or not api_id or not api_hash:
-        return jsonify({"success": False, "message": "Lütfen Telefon, API ID ve API Hash giriniz."})
+    if not phone:
+        return jsonify({"success": False, "message": "Lütfen telefon numarasını giriniz."})
+    if not api_id or not api_hash:
+        return jsonify({"success": False, "message": "Telegram API bilgileri sunucuda yapılandırılmamış."}), 503
         
     try:
         api_id_int = int(api_id)
@@ -1496,28 +1590,12 @@ def tg_verify_code():
         if state.get("loop") and not state["loop"].is_closed():
             state["loop"].close()
         
-        # Save to single-tenant config (bot_config.json)
-        if os.path.exists(CONFIG_FILE):
-            with open(CONFIG_FILE, "r", encoding="utf-8") as f:
-                cfg = json.load(f)
-        else:
-            cfg = {}
-        store_slot_session(cfg, slot, session_str)
-        with open(CONFIG_FILE, "w", encoding="utf-8") as f:
-            json.dump(cfg, f, indent=2, ensure_ascii=False)
-
-        env_var = SLOT_ENV_VARS.get(slot, "")
-        note = (f"\n\nÖNEMLİ: Render'da kalıcı olması için yeni anahtarı {env_var} "
-                "ortam değişkenine yapıştırın.") if env_var else ""
+        env_var = persist_render_session(slot, session_str)
         return jsonify({
             "success": True,
-            "message": f"Hesap #{slot} başarıyla bağlandı!" + note,
-            "session_string": session_str,
+            "message": f"Hesap #{slot} doğrulandı ve Render secret güncellendi.",
             "render_env_var": env_var,
-            "warning": (
-                f"Render'da kalıcı olması için bu anahtarı {env_var} ortam "
-                "değişkenine yapıştırın; aksi halde ilk deploy'da kaybolur."
-            ) if env_var else "",
+            "deploy_required": True,
         })
     except Exception as e:
         return jsonify({"success": False, "message": f"Doğrulama hatası: {str(e)}"})
@@ -1545,30 +1623,46 @@ def tg_verify_password():
         if state.get("loop") and not state["loop"].is_closed():
             state["loop"].close()
         
-        if os.path.exists(CONFIG_FILE):
-            with open(CONFIG_FILE, "r", encoding="utf-8") as f:
-                cfg = json.load(f)
-        else:
-            cfg = {}
-        store_slot_session(cfg, slot, session_str)
-        with open(CONFIG_FILE, "w", encoding="utf-8") as f:
-            json.dump(cfg, f, indent=2, ensure_ascii=False)
-
-        env_var = SLOT_ENV_VARS.get(slot, "")
-        note = (f"\n\nÖNEMLİ: Render'da kalıcı olması için yeni anahtarı {env_var} "
-                "ortam değişkenine yapıştırın.") if env_var else ""
+        env_var = persist_render_session(slot, session_str)
         return jsonify({
             "success": True,
-            "message": f"Hesap #{slot} iki adımlı doğrulama ile başarıyla bağlandı!" + note,
-            "session_string": session_str,
+            "message": f"Hesap #{slot} doğrulandı ve Render secret güncellendi.",
             "render_env_var": env_var,
-            "warning": (
-                f"Render'da kalıcı olması için bu anahtarı {env_var} ortam "
-                "değişkenine yapıştırın; aksi halde ilk deploy'da kaybolur."
-            ) if env_var else "",
+            "deploy_required": True,
         })
     except Exception as e:
         return jsonify({"success": False, "message": f"Şifre doğrulama hatası: {str(e)}"})
+
+
+_shutdown_started = False
+
+
+def shutdown_child_processes():
+    global _shutdown_started
+    if _shutdown_started:
+        return
+    _shutdown_started = True
+    for script_name in (
+        'otomatik_katil.py', 'froxy_bot.py',
+        'froxy_destek_bot.py', 'lisansarena_bot.py',
+    ):
+        kill_process_by_script(script_name)
+
+
+def _handle_shutdown_signal(signum, _frame):
+    print(f"[App] shutdown signal {signum}; stopping Telegram children.")
+    shutdown_child_processes()
+    raise SystemExit(0)
+
+
+atexit.register(shutdown_child_processes)
+if threading.current_thread() is threading.main_thread():
+    try:
+        import signal as _signal
+        _signal.signal(_signal.SIGTERM, _handle_shutdown_signal)
+        _signal.signal(_signal.SIGINT, _handle_shutdown_signal)
+    except Exception:
+        pass
 
 
 # Start background threads at module load (works under Gunicorn and direct python app.py)

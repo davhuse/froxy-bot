@@ -122,8 +122,8 @@ async def safe_event_edit(event, *args, **kwargs):
         logger.debug("Ignored an identical callback edit for user %s.", event.sender_id)
         return None
 
-API_ID = 31076280
-API_HASH = '7ba4072dcf0a05a7ccf80e570866b6d8'
+API_ID = int(os.environ.get("TELEGRAM_API_ID", "0") or 0)
+API_HASH = os.environ.get("TELEGRAM_API_HASH", "").strip()
 CONFIG_FILE = "bot_config.json"
 LINKS_FILE = "lisansarena_shopier_links.json"
 
@@ -225,16 +225,16 @@ if not config:
 
 # Read token for LisansArena
 
-IBAN_NO = "TR570008291009491531109206"
+IBAN_NO = "TR570082900009491531109206"
 IBAN_ALICI = "Mahmut Rençber"
 IBAN_UYARI = "🔴 **ÖNEMLİ UYARI:** Havale / EFT ödemesi yaparken **AÇIKLAMA alanını KESİNLİKLE BOŞ BIRAKINIZ!** Açıklama kısmına hiçbir şey yazmayınız."
 
-BOT_TOKEN = config.get("lisansarena_bot_token", "8272543860:AAGmIdyky47dOxFBmqCz-4mZGzvo1jknFDU")
-ADMIN_ID = config.get("admin_id", 8797763469)
+BOT_TOKEN = os.environ.get("LISANSARENA_BOT_TOKEN", "").strip()
+ADMIN_ID = int(os.environ.get("TELEGRAM_ADMIN_ID", config.get("admin_id", 0)) or 0)
 BOT_USER_ID = None
 
-if not BOT_TOKEN or BOT_TOKEN == "YOUR_TELEGRAM_BOT_TOKEN":
-    logger.error("Invalid LisansArena Bot Token in config. Exiting.")
+if not API_ID or not API_HASH or not BOT_TOKEN:
+    logger.error("LisansArena Telegram secrets are not configured. Exiting.")
     exit(1)
 
 # In-memory user state

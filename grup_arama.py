@@ -4,8 +4,8 @@ from telethon import TelegramClient
 from telethon.sessions import StringSession
 from telethon.tl.functions.contacts import SearchRequest
 
-api_id = 31076280
-api_hash = '7ba4072dcf0a05a7ccf80e570866b6d8'
+api_id = int(os.environ.get('TELEGRAM_API_ID', '0') or 0)
+api_hash = os.environ.get('TELEGRAM_API_HASH', '').strip()
 
 KEYWORDS = [
     # Kupon & İndirim

@@ -3,11 +3,6 @@ import sys
 import json
 import urllib.request
 import urllib.error
-import ssl
-
-ctx = ssl.create_default_context()
-ctx.check_hostname = False
-ctx.verify_mode = ssl.CERT_NONE
 
 # List of updated products for KeyVadi Shopier store
 PRODUCTS_TO_UPDATE = [
@@ -82,7 +77,7 @@ def update_via_api(token):
     # 1. Fetch existing products
     try:
         req = urllib.request.Request("https://api.shopier.com/v1/products", headers=headers)
-        with urllib.request.urlopen(req, context=ctx) as resp:
+        with urllib.request.urlopen(req) as resp:
             existing = json.loads(resp.read().decode('utf-8'))
             print(f"✅ Mevcut Shopier Ürün Sayısı: {len(existing)}")
     except Exception as e:
@@ -121,7 +116,7 @@ def update_via_api(token):
                     headers=headers,
                     method="PUT"
                 )
-                with urllib.request.urlopen(put_req, context=ctx) as resp:
+                with urllib.request.urlopen(put_req) as resp:
                     print(f"   ✅ {title} başarıyla güncellendi!")
             except Exception as pe:
                 print(f"   ⚠️ Güncelleme hatası: {pe}")
@@ -147,7 +142,7 @@ def update_via_api(token):
                     headers=headers,
                     method="POST"
                 )
-                with urllib.request.urlopen(post_req, context=ctx) as resp:
+                with urllib.request.urlopen(post_req) as resp:
                     res_data = json.loads(resp.read().decode('utf-8'))
                     print(f"   ✅ {title} başarıyla oluşturuldu! (ID: {res_data.get('id')})")
             except Exception as pe:

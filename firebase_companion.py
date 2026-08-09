@@ -26,7 +26,7 @@ import psutil
 import requests
 
 # ── Ayarlar ──────────────────────────────────────────────────────────────────
-API_KEY    = "AIzaSyCZz54GBF4nCgP84DsTSwwMyPq70Lb_Mjo"
+API_KEY    = os.environ.get("FIREBASE_API_KEY", "").strip()
 PROJECT_ID = "bot-2-63772"
 BASE_URL   = f"https://firestore.googleapis.com/v1/projects/{PROJECT_ID}/databases/(default)/documents"
 

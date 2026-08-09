@@ -164,29 +164,11 @@
                     <h2><i class="fa-solid fa-gears"></i> Bot Yapılandırması</h2>
                     
                     <div class="form-group">
-                        <label for="cfgBotToken">Telegram Bot Token (BotFather)</label>
-                        <input type="text" id="cfgBotToken" placeholder="Örn: 123456789:ABCdefGhI..." spellcheck="false">
-                    </div>
-                    
-                    <div class="form-group">
                         <label for="cfgAdminId">Admin Telegram Chat ID (Destek Mesajları İçin)</label>
                         <input type="number" id="cfgAdminId" placeholder="Örn: 987654321">
                     </div>
 
-                    <div class="form-group">
-                        <label for="cfgAdStringSession">Reklam Botu 1. Hesap StringSession Anahtarı (Bulut Sunucu İçin)</label>
-                        <input type="text" id="cfgAdStringSession" placeholder="Örn: 1BQWxsY..." spellcheck="false">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="cfgAdStringSession2">Reklam Botu 2. Hesap StringSession Anahtarı (İsteğe Bağlı)</label>
-                        <input type="text" id="cfgAdStringSession2" placeholder="Örn: 1BQWxsY..." spellcheck="false">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="cfgAdStringSession3">Reklam Botu 3. Hesap StringSession Anahtarı (İsteğe Bağlı)</label>
-                        <input type="text" id="cfgAdStringSession3" placeholder="Örn: 1BQWxsY..." spellcheck="false">
-                    </div>
+                    <p class="info-note"><i class="fa-solid fa-lock"></i> Bot tokenları ve Telegram oturumları yalnızca Render secret olarak saklanır.</p>
 
                     <h3>Reklam Botu Ayarları</h3>
                     <div class="form-row">
@@ -206,17 +188,6 @@
                         <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 15px; line-height: 1.4;">
                             API ID, Hash ve Telefon bilgilerinizi girip telefonunuza gelen kodu yazarak hesabınızı anında bağlayabilirsiniz.
                         </p>
-                        
-                        <div class="form-row">
-                            <div class="form-group half">
-                                <label for="tgApiId" style="font-size:0.8rem;">API ID</label>
-                                <input type="text" id="tgApiId" placeholder="Örn: 1234567" spellcheck="false" style="padding: 8px 10px;">
-                            </div>
-                            <div class="form-group half">
-                                <label for="tgApiHash" style="font-size:0.8rem;">API Hash</label>
-                                <input type="text" id="tgApiHash" placeholder="Örn: 7ba4072d..." spellcheck="false" style="padding: 8px 10px;">
-                            </div>
-                        </div>
                         <div class="form-row" style="margin-top: 10px;">
                             <div class="form-group half">
                                 <label for="tgPhone" style="font-size:0.8rem;">Telefon Numarası</label>
@@ -299,11 +270,7 @@
                 <div class="config-section glass-panel">
                     <h2><i class="fa-solid fa-gears"></i> Froxy AI Bot Yapılandırması</h2>
                     
-                    <div class="form-group">
-                        <label for="cfgFroxyBotToken">Froxy AI Bot Token (@FroxyDestekBOT)</label>
-                        <input type="text" id="cfgFroxyBotToken" placeholder="Örn: 123456789:ABCdefGhI..." spellcheck="false">
-                    </div>
-                    
+                    <p class="info-note"><i class="fa-solid fa-lock"></i> Bot tokenı yalnızca Render secret olarak yönetilir.</p>
                     <div class="form-group">
                         <label for="cfgFroxyAdminId">Froxy Admin Telegram Chat ID</label>
                         <input type="number" id="cfgFroxyAdminId" placeholder="Örn: 987654321">
@@ -350,11 +317,7 @@
                 <div class="config-section glass-panel">
                     <h2><i class="fa-solid fa-gears"></i> LisansArena Bot Yapılandırması</h2>
                     
-                    <div class="form-group">
-                        <label for="cfgLisansarenaBotToken">LisansArena Bot Token (@LisansArenaBot)</label>
-                        <input type="text" id="cfgLisansarenaBotToken" placeholder="Örn: 8272543860:AAGmIdyky47dOxFBmqCz..." spellcheck="false">
-                    </div>
-                    
+                    <p class="info-note"><i class="fa-solid fa-lock"></i> Bot tokenı yalnızca Render secret olarak yönetilir.</p>
                     <div class="form-group">
                         <label for="cfgLisansarenaAdminId">LisansArena Admin Telegram Chat ID</label>
                         <input type="number" id="cfgLisansarenaAdminId" placeholder="Örn: 8797763469">
@@ -409,6 +372,12 @@
                         </table>
                     </div>
                 </div>
+            </div>
+
+            <div class="glass-panel" style="width:100%; padding:20px; margin-top:16px;">
+                <h2><i class="fa-solid fa-shield-halved"></i> Hesap Bazlı Telegram Grup Durumları</h2>
+                <p style="color:rgba(255,255,255,.6); margin:8px 0 14px;">Kalıcı banlar, geçici slow mode ve erişim incelemeleri hesaplara göre ayrılır.</p>
+                <div id="accountGroupStatus" style="display:grid; gap:10px;"></div>
             </div>
         </div>
 

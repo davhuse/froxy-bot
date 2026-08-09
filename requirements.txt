@@ -2,3 +2,5 @@ Flask
 Telethon
 requests
 psutil
+google-auth
+gunicorn

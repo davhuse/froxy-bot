@@ -1,17 +1,20 @@
 import urllib.request
 import json
-import ssl
+import os
 import sys
 
 if sys.platform.startswith('win'):
     sys.stdout.reconfigure(encoding='utf-8')
 
 def fetch_logs():
-    context = ssl._create_unverified_context()
     url = "https://froxy-bot.onrender.com/api/logs"
     try:
         req = urllib.request.Request(url)
-        with urllib.request.urlopen(req, context=context, timeout=15) as response:
+        token = os.environ.get("PANEL_ADMIN_TOKEN", "").strip()
+        if not token:
+            raise RuntimeError("PANEL_ADMIN_TOKEN is required")
+        req.add_header("X-Admin-Token", token)
+        with urllib.request.urlopen(req, timeout=15) as response:
             data = json.loads(response.read().decode('utf-8'))
             logs = data.get("logs", [])
             print("=" * 80)

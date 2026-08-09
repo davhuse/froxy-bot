@@ -48,8 +48,8 @@ async def async_claim_event(event, scope):
     )
     return result is not False
 
-API_ID = 31076280
-API_HASH = '7ba4072dcf0a05a7ccf80e570866b6d8'
+API_ID = int(os.environ.get("TELEGRAM_API_ID", "0") or 0)
+API_HASH = os.environ.get("TELEGRAM_API_HASH", "").strip()
 CONFIG_FILE = "bot_config.json"
 
 # Load config
@@ -95,12 +95,12 @@ if not config:
     logger.error("bot_config.json could not be loaded. Exiting.")
     exit(1)
 
-BOT_TOKEN = config.get("froxy_bot_token", "")
-ADMIN_ID = config.get("froxy_admin_id", config.get("admin_id", 0))
+BOT_TOKEN = os.environ.get("FROXY_SUPPORT_BOT_TOKEN", "").strip()
+ADMIN_ID = int(os.environ.get("FROXY_ADMIN_ID", config.get("froxy_admin_id", config.get("admin_id", 0))) or 0)
 BOT_USER_ID = None
 
 if not BOT_TOKEN or BOT_TOKEN == "YOUR_TELEGRAM_BOT_TOKEN":
-    logger.error("Invalid Froxy Bot Token in config (froxy_bot_token). Please set it via Web Panel.")
+    logger.error("FROXY_SUPPORT_BOT_TOKEN is not configured. Exiting.")
     exit(1)
 
 # In-memory user state

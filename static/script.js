@@ -1,14 +1,28 @@
-// The panel token is never embedded in the bundle; it is supplied once by the
-// operator and kept only in browser localStorage for this session.
+// The panel token is never embedded in the bundle or persisted in Web Storage.
+// It lives only in this page's JavaScript memory and is requested again after
+// a refresh, limiting exposure if unrelated browser content is compromised.
 const nativeFetch = window.fetch.bind(window);
+let panelAdminToken = '';
 window.fetch = async (input, init = {}) => {
     const headers = new Headers(init.headers || {});
     const requestUrl = typeof input === 'string' ? input : input.url;
     const requestMethod = (init.method || (typeof input !== 'string' && input.method) || 'GET').toUpperCase();
-    const publicHealth = requestMethod === 'GET' && (requestUrl.endsWith('/api/status') || requestUrl.endsWith('/api/account-restrictions'));
-    let token = localStorage.getItem('panel_admin_token');
-    if (token) headers.set('X-Admin-Token', token);
-    return nativeFetch(input, { ...init, headers });
+    const parsedUrl = new URL(requestUrl, window.location.origin);
+    const publicHealth = requestMethod === 'GET' && parsedUrl.pathname === '/api/status';
+    const privileged = parsedUrl.pathname.startsWith('/api/') && !publicHealth;
+    if (privileged && !panelAdminToken) {
+        panelAdminToken = window.prompt('Panel yönetici anahtarını girin:') || '';
+        if (!panelAdminToken) throw new Error('Panel authentication cancelled');
+    }
+    if (privileged) headers.set('X-Admin-Token', panelAdminToken);
+    let response = await nativeFetch(input, { ...init, headers });
+    if (privileged && response.status === 401) {
+        panelAdminToken = window.prompt('Anahtar geçersiz. Panel yönetici anahtarını yeniden girin:') || '';
+        if (!panelAdminToken) return response;
+        headers.set('X-Admin-Token', panelAdminToken);
+        response = await nativeFetch(input, { ...init, headers });
+    }
+    return response;
 };
 
 const UI = {
@@ -43,7 +57,6 @@ const UI = {
     btnFroxyStart: document.getElementById('btnFroxyStart'),
     btnFroxyStop: document.getElementById('btnFroxyStop'),
     froxyTerminal: document.getElementById('froxyTerminalOutput'),
-    cfgFroxyBotToken: document.getElementById('cfgFroxyBotToken'),
     cfgFroxyAdminId: document.getElementById('cfgFroxyAdminId'),
     btnSaveFroxyConfig: document.getElementById('btnSaveFroxyConfig'),
     
@@ -53,16 +66,11 @@ const UI = {
     btnLisansarenaStart: document.getElementById('btnLisansarenaStart'),
     btnLisansarenaStop: document.getElementById('btnLisansarenaStop'),
     lisansarenaTerminal: document.getElementById('lisansarenaTerminalOutput'),
-    cfgLisansarenaBotToken: document.getElementById('cfgLisansarenaBotToken'),
     cfgLisansarenaAdminId: document.getElementById('cfgLisansarenaAdminId'),
     btnSaveLisansarenaConfig: document.getElementById('btnSaveLisansarenaConfig'),
     
     // Config Form Inputs
-    cfgBotToken: document.getElementById('cfgBotToken'),
     cfgAdminId: document.getElementById('cfgAdminId'),
-    cfgAdStringSession: document.getElementById('cfgAdStringSession'),
-    cfgAdStringSession2: document.getElementById('cfgAdStringSession2'),
-    cfgAdStringSession3: document.getElementById('cfgAdStringSession3'),
     cfgAdSleepMin: document.getElementById('cfgAdSleepMin'),
     cfgAdSleepMax: document.getElementById('cfgAdSleepMax'),
     btnSaveConfig: document.getElementById('btnSaveConfig'),
@@ -89,6 +97,7 @@ function switchTab(tabName) {
         loadDMLogs();
     } else if (tabName === 'blacklist') {
         loadBlacklist();
+        loadGroupStatus();
     } else if (tabName === 'scraper') {
         loadScraperConfig();
     } else if (tabName === 'tickets') {
@@ -203,6 +212,52 @@ function formatAdCountdown(seconds) {
     return `${minutes}dk ${String(secs).padStart(2, '0')}sn`;
 }
 
+async function loadGroupStatus() {
+    const container = document.getElementById('accountGroupStatus');
+    if (!container) return;
+    container.replaceChildren();
+    try {
+        const response = await fetch('/api/group-status');
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || `HTTP ${response.status}`);
+        const sections = [
+            ['Kalıcı engeller', data.permanent || []],
+            ['Süreli beklemeler', data.temporary || []],
+            ['Erişim incelemeleri', data.review || []]
+        ];
+        for (const [title, rows] of sections) {
+            const section = document.createElement('section');
+            section.style.cssText = 'padding:12px;border:1px solid rgba(255,255,255,.1);border-radius:10px';
+            const heading = document.createElement('h3');
+            heading.textContent = `${title} (${rows.length})`;
+            heading.style.margin = '0 0 8px';
+            section.appendChild(heading);
+            if (!rows.length) {
+                const empty = document.createElement('p');
+                empty.textContent = 'Kayıt yok.';
+                empty.style.cssText = 'margin:0;color:rgba(255,255,255,.55)';
+                section.appendChild(empty);
+            } else {
+                for (const row of rows) {
+                    const line = document.createElement('div');
+                    const account = row.account || 'Bilinmeyen hesap';
+                    const group = row.group || 'Bilinmeyen grup';
+                    const reason = row.reason || row.status || 'Neden kayıtlı değil';
+                    line.textContent = `${account} • @${String(group).replace(/^@/, '')} • ${reason}`;
+                    line.style.cssText = 'padding:6px 0;border-top:1px solid rgba(255,255,255,.06)';
+                    section.appendChild(line);
+                }
+            }
+            container.appendChild(section);
+        }
+    } catch (error) {
+        const message = document.createElement('p');
+        message.textContent = `Grup durumları alınamadı: ${error.message}`;
+        message.style.color = '#fca5a5';
+        container.appendChild(message);
+    }
+}
+
 function renderAdCountdowns() {
     Object.entries(adCountdownState).forEach(([account, state]) => {
         const card = document.getElementById(`countdown${account}`);
@@ -210,7 +265,14 @@ function renderAdCountdowns() {
         const value = card.querySelector('.countdown-value');
         const meta = card.querySelector('.countdown-meta');
         const seconds = Math.max(0, Math.ceil((state.targetAt - Date.now()) / 1000));
-        if (state.hasCountdown && seconds > 0) {
+        if (!state.telegramAuthorized) {
+            value.textContent = state.phase === 'session_invalid' ? 'Oturum Geçersiz' :
+                state.phase === 'standby_owner' ? 'İkinci Worker Engellendi' :
+                state.phase === 'configuration_error' ? 'Yapılandırma Hatası' :
+                state.phase === 'stopped' ? 'Durduruldu' : 'Telegram Bağlı Değil';
+            value.style.color = '#f87171';
+            meta.textContent = state.lastError || 'Yetkilendirilmiş Telegram bağlantısı yok';
+        } else if (state.hasCountdown && seconds > 0) {
             value.textContent = formatAdCountdown(seconds);
             value.style.color = '#fbbf24';
             meta.textContent = state.phase === 'sending' ? 'Blast gönderiliyor' : 'Sonraki blast için bekliyor';
@@ -237,6 +299,9 @@ function updateAdCountdowns(accounts) {
         const remaining = Number(data.remaining_seconds);
         adCountdownState[account] = {
             phase: data.phase || '',
+            telegramAuthorized: data.telegram_authorized === true,
+            telegramConnected: data.telegram_connected === true,
+            lastError: data.last_error || data.session_error || '',
             hasCountdown: Number.isFinite(remaining) && remaining > 0,
             targetAt: Date.now() + (Number.isFinite(remaining) ? Math.max(0, remaining) * 1000 : 0)
         };
@@ -260,6 +325,10 @@ function updateStatusUI(status) {
     
     if (status === 'running') {
         UI.statusText.textContent = 'Çalışıyor';
+        UI.btnStart.disabled = true; UI.btnStart.style.opacity = '0.5';
+        UI.btnStop.disabled = false; UI.btnStop.style.opacity = '1';
+    } else if (status === 'degraded') {
+        UI.statusText.textContent = 'Oturum Sorunu';
         UI.btnStart.disabled = true; UI.btnStart.style.opacity = '0.5';
         UI.btnStop.disabled = false; UI.btnStop.style.opacity = '1';
     } else if (status === 'stopped') {
@@ -485,7 +554,6 @@ async function loadFroxyConfig() {
     try {
         const res = await fetch('/api/froxy/config');
         const data = await res.json();
-        UI.cfgFroxyBotToken.value = data.froxy_bot_token || '';
         UI.cfgFroxyAdminId.value = data.froxy_admin_id || '';
     } catch (e) {
         console.error("Froxy config load error: ", e);
@@ -497,7 +565,6 @@ async function saveFroxyConfig() {
     UI.btnSaveFroxyConfig.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Kaydediliyor...';
     
     const configData = {
-        froxy_bot_token: UI.cfgFroxyBotToken.value.trim(),
         froxy_admin_id: parseInt(UI.cfgFroxyAdminId.value) || 0
     };
     
@@ -575,7 +642,6 @@ async function loadLisansarenaConfig() {
     try {
         const res = await fetch('/api/lisansarena/config');
         const data = await res.json();
-        UI.cfgLisansarenaBotToken.value = data.lisansarena_bot_token || '';
         UI.cfgLisansarenaAdminId.value = data.admin_id || '';
     } catch (e) {
         console.error("LisansArena config load error: ", e);
@@ -587,7 +653,6 @@ async function saveLisansarenaConfig() {
     UI.btnSaveLisansarenaConfig.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Kaydediliyor...';
     
     const configData = {
-        lisansarena_bot_token: UI.cfgLisansarenaBotToken.value.trim(),
         admin_id: parseInt(UI.cfgLisansarenaAdminId.value) || 0
     };
     
@@ -620,12 +685,8 @@ async function loadConfig() {
     try {
         const res = await fetch('/api/config');
         const data = await res.json();
-        if (data.bot_token || data.ad_string_session || data.ad_string_session_2 || data.ad_sleep_min) {
-            UI.cfgBotToken.value = data.bot_token || '';
+        if (data.admin_id || data.ad_sleep_min) {
             UI.cfgAdminId.value = data.admin_id || '';
-            UI.cfgAdStringSession.value = data.ad_string_session || '';
-            UI.cfgAdStringSession2.value = data.ad_string_session2 || data.ad_string_session_2 || '';
-            UI.cfgAdStringSession3.value = data.ad_string_session3 || data.ad_string_session_3 || '';
             UI.cfgAdSleepMin.value = data.ad_sleep_min || 180;
             UI.cfgAdSleepMax.value = data.ad_sleep_max || 300;
         }
@@ -639,11 +700,7 @@ async function saveConfig() {
     UI.btnSaveConfig.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Kaydediliyor...';
     
     const configData = {
-        bot_token: UI.cfgBotToken.value.trim(),
         admin_id: parseInt(UI.cfgAdminId.value) || 0,
-        ad_string_session: UI.cfgAdStringSession.value.trim(),
-        ad_string_session2: UI.cfgAdStringSession2.value.trim(),
-        ad_string_session3: UI.cfgAdStringSession3.value.trim(),
         ad_sleep_min: parseInt(UI.cfgAdSleepMin.value) || 180,
         ad_sleep_max: parseInt(UI.cfgAdSleepMax.value) || 300,
     };
@@ -1133,13 +1190,11 @@ async function tgSendCode(e) {
     if (e) e.preventDefault();
     
     const phone = document.getElementById('tgPhone').value.trim();
-    const apiId = document.getElementById('tgApiId').value.trim();
-    const apiHash = document.getElementById('tgApiHash').value.trim();
     const slot = document.getElementById('tgSlot').value;
     const btn = document.getElementById('btnTgSendCode');
     
-    if (!phone || !apiId || !apiHash) {
-        alert("Lütfen Telefon, API ID ve API Hash alanlarını doldurunuz.");
+    if (!phone) {
+        alert("Lütfen telefon numarasını giriniz.");
         return;
     }
     
@@ -1150,7 +1205,7 @@ async function tgSendCode(e) {
         const res = await fetch('/api/telegram/send-code', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phone, api_id: apiId, api_hash: apiHash, slot })
+            body: JSON.stringify({ phone, slot })
         });
         const data = await res.json();
         if (data.success) {

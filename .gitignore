@@ -30,5 +30,28 @@ blacklist_meta.json
 # blacklist_migration_v2.done
 blacklist_legacy_backup_*.txt
 
+# Local credentials, login handshakes, diagnostics and historical snapshots.
+# These remain on the operator machine but must never enter a deploy image.
+/bot_config.json
+/scratch/
+/backup_20260721/
+/backup_fixed_20260721/
+/pending_*login*.json
+/complete_*login*.py
+/relogin_*.py
+/keyvadi_oturum_yenile.py
+/handle_1386.py
+/inspect_telegram_live.py
+/relogin_remaining_ads.py
+/check_spambot_live.py
+/generate_session.py
+/session_key_output.txt
+/account_group_blocks.json
+/ad_worker.disabled
+/create_missing_now.py
+/test_froxy_shopier_token.py
+/test_no_media.py
+/upload_shopier_api_direct.py
+
 # Seven-day sales funnel runtime journal
 sales_metrics.jsonl
