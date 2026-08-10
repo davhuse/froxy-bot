@@ -1445,11 +1445,20 @@ def shopier_callback():
                 amount = float(str(total_amount).replace(',', '.'))
             except (TypeError, ValueError):
                 amount = 0.0
+            lowered_product = str(product_name).casefold()
+            bundle = ""
+            if "öğrenci paketi" in lowered_product or "ogrenci paketi" in lowered_product:
+                bundle = "Öğrenci Paketi"
+            elif "eğlence paketi" in lowered_product or "eglence paketi" in lowered_product:
+                bundle = "Eğlence Paketi"
+            elif "ai/üretkenlik" in lowered_product or "ai/uretkenlik" in lowered_product:
+                bundle = "AI/Üretkenlik Paketi"
             record_event(
                 "shopier_order",
                 data.get("shop_slug") or data.get("shop") or "Shopier",
                 amount=amount,
                 product=product_name,
+                bundle=bundle,
                 status="paid",
             )
             

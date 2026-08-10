@@ -104,7 +104,9 @@ PROTECTED_GROUP_ALIASES = {}
 # Kullanıcı tarafından katılım talebi geri çekilen gruplar. Bu gruplar yeni
 # katılım kuyruğuna tekrar alınmaz. Hesap zaten üyeyse reklam hedefi olmaya
 # devam eder; yalnızca bekleyen talep geri çekilir.
-CANCELLED_JOIN_REQUESTS = {"kuponceking"}
+# A withdrawn invitation is never a target again.  Keep aliases normalized,
+# because Telegram invite hashes are case-insensitive in the local queue.
+CANCELLED_JOIN_REQUESTS = {"kuponceking", "kcy3-gcnhwqxyzk0"}
 
 # Uyeliginden cikilacak gruplar.  Ban yedigimiz bir grupta uye kalmaya devam
 # etmek, yoneticiler hesabi tekrar fark ettiginde ikinci bir bana yol aciyor.
@@ -3661,6 +3663,15 @@ async def main():
                         msg = process_marketing_features(
                             msg, is_keyvadi, is_lisansarena, is_short=is_short_group
                         )
+                        # Keep the seven-day package experiment visible without
+                        # turning every advert into a second long catalogue.
+                        # Strict/short groups retain their approved short copy.
+                        if (is_keyvadi or is_lisansarena) and not is_short_group:
+                            package_lines = (
+                                "Paket fırsatları: Öğrenci • Eğlence • AI/Üretkenlik — DM'den detay."
+                            )
+                            if package_lines not in msg:
+                                msg = f"{msg.rstrip()}\n{package_lines}"
                         if is_short_group:
                             # Spintax sonrasinda da sert sinir uygula; bu gruba asla uzun
                             # normal-sablon veya ek kampanya blogu dusmez.
@@ -4237,7 +4248,14 @@ async def main():
     tasks = []
     for client, name, j_dialogs in active_clients:
         register_admin_handler(client, name, j_dialogs)
-        register_auto_reply_handler(client, name, our_user_ids)
+        # Support bots are the sole owners of customer DM replies.  Running a
+        # second handler on an advertising user account was the source of
+        # duplicate/stacked replies.  It remains an explicit opt-in only for
+        # emergency maintenance, never the production default.
+        if os.environ.get("ENABLE_AD_WORKER_DM_REPLIES", "0").strip().lower() in {"1", "true", "yes", "on"}:
+            register_auto_reply_handler(client, name, our_user_ids)
+        else:
+            print(f"ℹ️ [{name}] Reklam worker DM otomatik yanıtı kapalı; destek botu sahip.")
         register_telegram_code_forwarder(client, name)
         tasks.append(update_account_bios(client, name))
         tasks.append(run_worker_supervisor(client, name, j_dialogs))

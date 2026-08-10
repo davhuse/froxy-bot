@@ -15,6 +15,7 @@ import user_lang_helper
 import firestore_helper
 from gemini_helper import get_ai_response
 from sales_metrics import record_event
+from support_flow import claim_first_greeting, forward_customer_message, greeting_for, one_time_mode_enabled
 from update_keyvadi_links_json import fetch_live_catalog, write_catalog_atomic
 
 # Async wrappers for firestore_helper to prevent event loop deadlocks/freezes
@@ -1130,6 +1131,18 @@ async def message_handler(event):
                 pass
                 
         user_states[user_id] = None
+        return
+
+    config = load_config() or {}
+    support_chat_id = config.get("support_chat_id", ADMIN_ID)
+    is_admin_context = event.sender_id == ADMIN_ID or event.chat_id == support_chat_id
+    if one_time_mode_enabled() and not is_admin_context:
+        buttons = [[Button.inline("🚫 Kullanıcıyı Engelle (Ban)", f"la_adm_ban_{user_id}".encode())]]
+        if await forward_customer_message(bot, event, support_chat_id, "LisansArena", buttons):
+            record_event("dm_manual_forwarded", "LisansArena", source="telegram_private")
+            if await claim_first_greeting("lisansarena", user_id):
+                await event.respond(greeting_for("LisansArena"))
+                record_event("dm_greeting_sent", "LisansArena", source="telegram_private")
         return
 
     if user_states.get(user_id) == "AWAITING_SUPPORT":

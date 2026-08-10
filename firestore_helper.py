@@ -120,7 +120,7 @@ def _request(url, method="GET", payload=None, timeout=10):
     return urllib.request.urlopen(req, timeout=timeout)
 
 
-def get_document_with_meta(doc_id):
+def get_document_with_meta(doc_id, quiet=False):
     try:
         with _request(f"{BASE_URL}/{urllib.parse.quote(doc_id)}") as response:
             data = json.loads(response.read().decode("utf-8"))
@@ -132,10 +132,12 @@ def get_document_with_meta(doc_id):
     except urllib.error.HTTPError as exc:
         if exc.code == 404:
             return None, None
-        print(f"Firestore read error for doc {doc_id}: HTTP {exc.code}")
+        if not quiet:
+            print(f"Firestore read error for doc {doc_id}: HTTP {exc.code}")
         return None, None
     except Exception as exc:
-        print(f"Firestore read error for doc {doc_id}: {type(exc).__name__}")
+        if not quiet:
+            print(f"Firestore read error for doc {doc_id}: {type(exc).__name__}")
         return None, None
 
 
@@ -157,21 +159,23 @@ def set_document(doc_id, fields_dict):
         return False
 
 
-def _commit(write):
+def _commit(write, quiet=False):
     try:
         with _request(COMMIT_URL, method="POST", payload={"writes": [write]}) as response:
             return response.status in (200, 201)
     except urllib.error.HTTPError as exc:
         if exc.code in (400, 409):
             return False
-        print(f"Firestore conditional write error: HTTP {exc.code}")
+        if not quiet:
+            print(f"Firestore conditional write error: HTTP {exc.code}")
         return None
     except Exception as exc:
-        print(f"Firestore conditional write error: {type(exc).__name__}")
+        if not quiet:
+            print(f"Firestore conditional write error: {type(exc).__name__}")
         return None
 
 
-def claim_document(doc_id, fields_dict=None):
+def claim_document(doc_id, fields_dict=None, quiet=False):
     """Atomically create a document; False means another worker claimed it."""
     return _commit({
         "update": {
@@ -179,10 +183,10 @@ def claim_document(doc_id, fields_dict=None):
             "fields": _fields_to_firestore(fields_dict or {}),
         },
         "currentDocument": {"exists": False},
-    })
+    }, quiet=quiet)
 
 
-def compare_and_set_document(doc_id, fields_dict, update_time):
+def compare_and_set_document(doc_id, fields_dict, update_time, quiet=False):
     if not update_time:
         return False
     return _commit({
@@ -191,7 +195,7 @@ def compare_and_set_document(doc_id, fields_dict, update_time):
             "fields": _fields_to_firestore(fields_dict),
         },
         "currentDocument": {"updateTime": update_time},
-    })
+    }, quiet=quiet)
 
 
 def delete_document(doc_id, update_time=None):

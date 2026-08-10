@@ -837,6 +837,24 @@ async function fetchStats() {
     }
 }
 
+async function loadSalesSummary() {
+    const summary = document.getElementById('salesFunnelSummary');
+    const bundles = document.getElementById('salesBundleSummary');
+    if (!summary || !bundles) return;
+    try {
+        const res = await fetch('/api/sales/summary?days=7');
+        const data = await res.json();
+        const funnel = data.funnel || {};
+        summary.textContent = `${funnel.ad_sent || 0} reklam → ${funnel.dm_received || 0} DM → ${funnel.orders || 0} sipariş • ${Number(data.revenue || 0).toFixed(2)} TL`;
+        const rows = Object.entries(data.by_bundle || {});
+        bundles.textContent = rows.length
+            ? rows.map(([name, value]) => `${name}: ${value.orders || 0} sipariş / ${Number(value.revenue || 0).toFixed(2)} TL`).join('  •  ')
+            : 'Paket siparişleri bekleniyor.';
+    } catch (error) {
+        summary.textContent = 'Satış verisi alınamadı; reklam akışı etkilenmez.';
+    }
+}
+
 // SCRAPER TAB LOGIC
 let scraperKeywords = [];
 
@@ -1074,6 +1092,7 @@ window.onload = () => {
     checkLisansarenaStatus();
     fetchLogs();
     fetchStats();
+    loadSalesSummary();
     loadTickets();
     
     setInterval(checkStatus, 10000);
@@ -1083,6 +1102,7 @@ window.onload = () => {
     setInterval(renderAdCountdowns, 1000);
     setInterval(fetchLogs, 12000);
     setInterval(fetchStats, 15000);
+    setInterval(loadSalesSummary, 60000);
     setInterval(loadTickets, 20000); // Poll tickets every 20 seconds
 };
 

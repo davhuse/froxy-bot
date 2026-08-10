@@ -15,6 +15,7 @@ import firestore_helper
 from gemini_helper import get_ai_response
 from sales_catalog import filter_keyvadi_products
 from sales_metrics import record_event
+from support_flow import claim_first_greeting, forward_customer_message, greeting_for, one_time_mode_enabled
 from update_keyvadi_links_json import fetch_live_catalog, write_catalog_atomic
 
 # Async wrappers for firestore_helper to prevent event loop deadlocks/freezes
@@ -1263,6 +1264,21 @@ async def message_handler(event):
                 pass
                 
         user_states[user_id] = None
+        return
+
+    # The support bot is the only customer-DM owner.  Forward every customer
+    # message, but greet a customer only once across restarts/deploys.
+    config = load_config() or {}
+    admin_chat_id = config.get("admin_id", ADMIN_ID)
+    support_chat_id = config.get("support_chat_id", admin_chat_id)
+    is_admin_context = event.sender_id == admin_chat_id or event.chat_id == support_chat_id
+    if one_time_mode_enabled() and not is_admin_context:
+        buttons = [[Button.inline("🚫 Kullanıcıyı Engelle (Ban)", f"kv_adm_ban_{user_id}".encode())]]
+        if await forward_customer_message(bot, event, support_chat_id, "KeyVadi", buttons):
+            record_event("dm_manual_forwarded", "KeyVadi", source="telegram_private")
+            if await claim_first_greeting("keyvadi", user_id):
+                await event.respond(greeting_for("KeyVadi"))
+                record_event("dm_greeting_sent", "KeyVadi", source="telegram_private")
         return
 
     if user_states.get(user_id) == "AWAITING_SUPPORT":

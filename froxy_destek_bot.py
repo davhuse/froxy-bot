@@ -8,6 +8,8 @@ from telethon.errors import MessageNotModifiedError
 from telethon.sessions import StringSession
 import user_lang_helper
 import firestore_helper
+from sales_metrics import record_event
+from support_flow import claim_first_greeting, forward_customer_message, greeting_for, one_time_mode_enabled
 
 # Logging configuration
 logging.basicConfig(
@@ -575,6 +577,20 @@ async def message_handler(event):
     # Ban check
     ban_data = firestore_helper.get_document(f"ban_{user_id}")
     if ban_data and ban_data.get("banned", False):
+        return
+
+    is_admin_context = event.sender_id == admin_chat_id or event.chat_id == support_chat_id
+    if one_time_mode_enabled() and not is_admin_context:
+        buttons = [[
+            Button.inline("➕ 100 Kredi Ekle", f"adm_add_{user_id}_100".encode()),
+            Button.inline("🚫 Kullanıcıyı Engelle (Ban)", f"adm_ban_{user_id}".encode()),
+        ]]
+        if await forward_customer_message(bot, event, admin_chat_id, "Froxy AI", buttons):
+            record_event("dm_received", "Froxy AI", source="telegram_private")
+            record_event("dm_manual_forwarded", "Froxy AI", source="telegram_private")
+            if await claim_first_greeting("froxy", user_id):
+                await event.respond(greeting_for("Froxy AI"))
+                record_event("dm_greeting_sent", "Froxy AI", source="telegram_private")
         return
 
     if user_states.get(user_id) == "AWAITING_VERIFY_PAYMENT_INFO":
