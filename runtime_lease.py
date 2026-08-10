@@ -22,7 +22,17 @@ class RuntimeLease:
         self.owner_id = f"{identity}:{os.getpid()}:{uuid.uuid4().hex}"
         self.acquired = False
 
+    @property
+    def disabled(self):
+        """Allow the explicitly selected production owner to bypass a stale lease."""
+        return os.environ.get("DISABLE_RUNTIME_LEASE", "").strip().lower() in {
+            "1", "true", "yes", "on"
+        }
+
     async def acquire(self):
+        if self.disabled:
+            self.acquired = True
+            return True
         loop = asyncio.get_running_loop()
         result = await loop.run_in_executor(
             None,
@@ -47,6 +57,9 @@ class RuntimeLease:
                 return
 
     async def release(self):
+        if self.disabled:
+            self.acquired = False
+            return True
         if not self.acquired:
             return True
         loop = asyncio.get_running_loop()
