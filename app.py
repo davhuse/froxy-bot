@@ -22,7 +22,6 @@ app = Flask(__name__,
             template_folder=os.path.join(base_dir, 'templates'),
             static_folder=os.path.join(base_dir, 'static'))
 
-PANEL_ADMIN_TOKEN = os.environ.get('PANEL_ADMIN_TOKEN', '').strip()
 SHOPIER_CALLBACK_SECRET = os.environ.get('SHOPIER_CALLBACK_SECRET', '').strip()
 FROXY_ENABLED = True
 
@@ -33,30 +32,17 @@ app.config.update(
 )
 
 @app.before_request
-def protect_panel_api():
-    """Fail closed for every privileged panel API."""
-    if not request.path.startswith('/api/'):
+def protect_shopier_callback():
+    """Keep the external Shopier callback secret while the local panel stays keyless."""
+    if request.path != '/api/shopier/callback':
         return None
-    if request.path == '/api/status' and request.method == 'GET':
-        return None
-    if request.path == '/api/shopier/callback':
-        if not SHOPIER_CALLBACK_SECRET:
-            print('[Security] Shopier callback is disabled: secret is missing.')
-            return jsonify({'error': 'Callback is not configured'}), 503
-        supplied = (request.args.get('secret')
-                    or request.headers.get('X-Shopier-Secret', ''))
-        if not hmac.compare_digest(str(supplied), SHOPIER_CALLBACK_SECRET):
-            print('[Security] Shopier callback rejected an invalid secret.')
-            return jsonify({'error': 'Unauthorized'}), 401
-        return None
-
-    if not PANEL_ADMIN_TOKEN:
-        return jsonify({'error': 'Panel authentication is not configured'}), 503
-    supplied = request.headers.get('X-Admin-Token', '')
-    authorization = request.headers.get('Authorization', '')
-    if not supplied and authorization.lower().startswith('bearer '):
-        supplied = authorization[7:].strip()
-    if not supplied or not hmac.compare_digest(str(supplied), PANEL_ADMIN_TOKEN):
+    if not SHOPIER_CALLBACK_SECRET:
+        print('[Security] Shopier callback is disabled: secret is missing.')
+        return jsonify({'error': 'Callback is not configured'}), 503
+    supplied = (request.args.get('secret')
+                or request.headers.get('X-Shopier-Secret', ''))
+    if not hmac.compare_digest(str(supplied), SHOPIER_CALLBACK_SECRET):
+        print('[Security] Shopier callback rejected an invalid secret.')
         return jsonify({'error': 'Unauthorized'}), 401
     return None
 

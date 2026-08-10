@@ -3753,17 +3753,9 @@ async def main():
                     except FloodWaitError as e:
                         record_event("ad_failed", client_name, group=normalize_group_key(grup_name), error=type(e).__name__)
                         set_account_restriction(client_name, e.seconds, 'Telegram FloodWait', type(e).__name__, scope='send')
-                        if e.seconds <= 300 and retry_count < 2:
-                            retry_after = e.seconds + 2
-                            print(
-                                f"[{client_name}] ⏳ FloodWait {e.seconds}sn; "
-                                f"@{grup_name} bekleme sonrası yeniden denenecek "
-                                f"({retry_count + 1}/2)."
-                            )
-                        else:
-                            record_group_failure(grup_name, client_name, 'FloodWait', e.seconds, entity)
-                            print(f"[{client_name}] ⏳ FloodWait {e.seconds}sn; hesap duraklatıldı, grup kara listeye alınmadı.")
-                            fail_count += 1
+                        record_group_failure(grup_name, client_name, 'FloodWait', e.seconds, entity)
+                        print(f"[{client_name}] ⏳ FloodWait {e.seconds}sn; hesap duraklatıldı, başka gruba mesaj denenmeyecek.")
+                        fail_count += 1
                     except (PeerFloodError, UserRestrictedError) as e:
                         record_event("ad_failed", client_name, group=normalize_group_key(grup_name), error=type(e).__name__)
                         restriction_seconds = 48 * 60 * 60
@@ -3808,8 +3800,9 @@ async def main():
                         record_event("ad_failed", client_name, group=normalize_group_key(grup_name), error="SlowModeWaitError")
                         wait_sec = getattr(sme, 'seconds', 0) or 0
                         retry_after = max(60, wait_sec + 30)
-                        print(f"[{client_name}] 🐌 @{grup_name} → SlowMode aktif ({wait_sec}sn bekleme); {retry_after}sn kilitleniyor.")
+                        print(f"[{client_name}] 🐌 @{grup_name} → SlowMode aktif; grup {retry_after}sn beklemede, diğer gruplara devam ediliyor.")
                         record_group_failure(grup_name, client_name, 'SlowModeWait', retry_after, entity)
+                        retry_after = 0
                     except Exception as e:
                         record_event("ad_failed", client_name, group=normalize_group_key(grup_name), error=type(e).__name__)
                         err_type = type(e).__name__
@@ -3839,6 +3832,10 @@ async def main():
                 print(f"\n[{client_name}] 📤 Sırayla gönderim başlıyor ({len(blast_targets)} grup)...")
                 for i, g in enumerate(blast_targets, 1):
                     await blast_one(g)
+                    if is_account_restricted(client_name, scope='send'):
+                        state = account_restriction_status(client_name, scope='send')
+                        print(f"[{client_name}] ⏸️ Hesap gönderim kısıtında ({state.get('until', 'bilinmiyor')}); bu tur güvenli biçimde durduruldu.")
+                        break
                     if i < len(blast_targets):
                         delay = random.randint(20, 45)
                         print(f"[{client_name}] ⏳ Sonraki grup için {delay} saniye bekleniyor...")

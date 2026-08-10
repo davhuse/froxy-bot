@@ -1,29 +1,6 @@
-// The panel token is never embedded in the bundle or persisted in Web Storage.
-// It lives only in this page's JavaScript memory and is requested again after
-// a refresh, limiting exposure if unrelated browser content is compromised.
 const nativeFetch = window.fetch.bind(window);
-let panelAdminToken = '';
-window.fetch = async (input, init = {}) => {
-    const headers = new Headers(init.headers || {});
-    const requestUrl = typeof input === 'string' ? input : input.url;
-    const requestMethod = (init.method || (typeof input !== 'string' && input.method) || 'GET').toUpperCase();
-    const parsedUrl = new URL(requestUrl, window.location.origin);
-    const publicHealth = requestMethod === 'GET' && parsedUrl.pathname === '/api/status';
-    const privileged = parsedUrl.pathname.startsWith('/api/') && !publicHealth;
-    if (privileged && !panelAdminToken) {
-        panelAdminToken = window.prompt('Panel yönetici anahtarını girin:') || '';
-        if (!panelAdminToken) throw new Error('Panel authentication cancelled');
-    }
-    if (privileged) headers.set('X-Admin-Token', panelAdminToken);
-    let response = await nativeFetch(input, { ...init, headers });
-    if (privileged && response.status === 401) {
-        panelAdminToken = window.prompt('Anahtar geçersiz. Panel yönetici anahtarını yeniden girin:') || '';
-        if (!panelAdminToken) return response;
-        headers.set('X-Admin-Token', panelAdminToken);
-        response = await nativeFetch(input, { ...init, headers });
-    }
-    return response;
-};
+// This is an owner-operated panel: requests stay keyless as before.
+window.fetch = (input, init = {}) => nativeFetch(input, init);
 
 const UI = {
     statusBadge: document.getElementById('botStatus'),
