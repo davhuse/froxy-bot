@@ -2,9 +2,6 @@ import os
 import json
 import logging
 import re
-import urllib.request
-import ssl
-import html
 import asyncio
 import time
 from datetime import datetime
@@ -16,7 +13,14 @@ import firestore_helper
 from gemini_helper import get_ai_response
 from sales_metrics import record_event
 from support_flow import claim_first_greeting, forward_customer_message, greeting_for, one_time_mode_enabled
-from update_keyvadi_links_json import fetch_live_catalog, write_catalog_atomic
+from lisansarena_payment import (
+    IBAN_COMPACT,
+    IBAN_DISPLAY,
+    IBAN_RECIPIENT,
+    PAYMENT_REPLY_COOLDOWN_SECONDS,
+    PaymentSessionStore,
+    build_payment_message,
+)
 
 # Async wrappers for firestore_helper to prevent event loop deadlocks/freezes
 async def async_get_document(doc_id):
@@ -53,7 +57,7 @@ async def async_run_claim(doc_id, fields):
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(None, firestore_helper.claim_document, doc_id, fields)
 
-PRODUCT_REPLY_COOLDOWN_SECONDS = 90
+PRODUCT_REPLY_COOLDOWN_SECONDS = PAYMENT_REPLY_COOLDOWN_SECONDS
 PRODUCT_REPLY_COOLDOWNS = {}
 LAST_AI_REPLY_TIME = {}
 AUTO_REPLY_COOLDOWN_SECONDS = 300
@@ -80,7 +84,19 @@ def is_product_reply_cooling_down(user_id, products=None, fallback_key=None):
     return PRODUCT_REPLY_COOLDOWNS.get(key, 0) > now
 
 def mark_product_reply_sent(user_id, products=None, fallback_key=None):
-    PRODUCT_REPLY_COOLDOWNS[_product_reply_key(user_id, products, fallback_key)] = time.monotonic() + PRODUCT_REPLY_COOLDOWN_SECONDS
+    expires_at = time.monotonic() + PRODUCT_REPLY_COOLDOWN_SECONDS
+    if products:
+        for product in products:
+            PRODUCT_REPLY_COOLDOWNS[_product_reply_key(user_id, [product])] = expires_at
+        return
+    PRODUCT_REPLY_COOLDOWNS[_product_reply_key(user_id, fallback_key=fallback_key)] = expires_at
+
+
+def filter_products_not_cooling_down(user_id, products):
+    return [
+        product for product in products
+        if not is_product_reply_cooling_down(user_id, [product])
+    ]
 
 def is_auto_reply_cooling_down(user_id):
     return time.monotonic() - LAST_AUTO_REPLY_TIME.get(user_id, 0) < AUTO_REPLY_COOLDOWN_SECONDS
@@ -126,62 +142,7 @@ async def safe_event_edit(event, *args, **kwargs):
 API_ID = int(os.environ.get("TELEGRAM_API_ID", "0") or 0)
 API_HASH = os.environ.get("TELEGRAM_API_HASH", "").strip()
 CONFIG_FILE = "bot_config.json"
-LINKS_FILE = "lisansarena_shopier_links.json"
-
-# The public Shopier catalog is the source of truth.  These two Game Pass
-# listings are no longer public; the four 9999999x IDs were temporary manual
-# placeholders and therefore must never be shown as purchasable products.
-RETIRED_SHOPIER_PRODUCT_IDS = {
-    "48901882", "48901888",
-    "99999991", "99999992", "99999993", "99999994",
-}
-
-# Products that were published after the last exported Shopier catalog.  Keep
-# full Shopier IDs here so the bot always sends a real product URL, rather than
-# a synthetic fallback link.  This list is deliberately merged at load time so
-# refreshing the exported JSON later cannot create duplicate products.
-SHOPIER_CATALOG_ADDITIONS = [
-    {
-        "id": "49099069",
-        "title": "FC26 + Online Her Seyi Degisen Hesap",
-        "description": "FC26 + Online Her Seyi Degisen Hesap.",
-        "type": "digital",
-        "url": "https://www.shopier.com/49099069",
-        "priceData": {"currency": "TRY", "price": "299.99"},
-    },
-    {
-        "id": "49099023",
-        "title": "FC26 + Online Her Seyi Degisen Hesap",
-        "description": "FC26 + Online Her Seyi Degisen Hesap.",
-        "type": "digital",
-        "url": "https://www.shopier.com/49099023",
-        "priceData": {"currency": "TRY", "price": "299.99"},
-    },
-    {
-        "id": "49099022",
-        "title": "Zula Random Hesap",
-        "description": "Zula Random Hesap.",
-        "type": "digital",
-        "url": "https://www.shopier.com/49099022",
-        "priceData": {"currency": "TRY", "price": "5.00"},
-    },
-    {
-        "id": "49099021",
-        "title": "Netflix 4K UHD Ortak Profil",
-        "description": "Netflix 4K UHD Ortak Profil.",
-        "type": "digital",
-        "url": "https://www.shopier.com/49099021",
-        "priceData": {"currency": "TRY", "price": "39.99"},
-    },
-    {
-        "id": "49099018",
-        "title": "Steam 200 Dolar Random Key",
-        "description": "Steam 200 Dolar Random Key.",
-        "type": "digital",
-        "url": "https://www.shopier.com/49099018",
-        "priceData": {"currency": "TRY", "price": "30.00"},
-    },
-]
+LINKS_FILE = "lisansarena_shopier_links.json"  # Legacy local price export; URLs are never exposed.
 
 def save_ticket_to_file(bot_type, user_id, first_name, last_name, username, message):
     file_path = "tickets.json"
@@ -226,9 +187,9 @@ if not config:
 
 # Read token for LisansArena
 
-IBAN_NO = "TR570082900009491531109206"
-IBAN_ALICI = "Mahmut Rençber"
-IBAN_UYARI = "🔴 **ÖNEMLİ UYARI:** Havale / EFT ödemesi yaparken **AÇIKLAMA alanını KESİNLİKLE BOŞ BIRAKINIZ!** Açıklama kısmına hiçbir şey yazmayınız."
+IBAN_NO = IBAN_COMPACT
+IBAN_ALICI = IBAN_RECIPIENT
+PAYMENT_SESSIONS = PaymentSessionStore()
 
 BOT_TOKEN = os.environ.get("LISANSARENA_BOT_TOKEN", "").strip()
 ADMIN_ID = int(os.environ.get("TELEGRAM_ADMIN_ID", config.get("admin_id", 0)) or 0)
@@ -254,7 +215,7 @@ async def acknowledge_callback(event):
         pass
 
 # ═══════════════════════════════════════════════════════════════
-# Product Catalog - Shopier üzerinden satılan ürünler
+# Product Catalog - legacy local price export, IBAN-only checkout
 # ═══════════════════════════════════════════════════════════════
 CATEGORIES = {}
 ALL_PRODUCTS_FLAT = []
@@ -270,8 +231,6 @@ def load_products_from_links_json():
                 for item in data:
                     pid = item.get("id")
                     title = item.get("title")
-                    url = item.get("url")
-                    
                     price_val = item.get("price")
                     if price_val is None:
                         price_val = item.get("priceData", {}).get("price", "0")
@@ -283,7 +242,6 @@ def load_products_from_links_json():
                         "id": pid,
                         "title": title,
                         "price": price_str,
-                        "url": url,
                         "desc": item.get("description", "")
                     })
             logger.info(f"Loaded {len(products)} products from {LINKS_FILE}.")
@@ -305,8 +263,6 @@ def load_products_from_links_json():
         title = p["title"]
         pid = p["id"]
         price = p["price"]
-        url = p["url"]
-        
         t = title.lower()
         
         # 1. Yapay Zeka (AI) Çözümleri
@@ -325,7 +281,6 @@ def load_products_from_links_json():
         temp_categories[cat_key]["products"][pid] = {
             "title": title,
             "price": price,
-            "url": url,
             "desc": p["desc"]
         }
         
@@ -339,7 +294,6 @@ def load_products_from_links_json():
             temp_categories["firsatlar"]["products"][p["id"]] = {
                 "title": p["title"],
                 "price": p["price"],
-                "url": p["url"],
                 "desc": p["desc"]
             }
             f_count += 1
@@ -347,16 +301,35 @@ def load_products_from_links_json():
     CATEGORIES = temp_categories
     logger.info("In-memory categories rebuilt successfully.")
 
-def refresh_live_catalog():
-    """Refresh all Shopier pages; retain the last valid cache on any failure."""
-    try:
-        products = fetch_live_catalog("lisansarena")
-        write_catalog_atomic(products, LINKS_FILE)
-        logger.info("Refreshed all %s live LisansArena products.", len(products))
-        return products
-    except Exception as exc:
-        logger.warning("Live LisansArena catalog refresh failed; cached catalog retained: %s", exc)
-        return None
+
+def find_product(prod_key):
+    prod_key = str(prod_key)
+    for cat_key, category in CATEGORIES.items():
+        product = category["products"].get(prod_key)
+        if product:
+            return cat_key, product
+    return None, None
+
+
+def payment_message_for(user_id, prod_key, product, language="tr"):
+    session = PAYMENT_SESSIONS.get_or_create(user_id, prod_key)
+    return build_payment_message(product, session["code"], language=language), session
+
+
+def receipt_buttons(prod_key, support_label="💬 Bize Ulaşın / Destek"):
+    return [
+        [Button.inline("📸 Dekont Gönder", f"verify_iban_{prod_key}".encode())],
+        [Button.inline(support_label, b"menu_support")],
+        [Button.inline("📋 Ana Menü / Main Menu", b"menu_main")],
+    ]
+
+
+def is_unverified_payment_claim(text):
+    normalized = (text or "").strip().lower()
+    return any(
+        phrase in normalized
+        for phrase in ("ödeme yaptım", "odeme yaptim", "ödedim", "odedim", "parayı attım", "parayi attim")
+    )
 
 # ═══════════════════════════════════════════════════════════════
 # Smart Product Matching - Müşteri serbest metin yazınca ürün eşleştir
@@ -812,12 +785,8 @@ async def guncelle_handler(event):
     if event.sender_id != ADMIN_ID:
         return
         
-    await event.respond("⏳ Ürün listesi güncelleniyor, lütfen bekleyin...")
+    await event.respond("⏳ Yerel LisansArena fiyat listesi yeniden yükleniyor...")
     try:
-        loop = asyncio.get_event_loop()
-        products = await loop.run_in_executor(None, refresh_live_catalog)
-        if not products:
-            raise RuntimeError("Canlı Shopier kataloğu alınamadı; eski katalog korundu.")
         load_products_from_links_json()
         summary = "\n".join([f"- {cat['title']}: {len(cat['products'])} ürün" for cat_key, cat in CATEGORIES.items() if cat['products']])
         await event.respond(f"✅ Ürünler başarıyla güncellendi ve hafızaya yüklendi!\n\nToplam {len(ALL_PRODUCTS_FLAT)} ürün bulundu:\n{summary}")
@@ -883,27 +852,26 @@ async def product_handler(event):
         await event.answer(err_msg, alert=True)
         return
 
-    shopier_url = product.get("url", "https://www.shopier.com/lisansarena")
+    product_with_id = dict(product, id=prod_key)
+    if is_product_reply_cooling_down(user_id, [product_with_id]):
+        await event.answer("Bu ürünün ödeme bilgisi kısa süre önce gönderildi. 10 dakika içinde tekrar gönderilmez.", alert=True)
+        return
 
     price = product['price']
     if lang == "en":
         price = user_lang_helper.convert_price_to_usd(price)
 
-    desc_text = (
-        f"🌟 **{product['title']}**\n"
-        f"📝 {product['desc']}\n\n"
-        f"💰 **{t['price']}:** {price}\n\n"
-        f"{t['product_footer']}"
-    )
+    display_product = dict(product, price=price)
+    desc_text, _session = payment_message_for(user_id, prod_key, display_product, lang)
     
     cat_title = t["cat_title_mapping"].get(cat_key_found, CATEGORIES[cat_key_found]['title'])
     buttons = [
-        [Button.inline("💳 IBAN Bilgileri & Satın Al", f"iban_{prod_key}".encode())],
-        [Button.inline("📸 Ödemeyi Doğrula (Dekont Gönder)", f"verify_iban_{prod_key}".encode())],
+        [Button.inline("📸 Dekont Gönder", f"verify_iban_{prod_key}".encode())],
         [Button.inline(f"↩️ {cat_title}", f"cat_{cat_key_found}".encode())],
         [Button.inline(t["main_menu"], b"menu_main")]
     ]
     await safe_event_edit(event, desc_text, buttons=buttons)
+    mark_product_reply_sent(user_id, [product_with_id])
 
 
 # IBAN Ödeme Bilgileri Gösterici
@@ -917,13 +885,7 @@ async def iban_info_handler(event):
     lang = user_lang_helper.get_user_lang(user_id) or "tr"
     prod_key = event.data.decode('utf-8').replace("iban_", "")
     
-    product = None
-    cat_key_found = None
-    for ck, cat in CATEGORIES.items():
-        if prod_key in cat["products"]:
-            product = cat["products"][prod_key]
-            cat_key_found = ck
-            break
+    cat_key_found, product = find_product(prod_key)
             
     title = product['title'] if product else "Seçilen Ürün"
     price = product['price'] if product else "0 TL"
@@ -931,22 +893,20 @@ async def iban_info_handler(event):
     if lang == "en":
         price = user_lang_helper.convert_price_to_usd(price)
 
-    iban_text = (
-        f"💳 **LisansArena IBAN Ödeme Bilgileri**\n\n"
-        f"📦 **Satın Alınacak Ürün:** {title}\n"
-        f"💰 **Ödenecek Tutar:** `{price}`\n\n"
-        f"🏦 **IBAN:**\n`{IBAN_NO}`\n\n"
-        f"👤 **Alıcı Adı Soyadı:**\n`{IBAN_ALICI}`\n\n"
-        f"{IBAN_UYARI}\n\n"
-        f"Ödemenizi yaptıktan sonra aşağıdaki **'📸 Ödemeyi Doğrula / Dekont Gönder'** butonuna tıklayarak dekont fotoğrafını bu sohbete gönderebilirsiniz.\n\n"
-        f"💬 **Destek / İletişim:** @LisansArenaAdmin"
-    )
+    product_with_id = dict(product or {}, id=prod_key, title=title, price=price)
+    if is_product_reply_cooling_down(user_id, [product_with_id]):
+        await event.answer("Bu ürünün IBAN bilgisi kısa süre önce gönderildi. 10 dakika içinde tekrar gönderilmez.", alert=True)
+        return
+
+    display_product = {"title": title, "price": price}
+    iban_text, _session = payment_message_for(user_id, prod_key, display_product, lang)
     buttons = [
-        [Button.inline("📸 Ödemeyi Doğrula (Dekont Gönder)", f"verify_iban_{prod_key}".encode())],
+        [Button.inline("📸 Dekont Gönder", f"verify_iban_{prod_key}".encode())],
         [Button.inline("↩️ Ürün Sayfasına Dön", f"prod_{prod_key}".encode())],
         [Button.inline("🏠 Ana Menü", b"menu_main")]
     ]
     await safe_event_edit(event, iban_text, buttons=buttons)
+    mark_product_reply_sent(user_id, [product_with_id])
 
 # Dekont Bekleme Durumu Başlatıcı
 @bot.on(events.CallbackQuery(pattern=r'verify_iban_(\w+)'))
@@ -962,7 +922,7 @@ async def verify_iban_handler(event):
     text = (
         "📸 **Ödeme Doğrulama & Dekont Gönderimi**\n\n"
         "Lütfen Havale/EFT ödemenize ait **dekont fotoğrafını veya ekran görüntüsünü** bu sohbete gönderin.\n\n"
-        "Ödeme ve dekontunuz yetkili ekibimize anında iletilecek ve lisans kodunuz bu sohbet üzerinden tarafınıza teslim edilecektir.\n\n"
+        "Dekontunuz yetkili ekibimize iletilecek. Banka hareketi manuel kontrol edilmeden ödeme onaylanmaz ve teslimat yapılmaz.\n\n"
         "💬 İletişim / Canlı Destek: @LisansArenaAdmin\n"
         "*(Vazgeçmek için /start yazabilirsiniz)*"
     )
@@ -988,6 +948,80 @@ async def support_menu_handler(event):
 
 PROCESSED_MESSAGE_EVENTS = set()
 
+
+async def handle_admin_reply(event, support_chat_id):
+    """Relay a support-chat reply to the customer and confirm delivery."""
+    if event.sender_id != ADMIN_ID and event.chat_id != support_chat_id:
+        return False
+    if not event.is_reply or not event.text:
+        return False
+    reply_msg = await event.get_reply_message()
+    if not reply_msg or not reply_msg.text:
+        return False
+    match = re.search(r"Kullanıcı ID:\*\* `(\d+)`", reply_msg.text)
+    if not match:
+        match = re.search(r"Kullanıcı ID: (\d+)", reply_msg.text)
+    if not match:
+        return False
+    target_user_id = int(match.group(1))
+    target_lang = user_lang_helper.get_user_lang(target_user_id) or "tr"
+    text_to_send = event.text.strip()
+    clean_match = re.match(r"^(?:#reply|/reply)\s*(.*)$", text_to_send, re.DOTALL | re.IGNORECASE)
+    if clean_match:
+        text_to_send = clean_match.group(1).strip()
+    if not text_to_send:
+        await event.reply("⚠️ Lütfen boş mesaj göndermeyin.")
+        return True
+    try:
+        await bot.send_message(target_user_id, f"{TEXTS[target_lang]['reply_prefix']}{text_to_send}")
+        await event.reply("✅ Cevabınız kullanıcıya iletildi.")
+    except Exception as exc:
+        logger.error("Failed to reply to user %s: %s", target_user_id, exc)
+        await event.reply(f"❌ Cevap iletilemedi. Hata: {exc}")
+    return True
+
+
+async def handle_pending_receipt(event, support_chat_id, user_id):
+    """Forward receipt media for manual verification; never auto-deliver."""
+    state = user_states.get(user_id) or ""
+    if not state.startswith("AWAITING_DEKONT:"):
+        return False
+    prod_key = state.split(":", 1)[1]
+    _cat_key, product = find_product(prod_key)
+    product = product or {"title": "Seçilen Ürün", "price": "Bilinmiyor"}
+    session = PAYMENT_SESSIONS.get_or_create(user_id, prod_key)
+    buttons = [[Button.inline("🚫 Kullanıcıyı Engelle (Ban)", f"la_adm_ban_{user_id}".encode())]]
+    if not event.media:
+        await forward_customer_message(bot, event, support_chat_id, "LisansArena", buttons)
+        await event.respond(
+            "📸 Ödeme otomatik olarak onaylanmadı. Lütfen banka dekontunun fotoğrafını "
+            "veya ekran görüntüsünü bu sohbete gönderin."
+        )
+        return True
+    user = await event.get_sender()
+    full_name = " ".join(filter(None, [getattr(user, "first_name", ""), getattr(user, "last_name", "")])) or "Yok"
+    header = (
+        "📸 **[LisansArena] Yeni Dekont — Manuel Kontrol Gerekli**\n"
+        f"👤 **Kullanıcı ID:** `{user_id}`\n"
+        f"👤 **Adı Soyadı:** {full_name}\n"
+        f"📦 **Ürün:** {product['title']}\n"
+        f"💰 **Beklenen tutar:** {product['price']}\n"
+        f"🧾 **Sipariş kodu:** `{session['code']}`\n\n"
+        "Banka hareketini doğrulamadan ürün teslim etmeyin. Bu mesajı yanıtlayarak kullanıcıya cevap gönderebilirsiniz."
+    )
+    try:
+        await bot.send_message(support_chat_id, header, buttons=buttons)
+        await bot.forward_messages(support_chat_id, event.message)
+    except Exception as exc:
+        logger.error("Receipt forwarding failed for user %s: %s", user_id, exc)
+        await event.respond("⚠️ Dekont şu anda iletilemedi. Lütfen birkaç dakika sonra tekrar deneyin.")
+        return True
+    user_states[user_id] = None
+    await event.respond("✅ Dekontunuz alındı, kontrol ediliyor.")
+    record_event("receipt_submitted", "LisansArena", source="telegram_private", product=product.get("title", ""))
+    return True
+
+
 @bot.on(events.NewMessage(incoming=True))
 @serialize_user_events
 async def message_handler(event):
@@ -995,6 +1029,11 @@ async def message_handler(event):
         return
     if event.text and event.text.startswith('/'):
         return
+    config = load_config() or {}
+    support_chat_id = config.get("support_chat_id", ADMIN_ID)
+    if await handle_admin_reply(event, support_chat_id):
+        return
+
     claim_scope = "lisansarena_sales"
     event_key = (event.chat_id, getattr(event.message, 'id', None))
     if event_key in PROCESSED_MESSAGE_EVENTS:
@@ -1011,138 +1050,13 @@ async def message_handler(event):
     if ban_data and ban_data.get("banned", False):
         return
 
-    # LisansArena Shopier doğrulama akışı kapatıldı; eski state'ler de IBAN'a yönlendirilir.
+    # Legacy checkout states are redirected to the manual IBAN flow.
     if user_states.get(user_id) == "AWAITING_VERIFY_PAYMENT_INFO":
         user_states[user_id] = None
         await event.respond("LisansArena ödemeleri yalnızca IBAN ile alınır. Ürünü menüden seçip IBAN bilgileri veya dekont gönderme adımını kullanabilirsiniz.")
         return
 
-    if False and user_states.get(user_id) == "AWAITING_VERIFY_PAYMENT_INFO":
-        if event.text.startswith('/'):
-            user_states[user_id] = None
-            return
-            
-        input_val = event.text.strip().lower()
-        if "@" in input_val:
-            doc_id = "order_email_" + input_val.replace("@", "_").replace(".", "_")
-        else:
-            doc_id = "order_phone_" + input_val.replace("+", "").replace(" ", "")
-            
-        orders_doc = await async_get_document(doc_id)
-        if not orders_doc or not orders_doc.get("orders"):
-            await event.respond("❌ **Sipariş bulunamadı!** Girdiğiniz bilgiyi kontrol edip tekrar deneyin veya desteğe yazın. (Ödeme sonrası 1-2 dakika gecikme olabilir).")
-            user_states[user_id] = None
-            return
-            
-        orders = orders_doc.get("orders", [])
-        unclaimed_order = None
-        unclaimed_idx = -1
-        for i, o in enumerate(orders):
-            if not o.get("claimed", False):
-                unclaimed_order = o
-                unclaimed_idx = i
-                break
-                
-        if not unclaimed_order:
-            await event.respond("⚠️ **Bu bilgilere ait tüm siparişler zaten tanımlanmış!** Yardım isterseniz canlı destekten bize yazabilirsiniz.")
-            user_states[user_id] = None
-            return
-            
-        prod_name = unclaimed_order.get("product_name", "").lower()
-        
-        # Check license category for auto delivery
-        cat = None
-        if "canva" in prod_name:
-            cat = "canva"
-        elif "adobe" in prod_name:
-            cat = "adobe"
-        elif "windows" in prod_name:
-            cat = "windows"
-        elif "office" in prod_name:
-            cat = "office"
-        elif "netflix" in prod_name:
-            cat = "netflix"
-        elif "youtube" in prod_name or "yt " in prod_name:
-            cat = "youtube"
-            
-        license_key = None
-        if cat:
-            try:
-                with open("licenses.json", "r", encoding="utf-8") as f:
-                    stocks = json.load(f)
-                keys = stocks.get(cat, [])
-                if keys:
-                    license_key = keys.pop(0)
-                    stocks[cat] = keys
-                    with open("licenses.json", "w", encoding="utf-8") as f:
-                        json.dump(stocks, f, indent=2, ensure_ascii=False)
-            except Exception as e:
-                logger.error(f"Error reading licenses.json: {e}")
-                
-        orders[unclaimed_idx]["claimed"] = True
-        await async_set_document(doc_id, orders_doc)
-        
-        if license_key:
-            await event.respond(
-                f"✅ **Ödemeniz Başarıyla Doğrulandı!**\n\n"
-                f"📦 **Satın Alınan Ürün:** {unclaimed_order.get('product_name')}\n"
-                f"🔑 **Lisans Anahtarınız:**\n"
-                f"`{license_key}`\n\n"
-                f"*(Lisans anahtarını kopyalamak için üzerine tıklayabilirsiniz.)*\n\n"
-                f"LisansArena'yı tercih ettiğiniz için teşekkür ederiz! 😊"
-            )
-            
-            # Notify admin
-            try:
-                support_chat_id = config.get("support_chat_id", ADMIN_ID)
-                if support_chat_id:
-                    await bot.send_message(
-                        support_chat_id, 
-                        f"🎉 **LisansArena Otomatik Satış Bildirimi!**\n"
-                        f"👤 **Kullanıcı:** `{user_id}`\n"
-                        f"📦 **Ürün:** {unclaimed_order.get('product_name')}\n"
-                        f"🔑 **Lisans Kodu:** `{license_key}` (Otomatik teslim edildi)\n"
-                        f"💰 **Tutar:** {unclaimed_order.get('amount')} ₺\n"
-                        f"🛍️ **Shopier Sipariş ID:** `{unclaimed_order.get('order_id')}`\n\n"
-                        f"*(Kullanıcıya lisans teslimat bilgileri bot üzerinden iletilmiştir.)*"
-                    )
-            except Exception:
-                pass
-        else:
-            await event.respond(
-                f"✅ **Ödemeniz Başarıyla Doğrulandı!**\n\n"
-                f"📦 **Satın Alınan Ürün:** {unclaimed_order.get('product_name')}\n\n"
-                f"⚠️ **Stok Uyarısı:** Satın aldığınız ürünün lisans anahtarı stokta kalmamıştır. "
-                f"Yöneticiye bildirim gönderildi, en kısa sürede lisansınız Telegram üzerinden size iletilecektir."
-            )
-            
-            # Notify admin about stock warning
-            try:
-                support_chat_id = config.get("support_chat_id", ADMIN_ID)
-                if support_chat_id:
-                    await bot.send_message(
-                        support_chat_id, 
-                        f"🚨 **ACİL STOK UYARISI!**\n"
-                        f"Kullanıcı `{user_id}` Shopier'den **{unclaimed_order.get('product_name')}** satın aldı ancak stokta lisans kodu yok!\n"
-                        f"Lütfen en kısa sürede manuel teslimat yapın.\n"
-                        f"📧 **Müşteri E-posta/Telefon:** {input_val}"
-                    )
-            except Exception:
-                pass
-                
-        user_states[user_id] = None
-        return
-
-    config = load_config() or {}
-    support_chat_id = config.get("support_chat_id", ADMIN_ID)
-    is_admin_context = event.sender_id == ADMIN_ID or event.chat_id == support_chat_id
-    if one_time_mode_enabled() and not is_admin_context:
-        buttons = [[Button.inline("🚫 Kullanıcıyı Engelle (Ban)", f"la_adm_ban_{user_id}".encode())]]
-        if await forward_customer_message(bot, event, support_chat_id, "LisansArena", buttons):
-            record_event("dm_manual_forwarded", "LisansArena", source="telegram_private")
-            if await claim_first_greeting("lisansarena", user_id):
-                await event.respond(greeting_for("LisansArena"))
-                record_event("dm_greeting_sent", "LisansArena", source="telegram_private")
+    if await handle_pending_receipt(event, support_chat_id, user_id):
         return
 
     if user_states.get(user_id) == "AWAITING_SUPPORT":
@@ -1188,17 +1102,30 @@ async def message_handler(event):
         user_states[user_id] = None
         return
 
+    buttons = [[Button.inline("🚫 Kullanıcıyı Engelle (Ban)", f"la_adm_ban_{user_id}".encode())]]
+    forwarded = await forward_customer_message(bot, event, support_chat_id, "LisansArena", buttons)
+    if forwarded:
+        record_event("dm_manual_forwarded", "LisansArena", source="telegram_private")
+
+    if is_unverified_payment_claim(event.text):
+        await event.respond(
+            "📸 Ödemeniz henüz doğrulanmadı. Lütfen ürün sayfasındaki **Dekont Gönder** "
+            "butonuna basıp dekont görselini iletin. Banka hareketi kontrol edilmeden teslimat yapılmaz."
+        )
+        return
+
     # Smart Product Matching
     if event.text and not event.text.startswith('/'):
         if not has_sales_intent(event.text):
             logger.info("Ignoring non-sales message: %r", event.text)
-            return
-        if is_auto_reply_cooling_down(user_id):
-            logger.info("Suppressing automatic sales reply for user %s (global 5-minute cooldown)", user_id)
+            if one_time_mode_enabled() and forwarded and await claim_first_greeting("lisansarena", user_id):
+                await event.respond(greeting_for("LisansArena"))
+                record_event("dm_greeting_sent", "LisansArena", source="telegram_private")
             return
         matched_products = match_multiple_products_from_text(event.text)
         if matched_products:
-            if is_product_reply_cooling_down(user_id, matched_products):
+            matched_products = filter_products_not_cooling_down(user_id, matched_products)
+            if not matched_products:
                 logger.info("Suppressing duplicate product reply for user %s: %r", user_id, event.text)
                 return
             lang = user_lang_helper.get_user_lang(user_id) or "tr"
@@ -1206,25 +1133,18 @@ async def message_handler(event):
             
             if len(matched_products) == 1:
                 matched_product = matched_products[0]
-                product_msg = (
-                    f"🔍 **{matched_product['title']}**\n"
-                    f"📝 {matched_product['desc']}\n\n"
-                    f"💰 **{t['price']}:** {matched_product['price']}\n\n"
-                    f"{t['product_footer']}"
+                product_msg, _session = payment_message_for(
+                    user_id, matched_product["id"], matched_product, lang
                 )
-                buttons = [
-                    [Button.inline("💳 IBAN Bilgileri & Satın Al", f"iban_{matched_product['id']}".encode())],
-                    [Button.inline("📸 Ödemeyi Doğrula (Dekont Gönder)", f"verify_iban_{matched_product['id']}".encode())],
-                    [Button.inline(t["support_btn"], b"menu_support")],
-                    [Button.inline("📋 Ana Menü / Main Menu", b"menu_main")]
-                ]
+                buttons = receipt_buttons(matched_product["id"], t["support_btn"])
             else:
                 product_msg = "🔍 **Aradığınız Ürünler / Matched Products:**\n\n"
                 buttons = []
                 for i, p in enumerate(matched_products[:4]):
-                    product_msg += f"{i+1}. **{p['title']}**\n💰 {t['price']}: {p['price']}\n👉 {p['url']}\n\n"
-                    buttons.append([Button.url(f"Satın Al / Buy ({p['title'][:20]}...)", p.get('url', ''))])
-                product_msg += f"{t['product_footer']}"
+                    product_msg += f"{i+1}. **{p['title']}**\n💰 {t['price']}: {p['price']}\n\n"
+                    label = f"IBAN Bilgileri ({p['title'][:28]})"
+                    buttons.append([Button.inline(label, f"iban_{p['id']}".encode())])
+                product_msg += "📦 Ödeme öncesi stok teyidi alın. Ödeme ve teslimat yalnız IBAN/dekont ile manuel yürütülür."
                 buttons.append([Button.inline(t["support_btn"], b"menu_support")])
                 buttons.append([Button.inline("📋 Ana Menü / Main Menu", b"menu_main")])
                 
@@ -1235,7 +1155,6 @@ async def message_handler(event):
                 await async_release_event_claim(event, claim_scope)
                 raise
             mark_product_reply_sent(user_id, matched_products)
-            mark_auto_reply_sent(user_id)
             record_event("dm_reply_sent", "LisansArena", source="telegram_private", product=matched_products[0].get('title', '') if matched_products else '')
             return
         else:
@@ -1273,39 +1192,6 @@ async def message_handler(event):
                 record_event("dm_reply_sent", "LisansArena", source="telegram_private", product="AI")
                 logger.info(f"AI response for user {user_id}: '{event.text}'")
                 return
-
-    support_chat_id = config.get("support_chat_id", ADMIN_ID)
-    if event.sender_id == ADMIN_ID or event.chat_id == support_chat_id:
-        if event.is_reply:
-            reply_msg = await event.get_reply_message()
-            if reply_msg and reply_msg.text:
-                # Ensure the replied-to message was sent by this bot itself to prevent cross-talk
-                match = None
-                if reply_msg.sender_id == BOT_USER_ID:
-                    match = re.search(r"Kullanıcı ID:\*\* `(\d+)`", reply_msg.text)
-                if not match:
-                    match = re.search(r"Kullanıcı ID: (\d+)", reply_msg.text)
-
-                if match:
-                    target_user_id = int(match.group(1))
-                    target_lang = user_lang_helper.get_user_lang(target_user_id) or "tr"
-                    prefix = TEXTS[target_lang]["reply_prefix"]
-                    
-                    text_to_send = event.text.strip()
-                    clean_match = re.match(r"^(?:#reply|/reply)\s*(.*)$", text_to_send, re.DOTALL | re.IGNORECASE)
-                    if clean_match:
-                        text_to_send = clean_match.group(1).strip()
-                        
-                    if not text_to_send:
-                        await event.reply("⚠️ Lütfen boş mesaj göndermeyin.")
-                        return
-
-                    try:
-                        await bot.send_message(target_user_id, f"{prefix}{text_to_send}")
-                        await event.reply("✅ Cevabınız kullanıcıya iletildi.")
-                    except Exception as e:
-                        logger.error(f"Failed to reply to user {target_user_id}: {e}")
-                        await event.reply(f"❌ Cevap iletilemedi. Hata: {e}")
 
 @bot.on(events.CallbackQuery(pattern=r'la_adm_ban_(\d+)'))
 async def la_admin_ban_user_callback(event):
@@ -1349,7 +1235,6 @@ async def main():
 if __name__ == '__main__':
     import asyncio
     logger.info("Loading LisansArena products cache...")
-    refresh_live_catalog()
     load_products_from_links_json()
     logger.info("Starting LisansArena Sales Bot...")
     

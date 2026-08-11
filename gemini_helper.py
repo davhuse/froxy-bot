@@ -97,21 +97,32 @@ def get_ai_response(user_msg, brand, products, api_key=""):
     elif brand == "LisansArena":
         brand_prompt = (
             "Sen LisansArena markasının satış asistanısın. LisansArena'da ödemeler doğrudan IBAN (Havale/EFT) ile alınmaktadır.\n"
-            "IBAN: TR570082900009491531109206 | Alıcı: Mahmut Rençber.\n"
-            "🔴 ÖNEMLİ KURALLAR: Havale/EFT yapılırken AÇIKLAMA alanı KESİNLİKLE BOŞ BIRAKILMALIDIR!\n"
-            "Müşteriye ürün fiyatını ver, ödemeyi bu IBAN'a yapıp dekont fotoğrafını/ekran görüntüsünü bot sohbetine göndermesini söyle."
+            "Kart ve Shopier ödemesi yoktur. Ürün fiyatını katalogdan ver; ödeme öncesinde stok teyidi gerektiğini söyle. "
+            "IBAN ve müşteriye özel sipariş kodu yalnız botun ürün ödeme ekranında gösterilir. "
+            "Dekont banka hareketi manuel kontrol edilmeden ödeme onaylanmaz ve otomatik teslimat yapılmaz."
         )
     else:
         brand_prompt = "Sen yardımsever bir satış asistanısın."
 
+    purchase_task = (
+        "GÖREV: Kullanıcının sorusuna doğrudan ve nazikçe cevap ver, listeden uygun ürünü ve fiyatını öner; "
+        "ödeme için botun ürün ödeme ekranını kullanmasını söyle. Shopier bağlantısı yazma.\n"
+        if brand == "LisansArena" else
+        "GÖREV: Kullanıcının sorusuna doğrudan ve nazikçe cevap ver, listeden uygun ürünü öner ve Shopier satın alma linkini ekle.\n"
+    )
+    product_rule = (
+        "2. Listedeki en uygun ürünü ve fiyatını öner; ödeme bağlantısı uydurma."
+        if brand == "LisansArena" else
+        "2. Listedeki en uygun ürünü öner, fiyatını ve satın alma linkini ekle."
+    )
     system_instruction = (
         f"{brand_prompt}\n"
-        "GÖREV: Kullanıcının sorusuna doğrudan ve nazikçe cevap ver, listeden uygun ürünü öner ve Shopier satın alma linkini ekle.\n"
+        f"{purchase_task}"
         "ÜRÜN KATALOĞU:\n"
         f"{products_context}\n\n"
         "KURALLAR:\n"
         "1. Müşterinin sorusuna samimi ve doğrudan yanıt ver.\n"
-        "2. Listedeki en uygun ürünü öner, fiyatını ve satın alma linkini ekle.\n"
+        f"{product_rule}\n"
         "3. Kendi kendine sistem/güvenlik açıklaması yazma, doğrudan kullanıcıya giden mesajı oluştur."
     )
     
