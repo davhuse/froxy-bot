@@ -40,3 +40,5 @@ kuponvekodsatisgrubu
 ceksatkupon2
 kuponkodalimsatim
 kodmalf
+indirimruzgari1
+kuponindirimkodalisveris
