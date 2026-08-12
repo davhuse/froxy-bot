@@ -684,9 +684,9 @@ def get_dm_logs():
     try:
         limit = min(max(int(request.args.get('lines', 200)), 20), 2000)
         markers = (
-            'New message from user', 'New Support', 'DM Alındı',
-            'Smart match for user', 'AI response for user',
-            'Ignoring non-sales message', 'Yeni Destek Talebi',
+            'DM Alındı', 'Özel mesaj', 'GÖNDEREN=', 'New message', 'New Support',
+            'Smart match', 'AI response', 'Ignoring non-sales', 'Yeni Destek',
+            'otomatik yanıtlandı', '[AutoReply]', '[LisansArena]', '[KeyVadi]', '[Froxy]'
         )
         result = []
         for log_path in (LOG_FILE, SUPPORT_LOG_FILE, FROXY_LOG_FILE, LISANSARENA_LOG_FILE):

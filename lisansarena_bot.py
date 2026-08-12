@@ -958,9 +958,9 @@ async def handle_admin_reply(event, support_chat_id):
     reply_msg = await event.get_reply_message()
     if not reply_msg or not reply_msg.text:
         return False
-    match = re.search(r"Kullanıcı ID:\*\* `(\d+)`", reply_msg.text)
+    match = re.search(r"(?:Kullanıcı ID|User ID|ID):\*\*?\s*`?(\d+)`?", reply_msg.text, re.IGNORECASE)
     if not match:
-        match = re.search(r"Kullanıcı ID: (\d+)", reply_msg.text)
+        match = re.search(r"(\d{6,12})", reply_msg.text)
     if not match:
         return False
     target_user_id = int(match.group(1))

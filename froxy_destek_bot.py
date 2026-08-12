@@ -738,11 +738,7 @@ async def message_handler(event):
             reply_msg = await event.get_reply_message()
             if reply_msg and reply_msg.text:
                 # Ensure the replied-to message was sent by this bot itself to prevent cross-talk
-                match = None
-                if reply_msg.sender_id == BOT_USER_ID:
-                    match = re.search(r"Kullanıcı ID:\*\* `(\d+)`", reply_msg.text)
-                if not match:
-                    match = re.search(r"Kullanıcı ID: (\d+)", reply_msg.text)
+                match = re.search(r"(?:Kullanıcı ID|User ID|ID):\*\*?\s*`?(\d+)`?", reply_msg.text, re.IGNORECASE)
 
                 if match:
                     target_user_id = int(match.group(1))

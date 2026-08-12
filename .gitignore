@@ -36,6 +36,7 @@ blacklist_legacy_backup_*.txt
 /scratch/
 /backup_20260721/
 /backup_fixed_20260721/
+/backup_20260812_full/
 /pending_*login*.json
 /complete_*login*.py
 /relogin_*.py

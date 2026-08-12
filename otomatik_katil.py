@@ -2472,7 +2472,8 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         msg_text = (event.raw_text or "").strip().lower()
         if not msg_text:
             return
-        if not sales_context and is_obviously_non_sales_dm(event.raw_text):
+        has_keyword = any(kw in msg_text for kw in ("adobe", "youtube", "canva", "netflix", "spotify", "gpt", "chatgpt", "gemini", "claude", "windows", "office", "duolingo", "capcut", "express", "lisans", "premium", "shopier"))
+        if not has_keyword and not sales_context and is_obviously_non_sales_dm(event.raw_text):
             print(f"[{client_name}] DM satış dışı görünüyor, otomatik yanıt atlandı.")
             return
 
@@ -2537,7 +2538,7 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                             })
                 except Exception as e:
                     print(f"⚠️ Error loading LisansArena products: {e}")
-        elif is_keyvadi:
+        elif is_keyvadi or is_froxy:
             if os.path.exists("keyvadi_shopier_links.json"):
                 try:
                     with open("keyvadi_shopier_links.json", "r", encoding="utf-8") as f:
@@ -2567,7 +2568,7 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
             if len(matched_products) == 1:
                 reply_text = (
                     keyvadi_product_reply(matched_products[0])
-                    if is_keyvadi else (
+                    if (is_keyvadi or is_froxy) else (
                         "Ürün ve ödeme işlemleri Shopier kullanılmadan yürütülüyor. "
                         "Ürünü almak için @LisansArenaBot üzerinden ilerleyebilir, "
                         "IBAN/dekont desteği için @LisansArenaAdmin'e yazabilirsiniz."
@@ -2635,7 +2636,7 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         # KeyVadi must never send an automatic reply wave into one customer's
         # private chat. Persist one claim per customer so restarts or repeated
         # incoming messages cannot create another automatic reply.
-        if is_keyvadi:
+        if is_keyvadi and not has_keyword and not matched_products:
             one_reply_claim_id = f"keyvadi_dm_first_reply_{sender_id}"
             one_reply_claimed = await async_claim_document(one_reply_claim_id, {
                 "account": client_name,

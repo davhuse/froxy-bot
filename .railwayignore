@@ -5,3 +5,15 @@ __pycache__/
 *.log
 node_modules/
 .git/
+backup_*/
+firebase-panel/
+images/
+scratch/
+shopier_ai_images/
+shopier_images*/
+*.zip
+*.html
+*.csv
+*.json
+*.bat
+*.session
