@@ -37,3 +37,6 @@ ceksatistakasgrup
 mukyemek
 ticaretZ
 kuponvekodsatisgrubu
+ceksatkupon2
+kuponkodalimsatim
+kodmalf
