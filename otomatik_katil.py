@@ -225,7 +225,7 @@ def parse_spintax(text):
         return random.choice(options)
     return re.sub(r'\{([^\{\}]*)\}', replace, text)
 
-SHORT_AD_GROUP_USERNAMES = {'ilanticaret'}
+SHORT_AD_GROUP_USERNAMES = {'ilanticaret', 'kodceksatismerkezi'}
 SHORT_AD_GROUP_TITLES = {'ticaret ve ilan grubu - sanal'}
 SPYFORUM_GROUP_MARKER = 'spyforum'
 EXCLUDED_REFERENCE_CHANNELS = {"froxyreferans", "keyvadireferans", "lisansarenareferans"}
