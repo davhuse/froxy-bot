@@ -33,3 +33,4 @@ ticaretgruptr
 kuponkodceksatis
 kodindirimsatis
 kuponkodualsat
+ceksatistakasgrup
