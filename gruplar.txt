@@ -34,4 +34,3 @@ kuponkodceksatis
 kodindirimsatis
 kuponkodualsat
 ceksatistakasgrup
-hesapsatisgenel
