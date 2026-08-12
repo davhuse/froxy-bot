@@ -34,3 +34,6 @@ kuponkodceksatis
 kodindirimsatis
 kuponkodualsat
 ceksatistakasgrup
+mukyemek
+ticaretZ
+kuponvekodsatisgrubu

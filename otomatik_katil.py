@@ -3791,11 +3791,10 @@ async def main():
                             )
                         try:
                             if entity:
-                                if is_group_protected(grup_name):
-                                    print(f"⚠️ [Security] Korumalı/hedef grup @{grup_name} terk edilmesi engellendi!")
-                                else:
-                                    await client(LeaveChannelRequest(entity))
-                                    print(f"[{client_name}] 🚪 @{grup_name} grubundan çıkıldı.")
+                                await client(LeaveChannelRequest(entity))
+                                print(f"[{client_name}] 🚪 @{grup_name} grubundan çıkıldı.")
+                                async with state_lock:
+                                    blacklist_group(grup_name, 'UserBannedInChannel', client_name)
                         except Exception as le:
                             print(f"[{client_name}] ⚠️ @{grup_name} grubundan çıkılırken hata: {le}")
                     except ChatWriteForbiddenError:
@@ -3808,11 +3807,10 @@ async def main():
                             )
                         try:
                             if entity:
-                                if is_group_protected(grup_name):
-                                    print(f"⚠️ [Security] Korumalı/hedef grup @{grup_name} terk edilmesi engellendi!")
-                                else:
-                                    await client(LeaveChannelRequest(entity))
-                                    print(f"[{client_name}] 🚪 @{grup_name} grubundan çıkıldı.")
+                                await client(LeaveChannelRequest(entity))
+                                print(f"[{client_name}] 🚪 @{grup_name} grubundan çıkıldı.")
+                                async with state_lock:
+                                    blacklist_group(grup_name, 'ChatWriteForbidden', client_name)
                         except Exception as le:
                             print(f"[{client_name}] ⚠️ @{grup_name} grubundan çıkılırken hata: {le}")
                     except SlowModeWaitError as sme:
@@ -3971,19 +3969,9 @@ async def main():
                         set_account_restriction(client_name, e.seconds, 'Telegram katılım FloodWait', type(e).__name__, scope='join')
                         print(f"[{client_name}] ⚠️ Join flood {e.seconds}sn; hesap duraklatılıyor, grup kara listeye alınmadı.")
                         break
-                    except (ChannelPrivateError,):
-                        record_group_failure(
-                            hedef_grup, client_name, 'ChannelPrivateReview',
-                            retry_after=7 * 24 * 60 * 60,
-                        )
-                        print(f"[{client_name}] @{hedef_grup} private/access review; not permanently blocked.")
-                        continue
-                        if hedef_grup.lower() not in protected_groups:
-                            async with state_lock:
-                                blacklist_group(hedef_grup, 'ChannelPrivate', client_name)
-                            print(f"[{client_name}] ❌ @{hedef_grup} -> Kanal özel veya banlıyız, kara listeye alındı.")
-                        else:
-                            print(f"[{client_name}] ⚠️ Korumalı @{hedef_grup} özel/banlı, ancak korumalı olduğundan kara listeye ALINMADI.")
+                        async with state_lock:
+                            blacklist_group(hedef_grup, 'ChannelPrivate', client_name)
+                        print(f"[{client_name}] ❌ @{hedef_grup} -> Kanal özel veya erişilemez, kara listeye alındı.")
                     except Exception as e:
                         err_msg = str(e)
                         err_type = type(e).__name__
@@ -3991,10 +3979,9 @@ async def main():
                             record_account_group_block(
                                 hedef_grup, client_name, 'UserBannedInChannel'
                             )
-                            print(f"[{client_name}] @{hedef_grup} permanently blocked for this account.")
-                            continue
-                            record_group_failure(hedef_grup, client_name, 'UserBannedInChannel', retry_after=86400)
-                            print(f"[{client_name}] ⛔ @{hedef_grup} -> Bu hesap bu gruptan BANLANMIŞ. 24 saat boyunca denenmeyecek.")
+                            print(f"[{client_name}] ⛔ @{hedef_grup} -> Bu hesap bu gruptan BANLANMIŞ.")
+                            async with state_lock:
+                                blacklist_group(hedef_grup, 'UserBannedInChannel', client_name)
                         elif 'ChannelsTooMuch' in err_type or 'channels_too_much' in err_msg.lower():
                             set_account_restriction(client_name, 86400, 'Telegram 500 kanal limitine ulaşıldı', err_type, scope='join')
                             print(f"[{client_name}] 🚨 Telegram 500 kanal/grup limitine ulaşıldı! Katılım aşaması durduruluyor.")
@@ -4004,18 +3991,9 @@ async def main():
                             save_pending_invites(pending_invites)
                             print(f"[{client_name}] ⏳ @{hedef_grup} -> Katılım isteği gönderildi (onay bekleniyor).")
                         elif 'no user has' in err_msg.lower() or isinstance(e, (UsernameNotOccupiedError, UsernameInvalidError, ValueError)):
-                            record_group_failure(
-                                hedef_grup, client_name, f'{err_type}Review',
-                                retry_after=7 * 24 * 60 * 60,
-                            )
-                            print(f"[{client_name}] @{hedef_grup} invalid/private review; not permanently blocked.")
-                            continue
-                            if hedef_grup.lower() not in protected_groups:
-                                async with state_lock:
-                                    blacklist_group(hedef_grup, err_type, client_name)
-                                print(f"[{client_name}] ❌ @{hedef_grup} -> {err_type} (Kullanıcı/Grup yok), kara liste.")
-                            else:
-                                print(f"[{client_name}] ⚠️ Korumalı @{hedef_grup} bulunamadı, ancak korumalı olduğundan kara listeye ALINMADI.")
+                            async with state_lock:
+                                blacklist_group(hedef_grup, err_type, client_name)
+                            print(f"[{client_name}] ❌ @{hedef_grup} -> {err_type} (Kullanıcı/Grup yok), kara liste.")
                         else:
                             print(f"[{client_name}] ⚠️ @{hedef_grup} -> {err_type} (Hata: {err_msg})")
 
