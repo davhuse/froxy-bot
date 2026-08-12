@@ -123,8 +123,8 @@ def bot_runtime_enabled():
     """Run Telegram workers only from the configured owner platform.
 
     The local Antigravity checkout is intentionally a dashboard/control
-    surface.  Starting the same Telegram sessions locally and on Render
-    causes AuthKeyDuplicatedError and duplicate replies.  A deployment can
+    surface. Starting the same Telegram sessions locally and on Render
+    causes AuthKeyDuplicatedError and duplicate replies. A deployment can
     opt in explicitly with BOT_RUNTIME_ENABLED=true; Render is the default
     owner for production.
     """
@@ -134,12 +134,13 @@ def bot_runtime_enabled():
     if value in {"1", "true", "yes", "on"}:
         return True
 
+    # Production cloud environment (Render/Linux) defaults to True so workers auto-start
+    if os.name != "nt" or os.environ.get("PORT"):
+        return True
+
     owner = os.environ.get("BOT_RUNTIME_OWNER", "render").strip().lower()
     if owner != "render":
         return False
-    # Render normally exposes RENDER=true, but older services only expose one
-    # of the service URL/ID variables.  Accept those Render-only signals while
-    # keeping a local checkout disabled by default.
     return bool(
         os.environ.get("RENDER", "").strip().lower() == "true"
         or os.environ.get("RENDER_SERVICE_ID", "").strip()
