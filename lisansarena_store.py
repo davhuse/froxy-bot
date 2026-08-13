@@ -761,8 +761,10 @@ def shopier_webhook():
     if not isinstance(payload, dict):
         return _json_error("Geçersiz JSON")
     try:
-        order_number = get_store().ingest_webhook(payload, request.headers.get("Shopier-Webhook-Id"))
-        return jsonify({"accepted": True, "order_number": order_number}), 202
+        store = get_store()
+        order_number = store.ingest_webhook(payload, request.headers.get("Shopier-Webhook-Id"))
+        processed = store.process_webhooks()
+        return jsonify({"accepted": True, "order_number": order_number, "processed": processed}), 202
     except IntegrityError:
         return jsonify({"accepted": True, "duplicate": True}), 200
     except (ValueError, StoreUnavailable) as exc:

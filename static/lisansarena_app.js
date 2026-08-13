@@ -1,6 +1,7 @@
 "use strict";
 (() => {
   const state = { csrf: "", products: [], selected: null, user: null };
+  let topupRefreshTimer = null;
   const byId = (id) => document.getElementById(id);
   const notice = byId("notice");
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -65,6 +66,21 @@
     const data = await api("/api/la/wallet");
     const wallet = byId("walletButton");
     wallet.querySelector("strong").textContent = data.balance;
+  };
+  const refreshWalletQuietly = () => {
+    if (state.user) loadWallet().catch(() => {});
+  };
+  const watchTopup = () => {
+    if (topupRefreshTimer) clearInterval(topupRefreshTimer);
+    let attempts = 0;
+    topupRefreshTimer = setInterval(() => {
+      attempts += 1;
+      refreshWalletQuietly();
+      if (attempts >= 40) {
+        clearInterval(topupRefreshTimer);
+        topupRefreshTimer = null;
+      }
+    }, 15000);
   };
   const loadCatalog = async () => {
     const data = await api("/api/la/catalog");
@@ -173,9 +189,14 @@
           const link = addText(root, "a", "Shopier'de Ödemeye Geç");
           link.href = result.shopier_url;
           link.rel = "noopener noreferrer";
+          link.addEventListener("click", watchTopup);
         } else addText(root, "p", "Bakiye ilanı henüz bağlanmadı; ödeme yapmayın.");
       } catch (error) { setNotice(error.message, true); }
     });
+  });
+  globalThis.addEventListener("focus", refreshWalletQuietly);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") refreshWalletQuietly();
   });
   authenticate().catch((error) => setNotice(error.message, true));
 })();
