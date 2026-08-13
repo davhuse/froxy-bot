@@ -67,11 +67,24 @@ async def verify_ad_after_window(client, entity, message_id, client_name, group_
             "ad_visible_10m", client_name,
             group=normalize_group_key(group_name), source="telegram_visibility_check",
         )
-    except Exception as exc:
+    except ModerationDeletedError as exc:
         record_moderation_hold(group_name, client_name, str(exc), entity=entity)
         record_group_failure(group_name, client_name, "ModerationDeleted", 24 * 60 * 60, entity)
         record_event(
             "moderation_deleted", client_name,
+            group=normalize_group_key(group_name), source="telegram_visibility_check",
+            error=type(exc).__name__,
+        )
+    except Exception as exc:
+        # A transient Telegram/read failure does not prove that moderators
+        # deleted the advert. Preserve the accepted state without imposing a
+        # false 24-hour hold on this account/group pair.
+        record_delivery_state(
+            group_name, client_name, "visibility_check_error", entity=entity,
+            message_id=message_id, reason=type(exc).__name__,
+        )
+        record_event(
+            "ad_visibility_check_failed", client_name,
             group=normalize_group_key(group_name), source="telegram_visibility_check",
             error=type(exc).__name__,
         )
@@ -1008,6 +1021,15 @@ def account_restriction_status(client_name, scope=None):
         if _restriction_applies(record_scope, scope):
             return record
     return {}
+
+
+def should_resume_after_flood_wait(seconds, retry_count=0, limit_seconds=15 * 60):
+    """Short Telegram rate limits pause one account; they do not end its blast."""
+    try:
+        wait_seconds = int(seconds or 0)
+    except (TypeError, ValueError):
+        return False
+    return 0 < wait_seconds <= limit_seconds and retry_count < 1
 
 def claim_send_lock(grup_name, client_name, ttl_seconds=1800, entity=None):
     from datetime import datetime, timedelta, timezone
@@ -4008,10 +4030,17 @@ async def main():
                         fail_count += 1
                     except FloodWaitError as e:
                         record_event("ad_failed", client_name, group=normalize_group_key(grup_name), error=type(e).__name__)
-                        set_account_restriction(client_name, e.seconds, 'Telegram FloodWait', type(e).__name__, scope='send')
-                        record_group_failure(grup_name, client_name, 'FloodWait', e.seconds, entity)
-                        print(f"[{client_name}] ⏳ FloodWait {e.seconds}sn; hesap duraklatıldı, başka gruba mesaj denenmeyecek.")
                         fail_count += 1
+                        if should_resume_after_flood_wait(e.seconds, retry_count):
+                            retry_after = max(1, int(e.seconds)) + 5
+                            print(
+                                f"[{client_name}] ⏳ Kısa FloodWait {e.seconds}sn; "
+                                f"{retry_after}sn beklenip aynı turdan devam edilecek."
+                            )
+                        else:
+                            set_account_restriction(client_name, e.seconds, 'Telegram FloodWait', type(e).__name__, scope='send')
+                            record_group_failure(grup_name, client_name, 'FloodWait', e.seconds, entity)
+                            print(f"[{client_name}] ⏳ FloodWait {e.seconds}sn; hesap duraklatıldı, bu tur güvenli biçimde durdurulacak.")
                     except (PeerFloodError, UserRestrictedError) as e:
                         record_event("ad_failed", client_name, group=normalize_group_key(grup_name), error=type(e).__name__)
                         restriction_seconds = 48 * 60 * 60

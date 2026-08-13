@@ -7,6 +7,11 @@ import otomatik_katil as publisher
 
 
 class GroupStateTests(unittest.TestCase):
+    def test_short_flood_wait_resumes_once(self):
+        self.assertTrue(publisher.should_resume_after_flood_wait(134, 0))
+        self.assertFalse(publisher.should_resume_after_flood_wait(134, 1))
+        self.assertFalse(publisher.should_resume_after_flood_wait(3600, 0))
+
     def test_permanent_block_is_account_specific(self):
         with tempfile.TemporaryDirectory() as directory:
             path = str(Path(directory) / "account_group_blocks.json")
