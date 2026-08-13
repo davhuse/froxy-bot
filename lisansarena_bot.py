@@ -8,7 +8,7 @@ from datetime import datetime
 from telethon import TelegramClient, events, Button
 from telethon.errors import MessageNotModifiedError
 from telethon.sessions import StringSession
-from telethon.tl.types import KeyboardButtonRow, KeyboardButtonWebView, ReplyKeyboardMarkup
+from telethon.tl.types import KeyboardButtonRow, KeyboardButtonWebView, ReplyInlineMarkup
 import user_lang_helper
 import firestore_helper
 from gemini_helper import get_ai_response
@@ -651,13 +651,13 @@ def mini_app_markup():
         "LISANSARENA_MINI_APP_URL",
         "https://froxy-bot-wjzr.onrender.com/la/app",
     ).strip()
-    return ReplyKeyboardMarkup(
+    # Telegram rejects KeyboardButtonWebView inside a persistent reply
+    # keyboard for this bot (ButtonTypeInvalid). Web Apps launched by bots
+    # must be sent as an inline WebView button so Telegram supplies initData.
+    return ReplyInlineMarkup(
         rows=[KeyboardButtonRow(buttons=[
             KeyboardButtonWebView(text="🛍 Mağazayı Aç / Open Store", url=mini_app_url)
         ])],
-        resize=True,
-        single_use=False,
-        selective=False,
     )
 
 @bot.on(events.CallbackQuery(data=b'menu_verify_payment'))

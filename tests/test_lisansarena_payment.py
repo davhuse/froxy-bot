@@ -48,6 +48,12 @@ class LisansArenaPaymentTests(unittest.TestCase):
         self.assertNotIn("Button.url", source)
         self.assertNotIn("Ödemeniz Başarıyla Doğrulandı", source)
 
+    def test_mini_app_uses_inline_webview_markup(self):
+        source = Path("lisansarena_bot.py").read_text(encoding="utf-8")
+        self.assertIn("ReplyInlineMarkup", source)
+        self.assertIn("KeyboardButtonWebView", source)
+        self.assertNotIn("ReplyKeyboardMarkup", source)
+
 
 if __name__ == "__main__":
     unittest.main()
