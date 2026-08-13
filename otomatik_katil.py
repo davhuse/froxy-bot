@@ -19,6 +19,7 @@ except Exception:
 from gemini_helper import get_ai_response, get_ad_variation
 from sales_catalog import filter_keyvadi_products
 from sales_metrics import record_event
+from support_flow import save_ticket_record
 from telethon import TelegramClient, events
 from telethon.tl.functions.channels import JoinChannelRequest, LeaveChannelRequest
 from telethon.tl.functions.contacts import ResolveUsernameRequest, SearchRequest
@@ -451,6 +452,14 @@ def account_brand(client_name):
 def account_flags(client_name):
     brand = account_brand(client_name)
     return brand == 'keyvadi', brand == 'lisansarena', brand == 'froxy'
+
+
+def ad_worker_dm_replies_enabled(client_name):
+    """Advertising user accounts own Froxy/KeyVadi direct-message sales replies."""
+    if account_brand(client_name) in {"froxy", "keyvadi"}:
+        return True
+    override = os.environ.get("ENABLE_AD_WORKER_DM_REPLIES", "").strip().lower()
+    return override in {"1", "true", "yes", "on"}
 
 
 def short_group_message(is_keyvadi, is_lisansarena, is_froxy=False):
@@ -2325,8 +2334,10 @@ PROCESSED_DM_MSG_IDS = set()
 USER_DM_LAST_REPLY_TIME = {}
 USER_DM_LAST_REPLY_TEXT = {}
 USER_DM_SALES_CONTEXT = {}
+USER_DM_PRODUCT_REPLY_TIME = {}
 LISANSARENA_SUPPORT_NOTICE_TIME = {}
 SALES_FOLLOWUP_TTL_SECONDS = 15 * 60
+PRODUCT_DM_REPLY_COOLDOWN_SECONDS = 15 * 60
 
 KEYVADI_REFERENCE_URL = "https://t.me/satisrefim/9615"
 
@@ -2348,6 +2359,47 @@ def remember_sales_context(user_key, products, now=None):
         "expires_at": now + SALES_FOLLOWUP_TTL_SECONDS,
     }
 
+
+def product_dm_reply_key(client_name, sender_id, product):
+    product_id = product.get("id") or product.get("url") or product.get("title") or "product"
+    safe_product = re.sub(r"[^a-zA-Z0-9_-]+", "_", str(product_id))[:120]
+    return (client_name, int(sender_id), safe_product)
+
+
+async def reserve_product_dm_replies(client_name, sender_id, products, now=None):
+    """Keep only products not sent to this customer during the last 15 minutes."""
+    now = time.time() if now is None else now
+    available = []
+    reserved_keys = []
+    for product in products:
+        reply_key = product_dm_reply_key(client_name, sender_id, product)
+        if now - USER_DM_PRODUCT_REPLY_TIME.get(reply_key, 0) < PRODUCT_DM_REPLY_COOLDOWN_SECONDS:
+            continue
+        doc_id = f"ad_dm_product_{reply_key[0]}_{reply_key[1]}_{reply_key[2]}"
+        state = await async_get_document(doc_id) or {}
+        try:
+            last_sent_at = float(state.get("last_sent_at", 0) or 0)
+        except (TypeError, ValueError):
+            last_sent_at = 0
+        if now - last_sent_at < PRODUCT_DM_REPLY_COOLDOWN_SECONDS:
+            USER_DM_PRODUCT_REPLY_TIME[reply_key] = last_sent_at
+            continue
+        # Reserve locally before sending so concurrent updates cannot duplicate.
+        USER_DM_PRODUCT_REPLY_TIME[reply_key] = now
+        available.append(product)
+        reserved_keys.append((reply_key, doc_id))
+    return available, reserved_keys
+
+
+async def confirm_product_dm_replies(reserved_keys, now):
+    for _reply_key, doc_id in reserved_keys:
+        await async_set_document(doc_id, {"last_sent_at": float(now)})
+
+
+def release_product_dm_replies(reserved_keys):
+    for reply_key, _doc_id in reserved_keys:
+        USER_DM_PRODUCT_REPLY_TIME.pop(reply_key, None)
+
 def keyvadi_product_reply(product):
     """Add verified trust details without changing any blast/ad template."""
     return (
@@ -2356,6 +2408,18 @@ def keyvadi_product_reply(product):
         f"⭐ Müşteri referansları: {KEYVADI_REFERENCE_URL}\n"
         "💬 Teslimat ve garanti koşulları ürün türüne göre değişebilir; "
         "satın almadan önce bu sohbetten sorabilirsiniz."
+    )
+
+
+def froxy_product_reply(product):
+    """Return the exact Froxy Shopier product and keep the panel visible."""
+    return (
+        f"📌 **{product['title']}**\n"
+        f"💰 Fiyat: {product.get('price', 'Ürün sayfasında')}\n"
+        f"🛒 {product['url']}\n\n"
+        "🤖 Froxy AI panelinde GPT, Claude, Gemini, DeepSeek ve 1.100+ model "
+        "tek kredi sistemiyle kullanılabilir.\n"
+        "🌐 https://froxy.online"
     )
 
 def sales_followup_reply(context, text):
@@ -2449,16 +2513,24 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
             )
             return
 
+        is_keyvadi, is_lisansarena, is_froxy = account_flags(client_name)
+        panel_brand = "Froxy AI" if is_froxy else ("KeyVadi" if is_keyvadi else "LisansArena")
+        try:
+            save_ticket_record(
+                panel_brand,
+                sender_id,
+                getattr(sender, 'first_name', '') or '',
+                getattr(sender, 'last_name', '') or '',
+                f"@{sender.username}" if getattr(sender, 'username', None) else "Yok",
+                event.raw_text or '',
+            )
+        except Exception as exc:
+            print(f"[{client_name}] Panel DM kaydı yazılamadı: {type(exc).__name__}")
+
         user_key = (client_name, sender_id)
 
-        # 3. Per-User Rate Limiter (15 seconds Cooldown for ALL senders)
         now = time.time()
         sales_context = active_sales_context(user_key, now)
-        if user_key in USER_DM_LAST_REPLY_TIME:
-            reply_cooldown = 2 if sales_context else 15
-            if now - USER_DM_LAST_REPLY_TIME[user_key] < reply_cooldown:
-                print(f"⏳ [{client_name}] @{getattr(sender, 'username', sender_id)} {reply_cooldown}sn cooldown içinde, mükerrer mesaj yoksayıldı.")
-                return
 
         normalized_text = (event.raw_text or '').strip().lower()
         previous_time = USER_DM_LAST_REPLY_TIME.get(user_key)
@@ -2476,8 +2548,6 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         if not has_keyword and not sales_context and is_obviously_non_sales_dm(event.raw_text):
             print(f"[{client_name}] DM satış dışı görünüyor, otomatik yanıt atlandı.")
             return
-
-        is_keyvadi, is_lisansarena, is_froxy = account_flags(client_name)
 
         # LisansArena odeme/IBAN sorularini Shopier'e cevirmeden destek ekibine
         # aktar. Tekrarlanan mesajlarda hem musteriye hem admin'e dalga halinde
@@ -2539,9 +2609,10 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                 except Exception as e:
                     print(f"⚠️ Error loading LisansArena products: {e}")
         elif is_keyvadi or is_froxy:
-            if os.path.exists("keyvadi_shopier_links.json"):
+            catalog_file = "froxy_shopier_links.json" if is_froxy else "keyvadi_shopier_links.json"
+            if os.path.exists(catalog_file):
                 try:
-                    with open("keyvadi_shopier_links.json", "r", encoding="utf-8") as f:
+                    with open(catalog_file, "r", encoding="utf-8") as f:
                         data = json.load(f)
                         for item in data:
                             pid = item.get("id")
@@ -2556,18 +2627,30 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                             })
                 except:
                     pass
-            products = filter_keyvadi_products(products)
+            if is_keyvadi:
+                products = filter_keyvadi_products(products)
 
         matched_products = []
+        reserved_product_keys = []
         if products:
             matched_products = match_multiple_products_from_text(event.raw_text, products)
+            if matched_products:
+                matched_products, reserved_product_keys = await reserve_product_dm_replies(
+                    client_name, sender_id, matched_products, now
+                )
+                if not matched_products:
+                    print(
+                        f"⏳ [{client_name}] @{getattr(sender, 'username', sender_id)} için "
+                        "aynı ürün bağlantısı 15 dakikalık bekleme süresinde."
+                    )
+                    return
             
         reply_text = None
         matched_desc = ""
         if matched_products:
             if len(matched_products) == 1:
                 reply_text = (
-                    keyvadi_product_reply(matched_products[0])
+                    (froxy_product_reply(matched_products[0]) if is_froxy else keyvadi_product_reply(matched_products[0]))
                     if (is_keyvadi or is_froxy) else (
                         "Ürün ve ödeme işlemleri Shopier kullanılmadan yürütülüyor. "
                         "Ürünü almak için @LisansArenaBot üzerinden ilerleyebilir, "
@@ -2662,8 +2745,10 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
             USER_DM_LAST_REPLY_TEXT[user_key] = normalized_text
             if matched_products:
                 remember_sales_context(user_key, matched_products, now)
+                await confirm_product_dm_replies(reserved_product_keys, now)
             print(f"[{client_name}] ✉️ Özel mesaj otomatik yanıtlandı ({matched_desc}): @{sender.username or sender_id}")
         except Exception as e:
+            release_product_dm_replies(reserved_product_keys)
             if lisansarena_reply_claim_id:
                 await async_delete_document(lisansarena_reply_claim_id)
             print(f"[{client_name}] ⚠️ Özel mesaj otomatik yanıtlanırken hata: {e}")
@@ -4227,14 +4312,12 @@ async def main():
     tasks = []
     for client, name, j_dialogs in active_clients:
         register_admin_handler(client, name, j_dialogs)
-        # Support bots are the sole owners of customer DM replies.  Running a
-        # second handler on an advertising user account was the source of
-        # duplicate/stacked replies.  It remains an explicit opt-in only for
-        # emergency maintenance, never the production default.
-        if os.environ.get("ENABLE_AD_WORKER_DM_REPLIES", "0").strip().lower() in {"1", "true", "yes", "on"}:
+        # Froxy and KeyVadi customers also write directly to the advertising
+        # user accounts. Those accounts must own that private-chat sales flow.
+        if ad_worker_dm_replies_enabled(name):
             register_auto_reply_handler(client, name, our_user_ids)
         else:
-            print(f"ℹ️ [{name}] Reklam worker DM otomatik yanıtı kapalı; destek botu sahip.")
+            print(f"ℹ️ [{name}] Reklam hesabı DM otomatik yanıtı kapalı.")
         register_telegram_code_forwarder(client, name)
         tasks.append(update_account_bios(client, name))
         tasks.append(run_worker_supervisor(client, name, j_dialogs))
