@@ -7,6 +7,7 @@ import tempfile
 import time
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from sqlalchemy import func, insert, select, update
 
@@ -88,6 +89,30 @@ class LisansArenaStoreTests(unittest.TestCase):
         with self.store.engine.connect() as conn:
             self.assertEqual(self.store.balance(conn, self.user_id), 10000)
             self.assertEqual(conn.execute(select(func.count()).select_from(store_module.wallet_ledger).where(store_module.wallet_ledger.c.entry_type == "topup")).scalar_one(), 1)
+
+    def test_api_reconciliation_filters_unpaid_and_is_idempotent(self):
+        paid = {
+            "id": "order-api-1", "paymentStatus": "paid", "total": "100.00",
+            "note": "LA-A1B2C3", "lineItems": [{"productId": "balance-100", "quantity": 1}],
+        }
+        payload = json.dumps({"data": [paid, {"id": "unpaid", "paymentStatus": "waiting"}]}).encode()
+
+        class Response:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_):
+                return False
+
+            def read(self):
+                return payload
+
+        with patch.object(store_module.urllib.request, "urlopen", return_value=Response()):
+            self.assertEqual(self.store.reconcile_shopier_orders("secret"), 1)
+            self.assertEqual(self.store.reconcile_shopier_orders("secret"), 1)
+        with self.store.engine.connect() as conn:
+            count = conn.execute(select(func.count()).select_from(store_module.shopier_orders)).scalar_one()
+        self.assertEqual(count, 1)
 
     def test_margin_floor(self):
         self.assertTrue(store_module.margin_is_allowed(10000, 6000, "automatic", "0.05"))

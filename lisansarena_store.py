@@ -15,6 +15,8 @@ import secrets
 import threading
 import time
 from urllib.parse import parse_qsl
+import urllib.parse
+import urllib.request
 
 from argon2 import PasswordHasher
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
@@ -374,6 +376,38 @@ class LisansArenaStore:
                 status=incoming_status, payload=json.dumps(payload, ensure_ascii=False), created_at=utcnow(),
             ))
         return order_number
+
+    def reconcile_shopier_orders(self, token: str | None = None, days: int = 2):
+        """Fetch recent Shopier orders and enqueue paid/refunded ones idempotently."""
+        token = (token or os.environ.get("SHOPIER_LISANSARENA_ACCESS_TOKEN", "")).strip()
+        if not token:
+            return 0
+        date_start = (utcnow() - timedelta(days=max(1, days))).strftime("%Y-%m-%dT%H:%M:%S%z")
+        query = urllib.parse.urlencode({"limit": 100, "dateStart": date_start})
+        api_request = urllib.request.Request(
+            f"https://api.shopier.com/v1/orders?{query}",
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Accept": "application/json",
+                "User-Agent": "LisansArena-Store/1.0",
+            },
+        )
+        with urllib.request.urlopen(api_request, timeout=30) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+        rows = payload if isinstance(payload, list) else payload.get("data") or payload.get("orders") or []
+        accepted = 0
+        for order in rows:
+            if not isinstance(order, dict):
+                continue
+            status = str(order.get("paymentStatus") or order.get("status") or "").casefold()
+            if status not in {"paid", "refunded", "refund", "cancelled", "canceled"}:
+                continue
+            order_number = str(order.get("orderNumber") or order.get("order_number") or order.get("id") or "").strip()
+            if not order_number:
+                continue
+            self.ingest_webhook(order, f"api:{order_number}")
+            accepted += 1
+        return accepted
 
     def process_webhooks(self, limit=20):
         processed = 0
@@ -736,9 +770,15 @@ def start_store_worker():
     _worker_started = True
 
     def loop():
+        next_reconciliation = 0.0
         while True:
             try:
                 store = get_store()
+                now = time.monotonic()
+                if now >= next_reconciliation:
+                    store.reconcile_shopier_orders()
+                    interval = max(60, int(os.environ.get("LISANSARENA_RECONCILE_SECONDS", "300")))
+                    next_reconciliation = now + interval
                 store.process_webhooks()
                 store.expire_manual_orders()
             except Exception as exc:
