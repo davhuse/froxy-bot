@@ -81,13 +81,28 @@ BOT_TOKEN = os.environ.get("FROXY_SUPPORT_BOT_TOKEN", "").strip()
 ADMIN_ID = int(os.environ.get("FROXY_ADMIN_ID", config.get("froxy_admin_id", config.get("admin_id", 0))) or 0)
 BOT_USER_ID = None
 
+DEFAULT_FROXY_PRODUCTS = [
+    {"id": "49489768", "title": "Perplexity Pro (1 Aylık Ortak)", "price": "69,99 TL", "url": "https://www.shopier.com/froxyai/49489768"},
+    {"id": "49489754", "title": "ChatGPT Go (3 Aylık İndirim Kodu)", "price": "49,99 TL", "url": "https://www.shopier.com/froxyai/49489754"},
+    {"id": "49489749", "title": "Gemini Ultra (1 Aylık 2500 Kredili)", "price": "399,00 TL", "url": "https://www.shopier.com/froxyai/49489749"},
+    {"id": "49489734", "title": "Gemini Ultra (1 Aylık Kredisiz)", "price": "299,00 TL", "url": "https://www.shopier.com/froxyai/49489734"},
+    {"id": "49489726", "title": "Codex SMS Doğrulama Kodu", "price": "29,00 TL", "url": "https://www.shopier.com/froxyai/49489726"},
+    {"id": "49489721", "title": "ChatGPT Plus + Codex (1 Aylık)", "price": "199,99 TL", "url": "https://www.shopier.com/froxyai/49489721"},
+    {"id": "49489705", "title": "ChatGPT Plus (1 Aylık Ortak)", "price": "39,99 TL", "url": "https://www.shopier.com/froxyai/49489705"},
+    {"id": "49489691", "title": "ChatGPT Plus (1 Aylık Kişisel)", "price": "99,99 TL", "url": "https://www.shopier.com/froxyai/49489691"},
+    {"id": "49489681", "title": "Gemini Pro + Antigravity (18 Aylık)", "price": "249,99 TL", "url": "https://www.shopier.com/froxyai/49489681"},
+    {"id": "49489671", "title": "Gemini Pro + Antigravity (12 Aylık)", "price": "169,99 TL", "url": "https://www.shopier.com/froxyai/49489671"},
+    {"id": "49489662", "title": "Gemini Pro (18 Aylık Davet)", "price": "99,99 TL", "url": "https://www.shopier.com/froxyai/49489662"},
+    {"id": "49489651", "title": "Gemini Pro (12 Aylık Davet)", "price": "59,99 TL", "url": "https://www.shopier.com/froxyai/49489651"},
+    {"id": "47408150", "key": "kurumsal", "title": "Kurumsal Paket", "price": "1.499,99 TL", "url": "https://www.shopier.com/froxyai/47408150"},
+    {"id": "47408149", "key": "isletme", "title": "İşletme Paketi", "price": "799,99 TL", "url": "https://www.shopier.com/froxyai/47408149"},
+    {"id": "47408145", "key": "gelistirici", "title": "Geliştirici Paketi", "price": "599,99 TL", "url": "https://www.shopier.com/froxyai/47408145"},
+    {"id": "47408141", "key": "profesyonel", "title": "Profesyonel Paket", "price": "449,99 TL", "url": "https://www.shopier.com/froxyai/47408141"},
+    {"id": "47408138", "key": "populer", "title": "Popüler Paket", "price": "249,99 TL", "url": "https://www.shopier.com/froxyai/47408138"},
+    {"id": "47408136", "key": "baslangic", "title": "Başlangıç Paketi", "price": "129,99 TL", "url": "https://www.shopier.com/froxyai/47408136"},
+]
 DEFAULT_FROXY_SHOPIER_LINKS = {
-    "baslangic": "https://www.shopier.com/froxyai/47408136",
-    "populer": "https://www.shopier.com/froxyai/47408138",
-    "profesyonel": "https://www.shopier.com/froxyai/47408141",
-    "gelistirici": "https://www.shopier.com/froxyai/47408145",
-    "isletme": "https://www.shopier.com/froxyai/47408149",
-    "kurumsal": "https://www.shopier.com/froxyai/47408150",
+    product["key"]: product["url"] for product in DEFAULT_FROXY_PRODUCTS if product.get("key")
 }
 FROXY_PRODUCTS = []
 
@@ -101,10 +116,7 @@ def load_froxy_products():
         logger.info("Loaded %s products from the Froxy Shopier showroom.", len(FROXY_PRODUCTS))
     except Exception as exc:
         logger.warning("Froxy Shopier catalog could not be refreshed: %s", exc)
-        FROXY_PRODUCTS = [
-            {"id": key, "title": key.replace("_", " ").title(), "price": "", "url": url}
-            for key, url in DEFAULT_FROXY_SHOPIER_LINKS.items()
-        ]
+        FROXY_PRODUCTS = [dict(product) for product in DEFAULT_FROXY_PRODUCTS]
     return FROXY_PRODUCTS
 
 if not BOT_TOKEN or BOT_TOKEN == "YOUR_TELEGRAM_BOT_TOKEN":
