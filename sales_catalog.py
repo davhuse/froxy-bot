@@ -24,13 +24,9 @@ def sales_test_mode() -> bool:
                 return bool(configured)
     except Exception:
         pass
-    # Render starts the controlled experiment by default; local checkouts do
-    # not unexpectedly hide products from their owner.
-    return bool(
-        os.environ.get("RENDER", "").strip().lower() == "true"
-        or os.environ.get("RENDER_SERVICE_ID", "").strip()
-        or os.environ.get("RENDER_EXTERNAL_URL", "").strip()
-    )
+    # Full catalog is the production default. A reduced catalog is now an
+    # explicit maintenance-only opt-in.
+    return False
 
 
 def load_test_catalog() -> list[dict[str, Any]]:

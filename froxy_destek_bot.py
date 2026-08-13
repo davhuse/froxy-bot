@@ -3,6 +3,7 @@ import json
 import logging
 import re
 import asyncio
+import time
 from telethon import TelegramClient, events, Button
 from telethon.errors import MessageNotModifiedError
 from telethon.sessions import StringSession
@@ -11,6 +12,13 @@ import firestore_helper
 from sales_metrics import record_event
 from shopier_catalog import fetch_shopier_catalog, match_catalog_products
 from support_flow import claim_first_greeting, forward_customer_message, greeting_for, one_time_mode_enabled, save_ticket_record
+from sales_conversion import (
+    has_sales_query,
+    load_sales_catalog,
+    match_sales_products,
+    parse_cta_start_parameter,
+    purchase_url,
+)
 
 # Logging configuration
 logging.basicConfig(
@@ -126,6 +134,25 @@ if not BOT_TOKEN or BOT_TOKEN == "YOUR_TELEGRAM_BOT_TOKEN":
 # In-memory user state
 user_states = {}
 PROCESSED_MESSAGE_EVENTS = set()
+SUPPORT_SALES_CONTEXT = {}
+USER_CTA_ATTRIBUTION = {}
+PRODUCT_REPLY_COOLDOWNS = {}
+PRODUCT_REPLY_COOLDOWN_SECONDS = 15 * 60
+
+def filter_products_outside_cooldown(user_id, products):
+    now = time.monotonic()
+    for key, expires in list(PRODUCT_REPLY_COOLDOWNS.items()):
+        if expires <= now:
+            PRODUCT_REPLY_COOLDOWNS.pop(key, None)
+    return [
+        product for product in products
+        if PRODUCT_REPLY_COOLDOWNS.get(f"{user_id}:{product['id']}", 0) <= now
+    ]
+
+def mark_product_reply_sent(user_id, products):
+    expires = time.monotonic() + PRODUCT_REPLY_COOLDOWN_SECONDS
+    for product in products:
+        PRODUCT_REPLY_COOLDOWNS[f"{user_id}:{product['id']}"] = expires
 
 # Initialize client
 bot = TelegramClient("froxy_destek_bot_session", API_ID, API_HASH)
@@ -383,6 +410,16 @@ async def start_handler(event):
         param = parts[1].strip()
         if param.startswith("ref_"):
             ref_id = param.replace("ref_", "")
+        cta_data = parse_cta_start_parameter(param)
+        if cta_data and cta_data["brand"] == "froxy":
+            USER_CTA_ATTRIBUTION[user_id] = {
+                **cta_data,
+                "expires_at": time.monotonic() + 7 * 24 * 60 * 60,
+            }
+            record_event(
+                "ad_cta_open", "Froxy AI", source="telegram_start",
+                arm=cta_data["arm"], group_hash=cta_data["group_hash"],
+            )
             
     user_doc_id = f"user_{user_id}"
     user_data = firestore_helper.get_document(user_doc_id)
@@ -702,8 +739,16 @@ async def message_handler(event):
         return
 
     if not is_admin_context and event.text:
-        matched_products = match_catalog_products(event.text, FROXY_PRODUCTS)
+        matched_products = match_sales_products(event.text, load_sales_catalog("froxy"), limit=3)
         if matched_products:
+            matched_products = filter_products_outside_cooldown(user_id, matched_products)
+            if not matched_products:
+                return
+            attribution = USER_CTA_ATTRIBUTION.get(user_id, {})
+            if attribution.get("expires_at", 0) <= time.monotonic():
+                attribution = {}
+                USER_CTA_ATTRIBUTION.pop(user_id, None)
+            arm = attribution.get("arm", "")
             lang = user_lang_helper.get_user_lang(user_id) or "tr"
             t = TEXTS[lang]
             lines = ["🔎 **Uygun Froxy ürünleri:**", ""]
@@ -711,14 +756,42 @@ async def message_handler(event):
             for product in matched_products:
                 price = product.get("price") or "Fiyat ürün sayfasında"
                 lines.append(f"• **{product['title']}** — {price}")
-                buttons.append([Button.url(f"💳 {product['title'][:40]}", product["url"])])
-            lines.extend(["", "Satın almak için ürünün Shopier bağlantısını kullanabilirsiniz."])
+                buttons.append([Button.url(f"🛒 {product['title'][:40]}", purchase_url(product, "froxy", "support_bot_dm", arm))])
             buttons.append([Button.inline(t["support_btn"], b"menu_support")])
             await event.respond("\n".join(lines), buttons=buttons)
+            mark_product_reply_sent(user_id, matched_products)
+            SUPPORT_SALES_CONTEXT[user_id] = {
+                "product": dict(matched_products[0]),
+                "expires_at": asyncio.get_running_loop().time() + 15 * 60,
+            }
+            record_event("product_matched", "Froxy AI", source="telegram_private", product=matched_products[0].get("title", ""), product_count=len(matched_products), arm=arm)
+            record_event("purchase_cta_sent", "Froxy AI", source="telegram_private", product=matched_products[0].get("title", ""), product_count=len(matched_products), arm=arm)
             record_event(
                 "dm_reply_sent", "Froxy AI", source="telegram_private",
                 product=matched_products[0].get("title", ""),
             )
+            return
+        context = SUPPORT_SALES_CONTEXT.get(user_id)
+        if context and context.get("expires_at", 0) > asyncio.get_running_loop().time():
+            product = context["product"]
+            lang = user_lang_helper.get_user_lang(user_id) or "tr"
+            t = TEXTS[lang]
+            await event.respond(
+                f"**{product['title']}** için kullanım, cihaz, teslimat veya garanti ayrıntısını yanlış aktarmamak için satıcı bu sohbetten yanıtlayacak.",
+                buttons=[[Button.inline(t["support_btn"], b"menu_support")]],
+            )
+            record_event("human_handoff", "Froxy AI", source="telegram_private", product=product.get("title", ""), reason="unverified_product_fact")
+            record_event("dm_reply_sent", "Froxy AI", source="telegram_private", product="handoff")
+            return
+        if has_sales_query(event.text):
+            lang = user_lang_helper.get_user_lang(user_id) or "tr"
+            t = TEXTS[lang]
+            await event.respond(
+                "Aradığınız ürünü doğru bulabilmem için ürün adını ve varsa kişisel/ortak ya da süre tercihinizi yazar mısınız?",
+                buttons=[[Button.inline(t["support_btn"], b"menu_support")]],
+            )
+            record_event("human_handoff", "Froxy AI", source="telegram_private", reason="no_product_match")
+            record_event("dm_reply_sent", "Froxy AI", source="telegram_private", product="clarification")
             return
 
     if user_states.get(user_id) == "AWAITING_SUPPORT":

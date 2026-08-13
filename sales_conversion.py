@@ -1,0 +1,383 @@
+"""Shared sales catalog, matching, purchase-link, and CTA experiment helpers."""
+
+from __future__ import annotations
+
+import base64
+import hashlib
+import hmac
+import json
+import os
+import re
+import unicodedata
+import urllib.request
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+from urllib.parse import urlparse
+
+
+ROOT = Path(__file__).resolve().parent
+CATALOG_FILES = {
+    "keyvadi": ROOT / "keyvadi_shopier_links.json",
+    "froxy": ROOT / "froxy_shopier_links.json",
+}
+SHOPIER_HOSTS = {"shopier.com", "www.shopier.com"}
+PUBLIC_BASE_URL = (
+    os.environ.get("PUBLIC_BASE_URL")
+    or os.environ.get("RENDER_EXTERNAL_URL")
+    or "https://froxy-bot-wjzr.onrender.com"
+).rstrip("/")
+
+TEXT_ALIASES = {
+    "netfilix": "netflix",
+    "netfli": "netflix",
+    "chat gpt": "chatgpt",
+    "gpt": "chatgpt",
+    "you tube": "youtube",
+    "yt premium": "youtube premium",
+    "yt": "youtube",
+    "gamepass": "game pass",
+    "win10": "windows 10",
+    "win11": "windows 11",
+    "office365": "office 365",
+    "adobe cc": "adobe creative cloud",
+    "creative cloud": "adobe creative cloud",
+    "marketu": "trendyol market",
+    "market": "trendyol market",
+    "yemek kuponu": "trendyol yemek",
+    "tg hesap": "telegram hesap",
+    "telegram account": "telegram hesap",
+    "x box": "xbox",
+}
+
+BRAND_PHRASES = (
+    "chatgpt", "netflix", "youtube", "adobe", "canva", "windows", "office",
+    "gemini", "grok", "xbox", "spotify", "exxen", "trendyol yemek",
+    "trendyol market", "duolingo", "semrush", "capcut", "scribd", "gamma",
+    "kiro", "steam", "shell", "whatsapp", "apple", "crunchyroll", "telegram",
+    "midjourney", "tradingview", "nordvpn", "vpn", "kaspersky", "envato",
+    "freepik", "autocad", "figma", "elementor", "grammarly", "deepl",
+    "ideogram", "quillbot", "discord", "hbo", "prime video", "perplexity",
+    "magnific", "zula", "fc26", "codex", "antigravity", "disney",
+    "baslangic", "populer", "profesyonel", "gelistirici", "isletme", "kurumsal",
+)
+
+VARIANT_TERMS = {
+    "kisisel", "ortak", "ozel", "profil", "davet", "ultra", "pro", "plus",
+    "ay", "aylik", "yil", "yillik", "hafta", "haftalik", "kredili", "kredisiz",
+    "1", "2", "3", "4", "6", "12", "18", "2500", "5k", "15k", "50k",
+}
+
+STOP_WORDS = {
+    "var", "mi", "mu", "ve", "de", "da", "icin", "misiniz", "olur", "yok",
+    "acaba", "urun", "hesap", "kodu", "kupon", "hocam", "kanka", "bir",
+    "istiyorum", "lazim", "kac", "fiyat", "ne", "tl", "lira", "nasil", "nedir",
+    "site", "link", "al", "almak", "satin", "bilgi", "hakkinda",
+}
+
+
+def normalize_sales_text(value: str) -> str:
+    text = str(value or "").casefold().replace("ı", "i")
+    text = text.replace("�", "")
+    text = "".join(
+        char for char in unicodedata.normalize("NFKD", text)
+        if not unicodedata.combining(char)
+    )
+    text = re.sub(r"[^a-z0-9]+", " ", text).strip()
+    for source, target in sorted(TEXT_ALIASES.items(), key=lambda item: -len(item[0])):
+        source_norm = re.sub(r"[^a-z0-9]+", " ", normalize_alias_literal(source)).strip()
+        text = re.sub(rf"(?<!\w){re.escape(source_norm)}(?!\w)", target, text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def normalize_alias_literal(value: str) -> str:
+    text = str(value or "").casefold().replace("ı", "i").replace("�", "")
+    return "".join(
+        char for char in unicodedata.normalize("NFKD", text)
+        if not unicodedata.combining(char)
+    )
+
+
+def _normalize_product(item: dict) -> dict | None:
+    product_id = str(item.get("id") or "").strip()
+    title = str(item.get("title") or "").strip()
+    url = str(item.get("url") or item.get("link") or "").strip()
+    if not product_id or not title or not is_allowed_shopier_url(url):
+        return None
+    price = item.get("price")
+    if not price and isinstance(item.get("priceData"), dict):
+        price = item["priceData"].get("price")
+    normalized = dict(item)
+    normalized.update({"id": product_id, "title": title, "price": str(price or ""), "url": url})
+    return normalized
+
+
+def load_sales_catalog(brand: str) -> list[dict]:
+    path = CATALOG_FILES.get(str(brand).lower())
+    if not path:
+        return []
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return []
+    products = []
+    seen = set()
+    for item in data if isinstance(data, list) else []:
+        product = _normalize_product(item) if isinstance(item, dict) else None
+        if product and product["id"] not in seen:
+            seen.add(product["id"])
+            products.append(product)
+    return products
+
+
+def refresh_catalog_from_shopier_api(brand: str) -> int:
+    """Refresh one catalog when a Shopier personal access token is configured."""
+    brand = str(brand).lower()
+    token_key = "SHOPIER_KEYVADI_ACCESS_TOKEN" if brand == "keyvadi" else "SHOPIER_FROXY_ACCESS_TOKEN"
+    token = os.environ.get(token_key, "").strip()
+    path = CATALOG_FILES.get(brand)
+    if not token or not path:
+        return 0
+    request = urllib.request.Request(
+        "https://api.shopier.com/v1/products?limit=100",
+        headers={"Authorization": f"Bearer {token}", "Accept": "application/json"},
+    )
+    with urllib.request.urlopen(request, timeout=30) as response:
+        payload = json.loads(response.read().decode("utf-8"))
+    raw_products = payload if isinstance(payload, list) else (
+        payload.get("data") or payload.get("products") or []
+    )
+    current = {item["id"]: item for item in load_sales_catalog(brand)}
+    refreshed = []
+    for raw in raw_products:
+        if (
+            not isinstance(raw, dict)
+            or raw.get("active") is False
+            or raw.get("stockStatus") == "outOfStock"
+        ):
+            continue
+        product_id = str(raw.get("id") or "").strip()
+        old = current.get(product_id, {})
+        price_data = raw.get("priceData") if isinstance(raw.get("priceData"), dict) else {}
+        price = raw.get("price") or price_data.get("discountedPrice") or price_data.get("price") or old.get("price")
+        if isinstance(price, dict):
+            price = price.get("price_legacy_formatted") or price.get("price_code_formatted")
+        item = _normalize_product({
+            **old,
+            "id": product_id,
+            "title": raw.get("name") or raw.get("title") or old.get("title"),
+            "price": price,
+            "url": raw.get("link") or raw.get("url") or old.get("url"),
+            "description": raw.get("description") or old.get("description", ""),
+            "stockStatus": raw.get("stockStatus") or old.get("stockStatus", ""),
+            "stockQuantity": raw.get("stockQuantity", old.get("stockQuantity")),
+        })
+        if item:
+            refreshed.append(item)
+    if not refreshed:
+        raise RuntimeError(f"Shopier API returned no usable {brand} products")
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    temporary.write_text(json.dumps(refreshed, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    os.replace(temporary, path)
+    return len(refreshed)
+
+
+def refresh_configured_catalogs() -> dict[str, int]:
+    result = {}
+    for brand in CATALOG_FILES:
+        try:
+            result[brand] = refresh_catalog_from_shopier_api(brand)
+        except Exception:
+            result[brand] = 0
+    return result
+
+
+def is_allowed_shopier_url(url: str) -> bool:
+    try:
+        parsed = urlparse(str(url))
+        return parsed.scheme == "https" and (parsed.hostname or "").lower() in SHOPIER_HOSTS
+    except Exception:
+        return False
+
+
+def _brand_phrases_in(text: str) -> list[str]:
+    return [phrase for phrase in BRAND_PHRASES if re.search(rf"(?<!\w){re.escape(phrase)}(?!\w)", text)]
+
+
+def has_sales_query(message: str) -> bool:
+    query = normalize_sales_text(message)
+    return bool(_brand_phrases_in(query) or set(query.split()) & {"fiyat", "urun", "satin", "link"})
+
+
+def match_sales_products(message: str, products: list[dict], limit: int = 3) -> list[dict]:
+    """Return one specific match or at most three variants for a generic query."""
+    query = normalize_sales_text(message)
+    if not query:
+        return []
+    query_tokens = set(query.split())
+    brands = _brand_phrases_in(query)
+    if not brands:
+        return []
+    variant_tokens = query_tokens & VARIANT_TERMS
+    scored = []
+    for product in products:
+        title = normalize_sales_text(product.get("title", ""))
+        title_tokens = set(title.split())
+        matching_brands = [brand for brand in brands if brand in title]
+        if not matching_brands:
+            continue
+        useful_query = query_tokens - STOP_WORDS
+        overlap = useful_query & title_tokens
+        score = 100 * len(matching_brands) + 12 * len(overlap)
+        if title and title in query:
+            score += 100
+        for token in variant_tokens:
+            score += 35 if token in title_tokens else -30
+        if "yemek" in query_tokens and "yemek" not in title_tokens:
+            score -= 100
+        if "market" in query_tokens and "market" not in title_tokens:
+            score -= 100
+        if "kisisel" in query_tokens and "ortak" in title_tokens:
+            score -= 100
+        if "ortak" in query_tokens and "kisisel" in title_tokens:
+            score -= 100
+        scored.append((score, product))
+    scored.sort(key=lambda pair: (-pair[0], _price_number(pair[1].get("price")), pair[1]["title"]))
+    if not scored:
+        return []
+    # A query containing duration/variant detail is specific when the best
+    # candidate clearly beats the next one. Generic brand queries show choices.
+    if variant_tokens and (len(scored) == 1 or scored[0][0] - scored[1][0] >= 25):
+        return [scored[0][1]]
+    return [product for _score, product in scored[: max(1, min(limit, 3))]]
+
+
+def _price_number(value: str) -> float:
+    cleaned = re.sub(r"[^0-9,.]", "", str(value or "")).replace(".", "").replace(",", ".")
+    try:
+        return float(cleaned)
+    except ValueError:
+        return 999999.0
+
+
+def product_by_id(brand: str, product_id: str) -> dict | None:
+    return next((item for item in load_sales_catalog(brand) if item["id"] == str(product_id)), None)
+
+
+def _signing_secret() -> bytes:
+    value = (
+        os.environ.get("PURCHASE_LINK_SECRET")
+        or os.environ.get("SHOPIER_CALLBACK_SECRET")
+        or os.environ.get("TELEGRAM_API_HASH")
+        or ""
+    )
+    return value.encode("utf-8")
+
+
+def make_purchase_token(brand: str, product_id: str, source: str, arm: str = "") -> str | None:
+    secret = _signing_secret()
+    if not secret:
+        return None
+    payload = {
+        "b": str(brand).lower(), "p": str(product_id), "s": str(source)[:40],
+        "a": str(arm)[:16], "e": int((datetime.now(timezone.utc) + timedelta(days=30)).timestamp()),
+    }
+    raw = json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")
+    body = base64.urlsafe_b64encode(raw).rstrip(b"=")
+    signature = hmac.new(secret, body, hashlib.sha256).digest()[:16]
+    return (body + b"." + base64.urlsafe_b64encode(signature).rstrip(b"=")).decode("ascii")
+
+
+def parse_purchase_token(token: str) -> dict | None:
+    secret = _signing_secret()
+    if not secret or "." not in str(token):
+        return None
+    try:
+        body, supplied = str(token).split(".", 1)
+        expected = hmac.new(secret, body.encode("ascii"), hashlib.sha256).digest()[:16]
+        supplied_bytes = base64.urlsafe_b64decode(supplied + "=" * (-len(supplied) % 4))
+        if not hmac.compare_digest(expected, supplied_bytes):
+            return None
+        raw = base64.urlsafe_b64decode(body + "=" * (-len(body) % 4))
+        payload = json.loads(raw.decode("utf-8"))
+        if int(payload.get("e", 0)) < int(datetime.now(timezone.utc).timestamp()):
+            return None
+        if payload.get("b") not in CATALOG_FILES or not product_by_id(payload["b"], payload.get("p", "")):
+            return None
+        return payload
+    except Exception:
+        return None
+
+
+def purchase_url(product: dict, brand: str, source: str, arm: str = "") -> str:
+    token = make_purchase_token(brand, product.get("id", ""), source, arm)
+    return f"{PUBLIC_BASE_URL}/go/{token}" if token else product["url"]
+
+
+EXPERIMENT_START = datetime.fromisoformat(
+    os.environ.get("CTA_EXPERIMENT_START", "2026-08-13T00:00:00+00:00").replace("Z", "+00:00")
+)
+
+
+def cta_experiment_status(now: datetime | None = None) -> dict:
+    current = now or datetime.now(timezone.utc)
+    if current.tzinfo is None:
+        current = current.replace(tzinfo=timezone.utc)
+    initial_end = EXPERIMENT_START + timedelta(days=3)
+    final_end = EXPERIMENT_START + timedelta(days=7)
+    if current < EXPERIMENT_START:
+        phase = "scheduled"
+    elif current < initial_end:
+        phase = "initial_3_days"
+    elif current < final_end:
+        # Baseline traffic is below a reliable three-day sample, so keeping the
+        # original split through day seven is the plan's automatic extension.
+        phase = "extended_to_7_days"
+    else:
+        phase = "complete"
+    return {
+        "phase": phase,
+        "start": EXPERIMENT_START.isoformat(),
+        "initial_end": initial_end.isoformat(),
+        "final_end": final_end.isoformat(),
+    }
+
+
+def cta_experiment_arm(brand: str, group_key: str) -> str:
+    digest = hashlib.sha256(f"{brand.lower()}|{group_key.lower()}".encode("utf-8")).digest()
+    return "test" if digest[0] % 2 else "control"
+
+
+def cta_start_parameter(brand: str, group_key: str, arm: str) -> str:
+    group_hash = hashlib.sha256(group_key.lower().encode("utf-8")).hexdigest()[:10]
+    short_brand = "k" if brand.lower() == "keyvadi" else "f"
+    short_arm = "t" if arm == "test" else "c"
+    return f"cta_{short_brand}_{short_arm}_{group_hash}"
+
+
+def parse_cta_start_parameter(value: str) -> dict | None:
+    match = re.fullmatch(r"cta_([kf])_([ct])_([a-f0-9]{10})", str(value or ""))
+    if not match:
+        return None
+    return {
+        "brand": "keyvadi" if match.group(1) == "k" else "froxy",
+        "arm": "test" if match.group(2) == "t" else "control",
+        "group_hash": match.group(3),
+    }
+
+
+def apply_cta_experiment(message: str, brand: str, group_key: str) -> tuple[str, str]:
+    if brand not in {"keyvadi", "froxy"}:
+        return message, "none"
+    if cta_experiment_status()["phase"] in {"scheduled", "complete"}:
+        return message, "none"
+    arm = cta_experiment_arm(brand, group_key)
+    username = "KeyVadiSatisBot" if brand == "keyvadi" else "FroxyDestekBOT"
+    parameter = cta_start_parameter(brand, group_key, arm)
+    deep_link = f"https://t.me/{username}?start={parameter}"
+    linked_handle = f"[@{username}]({deep_link})"
+    updated = re.sub(rf"(?<!\[)@{re.escape(username)}", linked_handle, message)
+    if arm == "test":
+        cta = f"Ürün adını DM'den yaz — fiyat ve Hemen Satın Al seçeneği anında gelsin: {linked_handle}"
+        if cta not in updated:
+            updated = f"{updated.rstrip()}\n{cta}"
+    return updated, arm

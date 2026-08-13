@@ -164,12 +164,15 @@ def summarize(days: int = 7) -> dict[str, Any]:
     by_account: dict[str, dict[str, int | float]] = {}
     revenue = 0.0
     bundles: dict[str, dict[str, int | float]] = {}
+    by_product: dict[str, dict[str, int | float]] = {}
+    by_arm: dict[str, dict[str, int | float]] = {}
     for event in events:
         kind = str(event.get("kind", "unknown"))
         by_kind[kind] = by_kind.get(kind, 0) + 1
         account = str(event.get("account", "unknown"))
         bucket = by_account.setdefault(account, {"events": 0, "orders": 0, "revenue": 0.0})
         bucket["events"] = int(bucket["events"]) + 1
+        bucket[kind] = int(bucket.get(kind, 0)) + 1
         if kind == "shopier_order":
             bucket["orders"] = int(bucket["orders"]) + 1
             try:
@@ -183,9 +186,41 @@ def summarize(days: int = 7) -> dict[str, Any]:
                 item = bundles.setdefault(bundle, {"orders": 0, "revenue": 0.0})
                 item["orders"] = int(item["orders"]) + 1
                 item["revenue"] = round(float(item["revenue"]) + amount, 2)
+        product = str(event.get("product") or "").strip()
+        if product:
+            product_bucket = by_product.setdefault(product, {})
+            product_bucket[kind] = product_bucket.get(kind, 0) + 1
+        arm = str(event.get("arm") or "").strip()
+        if arm:
+            arm_bucket = by_arm.setdefault(arm, {})
+            arm_bucket[kind] = arm_bucket.get(kind, 0) + 1
     ads = by_kind.get("ad_sent", 0)
     dms = by_kind.get("dm_received", 0)
     orders = by_kind.get("shopier_order", 0)
+    matched = by_kind.get("product_matched", 0)
+    ctas = by_kind.get("purchase_cta_sent", 0)
+    clicks = by_kind.get("purchase_click", 0)
+    handoffs = by_kind.get("human_handoff", 0)
+    opens = by_kind.get("ad_cta_open", 0)
+    def add_rates(bucket):
+        bucket["ad_to_open_pct"] = round(
+            (bucket.get("ad_cta_open", 0) / bucket.get("ad_sent", 0)) * 100, 2
+        ) if bucket.get("ad_sent", 0) else 0.0
+        bucket["dm_to_match_pct"] = round(
+            (bucket.get("product_matched", 0) / bucket.get("dm_received", 0)) * 100, 2
+        ) if bucket.get("dm_received", 0) else 0.0
+        bucket["match_to_click_pct"] = round(
+            (bucket.get("purchase_click", 0) / bucket.get("product_matched", 0)) * 100, 2
+        ) if bucket.get("product_matched", 0) else 0.0
+        bucket["click_to_order_pct"] = round(
+            (bucket.get("shopier_order", 0) / bucket.get("purchase_click", 0)) * 100, 2
+        ) if bucket.get("purchase_click", 0) else 0.0
+        bucket["handoff_pct"] = round(
+            (bucket.get("human_handoff", 0) / bucket.get("dm_received", 0)) * 100, 2
+        ) if bucket.get("dm_received", 0) else 0.0
+    for dimension in (by_account, by_product, by_arm):
+        for dimension_bucket in dimension.values():
+            add_rates(dimension_bucket)
     return {
         "days": int(days),
         "event_count": len(events),
@@ -193,9 +228,18 @@ def summarize(days: int = 7) -> dict[str, Any]:
         "by_account": by_account,
         "revenue": round(revenue, 2),
         "by_bundle": bundles,
+        "by_product": by_product,
+        "by_arm": by_arm,
         "funnel": {
-            "ad_sent": ads, "dm_received": dms, "orders": orders,
+            "ad_sent": ads, "ad_cta_open": opens, "dm_received": dms,
+            "product_matched": matched, "purchase_cta_sent": ctas,
+            "purchase_click": clicks, "human_handoff": handoffs, "orders": orders,
             "ad_to_dm_pct": round((dms / ads) * 100, 2) if ads else 0.0,
+            "ad_to_open_pct": round((opens / ads) * 100, 2) if ads else 0.0,
+            "dm_to_match_pct": round((matched / dms) * 100, 2) if dms else 0.0,
+            "match_to_click_pct": round((clicks / matched) * 100, 2) if matched else 0.0,
+            "click_to_order_pct": round((orders / clicks) * 100, 2) if clicks else 0.0,
             "dm_to_order_pct": round((orders / dms) * 100, 2) if dms else 0.0,
+            "handoff_pct": round((handoffs / dms) * 100, 2) if dms else 0.0,
         },
     }

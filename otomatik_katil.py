@@ -20,6 +20,12 @@ from gemini_helper import get_ai_response, get_ad_variation
 from sales_catalog import filter_keyvadi_products
 from sales_metrics import record_event
 from support_flow import save_ticket_record
+from sales_conversion import (
+    apply_cta_experiment,
+    load_sales_catalog,
+    match_sales_products,
+    purchase_url,
+)
 from telethon import TelegramClient, events
 from telethon.tl.functions.channels import JoinChannelRequest, LeaveChannelRequest
 from telethon.tl.functions.contacts import ResolveUsernameRequest, SearchRequest
@@ -2400,29 +2406,26 @@ def release_product_dm_replies(reserved_keys):
     for reply_key, _doc_id in reserved_keys:
         USER_DM_PRODUCT_REPLY_TIME.pop(reply_key, None)
 
-def keyvadi_product_reply(product):
-    """Add verified trust details without changing any blast/ad template."""
+def keyvadi_product_reply(product, source="ad_account_dm", arm=""):
+    """Send one concise purchase action without exposing a long raw URL."""
+    target = purchase_url(product, "keyvadi", source, arm)
     return (
-        f"{product['url']}\n\n"
-        "🛡️ Ödeme Shopier üzerinden alınır.\n"
-        f"⭐ Müşteri referansları: {KEYVADI_REFERENCE_URL}\n"
-        "💬 Teslimat ve garanti koşulları ürün türüne göre değişebilir; "
-        "satın almadan önce bu sohbetten sorabilirsiniz."
+        f"📌 **{product['title']}**\n"
+        f"💰 {product.get('price') or 'Fiyat ürün sayfasında'}\n"
+        f"🛒 [Hemen Satın Al]({target})"
     )
 
 
-def froxy_product_reply(product):
+def froxy_product_reply(product, source="ad_account_dm", arm=""):
     """Return the exact Froxy Shopier product and keep the panel visible."""
+    target = purchase_url(product, "froxy", source, arm)
     return (
         f"📌 **{product['title']}**\n"
         f"💰 Fiyat: {product.get('price', 'Ürün sayfasında')}\n"
-        f"🛒 {product['url']}\n\n"
-        "🤖 Froxy AI panelinde GPT, Claude, Gemini, DeepSeek ve 1.100+ model "
-        "tek kredi sistemiyle kullanılabilir.\n"
-        "🌐 https://froxy.online"
+        f"🛒 [Hemen Satın Al]({target})"
     )
 
-def sales_followup_reply(context, text):
+def sales_followup_reply(context, text, brand="keyvadi"):
     """Answer only from catalog facts; route policy questions to a human."""
     products = context.get("products") or []
     if not products:
@@ -2436,7 +2439,7 @@ def sales_followup_reply(context, text):
         return (
             f"📌 **{product.get('title', 'Ürün')}**\n"
             f"💰 Fiyat: {product.get('price', 'Bilgi için yazın')}\n"
-            f"🛒 {product.get('url', '')}"
+            "Satın alma seçeneği bir önceki mesajda bulunuyor."
         )
     return (
         f"📌 **{product.get('title', 'Ürün')}** için sorunuzu aldım.\n\n"
@@ -2609,31 +2612,12 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                 except Exception as e:
                     print(f"⚠️ Error loading LisansArena products: {e}")
         elif is_keyvadi or is_froxy:
-            catalog_file = "froxy_shopier_links.json" if is_froxy else "keyvadi_shopier_links.json"
-            if os.path.exists(catalog_file):
-                try:
-                    with open(catalog_file, "r", encoding="utf-8") as f:
-                        data = json.load(f)
-                        for item in data:
-                            pid = item.get("id")
-                            title = item.get("title")
-                            url = item.get("url")
-                            price_val = item.get("price", "0")
-                            products.append({
-                                "id": pid,
-                                "title": title,
-                                "price": price_val,
-                                "url": url
-                            })
-                except:
-                    pass
-            if is_keyvadi:
-                products = filter_keyvadi_products(products)
+            products = load_sales_catalog("froxy" if is_froxy else "keyvadi")
 
         matched_products = []
         reserved_product_keys = []
         if products:
-            matched_products = match_multiple_products_from_text(event.raw_text, products)
+            matched_products = match_sales_products(event.raw_text, products, limit=3)
             if matched_products:
                 matched_products, reserved_product_keys = await reserve_product_dm_replies(
                     client_name, sender_id, matched_products, now
@@ -2648,6 +2632,12 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         reply_text = None
         matched_desc = ""
         if matched_products:
+            brand_name = "froxy" if is_froxy else "keyvadi"
+            record_event(
+                "product_matched", client_name, source="telegram_private",
+                product=matched_products[0].get("title", ""),
+                product_count=len(matched_products),
+            )
             if len(matched_products) == 1:
                 reply_text = (
                     (froxy_product_reply(matched_products[0]) if is_froxy else keyvadi_product_reply(matched_products[0]))
@@ -2667,13 +2657,16 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                         "@LisansArenaAdmin sağlıyor."
                     )
                 else:
-                    lines = ["🔍 **Aradığınız Ürünler:**\n"]
+                    lines = ["🔍 **Uygun seçenekler:**"]
                     for p in matched_products[:5]:
-                        lines.append(f"• **{p['title']}** ({p['price']}):\n  👉 {p['url']}")
+                        target = purchase_url(p, brand_name, "ad_account_dm")
+                        lines.append(f"• **{p['title']}** — {p['price']}\n  [Hemen Satın Al]({target})")
                     reply_text = "\n".join(lines)
                 matched_desc = ", ".join(p['title'] for p in matched_products)
         elif sales_context:
-            reply_text = sales_followup_reply(sales_context, event.raw_text)
+            reply_text = sales_followup_reply(
+                sales_context, event.raw_text, "froxy" if is_froxy else "keyvadi"
+            )
             matched_desc = "Satış takip sorusu"
         elif is_lisansarena and has_explicit_sales_intent(event.raw_text):
             # Katalog eslesmese bile LisansArena'da AI'nin Shopier URL'si
@@ -2684,15 +2677,15 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
             )
             matched_desc = "LisansArena destek yönlendirmesi"
         else:
-            # Yapay Zeka (AI) Yanıtlayıcı Devreye Girsin (OpenRouter / Pollinations)
-            brand_name = "Froxy" if is_froxy else ("LisansArena" if is_lisansarena else "KeyVadi")
             if not has_explicit_sales_intent(event.raw_text):
                 print(f"[{client_name}] DM satış niyeti içermiyor, AI yanıtı atlandı.")
                 return
-            ai_res = get_ai_response(event.raw_text, brand_name, products)
-            if ai_res:
-                reply_text = ai_res
-                matched_desc = "🤖 AI Akıllı Yanıt"
+            reply_text = (
+                "Aradığınız ürünü doğru bulabilmem için ürün adını ve varsa "
+                "kişisel/ortak ya da süre tercihinizi yazar mısınız?"
+            )
+            matched_desc = "İnsan desteği gerekli"
+            record_event("human_handoff", client_name, source="telegram_private", reason="no_product_match")
 
         if not reply_text:
             return
@@ -2741,6 +2734,12 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                 product=matched_desc[:160] if matched_desc else "",
                 source="telegram_private",
             )
+            if matched_products:
+                record_event(
+                    "purchase_cta_sent", client_name,
+                    product=matched_products[0].get('title', ''),
+                    product_count=len(matched_products), source="telegram_private",
+                )
             USER_DM_LAST_REPLY_TIME[user_key] = now
             USER_DM_LAST_REPLY_TEXT[user_key] = normalized_text
             if matched_products:
@@ -3770,6 +3769,8 @@ async def main():
                         msg = sanitize_strict_market_message(
                             msg, grup_name, is_keyvadi, is_lisansarena, is_froxy
                         )
+                        experiment_brand = "keyvadi" if is_keyvadi else ("froxy" if is_froxy else "lisansarena")
+                        msg, experiment_arm = apply_cta_experiment(msg, experiment_brand, group_key)
                         
                         # Görsel/Banner gönderimi (Grup yetki kontrolleri ve hata toleransı eklendi)
                         if is_keyvadi:
@@ -3841,6 +3842,7 @@ async def main():
                             group=normalize_group_key(grup_name),
                             source="telegram_group",
                             template=os.path.basename(chosen_file) if available_files else "fallback",
+                            arm=experiment_arm,
                         )
                         # Keep the restart-safe wait anchored to the most
                         # recent accepted Telegram message, not blast start.

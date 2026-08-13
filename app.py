@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, redirect, abort
 import subprocess
 import os
 import sys
@@ -8,14 +8,19 @@ try:
 except Exception:
     pass
 import json
+import re
 import threading
 import time
 import asyncio
 import psutil
 import socket
 import hmac
+import base64
+import hashlib
 import atexit
 from sales_metrics import record_event, summarize as summarize_sales
+from sales_conversion import cta_experiment_status, parse_purchase_token, product_by_id, refresh_configured_catalogs
+from shopier_orders import ingest_shopier_order, reconcile_configured_orders
 
 base_dir = os.path.abspath(os.path.dirname(__file__))
 app = Flask(__name__, 
@@ -39,9 +44,23 @@ def protect_shopier_callback():
     if not SHOPIER_CALLBACK_SECRET:
         print('[Security] Shopier callback is disabled: secret is missing.')
         return jsonify({'error': 'Callback is not configured'}), 503
-    supplied = (request.args.get('secret')
-                or request.headers.get('X-Shopier-Secret', ''))
-    if not hmac.compare_digest(str(supplied), SHOPIER_CALLBACK_SECRET):
+    signature = request.headers.get('Shopier-Signature', '').strip()
+    supplied = request.args.get('secret') or request.headers.get('X-Shopier-Secret', '')
+    valid = False
+    if signature:
+        digest = hmac.new(
+            SHOPIER_CALLBACK_SECRET.encode('utf-8'), request.get_data(cache=True), hashlib.sha256
+        ).digest()
+        candidates = {
+            digest.hex(),
+            base64.b64encode(digest).decode('ascii'),
+            base64.urlsafe_b64encode(digest).decode('ascii').rstrip('='),
+        }
+        valid = any(hmac.compare_digest(signature, candidate) for candidate in candidates)
+    elif supplied:
+        # Backward-compatible during migration from the old OSB callback.
+        valid = hmac.compare_digest(str(supplied), SHOPIER_CALLBACK_SECRET)
+    if not valid:
         print('[Security] Shopier callback rejected an invalid secret.')
         return jsonify({'error': 'Unauthorized'}), 401
     return None
@@ -600,7 +619,29 @@ def sales_summary():
         days = min(max(int(request.args.get('days', 7)), 1), 30)
     except (TypeError, ValueError):
         days = 7
-    return jsonify(summarize_sales(days))
+    summary = summarize_sales(days)
+    summary['cta_experiment'] = cta_experiment_status()
+    return jsonify(summary)
+
+
+@app.route('/go/<token>', methods=['GET'])
+def purchase_redirect(token):
+    """Record an anonymous purchase click and redirect only to a known product."""
+    payload = parse_purchase_token(token)
+    if not payload:
+        abort(404)
+    product = product_by_id(payload['b'], payload['p'])
+    if not product:
+        abort(404)
+    record_event(
+        "purchase_click",
+        payload['b'],
+        product=product['title'],
+        product_id=product['id'],
+        source=payload.get('s', ''),
+        arm=payload.get('a', ''),
+    )
+    return redirect(product['url'], code=302)
 
 @app.route('/api/start', methods=['POST'])
 def start():
@@ -1417,6 +1458,12 @@ def shopier_callback():
         data = request.form.to_dict()
         if not data:
             data = request.json or {}
+        # Current Shopier webhooks send the official Order model as JSON.
+        # Keep the legacy OSB form parser below during the migration window.
+        if data.get("id"):
+            account = request.headers.get("Shopier-Account-Id") or "Shopier"
+            ingest_shopier_order(data, account, "webhook")
+            return "OK", 200
         platform_order_id = data.get("platform_order_id")
         email = data.get("email", "").strip().lower()
         phone = data.get("phone", "").strip()
@@ -1425,6 +1472,13 @@ def shopier_callback():
         
         if not platform_order_id or not email:
             return jsonify({"success": False, "message": "Missing required fields"}), 400
+
+        order_claim_id = "shopier_order_" + re.sub(r'[^a-zA-Z0-9_-]+', '_', str(platform_order_id))
+        if firestore_helper.claim_document(order_claim_id, {
+            "order_id": str(platform_order_id),
+            "received_at": datetime.now().isoformat(),
+        }) is False:
+            return "OK", 200
 
         print(f"[Shopier] Received order callback: {platform_order_id}")
             
@@ -1678,6 +1732,16 @@ def start_background_threads():
                 print("🌐 [App] Web/static-only mode; Telegram watchdog is disabled.")
             ka = threading.Thread(target=keep_alive, daemon=True)
             ka.start()
+            def catalog_refresh_loop():
+                while True:
+                    refreshed = refresh_configured_catalogs()
+                    reconciled = reconcile_configured_orders()
+                    if any(refreshed.values()):
+                        print(f"[Catalog] Shopier API refresh completed: {refreshed}")
+                    if any(reconciled.values()):
+                        print(f"[Orders] Shopier API reconciliation completed: {reconciled}")
+                    time.sleep(30 * 60)
+            threading.Thread(target=catalog_refresh_loop, daemon=True).start()
 
 start_background_threads()
 

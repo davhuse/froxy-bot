@@ -17,6 +17,12 @@ from sales_catalog import filter_keyvadi_products
 from sales_metrics import record_event
 from support_flow import claim_first_greeting, forward_customer_message, greeting_for, one_time_mode_enabled, save_ticket_record
 from update_keyvadi_links_json import fetch_live_catalog, write_catalog_atomic
+from sales_conversion import (
+    load_sales_catalog,
+    match_sales_products,
+    parse_cta_start_parameter,
+    purchase_url,
+)
 
 # Async wrappers for firestore_helper to prevent event loop deadlocks/freezes
 async def async_get_document(doc_id):
@@ -53,34 +59,37 @@ async def async_run_claim(doc_id, fields):
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(None, firestore_helper.claim_document, doc_id, fields)
 
-PRODUCT_REPLY_COOLDOWN_SECONDS = 90
+PRODUCT_REPLY_COOLDOWN_SECONDS = 15 * 60
 PRODUCT_REPLY_COOLDOWNS = {}
 LAST_AI_REPLY_TIME = {}
 AUTO_REPLY_COOLDOWN_SECONDS = 300
 LAST_AUTO_REPLY_TIME = {}
+SUPPORT_SALES_CONTEXT = {}
+USER_CTA_ATTRIBUTION = {}
 MESSAGE_BURST_DEBOUNCE_SECONDS = 1.5
 LATEST_USER_MESSAGE_IDS = {}
 
-def _product_reply_key(user_id, products=None, fallback_key=None):
-    if products:
-        parts = []
-        for product in products[:4]:
-            parts.append(str(product.get('id') or product.get('url') or product.get('title') or '').lower())
-        product_key = '|'.join(parts)
+def _product_reply_key(user_id, product=None, fallback_key=None):
+    if product:
+        product_key = str(product.get('id') or product.get('url') or product.get('title') or '').lower()
     else:
         product_key = (fallback_key or 'fallback').strip().lower()[:100]
     return f"{user_id}:{product_key}"
 
-def is_product_reply_cooling_down(user_id, products=None, fallback_key=None):
+def filter_products_outside_cooldown(user_id, products):
     now = time.monotonic()
     for key, expires in list(PRODUCT_REPLY_COOLDOWNS.items()):
         if expires <= now:
             PRODUCT_REPLY_COOLDOWNS.pop(key, None)
-    key = _product_reply_key(user_id, products, fallback_key)
-    return PRODUCT_REPLY_COOLDOWNS.get(key, 0) > now
+    return [
+        product for product in products
+        if PRODUCT_REPLY_COOLDOWNS.get(_product_reply_key(user_id, product), 0) <= now
+    ]
 
-def mark_product_reply_sent(user_id, products=None, fallback_key=None):
-    PRODUCT_REPLY_COOLDOWNS[_product_reply_key(user_id, products, fallback_key)] = time.monotonic() + PRODUCT_REPLY_COOLDOWN_SECONDS
+def mark_product_reply_sent(user_id, products):
+    expires = time.monotonic() + PRODUCT_REPLY_COOLDOWN_SECONDS
+    for product in products:
+        PRODUCT_REPLY_COOLDOWNS[_product_reply_key(user_id, product)] = expires
 
 def is_auto_reply_cooling_down(user_id):
     return time.monotonic() - LAST_AUTO_REPLY_TIME.get(user_id, 0) < AUTO_REPLY_COOLDOWN_SECONDS
@@ -862,6 +871,16 @@ async def start_handler(event):
         param = parts[1].strip()
         if param.startswith("ref_"):
             ref_id = param.replace("ref_", "")
+        cta_data = parse_cta_start_parameter(param)
+        if cta_data and cta_data["brand"] == "keyvadi":
+            USER_CTA_ATTRIBUTION[user_id] = {
+                **cta_data,
+                "expires_at": time.monotonic() + 7 * 24 * 60 * 60,
+            }
+            record_event(
+                "ad_cta_open", "KeyVadi", source="telegram_start",
+                arm=cta_data["arm"], group_hash=cta_data["group_hash"],
+            )
             
     user_doc_id = f"keyvadi_user_{user_id}"
     user_data = await async_get_document(user_doc_id)
@@ -1317,19 +1336,23 @@ async def message_handler(event):
     # ── Smart Product Matching for free-text messages ──
     # If user is NOT in any special state and NOT admin, try to match a product
     if event.text and not event.text.startswith('/'):
-        matched_products = match_multiple_products_from_text(event.text)
+        full_catalog = load_sales_catalog("keyvadi")
+        matched_products = match_sales_products(event.text, full_catalog, limit=3)
         # A product name by itself (for example "Gemini" or "Perplexity") is
         # valid sales intent even when the customer does not say "fiyat/link".
         if not has_sales_intent(event.text) and not matched_products:
             logger.info("Ignoring non-sales message: %r", event.text)
             return
-        if is_auto_reply_cooling_down(user_id):
-            logger.info("Suppressing automatic sales reply for user %s (global 5-minute cooldown)", user_id)
-            return
         if matched_products:
-            if is_product_reply_cooling_down(user_id, matched_products):
+            matched_products = filter_products_outside_cooldown(user_id, matched_products)
+            if not matched_products:
                 logger.info("Suppressing duplicate product reply for user %s: %r", user_id, event.text)
                 return
+            attribution = USER_CTA_ATTRIBUTION.get(user_id, {})
+            if attribution.get("expires_at", 0) <= time.monotonic():
+                attribution = {}
+                USER_CTA_ATTRIBUTION.pop(user_id, None)
+            arm = attribution.get("arm", "")
             lang = user_lang_helper.get_user_lang(user_id) or "tr"
             t = TEXTS[lang]
             
@@ -1340,27 +1363,23 @@ async def message_handler(event):
                     price = user_lang_helper.convert_price_to_usd(price)
                 
                 product_msg = (
-                    f"🔍 **{matched_product['title']}**\n\n"
-                    f"💰 **{t['price']}:** {price}\n\n"
-                    f"{t['product_footer']}"
+                    f"📌 **{matched_product['title']}**\n"
+                    f"💰 **{t['price']}:** {price}"
                 )
                 buttons = [
-                    [Button.url(t["buy_btn"], matched_product.get('url', 'https://www.shopier.com/keyvadi'))],
+                    [Button.url("🛒 Hemen Satın Al", purchase_url(matched_product, "keyvadi", "support_bot_dm", arm))],
                     [Button.inline(t["support_btn"], b"menu_support")],
-                    [Button.inline("📋 Ana Menü / Main Menu", b"menu_main")]
                 ]
             else:
-                product_msg = "🔍 **Aradığınız Ürünler / Matched Products:**\n\n"
+                product_msg = "🔍 **Uygun seçenekler:**\n"
                 buttons = []
-                for i, p in enumerate(matched_products[:4]):
+                for i, p in enumerate(matched_products[:3]):
                     price = p['price']
                     if lang == "en":
                         price = user_lang_helper.convert_price_to_usd(price)
-                    product_msg += f"{i+1}. **{p['title']}**\n💰 {t['price']}: {price}\n👉 {p['url']}\n\n"
-                    buttons.append([Button.url(f"Satın Al / Buy ({p['title'][:20]}...)", p.get('url', ''))])
-                product_msg += f"{t['product_footer']}"
+                    product_msg += f"{i+1}. **{p['title']}** — {price}\n"
+                    buttons.append([Button.url(f"🛒 {p['title'][:35]}", purchase_url(p, "keyvadi", "support_bot_dm", arm))])
                 buttons.append([Button.inline(t["support_btn"], b"menu_support")])
-                buttons.append([Button.inline("📋 Ana Menü / Main Menu", b"menu_main")])
                 
             try:
                 await event.respond(product_msg, buttons=buttons)
@@ -1369,54 +1388,36 @@ async def message_handler(event):
                 await async_release_event_claim(event, claim_scope)
                 raise
             mark_product_reply_sent(user_id, matched_products)
-            mark_auto_reply_sent(user_id)
+            SUPPORT_SALES_CONTEXT[user_id] = {
+                "product": dict(matched_products[0]),
+                "expires_at": time.monotonic() + 15 * 60,
+            }
+            record_event("product_matched", "KeyVadi", source="telegram_private", product=matched_products[0].get('title', ''), product_count=len(matched_products), arm=arm)
+            record_event("purchase_cta_sent", "KeyVadi", source="telegram_private", product=matched_products[0].get('title', ''), product_count=len(matched_products), arm=arm)
             record_event("dm_reply_sent", "KeyVadi", source="telegram_private", product=matched_products[0].get('title', '') if matched_products else '')
             logger.info(f"Smart match for user {user_id}: '{event.text}' -> matched products successfully.")
             return
-        else:
-            # Yapay Zeka Akıllı Satış Asistanı
-            products = []
-            if os.path.exists("keyvadi_shopier_links.json"):
-                try:
-                    with open("keyvadi_shopier_links.json", "r", encoding="utf-8") as f:
-                        data = json.load(f)
-                        for item in data:
-                            products.append({'title': item.get('title'), 'price': item.get('price'), 'url': item.get('url')})
-                    products = filter_keyvadi_products(products)
-                except:
-                    pass
+        elif SUPPORT_SALES_CONTEXT.get(user_id, {}).get("expires_at", 0) > time.monotonic():
             lang = user_lang_helper.get_user_lang(user_id) or "tr"
             t = TEXTS[lang]
-            fallback_key = re.sub(r'\s+', ' ', event.text.strip().lower())
-            if is_product_reply_cooling_down(user_id, fallback_key=fallback_key):
-                logger.info("Suppressing duplicate AI fallback for user %s: %r", user_id, event.text)
-                return
-            
-            # Global per-user AI response rate limit (15 seconds)
-            now = time.monotonic()
-            last_reply = LAST_AI_REPLY_TIME.get(user_id, 0)
-            if now - last_reply < 15:
-                logger.info("Suppressing consecutive AI response for user %s (global AI cooldown)", user_id)
-                return
-                
-            ai_reply = get_ai_response(event.text, "KeyVadi", products)
-            if ai_reply:
-                buttons = [
-                    [Button.inline(t["support_btn"], b"menu_support")],
-                    [Button.inline("📋 Ana Menü / Main Menu", b"menu_main")]
-                ]
-                try:
-                    await event.respond(ai_reply, buttons=buttons)
-                except Exception:
-                    PROCESSED_MESSAGE_EVENTS.discard(event_key)
-                    await async_release_event_claim(event, claim_scope)
-                    raise
-                LAST_AI_REPLY_TIME[user_id] = now
-                mark_product_reply_sent(user_id, fallback_key=fallback_key)
-                mark_auto_reply_sent(user_id)
-                record_event("dm_reply_sent", "KeyVadi", source="telegram_private", product="AI")
-                logger.info(f"AI response for user {user_id}: '{event.text}'")
-                return
+            product = SUPPORT_SALES_CONTEXT[user_id]["product"]
+            await event.respond(
+                f"**{product['title']}** için kullanım, cihaz, teslimat veya garanti ayrıntısını yanlış aktarmamak için satıcı bu sohbetten yanıtlayacak.",
+                buttons=[[Button.inline(t["support_btn"], b"menu_support")]],
+            )
+            record_event("human_handoff", "KeyVadi", source="telegram_private", product=product.get("title", ""), reason="unverified_product_fact")
+            record_event("dm_reply_sent", "KeyVadi", source="telegram_private", product="handoff")
+            return
+        elif has_sales_intent(event.text):
+            lang = user_lang_helper.get_user_lang(user_id) or "tr"
+            t = TEXTS[lang]
+            await event.respond(
+                "Aradığınız ürünü doğru bulabilmem için ürün adını ve varsa kişisel/ortak ya da süre tercihinizi yazar mısınız?",
+                buttons=[[Button.inline(t["support_btn"], b"menu_support")]],
+            )
+            record_event("human_handoff", "KeyVadi", source="telegram_private", reason="no_product_match")
+            record_event("dm_reply_sent", "KeyVadi", source="telegram_private", product="clarification")
+            return
 
     config = load_config() or {}
     admin_chat_id = config.get("admin_id", ADMIN_ID)

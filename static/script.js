@@ -845,11 +845,11 @@ async function loadSalesSummary() {
         const res = await fetch('/api/sales/summary?days=7');
         const data = await res.json();
         const funnel = data.funnel || {};
-        summary.textContent = `${funnel.ad_sent || 0} reklam → ${funnel.dm_received || 0} DM → ${funnel.orders || 0} sipariş • ${Number(data.revenue || 0).toFixed(2)} TL`;
-        const rows = Object.entries(data.by_bundle || {});
-        bundles.textContent = rows.length
-            ? rows.map(([name, value]) => `${name}: ${value.orders || 0} sipariş / ${Number(value.revenue || 0).toFixed(2)} TL`).join('  •  ')
-            : 'Paket siparişleri bekleniyor.';
+        summary.textContent = `${funnel.ad_sent || 0} reklam → ${funnel.ad_cta_open || 0} CTA açılışı → ${funnel.dm_received || 0} DM → ${funnel.product_matched || 0} eşleşme → ${funnel.purchase_click || 0} satın alma tıklaması → ${funnel.orders || 0} sipariş • ${Number(data.revenue || 0).toFixed(2)} TL`;
+        const arms = Object.entries(data.by_arm || {});
+        bundles.textContent = arms.length
+            ? arms.map(([name, value]) => `${name}: ${value.ad_sent || 0} reklam / ${value.ad_cta_open || 0} açılış / ${value.purchase_click || 0} tıklama / ${value.shopier_order || 0} sipariş`).join('  •  ')
+            : 'A/B dönüşüm verisi bekleniyor.';
     } catch (error) {
         summary.textContent = 'Satış verisi alınamadı; reklam akışı etkilenmez.';
     }
