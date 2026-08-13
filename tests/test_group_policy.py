@@ -36,6 +36,26 @@ class GroupPolicyTests(unittest.TestCase):
         self.assertFalse(policy["allow_urls"])
         self.assertFalse(policy["allow_deep_links"])
 
+    def test_keyvadi_is_entity_free_even_in_default_groups(self):
+        policy = group_policy.apply_brand_link_safety(group_policy.DEFAULT_POLICY, "keyvadi")
+        message = (
+            "Canva Pro 49,90 TL\n"
+            "Sipariş Adresi: [@KeyVadiSatisBot]"
+            "(https://t.me/KeyVadiSatisBot?start=cta_k_t_1234567890)"
+        )
+        text, options = group_policy.make_policy_compliant(message, policy, "keyvadi")
+        self.assertIn("Canva Pro 49,90 TL", text)
+        self.assertEqual(text.count("KeyVadiSatisBot"), 1)
+        self.assertTrue(text.endswith(group_policy.PLAIN_KEYVADI_CTA))
+        for forbidden in ("http://", "https://", "t.me", "?start=", "@", "]("):
+            self.assertNotIn(forbidden, text)
+        self.assertIsNone(options["parse_mode"])
+
+    def test_darcy_spam_warning_is_detected(self):
+        warning = "@KeyVadiDestek grup veya kanal spamı gönderdi. Eylem: Sessize aldım"
+        self.assertTrue(group_policy.is_moderation_warning(warning))
+        self.assertTrue(group_policy.warning_targets_brand(warning, "keyvadi"))
+
     def test_cas_seed_holds_only_keyvadi(self):
         entity = SimpleNamespace(id=2780340773, username="ceksatkupon", default_banned_rights=None)
         _, policy = group_policy.resolve_group_policy("ceksatkupon", entity)
@@ -46,6 +66,13 @@ class GroupPolicyTests(unittest.TestCase):
         entity = SimpleNamespace(id=1511926667, username="kuponcekkodsatis", default_banned_rights=None)
         _, policy = group_policy.resolve_group_policy("kuponcekkodsatis", entity)
         self.assertTrue(group_policy.account_is_held(policy, "keyvadi"))
+
+    def test_indirim363_security_bot_hold_covers_both_muted_accounts(self):
+        entity = SimpleNamespace(id=2846540634, username="indirim363", default_banned_rights=None)
+        _, policy = group_policy.resolve_group_policy("indirim363", entity)
+        self.assertTrue(group_policy.account_is_held(policy, "keyvadi"))
+        self.assertTrue(group_policy.account_is_held(policy, "froxy"))
+        self.assertFalse(policy["allow_urls"])
 
     def test_message_empty_hold_expires_after_24_hours(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -70,6 +70,23 @@ SEEDED_POLICIES = {
         "account_hold": ["keyvadi"],
         "hold_reason": "Combot CAS spam incelemesi bekleniyor; denetim aşılmayacak.",
     },
+    # KUPON-KOD SATIŞ GRUBU / @indirim363
+    # 13 Ağustos 2026 canlı grup kaydında Darcy Güvenlik hem
+    # @KeyVadiDestek hem de @Froxy_Ai mesajını silip hesapları "grup veya
+    # kanal spamı" gerekçesiyle susturdu. Bu bir link biçimi sorunu olarak
+    # varsayılmamalı; hesaplar yönetici incelemesi olmadan yeniden denenmez.
+    "id:2846540634": {
+        "aliases": ["indirim363"],
+        "allow_urls": False,
+        "allow_deep_links": False,
+        "allow_mentions": False,
+        "allow_media": False,
+        "allow_emojis": False,
+        "max_lines": None,
+        "forbidden_products": [],
+        "account_hold": ["keyvadi", "froxy"],
+        "hold_reason": "Darcy Güvenlik spam uyarısı: KeyVadi ve Froxy mesajları silindi, hesaplar susturuldu; yönetici incelemesi bekleniyor.",
+    },
 }
 
 
@@ -167,6 +184,22 @@ def apply_telegram_rights(policy: dict, entity=None) -> dict:
     return result
 
 
+def apply_brand_link_safety(policy: dict, brand: str) -> dict:
+    """Keep KeyVadi group adverts entity-free until moderation risk clears.
+
+    Several groups render an identical visible CTA differently because the
+    experiment arm can attach a hidden Telegram deep-link.  KeyVadi has now
+    received multiple moderation actions, so its group copy must be
+    deterministic: no URL, hidden TextUrl, or @mention in any group.
+    """
+    result = deepcopy(policy)
+    if brand.lower() == "keyvadi":
+        result["allow_urls"] = False
+        result["allow_deep_links"] = False
+        result["allow_mentions"] = False
+    return result
+
+
 def _remove_forbidden_product_lines(message: str, forbidden: list[str]) -> str:
     folded_forbidden = [unicodedata.normalize("NFKD", item).encode("ascii", "ignore").decode().lower() for item in forbidden]
     kept = []
@@ -198,7 +231,9 @@ def make_policy_compliant(message: str, policy: dict, brand: str) -> tuple[str, 
         # approved plain-text CTA.  It deliberately has no @ or URL entity.
         text = "\n".join(
             line for line in text.splitlines()
-            if "hemen satın al" not in line.casefold() and "hemen satin al" not in line.casefold()
+            if "hemen satın al" not in line.casefold()
+            and "hemen satin al" not in line.casefold()
+            and "keyvadisatisbot" not in line.casefold()
         ).strip()
         if PLAIN_KEYVADI_CTA not in text:
             text = f"{text}\n{PLAIN_KEYVADI_CTA}".strip()
@@ -221,6 +256,8 @@ WARNING_PATTERNS = (
     "spam gondericisi",
     "yasaklı ürün",
     "yasakli urun",
+    "grup veya kanal spamı gönderdi",
+    "grup veya kanal spami gonderdi",
 )
 
 

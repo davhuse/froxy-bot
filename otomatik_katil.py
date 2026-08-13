@@ -22,6 +22,7 @@ from sales_metrics import record_event
 from support_flow import save_ticket_record
 from group_policy import (
     account_is_held,
+    apply_brand_link_safety,
     apply_telegram_rights,
     is_moderation_warning,
     make_policy_compliant,
@@ -3788,6 +3789,11 @@ async def main():
                     current_brand = account_brand(client_name)
                     _policy_key, group_policy = resolve_group_policy(grup_name, entity)
                     group_policy = apply_telegram_rights(group_policy, entity)
+                    # KeyVadi has received multiple moderation actions where
+                    # visually identical CTA variants carried different hidden
+                    # deep-link entities.  Force one entity-free representation
+                    # in every group before the A/B decision is reached.
+                    group_policy = apply_brand_link_safety(group_policy, current_brand)
                     if account_is_held(group_policy, current_brand):
                         print(
                             f"[{client_name}] ⏸️ @{grup_name} politika beklemesinde: "
