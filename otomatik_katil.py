@@ -646,24 +646,40 @@ NEGATIVE_KEYWORDS = [
 replied_users = set()
 PENDING_INVITES_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pending_invites.json')
 
-def load_pending_invites():
+def load_pending_invites(client_name=None):
     if os.path.exists(PENDING_INVITES_FILE):
         try:
             with open(PENDING_INVITES_FILE, 'r', encoding='utf-8') as f:
                 data = json.load(f)
+                if isinstance(data, dict):
+                    account = get_canonical_account_name(client_name) if client_name else None
+                    return set(data.get(account, [])) if account else {
+                        key: set(value) for key, value in data.items() if isinstance(value, list)
+                    }
                 if isinstance(data, list):
-                    return set(data)
+                    # Legacy versions shared this list between all accounts,
+                    # causing a request sent by Froxy to suppress LisansArena's
+                    # own join attempt. Do not apply ambiguous legacy entries
+                    # to a different Telegram account.
+                    return set() if client_name else {}
         except Exception:
             pass
-    return set()
+    return set() if client_name else {}
 
-def save_pending_invites(data):
+def save_pending_invites(client_name, data):
     try:
-        _atomik_json_yaz(PENDING_INVITES_FILE, sorted(list(data)), indent=2)
+        all_accounts = load_pending_invites()
+        if not isinstance(all_accounts, dict):
+            all_accounts = {}
+        all_accounts[get_canonical_account_name(client_name)] = sorted(set(data))
+        serializable = {
+            account: sorted(set(groups))
+            for account, groups in all_accounts.items()
+        }
+        _atomik_json_yaz(PENDING_INVITES_FILE, serializable, indent=2)
     except Exception as e:
         print(f"⚠️ pending_invites kaydetme hatası: {e}")
 
-pending_invites = load_pending_invites()
 dm_count_today = 0
 dm_last_reset = ""
 MAX_DM_PER_DAY = 20
@@ -701,6 +717,31 @@ ACCOUNT_STABLE_NAMES = {
 
 def normalize_phone(value):
     return ''.join(ch for ch in str(value or '') if ch.isdigit())
+
+
+def telegram_target_reference(value):
+    """Return numeric Telegram IDs as integers, never as fake usernames."""
+    normalized = normalize_group_key(value)
+    if re.fullmatch(r'-?\d+', normalized):
+        return int(normalized)
+    return normalized
+
+
+def classify_join_error(exc):
+    """Classify join failures without turning target-list errors global."""
+    error_type = type(exc).__name__
+    message = str(exc).lower()
+    if isinstance(exc, ChannelPrivateError):
+        return 'account_blocked'
+    if 'UserBannedInChannel' in error_type or 'user_banned_in_channel' in message:
+        return 'account_blocked'
+    if isinstance(exc, (UsernameNotOccupiedError, UsernameInvalidError, ValueError)) or 'no user has' in message:
+        return 'unresolvable'
+    if 'ChannelsTooMuch' in error_type or 'channels_too_much' in message:
+        return 'account_limit'
+    if 'InviteRequestSent' in error_type:
+        return 'pending'
+    return 'transient'
 
 # --- Auto-DM: Anahtar kelimeler ---
 DM_TRIGGER_KEYWORDS = [
@@ -3375,6 +3416,7 @@ async def main():
                 pass
 
     async def run_worker(client, client_name, joined_dialogs):
+        account_pending_invites = load_pending_invites(client_name)
         if account_brand(client_name) == 'keyvadi' or '2' in client_name or 'keyvadi' in client_name.lower():
             try:
                 from telethon.tl.functions.account import UpdateProfileRequest
@@ -3475,10 +3517,11 @@ async def main():
                         
                         # Korumalı grupları (sabit hedef listesi) doğrudan önbelleğe ekle ve geç
                         if is_protected:
-                            if username_lower and username_lower in pending_invites:
-                                pending_invites.remove(username_lower)
-                            if dialog_id_str in pending_invites:
-                                pending_invites.remove(dialog_id_str)
+                            if username_lower and username_lower in account_pending_invites:
+                                account_pending_invites.remove(username_lower)
+                            if dialog_id_str in account_pending_invites:
+                                account_pending_invites.remove(dialog_id_str)
+                            save_pending_invites(client_name, account_pending_invites)
                             all_groups_info.append({
                                 "username": username_lower or dialog_id_str,
                                 "title": title,
@@ -4159,7 +4202,10 @@ async def main():
             not_joined = []
             for g in hedef_set:
                 g_lower = g.lower()
-                if g_lower not in joined_dialogs and g_lower not in blacklist_lower:
+                if (g_lower not in joined_dialogs
+                        and g_lower not in blacklist_lower
+                        and not is_account_group_blocked(g, client_name)
+                        and not is_group_retry_blocked(g, client_name)):
                     not_joined.append(g)
             
             if not_joined:
@@ -4193,7 +4239,7 @@ async def main():
                     # yerde okunmuyordu: onay bekleyen tek bir grup her turda uc
                     # hesaptan yeni istek aliyordu (gunde ~72 istek), bu da hem
                     # grup yoneticisini rahatsiz ediyor hem PeerFlood riski.
-                    if hedef_grup.lower() in pending_invites:
+                    if hedef_grup.lower() in account_pending_invites:
                         print(f"[{client_name}] ⏳ @{hedef_grup} katılım isteği zaten gönderilmiş, bekleniyor.")
                         continue
 
@@ -4218,7 +4264,7 @@ async def main():
                                 else:
                                     raise e_hash
                         else:
-                            entity = await client.get_entity(hedef_grup)
+                            entity = await client.get_entity(telegram_target_reference(hedef_grup))
                             await client(JoinChannelRequest(entity))
                             print(f"[{client_name}] ✅ Gruba katıldı: @{hedef_grup}")
                             
@@ -4226,41 +4272,37 @@ async def main():
                             joined_dialogs[hedef_grup.lower()] = entity
                             join_count += 1
                             # Katılım isteği onaylandıysa/katılım sağlandıysa pending'den çıkar
-                            if hedef_grup.lower() in pending_invites:
-                                pending_invites.remove(hedef_grup.lower())
-                                save_pending_invites(pending_invites)
+                            if hedef_grup.lower() in account_pending_invites:
+                                account_pending_invites.remove(hedef_grup.lower())
+                                save_pending_invites(client_name, account_pending_invites)
                             await asyncio.sleep(random.randint(30, 90))
                             
                     except FloodWaitError as e:
                         set_account_restriction(client_name, e.seconds, 'Telegram katılım FloodWait', type(e).__name__, scope='join')
                         print(f"[{client_name}] ⚠️ Join flood {e.seconds}sn; hesap duraklatılıyor, grup kara listeye alınmadı.")
                         break
-                        async with state_lock:
-                            blacklist_group(hedef_grup, 'ChannelPrivate', client_name)
-                        print(f"[{client_name}] ❌ @{hedef_grup} -> Kanal özel veya erişilemez, kara listeye alındı.")
                     except Exception as e:
                         err_msg = str(e)
                         err_type = type(e).__name__
-                        if 'UserBannedInChannel' in err_type or 'user_banned_in_channel' in err_msg.lower():
+                        error_class = classify_join_error(e)
+                        if error_class == 'account_blocked':
                             record_account_group_block(
-                                hedef_grup, client_name, 'UserBannedInChannel'
+                                hedef_grup, client_name, err_type
                             )
-                            print(f"[{client_name}] ⛔ @{hedef_grup} -> Bu hesap bu gruptan BANLANMIŞ.")
-                            async with state_lock:
-                                blacklist_group(hedef_grup, 'UserBannedInChannel', client_name)
-                        elif 'ChannelsTooMuch' in err_type or 'channels_too_much' in err_msg.lower():
+                            print(f"[{client_name}] ⛔ @{hedef_grup} -> Bu hesap gruba erişemiyor ({err_type}); yalnız bu hesap için durduruldu.")
+                        elif error_class == 'account_limit':
                             set_account_restriction(client_name, 86400, 'Telegram 500 kanal limitine ulaşıldı', err_type, scope='join')
                             print(f"[{client_name}] 🚨 Telegram 500 kanal/grup limitine ulaşıldı! Katılım aşaması durduruluyor.")
                             break
-                        elif 'InviteRequestSent' in err_type or 'invite' in err_msg.lower():
-                            pending_invites.add(hedef_grup.lower())
-                            save_pending_invites(pending_invites)
+                        elif error_class == 'pending':
+                            account_pending_invites.add(hedef_grup.lower())
+                            save_pending_invites(client_name, account_pending_invites)
                             print(f"[{client_name}] ⏳ @{hedef_grup} -> Katılım isteği gönderildi (onay bekleniyor).")
-                        elif 'no user has' in err_msg.lower() or isinstance(e, (UsernameNotOccupiedError, UsernameInvalidError, ValueError)):
-                            async with state_lock:
-                                blacklist_group(hedef_grup, err_type, client_name)
-                            print(f"[{client_name}] ❌ @{hedef_grup} -> {err_type} (Kullanıcı/Grup yok), kara liste.")
+                        elif error_class == 'unresolvable':
+                            record_account_group_block(hedef_grup, client_name, err_type)
+                            print(f"[{client_name}] ❌ @{hedef_grup} -> hedef çözümlenemedi ({err_type}); bu hesap için tekrar denenmeyecek.")
                         else:
+                            record_group_failure(hedef_grup, client_name, err_type, 60 * 60)
                             print(f"[{client_name}] ⚠️ @{hedef_grup} -> {err_type} (Hata: {err_msg})")
 
             # Progress sıfırla (bir sonraki blast için)
