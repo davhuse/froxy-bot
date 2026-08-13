@@ -52,6 +52,30 @@ class ModerationDeletedError(RuntimeError):
     """Telegram accepted a send request but no visible message remained."""
 
 
+async def verify_ad_after_window(client, entity, message_id, client_name, group_name, seconds=600):
+    """Record the controlled smoke-test result without blocking the blast worker."""
+    await asyncio.sleep(seconds)
+    try:
+        visible = await client.get_messages(entity, ids=message_id)
+        if not visible or getattr(visible, "empty", False):
+            raise ModerationDeletedError("Message disappeared inside 10-minute window")
+        record_delivery_state(
+            group_name, client_name, "visible_10m", entity=entity, message_id=message_id
+        )
+        record_event(
+            "ad_visible_10m", client_name,
+            group=normalize_group_key(group_name), source="telegram_visibility_check",
+        )
+    except Exception as exc:
+        record_moderation_hold(group_name, client_name, str(exc), entity=entity)
+        record_group_failure(group_name, client_name, "ModerationDeleted", 24 * 60 * 60, entity)
+        record_event(
+            "moderation_deleted", client_name,
+            group=normalize_group_key(group_name), source="telegram_visibility_check",
+            error=type(exc).__name__,
+        )
+
+
 async def send_and_verify_ad(client, entity, message, client_name, group_name, options, file=None):
     """Send once and distinguish accepted, visible and moderation-deleted states."""
     kwargs = {}
@@ -81,6 +105,9 @@ async def send_and_verify_ad(client, entity, message, client_name, group_name, o
         raise ModerationDeletedError("Message disappeared after acceptance")
     record_delivery_state(
         group_name, client_name, "visible", entity=entity, message_id=message_id
+    )
+    asyncio.create_task(
+        verify_ad_after_window(client, entity, message_id, client_name, group_name)
     )
     return sent
 

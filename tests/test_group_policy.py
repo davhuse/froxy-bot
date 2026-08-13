@@ -42,6 +42,11 @@ class GroupPolicyTests(unittest.TestCase):
         self.assertTrue(group_policy.account_is_held(policy, "keyvadi"))
         self.assertFalse(group_policy.account_is_held(policy, "froxy"))
 
+    def test_second_link_protected_group_waits_for_controlled_smoke(self):
+        entity = SimpleNamespace(id=1511926667, username="kuponcekkodsatis", default_banned_rights=None)
+        _, policy = group_policy.resolve_group_policy("kuponcekkodsatis", entity)
+        self.assertTrue(group_policy.account_is_held(policy, "keyvadi"))
+
     def test_message_empty_hold_expires_after_24_hours(self):
         with tempfile.TemporaryDirectory() as directory:
             path = str(Path(directory) / "moderation.json")

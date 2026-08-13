@@ -54,8 +54,8 @@ SEEDED_POLICIES = {
         "allow_emojis": False,
         "max_lines": None,
         "forbidden_products": [],
-        "account_hold": [],
-        "hold_reason": "Önleyici link koruması; yalnız sade metin.",
+        "account_hold": ["keyvadi"],
+        "hold_reason": "@ceksatkupon2 sade metin smoke testi 10 dakika görünür kalana kadar beklemede.",
     },
     # İbr Çek-Sat Kupon / @ceksatkupon
     "id:2780340773": {
