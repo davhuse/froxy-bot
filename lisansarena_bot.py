@@ -4,9 +4,10 @@ import logging
 import re
 import asyncio
 import time
+import requests
 from datetime import datetime
 from telethon import TelegramClient, events, Button
-from telethon.errors import MessageNotModifiedError
+from telethon.errors import ButtonTypeInvalidError, MessageNotModifiedError
 from telethon.sessions import StringSession
 from telethon.tl.types import KeyboardButtonRow, KeyboardButtonWebView, ReplyInlineMarkup
 import user_lang_helper
@@ -640,10 +641,13 @@ async def show_main_menu(event, user_id, is_callback=False):
     buttons = mini_app_markup()
     # Referral and legacy IBAN/catalog buttons stay disabled. All customer
     # purchases now begin inside the authenticated Telegram Mini App.
-    await event.respond(
-        f"{welcome}\n\nÜrünler, gerçek stok, bakiye ve siparişler için aşağıdaki mağaza düğmesini kullanın.",
-        buttons=buttons,
-    )
+    message = f"{welcome}\n\nÜrünler, gerçek stok, bakiye ve siparişler için mağaza düğmesini kullanın."
+    try:
+        await event.respond(message, buttons=buttons)
+    except ButtonTypeInvalidError:
+        # The Bot API menu remains available if an older Telegram client
+        # rejects this inline WebView button.
+        await event.respond(f"{message}\n\nMağazayı sohbet ekranının altındaki Menü düğmesinden açabilirsiniz.")
 
 
 def mini_app_markup():
@@ -659,6 +663,29 @@ def mini_app_markup():
             KeyboardButtonWebView(text="🛍 Mağazayı Aç / Open Store", url=mini_app_url)
         ])],
     )
+
+
+def configure_mini_app_menu_button():
+    """Persist the default Mini App menu button through Telegram's Bot API."""
+    mini_app_url = os.environ.get(
+        "LISANSARENA_MINI_APP_URL",
+        "https://froxy-bot-wjzr.onrender.com/la/app",
+    ).strip()
+    response = requests.post(
+        f"https://api.telegram.org/bot{BOT_TOKEN}/setChatMenuButton",
+        json={
+            "menu_button": {
+                "type": "web_app",
+                "text": "🛍 Mağazayı Aç",
+                "web_app": {"url": mini_app_url},
+            }
+        },
+        timeout=20,
+    )
+    payload = response.json() if response.content else {}
+    if response.status_code >= 400 or not payload.get("ok"):
+        raise RuntimeError(str(payload.get("description") or f"HTTP {response.status_code}"))
+    return True
 
 @bot.on(events.CallbackQuery(data=b'menu_verify_payment'))
 async def verify_payment_callback(event):
@@ -1235,6 +1262,11 @@ async def main():
     while True:
         try:
             await bot.start(bot_token=BOT_TOKEN)
+            try:
+                await asyncio.to_thread(configure_mini_app_menu_button)
+                logger.info("LisansArena Mini App menu button configured successfully.")
+            except Exception as menu_error:
+                logger.warning("Mini App menu button configuration failed: %s", menu_error)
             await get_bot_info()
             logger.info("LisansArena Sales Bot started successfully!")
             await bot.run_until_disconnected()

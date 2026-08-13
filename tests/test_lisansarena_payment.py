@@ -53,6 +53,8 @@ class LisansArenaPaymentTests(unittest.TestCase):
         self.assertIn("ReplyInlineMarkup", source)
         self.assertIn("KeyboardButtonWebView", source)
         self.assertNotIn("ReplyKeyboardMarkup", source)
+        self.assertIn("setChatMenuButton", source)
+        self.assertIn("ButtonTypeInvalidError", source)
 
 
 if __name__ == "__main__":
