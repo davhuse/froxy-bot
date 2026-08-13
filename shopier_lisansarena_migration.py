@@ -103,7 +103,7 @@ def prepare():
     print(json.dumps({"archive": str(archive), "topup_products": mapping}, ensure_ascii=False))
 
 
-def paid_100_try_order(order_id, mapping):
+def paid_test_order(order_id, mapping, expected_amount=100):
     order = api(f"/orders/{urllib.parse.quote(str(order_id), safe='')}")
     status = str(order.get("paymentStatus") or order.get("status") or "").casefold()
     total = str((order.get("totals") or {}).get("total") or order.get("total") or order.get("amount") or "")
@@ -115,18 +115,18 @@ def paid_100_try_order(order_id, mapping):
     ids = {str(item.get("productId") or item.get("product_id") or item.get("id") or "") for item in items if isinstance(item, dict)}
     note = str(order.get("note") or order.get("orderNote") or order.get("buyerNote") or "")
     return (
-        status == "paid" and abs(amount - 100.0) < 0.001 and
-        str(mapping.get("100")) in ids and
+        status == "paid" and abs(amount - float(expected_amount)) < 0.001 and
+        str(mapping.get(str(int(expected_amount)))) in ids and
         bool(re.search(r"\bLA-[A-F0-9]{6}\b", note.upper()))
     )
 
 
-def finalize(order_id):
+def finalize(order_id, verified_amount=100):
     if not MAPPING_FILE.exists():
         raise SystemExit("Önce prepare çalıştırılmalı")
     mapping = json.loads(MAPPING_FILE.read_text(encoding="utf-8"))
-    if not paid_100_try_order(order_id, mapping):
-        raise SystemExit("Silme reddedildi: gerçek, ödenmiş 100 TL LA kodlu test siparişi doğrulanamadı")
+    if not paid_test_order(order_id, mapping, verified_amount):
+        raise SystemExit(f"Silme reddedildi: gerçek, ödenmiş {verified_amount} TL LA kodlu test siparişi doğrulanamadı")
     current = list_products()
     archive = backup(current)
     protected = set(mapping.values())
@@ -147,6 +147,7 @@ def main():
     sub.add_parser("prepare")
     finish = sub.add_parser("finalize")
     finish.add_argument("--verified-order", required=True)
+    finish.add_argument("--verified-amount", type=int, default=100)
     args = parser.parse_args()
     if args.command == "status":
         current = list_products()
@@ -154,7 +155,7 @@ def main():
     elif args.command == "prepare":
         prepare()
     else:
-        finalize(args.verified_order)
+        finalize(args.verified_order, args.verified_amount)
 
 
 if __name__ == "__main__":

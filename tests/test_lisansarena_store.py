@@ -90,6 +90,11 @@ class LisansArenaStoreTests(unittest.TestCase):
             self.assertEqual(self.store.balance(conn, self.user_id), 10000)
             self.assertEqual(conn.execute(select(func.count()).select_from(store_module.wallet_ledger).where(store_module.wallet_ledger.c.entry_type == "topup")).scalar_one(), 1)
 
+    def test_one_lira_release_topup_uses_temporary_product(self):
+        result = self.store.create_topup(self.user_id, 100)
+        self.assertEqual(result["amount"], "1,00 TL")
+        self.assertTrue(result["shopier_url"].endswith("/49853325"))
+
     def test_api_reconciliation_filters_unpaid_and_is_idempotent(self):
         paid = {
             "id": "order-api-1", "paymentStatus": "paid", "total": "100.00",

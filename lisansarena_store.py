@@ -32,7 +32,8 @@ from sqlalchemy.exc import IntegrityError
 
 la = Blueprint("lisansarena_store", __name__)
 metadata = MetaData()
-TOPUP_AMOUNTS = (10000, 20000, 50000, 100000, 200000, 500000)
+# Temporary 1 TL package for the real-payment release smoke test.
+TOPUP_AMOUNTS = (100, 10000, 20000, 50000, 100000, 200000, 500000)
 
 users = Table(
     "la_users", metadata,
