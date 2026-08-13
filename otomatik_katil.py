@@ -20,6 +20,17 @@ from gemini_helper import get_ai_response, get_ad_variation
 from sales_catalog import filter_keyvadi_products
 from sales_metrics import record_event
 from support_flow import save_ticket_record
+from group_policy import (
+    account_is_held,
+    apply_telegram_rights,
+    is_moderation_warning,
+    make_policy_compliant,
+    moderation_hold_active,
+    record_delivery_state,
+    record_moderation_hold,
+    resolve_group_policy,
+    warning_targets_brand,
+)
 from sales_conversion import (
     apply_cta_experiment,
     load_sales_catalog,
@@ -35,6 +46,43 @@ from telethon.errors import (
     SlowModeWaitError, UserBannedInChannelError, PeerFloodError,
     UserRestrictedError
 )
+
+
+class ModerationDeletedError(RuntimeError):
+    """Telegram accepted a send request but no visible message remained."""
+
+
+async def send_and_verify_ad(client, entity, message, client_name, group_name, options, file=None):
+    """Send once and distinguish accepted, visible and moderation-deleted states."""
+    kwargs = {}
+    if file:
+        kwargs["file"] = file
+    if options.get("parse_mode") is None:
+        kwargs["parse_mode"] = None
+    if options.get("link_preview") is not None:
+        kwargs["link_preview"] = bool(options["link_preview"])
+    sent = await client.send_message(entity, message, **kwargs)
+    message_id = getattr(sent, "id", None)
+    raw_text = getattr(sent, "raw_text", None) or getattr(sent, "message", None)
+    if sent is None or not message_id or (not raw_text and not getattr(sent, "media", None)):
+        record_moderation_hold(
+            group_name, client_name, "MessageEmpty", entity=entity
+        )
+        raise ModerationDeletedError("MessageEmpty")
+    record_delivery_state(
+        group_name, client_name, "telegram_accepted", entity=entity, message_id=message_id
+    )
+    await asyncio.sleep(2)
+    visible = await client.get_messages(entity, ids=message_id)
+    if not visible or getattr(visible, "empty", False):
+        record_moderation_hold(
+            group_name, client_name, "Message disappeared after acceptance", entity=entity
+        )
+        raise ModerationDeletedError("Message disappeared after acceptance")
+    record_delivery_state(
+        group_name, client_name, "visible", entity=entity, message_id=message_id
+    )
+    return sent
 
 # --- AYARLAR ---
 api_id = int(os.environ.get('TELEGRAM_API_ID', '0') or 0)
@@ -2475,6 +2523,33 @@ async def claim_dm_reply_event(client_name, chat_id, msg_id):
 
 def register_auto_reply_handler(client, client_name, our_user_ids):
     @client.on(events.NewMessage(incoming=True))
+    async def handle_group_moderation(event):
+        if event.is_private or getattr(event, "out", False):
+            return
+        text = event.raw_text or ""
+        brand = account_brand(client_name)
+        if not is_moderation_warning(text) or not warning_targets_brand(text, brand):
+            return
+        try:
+            entity = await event.get_chat()
+        except Exception:
+            entity = None
+        group_name = (
+            getattr(entity, "username", None)
+            or getattr(entity, "title", None)
+            or str(event.chat_id)
+        )
+        reason = f"Security bot warning: {text[:240]}"
+        record_moderation_hold(group_name, client_name, reason, entity=entity)
+        record_group_failure(group_name, client_name, "ModerationDeleted", 24 * 60 * 60, entity)
+        record_event(
+            "moderation_deleted", client_name,
+            group=normalize_group_key(group_name), source="telegram_security_bot",
+            reason=text[:240],
+        )
+        print(f"[{client_name}] Moderasyon uyarısı algılandı; @{group_name} 24 saat durduruldu.")
+
+    @client.on(events.NewMessage(incoming=True))
     async def handle_private_message(event):
         if not event.is_private or getattr(event, 'out', False):
             return
@@ -3683,6 +3758,18 @@ async def main():
                     if not entity:
                         return
                     group_key = cooldown_key(grup_name, entity)
+                    current_brand = account_brand(client_name)
+                    _policy_key, group_policy = resolve_group_policy(grup_name, entity)
+                    group_policy = apply_telegram_rights(group_policy, entity)
+                    if account_is_held(group_policy, current_brand):
+                        print(
+                            f"[{client_name}] ⏸️ @{grup_name} politika beklemesinde: "
+                            f"{group_policy.get('hold_reason') or 'inceleme bekleniyor'}"
+                        )
+                        return
+                    if moderation_hold_active(grup_name, client_name, entity=entity):
+                        print(f"[{client_name}] ⏸️ @{grup_name} moderasyon sonrası 24 saat beklemede.")
+                        return
                     if group_key in sent_this_cycle:
                         print(f"[{client_name}] ⏭️ @{grup_name} bu turda zaten gönderildi, atlanıyor...")
                         return
@@ -3770,7 +3857,15 @@ async def main():
                             msg, grup_name, is_keyvadi, is_lisansarena, is_froxy
                         )
                         experiment_brand = "keyvadi" if is_keyvadi else ("froxy" if is_froxy else "lisansarena")
-                        msg, experiment_arm = apply_cta_experiment(msg, experiment_brand, group_key)
+                        if group_policy.get("allow_deep_links") and group_policy.get("allow_urls"):
+                            msg, experiment_arm = apply_cta_experiment(msg, experiment_brand, group_key)
+                        else:
+                            experiment_arm = "policy_plain_text"
+                        # This is intentionally the final text transformation.
+                        # No later step may re-introduce a URL/TextUrl entity.
+                        msg, send_options = make_policy_compliant(
+                            msg, group_policy, experiment_brand
+                        )
                         
                         # Görsel/Banner gönderimi (Grup yetki kontrolleri ve hata toleransı eklendi)
                         if is_keyvadi:
@@ -3798,30 +3893,41 @@ async def main():
                             except Exception as e:
                                 print(f"[{client_name}] ⚠️ @{grup_name} izin kontrol hatası: {e}")
                                 
-                        if is_short_group:
+                        if is_short_group or not send_options["allow_media"]:
                             allows_media = False
 
                         if allows_media and os.path.exists(banner_file):
                             try:
                                 if len(msg) <= 1024:
-                                    await client.send_message(entity, msg, file=banner_file)
+                                    await send_and_verify_ad(
+                                        client, entity, msg, client_name, grup_name,
+                                        send_options, file=banner_file,
+                                    )
                                     telegram_accepted = True
                                     chosen_name = os.path.basename(chosen_file) if available_files else "fallback"
                                     print(f"[{client_name}] 📸 @{grup_name} → Görselli Gönderildi! ({sent_count+1}) [Şablon: {chosen_name}]")
                                 else:
                                     # Karakter sınırı 1024'ü aşıyorsa görsel gönderme, sadece tek parça düz metin gönder
-                                    await client.send_message(entity, msg)
+                                    await send_and_verify_ad(
+                                        client, entity, msg, client_name, grup_name, send_options
+                                    )
                                     telegram_accepted = True
                                     chosen_name = os.path.basename(chosen_file) if available_files else "fallback"
                                     print(f"[{client_name}] 📝 @{grup_name} → Karakter sınırı aşıldığı için görsel atlanarak Düz Metin Gönderildi! ({sent_count+1}) [Şablon: {chosen_name}]")
                             except Exception as media_err:
+                                if isinstance(media_err, ModerationDeletedError):
+                                    raise
                                 print(f"[{client_name}] ⚠️ @{grup_name} grubuna görsel gönderilemedi ({media_err}). Düz metin olarak gönderiliyor...")
-                                await client.send_message(entity, msg)
+                                await send_and_verify_ad(
+                                    client, entity, msg, client_name, grup_name, send_options
+                                )
                                 telegram_accepted = True
                                 chosen_name = os.path.basename(chosen_file) if available_files else "fallback"
                                 print(f"[{client_name}] ✅ @{grup_name} → Düz Metin Gönderildi! ({sent_count+1}) [Şablon: {chosen_name}]")
                         else:
-                            await client.send_message(entity, msg)
+                            await send_and_verify_ad(
+                                client, entity, msg, client_name, grup_name, send_options
+                            )
                             telegram_accepted = True
                             chosen_name = os.path.basename(chosen_file) if available_files else "fallback"
                             print(f"[{client_name}] ✅ @{grup_name} → Gönderildi! ({sent_count+1}) [Şablon: {chosen_name}]")
@@ -3856,6 +3962,17 @@ async def main():
                         await reset_failure(grup_name)
                         async with state_lock:
                             save_to_list(grup_name, PROGRESS_FILE)
+                    except ModerationDeletedError as e:
+                        record_event(
+                            "moderation_deleted", client_name,
+                            group=normalize_group_key(grup_name),
+                            source="telegram_send_verification", error=str(e),
+                        )
+                        record_group_failure(
+                            grup_name, client_name, "ModerationDeleted", 24 * 60 * 60, entity
+                        )
+                        print(f"[{client_name}] 🚫 @{grup_name} mesajı görünür kalmadı; 24 saat durduruldu.")
+                        fail_count += 1
                     except FloodWaitError as e:
                         record_event("ad_failed", client_name, group=normalize_group_key(grup_name), error=type(e).__name__)
                         set_account_restriction(client_name, e.seconds, 'Telegram FloodWait', type(e).__name__, scope='send')

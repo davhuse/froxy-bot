@@ -21,16 +21,24 @@ import atexit
 from sales_metrics import record_event, summarize as summarize_sales
 from sales_conversion import cta_experiment_status, parse_purchase_token, product_by_id, refresh_configured_catalogs
 from shopier_orders import ingest_shopier_order, reconcile_configured_orders
+from group_policy import load_policies, moderation_snapshot
+from lisansarena_store import la as lisansarena_store_blueprint, start_store_worker
 
 base_dir = os.path.abspath(os.path.dirname(__file__))
 app = Flask(__name__, 
             template_folder=os.path.join(base_dir, 'templates'),
             static_folder=os.path.join(base_dir, 'static'))
+app.register_blueprint(lisansarena_store_blueprint)
 
 SHOPIER_CALLBACK_SECRET = os.environ.get('SHOPIER_CALLBACK_SECRET', '').strip()
 FROXY_ENABLED = True
 
 app.config.update(
+    SECRET_KEY=os.environ.get('FLASK_SECRET_KEY'),
+    SESSION_COOKIE_SECURE=os.environ.get('RENDER', '').lower() == 'true',
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE='Lax',
+    PERMANENT_SESSION_LIFETIME=60 * 60 * 8,
     MAX_CONTENT_LENGTH=1024 * 1024,
     MAX_FORM_MEMORY_SIZE=256 * 1024,
     MAX_FORM_PARTS=100,
@@ -66,6 +74,21 @@ def protect_shopier_callback():
     return None
 
 
+@app.before_request
+def protect_privileged_panel_api():
+    protected = (
+        '/api/group-status', '/api/config', '/api/account-restrictions',
+        '/api/start', '/api/stop', '/api/lisansarena/start', '/api/lisansarena/stop',
+    )
+    if request.path not in protected:
+        return None
+    expected = os.environ.get('PANEL_ADMIN_TOKEN', '').strip()
+    supplied = request.headers.get('X-Admin-Token', '').strip()
+    if not expected or not supplied or not hmac.compare_digest(expected, supplied):
+        return jsonify({'error': 'Unauthorized'}), 401
+    return None
+
+
 @app.after_request
 def add_security_headers(response):
     response.headers.setdefault('X-Content-Type-Options', 'nosniff')
@@ -73,6 +96,14 @@ def add_security_headers(response):
     response.headers.setdefault('Referrer-Policy', 'same-origin')
     response.headers.setdefault('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
     response.headers.setdefault('Cache-Control', 'no-store')
+    if request.path.startswith('/la/') or request.path.startswith('/api/la/') or request.path == '/api/shopier/lisansarena/webhook':
+        response.headers['Content-Security-Policy'] = (
+            "default-src 'self'; script-src 'self' https://telegram.org; "
+            "style-src 'self'; img-src 'self' data:; connect-src 'self'; "
+            "frame-ancestors 'self' https://web.telegram.org https://*.telegram.org; "
+            "base-uri 'none'; form-action 'self'"
+        )
+        response.headers.pop('X-Frame-Options', None)
     return response
 
 
@@ -535,6 +566,8 @@ def group_status():
         'permanent': permanent,
         'temporary': temporary,
         'review': review,
+        'policies': load_policies(),
+        'delivery_states': moderation_snapshot(),
     })
 
 
@@ -1744,6 +1777,7 @@ def start_background_threads():
             threading.Thread(target=catalog_refresh_loop, daemon=True).start()
 
 start_background_threads()
+start_store_worker()
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))

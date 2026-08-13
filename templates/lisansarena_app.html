@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>LisansArena</title>
+  <link rel="stylesheet" href="/static/lisansarena_app.css">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="/static/lisansarena_app.js" defer></script>
+</head>
+<body>
+  <header>
+    <div><span class="eyebrow">DİJİTAL MAĞAZA</span><h1>LisansArena</h1></div>
+    <button id="walletButton" class="wallet" type="button">Bakiye: —</button>
+  </header>
+  <main>
+    <section id="notice" class="notice" aria-live="polite">Telegram doğrulanıyor…</section>
+    <section class="tools">
+      <input id="search" type="search" placeholder="Ürün veya kategori ara" autocomplete="off">
+      <select id="category" aria-label="Kategori"><option value="">Tüm kategoriler</option></select>
+    </section>
+    <nav class="tabs" aria-label="Mağaza bölümleri">
+      <button class="active" data-tab="catalog" type="button">Ürünler</button>
+      <button data-tab="topup" type="button">Bakiye yükle</button>
+      <button data-tab="orders" type="button">Siparişlerim</button>
+    </nav>
+    <section id="catalog" class="view active"><div id="products" class="products"></div></section>
+    <section id="topup" class="view">
+      <h2>Bakiye yükle</h2>
+      <p>Paketi seçin. Oluşan LA kodunu Shopier sipariş notuna aynen yazın. Kod 24 saat ve tek sipariş için geçerlidir.</p>
+      <div id="topupPackages" class="packages"></div>
+      <div id="topupResult" class="result" hidden></div>
+    </section>
+    <section id="orders" class="view"><h2>Siparişlerim</h2><div id="orderList"></div></section>
+  </main>
+  <dialog id="productDialog">
+    <button id="dialogClose" class="close" type="button" aria-label="Kapat">×</button>
+    <h2 id="dialogTitle"></h2><p id="dialogDescription"></p>
+    <div id="dialogMeta"></div><p id="dialogGuide" class="guide"></p>
+    <button id="buyButton" class="primary" type="button">Bakiyemle satın al</button>
+  </dialog>
+</body>
+</html>

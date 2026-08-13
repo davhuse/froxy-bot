@@ -4,3 +4,8 @@ requests
 psutil
 google-auth
 gunicorn
+SQLAlchemy>=2.0,<3
+psycopg[binary]>=3.2,<4
+cryptography>=44,<46
+argon2-cffi>=23,<26
+pyotp>=2.9,<3

@@ -8,6 +8,7 @@ from datetime import datetime
 from telethon import TelegramClient, events, Button
 from telethon.errors import MessageNotModifiedError
 from telethon.sessions import StringSession
+from telethon.tl.types import KeyboardButtonRow, KeyboardButtonWebView, ReplyKeyboardMarkup
 import user_lang_helper
 import firestore_helper
 from gemini_helper import get_ai_response
@@ -636,20 +637,28 @@ async def show_main_menu(event, user_id, is_callback=False):
         f"{t['welcome']}"
     )
     
-    buttons = []
-    for cat_key, cat in CATEGORIES.items():
-        if cat["products"]:
-            title = t["cat_title_mapping"].get(cat_key, cat["title"])
-            buttons.append([Button.inline(title, f"cat_{cat_key}".encode())])
-            
-    buttons.append([Button.inline("👥 Arkadaşını Davet Et / Invite Friends", b"menu_referral")])
-    buttons.append([Button.inline(t["support_btn"], b"menu_support")])
-    buttons.append([Button.inline(t["lang_btn"], b"menu_lang")])
-    
-    if is_callback:
-        await safe_event_edit(event, welcome, buttons=buttons)
-    else:
-        await event.respond(welcome, buttons=buttons)
+    buttons = mini_app_markup()
+    # Referral and legacy IBAN/catalog buttons stay disabled. All customer
+    # purchases now begin inside the authenticated Telegram Mini App.
+    await event.respond(
+        f"{welcome}\n\nÜrünler, gerçek stok, bakiye ve siparişler için aşağıdaki mağaza düğmesini kullanın.",
+        buttons=buttons,
+    )
+
+
+def mini_app_markup():
+    mini_app_url = os.environ.get(
+        "LISANSARENA_MINI_APP_URL",
+        "https://froxy-bot-wjzr.onrender.com/la/app",
+    ).strip()
+    return ReplyKeyboardMarkup(
+        rows=[KeyboardButtonRow(buttons=[
+            KeyboardButtonWebView(text="🛍 Mağazayı Aç / Open Store", url=mini_app_url)
+        ])],
+        resize=True,
+        single_use=False,
+        selective=False,
+    )
 
 @bot.on(events.CallbackQuery(data=b'menu_verify_payment'))
 async def verify_payment_callback(event):
@@ -676,11 +685,7 @@ async def start_handler(event):
     
     message_text = event.message.message or ""
     ref_id = None
-    if " " in message_text:
-        parts = message_text.split(" ", 1)
-        param = parts[1].strip()
-        if param.startswith("ref_"):
-            ref_id = param.replace("ref_", "")
+    # Referral rewards remain disabled until real net profitability is known.
             
     user_doc_id = f"lisansarena_user_{user_id}"
     user_data = await async_get_document(user_doc_id)
@@ -1106,6 +1111,15 @@ async def message_handler(event):
     forwarded = await forward_customer_message(bot, event, support_chat_id, "LisansArena", buttons)
     if forwarded:
         record_event("dm_manual_forwarded", "LisansArena", source="telegram_private")
+
+    # Legacy product matching and IBAN checkout are retired. Keep every DM in
+    # the shared support queue, then direct the customer to the authenticated
+    # Mini App without inventing product/stock information in chat.
+    await event.respond(
+        "Ürünler, güncel stok, bakiye yükleme ve sipariş takibi artık LisansArena mağazasında. Aşağıdaki düğmeden güvenle açabilirsiniz.",
+        buttons=mini_app_markup(),
+    )
+    return
 
     if is_unverified_payment_claim(event.text):
         await event.respond(
