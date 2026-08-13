@@ -41,7 +41,7 @@ class LisansArenaWebTests(unittest.TestCase):
 
     def test_telegram_auth_establishes_customer_session(self):
         token = "123:test-token"
-        user = json.dumps({"id": 42, "first_name": "Test"}, separators=(",", ":"))
+        user = json.dumps({"id": 42, "first_name": "Test", "username": "testuser"}, separators=(",", ":"))
         fields = {"auth_date": str(int(time.time())), "query_id": "q-1", "user": user}
         check = "\n".join(f"{key}={value}" for key, value in sorted(fields.items()))
         secret = hmac.new(b"WebAppData", token.encode(), hashlib.sha256).digest()
@@ -49,7 +49,18 @@ class LisansArenaWebTests(unittest.TestCase):
         with patch.dict(os.environ, {"LISANSARENA_BOT_TOKEN": token}):
             auth = self.client.post("/api/la/auth/telegram", json={"initData": urlencode(fields)})
         self.assertEqual(auth.status_code, 200)
-        self.assertEqual(self.client.get("/api/la/catalog").status_code, 200)
+        auth_data = auth.get_json()
+        self.assertEqual(auth_data["user"]["username"], "testuser")
+        self.assertTrue(auth_data["user"]["referral_code"].startswith("LA-"))
+        catalog = self.client.get("/api/la/catalog")
+        self.assertEqual(catalog.status_code, 200)
+        self.assertEqual(len(catalog.get_json()["products"]), 34)
+
+    def test_brand_asset_is_served(self):
+        response = self.client.get("/la/assets/brand")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.mimetype, "image/jpeg")
+        response.close()
 
     def test_webhook_rejects_invalid_signature(self):
         with patch.dict(os.environ, {"LISANSARENA_SHOPIER_WEBHOOK_SECRET": "secret"}):

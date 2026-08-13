@@ -51,6 +51,15 @@ class LisansArenaStoreTests(unittest.TestCase):
         self.assertEqual(count, 34)
         self.assertEqual(published, 0)
 
+    def test_storefront_shows_drafts_without_allowing_purchase(self):
+        catalog = self.store.storefront_catalog()
+        self.assertEqual(len(catalog), 34)
+        self.assertTrue(all(item["available"] is False for item in catalog))
+        self.assertTrue(all(item["category"] != "Taslak aktarım" for item in catalog))
+
+    def test_legacy_turkish_text_is_repaired_for_storefront(self):
+        self.assertEqual(store_module.clean_storefront_text("Canva Pro Ã–ÄŸretmen"), "Canva Pro Öğretmen")
+
     def test_automatic_stock_is_delivered_only_once(self):
         product_id = self.add_product()
         nonce, encrypted = self.store.encrypt_stock(product_id, "LICENSE-ONE")
@@ -134,6 +143,16 @@ class LisansArenaStoreTests(unittest.TestCase):
         encoded = "&".join(f"{key}={__import__('urllib.parse').parse.quote(value)}" for key, value in fields.items())
         self.assertEqual(store_module.verify_telegram_init_data(encoded, token)["id"], 42)
         self.assertIsNone(store_module.verify_telegram_init_data(encoded.replace("Test", "Evil"), token))
+
+    def test_telegram_auth_remains_valid_during_same_day_reopen(self):
+        token = "123:bot-secret"
+        user = json.dumps({"id": 42}, separators=(",", ":"))
+        fields = {"auth_date": str(int(time.time()) - 1800), "user": user}
+        check = "\n".join(f"{key}={value}" for key, value in sorted(fields.items()))
+        secret = hmac.new(b"WebAppData", token.encode(), hashlib.sha256).digest()
+        fields["hash"] = hmac.new(secret, check.encode(), hashlib.sha256).hexdigest()
+        encoded = "&".join(f"{key}={__import__('urllib.parse').parse.quote(value)}" for key, value in fields.items())
+        self.assertEqual(store_module.verify_telegram_init_data(encoded, token)["id"], 42)
 
 
 if __name__ == "__main__":

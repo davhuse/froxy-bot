@@ -1,6 +1,6 @@
 "use strict";
 (() => {
-  const state = { csrf: "", products: [], selected: null };
+  const state = { csrf: "", products: [], selected: null, user: null };
   const byId = (id) => document.getElementById(id);
   const notice = byId("notice");
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -38,14 +38,15 @@
     );
     products.forEach((product) => {
       const card = document.createElement("article");
-      card.className = "product";
+      card.className = `product${product.available ? "" : " unavailable"}`;
       addText(card, "span", product.category, "category");
       addText(card, "h3", product.name);
-      addText(card, "span", product.delivery_type === "automatic" ? `Anında teslim · Stok ${product.stock}` : "24 saat içinde manuel teslim", "stock");
+      addText(card, "span", product.available ? (product.delivery_type === "automatic" ? `Anında teslim · Stok ${product.stock}` : "24 saat içinde manuel teslim") : "Satış hazırlığında", "stock");
       addText(card, "strong", product.price, "price");
-      const button = addText(card, "button", "Ürünü İncele");
+      const button = addText(card, "button", product.available ? "Ürünü İncele" : "Yakında");
       button.type = "button";
-      button.addEventListener("click", () => openProduct(product));
+      button.disabled = !product.available;
+      if (product.available) button.addEventListener("click", () => openProduct(product));
       root.appendChild(card);
     });
     if (!products.length) addText(root, "p", "Aramana uygun ürün bulunamadı.", "empty");
@@ -91,20 +92,46 @@
     if (!data.orders.length) addText(root, "p", "Henüz siparişin yok.", "empty");
   };
 
+  const renderProfile = (user) => {
+    const fullName = [user.first_name, user.last_name].filter(Boolean).join(" ") || "Telegram kullanıcısı";
+    byId("profileName").textContent = fullName;
+    byId("profileUsername").textContent = user.username ? `@${user.username}` : "Telegram hesabı";
+    byId("referralCode").textContent = user.referral_code || "Hazırlanıyor";
+    byId("telegramBadge").textContent = "Telegram Bağlı";
+    byId("profileInitial").textContent = fullName.slice(0, 2).toLocaleUpperCase("tr");
+    if (user.photo_url) {
+      const photo = byId("profilePhoto");
+      photo.src = user.photo_url;
+      photo.hidden = false;
+      byId("profileInitial").hidden = true;
+      photo.addEventListener("error", () => { photo.hidden = true; byId("profileInitial").hidden = false; }, { once: true });
+    }
+  };
+
   const telegramInitData = async () => {
     const telegram = globalThis.Telegram && globalThis.Telegram.WebApp;
-    if (!telegram) throw new Error("Telegram bağlantısı kurulamadı. Bot sohbetine dönüp Mağazayı Aç düğmesine yeniden dokun.");
-    telegram.ready();
-    telegram.expand();
-    if (typeof telegram.disableVerticalSwipes === "function") telegram.disableVerticalSwipes();
-    for (let attempt = 0; attempt < 10 && !telegram.initData; attempt += 1) await sleep(150);
-    if (!telegram.initData) throw new Error("Telegram doğrulama bilgisi alınamadı. Sayfayı normal tarayıcıdan değil, LisansArena botunun menüsünden aç.");
-    return telegram.initData;
+    if (telegram) {
+      telegram.ready();
+      telegram.expand();
+      if (typeof telegram.disableVerticalSwipes === "function") telegram.disableVerticalSwipes();
+    }
+    const launchData = () => {
+      if (telegram && telegram.initData) return telegram.initData;
+      const fragment = new URLSearchParams(globalThis.location.hash.replace(/^#/, ""));
+      const query = new URLSearchParams(globalThis.location.search);
+      return fragment.get("tgWebAppData") || query.get("tgWebAppData") || "";
+    };
+    for (let attempt = 0; attempt < 14 && !launchData(); attempt += 1) await sleep(150);
+    const initData = launchData();
+    if (!initData) throw new Error("Telegram bağlantısı alınamadı. LisansArenaBot sohbetini kapatıp açın ve alttaki Mağaza düğmesine dokunun.");
+    return initData;
   };
   const authenticate = async () => {
     const initData = await telegramInitData();
     const data = await api("/api/la/auth/telegram", { method: "POST", body: JSON.stringify({ initData }) });
     state.csrf = data.csrf;
+    state.user = data.user;
+    renderProfile(data.user);
     await Promise.all([loadCatalog(), loadWallet(), loadOrders()]);
     setNotice(`Hoş geldin ${data.user.first_name || ""}. Güvenli mağaza hazır.`);
   };

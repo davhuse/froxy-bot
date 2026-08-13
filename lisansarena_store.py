@@ -20,7 +20,7 @@ import urllib.request
 
 from argon2 import PasswordHasher
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-from flask import Blueprint, abort, jsonify, render_template, request, session
+from flask import Blueprint, abort, jsonify, render_template, request, send_file, session
 import pyotp
 from sqlalchemy import (
     Boolean, Column, DateTime, ForeignKey, Integer, LargeBinary, MetaData,
@@ -155,6 +155,38 @@ def money(value: int) -> str:
     return f"{Decimal(value) / 100:.2f} TL".replace(".", ",")
 
 
+def clean_storefront_text(value):
+    """Repair legacy UTF-8 text that was previously decoded as Windows text."""
+    text = str(value or "")
+    if not any(marker in text for marker in ("Ã", "Ä", "Å", "â", "ð")):
+        return text
+    for encoding in ("cp1252", "latin1"):
+        try:
+            repaired = text.encode(encoding).decode("utf-8")
+            if repaired.count("Ã") + repaired.count("Ä") + repaired.count("Å") < text.count("Ã") + text.count("Ä") + text.count("Å"):
+                return repaired
+        except (UnicodeEncodeError, UnicodeDecodeError):
+            continue
+    return text
+
+
+def storefront_category(name):
+    value = clean_storefront_text(name).casefold()
+    groups = (
+        ("Yapay Zekâ", ("chatgpt", "gemini", "grok", "perplexity", "deepseek", "ai ", "yapay")),
+        ("Tasarım", ("canva", "adobe", "freepik", "envato", "figma", "magnific")),
+        ("Eğlence", ("netflix", "youtube", "spotify", "exxen", "disney", "hbo", "prime")),
+        ("Oyun", ("steam", "xbox", "zula", "fc26", "game pass")),
+        ("Yazılım", ("windows", "office", "autocad", "lisans")),
+        ("Güvenlik", ("kaspersky", "vpn", "antivir")),
+        ("Kupon ve Puan", ("kupon", "shell", "trendyol", "market", "yemek")),
+    )
+    for category, keywords in groups:
+        if any(keyword in value for keyword in keywords):
+            return category
+    return "Diğer"
+
+
 def margin_is_allowed(price_cents: int, cost_cents: int, delivery_type: str, fee_rate=None) -> bool:
     if price_cents <= 0 or cost_cents is None:
         return False
@@ -281,6 +313,24 @@ class LisansArenaStore:
             stock_count = select(func.count(inventory.c.id)).where(and_(inventory.c.product_id == products.c.id, inventory.c.sold_order_id.is_(None))).scalar_subquery()
             rows = conn.execute(select(products, stock_count.label("stock")).where(products.c.published.is_(True)).order_by(products.c.category, products.c.name)).mappings()
             return [{**dict(row), "price": money(row["price_cents"]), "stock": int(row["stock"])} for row in rows]
+
+    def storefront_catalog(self):
+        """Show the imported range while keeping unapproved drafts unbuyable."""
+        with self.engine.connect() as conn:
+            stock_count = select(func.count(inventory.c.id)).where(and_(inventory.c.product_id == products.c.id, inventory.c.sold_order_id.is_(None))).scalar_subquery()
+            rows = conn.execute(select(products, stock_count.label("stock")).order_by(products.c.name)).mappings()
+            result = []
+            for row in rows:
+                item = dict(row)
+                item["name"] = clean_storefront_text(item["name"])
+                item["description"] = clean_storefront_text(item.get("description")) or "Ürün ayrıntıları ve teslimat bilgileri hazırlanıyor."
+                item["guide"] = clean_storefront_text(item.get("guide"))
+                item["category"] = storefront_category(item["name"])
+                item["stock"] = int(row["stock"])
+                item["price"] = money(row["price_cents"])
+                item["available"] = bool(row["published"] and (row["delivery_type"] == "manual" or item["stock"] > 0))
+                result.append(item)
+            return result
 
     def quote(self, product_id, quantity):
         quantity = max(1, min(int(quantity), 10))
@@ -505,7 +555,7 @@ def get_store():
     return _store
 
 
-def verify_telegram_init_data(init_data: str, bot_token: str, max_age=300):
+def verify_telegram_init_data(init_data: str, bot_token: str, max_age=24 * 60 * 60):
     pairs = dict(parse_qsl(init_data, keep_blank_values=True))
     supplied_hash = pairs.pop("hash", "")
     if not supplied_hash or not bot_token:
@@ -570,6 +620,11 @@ def mini_app():
     return render_template("lisansarena_app.html")
 
 
+@la.get("/la/assets/brand")
+def brand_asset():
+    return send_file(os.path.join(os.path.dirname(__file__), "lisansarena_banner.jpeg"), mimetype="image/jpeg", max_age=86400)
+
+
 @la.post("/api/la/auth/telegram")
 def telegram_auth():
     payload = request.get_json(silent=True) or {}
@@ -584,14 +639,27 @@ def telegram_auth():
     session["la_user_id"] = user_id
     session["la_csrf"] = secrets.token_urlsafe(32)
     session.permanent = True
-    return jsonify({"ok": True, "csrf": session["la_csrf"], "user": {"first_name": user.get("first_name", "")}})
+    referral_secret = os.environ.get("FLASK_SECRET_KEY") or os.environ.get("LISANSARENA_BOT_TOKEN", "")
+    referral_code = "LA-" + hmac.new(referral_secret.encode(), str(user["id"]).encode(), hashlib.sha256).hexdigest()[:8].upper()
+    return jsonify({
+        "ok": True,
+        "csrf": session["la_csrf"],
+        "user": {
+            "first_name": user.get("first_name", ""),
+            "last_name": user.get("last_name", ""),
+            "username": user.get("username", ""),
+            "photo_url": user.get("photo_url", ""),
+            "referral_code": referral_code,
+            "referrals_enabled": False,
+        },
+    })
 
 
 @la.get("/api/la/catalog")
 @customer_required
 def api_catalog():
     try:
-        return jsonify({"products": get_store().catalog()})
+        return jsonify({"products": get_store().storefront_catalog()})
     except StoreUnavailable as exc:
         return _json_error(exc, 503)
 
