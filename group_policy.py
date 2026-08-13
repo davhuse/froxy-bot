@@ -17,6 +17,7 @@ import unicodedata
 POLICY_FILE = os.environ.get("GROUP_POLICY_FILE", "group_policies.json")
 MODERATION_FILE = os.environ.get("GROUP_MODERATION_FILE", "group_moderation.json")
 PLAIN_KEYVADI_CTA = "Sipariş için Telegram aramasına KeyVadiSatisBot yazabilirsiniz."
+PLAIN_FROXY_CTA = "Detaylar için Telegram aramasına FroxyDestekBOT yazabilirsiniz."
 
 DEFAULT_POLICY = {
     "allow_urls": True,
@@ -28,6 +29,7 @@ DEFAULT_POLICY = {
     "forbidden_products": [],
     "account_hold": [],
     "hold_reason": "",
+    "smoke_required": False,
 }
 
 SEEDED_POLICIES = {
@@ -54,8 +56,9 @@ SEEDED_POLICIES = {
         "allow_emojis": False,
         "max_lines": None,
         "forbidden_products": [],
-        "account_hold": ["keyvadi"],
-        "hold_reason": "@ceksatkupon2 sade metin smoke testi 10 dakika görünür kalana kadar beklemede.",
+        "account_hold": [],
+        "hold_reason": "Bağlantısız sade metin ve kontrollü smoke zorunlu.",
+        "smoke_required": True,
     },
     # İbr Çek-Sat Kupon / @ceksatkupon
     "id:2780340773": {
@@ -84,8 +87,24 @@ SEEDED_POLICIES = {
         "allow_emojis": False,
         "max_lines": None,
         "forbidden_products": [],
-        "account_hold": ["keyvadi", "froxy"],
-        "hold_reason": "Darcy Güvenlik spam uyarısı: KeyVadi ve Froxy mesajları silindi, hesaplar susturuldu; yönetici incelemesi bekleniyor.",
+        "account_hold": [],
+        "hold_reason": "Darcy uyarısı sonrası bağlantısız sade metin smoke zorunlu.",
+        "smoke_required": True,
+    },
+    # Kullanıcı yeniden açılmasını onayladı; kimlik canlı çözümlemede kalıcı
+    # Telegram ID'sine taşınır.
+    "alias:kuponceking": {
+        "aliases": ["kuponceking"],
+        "allow_urls": False,
+        "allow_deep_links": False,
+        "allow_mentions": False,
+        "allow_media": False,
+        "allow_emojis": False,
+        "max_lines": 18,
+        "forbidden_products": [],
+        "account_hold": [],
+        "hold_reason": "Bağlantısız sade metin ve kontrollü smoke zorunlu.",
+        "smoke_required": True,
     },
 }
 
@@ -185,19 +204,13 @@ def apply_telegram_rights(policy: dict, entity=None) -> dict:
 
 
 def apply_brand_link_safety(policy: dict, brand: str) -> dict:
-    """Keep KeyVadi group adverts entity-free until moderation risk clears.
+    """Apply brand-wide safety without overriding a group's own policy.
 
-    Several groups render an identical visible CTA differently because the
-    experiment arm can attach a hidden Telegram deep-link.  KeyVadi has now
-    received multiple moderation actions, so its group copy must be
-    deterministic: no URL, hidden TextUrl, or @mention in any group.
+    Link restrictions are group-specific. Security warnings persist a strict
+    policy for that Telegram group, while unaffected groups keep the measured
+    CTA flow.
     """
-    result = deepcopy(policy)
-    if brand.lower() == "keyvadi":
-        result["allow_urls"] = False
-        result["allow_deep_links"] = False
-        result["allow_mentions"] = False
-    return result
+    return deepcopy(policy)
 
 
 def _remove_forbidden_product_lines(message: str, forbidden: list[str]) -> str:
@@ -237,9 +250,29 @@ def make_policy_compliant(message: str, policy: dict, brand: str) -> tuple[str, 
         ).strip()
         if PLAIN_KEYVADI_CTA not in text:
             text = f"{text}\n{PLAIN_KEYVADI_CTA}".strip()
+    elif no_links and brand.lower() == "froxy":
+        text = "\n".join(
+            line for line in text.splitlines()
+            if "froxy_destek" not in line.casefold()
+            and "froxy destek" not in line.casefold()
+            and "froxydestekbot" not in line.casefold()
+        ).strip()
+        if PLAIN_FROXY_CTA not in text:
+            text = f"{text}\n{PLAIN_FROXY_CTA}".strip()
     max_lines = policy.get("max_lines")
     if isinstance(max_lines, int) and max_lines > 0:
-        text = "\n".join(text.splitlines()[:max_lines]).strip()
+        lines = text.splitlines()
+        required_cta = None
+        if no_links and brand.lower() == "keyvadi":
+            required_cta = PLAIN_KEYVADI_CTA
+        elif no_links and brand.lower() == "froxy":
+            required_cta = PLAIN_FROXY_CTA
+        if required_cta and required_cta in lines and len(lines) > max_lines:
+            lines = [line for line in lines if line != required_cta]
+            lines = lines[:max_lines - 1] + [required_cta]
+        else:
+            lines = lines[:max_lines]
+        text = "\n".join(lines).strip()
     return text, {
         "link_preview": False if no_links else None,
         "parse_mode": None if no_links else "md",
@@ -279,12 +312,20 @@ def warning_targets_brand(text: str, brand: str) -> bool:
 def record_delivery_state(group_name, account, status, *, entity=None, message_id=None, reason="") -> None:
     data = _load(MODERATION_FILE)
     key = policy_key(group_name, entity)
-    data.setdefault(key, {})[account] = {
+    previous = data.setdefault(key, {}).get(account, {})
+    state = {
+        **previous,
         "status": status,
         "message_id": message_id,
         "reason": reason,
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }
+    if status == "policy_smoke_sent":
+        state["smoke_started_at"] = state["updated_at"]
+        state.pop("smoke_passed_at", None)
+    elif status == "visible_10m" and previous.get("smoke_started_at"):
+        state["smoke_passed_at"] = state["updated_at"]
+    data[key][account] = state
     _atomic_json(MODERATION_FILE, data)
 
 
@@ -299,6 +340,50 @@ def record_moderation_hold(group_name, account, reason, *, entity=None, hours=24
         "updated_at": now.isoformat(),
     }
     _atomic_json(MODERATION_FILE, data)
+
+
+def policy_smoke_pending(group_name, account, policy, *, entity=None) -> bool:
+    if not policy.get("smoke_required"):
+        return False
+    data = _load(MODERATION_FILE)
+    account_state = data.get(policy_key(group_name, entity), {}).get(account, {})
+    return not bool(account_state.get("smoke_passed_at"))
+
+
+def policy_smoke_available(group_name, account, *, entity=None, window_minutes=15) -> bool:
+    """Serialize smoke attempts for different accounts in the same group."""
+    now = datetime.now(timezone.utc)
+    states = _load(MODERATION_FILE).get(policy_key(group_name, entity), {})
+    for other_account, state in states.items():
+        if other_account == account or not isinstance(state, dict):
+            continue
+        started = state.get("smoke_started_at")
+        if not started or state.get("smoke_passed_at"):
+            continue
+        try:
+            if now - datetime.fromisoformat(started) < timedelta(minutes=window_minutes):
+                return False
+        except (TypeError, ValueError):
+            continue
+    return True
+
+
+def visibility_check_pending(group_name, *, entity=None, window_minutes=15) -> bool:
+    """Prevent another account sending before a prior advert is confirmed."""
+    now = datetime.now(timezone.utc)
+    states = _load(MODERATION_FILE).get(policy_key(group_name, entity), {})
+    for state in states.values():
+        if not isinstance(state, dict) or state.get("status") not in {
+            "policy_smoke_sent", "telegram_accepted", "visible"
+        }:
+            continue
+        updated = state.get("updated_at")
+        try:
+            if updated and now - datetime.fromisoformat(updated) < timedelta(minutes=window_minutes):
+                return True
+        except (TypeError, ValueError):
+            continue
+    return False
 
 
 def moderation_hold_active(group_name, account, *, entity=None) -> bool:

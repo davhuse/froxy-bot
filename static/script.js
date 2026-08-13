@@ -227,6 +227,31 @@ async function loadGroupStatus() {
             }
             container.appendChild(section);
         }
+        const targetLabels = {
+            sendable: 'Gönderilecek',
+            cooldown: 'Cooldown',
+            policy_smoke: 'Politika smoke',
+            moderation_hold: 'Moderasyon beklemesi',
+            write_forbidden: 'Yazma yasağı',
+            not_joined: 'Üye değil',
+            unsuitable: 'Uygunsuz'
+        };
+        for (const [account, states] of Object.entries(data.account_targets || {})) {
+            const section = document.createElement('section');
+            section.style.cssText = 'padding:12px;border:1px solid rgba(255,255,255,.1);border-radius:10px';
+            const heading = document.createElement('h3');
+            heading.textContent = `${account} canlı hedef durumu`;
+            heading.style.margin = '0 0 8px';
+            section.appendChild(heading);
+            for (const [state, label] of Object.entries(targetLabels)) {
+                const groups = Array.isArray(states[state]) ? states[state] : [];
+                const line = document.createElement('div');
+                line.textContent = `${label} (${groups.length}): ${groups.length ? groups.map(group => `@${String(group).replace(/^@/, '')}`).join(', ') : 'yok'}`;
+                line.style.cssText = 'padding:6px 0;border-top:1px solid rgba(255,255,255,.06);overflow-wrap:anywhere';
+                section.appendChild(line);
+            }
+            container.appendChild(section);
+        }
     } catch (error) {
         const message = document.createElement('p');
         message.textContent = `Grup durumları alınamadı: ${error.message}`;

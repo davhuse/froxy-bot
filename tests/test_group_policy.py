@@ -36,7 +36,7 @@ class GroupPolicyTests(unittest.TestCase):
         self.assertFalse(policy["allow_urls"])
         self.assertFalse(policy["allow_deep_links"])
 
-    def test_keyvadi_is_entity_free_even_in_default_groups(self):
+    def test_default_group_keeps_measured_keyvadi_cta(self):
         policy = group_policy.apply_brand_link_safety(group_policy.DEFAULT_POLICY, "keyvadi")
         message = (
             "Canva Pro 49,90 TL\n"
@@ -45,11 +45,8 @@ class GroupPolicyTests(unittest.TestCase):
         )
         text, options = group_policy.make_policy_compliant(message, policy, "keyvadi")
         self.assertIn("Canva Pro 49,90 TL", text)
-        self.assertEqual(text.count("KeyVadiSatisBot"), 1)
-        self.assertTrue(text.endswith(group_policy.PLAIN_KEYVADI_CTA))
-        for forbidden in ("http://", "https://", "t.me", "?start=", "@", "]("):
-            self.assertNotIn(forbidden, text)
-        self.assertIsNone(options["parse_mode"])
+        self.assertIn("https://t.me/KeyVadiSatisBot?start=", text)
+        self.assertEqual(options["parse_mode"], "md")
 
     def test_darcy_spam_warning_is_detected(self):
         warning = "@KeyVadiDestek grup veya kanal spamı gönderdi. Eylem: Sessize aldım"
@@ -65,14 +62,56 @@ class GroupPolicyTests(unittest.TestCase):
     def test_second_link_protected_group_waits_for_controlled_smoke(self):
         entity = SimpleNamespace(id=1511926667, username="kuponcekkodsatis", default_banned_rights=None)
         _, policy = group_policy.resolve_group_policy("kuponcekkodsatis", entity)
-        self.assertTrue(group_policy.account_is_held(policy, "keyvadi"))
+        self.assertFalse(group_policy.account_is_held(policy, "keyvadi"))
+        self.assertTrue(policy["smoke_required"])
 
     def test_indirim363_security_bot_hold_covers_both_muted_accounts(self):
         entity = SimpleNamespace(id=2846540634, username="indirim363", default_banned_rights=None)
         _, policy = group_policy.resolve_group_policy("indirim363", entity)
-        self.assertTrue(group_policy.account_is_held(policy, "keyvadi"))
-        self.assertTrue(group_policy.account_is_held(policy, "froxy"))
+        self.assertFalse(group_policy.account_is_held(policy, "keyvadi"))
+        self.assertFalse(group_policy.account_is_held(policy, "froxy"))
+        self.assertTrue(policy["smoke_required"])
         self.assertFalse(policy["allow_urls"])
+
+    def test_smoke_is_serialized_across_accounts_and_passes_at_ten_minutes(self):
+        entity = SimpleNamespace(id=2846540634, username="indirim363", default_banned_rights=None)
+        _, policy = group_policy.resolve_group_policy("indirim363", entity)
+        with tempfile.TemporaryDirectory() as directory:
+            path = str(Path(directory) / "moderation.json")
+            with patch.object(group_policy, "MODERATION_FILE", path):
+                self.assertTrue(group_policy.policy_smoke_pending(
+                    "indirim363", "FroxyOnline", policy, entity=entity
+                ))
+                group_policy.record_delivery_state(
+                    "indirim363", "FroxyOnline", "policy_smoke_sent", entity=entity
+                )
+                self.assertTrue(group_policy.visibility_check_pending(
+                    "indirim363", entity=entity
+                ))
+                self.assertFalse(group_policy.policy_smoke_available(
+                    "indirim363", "KeyVadiOnline", entity=entity
+                ))
+                group_policy.record_delivery_state(
+                    "indirim363", "FroxyOnline", "visible_10m", entity=entity
+                )
+                self.assertFalse(group_policy.policy_smoke_pending(
+                    "indirim363", "FroxyOnline", policy, entity=entity
+                ))
+                self.assertFalse(group_policy.visibility_check_pending(
+                    "indirim363", entity=entity
+                ))
+
+    def test_link_forbidden_froxy_copy_has_plain_cta_and_max_lines(self):
+        policy = {**group_policy.DEFAULT_POLICY, "allow_urls": False,
+                  "allow_deep_links": False, "allow_mentions": False,
+                  "max_lines": 3}
+        text, options = group_policy.make_policy_compliant(
+            "A\nB\nC\nD\n@FroxyDestekBOT", policy, "froxy"
+        )
+        self.assertEqual(len(text.splitlines()), 3)
+        self.assertTrue(text.endswith(group_policy.PLAIN_FROXY_CTA))
+        self.assertNotIn("@", text)
+        self.assertIsNone(options["parse_mode"])
 
     def test_message_empty_hold_expires_after_24_hours(self):
         with tempfile.TemporaryDirectory() as directory:

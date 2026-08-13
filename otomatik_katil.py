@@ -27,9 +27,13 @@ from group_policy import (
     is_moderation_warning,
     make_policy_compliant,
     moderation_hold_active,
+    policy_smoke_available,
+    policy_smoke_pending,
     record_delivery_state,
     record_moderation_hold,
     resolve_group_policy,
+    update_policy,
+    visibility_check_pending,
     warning_targets_brand,
 )
 from sales_conversion import (
@@ -53,7 +57,8 @@ class ModerationDeletedError(RuntimeError):
     """Telegram accepted a send request but no visible message remained."""
 
 
-async def verify_ad_after_window(client, entity, message_id, client_name, group_name, seconds=600):
+async def verify_ad_after_window(client, entity, message_id, client_name, group_name,
+                                 seconds=600, experiment_arm=None, template=None):
     """Record the controlled smoke-test result without blocking the blast worker."""
     await asyncio.sleep(seconds)
     try:
@@ -66,6 +71,23 @@ async def verify_ad_after_window(client, entity, message_id, client_name, group_
         record_event(
             "ad_visible_10m", client_name,
             group=normalize_group_key(group_name), source="telegram_visibility_check",
+        )
+        record_event(
+            "ad_sent", client_name,
+            group=normalize_group_key(group_name), source="telegram_group",
+            template=template or "fallback", arm=experiment_arm,
+        )
+        set_cooldown(group_name, client_name, entity)
+        update_stats(sent=1)
+        clear_group_failure(group_name, client_name, entity)
+        update_ad_account_status(
+            client_name,
+            process_running=True,
+            telegram_connected=True,
+            telegram_authorized=True,
+            last_success_at=datetime.now(timezone.utc).isoformat(),
+            last_error=None,
+            session_error=None,
         )
     except ModerationDeletedError as exc:
         record_moderation_hold(group_name, client_name, str(exc), entity=entity)
@@ -121,7 +143,11 @@ async def send_and_verify_ad(client, entity, message, client_name, group_name, o
         group_name, client_name, "visible", entity=entity, message_id=message_id
     )
     asyncio.create_task(
-        verify_ad_after_window(client, entity, message_id, client_name, group_name)
+        verify_ad_after_window(
+            client, entity, message_id, client_name, group_name,
+            experiment_arm=options.get("experiment_arm"),
+            template=options.get("template"),
+        )
     )
     return sent
 
@@ -202,13 +228,12 @@ PROTECTED_GROUP_ALIASES = {}
 # devam eder; yalnızca bekleyen talep geri çekilir.
 # A withdrawn invitation is never a target again.  Keep aliases normalized,
 # because Telegram invite hashes are case-insensitive in the local queue.
-CANCELLED_JOIN_REQUESTS = {"kuponceking", "kcy3-gcnhwqxyzk0"}
+CANCELLED_JOIN_REQUESTS = set()
 
 # Uyeliginden cikilacak gruplar.  Ban yedigimiz bir grupta uye kalmaya devam
 # etmek, yoneticiler hesabi tekrar fark ettiginde ikinci bir bana yol aciyor.
 # Calisma basina bir kez islenir.
 GROUPS_TO_LEAVE = {
-    "kuponsatimalim",
     # Kullanicinin reklami kestigi ve uyelikten de cikilmasini istedigi gruplar
     "ticaretsaha",
     "ilanticaret",
@@ -333,14 +358,10 @@ EXCLUDED_REFERENCE_CHAT_IDS = {3982754573, 4401324614, 4316589940}
 MANUALLY_EXCLUDED_AD_GROUPS = {
     "-1572316417",
     "-1001572316417",
-    "kuponceksatisi",
     "kuponkodalsat",
     "reklamreferans",
     "ticar4t",
     "ticaretyapreklam",
-    "ticaretguvenilir",
-    "kuponceksatis",
-    "ticaretforumofficial",
     "illegalalimsatimerkezi",
     "sultanbeyliikinciel0",
     "reklamonliene",
@@ -355,7 +376,6 @@ MANUALLY_EXCLUDED_AD_GROUPS = {
     # UserBannedInChannel dondurdugu halde @Nightsatis korumali listede
     # oldugu icin ne kara listeye alinabiliyor ne de terk edilebiliyordu;
     # bot her tur banli gruba mesaj denemeye devam ediyordu.
-    "kuponsatimalim",
     "nightsatis",
     "-1003336542169",
     # Satış odağıyla ilgisiz ve marka açısından riskli gruplar.
@@ -363,6 +383,24 @@ MANUALLY_EXCLUDED_AD_GROUPS = {
     "turkiyevozolsigarasatis",
     "gurcistanticaret",
 }
+
+# Önceden tek bir hesaptaki hata nedeniyle genel kara listeye düşmüş, ancak
+# satış kitlesiyle uyumlu gruplar. Canlı erişim ve hesap-bazlı engel denetimi
+# bunlar için yeniden tek kaynak olacak.
+REOPENABLE_SALES_GROUPS = {
+    "indirim363", "kuponcekkodsatis", "kuponceking", "kuponceksatis",
+    "kuponceksatisi", "kuponkodualsat", "hesapsatisgenel",
+    "ticaretforumofficial", "kuponsatimalim", "kuponindirimsatis",
+    "ticaretguvenilir",
+}
+
+AUTO_TARGET_TERMS = (
+    "kupon", "kod", "cek", "hesap", "indirim", "dijital", "lisans", "ticaret",
+)
+AUTO_TARGET_REJECT_TERMS = (
+    "illegal", "casino", "kumar", "bahis", "referans", "reklam kasma",
+    "sigara", "puff", "escort", "ifsa", "porno",
+)
 TICARET_FORUM_MAX_CHARS = 700
 TICARET_FORUM_FALLBACKS = {
     'keyvadi': (
@@ -732,7 +770,7 @@ def classify_join_error(exc):
     error_type = type(exc).__name__
     message = str(exc).lower()
     if isinstance(exc, ChannelPrivateError):
-        return 'account_blocked'
+        return 'access_review'
     if 'UserBannedInChannel' in error_type or 'user_banned_in_channel' in message:
         return 'account_blocked'
     if isinstance(exc, (UsernameNotOccupiedError, UsernameInvalidError, ValueError)) or 'no user has' in message:
@@ -934,6 +972,60 @@ def is_excluded_ad_target(group_name, entity=None):
     if entity is not None:
         identifiers.add(normalize_group_key(getattr(entity, 'username', '')))
     return bool(identifiers.intersection(MANUALLY_EXCLUDED_AD_GROUPS))
+
+
+def joined_sales_target_status(group_name, entity, client_name):
+    """Return (eligible, reason) for live-dialog auto targeting."""
+    brand = account_brand(client_name)
+    if brand not in {'froxy', 'keyvadi'}:
+        return False, 'unsupported_account'
+    if entity is None:
+        return False, 'not_joined'
+    if is_excluded_ad_target(group_name, entity):
+        return False, 'unsuitable'
+    if getattr(entity, 'broadcast', False):
+        return False, 'broadcast_channel'
+    rights = getattr(entity, 'default_banned_rights', None)
+    if rights and getattr(rights, 'send_messages', False):
+        return False, 'write_forbidden'
+    if is_account_group_blocked(group_name, client_name, entity):
+        return False, 'write_forbidden'
+
+    try:
+        members = int(getattr(entity, 'participants_count', 0) or 0)
+    except (TypeError, ValueError):
+        members = 0
+    if members < 150:
+        return False, 'under_150_members'
+
+    searchable = _ascii_fold(' '.join(filter(None, (
+        normalize_group_key(group_name),
+        getattr(entity, 'username', None),
+        getattr(entity, 'title', None),
+    ))))
+    if any(term in searchable for term in AUTO_TARGET_REJECT_TERMS):
+        return False, 'unsuitable'
+    if not any(term in searchable for term in AUTO_TARGET_TERMS):
+        return False, 'unsuitable'
+    return True, 'sendable'
+
+
+def live_joined_sales_targets(joined_dialogs, client_name):
+    """Discover eligible, writable sales groups from the account's dialogs."""
+    targets = set()
+    seen = set()
+    for dialog_key, entity in joined_dialogs.items():
+        if dialog_key == 'id' or entity is None:
+            continue
+        dedupe = target_dedupe_key(dialog_key, entity)
+        if dedupe in seen:
+            continue
+        seen.add(dedupe)
+        username = normalize_group_key(getattr(entity, 'username', None) or dialog_key)
+        eligible, _reason = joined_sales_target_status(username, entity, client_name)
+        if eligible:
+            targets.add(username)
+    return targets
 
 def _load_json_file(path, default):
     try:
@@ -1207,6 +1299,14 @@ def blacklist_group(grup_name, reason, client_name):
         'updated_at': datetime.now(timezone.utc).isoformat()
     }
     _save_json_file(BLACKLIST_META_FILE, metadata)
+
+
+def remove_reopenable_sales_blacklist(entries):
+    """Drop stale global blocks that are now decided per Telegram account."""
+    return {
+        entry for entry in entries
+        if normalize_group_key(entry) not in REOPENABLE_SALES_GROUPS
+    }
 
 def migrate_legacy_blacklist_once():
     """Back up legacy blacklist decisions and retain only approved groups."""
@@ -2631,6 +2731,18 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
             or str(event.chat_id)
         )
         reason = f"Security bot warning: {text[:240]}"
+        # The warning changes the group policy as well as the temporary account
+        # hold. After the hold expires, the next attempt is an entity-free smoke
+        # instead of repeating the same linked advertisement.
+        update_policy(
+            group_name, entity,
+            allow_urls=False,
+            allow_deep_links=False,
+            allow_mentions=False,
+            allow_media=False,
+            smoke_required=True,
+            hold_reason="Güvenlik botu uyarısı sonrası linksiz smoke zorunlu.",
+        )
         record_moderation_hold(group_name, client_name, reason, entity=entity)
         record_group_failure(group_name, client_name, "ModerationDeleted", 24 * 60 * 60, entity)
         record_event(
@@ -3421,9 +3533,9 @@ async def main():
             try:
                 from telethon.tl.functions.account import UpdateProfileRequest
                 await client(UpdateProfileRequest(
-                    about="Referanslar: https://t.me/satisrefim/9615 | Bot: @KeyVadiSatisBot"
+                    about="Referanslar: t.me/satisrefim/9615 | Sipariş: KeyVadiSatisBot"
                 ))
-                print(f"✅ [{client_name}] KeyVadi hesabı biografisi güncellendi: https://t.me/satisrefim/9615")
+                print(f"✅ [{client_name}] KeyVadi hesabı biografisi güncellendi.")
             except Exception as e:
                 print(f"⚠️ [{client_name}] Bio güncelleme uyarısı: {e}")
 
@@ -3719,13 +3831,20 @@ async def main():
                 blacklist_keys.update(
                     group_state_keys(engelli, joined_dialogs.get(engelli)))
 
-            # All three accounts use only the user-approved target list.
-            hedef_set = {
+            # LisansArena keeps its approved list. Froxy and KeyVadi reconcile
+            # that list with suitable groups found in their live dialogs before
+            # every blast, so an accepted join is active by the next cycle.
+            approved_targets = {
                 g for g in protected_groups
                 if not is_excluded_ad_target(g, joined_dialogs.get(normalize_group_key(g)))
             }
+            dynamic_targets = live_joined_sales_targets(joined_dialogs, client_name)
+            hedef_set = approved_targets | dynamic_targets
 
-            print(f"[{client_name}] Approved send targets: {len(hedef_set)} groups")
+            print(
+                f"[{client_name}] Hedef uzlaştırma: {len(approved_targets)} onaylı + "
+                f"{len(dynamic_targets)} canlı uygun = {len(hedef_set)} toplam"
+            )
             
             # Önbellekte olan + kara listede olmayan hedef gruplar
             blast_targets = []
@@ -3733,27 +3852,101 @@ async def main():
             debug_blacklisted = 0
             debug_not_cached = 0
             small_groups_skipped = 0
+            group_states = {
+                'sendable': [], 'cooldown': [], 'policy_smoke': [],
+                'moderation_hold': [], 'write_forbidden': [],
+                'not_joined': [], 'unsuitable': [],
+            }
+            def set_group_state(group_name, state_name):
+                normalized = normalize_group_key(group_name)
+                for values in group_states.values():
+                    while normalized in values:
+                        values.remove(normalized)
+                group_states[state_name].append(normalized)
+
+            if account_brand(client_name) in {'froxy', 'keyvadi'}:
+                classified_dialogs = set()
+                for dialog_key, dialog_entity in joined_dialogs.items():
+                    if dialog_key == 'id' or dialog_entity is None:
+                        continue
+                    dedupe_key = target_dedupe_key(dialog_key, dialog_entity)
+                    if dedupe_key in classified_dialogs:
+                        continue
+                    classified_dialogs.add(dedupe_key)
+                    dialog_name = normalize_group_key(
+                        getattr(dialog_entity, 'username', None) or dialog_key
+                    )
+                    eligible, reason = joined_sales_target_status(
+                        dialog_name, dialog_entity, client_name
+                    )
+                    if eligible:
+                        continue
+                    state_name = (
+                        'write_forbidden' if reason == 'write_forbidden'
+                        else 'not_joined' if reason == 'not_joined'
+                        else 'unsuitable'
+                    )
+                    set_group_state(dialog_name, state_name)
             for username_lower in hedef_set:
                 entity = joined_dialogs.get(username_lower)
                 if (blacklist_keys.intersection(group_state_keys(username_lower, entity))
                         or is_excluded_ad_target(username_lower, entity)):
                     debug_blacklisted += 1
+                    set_group_state(username_lower, 'unsuitable')
                     continue
                 if is_account_group_blocked(username_lower, client_name, entity):
                     debug_blacklisted += 1
+                    set_group_state(username_lower, 'write_forbidden')
                     continue
                 if username_lower in joined_dialogs:
                     entity = joined_dialogs[username_lower]
                     if getattr(entity, 'broadcast', False):
+                        set_group_state(username_lower, 'unsuitable')
                         continue
                     member_count = getattr(entity, 'participants_count', None)
+                    if member_count is not None and int(member_count or 0) < 150:
+                        small_groups_skipped += 1
+                        set_group_state(username_lower, 'unsuitable')
+                        continue
                     dedupe_key = target_dedupe_key(username_lower, entity)
                     if dedupe_key in seen_target_chat_ids:
                         continue
                     seen_target_chat_ids.add(dedupe_key)
+                    _policy_key, status_policy = resolve_group_policy(username_lower, entity)
+                    status_policy = apply_brand_link_safety(
+                        apply_telegram_rights(status_policy, entity),
+                        account_brand(client_name),
+                    )
+                    if account_is_held(status_policy, account_brand(client_name)):
+                        set_group_state(username_lower, 'moderation_hold')
+                        continue
+                    if moderation_hold_active(username_lower, client_name, entity=entity):
+                        set_group_state(username_lower, 'moderation_hold')
+                        continue
+                    if is_group_retry_blocked(username_lower, client_name, entity):
+                        set_group_state(username_lower, 'moderation_hold')
+                        continue
+                    if visibility_check_pending(username_lower, entity=entity):
+                        set_group_state(username_lower, 'moderation_hold')
+                        continue
+                    if is_on_cooldown(username_lower, client_name, entity):
+                        set_group_state(username_lower, 'cooldown')
+                        continue
+                    if policy_smoke_pending(
+                        username_lower, client_name, status_policy, entity=entity
+                    ):
+                        if not policy_smoke_available(
+                            username_lower, client_name, entity=entity
+                        ):
+                            set_group_state(username_lower, 'moderation_hold')
+                            continue
+                        set_group_state(username_lower, 'policy_smoke')
+                    else:
+                        set_group_state(username_lower, 'sendable')
                     blast_targets.append(username_lower)
                 else:
                     debug_not_cached += 1
+                    set_group_state(username_lower, 'not_joined')
             # (Kapatıldı: Kullanıcı her hesabın katıldığı tüm gruplara göndermesini istiyor)
             # if len(active_clients) > 1:
             #     num_clients = len(active_clients)
@@ -3786,6 +3979,10 @@ async def main():
                 sendable_groups=len(blast_targets),
                 blacklisted_groups=debug_blacklisted,
                 not_joined_groups=debug_not_cached,
+                group_states={
+                    name: sorted(set(groups))
+                    for name, groups in group_states.items()
+                },
             )
 
             # Sayaclar dongu govdesinde ilklenmeli: asagida bekleme suresini
@@ -3867,6 +4064,23 @@ async def main():
                         return
                     if moderation_hold_active(grup_name, client_name, entity=entity):
                         print(f"[{client_name}] ⏸️ @{grup_name} moderasyon sonrası 24 saat beklemede.")
+                        return
+                    if visibility_check_pending(grup_name, entity=entity):
+                        print(
+                            f"[{client_name}] @{grup_name} önceki mesajın 10 dakikalık "
+                            "görünürlük kontrolünü bekliyor."
+                        )
+                        return
+                    smoke_pending = policy_smoke_pending(
+                        grup_name, client_name, group_policy, entity=entity
+                    )
+                    if smoke_pending and not policy_smoke_available(
+                        grup_name, client_name, entity=entity
+                    ):
+                        print(
+                            f"[{client_name}] @{grup_name} diğer hesabın politika "
+                            "smoke kontrolünü bekliyor."
+                        )
                         return
                     if group_key in sent_this_cycle:
                         print(f"[{client_name}] ⏭️ @{grup_name} bu turda zaten gönderildi, atlanıyor...")
@@ -3964,6 +4178,17 @@ async def main():
                         msg, send_options = make_policy_compliant(
                             msg, group_policy, experiment_brand
                         )
+                        if smoke_pending:
+                            experiment_arm = "policy_smoke"
+                            record_delivery_state(
+                                grup_name, client_name, "policy_smoke_sent",
+                                entity=entity,
+                                reason="Bağlantısız sade metin görünürlük testi",
+                            )
+                        send_options["experiment_arm"] = experiment_arm
+                        send_options["template"] = (
+                            os.path.basename(chosen_file) if available_files else "fallback"
+                        )
                         
                         # Görsel/Banner gönderimi (Grup yetki kontrolleri ve hata toleransı eklendi)
                         if is_keyvadi:
@@ -4036,30 +4261,14 @@ async def main():
                             process_running=True,
                             telegram_connected=True,
                             telegram_authorized=True,
-                            last_success_at=datetime.now(timezone.utc).isoformat(),
+                            last_accepted_at=datetime.now(timezone.utc).isoformat(),
                             last_error=None,
                             session_error=None,
-                        )
-                        record_event(
-                            "ad_sent",
-                            client_name,
-                            group=normalize_group_key(grup_name),
-                            source="telegram_group",
-                            template=os.path.basename(chosen_file) if available_files else "fallback",
-                            arm=experiment_arm,
                         )
                         # Keep the restart-safe wait anchored to the most
                         # recent accepted Telegram message, not blast start.
                         save_last_blast_time(client_name)
-                        # Only mark the group after Telegram accepted the message.
-                        set_cooldown(grup_name, client_name, entity)
                         sent_this_cycle.add(group_key)
-
-
-                        update_stats(sent=1)
-                        await reset_failure(grup_name)
-                        async with state_lock:
-                            save_to_list(grup_name, PROGRESS_FILE)
                     except ModerationDeletedError as e:
                         record_event(
                             "moderation_deleted", client_name,
@@ -4092,7 +4301,7 @@ async def main():
                         fail_count += 1
                     except UserBannedInChannelError:
                         record_event("ad_failed", client_name, group=normalize_group_key(grup_name), error="UserBannedInChannelError")
-                        print(f"[{client_name}] ❌ @{grup_name} → Banlandık! Kara listeye ekleniyor...")
+                        print(f"[{client_name}] ❌ @{grup_name} → Bu hesap banlı; hesap bazlı engelleniyor...")
                         fail_count += 1
                         async with state_lock:
                             record_account_group_block(
@@ -4102,13 +4311,11 @@ async def main():
                             if entity:
                                 await client(LeaveChannelRequest(entity))
                                 print(f"[{client_name}] 🚪 @{grup_name} grubundan çıkıldı.")
-                                async with state_lock:
-                                    blacklist_group(grup_name, 'UserBannedInChannel', client_name)
                         except Exception as le:
                             print(f"[{client_name}] ⚠️ @{grup_name} grubundan çıkılırken hata: {le}")
                     except ChatWriteForbiddenError:
                         record_event("ad_failed", client_name, group=normalize_group_key(grup_name), error="ChatWriteForbiddenError")
-                        print(f"[{client_name}] 🔒 @{grup_name} → Yazma izni yok! Kara listeye ekleniyor...")
+                        print(f"[{client_name}] 🔒 @{grup_name} → Bu hesapta yazma izni yok; hesap bazlı engelleniyor...")
                         fail_count += 1
                         async with state_lock:
                             record_account_group_block(
@@ -4118,8 +4325,6 @@ async def main():
                             if entity:
                                 await client(LeaveChannelRequest(entity))
                                 print(f"[{client_name}] 🚪 @{grup_name} grubundan çıkıldı.")
-                                async with state_lock:
-                                    blacklist_group(grup_name, 'ChatWriteForbidden', client_name)
                         except Exception as le:
                             print(f"[{client_name}] ⚠️ @{grup_name} grubundan çıkılırken hata: {le}")
                     except SlowModeWaitError as sme:
@@ -4290,6 +4495,11 @@ async def main():
                                 hedef_grup, client_name, err_type
                             )
                             print(f"[{client_name}] ⛔ @{hedef_grup} -> Bu hesap gruba erişemiyor ({err_type}); yalnız bu hesap için durduruldu.")
+                        elif error_class == 'access_review':
+                            record_group_failure(
+                                hedef_grup, client_name, 'AccessReview', 24 * 60 * 60
+                            )
+                            print(f"[{client_name}] ⚠️ @{hedef_grup} -> Özel erişim/ban belirsiz; 24 saatlik hesap bazlı incelemeye alındı.")
                         elif error_class == 'account_limit':
                             set_account_restriction(client_name, 86400, 'Telegram 500 kanal limitine ulaşıldı', err_type, scope='join')
                             print(f"[{client_name}] 🚨 Telegram 500 kanal/grup limitine ulaşıldı! Katılım aşaması durduruluyor.")
@@ -4299,8 +4509,10 @@ async def main():
                             save_pending_invites(client_name, account_pending_invites)
                             print(f"[{client_name}] ⏳ @{hedef_grup} -> Katılım isteği gönderildi (onay bekleniyor).")
                         elif error_class == 'unresolvable':
-                            record_account_group_block(hedef_grup, client_name, err_type)
-                            print(f"[{client_name}] ❌ @{hedef_grup} -> hedef çözümlenemedi ({err_type}); bu hesap için tekrar denenmeyecek.")
+                            record_group_failure(
+                                hedef_grup, client_name, 'UsernameInvalidReview', 24 * 60 * 60
+                            )
+                            print(f"[{client_name}] ⚠️ @{hedef_grup} -> hedef çözümlenemedi ({err_type}); 24 saat sonra yeniden kontrol edilecek.")
                         else:
                             record_group_failure(hedef_grup, client_name, err_type, 60 * 60)
                             print(f"[{client_name}] ⚠️ @{hedef_grup} -> {err_type} (Hata: {err_msg})")
@@ -4358,9 +4570,19 @@ async def main():
         remote_black = set(x.strip() for x in fs_black.splitlines() if x.strip())
         merged_black = local_black if os.path.exists(BLACKLIST_MIGRATION_MARKER) else local_black.union(remote_black)
         merged_black = {g for g in merged_black if not is_group_protected(g)}
+        merged_black = remove_reopenable_sales_blacklist(merged_black)
         with open(BLACKLIST_FILE, 'w', encoding='utf-8') as f:
             f.write('\n'.join(merged_black) + '\n')
         print("📥 Kara liste buluttan indirildi, korumalılar filtrelendi ve birleştirildi.")
+    # Clean local-only stale blocks too, then persist the reconciled global
+    # list so cloud sync cannot reintroduce account-specific access failures.
+    cleaned_blacklist = remove_reopenable_sales_blacklist(get_list(BLACKLIST_FILE))
+    with open(BLACKLIST_FILE, 'w', encoding='utf-8') as f:
+        f.write('\n'.join(sorted(cleaned_blacklist)) + ('\n' if cleaned_blacklist else ''))
+    try:
+        fs_set_state(blacklist='\n'.join(sorted(cleaned_blacklist)) + ('\n' if cleaned_blacklist else ''))
+    except Exception:
+        pass
     if fs_auto:
         with open(AUTO_GROUPS_FILE, 'w', encoding='utf-8') as f:
             f.write(fs_auto)
@@ -4399,6 +4621,7 @@ async def main():
                     local_black = get_list(BLACKLIST_FILE)
                     remote_black = set(x.strip() for x in fs_black_new.splitlines() if x.strip())
                     merged_black = local_black if os.path.exists(BLACKLIST_MIGRATION_MARKER) else local_black.union(remote_black)
+                    merged_black = remove_reopenable_sales_blacklist(merged_black)
                     # Korumali listeden dolayi kara liste BUDANMAZ.  Bir grubu
                     # hem hedef listesinde hem kara listede tutmak celiskidir ve
                     # cozumu kara listeyi silmek degil, hedeften cikarmaktir.
@@ -4525,9 +4748,9 @@ async def main():
             try:
                 from telethon.tl.functions.account import UpdateProfileRequest
                 await client(UpdateProfileRequest(
-                    about="Referanslar & Müşteri Yorumları: https://t.me/satisrefim/7287 | Sipariş: @KeyVadiSatisBot"
+                    about="Referanslar: t.me/satisrefim/9615 | Sipariş: KeyVadiSatisBot"
                 ))
-                print(f"✅ [{name}] KeyVadi hesabı biografisi güncellendi: https://t.me/satisrefim/7287")
+                print(f"✅ [{name}] KeyVadi hesabı biografisi güncellendi.")
             except Exception as e:
                 print(f"⚠️ [{name}] Bio güncelleme uyarısı: {e}")
 

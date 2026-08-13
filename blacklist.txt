@@ -4,16 +4,10 @@ Gurcistanticaret
 buradayiztikla
 dolapilanlari
 froxyreferans
-hesapsatisgenel
 ilanticaret
 illegalalimsatimerkezi
 keyvadireferans
-kuponceking
-kuponceksatis
-kuponceksatisi
 kuponkodalsat
-kuponkodualsat
-kuponsatimalim
 lisansarenareferans
 referansreklam1
 referansreklamyardimlasma
@@ -24,6 +18,5 @@ sanalalimsatimticaret
 sultanbeyliikinciel0
 takipcisatiyor
 ticar4t
-ticaretguvenilir
 ticaretyapreklam
 ttingalimsatim

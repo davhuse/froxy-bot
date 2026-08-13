@@ -520,6 +520,11 @@ def status():
         else 'degraded' if process_running
         else 'stopped'
     )
+    # Detailed group names belong to the token-protected group-status API.
+    public_ad_accounts = {
+        name: {key: value for key, value in account.items() if key != 'group_states'}
+        for name, account in ad_accounts.items()
+    }
     return jsonify({
         'status': overall_status,
         'bot_runtime_enabled': bot_runtime_enabled(),
@@ -529,7 +534,7 @@ def status():
         'support_processes': len(get_processes_by_script('froxy_bot.py')),
         'froxy_support_processes': len(get_processes_by_script('froxy_destek_bot.py')),
         'lisansarena_processes': len(get_processes_by_script('lisansarena_bot.py')),
-        'ad_accounts': ad_accounts,
+        'ad_accounts': public_ad_accounts,
     })
 
 
@@ -566,6 +571,12 @@ def group_status():
     review_reasons = {'ChannelPrivateReview', 'UsernameInvalidReview', 'AccessReview'}
     review = [row for row in failures if row.get('reason') in review_reasons]
     temporary = [row for row in failures if row.get('reason') not in review_reasons]
+    account_status = load_json_file('ad_account_status.json', {})
+    account_targets = {
+        account: state.get('group_states', {})
+        for account, state in account_status.items()
+        if isinstance(state, dict) and isinstance(state.get('group_states'), dict)
+    }
     return jsonify({
         'global_blacklist': global_blacklist,
         'permanent': permanent,
@@ -573,6 +584,7 @@ def group_status():
         'review': review,
         'policies': load_policies(),
         'delivery_states': moderation_snapshot(),
+        'account_targets': account_targets,
     })
 
 
