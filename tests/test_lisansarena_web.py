@@ -39,6 +39,27 @@ class LisansArenaWebTests(unittest.TestCase):
     def test_customer_api_requires_telegram_session(self):
         self.assertEqual(self.client.get("/api/la/catalog").status_code, 401)
 
+    def test_store_health_reports_product_count(self):
+        response = self.client.get("/api/la/health")
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.get_json()["ok"])
+        self.assertEqual(response.get_json()["product_count"], 34)
+
+    def test_database_url_normalizes_render_postgres_and_quotes(self):
+        normalized = store_module.normalize_database_url(
+            "  'postgresql://user:pass@database.internal/store'  "
+        )
+        self.assertEqual(
+            normalized,
+            "postgresql+psycopg://user:pass@database.internal/store",
+        )
+
+    def test_database_url_rejects_malformed_value_without_echoing_it(self):
+        secret = "definitely-not-a-database-url"
+        with self.assertRaises(store_module.StoreUnavailable) as raised:
+            store_module.normalize_database_url(secret)
+        self.assertNotIn(secret, str(raised.exception))
+
     def test_telegram_auth_establishes_customer_session(self):
         token = "123:test-token"
         user = json.dumps({"id": 42, "first_name": "Test", "username": "testuser"}, separators=(",", ":"))

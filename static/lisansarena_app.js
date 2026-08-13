@@ -18,6 +18,7 @@
     notice.querySelector("span:last-child").textContent = message;
     notice.classList.toggle("error", error);
     notice.classList.remove("loading");
+    notice.classList.toggle("success", !error);
   };
   const addText = (parent, tag, value, className = "") => {
     const node = document.createElement(tag);
@@ -68,6 +69,10 @@
   const loadCatalog = async () => {
     const data = await api("/api/la/catalog");
     state.products = data.products;
+    const activeCount = data.products.filter((product) => product.available).length;
+    byId("productCount").textContent = activeCount
+      ? `${activeCount} ürün satışta`
+      : `${data.products.length} ürün katalogda`;
     const category = byId("category");
     category.querySelectorAll("option:not(:first-child)").forEach((option) => option.remove());
     [...new Set(data.products.map((product) => product.category))].sort().forEach((value) => {
@@ -139,7 +144,7 @@
   document.querySelectorAll(".tabs button").forEach((button) => button.addEventListener("click", () => {
     document.querySelectorAll(".tabs button").forEach((item) => item.classList.toggle("active", item === button));
     document.querySelectorAll(".view").forEach((view) => view.classList.toggle("active", view.id === button.dataset.tab));
-    if (button.dataset.tab === "orders") loadOrders().catch((error) => setNotice(error.message, true));
+    if (button.dataset.tab === "account") loadOrders().catch((error) => setNotice(error.message, true));
   }));
   ["search", "category"].forEach((id) => byId(id).addEventListener("input", renderProducts));
   byId("dialogClose").addEventListener("click", () => byId("productDialog").close());

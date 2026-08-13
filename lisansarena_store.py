@@ -27,7 +27,8 @@ from sqlalchemy import (
     String, Table, Text, UniqueConstraint, and_, create_engine, func, insert,
     select, update,
 )
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.engine import make_url
+from sqlalchemy.exc import ArgumentError, IntegrityError
 
 
 la = Blueprint("lisansarena_store", __name__)
@@ -200,15 +201,31 @@ class StoreUnavailable(RuntimeError):
     pass
 
 
+def normalize_database_url(value):
+    """Normalize Render/Postgres URLs and reject malformed values safely."""
+    url = str(value or "").strip()
+    if len(url) >= 2 and url[0] == url[-1] and url[0] in {"'", '"'}:
+        url = url[1:-1].strip()
+    if not url:
+        raise StoreUnavailable("LisansArena veritabanı bağlantısı yapılandırılmadı")
+    if url.startswith("postgres://"):
+        url = "postgresql+psycopg://" + url[len("postgres://"):]
+    elif url.startswith("postgresql://"):
+        url = "postgresql+psycopg://" + url[len("postgresql://"):]
+    try:
+        parsed = make_url(url)
+    except ArgumentError as exc:
+        raise StoreUnavailable("LisansArena veritabanı bağlantısı geçersiz") from exc
+    if parsed.get_backend_name() not in {"postgresql", "sqlite"}:
+        raise StoreUnavailable("LisansArena veritabanı türü desteklenmiyor")
+    return url
+
+
 class LisansArenaStore:
     def __init__(self, database_url=None, *, encryption_key=None):
-        url = database_url or os.environ.get("LISANSARENA_DATABASE_URL") or os.environ.get("DATABASE_URL")
-        if not url:
-            raise StoreUnavailable("LisansArena PostgreSQL yapılandırılmadı")
-        if url.startswith("postgres://"):
-            url = "postgresql+psycopg://" + url[len("postgres://"):]
-        elif url.startswith("postgresql://"):
-            url = "postgresql+psycopg://" + url[len("postgresql://"):]
+        url = normalize_database_url(
+            database_url or os.environ.get("LISANSARENA_DATABASE_URL") or os.environ.get("DATABASE_URL")
+        )
         self.engine = create_engine(url, pool_pre_ping=True, future=True)
         raw_key = encryption_key or os.environ.get("LISANSARENA_STOCK_KEY", "")
         if not raw_key:
@@ -623,6 +640,19 @@ def mini_app():
 @la.get("/la/assets/brand")
 def brand_asset():
     return send_file(os.path.join(os.path.dirname(__file__), "lisansarena_banner.jpeg"), mimetype="image/jpeg", max_age=86400)
+
+
+@la.get("/api/la/health")
+def store_health():
+    try:
+        store = get_store()
+        with store.engine.connect() as conn:
+            product_count = conn.execute(select(func.count()).select_from(products)).scalar_one()
+        return jsonify({"ok": True, "database": "ready", "product_count": product_count})
+    except StoreUnavailable:
+        return jsonify({"ok": False, "database": "unavailable", "error": "Mağaza veritabanı hazır değil"}), 503
+    except Exception:
+        return jsonify({"ok": False, "database": "unavailable", "error": "Mağaza veritabanına ulaşılamıyor"}), 503
 
 
 @la.post("/api/la/auth/telegram")
