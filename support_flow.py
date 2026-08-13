@@ -7,9 +7,100 @@ one-time greeting claim and never message text or contact details in metrics.
 from __future__ import annotations
 
 import asyncio
+import datetime
+import json
 import os
+import tempfile
+from contextlib import contextmanager
 
 import firestore_helper
+
+
+TICKETS_FILE = "tickets.json"
+TICKETS_LOCK_FILE = "tickets.json.lock"
+
+
+@contextmanager
+def _ticket_file_lock():
+    """Serialize ticket updates across the separate support-bot processes."""
+    lock_handle = open(TICKETS_LOCK_FILE, "a+b")
+    try:
+        lock_handle.seek(0, os.SEEK_END)
+        if lock_handle.tell() == 0:
+            lock_handle.write(b"0")
+            lock_handle.flush()
+        lock_handle.seek(0)
+        if os.name == "nt":
+            import msvcrt
+            msvcrt.locking(lock_handle.fileno(), msvcrt.LK_LOCK, 1)
+        else:
+            import fcntl
+            fcntl.flock(lock_handle.fileno(), fcntl.LOCK_EX)
+        yield
+    finally:
+        try:
+            lock_handle.seek(0)
+            if os.name == "nt":
+                import msvcrt
+                msvcrt.locking(lock_handle.fileno(), msvcrt.LK_UNLCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(lock_handle.fileno(), fcntl.LOCK_UN)
+        finally:
+            lock_handle.close()
+
+
+def save_ticket_record(
+    brand: str,
+    user_id: int,
+    first_name: str,
+    last_name: str,
+    username: str,
+    message: str,
+) -> None:
+    """Persist a customer DM atomically for the web panel."""
+    ticket = {
+        "bot_type": brand,
+        "user_id": user_id,
+        "first_name": first_name or "",
+        "last_name": last_name or "",
+        "username": username or "Yok",
+        "message": message or "",
+        "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    }
+    with _ticket_file_lock():
+        tickets = []
+        if os.path.exists(TICKETS_FILE):
+            try:
+                with open(TICKETS_FILE, "r", encoding="utf-8") as handle:
+                    loaded = json.load(handle)
+                    if isinstance(loaded, list):
+                        tickets = loaded
+            except (OSError, ValueError, TypeError):
+                tickets = []
+        tickets.insert(0, ticket)
+        tickets = tickets[:200]
+        target_dir = os.path.dirname(os.path.abspath(TICKETS_FILE))
+        fd, temp_path = tempfile.mkstemp(prefix="tickets-", suffix=".json.tmp", dir=target_dir)
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as handle:
+                json.dump(tickets, handle, indent=2, ensure_ascii=False)
+            os.replace(temp_path, TICKETS_FILE)
+        finally:
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+
+
+def save_incoming_ticket(brand: str, event, user) -> None:
+    """Persist every incoming customer DM for the web panel."""
+    save_ticket_record(
+        brand,
+        event.sender_id,
+        getattr(user, "first_name", "") or "",
+        getattr(user, "last_name", "") or "",
+        f"@{user.username}" if getattr(user, "username", None) else "Yok",
+        event.text or "",
+    )
 
 
 def one_time_mode_enabled() -> bool:
@@ -38,10 +129,11 @@ async def claim_first_greeting(brand: str, user_id: int) -> bool:
 
 async def forward_customer_message(bot, event, support_chat_id, brand: str, buttons=None) -> bool:
     """Forward every customer message to the support chat for a manual reply."""
-    if not support_chat_id:
-        return False
     try:
         user = await event.get_sender()
+        save_incoming_ticket(brand, event, user)
+        if not support_chat_id:
+            return False
         username = f"@{user.username}" if getattr(user, "username", None) else "Yok"
         first_name = getattr(user, "first_name", "") or ""
         last_name = getattr(user, "last_name", "") or ""

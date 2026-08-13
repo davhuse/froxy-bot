@@ -9,7 +9,8 @@ from telethon.sessions import StringSession
 import user_lang_helper
 import firestore_helper
 from sales_metrics import record_event
-from support_flow import claim_first_greeting, forward_customer_message, greeting_for, one_time_mode_enabled
+from shopier_catalog import fetch_shopier_catalog, match_catalog_products
+from support_flow import claim_first_greeting, forward_customer_message, greeting_for, one_time_mode_enabled, save_ticket_record
 
 # Logging configuration
 logging.basicConfig(
@@ -56,29 +57,8 @@ CONFIG_FILE = "bot_config.json"
 
 # Load config
 def save_ticket_to_file(bot_type, user_id, first_name, last_name, username, message):
-    import datetime
-    file_path = "tickets.json"
-    new_ticket = {
-        "bot_type": bot_type,
-        "user_id": user_id,
-        "first_name": first_name,
-        "last_name": last_name,
-        "username": username,
-        "message": message,
-        "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    }
-    tickets = []
-    if os.path.exists(file_path):
-        try:
-            with open(file_path, "r", encoding="utf-8") as f:
-                tickets = json.load(f)
-        except:
-            tickets = []
-    tickets.insert(0, new_ticket)
-    tickets = tickets[:200]
     try:
-        with open(file_path, "w", encoding="utf-8") as f:
-            json.dump(tickets, f, indent=2, ensure_ascii=False)
+        save_ticket_record(bot_type, user_id, first_name, last_name, username, message)
     except Exception as e:
         logger.error(f"Error saving ticket to file: {e}")
 
@@ -100,6 +80,32 @@ if not config:
 BOT_TOKEN = os.environ.get("FROXY_SUPPORT_BOT_TOKEN", "").strip()
 ADMIN_ID = int(os.environ.get("FROXY_ADMIN_ID", config.get("froxy_admin_id", config.get("admin_id", 0))) or 0)
 BOT_USER_ID = None
+
+DEFAULT_FROXY_SHOPIER_LINKS = {
+    "baslangic": "https://www.shopier.com/froxyai/47408136",
+    "populer": "https://www.shopier.com/froxyai/47408138",
+    "profesyonel": "https://www.shopier.com/froxyai/47408141",
+    "gelistirici": "https://www.shopier.com/froxyai/47408145",
+    "isletme": "https://www.shopier.com/froxyai/47408149",
+    "kurumsal": "https://www.shopier.com/froxyai/47408150",
+}
+FROXY_PRODUCTS = []
+
+
+def load_froxy_products():
+    global FROXY_PRODUCTS
+    try:
+        FROXY_PRODUCTS = fetch_shopier_catalog("froxyai")
+        if not FROXY_PRODUCTS:
+            raise ValueError("Shopier showroom returned no products")
+        logger.info("Loaded %s products from the Froxy Shopier showroom.", len(FROXY_PRODUCTS))
+    except Exception as exc:
+        logger.warning("Froxy Shopier catalog could not be refreshed: %s", exc)
+        FROXY_PRODUCTS = [
+            {"id": key, "title": key.replace("_", " ").title(), "price": "", "url": url}
+            for key, url in DEFAULT_FROXY_SHOPIER_LINKS.items()
+        ]
+    return FROXY_PRODUCTS
 
 if not BOT_TOKEN or BOT_TOKEN == "YOUR_TELEGRAM_BOT_TOKEN":
     logger.error("FROXY_SUPPORT_BOT_TOKEN is not configured. Exiting.")
@@ -522,7 +528,7 @@ async def pkg_select_handler(event):
 
     # Get Shopier link from config
     config = load_config() or {}
-    froxy_links = config.get("froxy_shopier_links", {})
+    froxy_links = {**DEFAULT_FROXY_SHOPIER_LINKS, **config.get("froxy_shopier_links", {})}
     shopier_url = froxy_links.get(pkg_key, "https://www.shopier.com/froxyai")
 
     text = t["product_header"].format(
@@ -585,13 +591,15 @@ async def message_handler(event):
             Button.inline("➕ 100 Kredi Ekle", f"adm_add_{user_id}_100".encode()),
             Button.inline("🚫 Kullanıcıyı Engelle (Ban)", f"adm_ban_{user_id}".encode()),
         ]]
-        if await forward_customer_message(bot, event, admin_chat_id, "Froxy AI", buttons):
+        if await forward_customer_message(bot, event, support_chat_id, "Froxy AI", buttons):
             record_event("dm_received", "Froxy AI", source="telegram_private")
             record_event("dm_manual_forwarded", "Froxy AI", source="telegram_private")
             if await claim_first_greeting("froxy", user_id):
                 await event.respond(greeting_for("Froxy AI"))
                 record_event("dm_greeting_sent", "Froxy AI", source="telegram_private")
-        return
+        if user_states.get(user_id) == "AWAITING_SUPPORT":
+            user_states[user_id] = None
+            return
 
     if user_states.get(user_id) == "AWAITING_VERIFY_PAYMENT_INFO":
         if event.text.startswith('/'):
@@ -680,6 +688,26 @@ async def message_handler(event):
             
         user_states[user_id] = None
         return
+
+    if not is_admin_context and event.text:
+        matched_products = match_catalog_products(event.text, FROXY_PRODUCTS)
+        if matched_products:
+            lang = user_lang_helper.get_user_lang(user_id) or "tr"
+            t = TEXTS[lang]
+            lines = ["🔎 **Uygun Froxy ürünleri:**", ""]
+            buttons = []
+            for product in matched_products:
+                price = product.get("price") or "Fiyat ürün sayfasında"
+                lines.append(f"• **{product['title']}** — {price}")
+                buttons.append([Button.url(f"💳 {product['title'][:40]}", product["url"])])
+            lines.extend(["", "Satın almak için ürünün Shopier bağlantısını kullanabilirsiniz."])
+            buttons.append([Button.inline(t["support_btn"], b"menu_support")])
+            await event.respond("\n".join(lines), buttons=buttons)
+            record_event(
+                "dm_reply_sent", "Froxy AI", source="telegram_private",
+                product=matched_products[0].get("title", ""),
+            )
+            return
 
     if user_states.get(user_id) == "AWAITING_SUPPORT":
         if event.text.startswith('/'):
@@ -828,6 +856,9 @@ async def admin_ban_user_callback(event):
 if __name__ == '__main__':
     import asyncio
     from telethon.errors import FloodWaitError
+
+    logger.info("Loading Froxy Shopier products cache...")
+    load_froxy_products()
     
     async def start_with_retry():
         global BOT_USER_ID

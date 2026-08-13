@@ -15,7 +15,7 @@ import firestore_helper
 from gemini_helper import get_ai_response
 from sales_catalog import filter_keyvadi_products
 from sales_metrics import record_event
-from support_flow import claim_first_greeting, forward_customer_message, greeting_for, one_time_mode_enabled
+from support_flow import claim_first_greeting, forward_customer_message, greeting_for, one_time_mode_enabled, save_ticket_record
 from update_keyvadi_links_json import fetch_live_catalog, write_catalog_atomic
 
 # Async wrappers for firestore_helper to prevent event loop deadlocks/freezes
@@ -129,29 +129,8 @@ CONFIG_FILE = "bot_config.json"
 
 # Load config
 def save_ticket_to_file(bot_type, user_id, first_name, last_name, username, message):
-    import datetime
-    file_path = "tickets.json"
-    new_ticket = {
-        "bot_type": bot_type,
-        "user_id": user_id,
-        "first_name": first_name,
-        "last_name": last_name,
-        "username": username,
-        "message": message,
-        "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    }
-    tickets = []
-    if os.path.exists(file_path):
-        try:
-            with open(file_path, "r", encoding="utf-8") as f:
-                tickets = json.load(f)
-        except:
-            tickets = []
-    tickets.insert(0, new_ticket)
-    tickets = tickets[:200]
     try:
-        with open(file_path, "w", encoding="utf-8") as f:
-            json.dump(tickets, f, indent=2, ensure_ascii=False)
+        save_ticket_record(bot_type, user_id, first_name, last_name, username, message)
     except Exception as e:
         logger.error(f"Error saving ticket to file: {e}")
 
@@ -1279,7 +1258,11 @@ async def message_handler(event):
             if await claim_first_greeting("keyvadi", user_id):
                 await event.respond(greeting_for("KeyVadi"))
                 record_event("dm_greeting_sent", "KeyVadi", source="telegram_private")
-        return
+        # A support-form message has already been forwarded above. Ordinary DMs
+        # must continue so the product matcher can return the Shopier URL.
+        if user_states.get(user_id) == "AWAITING_SUPPORT":
+            user_states[user_id] = None
+            return
 
     if user_states.get(user_id) == "AWAITING_SUPPORT":
         if event.text.startswith('/'):
@@ -1334,13 +1317,15 @@ async def message_handler(event):
     # ── Smart Product Matching for free-text messages ──
     # If user is NOT in any special state and NOT admin, try to match a product
     if event.text and not event.text.startswith('/'):
-        if not has_sales_intent(event.text):
+        matched_products = match_multiple_products_from_text(event.text)
+        # A product name by itself (for example "Gemini" or "Perplexity") is
+        # valid sales intent even when the customer does not say "fiyat/link".
+        if not has_sales_intent(event.text) and not matched_products:
             logger.info("Ignoring non-sales message: %r", event.text)
             return
         if is_auto_reply_cooling_down(user_id):
             logger.info("Suppressing automatic sales reply for user %s (global 5-minute cooldown)", user_id)
             return
-        matched_products = match_multiple_products_from_text(event.text)
         if matched_products:
             if is_product_reply_cooling_down(user_id, matched_products):
                 logger.info("Suppressing duplicate product reply for user %s: %r", user_id, event.text)

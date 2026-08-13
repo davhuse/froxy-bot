@@ -42,3 +42,5 @@ kuponkodalimsatim
 kodmalf
 indirimruzgari1
 kuponindirimkodalisveris
+alisverisforumuguncel
+kuponindirimcek
