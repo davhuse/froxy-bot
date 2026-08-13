@@ -4,7 +4,9 @@ import hmac
 import json
 import os
 import tempfile
+import time
 import unittest
+from urllib.parse import urlencode
 from unittest.mock import patch
 
 import lisansarena_store as store_module
@@ -36,6 +38,18 @@ class LisansArenaWebTests(unittest.TestCase):
 
     def test_customer_api_requires_telegram_session(self):
         self.assertEqual(self.client.get("/api/la/catalog").status_code, 401)
+
+    def test_telegram_auth_establishes_customer_session(self):
+        token = "123:test-token"
+        user = json.dumps({"id": 42, "first_name": "Test"}, separators=(",", ":"))
+        fields = {"auth_date": str(int(time.time())), "query_id": "q-1", "user": user}
+        check = "\n".join(f"{key}={value}" for key, value in sorted(fields.items()))
+        secret = hmac.new(b"WebAppData", token.encode(), hashlib.sha256).digest()
+        fields["hash"] = hmac.new(secret, check.encode(), hashlib.sha256).hexdigest()
+        with patch.dict(os.environ, {"LISANSARENA_BOT_TOKEN": token}):
+            auth = self.client.post("/api/la/auth/telegram", json={"initData": urlencode(fields)})
+        self.assertEqual(auth.status_code, 200)
+        self.assertEqual(self.client.get("/api/la/catalog").status_code, 200)
 
     def test_webhook_rejects_invalid_signature(self):
         with patch.dict(os.environ, {"LISANSARENA_SHOPIER_WEBHOOK_SECRET": "secret"}):

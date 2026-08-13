@@ -33,11 +33,16 @@ app.register_blueprint(lisansarena_store_blueprint)
 SHOPIER_CALLBACK_SECRET = os.environ.get('SHOPIER_CALLBACK_SECRET', '').strip()
 FROXY_ENABLED = True
 
+is_render = os.environ.get('RENDER', '').lower() == 'true'
+
 app.config.update(
     SECRET_KEY=os.environ.get('FLASK_SECRET_KEY'),
-    SESSION_COOKIE_SECURE=os.environ.get('RENDER', '').lower() == 'true',
+    SESSION_COOKIE_SECURE=is_render,
     SESSION_COOKIE_HTTPONLY=True,
-    SESSION_COOKIE_SAMESITE='Lax',
+    # Telegram Web opens Mini Apps inside a cross-site iframe. Lax cookies are
+    # accepted by auth but omitted from the following API calls.
+    SESSION_COOKIE_SAMESITE='None' if is_render else 'Lax',
+    SESSION_COOKIE_PARTITIONED=is_render,
     PERMANENT_SESSION_LIFETIME=60 * 60 * 8,
     MAX_CONTENT_LENGTH=1024 * 1024,
     MAX_FORM_MEMORY_SIZE=256 * 1024,
