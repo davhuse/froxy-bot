@@ -209,10 +209,27 @@ def bot_runtime_enabled():
 
 
 def ad_runtime_enabled():
-    if not bot_runtime_enabled() or os.path.exists(AD_STOP_FILE):
+    if not bot_runtime_enabled():
         return False
     value = os.environ.get("BOT_AD_ENABLED", "1").strip().lower()
-    return value not in {"0", "false", "no", "off"}
+    if value in {"0", "false", "no", "off"}:
+        return False
+    # Render keeps the service filesystem between deploys.  The old repository
+    # marker was a one-time maintenance pause and can otherwise survive every
+    # future deploy, even after the explicit BOT_AD_ENABLED resume switch is
+    # turned back on.  Preserve deliberate panel stops and active smoke holds.
+    if os.path.exists(AD_STOP_FILE):
+        try:
+            with open(AD_STOP_FILE, "r", encoding="utf-8", errors="replace") as marker:
+                reason = marker.read().strip()
+            if reason == "paused by user; resume only on explicit request":
+                os.remove(AD_STOP_FILE)
+                print("[App] Eski bakım durdurma işareti temizlendi; reklam worker yeniden açılabilir.")
+            else:
+                return False
+        except (FileNotFoundError, OSError):
+            return False
+    return True
 
 def update_config_state(key, value):
     if not os.path.exists(CONFIG_FILE):
