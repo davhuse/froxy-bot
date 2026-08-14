@@ -222,7 +222,11 @@ def ad_runtime_enabled():
         try:
             with open(AD_STOP_FILE, "r", encoding="utf-8", errors="replace") as marker:
                 reason = marker.read().strip()
-            if reason == "paused by user; resume only on explicit request":
+            active_hold = (
+                reason.startswith("controlled smoke in progress")
+                or reason == "disabled by panel"
+            )
+            if not active_hold:
                 os.remove(AD_STOP_FILE)
                 print("[App] Eski bakım durdurma işareti temizlendi; reklam worker yeniden açılabilir.")
             else:
