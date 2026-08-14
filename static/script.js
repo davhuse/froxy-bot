@@ -1,6 +1,33 @@
 const nativeFetch = window.fetch.bind(window);
-// This is an owner-operated panel: requests stay keyless as before.
-window.fetch = (input, init = {}) => nativeFetch(input, init);
+let panelAdminToken = sessionStorage.getItem('panelAdminToken') || '';
+
+async function adminFetch(input, init = {}) {
+    if (!panelAdminToken) throw new Error('Yönetim anahtarı gerekli');
+    const headers = new Headers(init.headers || {});
+    headers.set('X-Admin-Token', panelAdminToken);
+    const response = await nativeFetch(input, { ...init, headers });
+    if (response.status === 401 || response.status === 503) {
+        panelAdminToken = '';
+        sessionStorage.removeItem('panelAdminToken');
+        throw new Error('Yönetim anahtarı geçersiz veya sunucuda yapılandırılmamış');
+    }
+    return response;
+}
+
+function savePanelAdminToken(event) {
+    if (event) event.preventDefault();
+    const input = document.getElementById('panelAdminToken');
+    const value = input ? input.value.trim() : '';
+    if (!value) {
+        alert('Render PANEL_ADMIN_TOKEN değerini girin.');
+        return;
+    }
+    panelAdminToken = value;
+    sessionStorage.setItem('panelAdminToken', value);
+    input.value = '';
+    loadGroupStatus();
+    refreshControlledSmokeStatus();
+}
 
 const UI = {
     statusBadge: document.getElementById('botStatus'),
@@ -194,7 +221,7 @@ async function loadGroupStatus() {
     if (!container) return;
     container.replaceChildren();
     try {
-        const response = await fetch('/api/group-status');
+        const response = await adminFetch('/api/group-status');
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || `HTTP ${response.status}`);
         const sections = [
@@ -295,6 +322,64 @@ async function loadGroupStatus() {
     }
 }
 
+let controlledSmokePoll = null;
+
+function setControlledSmokeText(text, isError = false) {
+    const status = document.getElementById('controlledSmokeStatus');
+    if (!status) return;
+    status.textContent = text;
+    status.style.color = isError ? '#fca5a5' : 'rgba(255,255,255,.75)';
+}
+
+async function refreshControlledSmokeStatus() {
+    if (!panelAdminToken) {
+        setControlledSmokeText('Önce yönetim erişimini açın.');
+        return;
+    }
+    try {
+        const response = await adminFetch('/api/ad-smoke/status');
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || `HTTP ${response.status}`);
+        const result = data.result || {};
+        const active = data.active || {};
+        const state = result.status || (active.group ? 'running' : 'idle');
+        const group = result.group || active.group;
+        const autoStart = result.auto_start ? ` • normal sıra: ${result.auto_start}` : '';
+        setControlledSmokeText(`${state}${group ? ` • @${group}` : ''}${autoStart}`);
+        if (!active.group && controlledSmokePoll) {
+            clearInterval(controlledSmokePoll);
+            controlledSmokePoll = null;
+        }
+    } catch (error) {
+        setControlledSmokeText(error.message, true);
+    }
+}
+
+async function startControlledSmoke(event) {
+    if (event) event.preventDefault();
+    const input = document.getElementById('controlledSmokeGroup');
+    const group = String(input ? input.value : '').trim().replace(/^@/, '').toLowerCase();
+    if (!/^[a-z0-9_]{5,}$/.test(group)) {
+        setControlledSmokeText('Geçerli bir grup kullanıcı adı girin.', true);
+        return;
+    }
+    try {
+        setControlledSmokeText(`@${group} için kontrollü test başlatılıyor…`);
+        const response = await adminFetch('/api/ad-smoke/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ account: 'KeyVadiOnline', group })
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) throw new Error(data.message || `HTTP ${response.status}`);
+        setControlledSmokeText(`running • @${group} • 10 dakika görünürlük kontrolü`);
+        if (controlledSmokePoll) clearInterval(controlledSmokePoll);
+        controlledSmokePoll = setInterval(refreshControlledSmokeStatus, 15000);
+    } catch (error) {
+        setControlledSmokeText(error.message, true);
+    }
+}
+
 function renderAdCountdowns() {
     Object.entries(adCountdownState).forEach(([account, state]) => {
         const card = document.getElementById(`countdown${account}`);
@@ -389,7 +474,7 @@ function updateStatusUI(status) {
 
 async function startBot() {
     UI.btnStart.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Başlatılıyor...';
-    const res = await fetch('/api/start', { method: 'POST' });
+    const res = await adminFetch('/api/start', { method: 'POST' });
     const data = await res.json();
     UI.btnStart.innerHTML = '<i class="fa-solid fa-play"></i> Başlat';
     if(data.success) checkStatus();
@@ -398,7 +483,7 @@ async function startBot() {
 
 async function stopBot() {
     UI.btnStop.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Durduruluyor...';
-    const res = await fetch('/api/stop', { method: 'POST' });
+    const res = await adminFetch('/api/stop', { method: 'POST' });
     const data = await res.json();
     UI.btnStop.innerHTML = '<i class="fa-solid fa-stop"></i> Durdur';
     if(data.success) checkStatus();
@@ -668,7 +753,7 @@ function updateLisansarenaStatusUI(status) {
 
 async function startLisansarenaBot() {
     UI.btnLisansarenaStart.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Başlatılıyor...';
-    const res = await fetch('/api/lisansarena/start', { method: 'POST' });
+    const res = await adminFetch('/api/lisansarena/start', { method: 'POST' });
     const data = await res.json();
     UI.btnLisansarenaStart.innerHTML = '<i class="fa-solid fa-play"></i> Botu Aktifleştir';
     if(data.success) checkLisansarenaStatus();
@@ -677,7 +762,7 @@ async function startLisansarenaBot() {
 
 async function stopLisansarenaBot() {
     UI.btnLisansarenaStop.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Durduruluyor...';
-    const res = await fetch('/api/lisansarena/stop', { method: 'POST' });
+    const res = await adminFetch('/api/lisansarena/stop', { method: 'POST' });
     const data = await res.json();
     UI.btnLisansarenaStop.innerHTML = '<i class="fa-solid fa-stop"></i> Botu Durdur';
     if(data.success) checkLisansarenaStatus();
@@ -729,7 +814,7 @@ async function saveLisansarenaConfig() {
 // CONFIGURATION LOGIC
 async function loadConfig() {
     try {
-        const res = await fetch('/api/config');
+        const res = await adminFetch('/api/config');
         const data = await res.json();
         if (data.admin_id || data.ad_sleep_min) {
             UI.cfgAdminId.value = data.admin_id || '';
@@ -752,7 +837,7 @@ async function saveConfig() {
     };
     
     try {
-        const res = await fetch('/api/config', {
+        const res = await adminFetch('/api/config', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(configData)

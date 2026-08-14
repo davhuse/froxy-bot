@@ -385,7 +385,22 @@
             <div class="glass-panel" style="width:100%; padding:20px; margin-top:16px;">
                 <h2><i class="fa-solid fa-shield-halved"></i> Hesap Bazlı Telegram Grup Durumları</h2>
                 <p style="color:rgba(255,255,255,.6); margin:8px 0 14px;">Kalıcı banlar, geçici slow mode ve erişim incelemeleri hesaplara göre ayrılır.</p>
+                <div style="display:grid; grid-template-columns:minmax(220px,1fr) auto; gap:10px; margin-bottom:14px;">
+                    <input type="password" id="panelAdminToken" autocomplete="off" placeholder="Render PANEL_ADMIN_TOKEN" style="padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.2);color:white;">
+                    <button class="btn primary" onclick="savePanelAdminToken(event)"><i class="fa-solid fa-key"></i> Yönetim Erişimi</button>
+                </div>
                 <div id="accountGroupStatus" style="display:grid; gap:10px;"></div>
+            </div>
+
+            <div class="glass-panel" style="width:100%; padding:20px; margin-top:16px;">
+                <h2><i class="fa-solid fa-flask"></i> Kontrollü KeyVadi Smoke Testi</h2>
+                <p style="color:rgba(255,255,255,.6); margin:8px 0 14px;">Yalnız onaylı bir gruba tek mesaj yollar; mesaj 10 dakika görünür kalırsa merkezî reklam sırası otomatik açılır.</p>
+                <div style="display:grid; grid-template-columns:minmax(220px,1fr) auto auto; gap:10px;">
+                    <input type="text" id="controlledSmokeGroup" autocomplete="off" placeholder="@onayli_grup" style="padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.2);color:white;">
+                    <button class="btn primary" onclick="startControlledSmoke(event)"><i class="fa-solid fa-play"></i> Tek Mesaj Testi</button>
+                    <button class="btn" onclick="refreshControlledSmokeStatus()"><i class="fa-solid fa-rotate"></i> Durumu Yenile</button>
+                </div>
+                <p id="controlledSmokeStatus" style="margin:12px 0 0;color:rgba(255,255,255,.75);">Önce yönetim erişimini açın.</p>
             </div>
         </div>
 

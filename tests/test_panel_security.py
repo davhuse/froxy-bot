@@ -70,6 +70,19 @@ class PanelSecurityTests(unittest.TestCase):
             "otomatik_katil.py",
         ))
 
+    def test_panel_sends_admin_header_and_exposes_controlled_smoke_ui(self):
+        script_response = self.client.get("/static/script.js")
+        html_response = self.client.get("/")
+        script = script_response.get_data(as_text=True)
+        html = html_response.get_data(as_text=True)
+        script_response.close()
+        html_response.close()
+        self.assertIn("X-Admin-Token", script)
+        self.assertIn("adminFetch('/api/group-status')", script)
+        self.assertIn("adminFetch('/api/ad-smoke/start'", script)
+        self.assertIn('id="panelAdminToken"', html)
+        self.assertIn('id="controlledSmokeGroup"', html)
+
 
 if __name__ == "__main__":
     unittest.main()
