@@ -68,6 +68,8 @@ class LisansArenaPaymentTests(unittest.TestCase):
         self.assertIn("setMyCommands", source)
         self.assertIn("setMyDescription", source)
         self.assertIn("setMyProfilePhoto", source)
+        self.assertIn('attach://profile_photo', source)
+        self.assertIn('lisansarena_logo_v2.jpg', source)
 
 
 if __name__ == "__main__":

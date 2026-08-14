@@ -281,11 +281,22 @@ def configure_bot_profile():
     )
     for method, payload in calls:
         _bot_api(method, payload=payload)
-    logo = Path("static/lisansarena_logo_v2.png")
+    logo = Path("static/lisansarena_logo_v2.jpg")
     if logo.exists():
         try:
             with logo.open("rb") as handle:
-                _bot_api("setMyProfilePhoto", files={"photo": (logo.name, handle, "image/png")})
+                _bot_api(
+                    "setMyProfilePhoto",
+                    payload={
+                        "photo": json.dumps({
+                            "type": "static",
+                            "photo": "attach://profile_photo",
+                        })
+                    },
+                    files={
+                        "profile_photo": (logo.name, handle, "image/jpeg")
+                    },
+                )
         except Exception as exc:
             # Some Bot API versions/accounts do not expose this method yet;
             # command/menu configuration must still complete.
