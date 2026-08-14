@@ -3092,7 +3092,9 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
             matched_desc = candidate_products[0].get('title', '')
         elif sales_context:
             reply_text = sales_followup_reply(
-                sales_context, event.raw_text, "froxy" if is_froxy else "keyvadi"
+                sales_context,
+                event.raw_text,
+                "froxy" if is_froxy else ("keyvadi" if is_keyvadi else "lisansarena"),
             )
             matched_desc = "Satış takip sorusu"
         elif is_lisansarena and has_explicit_sales_intent(event.raw_text):

@@ -80,6 +80,15 @@ class SalesCatalogMatchingTests(unittest.TestCase):
         self.assertEqual(len(office), 1)
         self.assertNotEqual(windows[0]["id"], office[0]["id"])
 
+    def test_lisansarena_catalog_supports_signed_purchase_links(self):
+        from sales_conversion import make_purchase_token, parse_purchase_token
+        product = load_sales_catalog("lisansarena")[0]
+        with patch.dict(os.environ, {"PURCHASE_LINK_SECRET": "unit-test-secret"}):
+            token = make_purchase_token("lisansarena", product["id"], "ad_account_dm", "control")
+            payload = parse_purchase_token(token)
+        self.assertEqual(payload["b"], "lisansarena")
+        self.assertEqual(payload["p"], product["id"])
+
 
 class PurchaseLinkTests(unittest.TestCase):
     def test_signed_token_round_trip_and_tamper_rejection(self):
