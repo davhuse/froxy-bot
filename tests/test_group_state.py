@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime, timezone
 import json
 import os
 import tempfile
@@ -102,6 +103,36 @@ class GroupStateTests(unittest.TestCase):
         )
         self.assertEqual(send_targets, {"mevcutgrup"})
         self.assertEqual(candidates, {"yenikuponpazari"})
+
+    def test_in_progress_blast_resumes_without_global_one_hour_wait(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = str(Path(directory) / "cooldowns.json")
+            empty_cloud = (None, None, None, None, None, None)
+            with patch.object(publisher, "COOLDOWN_FILE", path), patch.object(
+                publisher, "fs_get_state", return_value=empty_cloud
+            ), patch.object(publisher, "fs_set_state"):
+                publisher.save_last_blast_time("FroxyOnline")
+                self.assertGreater(
+                    publisher.get_last_blast_remaining_wait("FroxyOnline"), 3500
+                )
+                publisher.mark_blast_started("FroxyOnline")
+                self.assertEqual(
+                    publisher.get_last_blast_remaining_wait("FroxyOnline"), 0
+                )
+
+    def test_legacy_per_message_blast_timestamp_is_not_completion(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "cooldowns.json"
+            path.write_text(json.dumps({
+                "__LAST_BLAST_TIME_FroxyOnline": datetime.now(timezone.utc).isoformat()
+            }), encoding="utf-8")
+            empty_cloud = (None, None, None, None, None, None)
+            with patch.object(publisher, "COOLDOWN_FILE", str(path)), patch.object(
+                publisher, "fs_get_state", return_value=empty_cloud
+            ):
+                self.assertEqual(
+                    publisher.get_last_blast_remaining_wait("FroxyOnline"), 0
+                )
 
     def test_live_target_requires_150_members_and_rejects_reference_groups(self):
         with tempfile.TemporaryDirectory() as directory:

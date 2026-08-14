@@ -1463,8 +1463,28 @@ def get_account_aliases(client_name):
         aliases.add('lisansarenaonline')
     return aliases
 
+def mark_blast_started(client_name):
+    """Persist an in-progress marker so a deploy resumes instead of waiting."""
+    try:
+        cname = get_canonical_account_name(client_name)
+        cooldowns = load_cooldowns()
+        now_str = datetime.now(timezone.utc).isoformat()
+        for alias in get_account_aliases(client_name):
+            cooldowns[f"__BLAST_STATE_V2_{alias}"] = {
+                "status": "in_progress",
+                "started_at": now_str,
+            }
+        save_cooldowns(cooldowns)
+        try:
+            fs_set_state(cooldowns=json.dumps(cooldowns, ensure_ascii=False, indent=2))
+        except Exception:
+            pass
+        print(f"[{cname}] Blast devam ediyor işareti kaydedildi: {now_str}")
+    except Exception as e:
+        print(f"[{client_name}] Blast başlangıç işareti kaydedilemedi: {e}")
+
 def save_last_blast_time(client_name):
-    """Hesabın son blast tamamlanma zamanını kaydeder (tüm rumuzlar için)"""
+    """Persist only a fully completed blast, never an accepted single send."""
     try:
         from datetime import datetime, timezone
         cname = get_canonical_account_name(client_name)
@@ -1472,6 +1492,10 @@ def save_last_blast_time(client_name):
         now_str = datetime.now(timezone.utc).isoformat()
         for alias in get_account_aliases(client_name):
             cooldowns[f"__LAST_BLAST_TIME_{alias}"] = now_str
+            cooldowns[f"__BLAST_STATE_V2_{alias}"] = {
+                "status": "completed",
+                "completed_at": now_str,
+            }
         save_cooldowns(cooldowns)
         try:
             fs_set_state(cooldowns=json.dumps(cooldowns, ensure_ascii=False, indent=2))
@@ -1497,6 +1521,7 @@ def get_last_blast_remaining_wait(client_name, target_wait_seconds=3600):
             pass
 
         timestamps = []
+        states = []
         for alias in get_account_aliases(client_name):
             k = f"__LAST_BLAST_TIME_{alias}"
             # Yerel ve bulut kaydindan en yenisini kullan. Eski kod yerel
@@ -1512,6 +1537,31 @@ def get_last_blast_remaining_wait(client_name, target_wait_seconds=3600):
                         timestamps.append(timestamp)
                     except Exception:
                         pass
+            state_key = f"__BLAST_STATE_V2_{alias}"
+            for state in (cooldowns.get(state_key), fs_cdata.get(state_key)):
+                if not isinstance(state, dict):
+                    continue
+                marker = state.get("started_at") or state.get("completed_at")
+                try:
+                    marker_dt = datetime.fromisoformat(marker) if marker else None
+                    if marker_dt and marker_dt.tzinfo is None:
+                        marker_dt = marker_dt.replace(tzinfo=timezone.utc)
+                    if marker_dt:
+                        states.append((marker_dt, state.get("status")))
+                except Exception:
+                    pass
+
+        if states and max(states, key=lambda item: item[0])[1] == "in_progress":
+            print(f"[{cname}] Yarım kalan blast bulundu; beklemeden kalan gruplardan devam ediliyor.")
+            return 0
+
+        # Older builds updated __LAST_BLAST_TIME after every accepted message,
+        # so such a timestamp cannot prove that the cycle completed.  Ignore it
+        # once during the V2 migration; per-group cooldowns still prevent a
+        # duplicate send and the first completed scan writes a trusted marker.
+        if timestamps and not states:
+            print(f"[{cname}] Eski tip blast kaydı tamamlanma kanıtı değil; kalan hedefler kontrol ediliyor.")
+            return 0
 
         if not timestamps:
             print(f"[{cname}] 🛡️ Sunucu başlangıcı: Son blast kaydı bulunamadı, 60 dakika güvenlik beklemesi uygulanıyor.")
@@ -4276,9 +4326,6 @@ async def main():
                             last_error=None,
                             session_error=None,
                         )
-                        # Keep the restart-safe wait anchored to the most
-                        # recent accepted Telegram message, not blast start.
-                        save_last_blast_time(client_name)
                         sent_this_cycle.add(group_key)
                     except ModerationDeletedError as e:
                         record_event(
@@ -4371,6 +4418,8 @@ async def main():
                         await blast_one(grup_name, retry_count + 1)
 
                 # Gruplara sırayla ve aralarında 20-45 saniye rastgele bekleme (daha doğal)
+                mark_blast_started(client_name)
+                blast_interrupted = False
                 random.shuffle(blast_targets)  # Grup sırasını karıştır
                 print(f"\n[{client_name}] 📤 Sırayla gönderim başlıyor ({len(blast_targets)} grup)...")
                 for i, g in enumerate(blast_targets, 1):
@@ -4378,6 +4427,7 @@ async def main():
                     if is_account_restricted(client_name, scope='send'):
                         state = account_restriction_status(client_name, scope='send')
                         print(f"[{client_name}] ⏸️ Hesap gönderim kısıtında ({state.get('until', 'bilinmiyor')}); bu tur güvenli biçimde durduruldu.")
+                        blast_interrupted = True
                         break
                     if i < len(blast_targets):
                         delay = random.randint(20, 45)
@@ -4399,16 +4449,32 @@ async def main():
                 except Exception as e:
                     print(f"[{client_name}] ⚠️ Cooldown bulut yedeği alınamadı: {e}")
 
-                update_ad_account_status(
-                    client_name,
-                    phase='completed',
-                    target_groups=len(hedef_set),
-                    sendable_groups=len(blast_targets),
-                    sent_count=sent_count,
-                    failed_count=fail_count,
-                )
-                
-                print(f"\n[{client_name}] 📊 BLAST SONUÇ: {sent_count} başarılı, {fail_count} başarısız / {len(blast_targets)} toplam")
+                if not blast_interrupted:
+                    save_last_blast_time(client_name)
+                    update_ad_account_status(
+                        client_name,
+                        phase='completed',
+                        target_groups=len(hedef_set),
+                        sendable_groups=len(blast_targets),
+                        sent_count=sent_count,
+                        failed_count=fail_count,
+                    )
+                    print(f"\n[{client_name}] 📊 BLAST SONUÇ: {sent_count} başarılı, {fail_count} başarısız / {len(blast_targets)} toplam")
+                else:
+                    update_ad_account_status(
+                        client_name,
+                        phase='interrupted',
+                        target_groups=len(hedef_set),
+                        sendable_groups=len(blast_targets),
+                        sent_count=sent_count,
+                        failed_count=fail_count,
+                    )
+                    print(f"\n[{client_name}] Blast yarım kaldı; sonraki başlangıçta kalan gruplardan devam edilecek.")
+
+            if not blast_targets:
+                # A full scan with no currently sendable target is also a
+                # completed cycle; this prevents a tight restart loop.
+                save_last_blast_time(client_name)
 
             # ═══════════════════════════════════════════════════
             # YENİ GRUPLARA KATILMA AŞAMASI (blast sonrası)
