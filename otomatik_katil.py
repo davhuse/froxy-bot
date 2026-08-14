@@ -1027,6 +1027,13 @@ def live_joined_sales_targets(joined_dialogs, client_name):
             targets.add(username)
     return targets
 
+
+def reconcile_send_targets(approved_targets, live_candidates):
+    """Keep delivery opt-in while reporting newly discovered live candidates."""
+    approved = {normalize_group_key(item) for item in approved_targets if item}
+    live = {normalize_group_key(item) for item in live_candidates if item}
+    return approved, live - approved
+
 def _load_json_file(path, default):
     try:
         if os.path.exists(path):
@@ -3831,19 +3838,21 @@ async def main():
                 blacklist_keys.update(
                     group_state_keys(engelli, joined_dialogs.get(engelli)))
 
-            # LisansArena keeps its approved list. Froxy and KeyVadi reconcile
-            # that list with suitable groups found in their live dialogs before
-            # every blast, so an accepted join is active by the next cycle.
+            # Delivery remains opt-in: live dialog discovery only produces an
+            # account-specific candidate list. It never broadens the blast set
+            # until the group is added to the approved target list.
             approved_targets = {
                 g for g in protected_groups
                 if not is_excluded_ad_target(g, joined_dialogs.get(normalize_group_key(g)))
             }
             dynamic_targets = live_joined_sales_targets(joined_dialogs, client_name)
-            hedef_set = approved_targets | dynamic_targets
+            hedef_set, approval_candidates = reconcile_send_targets(
+                approved_targets, dynamic_targets
+            )
 
             print(
-                f"[{client_name}] Hedef uzlaştırma: {len(approved_targets)} onaylı + "
-                f"{len(dynamic_targets)} canlı uygun = {len(hedef_set)} toplam"
+                f"[{client_name}] Hedef uzlaştırma: {len(hedef_set)} onaylı gönderim + "
+                f"{len(approval_candidates)} onay bekleyen canlı aday"
             )
             
             # Önbellekte olan + kara listede olmayan hedef gruplar
@@ -3855,7 +3864,7 @@ async def main():
             group_states = {
                 'sendable': [], 'cooldown': [], 'policy_smoke': [],
                 'moderation_hold': [], 'write_forbidden': [],
-                'not_joined': [], 'unsuitable': [],
+                'not_joined': [], 'unsuitable': [], 'approval_candidates': [],
             }
             def set_group_state(group_name, state_name):
                 normalized = normalize_group_key(group_name)
@@ -3887,6 +3896,8 @@ async def main():
                         else 'unsuitable'
                     )
                     set_group_state(dialog_name, state_name)
+            for candidate in approval_candidates:
+                set_group_state(candidate, 'approval_candidates')
             for username_lower in hedef_set:
                 entity = joined_dialogs.get(username_lower)
                 if (blacklist_keys.intersection(group_state_keys(username_lower, entity))
@@ -4150,7 +4161,7 @@ async def main():
                         # Keep the seven-day package experiment visible without
                         # turning every advert into a second long catalogue.
                         # Strict/short groups retain their approved short copy.
-                        if (is_keyvadi or is_lisansarena) and not is_short_group:
+                        if is_keyvadi and not is_short_group:
                             package_lines = (
                                 "Paket fırsatları: Öğrenci • Eğlence • AI/Üretkenlik — DM'den detay."
                             )

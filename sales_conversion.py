@@ -377,7 +377,25 @@ def apply_cta_experiment(message: str, brand: str, group_key: str) -> tuple[str,
     linked_handle = f"[@{username}]({deep_link})"
     updated = re.sub(rf"(?<!\[)@{re.escape(username)}", linked_handle, message)
     if arm == "test":
-        cta = f"Ürün adını DM'den yaz — fiyat ve Hemen Satın Al seçeneği anında gelsin: {linked_handle}"
-        if cta not in updated:
-            updated = f"{updated.rstrip()}\n{cta}"
+        # The base template already contains one contact handle. Replace that
+        # CTA instead of tagging the same bot a second time.
+        cleaned_lines = []
+        for line in updated.splitlines():
+            if linked_handle in line:
+                line = line.split(linked_handle, 1)[0]
+                line = re.sub(
+                    r"(?:İletişim|Sipariş Adresi|Canlı Destek ve Sipariş|"
+                    r"Hızlı Sipariş & Canlı Destek Botumuz|"
+                    r"Paneli (?:önce )?100 ücretsiz krediyle (?:deneyin|test edin|açın)|"
+                    r"100 ücretsiz krediyle (?:paneli )?(?:deneyin|başlayın))\s*:\s*$",
+                    "", line, flags=re.IGNORECASE,
+                ).rstrip()
+            if line.strip():
+                cleaned_lines.append(line)
+        updated = "\n".join(cleaned_lines).rstrip()
+        if brand == "froxy":
+            cta = f"Paneli aç, 100 ücretsiz krediyle dene: {linked_handle}"
+        else:
+            cta = f"Ürün adını DM'den yaz — fiyat ve Hemen Satın Al seçeneği anında gelsin: {linked_handle}"
+        updated = f"{updated}\n{cta}".strip()
     return updated, arm

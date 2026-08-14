@@ -96,6 +96,13 @@ class GroupStateTests(unittest.TestCase):
                     {"yenikuponpazari"},
                 )
 
+    def test_live_candidate_never_expands_send_targets_without_approval(self):
+        send_targets, candidates = publisher.reconcile_send_targets(
+            {"mevcutgrup"}, {"mevcutgrup", "yenikuponpazari"}
+        )
+        self.assertEqual(send_targets, {"mevcutgrup"})
+        self.assertEqual(candidates, {"yenikuponpazari"})
+
     def test_live_target_requires_150_members_and_rejects_reference_groups(self):
         with tempfile.TemporaryDirectory() as directory:
             blocks = str(Path(directory) / "blocks.json")

@@ -234,7 +234,8 @@ async function loadGroupStatus() {
             moderation_hold: 'Moderasyon beklemesi',
             write_forbidden: 'Yazma yasağı',
             not_joined: 'Üye değil',
-            unsuitable: 'Uygunsuz'
+            unsuitable: 'Uygunsuz',
+            approval_candidates: 'Onay bekleyen adaylar'
         };
         for (const [account, states] of Object.entries(data.account_targets || {})) {
             const section = document.createElement('section');
