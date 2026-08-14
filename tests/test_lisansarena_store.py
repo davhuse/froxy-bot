@@ -44,18 +44,76 @@ class LisansArenaStoreTests(unittest.TestCase):
                 reference_type="test", reference_id=reference, created_at=store_module.utcnow(),
             ))
 
-    def test_legacy_34_products_are_imported_as_unpublished_drafts(self):
+    def test_full_50_product_catalog_is_sellable_in_the_mini_app(self):
         with self.store.engine.connect() as conn:
-            count = conn.execute(select(func.count()).select_from(store_module.products).where(store_module.products.c.legacy_shopier_id.is_not(None))).scalar_one()
+            count = conn.execute(select(func.count()).select_from(store_module.products)).scalar_one()
             published = conn.execute(select(func.count()).select_from(store_module.products).where(store_module.products.c.published.is_(True))).scalar_one()
-        self.assertEqual(count, 34)
-        self.assertEqual(published, 0)
+        self.assertEqual(count, 50)
+        self.assertEqual(published, 50)
 
-    def test_storefront_shows_drafts_without_allowing_purchase(self):
+    def test_storefront_has_a_real_cart_action_and_generated_cover_for_every_product(self):
         catalog = self.store.storefront_catalog()
-        self.assertEqual(len(catalog), 34)
-        self.assertTrue(all(item["available"] is False for item in catalog))
+        self.assertEqual(len(catalog), 50)
+        self.assertTrue(all(item["available"] is True for item in catalog))
         self.assertTrue(all(item["category"] != "Taslak aktarım" for item in catalog))
+        self.assertTrue(all(item["image_url"].startswith("/static/la-cover-") for item in catalog))
+        self.assertTrue(all(item["image_url"].endswith(".webp") for item in catalog))
+        self.assertTrue(all(item["request_enabled"] is False for item in catalog))
+        self.assertTrue(all(item["action"] == "buy" for item in catalog))
+        root = Path(__file__).resolve().parents[1]
+        self.assertTrue(all(
+            (root / item["image_url"].lstrip("/")).is_file()
+            for item in catalog
+        ))
+        self.assertGreater(sum(1 for item in catalog if item["featured"]), 0)
+
+    def test_approved_advert_products_and_prices_match_the_storefront(self):
+        by_name = {
+            item["name"]: item["price_cents"]
+            for item in self.store.storefront_catalog()
+        }
+        expected = {
+            "ChatGPT Plus 30 Gün - Kişisel": 25000,
+            "ChatGPT Plus 30 Gün - Ortak": 6990,
+            "Gemini Pro 3 Aylık": 5990,
+            "Gemini Ultra (2.5k Kredili Hesap)": 59999,
+            "Gamma Pro (1 Aylık Hesap)": 29999,
+            "Canva Pro (1 Yıllık Yetki)": 8399,
+            "Discord Nitro 14X Boost - 1 Aylık": 22499,
+            "Xbox Game Pass Ultimate 3 Aylık": 8990,
+            "Windows 10/11 Pro Lisans Anahtarı (Key)": 7000,
+            "Microsoft Office 365 (1 Yıllık Hesap)": 7000,
+            "Kaspersky Premium 1 Yıl - 1 Cihaz": 24499,
+            "Shell 75 TL Akaryakıt Puanı": 1499,
+        }
+        for name, price_cents in expected.items():
+            with self.subTest(product=name):
+                self.assertEqual(by_name.get(name), price_cents)
+
+    def test_seed_migration_does_not_overwrite_later_admin_decisions(self):
+        with self.store.engine.begin() as conn:
+            product_id = conn.execute(select(store_module.products.c.id).limit(1)).scalar_one()
+            conn.execute(update(store_module.products).where(
+                store_module.products.c.id == product_id
+            ).values(published=False))
+            conn.execute(update(store_module.product_display).where(
+                store_module.product_display.c.product_id == product_id
+            ).values(featured=False, display_order=777))
+        self.store.import_legacy_drafts()
+        self.store.backfill_product_display()
+        with self.store.engine.connect() as conn:
+            product = conn.execute(select(store_module.products.c.published).where(
+                store_module.products.c.id == product_id
+            )).scalar_one()
+            display = conn.execute(select(
+                store_module.product_display.c.featured,
+                store_module.product_display.c.display_order,
+            ).where(
+                store_module.product_display.c.product_id == product_id
+            )).one()
+        self.assertFalse(product)
+        self.assertFalse(display.featured)
+        self.assertEqual(display.display_order, 777)
 
     def test_legacy_turkish_text_is_repaired_for_storefront(self):
         self.assertEqual(store_module.clean_storefront_text("Canva Pro Ã–ÄŸretmen"), "Canva Pro Öğretmen")
@@ -70,6 +128,56 @@ class LisansArenaStoreTests(unittest.TestCase):
         self.assertEqual(result["delivery"], ["LICENSE-ONE"])
         with self.assertRaisesRegex(ValueError, "Stok tükendi"):
             self.store.purchase(self.user_id, product_id, 1)
+
+    def test_cart_checkout_rolls_back_everything_when_one_item_has_no_stock(self):
+        stocked_id = self.add_product(price=10000)
+        empty_id = self.add_product(price=12000)
+        nonce, encrypted = self.store.encrypt_stock(stocked_id, "ROLLBACK-LICENSE")
+        with self.store.engine.begin() as conn:
+            conn.execute(insert(store_module.inventory).values(
+                product_id=stocked_id, nonce=nonce, ciphertext=encrypted,
+                sold_order_id=None, created_at=store_module.utcnow(),
+            ))
+        self.credit(50000, "cart-rollback")
+        with self.assertRaisesRegex(ValueError, "Stok tükendi"):
+            self.store.checkout(self.user_id, [
+                {"product_id": stocked_id, "quantity": 1},
+                {"product_id": empty_id, "quantity": 1},
+            ])
+        with self.store.engine.connect() as conn:
+            self.assertEqual(self.store.balance(conn, self.user_id), 50000)
+            self.assertEqual(conn.execute(select(func.count()).select_from(
+                store_module.orders
+            )).scalar_one(), 0)
+            self.assertIsNone(conn.execute(select(
+                store_module.inventory.c.sold_order_id
+            ).where(store_module.inventory.c.product_id == stocked_id)).scalar_one())
+
+    def test_ticket_referral_and_draw_features_are_persistent(self):
+        requested_product = self.store.storefront_catalog()[0]
+        ticket = self.store.create_ticket(
+            self.user_id, "request", "Bu ürün ne zaman gelir?",
+            product_id=requested_product["id"],
+        )
+        self.assertEqual(self.store.list_tickets(self.user_id)[0]["id"], ticket["id"])
+        self.store.update_ticket(ticket["id"], status="resolved", admin_reply="Stok gelince haber verilecek")
+        self.assertEqual(self.store.list_tickets(self.user_id)[0]["status"], "resolved")
+
+        referred_id = self.store.get_or_create_user({"id": 84, "first_name": "Arkadaş"})
+        code = self.store.referral_profile(self.user_id)["code"]
+        self.assertTrue(self.store.apply_referral_code(referred_id, code))
+        self.assertFalse(self.store.apply_referral_code(referred_id, code))
+        self.assertEqual(self.store.referral_profile(self.user_id)["count"], 1)
+
+        with self.store.engine.begin() as conn:
+            draw_id = conn.execute(insert(store_module.draws).values(
+                title="Test çekilişi", description="", status="active",
+                ends_at=store_module.utcnow() + timedelta(hours=1),
+                created_at=store_module.utcnow(),
+            ).returning(store_module.draws.c.id)).scalar_one()
+        self.assertFalse(self.store.enter_draw(self.user_id, draw_id)["already_entered"])
+        self.assertTrue(self.store.enter_draw(self.user_id, draw_id)["already_entered"])
+        self.assertTrue(self.store.active_draws(self.user_id)[0]["entered"])
 
     def test_manual_order_refunds_wallet_after_deadline(self):
         product_id = self.add_product("manual")

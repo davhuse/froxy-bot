@@ -56,6 +56,19 @@ class LisansArenaPaymentTests(unittest.TestCase):
         self.assertIn("setChatMenuButton", source)
         self.assertIn("ButtonTypeInvalidError", source)
 
+    def test_all_customer_commands_are_registered_and_have_handlers(self):
+        source = Path("lisansarena_bot.py").read_text(encoding="utf-8")
+        commands = (
+            "start", "magaza", "urunler", "bakiye", "siparisler",
+            "hesaplar", "gecmis", "kullanim", "talep", "destek",
+            "iade", "referans", "cekilis", "ayarlar", "dil", "yardim",
+        )
+        for command in commands:
+            self.assertIn(f'(\"{command}\",', source)
+        self.assertIn("setMyCommands", source)
+        self.assertIn("setMyDescription", source)
+        self.assertIn("setMyProfilePhoto", source)
+
 
 if __name__ == "__main__":
     unittest.main()

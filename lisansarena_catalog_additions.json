@@ -1,0 +1,98 @@
+[
+  {
+    "id": "la-email-netflix-ortak",
+    "title": "Netflix 4K UHD Ortak Profil",
+    "price": "39,99 TL",
+    "description": "Netflix 4K UHD ortak hesapta kişiye ayrılmış profil. Teslimat bilgileri sipariş sonrasında iletilir."
+  },
+  {
+    "id": "la-email-trendyol-yemek",
+    "title": "Trendyol Go Yemek İndirim Kuponu (700 TL'ye 250 TL)",
+    "price": "49,99 TL",
+    "description": "Trendyol Go Yemek siparişinde 700 TL sepet için 250 TL indirim sağlayan tek kullanımlık kupon."
+  },
+  {
+    "id": "la-email-trendyol-market",
+    "title": "Trendyol Go Market İndirim Kuponu (900 TL'ye 250 TL)",
+    "price": "49,99 TL",
+    "description": "Trendyol Go Market siparişinde 900 TL sepet için 250 TL indirim sağlayan tek kullanımlık kupon."
+  },
+  {
+    "id": "la-email-exxen-3ay",
+    "title": "Exxen Reklamsız (3 Aylık)",
+    "price": "36,99 TL",
+    "description": "Exxen reklamsız üç aylık kullanım. Teslimat bilgileri sipariş sonrasında iletilir."
+  },
+  {
+    "id": "la-email-netflix-kisisel",
+    "title": "Netflix 4K Ultra HD (Kişisel Profil)",
+    "price": "94,49 TL",
+    "description": "Netflix 4K Ultra HD hesapta kişiye ayrılmış profil. Teslimat bilgileri sipariş sonrasında iletilir."
+  },
+  {
+    "id": "la-email-youtube-3ay",
+    "title": "YouTube Premium (3 Aylık Kod)",
+    "price": "47,24 TL",
+    "description": "YouTube Premium üç aylık aktivasyon kodu. Uygunluk ve kullanım şartları teslimat öncesinde doğrulanır."
+  },
+  {
+    "id": "la-email-spotify-4ay",
+    "title": "Spotify Premium (4 Aylık Kod)",
+    "price": "36,74 TL",
+    "description": "Spotify Premium dört aylık aktivasyon kodu. Uygunluk ve kullanım şartları teslimat öncesinde doğrulanır."
+  },
+  {
+    "id": "la-email-hbo-max",
+    "title": "HBO Max 1 Aylık Profil",
+    "price": "39,90 TL",
+    "description": "HBO Max bir aylık kişiye ayrılmış profil. Teslimat bilgileri sipariş sonrasında iletilir."
+  },
+  {
+    "id": "la-email-prime-ozel",
+    "title": "Prime Video (1 Aylık) - Özel Profil",
+    "price": "29,90 TL",
+    "description": "Prime Video bir aylık kişiye ayrılmış profil. Teslimat bilgileri sipariş sonrasında iletilir."
+  },
+  {
+    "id": "la-email-prime-ortak",
+    "title": "Prime Video (1 Aylık) - Ortak Profil",
+    "price": "19,90 TL",
+    "description": "Prime Video bir aylık ortak profil. Teslimat bilgileri sipariş sonrasında iletilir."
+  },
+  {
+    "id": "la-approved-chatgpt-kisisel",
+    "title": "ChatGPT Plus 30 Gün - Kişisel",
+    "price": "250,00 TL",
+    "description": "ChatGPT Plus 30 günlük kişisel kullanım. Teslimat bilgileri sipariş sonrasında iletilir."
+  },
+  {
+    "id": "la-approved-chatgpt-ortak",
+    "title": "ChatGPT Plus 30 Gün - Ortak",
+    "price": "69,90 TL",
+    "description": "ChatGPT Plus 30 günlük ortak kullanım. Teslimat bilgileri sipariş sonrasında iletilir."
+  },
+  {
+    "id": "la-approved-gemini-pro-3ay",
+    "title": "Gemini Pro 3 Aylık",
+    "price": "59,90 TL",
+    "description": "Gemini Pro üç aylık kullanım. Teslimat bilgileri sipariş sonrasında iletilir."
+  },
+  {
+    "id": "la-approved-discord-nitro-14x",
+    "title": "Discord Nitro 14X Boost - 1 Aylık",
+    "price": "224,99 TL",
+    "description": "Discord Nitro 14X Boost bir aylık kullanım. Uygunluk ve teslimat bilgileri sipariş öncesinde doğrulanır."
+  },
+  {
+    "id": "la-approved-xbox-gamepass-3ay",
+    "title": "Xbox Game Pass Ultimate 3 Aylık",
+    "price": "89,90 TL",
+    "description": "Xbox Game Pass Ultimate üç aylık kullanım. Teslimat bilgileri sipariş sonrasında iletilir."
+  },
+  {
+    "id": "la-approved-kaspersky-1y",
+    "title": "Kaspersky Premium 1 Yıl - 1 Cihaz",
+    "price": "244,99 TL",
+    "description": "Kaspersky Premium bir yıllık, tek cihazlık lisans. Aktivasyon ve kullanım bilgileri teslimatta iletilir."
+  }
+]

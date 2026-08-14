@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 from telethon.errors import ChannelPrivateError, UsernameInvalidError
 
@@ -96,6 +96,26 @@ class GroupStateTests(unittest.TestCase):
                     publisher.live_joined_sales_targets(joined, "KeyVadiOnline"),
                     {"yenikuponpazari"},
                 )
+                self.assertEqual(
+                    publisher.live_joined_sales_targets(joined, "LisansArenaOnline"),
+                    {"yenikuponpazari"},
+                )
+
+    def test_candidate_report_is_detailed_but_does_not_auto_approve(self):
+        with tempfile.TemporaryDirectory() as directory:
+            blocks = str(Path(directory) / "blocks.json")
+            with patch.object(publisher, "ACCOUNT_GROUP_BLOCKS_FILE", blocks):
+                entity = self._entity(username="yenikuponpazari", entity_id=991)
+                rows = publisher.live_joined_sales_candidate_report(
+                    {"yenikuponpazari": entity}, "FroxyOnline", {"mevcutgrup"}
+                )
+                self.assertEqual(rows[0]["username"], "yenikuponpazari")
+                self.assertTrue(rows[0]["eligible"])
+                self.assertFalse(rows[0]["approved"])
+                send_targets, _ = publisher.reconcile_send_targets(
+                    {"mevcutgrup"}, {rows[0]["username"]}
+                )
+                self.assertEqual(send_targets, {"mevcutgrup"})
 
     def test_live_candidate_never_expands_send_targets_without_approval(self):
         send_targets, candidates = publisher.reconcile_send_targets(
@@ -186,6 +206,74 @@ class GroupStateTests(unittest.TestCase):
                 "indirim363", seconds=0, experiment_arm="policy_smoke"
             ))
             set_cooldown.assert_not_called()
+
+    def test_transport_layer_always_disables_link_preview(self):
+        class Sent:
+            id = 77
+            raw_text = "Froxy panel: @FroxyDestekBOT"
+            media = None
+
+        class Client:
+            def __init__(self):
+                self.kwargs = None
+
+            async def send_message(self, entity, message, **kwargs):
+                self.kwargs = kwargs
+                return Sent()
+
+            async def get_messages(self, entity, ids):
+                return SimpleNamespace(empty=False)
+
+        async def run():
+            client = Client()
+            def discard_task(coroutine):
+                coroutine.close()
+                return None
+            with patch.object(publisher.asyncio, "sleep", return_value=None), patch.object(
+                publisher.asyncio, "create_task", side_effect=discard_task
+            ):
+                await publisher.send_and_verify_ad(
+                    client, self._entity(), Sent.raw_text, "FroxyOnline",
+                    "kuponceksatis", {"parse_mode": "md", "link_preview": None},
+                )
+            return client.kwargs
+
+        kwargs = asyncio.run(run())
+        self.assertIs(kwargs["link_preview"], False)
+
+    def test_controlled_release_smoke_awaits_the_full_visibility_check(self):
+        class Sent:
+            id = 88
+            raw_text = "KeyVadi ürün listesi"
+            media = None
+
+        class Client:
+            async def send_message(self, entity, message, **kwargs):
+                return Sent()
+
+            async def get_messages(self, entity, ids):
+                return SimpleNamespace(empty=False)
+
+        async def run():
+            verifier = AsyncMock(return_value={"success": True, "message_id": 88})
+            with patch.object(publisher.asyncio, "sleep", return_value=None), patch.object(
+                publisher, "verify_ad_after_window", verifier
+            ):
+                sent = await publisher.send_and_verify_ad(
+                    Client(), self._entity(), Sent.raw_text, "KeyVadiOnline",
+                    "indirim363", {
+                        "parse_mode": None,
+                        "controlled_smoke": True,
+                        "verification_seconds": 600,
+                    },
+                )
+            return sent, verifier
+
+        sent, verifier = asyncio.run(run())
+        self.assertEqual(sent.id, 88)
+        self.assertEqual(verifier.await_count, 1)
+        self.assertEqual(verifier.await_args.kwargs["seconds"], 600)
+        self.assertTrue(verifier.await_args.kwargs["raise_on_failure"])
 
 
 if __name__ == "__main__":

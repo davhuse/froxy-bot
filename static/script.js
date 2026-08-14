@@ -202,6 +202,23 @@ async function loadGroupStatus() {
             ['Süreli beklemeler', data.temporary || []],
             ['Erişim incelemeleri', data.review || []]
         ];
+        const checkpoint = data.blast_checkpoint || {};
+        const queueSection = document.createElement('section');
+        queueSection.style.cssText = 'padding:12px;border:1px solid rgba(96,165,250,.28);border-radius:10px';
+        const queueHeading = document.createElement('h3');
+        queueHeading.textContent = `Tekli blast sırası • Aktif: ${checkpoint.active_account || 'yok'}`;
+        queueHeading.style.margin = '0 0 8px';
+        queueSection.appendChild(queueHeading);
+        for (const [account, queue] of Object.entries(checkpoint.accounts || {})) {
+            const targets = Array.isArray(queue.targets) ? queue.targets : [];
+            const cursor = Number(queue.cursor || 0);
+            const current = targets[cursor];
+            const line = document.createElement('div');
+            line.textContent = `${account} • ${queue.status || 'bilinmiyor'} • ${targets.length ? `${Math.min(cursor + 1, targets.length)}/${targets.length}` : '0/0'}${current ? ` • sıradaki @${current.group}` : ''}${queue.pause_reason ? ` • ${queue.pause_reason}` : ''}`;
+            line.style.cssText = 'padding:6px 0;border-top:1px solid rgba(255,255,255,.06);overflow-wrap:anywhere';
+            queueSection.appendChild(line);
+        }
+        container.appendChild(queueSection);
         for (const [title, rows] of sections) {
             const section = document.createElement('section');
             section.style.cssText = 'padding:12px;border:1px solid rgba(255,255,255,.1);border-radius:10px';
@@ -253,6 +270,23 @@ async function loadGroupStatus() {
             }
             container.appendChild(section);
         }
+        for (const [account, candidates] of Object.entries(data.candidate_groups || {})) {
+            const eligible = (candidates || []).filter(row => row.eligible && !row.approved);
+            if (!eligible.length) continue;
+            const section = document.createElement('section');
+            section.style.cssText = 'padding:12px;border:1px solid rgba(255,255,255,.1);border-radius:10px';
+            const heading = document.createElement('h3');
+            heading.textContent = `${account} yeni grup adayları (${eligible.length})`;
+            heading.style.margin = '0 0 8px';
+            section.appendChild(heading);
+            for (const candidate of eligible) {
+                const line = document.createElement('div');
+                line.textContent = `@${candidate.username} • ${candidate.members || 0} üye • ${candidate.writable ? 'yazılabilir' : 'yazma kapalı'} • otomatik eklenmedi`;
+                line.style.cssText = 'padding:6px 0;border-top:1px solid rgba(255,255,255,.06);overflow-wrap:anywhere';
+                section.appendChild(line);
+            }
+            container.appendChild(section);
+        }
     } catch (error) {
         const message = document.createElement('p');
         message.textContent = `Grup durumları alınamadı: ${error.message}`;
@@ -275,6 +309,12 @@ function renderAdCountdowns() {
                 state.phase === 'stopped' ? 'Durduruldu' : 'Telegram Bağlı Değil';
             value.style.color = '#f87171';
             meta.textContent = state.lastError || 'Yetkilendirilmiş Telegram bağlantısı yok';
+        } else if (state.queueActive && state.queueState) {
+            const current = state.queueState.current_index || 0;
+            const total = state.queueState.total_groups || 0;
+            value.textContent = total ? `${current}/${total} Gönderiliyor` : 'Hazırlanıyor';
+            value.style.color = '#60a5fa';
+            meta.textContent = 'Tekli sıranın aktif hesabı';
         } else if (state.hasCountdown && seconds > 0) {
             value.textContent = formatAdCountdown(seconds);
             value.style.color = '#fbbf24';
@@ -290,12 +330,13 @@ function renderAdCountdowns() {
         } else {
             value.textContent = 'Hazır';
             value.style.color = '#4ade80';
-            meta.textContent = 'Yeni blast için uygun';
+            meta.textContent = state.queueState && state.queueState.status === 'queued'
+                ? 'Tekli gönderim sırasında bekliyor' : 'Yeni blast için uygun';
         }
     });
 }
 
-function updateAdCountdowns(accounts) {
+function updateAdCountdowns(accounts, queue) {
     ['FroxyOnline', 'KeyVadiOnline', 'LisansArenaOnline'].forEach(account => {
         const data = accounts && accounts[account];
         if (!data) return;
@@ -306,7 +347,9 @@ function updateAdCountdowns(accounts) {
             telegramConnected: data.telegram_connected === true,
             lastError: data.last_error || data.session_error || '',
             hasCountdown: Number.isFinite(remaining) && remaining > 0,
-            targetAt: Date.now() + (Number.isFinite(remaining) ? Math.max(0, remaining) * 1000 : 0)
+            targetAt: Date.now() + (Number.isFinite(remaining) ? Math.max(0, remaining) * 1000 : 0),
+            queueActive: queue && queue.active_account === account,
+            queueState: queue && queue.accounts ? queue.accounts[account] : null
         };
     });
     renderAdCountdowns();
@@ -317,7 +360,7 @@ async function checkStatus() {
         const res = await fetch('/api/status');
         const data = await res.json();
         updateStatusUI(data.status);
-        updateAdCountdowns(data.ad_accounts || {});
+        updateAdCountdowns(data.ad_accounts || {}, data.blast_queue || {});
     } catch (e) {
         updateStatusUI('offline');
     }

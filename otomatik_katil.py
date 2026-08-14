@@ -11,6 +11,8 @@ import shutil
 import time
 import signal
 
+from blast_scheduler import BlastCoordinator
+
 try:
     sys.stdout.reconfigure(encoding='utf-8')
     sys.stderr.reconfigure(encoding='utf-8')
@@ -57,8 +59,41 @@ class ModerationDeletedError(RuntimeError):
     """Telegram accepted a send request but no visible message remained."""
 
 
+CONTROLLED_SMOKE_MODE = (
+    os.environ.get("BOT_AD_RUN_MODE", "").strip().lower() == "controlled_smoke"
+)
+CONTROLLED_SMOKE_ACCOUNT = os.environ.get(
+    "BOT_AD_SMOKE_ACCOUNT", "KeyVadiOnline"
+).strip()
+CONTROLLED_SMOKE_GROUP = os.environ.get("BOT_AD_SMOKE_GROUP", "").strip().lower().lstrip("@")
+CONTROLLED_SMOKE_SECONDS = max(
+    1, int(os.environ.get("BOT_AD_SMOKE_SECONDS", "600") or 600)
+)
+CONTROLLED_SMOKE_RESULT_FILE = "ad_smoke_result.json"
+CONTROLLED_SMOKE_CHECKPOINT_FILE = "blast_smoke_checkpoint.json"
+
+
+def write_controlled_smoke_result(status, *, account=None, group=None, reason=None,
+                                  message_id=None):
+    """Persist a non-sensitive result consumed by the web-process gate."""
+    payload = {
+        "status": str(status),
+        "account": account or CONTROLLED_SMOKE_ACCOUNT,
+        "group": (group or CONTROLLED_SMOKE_GROUP).lower().lstrip("@"),
+        "reason": reason,
+        "message_id": message_id,
+        "finished_at": datetime.now(timezone.utc).isoformat(),
+    }
+    temporary = f"{CONTROLLED_SMOKE_RESULT_FILE}.{os.getpid()}.tmp"
+    with open(temporary, "w", encoding="utf-8") as handle:
+        json.dump(payload, handle, ensure_ascii=False, indent=2)
+    os.replace(temporary, CONTROLLED_SMOKE_RESULT_FILE)
+    return payload
+
+
 async def verify_ad_after_window(client, entity, message_id, client_name, group_name,
-                                 seconds=600, experiment_arm=None, template=None):
+                                 seconds=600, experiment_arm=None, template=None,
+                                 raise_on_failure=False):
     """Record the controlled smoke-test result without blocking the blast worker."""
     await asyncio.sleep(seconds)
     try:
@@ -89,6 +124,7 @@ async def verify_ad_after_window(client, entity, message_id, client_name, group_
             last_error=None,
             session_error=None,
         )
+        return {"success": True, "message_id": message_id}
     except ModerationDeletedError as exc:
         record_moderation_hold(group_name, client_name, str(exc), entity=entity)
         record_group_failure(group_name, client_name, "ModerationDeleted", 24 * 60 * 60, entity)
@@ -97,6 +133,9 @@ async def verify_ad_after_window(client, entity, message_id, client_name, group_
             group=normalize_group_key(group_name), source="telegram_visibility_check",
             error=type(exc).__name__,
         )
+        if raise_on_failure:
+            raise
+        return {"success": False, "reason": type(exc).__name__}
     except Exception as exc:
         # A transient Telegram/read failure does not prove that moderators
         # deleted the advert. Preserve the accepted state without imposing a
@@ -110,6 +149,11 @@ async def verify_ad_after_window(client, entity, message_id, client_name, group_
             group=normalize_group_key(group_name), source="telegram_visibility_check",
             error=type(exc).__name__,
         )
+        if raise_on_failure:
+            raise RuntimeError(
+                f"Visibility check failed: {type(exc).__name__}"
+            ) from exc
+        return {"success": False, "reason": type(exc).__name__}
 
 
 async def send_and_verify_ad(client, entity, message, client_name, group_name, options, file=None):
@@ -119,8 +163,9 @@ async def send_and_verify_ad(client, entity, message, client_name, group_name, o
         kwargs["file"] = file
     if options.get("parse_mode") is None:
         kwargs["parse_mode"] = None
-    if options.get("link_preview") is not None:
-        kwargs["link_preview"] = bool(options["link_preview"])
+    # Final transport-layer guarantee: a template or A/B branch can never
+    # accidentally restore Telegram's automatic "VIEW BOT" preview card.
+    kwargs["link_preview"] = False
     sent = await client.send_message(entity, message, **kwargs)
     message_id = getattr(sent, "id", None)
     raw_text = getattr(sent, "raw_text", None) or getattr(sent, "message", None)
@@ -142,13 +187,22 @@ async def send_and_verify_ad(client, entity, message, client_name, group_name, o
     record_delivery_state(
         group_name, client_name, "visible", entity=entity, message_id=message_id
     )
-    asyncio.create_task(
-        verify_ad_after_window(
+    if options.get("controlled_smoke"):
+        await verify_ad_after_window(
             client, entity, message_id, client_name, group_name,
+            seconds=int(options.get("verification_seconds") or 600),
             experiment_arm=options.get("experiment_arm"),
             template=options.get("template"),
+            raise_on_failure=True,
         )
-    )
+    else:
+        asyncio.create_task(
+            verify_ad_after_window(
+                client, entity, message_id, client_name, group_name,
+                experiment_arm=options.get("experiment_arm"),
+                template=options.get("template"),
+            )
+        )
     return sent
 
 # --- AYARLAR ---
@@ -977,7 +1031,7 @@ def is_excluded_ad_target(group_name, entity=None):
 def joined_sales_target_status(group_name, entity, client_name):
     """Return (eligible, reason) for live-dialog auto targeting."""
     brand = account_brand(client_name)
-    if brand not in {'froxy', 'keyvadi'}:
+    if brand not in {'froxy', 'keyvadi', 'lisansarena'}:
         return False, 'unsupported_account'
     if entity is None:
         return False, 'not_joined'
@@ -1026,6 +1080,34 @@ def live_joined_sales_targets(joined_dialogs, client_name):
         if eligible:
             targets.add(username)
     return targets
+
+
+def live_joined_sales_candidate_report(joined_dialogs, client_name, approved_targets=None):
+    """Return account-specific dialog classifications without auto-approval."""
+    approved = {normalize_group_key(item) for item in (approved_targets or []) if item}
+    rows = []
+    seen = set()
+    for dialog_key, entity in joined_dialogs.items():
+        if dialog_key == 'id' or entity is None:
+            continue
+        dedupe = target_dedupe_key(dialog_key, entity)
+        if dedupe in seen:
+            continue
+        seen.add(dedupe)
+        username = normalize_group_key(getattr(entity, 'username', None) or dialog_key)
+        eligible, reason = joined_sales_target_status(username, entity, client_name)
+        rights = getattr(entity, 'default_banned_rights', None)
+        rows.append({
+            'username': username,
+            'title': getattr(entity, 'title', '') or '',
+            'members': int(getattr(entity, 'participants_count', 0) or 0),
+            'stable_chat_id': dedupe,
+            'writable': not bool(rights and getattr(rights, 'send_messages', False)),
+            'eligible': bool(eligible),
+            'approved': username in approved,
+            'reason': 'approved' if username in approved else reason,
+        })
+    return sorted(rows, key=lambda row: (-row['members'], row['username']))
 
 
 def reconcile_send_targets(approved_targets, live_candidates):
@@ -1605,9 +1687,6 @@ LISANSARENA_MESSAGES = [
     os.path.join(MESSAGES_DIR, 'lisansarena_1.txt'),
     os.path.join(MESSAGES_DIR, 'lisansarena_2.txt'),
     os.path.join(MESSAGES_DIR, 'lisansarena_3.txt'),
-    os.path.join(MESSAGES_DIR, 'lisansarena_4.txt'),
-    os.path.join(MESSAGES_DIR, 'lisansarena_5.txt'),
-    os.path.join(MESSAGES_DIR, 'lisansarena_6.txt'),
 ]
 
 # Mesaj geçmişi (aynı gruba aynı mesaj gitmesin)
@@ -3522,6 +3601,23 @@ async def main():
         import sys
         sys.exit(1)
 
+    if CONTROLLED_SMOKE_MODE:
+        expected = set(BEKLENEN_HESAPLAR)
+        authorized = {name for _, name, _ in active_clients}
+        missing = sorted(expected - authorized)
+        invalid_request = (
+            CONTROLLED_SMOKE_ACCOUNT not in expected
+            or not CONTROLLED_SMOKE_GROUP
+        )
+        if missing or invalid_request:
+            reason = (
+                f"missing_authorized_accounts:{','.join(missing)}"
+                if missing else "invalid_smoke_request"
+            )
+            write_controlled_smoke_result("failed", reason=reason)
+            print(f"🛑 Kontrollü smoke ön kontrolü başarısız: {reason}")
+            stop_event.set()
+
     # Sistem genelinde bizim olan User ID'lerin toplanması
     our_user_ids = set()
     for _, _, info in active_clients:
@@ -3793,12 +3889,48 @@ async def main():
             if is_account_restricted(client_name, scope='send'):
                 state = account_restriction_status(client_name, scope='send')
                 print(f"[{client_name}] ⏸️ Hesap kısıtlaması aktif; {state.get('until', 'belirsiz')} tarihine kadar gönderim durdu.")
-                await asyncio.sleep(60)
+                until = _parse_utc_datetime(state.get('until'))
+                pause_seconds = max(
+                    60,
+                    int((until - datetime.now(timezone.utc)).total_seconds()) if until else 60,
+                )
+                await asyncio.to_thread(
+                    blast_coordinator.pause_account,
+                    client_name,
+                    pause_seconds,
+                    state.get('reason') or 'Telegram hesap kısıtlaması',
+                )
+                await asyncio.sleep(min(60, pause_seconds))
+                continue
+
+            # Three Telegram sessions stay connected, but exactly one account
+            # owns the advertising turn. The durable coordinator also restores
+            # the active account and its group cursor after a deploy.
+            owns_blast_turn = await asyncio.to_thread(
+                blast_coordinator.try_acquire_turn, client_name
+            )
+            if not owns_blast_turn:
+                queue_wait = await asyncio.to_thread(
+                    blast_coordinator.remaining_wait, client_name
+                )
+                queue_snapshot = await asyncio.to_thread(blast_coordinator.snapshot)
+                update_ad_account_status(
+                    client_name,
+                    phase='queued',
+                    active_account=queue_snapshot.get('active_account'),
+                    remaining_seconds=queue_wait,
+                    remaining_minutes=(queue_wait + 59) // 60,
+                    next_blast_at=utc_after_seconds_iso(queue_wait),
+                )
+                await asyncio.sleep(min(15, max(3, queue_wait or 5)))
                 continue
 
             # Her blast turu öncesi son blast zamanına bak.
             # Son blast üzerinden 1 saat geçmediyse kalan süreyi bekle, 1 saat geçtiyse hemen başla.
-            rem_wait = get_last_blast_remaining_wait(client_name, target_wait_seconds=3600)
+            # Legacy cooldown timestamps were folded into V3 at startup.
+            # Holding the central turn while waiting would block the other
+            # accounts, so the acquired owner always starts preparation now.
+            rem_wait = 0
             if rem_wait > 0:
                 elapsed_min = (3600 - rem_wait) // 60
                 rem_min = rem_wait // 60
@@ -3923,7 +4055,7 @@ async def main():
                         values.remove(normalized)
                 group_states[state_name].append(normalized)
 
-            if account_brand(client_name) in {'froxy', 'keyvadi'}:
+            if account_brand(client_name) in {'froxy', 'keyvadi', 'lisansarena'}:
                 classified_dialogs = set()
                 for dialog_key, dialog_entity in joined_dialogs.items():
                     if dialog_key == 'id' or dialog_entity is None:
@@ -3948,6 +4080,9 @@ async def main():
                     set_group_state(dialog_name, state_name)
             for candidate in approval_candidates:
                 set_group_state(candidate, 'approval_candidates')
+            candidate_report = live_joined_sales_candidate_report(
+                joined_dialogs, client_name, approved_targets
+            )
             for username_lower in hedef_set:
                 entity = joined_dialogs.get(username_lower)
                 if (blacklist_keys.intersection(group_state_keys(username_lower, entity))
@@ -4027,6 +4162,45 @@ async def main():
             #     print(f"[{client_name}] 🔀 İş yükü bölündü: {original_count} gruptan {len(blast_targets)} tanesi bu hesaba atandı.")
             pass
 
+            if CONTROLLED_SMOKE_MODE:
+                smoke_group = normalize_group_key(CONTROLLED_SMOKE_GROUP)
+                if client_name != CONTROLLED_SMOKE_ACCOUNT:
+                    await asyncio.to_thread(
+                        blast_coordinator.pause_account,
+                        client_name, 3600, "not_selected_for_controlled_smoke",
+                    )
+                    return
+                if smoke_group not in {normalize_group_key(g) for g in hedef_set}:
+                    write_controlled_smoke_result(
+                        "failed", account=client_name, group=smoke_group,
+                        reason="group_not_in_approved_targets",
+                    )
+                    await asyncio.to_thread(
+                        blast_coordinator.release_empty_cycle, client_name, 3600
+                    )
+                    stop_event.set()
+                    return
+                if smoke_group not in {normalize_group_key(g) for g in blast_targets}:
+                    reason = "group_not_sendable"
+                    for state_name, state_groups in group_states.items():
+                        if smoke_group in {normalize_group_key(g) for g in state_groups}:
+                            reason = state_name
+                            break
+                    write_controlled_smoke_result(
+                        "failed", account=client_name, group=smoke_group,
+                        reason=reason,
+                    )
+                    await asyncio.to_thread(
+                        blast_coordinator.release_empty_cycle, client_name, 3600
+                    )
+                    stop_event.set()
+                    return
+                blast_targets = [smoke_group]
+                print(
+                    f"🧪 [{client_name}] Kontrollü smoke yalnız @{smoke_group} "
+                    f"için başlıyor; pencere={CONTROLLED_SMOKE_SECONDS}sn."
+                )
+
             
             print(f"[{client_name}] 📊 Hedef: {len(hedef_set)} | Gönderilecek: {len(blast_targets)} | Kara liste: {debug_blacklisted} | Küçük grup çıkar: {small_groups_skipped} | Üye değil: {debug_not_cached}")
 
@@ -4044,6 +4218,7 @@ async def main():
                     name: sorted(set(groups))
                     for name, groups in group_states.items()
                 },
+                candidate_groups=candidate_report,
             )
 
             # Sayaclar dongu govdesinde ilklenmeli: asagida bekleme suresini
@@ -4098,16 +4273,16 @@ async def main():
                     clear_group_failure(grup_name, client_name,
                                         joined_dialogs.get(grup_name.lower()))
 
-                async def blast_one(grup_name, retry_count=0):
+                async def blast_one(grup_name, retry_count=0, chosen_file_override=None):
                     """Tek bir gruba rotasyonlu mesaj gönder"""
                     nonlocal sent_count, fail_count
                     if not await ensure_telegram_connection(client, client_name):
                         print(f"[{client_name}] Telegram bağlantısı yok, @{grup_name} bu turda atlanıyor.")
                         fail_count += 1
-                        return
+                        return {'status': 'failed', 'reason': 'telegram_disconnected'}
                     entity = joined_dialogs.get(grup_name.lower())
                     if not entity:
-                        return
+                        return {'status': 'skipped', 'reason': 'not_joined'}
                     group_key = cooldown_key(grup_name, entity)
                     current_brand = account_brand(client_name)
                     _policy_key, group_policy = resolve_group_policy(grup_name, entity)
@@ -4122,16 +4297,16 @@ async def main():
                             f"[{client_name}] ⏸️ @{grup_name} politika beklemesinde: "
                             f"{group_policy.get('hold_reason') or 'inceleme bekleniyor'}"
                         )
-                        return
+                        return {'status': 'skipped', 'reason': 'policy_hold'}
                     if moderation_hold_active(grup_name, client_name, entity=entity):
                         print(f"[{client_name}] ⏸️ @{grup_name} moderasyon sonrası 24 saat beklemede.")
-                        return
+                        return {'status': 'skipped', 'reason': 'moderation_hold'}
                     if visibility_check_pending(grup_name, entity=entity):
                         print(
                             f"[{client_name}] @{grup_name} önceki mesajın 10 dakikalık "
                             "görünürlük kontrolünü bekliyor."
                         )
-                        return
+                        return {'status': 'skipped', 'reason': 'visibility_check_pending'}
                     smoke_pending = policy_smoke_pending(
                         grup_name, client_name, group_policy, entity=entity
                     )
@@ -4142,17 +4317,17 @@ async def main():
                             f"[{client_name}] @{grup_name} diğer hesabın politika "
                             "smoke kontrolünü bekliyor."
                         )
-                        return
+                        return {'status': 'skipped', 'reason': 'other_account_smoke'}
                     if group_key in sent_this_cycle:
                         print(f"[{client_name}] ⏭️ @{grup_name} bu turda zaten gönderildi, atlanıyor...")
-                        return
+                        return {'status': 'skipped', 'reason': 'already_sent_this_cycle'}
                     if is_group_retry_blocked(grup_name, client_name, entity):
                         print(f"[{client_name}] ⏸️ @{grup_name} geçici/hesaba özel gönderim engelinde, atlanıyor...")
-                        return
+                        return {'status': 'skipped', 'reason': 'temporary_group_block'}
 
                     if is_account_group_blocked(grup_name, client_name, entity):
                         print(f"[{client_name}] account-specific permanent block: @{grup_name}")
-                        return
+                        return {'status': 'skipped', 'reason': 'account_group_block'}
 
                     lock_claimed = False
                     distributed_claim_id = None
@@ -4160,13 +4335,13 @@ async def main():
                     async with state_lock:
                         if group_key in sent_this_cycle:
                             print(f"[{client_name}] ⏭️ @{grup_name} bu turda zaten gönderildi, atlanıyor...")
-                            return
+                            return {'status': 'skipped', 'reason': 'already_sent_this_cycle'}
                         if is_on_cooldown(grup_name, client_name, entity):
                             print(f"[{client_name}] ⏳ @{grup_name} cooldown süresinde, atlanıyor...")
-                            return
+                            return {'status': 'skipped', 'reason': 'cooldown'}
                         if not claim_send_lock(grup_name, client_name, entity=entity):
                             print(f"[{client_name}] 🔒 @{grup_name} gönderim kilidinde, bu turda atlanıyor...")
-                            return
+                            return {'status': 'skipped', 'reason': 'local_send_lock'}
                         lock_claimed = True
 
                     # JSON locks are process-local.  Claim the same account /
@@ -4178,13 +4353,18 @@ async def main():
                     if not distributed_claim_id:
                         async with state_lock:
                             release_send_lock(grup_name, client_name, entity)
-                        return
+                        return {'status': 'skipped', 'reason': 'distributed_send_claim'}
 
                     retry_after = 0
+                    sent_message = None
                     try:
                         # Mesaj rotasyonu: bu grup için farklı mesaj seç
                         if available_files:
-                            chosen_file = pick_message_for_group(grup_name, available_files, msg_history)
+                            chosen_file = chosen_file_override or pick_message_for_group(
+                                grup_name, available_files, msg_history
+                            )
+                            if chosen_file_override:
+                                msg_history[grup_name.lower()] = chosen_file_override
                             try:
                                 with open(chosen_file, 'r', encoding='utf-8') as fm:
                                     base_msg = fm.read()
@@ -4250,6 +4430,9 @@ async def main():
                         send_options["template"] = (
                             os.path.basename(chosen_file) if available_files else "fallback"
                         )
+                        if CONTROLLED_SMOKE_MODE:
+                            send_options["controlled_smoke"] = True
+                            send_options["verification_seconds"] = CONTROLLED_SMOKE_SECONDS
                         
                         # Görsel/Banner gönderimi (Grup yetki kontrolleri ve hata toleransı eklendi)
                         if is_keyvadi:
@@ -4266,6 +4449,10 @@ async def main():
                                     allows_media = cfg.get("send_images", False)
                             except:
                                 pass
+                        if CONTROLLED_SMOKE_MODE:
+                            # Release smoke validates the exact text transport;
+                            # media is deliberately excluded from this gate.
+                            allows_media = False
                                 
                         # Grup bazında görsel engeli var mı kontrol et
                         if allows_media:
@@ -4283,7 +4470,7 @@ async def main():
                         if allows_media and os.path.exists(banner_file):
                             try:
                                 if len(msg) <= 1024:
-                                    await send_and_verify_ad(
+                                    sent_message = await send_and_verify_ad(
                                         client, entity, msg, client_name, grup_name,
                                         send_options, file=banner_file,
                                     )
@@ -4292,7 +4479,7 @@ async def main():
                                     print(f"[{client_name}] 📸 @{grup_name} → Görselli Gönderildi! ({sent_count+1}) [Şablon: {chosen_name}]")
                                 else:
                                     # Karakter sınırı 1024'ü aşıyorsa görsel gönderme, sadece tek parça düz metin gönder
-                                    await send_and_verify_ad(
+                                    sent_message = await send_and_verify_ad(
                                         client, entity, msg, client_name, grup_name, send_options
                                     )
                                     telegram_accepted = True
@@ -4302,14 +4489,14 @@ async def main():
                                 if isinstance(media_err, ModerationDeletedError):
                                     raise
                                 print(f"[{client_name}] ⚠️ @{grup_name} grubuna görsel gönderilemedi ({media_err}). Düz metin olarak gönderiliyor...")
-                                await send_and_verify_ad(
+                                sent_message = await send_and_verify_ad(
                                     client, entity, msg, client_name, grup_name, send_options
                                 )
                                 telegram_accepted = True
                                 chosen_name = os.path.basename(chosen_file) if available_files else "fallback"
                                 print(f"[{client_name}] ✅ @{grup_name} → Düz Metin Gönderildi! ({sent_count+1}) [Şablon: {chosen_name}]")
                         else:
-                            await send_and_verify_ad(
+                            sent_message = await send_and_verify_ad(
                                 client, entity, msg, client_name, grup_name, send_options
                             )
                             telegram_accepted = True
@@ -4415,21 +4602,118 @@ async def main():
 
                     if retry_after:
                         await asyncio.sleep(retry_after)
-                        await blast_one(grup_name, retry_count + 1)
-
-                # Gruplara sırayla ve aralarında 20-45 saniye rastgele bekleme (daha doğal)
-                mark_blast_started(client_name)
-                blast_interrupted = False
-                random.shuffle(blast_targets)  # Grup sırasını karıştır
-                print(f"\n[{client_name}] 📤 Sırayla gönderim başlıyor ({len(blast_targets)} grup)...")
-                for i, g in enumerate(blast_targets, 1):
-                    await blast_one(g)
+                        return await blast_one(
+                            grup_name, retry_count + 1, chosen_file_override
+                        )
+                    if telegram_accepted:
+                        return {
+                            'status': 'accepted',
+                            'message_id': getattr(sent_message, 'id', None),
+                            'reason': None,
+                        }
                     if is_account_restricted(client_name, scope='send'):
-                        state = account_restriction_status(client_name, scope='send')
-                        print(f"[{client_name}] ⏸️ Hesap gönderim kısıtında ({state.get('until', 'bilinmiyor')}); bu tur güvenli biçimde durduruldu.")
+                        return {'status': 'deferred', 'reason': 'account_restricted'}
+                    return {'status': 'failed', 'reason': 'telegram_send_failed'}
+
+                # The target order and template assignment are persisted once
+                # at cycle start. A deploy therefore continues the same group
+                # with the same copy instead of reshuffling or restarting all
+                # three accounts.
+                cycle_state = await asyncio.to_thread(
+                    blast_coordinator.begin_cycle,
+                    client_name,
+                    blast_targets,
+                    available_files,
+                )
+                if not CONTROLLED_SMOKE_MODE:
+                    mark_blast_started(client_name)
+                blast_interrupted = False
+                last_outcome = None
+                cycle_total = len(cycle_state.get('targets') or [])
+                print(
+                    f"\n[{client_name}] 📤 Tekli sırada gönderim başlıyor "
+                    f"({cycle_total} grup, run={cycle_state.get('run_id', '')[:8]})..."
+                )
+                while True:
+                    target_record = await asyncio.to_thread(
+                        blast_coordinator.next_target, client_name
+                    )
+                    if not target_record:
+                        break
+                    target_index = int(target_record['index'])
+                    g = target_record['group']
+                    claimed = await asyncio.to_thread(
+                        blast_coordinator.claim_target, client_name, target_index
+                    )
+                    if not claimed:
+                        await asyncio.to_thread(
+                            blast_coordinator.finish_target,
+                            client_name,
+                            target_index,
+                            'skipped_uncertain',
+                            reason='checkpoint_claim_already_exists',
+                        )
+                        continue
+
+                    update_ad_account_status(
+                        client_name,
+                        phase='sending',
+                        active_account=client_name,
+                        current_group=g,
+                        current_index=target_index + 1,
+                        total_groups=cycle_total,
+                        current_template=os.path.basename(
+                            target_record.get('template') or 'fallback'
+                        ),
+                    )
+                    outcome = await blast_one(
+                        g,
+                        chosen_file_override=target_record.get('template') or None,
+                    ) or {'status': 'failed', 'reason': 'empty_worker_outcome'}
+                    last_outcome = outcome
+
+                    if outcome.get('status') == 'deferred' or is_account_restricted(
+                        client_name, scope='send'
+                    ):
+                        restriction = account_restriction_status(
+                            client_name, scope='send'
+                        )
+                        until = _parse_utc_datetime(restriction.get('until'))
+                        wait_seconds = max(
+                            60,
+                            int((until - datetime.now(timezone.utc)).total_seconds())
+                            if until else 60,
+                        )
+                        await asyncio.to_thread(
+                            blast_coordinator.defer_current,
+                            client_name,
+                            target_index,
+                            wait_seconds,
+                            restriction.get('reason') or outcome.get('reason') or 'send_paused',
+                        )
+                        print(
+                            f"[{client_name}] ⏸️ Hesap {wait_seconds} saniye ertelendi; "
+                            "tekli sıra uygun sonraki hesaba bırakıldı."
+                        )
                         blast_interrupted = True
                         break
-                    if i < len(blast_targets):
+
+                    outcome_state = outcome.get('status')
+                    if outcome_state not in {'accepted', 'failed', 'skipped'}:
+                        outcome_state = 'failed'
+                    await asyncio.to_thread(
+                        blast_coordinator.finish_target,
+                        client_name,
+                        target_index,
+                        outcome_state,
+                        message_id=outcome.get('message_id'),
+                        reason=outcome.get('reason'),
+                    )
+
+                    upcoming = await asyncio.to_thread(
+                        blast_coordinator.next_target, client_name
+                    )
+                    if upcoming:
                         delay = random.randint(20, 45)
                         print(f"[{client_name}] ⏳ Sonraki grup için {delay} saniye bekleniyor...")
                         await asyncio.sleep(delay)
@@ -4450,7 +4734,11 @@ async def main():
                     print(f"[{client_name}] ⚠️ Cooldown bulut yedeği alınamadı: {e}")
 
                 if not blast_interrupted:
-                    save_last_blast_time(client_name)
+                    await asyncio.to_thread(
+                        blast_coordinator.complete_cycle, client_name, 3600
+                    )
+                    if not CONTROLLED_SMOKE_MODE:
+                        save_last_blast_time(client_name)
                     update_ad_account_status(
                         client_name,
                         phase='completed',
@@ -4471,9 +4759,36 @@ async def main():
                     )
                     print(f"\n[{client_name}] Blast yarım kaldı; sonraki başlangıçta kalan gruplardan devam edilecek.")
 
+                if CONTROLLED_SMOKE_MODE:
+                    passed = (
+                        not blast_interrupted
+                        and sent_count == 1
+                        and fail_count == 0
+                        and (last_outcome or {}).get('status') == 'accepted'
+                    )
+                    write_controlled_smoke_result(
+                        "passed" if passed else "failed",
+                        account=client_name,
+                        group=CONTROLLED_SMOKE_GROUP,
+                        reason=None if passed else (
+                            (last_outcome or {}).get('reason')
+                            or ('blast_interrupted' if blast_interrupted else 'send_failed')
+                        ),
+                        message_id=(last_outcome or {}).get('message_id'),
+                    )
+                    print(
+                        f"🧪 Kontrollü smoke sonucu: "
+                        f"{'BAŞARILI' if passed else 'BAŞARISIZ'}"
+                    )
+                    stop_event.set()
+                    return
+
             if not blast_targets:
                 # A full scan with no currently sendable target is also a
                 # completed cycle; this prevents a tight restart loop.
+                await asyncio.to_thread(
+                    blast_coordinator.release_empty_cycle, client_name, 3600
+                )
                 save_last_blast_time(client_name)
 
             # ═══════════════════════════════════════════════════
@@ -4686,6 +5001,38 @@ async def main():
         except Exception as e:
             print(f"⚠️ Karşılanan kullanıcı yükleme hatası: {e}")
 
+    # Initialize the durable V3 queue only after legacy cooldown state has been
+    # reconciled from Firestore. Missing/unauthorized accounts are disabled so
+    # they can never hold up the remaining queue.
+    blast_coordinator = await asyncio.to_thread(
+        BlastCoordinator,
+        CONTROLLED_SMOKE_CHECKPOINT_FILE if CONTROLLED_SMOKE_MODE
+        else "blast_checkpoint_v3.json",
+        remote=False if CONTROLLED_SMOKE_MODE else None,
+    )
+    active_account_names = {name for _, name, _ in active_clients}
+    queue_account_names = (
+        {CONTROLLED_SMOKE_ACCOUNT} if CONTROLLED_SMOKE_MODE
+        else active_account_names
+    )
+    legacy_waits = {
+        name: 0 if CONTROLLED_SMOKE_MODE else get_last_blast_remaining_wait(
+            name, target_wait_seconds=3600
+        )
+        for name in queue_account_names
+    }
+    await asyncio.to_thread(
+        blast_coordinator.initialize_accounts,
+        legacy_waits,
+        queue_account_names,
+    )
+    initial_blast_snapshot = await asyncio.to_thread(blast_coordinator.snapshot)
+    print(
+        "🧭 Tekli blast sırası hazır: "
+        f"aktif={initial_blast_snapshot.get('active_account') or 'yok'}, "
+        f"hesaplar={','.join(sorted(queue_account_names))}"
+    )
+
     # Periyodik arka plan görevleri
     async def periodic_firestore_sync():
         print("🔄 [Firestore Sync] Periyodik senkronizasyon görevi başlatıldı (5 dk aralıklarla).")
@@ -4808,6 +5155,11 @@ async def main():
             except Exception as e:
                 if is_dead_session_error(e):
                     mark_dead_ad_session(client_name, e)
+                    await asyncio.to_thread(
+                        blast_coordinator.disable_account,
+                        client_name,
+                        f"dead_session:{type(e).__name__}",
+                    )
                     try:
                         await client.disconnect()
                     except Exception:
@@ -4843,7 +5195,15 @@ async def main():
             print(f"ℹ️ [{name}] Reklam hesabı DM otomatik yanıtı kapalı.")
         register_telegram_code_forwarder(client, name)
         tasks.append(update_account_bios(client, name))
-        tasks.append(run_worker_supervisor(client, name, j_dialogs))
+        if not CONTROLLED_SMOKE_MODE or name == CONTROLLED_SMOKE_ACCOUNT:
+            tasks.append(run_worker_supervisor(client, name, j_dialogs))
+        else:
+            update_ad_account_status(
+                name,
+                phase='smoke_preflight_ready',
+                telegram_connected=True,
+                telegram_authorized=True,
+            )
         tasks.append(connection_watchdog(client, name))
     
     # Scraper tasks disabled: All accounts strictly use their assigned target group lists.

@@ -3,56 +3,116 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#080a12">
+  <meta name="theme-color" content="#070912">
   <title>LisansArena</title>
-  <link rel="preconnect" href="https://telegram.org">
-  <link rel="stylesheet" href="/static/lisansarena_app.css?v=20260814-4">
+  <link rel="stylesheet" href="/static/lisansarena_app.css?v=20260814-11">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="/static/lisansarena_app.js?v=20260814-5" defer></script>
+  <script src="/static/lisansarena_app.js?v=20260814-11" defer></script>
 </head>
 <body>
+  <div id="splash" class="splash" aria-hidden="true">
+    <img src="/la/assets/logo" alt=""><strong>LisansArena</strong><span>Güvenli dijital mağaza</span>
+  </div>
+
   <header class="topbar">
-    <div class="brand"><img class="brand-mark" src="/la/assets/brand" alt="LisansArena"><div><span class="eyebrow">DİJİTAL MAĞAZA</span><h1>LisansArena</h1></div></div>
-    <button id="walletButton" class="wallet" type="button"><span>Bakiyem</span><strong>—</strong></button>
+    <div class="brand">
+      <img class="brand-mark" src="/la/assets/logo" alt="LisansArena logosu">
+      <div><span class="eyebrow">DİJİTAL MAĞAZA</span><h1>LisansArena</h1></div>
+    </div>
+    <button id="walletButton" class="wallet" type="button" data-open-tab="balance">
+      <span>Bakiyem</span><strong>—</strong>
+    </button>
   </header>
+
   <main>
-    <section class="hero"><img src="/la/assets/brand" alt="LisansArena · Güvenilir Satıcı · Otomatik Teslimat"><div class="hero-copy"><strong>Dijital ürünler tek yerde</strong><span>Bakiyeni yükle, ürününü seç, teslimatını takip et.</span></div></section>
+    <section class="hero">
+      <img src="/la/assets/brand" alt="LisansArena dijital ürün mağazası">
+      <div class="hero-shade"></div>
+      <div class="hero-copy"><span class="hero-kicker">TEK MAĞAZA · NET TESLİMAT</span><strong>Dijital ürününü kolayca seç</strong><span>Stok, teslim türü ve sipariş durumunu tek ekranda gör.</span></div>
+    </section>
+
     <section id="notice" class="notice loading" aria-live="polite"><span class="status-dot"></span><span>Telegram hesabın doğrulanıyor…</span></section>
+
     <nav class="tabs" aria-label="Mağaza bölümleri">
-      <button class="active" data-tab="catalog" type="button">Mağaza</button>
-      <button data-tab="topup" type="button">Bakiye</button>
-      <button data-tab="account" type="button">Hesabım</button>
+      <button class="active" data-tab="catalog" type="button"><span>⌂</span>Mağaza</button>
+      <button data-tab="balance" type="button"><span>₺</span>Bakiye</button>
+      <button data-tab="orders" type="button"><span>✓</span>Siparişler</button>
+      <button data-tab="profile" type="button"><span>●</span>Profil</button>
     </nav>
+
     <section id="catalog" class="view active">
-      <section class="tools">
-        <label class="searchbox"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="Ürün veya kategori ara" autocomplete="off"></label>
-        <select id="category" aria-label="Kategori"><option value="">Tüm kategoriler</option></select>
-      </section>
-      <div class="catalog-summary"><div><strong id="productCount">Ürünler hazırlanıyor</strong><span>Aktif ürünleri burada görebilirsin.</span></div><span class="secure-chip">Güvenli ödeme</span></div>
-      <div id="products" class="products"></div>
+      <label class="searchbox"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="Ürün veya kategori ara" autocomplete="off"></label>
+      <div id="categoryChips" class="chips" aria-label="Kategoriler"></div>
+      <div class="catalog-summary"><div><strong id="productCount">Ürünler hazırlanıyor</strong><span>Ürünü seç, adetini belirle ve doğrudan sepete ekle.</span></div><span class="secure-chip">Güvenli katalog</span></div>
+      <div id="products" class="products" aria-live="polite">
+        <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
+      </div>
     </section>
-    <section id="topup" class="view">
-      <div class="section-heading"><span class="section-icon">₺</span><div><h2>Bakiye yükle</h2><p>İstediğin tutarı seç ve Shopier üzerinden güvenle öde.</p></div></div>
-      <div id="topupPackages" class="packages"></div>
+
+    <section id="balance" class="view">
+      <div class="section-heading"><span class="section-icon">₺</span><div><h2>Bakiye yükle</h2><p>Önce paketi seç, sonra ödeme bağlantısını oluştur.</p></div></div>
+      <div id="topupPackages" class="packages" role="radiogroup" aria-label="Bakiye paketleri"></div>
+      <button id="topupContinue" class="primary payment-action" type="button" disabled>Ödeme adımına geç</button>
+      <p class="payment-note"><strong>Not:</strong> Ödemeler doğrulamaya bağlı olarak en geç 10 dakika içinde bakiyenize yansır.</p>
       <div id="topupResult" class="result" hidden></div>
+      <div class="section-heading history-heading"><span class="section-icon">↺</span><div><h2>Bakiye geçmişi</h2><p>Yükleme ve harcama hareketlerin.</p></div></div>
+      <div id="walletEntries" class="timeline"></div>
     </section>
-    <section id="account" class="view">
+
+    <section id="orders" class="view">
+      <div class="section-heading"><span class="section-icon">✓</span><div><h2>Siparişlerim</h2><p>Teslimat ve sipariş durumunu buradan takip et.</p></div></div>
+      <div id="orderList" class="order-list"></div>
+    </section>
+
+    <section id="profile" class="view">
       <div class="profile-card">
         <img id="profilePhoto" class="profile-photo" alt="Telegram profil fotoğrafı" hidden>
         <span id="profileInitial" class="profile-initial">LA</span>
         <div class="profile-copy"><h2 id="profileName">Telegram kullanıcısı</h2><p id="profileUsername">Bağlantı bekleniyor</p></div>
         <span id="telegramBadge" class="telegram-badge">Bağlanıyor</span>
       </div>
-      <div class="referral-card"><span class="section-icon">↗</span><div><h3>Referans Profilin</h3><p id="referralCode">Doğrulama sonrasında gösterilecek</p><small>Referans ödül sistemi mağaza kârlılık testi tamamlandıktan sonra açılacak.</small></div></div>
-      <div class="section-heading orders-heading"><span class="section-icon">✓</span><div><h2>Siparişlerim</h2><p>Satın alımlarını ve teslimat durumunu takip et.</p></div></div>
-      <div id="orderList"></div>
+      <div class="profile-actions">
+        <button type="button" data-ticket="support"><span>?</span><strong>Destek</strong><small>Bir sorun bildir</small></button>
+        <button type="button" data-ticket="request"><span>＋</span><strong>Ürün talebi</strong><small>Aradığın ürünü yaz</small></button>
+        <button type="button" data-ticket="refund"><span>↺</span><strong>İade talebi</strong><small>Siparişini belirt</small></button>
+      </div>
+      <div class="referral-card"><span class="section-icon">↗</span><div><h3>Referans profilin</h3><p id="referralCode">Doğrulama sonrasında gösterilecek</p><small id="referralStatus">Ödül sistemi kârlılık testi tamamlandıktan sonra açılacak.</small></div></div>
+      <div class="section-heading compact"><span class="section-icon">◎</span><div><h2>Çekilişler</h2><p>Aktif çekilişler burada görünür.</p></div></div>
+      <div id="drawList" class="timeline"></div>
+      <div class="section-heading compact"><span class="section-icon">☏</span><div><h2>Taleplerim</h2><p>Destek ekibi yanıtlarını takip et.</p></div></div>
+      <div id="ticketList" class="timeline"></div>
     </section>
   </main>
-  <dialog id="productDialog">
-    <button id="dialogClose" class="close" type="button" aria-label="Kapat">×</button>
+
+  <aside id="cartBar" class="cart-bar" hidden>
+    <div><strong id="cartCount">0 ürün</strong><span id="cartTotal">0,00 TL</span></div>
+    <button id="openCart" type="button">Sepeti aç <span>→</span></button>
+  </aside>
+
+  <dialog id="productDialog" class="sheet">
+    <button class="close" data-close="productDialog" type="button" aria-label="Kapat">×</button>
+    <img id="dialogImage" class="dialog-image" alt="">
+    <span id="dialogBadge" class="category"></span>
     <h2 id="dialogTitle"></h2><p id="dialogDescription"></p>
-    <div id="dialogMeta"></div><p id="dialogGuide" class="guide"></p>
-    <button id="buyButton" class="primary" type="button">Bakiyemle satın al</button>
+    <div id="dialogMeta" class="dialog-meta"></div><p id="dialogGuide" class="guide"></p>
+    <div class="quantity-row"><span>Adet</span><div><button id="quantityMinus" type="button">−</button><strong id="dialogQuantity">1</strong><button id="quantityPlus" type="button">＋</button></div></div>
+    <button id="productAction" class="primary" type="button">Sepete ekle</button>
+  </dialog>
+
+  <dialog id="cartDialog" class="sheet">
+    <button class="close" data-close="cartDialog" type="button" aria-label="Kapat">×</button>
+    <span class="sheet-kicker">SİPARİŞ ÖZETİ</span><h2>Sepetin</h2>
+    <div id="cartItems" class="cart-items"></div>
+    <div class="cart-total"><span>Toplam</span><strong id="cartDialogTotal">0,00 TL</strong></div>
+    <button id="checkoutButton" class="primary" type="button">Bakiyemle satın al</button>
+  </dialog>
+
+  <dialog id="ticketDialog" class="sheet">
+    <button class="close" data-close="ticketDialog" type="button" aria-label="Kapat">×</button>
+    <span class="sheet-kicker">LİSANSARENA DESTEK</span><h2 id="ticketTitle">Talep oluştur</h2>
+    <input id="ticketSubject" type="text" maxlength="220" placeholder="Kısa başlık">
+    <textarea id="ticketMessage" maxlength="2000" rows="6" placeholder="Talebini ayrıntılı yaz"></textarea>
+    <button id="ticketSubmit" class="primary" type="button">Talebi gönder</button>
   </dialog>
 </body>
 </html>

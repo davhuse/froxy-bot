@@ -20,6 +20,7 @@ import hashlib
 import atexit
 from sales_metrics import record_event, summarize as summarize_sales
 from sales_conversion import cta_experiment_status, parse_purchase_token, product_by_id, refresh_configured_catalogs
+from blast_scheduler import load_blast_snapshot
 from shopier_orders import ingest_shopier_order, reconcile_configured_orders
 from group_policy import load_policies, moderation_snapshot
 from lisansarena_store import la as lisansarena_store_blueprint, start_store_worker
@@ -84,6 +85,7 @@ def protect_privileged_panel_api():
     protected = (
         '/api/group-status', '/api/config', '/api/account-restrictions',
         '/api/start', '/api/stop', '/api/lisansarena/start', '/api/lisansarena/stop',
+        '/api/ad-smoke/start', '/api/ad-smoke/status',
     )
     if request.path not in protected:
         return None
@@ -172,6 +174,9 @@ LISANSARENA_LOG_FILE = "lisansarena_bot_log.txt"
 MESSAGE_FILE = "message.txt"
 CONFIG_FILE = "bot_config.json"
 AD_STOP_FILE = "ad_worker.disabled"
+AD_SMOKE_ACTIVE_FILE = "ad_smoke.active.json"
+AD_SMOKE_RESULT_FILE = "ad_smoke_result.json"
+AD_SMOKE_CHECKPOINT_FILE = "blast_smoke_checkpoint.json"
 
 
 def bot_runtime_enabled():
@@ -222,6 +227,21 @@ def update_config_state(key, value):
         print(f"Error updating config state: {e}")
 
 # Process tracking helpers using psutil
+def command_runs_python_script(process_name, command_line, script_name):
+    """Match an actual Python script argument, never a shell command string."""
+    command_line = [str(arg or "") for arg in (command_line or [])]
+    executable = os.path.basename(command_line[0]).casefold() if command_line else ""
+    process_name = str(process_name or "").casefold()
+    is_python = process_name.startswith("python") or executable.startswith("python")
+    wanted = os.path.basename(str(script_name)).casefold()
+    script_args = {
+        os.path.basename(arg.strip().strip('"\'')).casefold()
+        for arg in command_line[1:]
+        if arg.strip()
+    }
+    return is_python and wanted in script_args
+
+
 def get_processes_by_script(script_name):
     """Return every Python process running a script, including stale duplicates."""
     found = {}
@@ -229,9 +249,8 @@ def get_processes_by_script(script_name):
         for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
             try:
                 cmd = proc.info.get('cmdline') or []
-                if any(script_name in arg for arg in cmd) and (
-                    any('python' in arg.lower() for arg in cmd)
-                    or proc.info.get('name') in ['python', 'python.exe']
+                if command_runs_python_script(
+                    proc.info.get('name'), cmd, script_name
                 ):
                     found[proc.info['pid']] = proc
             except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
@@ -269,6 +288,95 @@ def kill_process_by_script(script_name):
         except Exception:
             pass
     return killed
+
+
+def launch_ad_worker(*, env_overrides=None, truncate_log=False):
+    """Start exactly one ad worker and return its process."""
+    global ad_process
+    if get_process_by_script('otomatik_katil.py') is not None:
+        raise RuntimeError('Reklam worker zaten çalışıyor')
+    flags = subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
+    env = os.environ.copy()
+    env["PYTHONIOENCODING"] = "utf-8"
+    env.update({
+        str(key): str(value)
+        for key, value in (env_overrides or {}).items()
+    })
+    mode = 'w' if truncate_log else 'a'
+    file_out = open(LOG_FILE, mode, encoding="utf-8", buffering=1)
+    ad_process = subprocess.Popen(
+        [sys.executable, '-u', 'otomatik_katil.py'],
+        stdout=file_out,
+        stderr=subprocess.STDOUT,
+        creationflags=flags,
+        env=env,
+    )
+    with open("otomatik_katil.py.pid", "w", encoding="utf-8") as handle:
+        handle.write(str(ad_process.pid))
+    return ad_process
+
+
+def read_controlled_smoke_result():
+    try:
+        with open(AD_SMOKE_RESULT_FILE, "r", encoding="utf-8") as handle:
+            value = json.load(handle)
+        return value if isinstance(value, dict) else {}
+    except (FileNotFoundError, OSError, json.JSONDecodeError):
+        return {}
+
+
+def monitor_controlled_smoke(process, expected_account, expected_group):
+    """Keep ads paused on failure; auto-release the normal queue on success."""
+    global ad_process
+    try:
+        process.wait()
+        result = read_controlled_smoke_result()
+        valid = (
+            process.returncode == 0
+            and result.get("status") == "passed"
+            and result.get("account") == expected_account
+            and str(result.get("group") or "").lower().lstrip("@") == expected_group
+        )
+        try:
+            os.remove(AD_SMOKE_ACTIVE_FILE)
+        except FileNotFoundError:
+            pass
+        try:
+            os.remove("otomatik_katil.py.pid")
+        except FileNotFoundError:
+            pass
+        ad_process = None
+        if not valid:
+            with open(AD_STOP_FILE, "w", encoding="utf-8") as marker:
+                marker.write("controlled smoke failed; manual review required\n")
+            return
+        if os.environ.get("BOT_AD_ENABLED", "1").strip().lower() in {
+            "0", "false", "no", "off"
+        } or not bot_runtime_enabled():
+            result["auto_start"] = "blocked_by_runtime_configuration"
+            with open(AD_SMOKE_RESULT_FILE, "w", encoding="utf-8") as handle:
+                json.dump(result, handle, ensure_ascii=False, indent=2)
+            return
+        try:
+            os.remove(AD_STOP_FILE)
+        except FileNotFoundError:
+            pass
+        launch_ad_worker()
+        update_config_state("ad_bot_running", True)
+        result["auto_start"] = "started"
+        result["normal_worker_pid"] = ad_process.pid
+        with open(AD_SMOKE_RESULT_FILE, "w", encoding="utf-8") as handle:
+            json.dump(result, handle, ensure_ascii=False, indent=2)
+    except Exception as exc:
+        with open(AD_STOP_FILE, "w", encoding="utf-8") as marker:
+            marker.write("controlled smoke monitor failed; manual review required\n")
+        result = read_controlled_smoke_result()
+        result.update({
+            "status": "failed",
+            "reason": f"monitor:{type(exc).__name__}",
+        })
+        with open(AD_SMOKE_RESULT_FILE, "w", encoding="utf-8") as handle:
+            json.dump(result, handle, ensure_ascii=False, indent=2)
 
 # WATCHDOG SYSTEM: Keeps both bots running 24/7 unconditionally
 def bot_watchdog():
@@ -312,7 +420,13 @@ def bot_watchdog():
 
             # 1. Check Ad Bot (otomatik_katil.py)
             ad_proc_os = get_process_by_script('otomatik_katil.py')
-            if ad_enabled:
+            smoke_active = os.path.exists(AD_SMOKE_ACTIVE_FILE)
+            if smoke_active:
+                # A controlled smoke deliberately runs while the normal ad
+                # marker remains disabled. Never kill it and never replace a
+                # failed/finished smoke with an unrestricted normal worker.
+                ad_process = ad_proc_os
+            elif ad_enabled:
                 if ad_proc_os is None:
                     print("📢 [Watchdog] Reklam botu aktif değil veya durmuş. Başlatılıyor...")
                     with open(LOG_FILE, "a", encoding="utf-8") as f:
@@ -522,9 +636,28 @@ def status():
     )
     # Detailed group names belong to the token-protected group-status API.
     public_ad_accounts = {
-        name: {key: value for key, value in account.items() if key != 'group_states'}
+        name: {
+            key: value for key, value in account.items()
+            if key not in {'group_states', 'candidate_groups'}
+        }
         for name, account in ad_accounts.items()
     }
+    checkpoint = load_blast_snapshot(os.path.join(base_dir, 'blast_checkpoint_v3.json'))
+    public_queue = {
+        'active_account': checkpoint.get('active_account'),
+        'updated_at': checkpoint.get('updated_at'),
+        'accounts': {},
+    }
+    for name, queue_state in (checkpoint.get('accounts') or {}).items():
+        targets = queue_state.get('targets') or []
+        cursor = int(queue_state.get('cursor', 0) or 0)
+        public_queue['accounts'][name] = {
+            'status': queue_state.get('status'),
+            'due_at': queue_state.get('due_at'),
+            'current_index': cursor + 1 if targets and cursor < len(targets) else None,
+            'total_groups': len(targets),
+            'pause_reason': queue_state.get('pause_reason'),
+        }
     return jsonify({
         'status': overall_status,
         'bot_runtime_enabled': bot_runtime_enabled(),
@@ -535,6 +668,7 @@ def status():
         'froxy_support_processes': len(get_processes_by_script('froxy_destek_bot.py')),
         'lisansarena_processes': len(get_processes_by_script('lisansarena_bot.py')),
         'ad_accounts': public_ad_accounts,
+        'blast_queue': public_queue,
     })
 
 
@@ -577,6 +711,11 @@ def group_status():
         for account, state in account_status.items()
         if isinstance(state, dict) and isinstance(state.get('group_states'), dict)
     }
+    candidate_groups = {
+        account: state.get('candidate_groups', [])
+        for account, state in account_status.items()
+        if isinstance(state, dict) and isinstance(state.get('candidate_groups'), list)
+    }
     return jsonify({
         'global_blacklist': global_blacklist,
         'permanent': permanent,
@@ -585,6 +724,10 @@ def group_status():
         'policies': load_policies(),
         'delivery_states': moderation_snapshot(),
         'account_targets': account_targets,
+        'candidate_groups': candidate_groups,
+        'blast_checkpoint': load_blast_snapshot(
+            os.path.join(base_dir, 'blast_checkpoint_v3.json')
+        ),
     })
 
 
@@ -733,6 +876,84 @@ def start():
         return jsonify({"success": True})
     except Exception as e:
          return jsonify({"success": False, "message": str(e)})
+
+
+@app.route('/api/ad-smoke/start', methods=['POST'])
+def start_controlled_ad_smoke():
+    """Run one KeyVadi message and keep every normal blast paused for 10m."""
+    if not bot_runtime_enabled():
+        return jsonify({"success": False, "message": "Telegram runtime kapalı"}), 409
+    data = request.get_json(silent=True) or {}
+    account = str(data.get("account") or "KeyVadiOnline").strip()
+    group = str(data.get("group") or "").strip().lower().lstrip("@")
+    if account != "KeyVadiOnline":
+        return jsonify({"success": False, "message": "İlk smoke yalnız KeyVadi ile çalışır"}), 400
+    if not re.fullmatch(r"(?:[a-z0-9_]{5,32}|-?\d{6,20})", group):
+        return jsonify({"success": False, "message": "Geçerli bir onaylı grup gir"}), 400
+    if get_process_by_script('otomatik_katil.py') is not None:
+        return jsonify({"success": False, "message": "Reklam worker hâlâ çalışıyor"}), 409
+
+    with open(AD_STOP_FILE, "w", encoding="utf-8") as marker:
+        marker.write("controlled smoke in progress; normal blast disabled\n")
+    for path in (AD_SMOKE_RESULT_FILE, AD_SMOKE_CHECKPOINT_FILE):
+        try:
+            os.remove(path)
+        except FileNotFoundError:
+            pass
+    active = {
+        "account": account,
+        "group": group,
+        "started_at": time.time(),
+        "verification_seconds": 600,
+    }
+    with open(AD_SMOKE_ACTIVE_FILE, "w", encoding="utf-8") as handle:
+        json.dump(active, handle, ensure_ascii=False, indent=2)
+    try:
+        process = launch_ad_worker(
+            env_overrides={
+                "BOT_AD_ENABLED": "1",
+                "BOT_AD_RUN_MODE": "controlled_smoke",
+                "BOT_AD_SMOKE_ACCOUNT": account,
+                "BOT_AD_SMOKE_GROUP": group,
+                "BOT_AD_SMOKE_SECONDS": "600",
+            },
+            truncate_log=True,
+        )
+    except Exception as exc:
+        try:
+            os.remove(AD_SMOKE_ACTIVE_FILE)
+        except FileNotFoundError:
+            pass
+        return jsonify({"success": False, "message": str(exc)}), 500
+    threading.Thread(
+        target=monitor_controlled_smoke,
+        args=(process, account, group),
+        daemon=True,
+    ).start()
+    return jsonify({
+        "success": True,
+        "status": "running",
+        "account": account,
+        "group": group,
+        "verification_seconds": 600,
+    }), 202
+
+
+@app.route('/api/ad-smoke/status', methods=['GET'])
+def controlled_ad_smoke_status():
+    active = {}
+    try:
+        with open(AD_SMOKE_ACTIVE_FILE, "r", encoding="utf-8") as handle:
+            active = json.load(handle)
+    except (FileNotFoundError, OSError, json.JSONDecodeError):
+        pass
+    return jsonify({
+        "active": bool(active),
+        "request": active,
+        "result": read_controlled_smoke_result(),
+        "normal_ads_paused": os.path.exists(AD_STOP_FILE),
+        "worker_running": get_process_by_script('otomatik_katil.py') is not None,
+    })
 
 @app.route('/api/stop', methods=['POST'])
 def stop():
@@ -1489,6 +1710,22 @@ def get_tickets():
                 tickets = json.load(f)
         except Exception as e:
             return jsonify({"error": str(e)})
+    try:
+        from lisansarena_store import get_store
+        lisansarena_tickets = get_store().list_tickets(limit=200)
+        for item in lisansarena_tickets:
+            tickets.append({
+                "source": "lisansarena",
+                "bot_type": "LisansArena",
+                **item,
+            })
+        tickets.sort(
+            key=lambda item: str(item.get("created_at") or item.get("timestamp") or ""),
+            reverse=True,
+        )
+    except Exception:
+        # The shared support queue remains available if the store DB is down.
+        pass
     return jsonify({"tickets": tickets})
 
 @app.route('/api/tickets/clear', methods=['POST'])

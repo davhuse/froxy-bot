@@ -19,12 +19,18 @@ class PanelSecurityTests(unittest.TestCase):
     def test_privileged_api_rejects_missing_token(self):
         response = self.client.get("/api/group-status")
         self.assertEqual(response.status_code, 401)
+        self.assertEqual(self.client.get("/api/ad-smoke/status").status_code, 401)
 
     def test_privileged_api_accepts_header_token(self):
         response = self.client.get(
             "/api/group-status", headers={"X-Admin-Token": "test-panel-token"}
         )
         self.assertEqual(response.status_code, 200)
+        smoke = self.client.get(
+            "/api/ad-smoke/status", headers={"X-Admin-Token": "test-panel-token"}
+        )
+        self.assertEqual(smoke.status_code, 200)
+        self.assertIn("normal_ads_paused", smoke.get_json())
 
     def test_shopier_callback_fails_closed_without_secret(self):
         response = self.client.post("/api/shopier/callback")
@@ -51,6 +57,18 @@ class PanelSecurityTests(unittest.TestCase):
                 self.assertFalse(account["process_running"])
                 self.assertFalse(account["telegram_connected"])
                 self.assertFalse(account["telegram_authorized"])
+
+    def test_process_matcher_never_treats_a_shell_command_as_the_bot(self):
+        self.assertFalse(self.module.command_runs_python_script(
+            "powershell.exe",
+            ["powershell.exe", "python -m py_compile otomatik_katil.py"],
+            "otomatik_katil.py",
+        ))
+        self.assertTrue(self.module.command_runs_python_script(
+            "python.exe",
+            ["python.exe", "-u", "otomatik_katil.py"],
+            "otomatik_katil.py",
+        ))
 
 
 if __name__ == "__main__":

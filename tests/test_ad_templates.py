@@ -27,11 +27,22 @@ class AdTemplateTests(unittest.TestCase):
         self.assertIn("100 ücretsiz krediyle dene", updated)
 
     def test_lisansarena_templates_have_distinct_store_identity(self):
-        for path in sorted((ROOT / "messages").glob("lisansarena_*.txt")):
+        paths = sorted((ROOT / "messages").glob("lisansarena_*.txt"))
+        self.assertEqual([path.name for path in paths], [
+            "lisansarena_1.txt", "lisansarena_2.txt", "lisansarena_3.txt"
+        ])
+        required_prices = (
+            "250 TL", "69,90 TL", "59,90 TL", "99,99 TL", "599,99 TL",
+            "119,90 TL", "149,99 TL", "83,99 TL", "224,99 TL", "94,49 TL",
+            "47,24 TL", "36,74 TL", "36,99 TL", "39,90 TL", "29,90 TL",
+            "89,90 TL", "63 TL", "70 TL", "244,99 TL", "49,99 TL", "14,99 TL",
+        )
+        for path in paths:
             text = path.read_text(encoding="utf-8")
             self.assertEqual(text.count("@LisansArenaBot"), 1, path.name)
             self.assertNotIn("KeyVadi", text, path.name)
-            self.assertIn("mini app", text.casefold(), path.name)
+            for price in required_prices:
+                self.assertIn(price, text, (path.name, price))
 
 
 if __name__ == "__main__":

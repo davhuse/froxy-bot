@@ -47,6 +47,7 @@ class GroupPolicyTests(unittest.TestCase):
         self.assertIn("Canva Pro 49,90 TL", text)
         self.assertIn("https://t.me/KeyVadiSatisBot?start=", text)
         self.assertEqual(options["parse_mode"], "md")
+        self.assertFalse(options["link_preview"])
 
     def test_darcy_spam_warning_is_detected(self):
         warning = "@KeyVadiDestek grup veya kanal spamı gönderdi. Eylem: Sessize aldım"
@@ -112,6 +113,19 @@ class GroupPolicyTests(unittest.TestCase):
         self.assertTrue(text.endswith(group_policy.PLAIN_FROXY_CTA))
         self.assertNotIn("@", text)
         self.assertIsNone(options["parse_mode"])
+
+    def test_link_forbidden_lisansarena_has_only_plain_search_cta(self):
+        policy = {**group_policy.DEFAULT_POLICY, "allow_urls": False,
+                  "allow_deep_links": False, "allow_mentions": False}
+        text, options = group_policy.make_policy_compliant(
+            "Ürün listesi\nSipariş ve destek: @LisansArenaBot",
+            policy,
+            "lisansarena",
+        )
+        self.assertTrue(text.endswith(group_policy.PLAIN_LISANSARENA_CTA))
+        self.assertNotIn("@", text)
+        self.assertNotIn("t.me", text)
+        self.assertFalse(options["link_preview"])
 
     def test_message_empty_hold_expires_after_24_hours(self):
         with tempfile.TemporaryDirectory() as directory:

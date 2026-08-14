@@ -24,6 +24,10 @@ password_input_*.txt
 account_restrictions.json
 group_failures.json
 send_locks.json
+blast_checkpoint_v3.json
+blast_smoke_checkpoint.json
+ad_smoke.active.json
+ad_smoke_result.json
 blacklist_meta.json
 # blacklist_migration_v2.done imaja GIRMELI: yoksa her Render yeniden
 # baslatmasinda migration tekrar calisip kara listeyi bosaltiyor.

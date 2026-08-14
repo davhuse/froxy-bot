@@ -135,6 +135,65 @@ audit_log = Table(
     Column("created_at", DateTime(timezone=True), nullable=False),
 )
 
+product_display = Table(
+    "la_product_display", metadata,
+    Column("product_id", Integer, ForeignKey("la_products.id"), primary_key=True),
+    Column("image_key", String(180), nullable=False, default="lisansarena_logo_v2.png"),
+    Column("featured", Boolean, nullable=False, default=False),
+    Column("display_order", Integer, nullable=False, default=999),
+    Column("request_enabled", Boolean, nullable=False, default=True),
+    Column("updated_at", DateTime(timezone=True), nullable=False),
+)
+
+tickets = Table(
+    "la_tickets", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("user_id", Integer, ForeignKey("la_users.id"), nullable=False, index=True),
+    Column("ticket_type", String(24), nullable=False),
+    Column("product_id", Integer, ForeignKey("la_products.id")),
+    Column("order_id", Integer, ForeignKey("la_orders.id")),
+    Column("subject", String(220), nullable=False),
+    Column("message", Text, nullable=False),
+    Column("status", String(24), nullable=False, default="open"),
+    Column("admin_reply", Text),
+    Column("created_at", DateTime(timezone=True), nullable=False),
+    Column("updated_at", DateTime(timezone=True), nullable=False),
+)
+
+referrals = Table(
+    "la_referrals", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("referrer_user_id", Integer, ForeignKey("la_users.id"), nullable=False),
+    Column("referred_user_id", Integer, ForeignKey("la_users.id"), nullable=False, unique=True),
+    Column("created_at", DateTime(timezone=True), nullable=False),
+)
+
+draws = Table(
+    "la_draws", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("title", String(220), nullable=False),
+    Column("description", Text, nullable=False, default=""),
+    Column("status", String(24), nullable=False, default="draft"),
+    Column("ends_at", DateTime(timezone=True)),
+    Column("created_at", DateTime(timezone=True), nullable=False),
+)
+
+draw_entries = Table(
+    "la_draw_entries", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("draw_id", Integer, ForeignKey("la_draws.id"), nullable=False),
+    Column("user_id", Integer, ForeignKey("la_users.id"), nullable=False),
+    Column("created_at", DateTime(timezone=True), nullable=False),
+    UniqueConstraint("draw_id", "user_id", name="uq_la_draw_entry"),
+)
+
+user_preferences = Table(
+    "la_user_preferences", metadata,
+    Column("user_id", Integer, ForeignKey("la_users.id"), primary_key=True),
+    Column("language", String(8), nullable=False, default="tr"),
+    Column("updated_at", DateTime(timezone=True), nullable=False),
+)
+
 
 def utcnow():
     return datetime.now(timezone.utc)
@@ -186,6 +245,37 @@ def storefront_category(name):
         if any(keyword in value for keyword in keywords):
             return category
     return "Diğer"
+
+
+def product_image_key(name, catalog_id=None):
+    """Return the new product-specific generated cover filename."""
+    identity = str(catalog_id or clean_storefront_text(name)).casefold()
+    slug = re.sub(r"[^a-z0-9]+", "-", identity).strip("-")[:96]
+    if not slug:
+        slug = hashlib.sha256(str(name).encode("utf-8")).hexdigest()[:16]
+    return f"la-cover-{slug}.webp"
+
+
+def product_is_featured(name):
+    value = clean_storefront_text(name).casefold()
+    return any(term in value for term in (
+        "canva pro öğretmen", "gemini pro davet", "perplexity pro",
+        "adobe creative cloud (1 haftalık)", "windows 10/11", "office 365",
+        "netflix", "youtube premium", "spotify premium", "trendyol go",
+        "exxen", "hbo max", "prime video",
+    ))
+
+
+def referral_code_for_telegram_id(telegram_id):
+    secret = (
+        os.environ.get("FLASK_SECRET_KEY")
+        or os.environ.get("LISANSARENA_BOT_TOKEN")
+        or "lisansarena-local-referral"
+    )
+    digest = hmac.new(
+        secret.encode(), str(telegram_id).encode(), hashlib.sha256
+    ).hexdigest()[:8].upper()
+    return f"LA-{digest}"
 
 
 def margin_is_allowed(price_cents: int, cost_cents: int, delivery_type: str, fee_rate=None) -> bool:
@@ -240,6 +330,7 @@ class LisansArenaStore:
         metadata.create_all(self.engine)
         self._install_ledger_guards()
         self.import_legacy_drafts()
+        self.backfill_product_display()
         self.bootstrap_admin()
 
     def _install_ledger_guards(self):
@@ -259,30 +350,129 @@ class LisansArenaStore:
                 conn.execute(text(statement))
 
     def import_legacy_drafts(self):
-        path = os.path.join(os.path.dirname(__file__), "lisansarena_shopier_links.json")
-        if not os.path.exists(path):
+        """Synchronize the full Mini App catalogue independently of Shopier.
+
+        Shopier remains only the wallet top-up rail. The archived 34 entries,
+        the 10 products named in Shopier's removal notice and the six approved
+        advert products are sold as manual-delivery products inside Telegram.
+        """
+        seed = []
+        for filename in (
+            "lisansarena_shopier_links.json",
+            "lisansarena_catalog_additions.json",
+        ):
+            path = os.path.join(os.path.dirname(__file__), filename)
+            if os.path.exists(path):
+                with open(path, "r", encoding="utf-8") as handle:
+                    seed.extend(json.load(handle))
+        if not seed:
             return
-        with open(path, "r", encoding="utf-8") as handle:
-            legacy = json.load(handle)
         now = utcnow()
         with self.engine.begin() as conn:
-            existing = {row[0] for row in conn.execute(select(products.c.legacy_shopier_id))}
-            for item in legacy:
+            activation_done = conn.execute(select(audit_log.c.id).where(
+                audit_log.c.action == "catalog_seed_v2_activated"
+            ).limit(1)).first() is not None
+            price_alignment_done = conn.execute(select(audit_log.c.id).where(
+                audit_log.c.action == "catalog_prices_v3_aligned"
+            ).limit(1)).first() is not None
+            existing = {
+                row.legacy_shopier_id: row.id
+                for row in conn.execute(select(
+                    products.c.id, products.c.legacy_shopier_id
+                ))
+                if row.legacy_shopier_id
+            }
+            for item in seed:
                 legacy_id = str(item.get("id") or "")
-                if not legacy_id or legacy_id in existing:
+                if not legacy_id:
                     continue
-                conn.execute(insert(products).values(
+                values = dict(
                     legacy_shopier_id=legacy_id,
                     name=str(item.get("title") or "İsimsiz ürün")[:220],
                     description=str(item.get("description") or ""),
-                    category="Taslak aktarım",
+                    category=storefront_category(item.get("title") or ""),
                     price_cents=cents(item.get("price") or item.get("priceData", {}).get("price") or 0),
-                    cost_cents=None,
                     delivery_type="manual",
-                    published=False,
-                    guide="",
-                    created_at=now,
+                    published=True,
+                    guide="Teslimat en geç 24 saat içinde sipariş kaydına eklenir.",
                     updated_at=now,
+                )
+                if legacy_id in existing:
+                    if not activation_done:
+                        conn.execute(update(products).where(
+                            products.c.id == existing[legacy_id]
+                        ).values(
+                            price_cents=values["price_cents"],
+                            delivery_type="manual",
+                            published=True,
+                            guide="Teslimat en geç 24 saat içinde sipariş kaydına eklenir.",
+                            updated_at=now,
+                        ))
+                    elif not price_alignment_done:
+                        conn.execute(update(products).where(
+                            products.c.id == existing[legacy_id]
+                        ).values(
+                            price_cents=values["price_cents"],
+                            updated_at=now,
+                        ))
+                else:
+                    conn.execute(insert(products).values(
+                        **values, cost_cents=None, created_at=now
+                    ))
+            if not activation_done:
+                conn.execute(insert(audit_log).values(
+                    admin_id=None,
+                    action="catalog_seed_v2_activated",
+                    target="lisansarena_catalog",
+                    detail="Archived 34 + Shopier notice 10 + approved advert 6 activated for Mini App",
+                    created_at=now,
+                ))
+            if not price_alignment_done:
+                conn.execute(insert(audit_log).values(
+                    admin_id=None,
+                    action="catalog_prices_v3_aligned",
+                    target="lisansarena_catalog",
+                    detail="Approved LisansArena advert prices aligned once",
+                    created_at=now,
+                ))
+
+    def backfill_product_display(self):
+        """Attach real covers and merchandising metadata to every product."""
+        now = utcnow()
+        with self.engine.begin() as conn:
+            cover_migration_done = conn.execute(select(audit_log.c.id).where(
+                audit_log.c.action == "catalog_covers_v2_generated"
+            ).limit(1)).first() is not None
+            existing = {
+                row[0] for row in conn.execute(select(product_display.c.product_id))
+            }
+            rows = conn.execute(select(
+                products.c.id, products.c.name, products.c.legacy_shopier_id
+            )).all()
+            for position, row in enumerate(rows, 1):
+                values = dict(
+                    image_key=product_image_key(row.name, row.legacy_shopier_id),
+                    featured=product_is_featured(row.name),
+                    display_order=position,
+                    request_enabled=False,
+                    updated_at=now,
+                )
+                if row.id in existing:
+                    if not cover_migration_done:
+                        conn.execute(update(product_display).where(
+                            product_display.c.product_id == row.id
+                        ).values(**values))
+                else:
+                    conn.execute(insert(product_display).values(
+                        product_id=row.id, **values
+                    ))
+            if not cover_migration_done:
+                conn.execute(insert(audit_log).values(
+                    admin_id=None,
+                    action="catalog_covers_v2_generated",
+                    target="lisansarena_catalog",
+                    detail="Product-specific generated covers and storefront order applied",
+                    created_at=now,
                 ))
 
     def bootstrap_admin(self):
@@ -325,6 +515,20 @@ class LisansArenaStore:
     def balance(self, conn, user_id):
         return int(conn.execute(select(func.coalesce(func.sum(wallet_ledger.c.amount_cents), 0)).where(wallet_ledger.c.user_id == user_id)).scalar_one())
 
+    def wallet_history(self, user_id, limit=50):
+        with self.engine.connect() as conn:
+            balance_value = self.balance(conn, int(user_id))
+            rows = conn.execute(select(wallet_ledger).where(
+                wallet_ledger.c.user_id == int(user_id)
+            ).order_by(wallet_ledger.c.id.desc()).limit(
+                max(1, min(int(limit), 100))
+            )).mappings().all()
+        return {
+            "balance_cents": balance_value,
+            "balance": money(balance_value),
+            "entries": [{**dict(row), "amount": money(row["amount_cents"])} for row in rows],
+        }
+
     def catalog(self):
         with self.engine.connect() as conn:
             stock_count = select(func.count(inventory.c.id)).where(and_(inventory.c.product_id == products.c.id, inventory.c.sold_order_id.is_(None))).scalar_subquery()
@@ -332,10 +536,20 @@ class LisansArenaStore:
             return [{**dict(row), "price": money(row["price_cents"]), "stock": int(row["stock"])} for row in rows]
 
     def storefront_catalog(self):
-        """Show the imported range while keeping unapproved drafts unbuyable."""
+        """Show every product; drafts remain requestable but not purchasable."""
         with self.engine.connect() as conn:
             stock_count = select(func.count(inventory.c.id)).where(and_(inventory.c.product_id == products.c.id, inventory.c.sold_order_id.is_(None))).scalar_subquery()
-            rows = conn.execute(select(products, stock_count.label("stock")).order_by(products.c.name)).mappings()
+            rows = conn.execute(
+                select(products, product_display, stock_count.label("stock"))
+                .select_from(products.outerjoin(
+                    product_display, product_display.c.product_id == products.c.id
+                ))
+                .order_by(
+                    product_display.c.featured.desc(),
+                    product_display.c.display_order,
+                    products.c.name,
+                )
+            ).mappings()
             result = []
             for row in rows:
                 item = dict(row)
@@ -346,6 +560,17 @@ class LisansArenaStore:
                 item["stock"] = int(row["stock"])
                 item["price"] = money(row["price_cents"])
                 item["available"] = bool(row["published"] and (row["delivery_type"] == "manual" or item["stock"] > 0))
+                item["image_key"] = item.get("image_key") or product_image_key(
+                    item["name"], item.get("legacy_shopier_id")
+                )
+                item["image_url"] = f"/static/{item['image_key']}"
+                item["featured"] = bool(item.get("featured"))
+                item["request_enabled"] = bool(
+                    item.get("request_enabled", True) and not item["available"]
+                )
+                item["action"] = "buy" if item["available"] else (
+                    "request" if item["request_enabled"] else "unavailable"
+                )
                 result.append(item)
             return result
 
@@ -358,42 +583,331 @@ class LisansArenaStore:
             return {"product_id": product["id"], "quantity": quantity, "total_cents": product["price_cents"] * quantity, "total": money(product["price_cents"] * quantity)}
 
     def purchase(self, user_id, product_id, quantity):
-        quantity = max(1, min(int(quantity), 10))
+        result = self.checkout(user_id, [{
+            "product_id": product_id,
+            "quantity": quantity,
+        }])
+        return result["orders"][0]
+
+    def checkout(self, user_id, items):
+        """Atomically buy a cart; one failure rolls the whole cart back."""
+        if not isinstance(items, list) or not items or len(items) > 20:
+            raise ValueError("Sepette 1-20 ürün olmalı")
+        combined = {}
+        for item in items:
+            try:
+                product_id = int(item.get("product_id"))
+                quantity = int(item.get("quantity", 1))
+            except (AttributeError, TypeError, ValueError):
+                raise ValueError("Sepet ürünü geçersiz")
+            if quantity < 1 or quantity > 10:
+                raise ValueError("Ürün adedi 1-10 arasında olmalı")
+            combined[product_id] = combined.get(product_id, 0) + quantity
+            if combined[product_id] > 10:
+                raise ValueError("Bir üründen en fazla 10 adet alınabilir")
+
         now = utcnow()
         with self.engine.begin() as conn:
-            # Serializes purchases for this wallet and inventory product.
-            customer = conn.execute(select(users).where(users.c.id == user_id).with_for_update()).mappings().one()
+            customer = conn.execute(
+                select(users).where(users.c.id == user_id).with_for_update()
+            ).mappings().one()
             if customer["status"] != "active":
                 raise ValueError("Hesap incelemede; destek ekibiyle iletişime geçin")
-            product = conn.execute(select(products).where(products.c.id == int(product_id)).with_for_update()).mappings().first()
-            if not product or not product["published"]:
-                raise ValueError("Ürün satışta değil")
-            total = int(product["price_cents"]) * quantity
-            if self.balance(conn, user_id) < total:
+
+            prepared = []
+            cart_total = 0
+            for product_id in sorted(combined):
+                quantity = combined[product_id]
+                product = conn.execute(
+                    select(products).where(products.c.id == product_id).with_for_update()
+                ).mappings().first()
+                if not product or not product["published"]:
+                    raise ValueError("Sepette satışta olmayan ürün var")
+                total = int(product["price_cents"]) * quantity
+                delivery = product["delivery_type"]
+                if delivery == "automatic":
+                    units = conn.execute(
+                        select(inventory).where(and_(
+                            inventory.c.product_id == product_id,
+                            inventory.c.sold_order_id.is_(None),
+                        )).limit(quantity).with_for_update(skip_locked=True)
+                    ).mappings().all()
+                    if len(units) != quantity:
+                        raise ValueError(
+                            f"Stok tükendi: {clean_storefront_text(product['name'])}"
+                        )
+                else:
+                    units = []
+                prepared.append((product, quantity, total, units))
+                cart_total += total
+
+            if self.balance(conn, user_id) < cart_total:
                 raise ValueError("Yetersiz bakiye")
-            delivery = product["delivery_type"]
-            if delivery == "automatic":
-                units = conn.execute(select(inventory).where(and_(inventory.c.product_id == product["id"], inventory.c.sold_order_id.is_(None))).limit(quantity).with_for_update(skip_locked=True)).mappings().all()
-                if len(units) != quantity:
-                    raise ValueError("Stok tükendi")
-            else:
-                units = []
-            order_id = conn.execute(insert(orders).values(
-                user_id=user_id, product_id=product["id"], quantity=quantity,
-                total_cents=total, status="delivered" if delivery == "automatic" else "manual_pending",
-                delivery_type=delivery,
-                deadline_at=None if delivery == "automatic" else now + timedelta(hours=24),
-                created_at=now, completed_at=now if delivery == "automatic" else None,
-            ).returning(orders.c.id)).scalar_one()
-            conn.execute(insert(wallet_ledger).values(
-                user_id=user_id, amount_cents=-total, entry_type="purchase",
-                reference_type="order", reference_id=str(order_id), created_at=now,
+
+            created_orders = []
+            for product, quantity, total, units in prepared:
+                delivery = product["delivery_type"]
+                deadline = None if delivery == "automatic" else now + timedelta(hours=24)
+                order_id = conn.execute(insert(orders).values(
+                    user_id=user_id,
+                    product_id=product["id"],
+                    quantity=quantity,
+                    total_cents=total,
+                    status="delivered" if delivery == "automatic" else "manual_pending",
+                    delivery_type=delivery,
+                    deadline_at=deadline,
+                    created_at=now,
+                    completed_at=now if delivery == "automatic" else None,
+                ).returning(orders.c.id)).scalar_one()
+                conn.execute(insert(wallet_ledger).values(
+                    user_id=user_id,
+                    amount_cents=-total,
+                    entry_type="purchase",
+                    reference_type="order",
+                    reference_id=str(order_id),
+                    created_at=now,
+                ))
+                delivered = []
+                for unit in units:
+                    conn.execute(update(inventory).where(
+                        inventory.c.id == unit["id"]
+                    ).values(sold_order_id=order_id))
+                    delivered.append(self.decrypt_stock(
+                        product["id"], unit["nonce"], unit["ciphertext"]
+                    ))
+                created_orders.append({
+                    "order_id": order_id,
+                    "product_id": product["id"],
+                    "product_name": clean_storefront_text(product["name"]),
+                    "quantity": quantity,
+                    "total_cents": total,
+                    "total": money(total),
+                    "status": "delivered" if delivery == "automatic" else "manual_pending",
+                    "delivery": delivered,
+                    "deadline": deadline.isoformat() if deadline else None,
+                })
+            return {
+                "orders": created_orders,
+                "total_cents": cart_total,
+                "total": money(cart_total),
+            }
+
+    def user_summary(self, user_id):
+        with self.engine.connect() as conn:
+            user = conn.execute(select(users).where(users.c.id == int(user_id))).mappings().first()
+            if not user:
+                raise ValueError("Kullanıcı bulunamadı")
+            return {
+                **dict(user),
+                "balance_cents": self.balance(conn, user["id"]),
+                "balance": money(self.balance(conn, user["id"])),
+                "referral_code": referral_code_for_telegram_id(user["telegram_id"]),
+            }
+
+    def order_history(self, user_id, limit=100):
+        with self.engine.connect() as conn:
+            rows = conn.execute(
+                select(
+                    orders,
+                    products.c.name.label("product_name"),
+                    products.c.guide.label("product_guide"),
+                ).join(products, products.c.id == orders.c.product_id)
+                .where(orders.c.user_id == int(user_id))
+                .order_by(orders.c.id.desc())
+                .limit(max(1, min(int(limit), 100)))
+            ).mappings().all()
+            result = []
+            for row in rows:
+                item = dict(row)
+                item["product_name"] = clean_storefront_text(item["product_name"])
+                item["product_guide"] = clean_storefront_text(item.get("product_guide"))
+                item["total"] = money(item["total_cents"])
+                item["delivery"] = []
+                if item["status"] == "delivered" and item["delivery_type"] == "automatic":
+                    units = conn.execute(select(inventory).where(
+                        inventory.c.sold_order_id == item["id"]
+                    )).mappings().all()
+                    item["delivery"] = [
+                        self.decrypt_stock(item["product_id"], unit["nonce"], unit["ciphertext"])
+                        for unit in units
+                    ]
+                result.append(item)
+            return result
+
+    def create_ticket(self, user_id, ticket_type, message, *, product_id=None,
+                      order_id=None, subject=None):
+        ticket_type = str(ticket_type or "support").strip().lower()
+        if ticket_type not in {"support", "request", "refund"}:
+            raise ValueError("Talep tipi geçersiz")
+        message = str(message or "").strip()
+        if len(message) < 3 or len(message) > 2000:
+            raise ValueError("Mesaj 3-2000 karakter olmalı")
+        now = utcnow()
+        subject = str(subject or {
+            "support": "Destek talebi",
+            "request": "Ürün talebi",
+            "refund": "İade talebi",
+        }[ticket_type])[:220]
+        with self.engine.begin() as conn:
+            if product_id and not conn.execute(select(products.c.id).where(
+                products.c.id == int(product_id)
+            )).first():
+                raise ValueError("Ürün bulunamadı")
+            if order_id:
+                order = conn.execute(select(orders).where(and_(
+                    orders.c.id == int(order_id), orders.c.user_id == int(user_id)
+                ))).first()
+                if not order:
+                    raise ValueError("Sipariş bulunamadı")
+            ticket_id = conn.execute(insert(tickets).values(
+                user_id=int(user_id),
+                ticket_type=ticket_type,
+                product_id=int(product_id) if product_id else None,
+                order_id=int(order_id) if order_id else None,
+                subject=subject,
+                message=message,
+                status="open",
+                admin_reply=None,
+                created_at=now,
+                updated_at=now,
+            ).returning(tickets.c.id)).scalar_one()
+        return {"id": ticket_id, "status": "open", "subject": subject}
+
+    def list_tickets(self, user_id=None, limit=100):
+        query = select(
+            tickets,
+            users.c.telegram_id,
+            users.c.username,
+            users.c.display_name,
+            products.c.name.label("product_name"),
+        ).select_from(
+            tickets.join(users, users.c.id == tickets.c.user_id).outerjoin(
+                products, products.c.id == tickets.c.product_id
+            )
+        )
+        if user_id is not None:
+            query = query.where(tickets.c.user_id == int(user_id))
+        query = query.order_by(tickets.c.id.desc()).limit(max(1, min(int(limit), 500)))
+        with self.engine.connect() as conn:
+            return [dict(row) for row in conn.execute(query).mappings().all()]
+
+    def update_ticket(self, ticket_id, *, status=None, admin_reply=None, admin_id=None):
+        values = {"updated_at": utcnow()}
+        if status is not None:
+            if status not in {"open", "waiting_customer", "resolved", "rejected"}:
+                raise ValueError("Talep durumu geçersiz")
+            values["status"] = status
+        if admin_reply is not None:
+            values["admin_reply"] = str(admin_reply).strip()[:4000]
+        with self.engine.begin() as conn:
+            if not conn.execute(select(tickets.c.id).where(
+                tickets.c.id == int(ticket_id)
+            )).first():
+                raise ValueError("Talep bulunamadı")
+            conn.execute(update(tickets).where(tickets.c.id == int(ticket_id)).values(**values))
+            conn.execute(insert(audit_log).values(
+                admin_id=admin_id,
+                action="ticket_update",
+                target=str(ticket_id),
+                detail=json.dumps(values, ensure_ascii=False, default=str),
+                created_at=utcnow(),
             ))
-            delivered = []
-            for unit in units:
-                conn.execute(update(inventory).where(inventory.c.id == unit["id"]).values(sold_order_id=order_id))
-                delivered.append(self.decrypt_stock(product["id"], unit["nonce"], unit["ciphertext"]))
-            return {"order_id": order_id, "status": "delivered" if delivered else "manual_pending", "delivery": delivered, "deadline": (now + timedelta(hours=24)).isoformat() if delivery != "automatic" else None}
+        return {"ok": True}
+
+    def referral_profile(self, user_id):
+        with self.engine.connect() as conn:
+            user = conn.execute(select(users).where(users.c.id == int(user_id))).mappings().first()
+            if not user:
+                raise ValueError("Kullanıcı bulunamadı")
+            count = conn.execute(select(func.count()).select_from(referrals).where(
+                referrals.c.referrer_user_id == int(user_id)
+            )).scalar_one()
+        return {
+            "code": referral_code_for_telegram_id(user["telegram_id"]),
+            "count": int(count),
+            "rewards_enabled": False,
+        }
+
+    def apply_referral_code(self, referred_user_id, code):
+        code = str(code or "").strip().upper()
+        if not code:
+            return False
+        with self.engine.begin() as conn:
+            referred = conn.execute(select(users).where(
+                users.c.id == int(referred_user_id)
+            )).mappings().first()
+            if not referred:
+                return False
+            candidates = conn.execute(select(users.c.id, users.c.telegram_id)).all()
+            referrer_id = next((row.id for row in candidates
+                                if referral_code_for_telegram_id(row.telegram_id) == code), None)
+            if not referrer_id or referrer_id == int(referred_user_id):
+                return False
+            try:
+                with conn.begin_nested():
+                    conn.execute(insert(referrals).values(
+                        referrer_user_id=referrer_id,
+                        referred_user_id=int(referred_user_id),
+                        created_at=utcnow(),
+                    ))
+            except IntegrityError:
+                return False
+        return True
+
+    def active_draws(self, user_id=None):
+        now = utcnow()
+        with self.engine.connect() as conn:
+            rows = conn.execute(select(draws).where(and_(
+                draws.c.status == "active",
+                (draws.c.ends_at.is_(None) | (draws.c.ends_at > now)),
+            )).order_by(draws.c.id.desc())).mappings().all()
+            entered = set()
+            if user_id is not None:
+                entered = {row[0] for row in conn.execute(select(
+                    draw_entries.c.draw_id
+                ).where(draw_entries.c.user_id == int(user_id)))}
+        return [{**dict(row), "entered": row["id"] in entered} for row in rows]
+
+    def enter_draw(self, user_id, draw_id):
+        with self.engine.begin() as conn:
+            draw = conn.execute(select(draws).where(draws.c.id == int(draw_id)).with_for_update()).mappings().first()
+            ends_at = draw["ends_at"] if draw else None
+            if ends_at is not None and ends_at.tzinfo is None:
+                ends_at = ends_at.replace(tzinfo=timezone.utc)
+            if not draw or draw["status"] != "active" or (ends_at and ends_at <= utcnow()):
+                raise ValueError("Çekiliş aktif değil")
+            try:
+                with conn.begin_nested():
+                    conn.execute(insert(draw_entries).values(
+                        draw_id=int(draw_id), user_id=int(user_id), created_at=utcnow()
+                    ))
+            except IntegrityError:
+                return {"ok": True, "already_entered": True}
+        return {"ok": True, "already_entered": False}
+
+    def get_language(self, user_id):
+        with self.engine.connect() as conn:
+            return conn.execute(select(user_preferences.c.language).where(
+                user_preferences.c.user_id == int(user_id)
+            )).scalar_one_or_none() or "tr"
+
+    def set_language(self, user_id, language):
+        language = str(language or "tr").lower()
+        if language not in {"tr", "en"}:
+            raise ValueError("Dil desteklenmiyor")
+        with self.engine.begin() as conn:
+            current = conn.execute(select(user_preferences.c.user_id).where(
+                user_preferences.c.user_id == int(user_id)
+            )).first()
+            if current:
+                conn.execute(update(user_preferences).where(
+                    user_preferences.c.user_id == int(user_id)
+                ).values(language=language, updated_at=utcnow()))
+            else:
+                conn.execute(insert(user_preferences).values(
+                    user_id=int(user_id), language=language, updated_at=utcnow()
+                ))
+        return language
 
     def create_topup(self, user_id, amount_cents):
         amount_cents = int(amount_cents)
@@ -405,6 +919,8 @@ class LisansArenaStore:
             with open(mapping_path, "r", encoding="utf-8") as handle:
                 package_map = json.load(handle)
         product_id = str(package_map.get(str(amount_cents // 100)) or "")
+        if not product_id:
+            raise ValueError("Seçilen bakiye paketi ödeme ilanına bağlı değil")
         code = f"LA-{secrets.token_hex(3).upper()}"
         now = utcnow()
         with self.engine.begin() as conn:
@@ -416,7 +932,9 @@ class LisansArenaStore:
         return {
             "code": code, "amount": money(amount_cents),
             "expires_at": (now + timedelta(hours=24)).isoformat(),
-            "shopier_url": f"https://www.shopier.com/lisansarena/{product_id}" if product_id else None,
+            "payment_ready": True,
+            "shopier_product_id": product_id,
+            "shopier_url": f"https://www.shopier.com/lisansarena/{product_id}",
         }
 
     def ingest_webhook(self, payload: dict, webhook_id: str | None):
@@ -642,6 +1160,14 @@ def brand_asset():
     return send_file(os.path.join(os.path.dirname(__file__), "lisansarena_banner.jpeg"), mimetype="image/jpeg", max_age=86400)
 
 
+@la.get("/la/assets/logo")
+def logo_asset():
+    path = os.path.join(os.path.dirname(__file__), "static", "lisansarena_logo_v2.png")
+    if not os.path.exists(path):
+        path = os.path.join(os.path.dirname(__file__), "lisansarena_banner.jpeg")
+    return send_file(path, max_age=86400)
+
+
 @la.get("/api/la/health")
 def store_health():
     try:
@@ -669,8 +1195,10 @@ def telegram_auth():
     session["la_user_id"] = user_id
     session["la_csrf"] = secrets.token_urlsafe(32)
     session.permanent = True
-    referral_secret = os.environ.get("FLASK_SECRET_KEY") or os.environ.get("LISANSARENA_BOT_TOKEN", "")
-    referral_code = "LA-" + hmac.new(referral_secret.encode(), str(user["id"]).encode(), hashlib.sha256).hexdigest()[:8].upper()
+    start_param = str(payload.get("startParam") or "")
+    if start_param.lower().startswith("ref_"):
+        get_store().apply_referral_code(user_id, start_param[4:])
+    referral_profile = get_store().referral_profile(user_id)
     return jsonify({
         "ok": True,
         "csrf": session["la_csrf"],
@@ -679,8 +1207,9 @@ def telegram_auth():
             "last_name": user.get("last_name", ""),
             "username": user.get("username", ""),
             "photo_url": user.get("photo_url", ""),
-            "referral_code": referral_code,
-            "referrals_enabled": False,
+            "referral_code": referral_profile["code"],
+            "referral_count": referral_profile["count"],
+            "referrals_enabled": referral_profile["rewards_enabled"],
         },
     })
 
@@ -714,14 +1243,20 @@ def api_purchase():
         return _json_error(exc, 503 if isinstance(exc, StoreUnavailable) else 400)
 
 
+@la.post("/api/la/cart/checkout")
+@customer_required
+def api_cart_checkout():
+    data = request.get_json(silent=True) or {}
+    try:
+        return jsonify(get_store().checkout(session["la_user_id"], data.get("items")))
+    except (ValueError, StoreUnavailable) as exc:
+        return _json_error(exc, 503 if isinstance(exc, StoreUnavailable) else 400)
+
+
 @la.get("/api/la/wallet")
 @customer_required
 def api_wallet():
-    store = get_store()
-    with store.engine.connect() as conn:
-        balance = store.balance(conn, session["la_user_id"])
-        entries = conn.execute(select(wallet_ledger).where(wallet_ledger.c.user_id == session["la_user_id"]).order_by(wallet_ledger.c.id.desc()).limit(50)).mappings().all()
-    return jsonify({"balance_cents": balance, "balance": money(balance), "entries": [{**dict(row), "amount": money(row["amount_cents"])} for row in entries]})
+    return jsonify(get_store().wallet_history(session["la_user_id"]))
 
 
 @la.post("/api/la/topups")
@@ -736,10 +1271,48 @@ def api_topups():
 @la.get("/api/la/orders")
 @customer_required
 def api_orders():
+    return jsonify({"orders": get_store().order_history(session["la_user_id"])})
+
+
+@la.route("/api/la/tickets", methods=["GET", "POST"])
+@customer_required
+def api_tickets():
     store = get_store()
-    with store.engine.connect() as conn:
-        rows = conn.execute(select(orders, products.c.name.label("product_name")).join(products, products.c.id == orders.c.product_id).where(orders.c.user_id == session["la_user_id"]).order_by(orders.c.id.desc()).limit(100)).mappings().all()
-    return jsonify({"orders": [{**dict(row), "total": money(row["total_cents"])} for row in rows]})
+    if request.method == "GET":
+        return jsonify({"tickets": store.list_tickets(session["la_user_id"])})
+    data = request.get_json(silent=True) or {}
+    try:
+        return jsonify(store.create_ticket(
+            session["la_user_id"],
+            data.get("ticket_type"),
+            data.get("message"),
+            product_id=data.get("product_id"),
+            order_id=data.get("order_id"),
+            subject=data.get("subject"),
+        )), 201
+    except (ValueError, StoreUnavailable) as exc:
+        return _json_error(exc, 503 if isinstance(exc, StoreUnavailable) else 400)
+
+
+@la.get("/api/la/referral")
+@customer_required
+def api_referral():
+    return jsonify(get_store().referral_profile(session["la_user_id"]))
+
+
+@la.get("/api/la/draws")
+@customer_required
+def api_draws():
+    return jsonify({"draws": get_store().active_draws(session["la_user_id"])})
+
+
+@la.post("/api/la/draws/<int:draw_id>/enter")
+@customer_required
+def api_draw_enter(draw_id):
+    try:
+        return jsonify(get_store().enter_draw(session["la_user_id"], draw_id))
+    except ValueError as exc:
+        return _json_error(exc)
 
 
 def _valid_shopier_signature(raw: bytes, supplied: str):
@@ -803,10 +1376,20 @@ def admin_page():
 def admin_overview():
     store = get_store()
     with store.engine.connect() as conn:
-        product_rows = conn.execute(select(products).order_by(products.id)).mappings().all()
+        product_rows = conn.execute(
+            select(products, product_display).select_from(products.outerjoin(
+                product_display, product_display.c.product_id == products.c.id
+            )).order_by(product_display.c.display_order, products.id)
+        ).mappings().all()
         pending = conn.execute(select(orders, products.c.name.label("product_name")).join(products).where(orders.c.status == "manual_pending").order_by(orders.c.deadline_at)).mappings().all()
         review = conn.execute(select(shopier_orders).where(shopier_orders.c.status == "manual_review").order_by(shopier_orders.c.id.desc())).mappings().all()
-    return jsonify({"products": [dict(row) for row in product_rows], "manual_orders": [dict(row) for row in pending], "topup_review": [dict(row) for row in review]})
+    return jsonify({
+        "products": [dict(row) for row in product_rows],
+        "manual_orders": [dict(row) for row in pending],
+        "topup_review": [dict(row) for row in review],
+        "tickets": store.list_tickets(),
+        "draws": store.active_draws(),
+    })
 
 
 @la.post("/api/la/admin/products/<int:product_id>")
@@ -814,6 +1397,9 @@ def admin_overview():
 def admin_product(product_id):
     data = request.get_json(silent=True) or {}
     allowed = {key: data[key] for key in ("name", "description", "category", "price_cents", "cost_cents", "delivery_type", "guide", "published") if key in data}
+    display_allowed = {key: data[key] for key in (
+        "image_key", "featured", "display_order", "request_enabled"
+    ) if key in data}
     if allowed.get("delivery_type") not in (None, "automatic", "manual"):
         return _json_error("Teslim tipi geçersiz")
     store = get_store()
@@ -829,8 +1415,46 @@ def admin_product(product_id):
             if not margin_is_allowed(merged["price_cents"], merged["cost_cents"], merged["delivery_type"]):
                 return _json_error(f"Net marj en az %{int(minimum * 100)} olmalı")
         conn.execute(update(products).where(products.c.id == product_id).values(**allowed, updated_at=utcnow()))
-        conn.execute(insert(audit_log).values(admin_id=session["la_admin_id"], action="product_update", target=str(product_id), detail=json.dumps(allowed, ensure_ascii=False), created_at=utcnow()))
+        if display_allowed:
+            display_allowed["image_key"] = os.path.basename(str(
+                display_allowed.get("image_key") or product_image_key(merged["name"])
+            ))
+            display_allowed["updated_at"] = utcnow()
+            current_display = conn.execute(select(product_display.c.product_id).where(
+                product_display.c.product_id == product_id
+            )).first()
+            if current_display:
+                conn.execute(update(product_display).where(
+                    product_display.c.product_id == product_id
+                ).values(**display_allowed))
+            else:
+                defaults = {
+                    "product_id": product_id,
+                    "image_key": product_image_key(merged["name"]),
+                    "featured": False,
+                    "display_order": 999,
+                    "request_enabled": True,
+                    "updated_at": utcnow(),
+                }
+                defaults.update(display_allowed)
+                conn.execute(insert(product_display).values(**defaults))
+        conn.execute(insert(audit_log).values(admin_id=session["la_admin_id"], action="product_update", target=str(product_id), detail=json.dumps({**allowed, **display_allowed}, ensure_ascii=False, default=str), created_at=utcnow()))
     return jsonify({"ok": True})
+
+
+@la.post("/api/la/admin/tickets/<int:ticket_id>")
+@admin_required
+def admin_ticket(ticket_id):
+    data = request.get_json(silent=True) or {}
+    try:
+        return jsonify(get_store().update_ticket(
+            ticket_id,
+            status=data.get("status"),
+            admin_reply=data.get("admin_reply"),
+            admin_id=session["la_admin_id"],
+        ))
+    except ValueError as exc:
+        return _json_error(exc)
 
 
 @la.post("/api/la/admin/products/<int:product_id>/stock")

@@ -1,1287 +1,492 @@
-import os
+"""LisansArena Telegram storefront and support bot.
+
+Shopier is used only for Mini App wallet top-ups. Product purchase, order
+history, requests, refunds and support are handled by the PostgreSQL-backed
+LisansArena store.
+"""
+
+from __future__ import annotations
+
+import asyncio
 import json
 import logging
+import os
 import re
-import asyncio
-import time
+from pathlib import Path
+
 import requests
-from datetime import datetime
 from telethon import TelegramClient, events, Button
-from telethon.errors import ButtonTypeInvalidError, MessageNotModifiedError
+from telethon.errors import ButtonTypeInvalidError, FloodWaitError, MessageNotModifiedError
 from telethon.sessions import StringSession
 from telethon.tl.types import KeyboardButtonRow, KeyboardButtonWebView, ReplyInlineMarkup
-import user_lang_helper
-import firestore_helper
-from gemini_helper import get_ai_response
+
+from lisansarena_store import StoreUnavailable, get_store
 from sales_metrics import record_event
-from support_flow import claim_first_greeting, forward_customer_message, greeting_for, one_time_mode_enabled
-from lisansarena_payment import (
-    IBAN_COMPACT,
-    IBAN_DISPLAY,
-    IBAN_RECIPIENT,
-    PAYMENT_REPLY_COOLDOWN_SECONDS,
-    PaymentSessionStore,
-    build_payment_message,
-)
-
-# Async wrappers for firestore_helper to prevent event loop deadlocks/freezes
-async def async_get_document(doc_id):
-    loop = asyncio.get_event_loop()
-    return await loop.run_in_executor(None, firestore_helper.get_document, doc_id)
-
-async def async_set_document(doc_id, fields_dict):
-    loop = asyncio.get_event_loop()
-    return await loop.run_in_executor(None, firestore_helper.set_document, doc_id, fields_dict)
-
-async def async_delete_document(doc_id):
-    loop = asyncio.get_event_loop()
-    return await loop.run_in_executor(None, firestore_helper.delete_document, doc_id)
-
-def get_event_claim_doc_id(event, scope):
-    message_id = getattr(event.message, 'id', None)
-    if not message_id or event.chat_id is None:
-        return None
-    return f"dm_event_{scope}_{event.chat_id}_{message_id}"
-
-async def async_claim_event(event, scope):
-    doc_id = get_event_claim_doc_id(event, scope)
-    if not doc_id:
-        return True
-    result = await async_run_claim(doc_id, {"scope": scope, "chat_id": event.chat_id, "message_id": getattr(event.message, 'id', None)})
-    return result is not False
-
-async def async_release_event_claim(event, scope):
-    doc_id = get_event_claim_doc_id(event, scope)
-    if doc_id:
-        await async_delete_document(doc_id)
-
-async def async_run_claim(doc_id, fields):
-    loop = asyncio.get_event_loop()
-    return await loop.run_in_executor(None, firestore_helper.claim_document, doc_id, fields)
-
-PRODUCT_REPLY_COOLDOWN_SECONDS = PAYMENT_REPLY_COOLDOWN_SECONDS
-PRODUCT_REPLY_COOLDOWNS = {}
-LAST_AI_REPLY_TIME = {}
-AUTO_REPLY_COOLDOWN_SECONDS = 300
-LAST_AUTO_REPLY_TIME = {}
-MESSAGE_BURST_DEBOUNCE_SECONDS = 1.5
-LATEST_USER_MESSAGE_IDS = {}
-
-def _product_reply_key(user_id, products=None, fallback_key=None):
-    if products:
-        parts = []
-        for product in products[:4]:
-            parts.append(str(product.get('id') or product.get('url') or product.get('title') or '').lower())
-        product_key = '|'.join(parts)
-    else:
-        product_key = (fallback_key or 'fallback').strip().lower()[:100]
-    return f"{user_id}:{product_key}"
-
-def is_product_reply_cooling_down(user_id, products=None, fallback_key=None):
-    now = time.monotonic()
-    for key, expires in list(PRODUCT_REPLY_COOLDOWNS.items()):
-        if expires <= now:
-            PRODUCT_REPLY_COOLDOWNS.pop(key, None)
-    key = _product_reply_key(user_id, products, fallback_key)
-    return PRODUCT_REPLY_COOLDOWNS.get(key, 0) > now
-
-def mark_product_reply_sent(user_id, products=None, fallback_key=None):
-    expires_at = time.monotonic() + PRODUCT_REPLY_COOLDOWN_SECONDS
-    if products:
-        for product in products:
-            PRODUCT_REPLY_COOLDOWNS[_product_reply_key(user_id, [product])] = expires_at
-        return
-    PRODUCT_REPLY_COOLDOWNS[_product_reply_key(user_id, fallback_key=fallback_key)] = expires_at
+from support_flow import claim_first_greeting, forward_customer_message
 
 
-def filter_products_not_cooling_down(user_id, products):
-    return [
-        product for product in products
-        if not is_product_reply_cooling_down(user_id, [product])
-    ]
-
-def is_auto_reply_cooling_down(user_id):
-    return time.monotonic() - LAST_AUTO_REPLY_TIME.get(user_id, 0) < AUTO_REPLY_COOLDOWN_SECONDS
-
-def mark_auto_reply_sent(user_id):
-    LAST_AUTO_REPLY_TIME[user_id] = time.monotonic()
-
-# Logging configuration
 logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO,
-    # app.py captures stdout into lisansarena_bot_log.txt in production.
-    handlers=[logging.StreamHandler()]
+    handlers=[logging.StreamHandler()],
 )
 logger = logging.getLogger("LisansArenaBot")
-USER_EVENT_LOCKS = {}
-
-def serialize_user_events(handler):
-    async def serialized(event, *args, **kwargs):
-        user_id = event.sender_id
-        message_id = getattr(event.message, 'id', None)
-        text = getattr(event, 'text', None)
-        if user_id and message_id and text and not text.startswith('/'):
-            LATEST_USER_MESSAGE_IDS[user_id] = message_id
-            await asyncio.sleep(MESSAGE_BURST_DEBOUNCE_SECONDS)
-            if LATEST_USER_MESSAGE_IDS.get(user_id) != message_id:
-                logger.info("Ignoring superseded burst message for user %s (message %s)", user_id, message_id)
-                return
-        lock = USER_EVENT_LOCKS.setdefault(user_id, asyncio.Lock())
-        async with lock:
-            return await handler(event, *args, **kwargs)
-    return serialized
-
-async def safe_event_edit(event, *args, **kwargs):
-    """Repeated button taps are harmless; Telegram rejects identical edits."""
-    try:
-        edit_method = event.edit
-        return await edit_method(*args, **kwargs)
-    except MessageNotModifiedError:
-        logger.debug("Ignored an identical callback edit for user %s.", event.sender_id)
-        return None
 
 API_ID = int(os.environ.get("TELEGRAM_API_ID", "0") or 0)
 API_HASH = os.environ.get("TELEGRAM_API_HASH", "").strip()
-CONFIG_FILE = "bot_config.json"
-LINKS_FILE = "lisansarena_shopier_links.json"  # Legacy local price export; URLs are never exposed.
-
-def save_ticket_to_file(bot_type, user_id, first_name, last_name, username, message):
-    file_path = "tickets.json"
-    new_ticket = {
-        "bot_type": bot_type,
-        "user_id": user_id,
-        "first_name": first_name,
-        "last_name": last_name,
-        "username": username,
-        "message": message,
-        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    }
-    tickets = []
-    if os.path.exists(file_path):
-        try:
-            with open(file_path, "r", encoding="utf-8") as f:
-                tickets = json.load(f)
-        except:
-            tickets = []
-    tickets.insert(0, new_ticket)
-    tickets = tickets[:200]
-    try:
-        with open(file_path, "w", encoding="utf-8") as f:
-            json.dump(tickets, f, indent=2, ensure_ascii=False)
-    except Exception as e:
-        logger.error(f"Error saving ticket to file: {e}")
-
-def load_config():
-    if not os.path.exists(CONFIG_FILE):
-        return None
-    try:
-        with open(CONFIG_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except Exception as e:
-        logger.error(f"Config load error: {e}")
-        return None
-
-config = load_config()
-if not config:
-    logger.error("bot_config.json could not be loaded. Exiting.")
-    exit(1)
-
-# Read token for LisansArena
-
-IBAN_NO = IBAN_COMPACT
-IBAN_ALICI = IBAN_RECIPIENT
-PAYMENT_SESSIONS = PaymentSessionStore()
-
 BOT_TOKEN = os.environ.get("LISANSARENA_BOT_TOKEN", "").strip()
-ADMIN_ID = int(os.environ.get("TELEGRAM_ADMIN_ID", config.get("admin_id", 0)) or 0)
-BOT_USER_ID = None
+MINI_APP_URL = os.environ.get(
+    "LISANSARENA_MINI_APP_URL",
+    "https://froxy-bot-wjzr.onrender.com/la/app",
+).strip()
+
+
+def _load_config():
+    try:
+        return json.loads(Path("bot_config.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+CONFIG = _load_config()
+ADMIN_ID = int(os.environ.get("TELEGRAM_ADMIN_ID", CONFIG.get("admin_id", 0)) or 0)
+SUPPORT_CHAT_ID = int(CONFIG.get("support_chat_id") or ADMIN_ID or 0)
+PENDING_INPUT = {}
 
 if not API_ID or not API_HASH or not BOT_TOKEN:
-    logger.error("LisansArena Telegram secrets are not configured. Exiting.")
-    exit(1)
+    raise SystemExit("LisansArena Telegram credentials are not configured")
 
-# In-memory user state
-user_states = {}
-bot_username = "LisansArenaBot" # default, updated dynamically on start
-
-# Initialize client
 bot = TelegramClient(StringSession(), API_ID, API_HASH)
 
-@bot.on(events.CallbackQuery())
-async def acknowledge_callback(event):
-    """Acknowledge Telegram callbacks immediately so the first click is not stuck."""
-    try:
-        await event.answer()
-    except Exception:
-        pass
 
-# ═══════════════════════════════════════════════════════════════
-# Product Catalog - legacy local price export, IBAN-only checkout
-# ═══════════════════════════════════════════════════════════════
-CATEGORIES = {}
-ALL_PRODUCTS_FLAT = []
-
-def load_products_from_links_json():
-    global ALL_PRODUCTS_FLAT, CATEGORIES
-    products = []
-    
-    if os.path.exists(LINKS_FILE):
-        try:
-            with open(LINKS_FILE, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                for item in data:
-                    pid = item.get("id")
-                    title = item.get("title")
-                    price_val = item.get("price")
-                    if price_val is None:
-                        price_val = item.get("priceData", {}).get("price", "0")
-                    price_text = str(price_val).strip()
-                    price_text = re.sub(r"\s*(?:TL|₺)\s*$", "", price_text, flags=re.I)
-                    price_str = f"{price_text} TL"
-                    
-                    products.append({
-                        "id": pid,
-                        "title": title,
-                        "price": price_str,
-                        "desc": item.get("description", "")
-                    })
-            logger.info(f"Loaded {len(products)} products from {LINKS_FILE}.")
-        except Exception as e:
-            logger.error(f"Error loading {LINKS_FILE}: {e}")
-            
-    ALL_PRODUCTS_FLAT = list(products)
-    
-    # Rebuild categories
-    temp_categories = {
-        "firsatlar": {"title": "🔥 Kaçırılmayacak Fırsatlar", "products": {}},
-        "ai": {"title": "🌟 Yapay Zeka (AI) Çözümleri", "products": {}},
-        "streaming": {"title": "📺 Dizi & Film Platformları", "products": {}},
-        "design": {"title": "🎨 Tasarım & Eğlence Üyelikleri", "products": {}},
-        "license": {"title": "🔑 Lisans, Oyun & Diğer", "products": {}}
-    }
-    
-    for p in products:
-        title = p["title"]
-        pid = p["id"]
-        price = p["price"]
-        t = title.lower()
-        
-        # 1. Yapay Zeka (AI) Çözümleri
-        if any(k in t for k in ["gemini", "perplexity", "magnific", "deepl", "ai", "grok", "chatgpt", "openai", "copilot", "claude", "midjourney", "semrush", "gamma", "quill", "ideogram"]):
-            cat_key = "ai"
-        # 2. Dizi & Film Platformları
-        elif any(k in t for k in ["netflix", "prime video", "hbo max", "hbo", "crunchyroll", "exxen", "blutv", "disney"]):
-            cat_key = "streaming"
-        # 3. Tasarım & Eğlence Üyelikleri
-        elif any(k in t for k in ["canva", "adobe", "creative cloud", "express", "capcut", "duolingo", "scribd", "design", "tasarım", "spotify", "youtube", "music"]):
-            cat_key = "design"
-        # 4. Lisans, Oyun & Diğer
-        else:
-            cat_key = "license"
-            
-        temp_categories[cat_key]["products"][pid] = {
-            "title": title,
-            "price": price,
-            "desc": p["desc"]
-        }
-        
-    # Inject popular deals into firsatlar
-    f_count = 0
-    for p in products:
-        if f_count >= 4:
-            break
-        t = p["title"].lower()
-        if "netflix" in t or "canva" in t or "youtube" in t or "office" in t:
-            temp_categories["firsatlar"]["products"][p["id"]] = {
-                "title": p["title"],
-                "price": p["price"],
-                "desc": p["desc"]
-            }
-            f_count += 1
-        
-    CATEGORIES = temp_categories
-    logger.info("In-memory categories rebuilt successfully.")
+BOT_COMMANDS = [
+    ("start", "LisansArena ana menüsünü aç"),
+    ("magaza", "Telegram mağazasını aç"),
+    ("urunler", "Ürün kataloğunu görüntüle"),
+    ("bakiye", "Bakiye ve yükleme ekranı"),
+    ("siparisler", "Siparişlerini görüntüle"),
+    ("hesaplar", "Hesap ve referans profilin"),
+    ("gecmis", "Bakiye hareketlerin"),
+    ("kullanim", "Teslimat ve kullanım bilgileri"),
+    ("talep", "Yeni ürün talebi oluştur"),
+    ("destek", "Destek talebi oluştur"),
+    ("iade", "İade talebi oluştur"),
+    ("referans", "Referans profilini görüntüle"),
+    ("cekilis", "Aktif çekilişleri görüntüle"),
+    ("ayarlar", "Hesap ayarları"),
+    ("dil", "Dil seçimini değiştir"),
+    ("yardim", "Komutları ve yardımı görüntüle"),
+]
 
 
-def find_product(prod_key):
-    prod_key = str(prod_key)
-    for cat_key, category in CATEGORIES.items():
-        product = category["products"].get(prod_key)
-        if product:
-            return cat_key, product
-    return None, None
+def mini_app_markup(label="Mağazayı Aç"):
+    return ReplyInlineMarkup(rows=[KeyboardButtonRow(buttons=[
+        KeyboardButtonWebView(text=f"🛍 {label}", url=MINI_APP_URL)
+    ])])
 
 
-def payment_message_for(user_id, prod_key, product, language="tr"):
-    session = PAYMENT_SESSIONS.get_or_create(user_id, prod_key)
-    return build_payment_message(product, session["code"], language=language), session
-
-
-def receipt_buttons(prod_key, support_label="💬 Bize Ulaşın / Destek"):
+def inline_menu():
     return [
-        [Button.inline("📸 Dekont Gönder", f"verify_iban_{prod_key}".encode())],
-        [Button.inline(support_label, b"menu_support")],
-        [Button.inline("📋 Ana Menü / Main Menu", b"menu_main")],
+        [Button.inline("🛍 Ürünler", b"menu_products"), Button.inline("💳 Bakiye", b"menu_balance")],
+        [Button.inline("📦 Siparişler", b"menu_orders"), Button.inline("👤 Profil", b"menu_profile")],
+        [Button.inline("💬 Destek", b"ticket_support"), Button.inline("➕ Ürün Talebi", b"ticket_request")],
     ]
 
 
-def is_unverified_payment_claim(text):
-    normalized = (text or "").strip().lower()
-    return any(
-        phrase in normalized
-        for phrase in ("ödeme yaptım", "odeme yaptim", "ödedim", "odedim", "parayı attım", "parayi attim")
-    )
-
-# ═══════════════════════════════════════════════════════════════
-# Smart Product Matching - Müşteri serbest metin yazınca ürün eşleştir
-# ═══════════════════════════════════════════════════════════════
-SALES_INTENT_KEYWORDS = {
-    "fiyat", "ücret", "tl", "satın", "almak", "alacağım", "sipariş",
-    "ürün", "stok", "link", "shopier", "ödeme", "ödemek", "kampanya",
-    "indirim", "premium", "lisans", "hesap", "abonelik", "paket", "üyelik",
-    "canva", "adobe", "netflix", "youtube", "spotify", "capcut", "chatgpt",
-    "var mı", "mevcut mu", "nasıl alırım", "satın al",
-}
-
-def has_sales_intent(text):
-    normalized = (text or "").strip().lower()
-    return bool(normalized) and any(
-        re.search(rf"(?<!\w){re.escape(keyword)}(?!\w)", normalized)
-        for keyword in SALES_INTENT_KEYWORDS
-    )
-
-def _get_words(text):
-    return re.findall(r'[a-zA-Z0-9çğıöşüÇĞİÖŞÜ]+', text.lower())
-
-def match_product_from_text(msg_text):
-    msg_clean = msg_text.lower().strip()
-    msg_clean = msg_clean.replace("you tube", "youtube")
-    msg_clean = re.sub(r'\byt\b', 'youtube', msg_clean)
-    msg_clean = re.sub(r'\bwin\b', 'windows', msg_clean)
-    msg_clean = msg_clean.replace("win10", "windows")
-    msg_clean = msg_clean.replace("win11", "windows")
-    msg_clean = msg_clean.replace("office365", "office 365")
-    msg_clean = msg_clean.replace("gamepass", "game pass")
-    
-    query_words = _get_words(msg_clean)
-    
-    brand_keywords = {
-        "netflix", "youtube", "adobe", "canva", "windows", "office", "gemini", "grok",
-        "xbox", "spotify", "exxen", "trendyol", "duolingo", "semrush", "capcut",
-        "scribd", "gamma", "steam", "whatsapp", "apple", "perplexity",
-        "crunchyroll", "chatgpt", "midjourney", "creative", "deepl", "magnific"
+def _telegram_user(sender):
+    return {
+        "id": sender.id,
+        "username": getattr(sender, "username", "") or "",
+        "first_name": getattr(sender, "first_name", "") or "",
+        "last_name": getattr(sender, "last_name", "") or "",
     }
-    
-    has_brand = any(w in brand_keywords for w in query_words)
-    if not has_brand:
-        return None, 0
-        
-    query_brands = [w for w in query_words if w in brand_keywords]
-    
-    skip_words = {
-        "var", "mi", "mı", "mu", "mü", "ve", "de", "da", "için", "misiniz", "miyiz",
-        "olur", "miyim", "yok", "acaba", "hizmeti", "ürünü", "hesabı", "kodu", "kuponu",
-        "premium", "alacaktım", "hocam", "knk", "kanka", "bir", "alacağım", "alacaktim",
-        "istiyorum", "lazım", "lazim", "alalım", "alalim", "kaç", "kac", "fiyat",
-        "ne", "tl", "lira", "bak", "abi", "güvenilir", "güvenilirmi"
-    }
-    
-    best_product = None
-    best_score = 0
-    
-    for p in ALL_PRODUCTS_FLAT:
-        title_lower = p.get("title", "").lower()
-        title_words = set(_get_words(title_lower))
-        
-        if query_brands:
-            if not any(b in title_words for b in query_brands):
-                continue
-        
-        score = 0
-        matched_brand = False
-        
-        for i in range(len(query_words) - 1):
-            phrase = f"{query_words[i]} {query_words[i+1]}"
-            if phrase in title_lower:
-                score += 50
-                
-        for w in query_words:
-            if w in skip_words or len(w) <= 1:
-                continue
-            if w in title_words:
-                score += 20
-                if w in brand_keywords:
-                    matched_brand = True
-            elif len(w) > 5:
-                for tw in title_words:
-                    if w in tw or tw in w:
-                        score += 8
-                        break
-        
-        if not matched_brand and score < 50:
-            continue
-            
-        # Penalties
-        if "ultra" in query_words and "ultra" not in title_words:
-            score -= 100
-        if "pro" in query_words and "pro" not in title_words:
-            score -= 50
-        if "1 aylık" in title_lower and "haftalık" in query_words:
-            score -= 80
-            
-        if score > best_score:
-            best_score = score
-            best_product = p
-            
-    if best_score >= 20:
-        return best_product, best_score
-    return None, 0
 
-def match_multiple_products_from_text(msg_text):
-    msg_clean = msg_text.lower().strip()
-    msg_clean = msg_clean.replace("you tube", "youtube")
-    msg_clean = re.sub(r'\byt\b', 'youtube', msg_clean)
-    msg_clean = re.sub(r'\bwin\b', 'windows', msg_clean)
-    msg_clean = msg_clean.replace("win10", "windows")
-    msg_clean = msg_clean.replace("win11", "windows")
-    msg_clean = msg_clean.replace("office365", "office 365")
-    msg_clean = msg_clean.replace("gamepass", "game pass")
-    msg_clean = msg_clean.replace("cc", "creative cloud")
-    
-    query_words = _get_words(msg_clean)
-    
-    brand_keywords = {
-        "netflix", "youtube", "adobe", "canva", "windows", "office", "gemini", "grok",
-        "xbox", "spotify", "exxen", "trendyol", "duolingo", "semrush", "capcut",
-        "scribd", "gamma", "steam", "whatsapp", "apple", "perplexity",
-        "crunchyroll", "chatgpt", "midjourney", "creative", "deepl", "magnific"
-    }
-    
-    primary_brands = {
-        "netflix", "youtube", "adobe", "canva", "windows", "office", "gemini", "grok",
-        "xbox", "spotify", "exxen", "trendyol", "duolingo", "semrush", "capcut",
-        "scribd", "gamma", "steam", "whatsapp", "apple", "perplexity",
-        "crunchyroll", "chatgpt", "midjourney", "creative", "deepl", "magnific"
-    }
-    
-    query_brands = [w for w in query_words if w in brand_keywords]
-    if not query_brands:
-        return []
-        
-    query_primary_brands = [w for w in query_words if w in primary_brands]
-    target_brands = list(set(query_primary_brands if query_primary_brands else query_brands))
-    
-    skip_words = {
-        "var", "mi", "mı", "mu", "mü", "ve", "de", "da", "için", "misiniz", "miyiz",
-        "olur", "miyim", "yok", "acaba", "hizmeti", "ürünü", "hesabı", "kodu", "kuponu",
-        "premium", "alacaktım", "hocam", "knk", "kanka", "bir", "alacağım", "alacaktim",
-        "istiyorum", "lazım", "lazim", "alalım", "alalim", "kaç", "kac", "fiyat",
-        "ne", "tl", "lira", "bak", "abi", "güvenilir", "güvenilirmi"
-    }
-    
-    matched_products = []
-    
-    for brand in target_brands:
-        best_product = None
-        best_score = 0
-        
-        for p in ALL_PRODUCTS_FLAT:
-            title_lower = p.get("title", "").lower()
-            title_words = set(_get_words(title_lower))
-            
-            if "bakiye" in title_lower or "keyvadi" in title_lower:
-                continue
-                
-            # Enforce brand check
-            if brand not in title_words:
-                if brand == "adobe" and "creative" in title_words:
-                    pass
-                elif brand == "creative" and "adobe" in title_words:
-                    pass
-                else:
-                    continue
-                
-            score = 0
-            matched_brand = False
-            
-            for i in range(len(query_words) - 1):
-                phrase = f"{query_words[i]} {query_words[i+1]}"
-                if phrase in title_lower:
-                    score += 50
-                    
-            for w in query_words:
-                if w in skip_words or len(w) <= 1:
-                    continue
-                if w in title_words:
-                    score += 20
-                    if w in brand_keywords:
-                        matched_brand = True
-                elif len(w) > 5:
-                    for tw in title_words:
-                        if w in tw or tw in w:
-                            score += 8
-                            break
-            
-            # Duration mismatch
-            q_durations = {"haftalık", "aylık", "yıllık", "günlük"}
-            q_dur = [w for w in query_words if w in q_durations]
-            q_nums = [w for w in query_words if w.isdigit()]
-            if q_dur and q_nums:
-                dur_phrase = f"{q_nums[0]} {q_dur[0]}"
-                if dur_phrase not in title_lower and len(q_nums[0]) <= 2:
-                    score -= 15
-                            
-            if not matched_brand and score < 50:
-                continue
-                
-            # Penalties
-            if "ultra" in query_words and "ultra" not in title_words:
-                score -= 100
-            if "pro" in query_words and "pro" not in title_words:
-                score -= 50
-            if "1 aylık" in title_lower and "haftalık" in query_words:
-                score -= 80
-                
-            if score > best_score:
-                best_score = score
-                best_product = p
-                
-        if best_product and best_score >= 20:
-            if best_product not in matched_products:
-                matched_products.append(best_product)
-                
-    return matched_products
 
-TEXTS = {
-    "tr": {
-        "welcome": (
-            "🚀 **LisansArena'ya Hoş Geldiniz! - Dijital Dünyanın Zirvesi** 🚀\n\n"
-            "İhtiyacınız olan tüm premium yazılımlar, oyunlar, yapay zeka araçları ve eğlence paketleri tek bir yerde!\n\n"
-            "Hemen aşağıdaki menüden kategorinizi seçin 👇"
-        ),
-        "support_btn": "💬 Bize Ulaşın / Destek",
-        "lang_btn": "🌍 Dil Değiştir / Language",
-        "main_menu": "🏠 Ana Menüye Dön",
-        "cat_title_mapping": {
-            "firsatlar": "🔥 Kaçırılmayacak Fırsatlar",
-            "ai": "🌟 Yapay Zeka (AI) Çözümleri",
-            "streaming": "📺 Dizi & Film Platformları",
-            "design": "🎨 Tasarım & Eğlence Üyelikleri",
-            "license": "🔑 Lisans, Oyun & Diğer"
-        },
-        "select_product": "İncelemek veya satın almak istediğiniz ürünü seçiniz:",
-        "price": "Fiyatımız",
-        "product_footer": "✅ Güvenli Havale/EFT Ödemesi · ⚡ Hızlı Teslimat · 🤝 Kesintisiz Destek\n\nÜrünü satın almak için aşağıdaki IBAN ödeme butonunu kullanabilirsiniz.",
-        "buy_btn": "💳 IBAN Bilgileri ile Satın Al",
-        "support_title": "💬 **Müşteri Hizmetleri & İletişim**",
-        "support_desc": "Sorularınızı, satın almak istediğiniz ürünü veya karşılaştığınız bir sorunu detaylıca buraya yazabilirsiniz.\n\nYetkili ekibimiz en kısa sürede size dönüş yapacaktır.",
-        "cancel": "❌ İşlemi İptal Et",
-        "support_success": "✅ Talebiniz başarıyla alındı. Müşteri temsilcimiz size en kısa sürede cevap verecektir.",
-        "support_fail": "⚠️ Bir sorun oluştu ve mesajınız iletilemedi. Lütfen bir süre sonra tekrar deneyin.",
-        "support_inactive": "⚠️ Şu anda müşteri hizmetleri sistemimiz geçici olarak çevrimdışıdır. Lütfen daha sonra tekrar deneyiniz.",
-        "reply_prefix": "🔔 **LisansArena Ekibinden Mesaj:**\n\n",
-        "choose_lang": "Lütfen dil seçiminizi yapın / Please choose your language:"
-    },
-    "en": {
-        "welcome": (
-            "🚀 **Welcome to LisansArena! - The Summit of the Digital World** 🚀\n\n"
-            "All the premium software, games, AI tools, and entertainment packages you need in one place!\n\n"
-            "Select your category from the menu below 👇"
-        ),
-        "support_btn": "💬 Contact Us / Support",
-        "lang_btn": "🌍 Language / Dil Değiştir",
-        "main_menu": "🏠 Back to Main Menu",
-        "cat_title_mapping": {
-            "firsatlar": "🔥 Kaçırılmayacak Fırsatlar / Super Deals",
-            "ai": "🌟 Yapay Zeka (AI) Çözümleri / AI Solutions",
-            "streaming": "📺 Dizi & Film Platformları / Streaming Platforms",
-            "design": "🎨 Tasarım & Eğlence Üyelikleri / Design & Fun",
-            "license": "🔑 Lisans, Oyun & Diğer / Licenses & Games"
-        },
-        "select_product": "Select the product you'd like to review or purchase:",
-        "price": "Our Price",
-        "product_footer": "✅ Secure Transaction · ⚡ Fast Delivery · 🤝 Continuous Support\n\nYou can use the secure payment button below to purchase the product.",
-        "buy_btn": "💳 Pay via Bank IBAN Transfer",
-        "support_title": "💬 **Customer Service & Contact**",
-        "support_desc": "You can write your questions, the product you want to buy, or any problem you encountered in detail here.\n\nOur authorized team will get back to you as soon as possible.",
-        "cancel": "❌ Cancel Action",
-        "support_success": "✅ Your request has been successfully received. Our customer representative will reply to you shortly.",
-        "support_fail": "⚠️ An error occurred and your message could not be sent. Please try again later.",
-        "support_inactive": "⚠️ Our customer service system is temporarily offline right now. Please try again later.",
-        "reply_prefix": "🔔 **Message from LisansArena Team:**\n\n",
-        "choose_lang": "Please choose your language / Lütfen dil seçiminizi yapın:"
-    }
-}
+async def _store_user(event):
+    sender = await event.get_sender()
+    store = get_store()
+    user_id = await asyncio.to_thread(store.get_or_create_user, _telegram_user(sender))
+    return store, user_id, sender
 
-async def show_lang_selection(event, is_callback=False):
-    text = "Lütfen dilinizi seçin / Please choose your language:"
-    buttons = [
-        [Button.inline("🇹🇷 Türkçe", b"lang_tr"), Button.inline("🇺🇸 English", b"lang_en")]
-    ]
-    if is_callback:
-        await safe_event_edit(event, text, buttons=buttons)
-    else:
-        await event.respond(text, buttons=buttons)
 
-async def show_main_menu(event, user_id, is_callback=False):
-    lang = user_lang_helper.get_user_lang(user_id) or "tr"
-    t = TEXTS[lang]
-    
-    presence = await async_get_document("habil_presence") or {}
-    is_online = presence.get("is_online", False)
-    status_emoji = "🟢 **Destek Çevrimiçi / Support Online**" if is_online else "🔴 **Destek Çevrimdışı / Support Offline**"
-    
-    welcome = (
-        f"{status_emoji}\n"
-        f"━━━━━━━━━━━━━━━━━━━\n\n"
-        f"{t['welcome']}"
-    )
-    
-    buttons = mini_app_markup()
-    # Referral and legacy IBAN/catalog buttons stay disabled. All customer
-    # purchases now begin inside the authenticated Telegram Mini App.
-    message = f"{welcome}\n\nÜrünler, gerçek stok, bakiye ve siparişler için mağaza düğmesini kullanın."
+async def safe_edit(event, text, **kwargs):
     try:
-        await event.respond(message, buttons=buttons)
-    except ButtonTypeInvalidError:
-        # The Bot API menu remains available if an older Telegram client
-        # rejects this inline WebView button.
-        await event.respond(f"{message}\n\nMağazayı sohbet ekranının altındaki Menü düğmesinden açabilirsiniz.")
+        return await event.edit(text, **kwargs)
+    except MessageNotModifiedError:
+        return None
 
 
-def mini_app_markup():
-    mini_app_url = os.environ.get(
-        "LISANSARENA_MINI_APP_URL",
-        "https://froxy-bot-wjzr.onrender.com/la/app",
-    ).strip()
-    # Telegram rejects KeyboardButtonWebView inside a persistent reply
-    # keyboard for this bot (ButtonTypeInvalid). Web Apps launched by bots
-    # must be sent as an inline WebView button so Telegram supplies initData.
-    return ReplyInlineMarkup(
-        rows=[KeyboardButtonRow(buttons=[
-            KeyboardButtonWebView(text="🛍 Mağazayı Aç / Open Store", url=mini_app_url)
-        ])],
+async def respond_store_error(event, exc):
+    logger.warning("Store request failed: %s", type(exc).__name__)
+    await event.respond(
+        "Mağaza verisine şu anda ulaşılamıyor. Mesajın destek kuyruğuna alınabilir; birkaç dakika sonra tekrar dene.",
+        buttons=[[Button.inline("💬 Destek", b"ticket_support")]],
     )
 
 
-def configure_mini_app_menu_button():
-    """Persist the default Mini App menu button through Telegram's Bot API."""
-    mini_app_url = os.environ.get(
-        "LISANSARENA_MINI_APP_URL",
-        "https://froxy-bot-wjzr.onrender.com/la/app",
-    ).strip()
-    response = requests.post(
-        f"https://api.telegram.org/bot{BOT_TOKEN}/setChatMenuButton",
-        json={
-            "menu_button": {
-                "type": "web_app",
-                "text": "🛍 Mağazayı Aç",
-                "web_app": {"url": mini_app_url},
-            }
-        },
-        timeout=20,
-    )
-    payload = response.json() if response.content else {}
-    if response.status_code >= 400 or not payload.get("ok"):
-        raise RuntimeError(str(payload.get("description") or f"HTTP {response.status_code}"))
-    return True
-
-@bot.on(events.CallbackQuery(data=b'menu_verify_payment'))
-async def verify_payment_callback(event):
-    try:
-        await event.answer()
-    except Exception:
-        pass
-    user_states[event.sender_id] = None
-    await event.answer("LisansArena ödemeleri yalnızca IBAN ve dekont ile alınır.", alert=True)
-    await show_main_menu(event, event.sender_id, is_callback=True)
-
-@bot.on(events.NewMessage(pattern='/start'))
-async def start_handler(event):
-    if not await async_claim_event(event, "lisansarena_sales"):
-        return
-    user_id = event.sender_id
-    
-    ban_data = await async_get_document(f"lisansarena_ban_{user_id}")
-    if ban_data and ban_data.get("banned", False):
-        await event.respond("⚠️ **Hesabınız askıya alınmıştır.** İletişime geçmek için yöneticinize başvurun.")
-        return
-        
-    user_states[user_id] = None
-    
-    message_text = event.message.message or ""
-    ref_id = None
-    # Referral rewards remain disabled until real net profitability is known.
-            
-    user_doc_id = f"lisansarena_user_{user_id}"
-    user_data = await async_get_document(user_doc_id)
-    
-    if not user_data:
-        user_data = {
-            "referrals_count": 0,
-            "referred_by": ref_id or "",
-            "id": user_id
-        }
-        await async_set_document(user_doc_id, user_data)
-        
-        if ref_id:
-            ref_doc_id = f"lisansarena_user_{ref_id}"
-            ref_data = await async_get_document(ref_doc_id)
-            if ref_data:
-                ref_data["referrals_count"] = ref_data.get("referrals_count", 0) + 1
-                await async_set_document(ref_doc_id, ref_data)
-                try:
-                    await bot.send_message(int(ref_id), "🎉 **Tebrikler!** Bir arkadaşınız davetinizle LisansArena'ya katıldı. Davet sayınız güncellendi!")
-                except Exception:
-                    pass
-
-    lang = user_lang_helper.get_user_lang(user_id)
-    if not lang:
-        await show_lang_selection(event)
-    else:
-        await show_main_menu(event, user_id)
-
-@bot.on(events.NewMessage(pattern=r'/lang|/dil'))
-async def lang_cmd_handler(event):
-    user_id = event.sender_id
-    user_states[user_id] = None
-    await show_lang_selection(event)
-
-@bot.on(events.CallbackQuery(pattern=r'lang_(\w+)'))
-async def lang_select_callback(event):
-    try:
-        await event.answer()
-    except Exception:
-        pass
-    user_id = event.sender_id
-    lang = event.data.decode('utf-8').replace("lang_", "")
-    user_lang_helper.set_user_lang(user_id, lang)
-    
-    if lang == "tr":
-        await event.answer("Dil Türkçe olarak ayarlandı.", alert=False)
-    else:
-        await event.answer("Language set to English.", alert=False)
-        
-    await show_main_menu(event, user_id, is_callback=True)
-
-@bot.on(events.CallbackQuery(data=b'menu_referral'))
-async def menu_referral_handler(event):
-    try:
-        await event.answer()
-    except Exception:
-        pass
-    user_id = event.sender_id
-    user_data = await async_get_document(f"lisansarena_user_{user_id}") or {"referrals_count": 0}
-    count = user_data.get("referrals_count", 0)
-    
-    coupon_info = ""
-    if count >= 5:
-        coupon_info = "🎁 **Tebrikler!** 5 referans barajını aştınız. Sizin için %15 indirim kuponunuz: **LISANSARENA15**"
-    else:
-        coupon_info = f"🎁 5 arkadaşınızı davet ettiğinizde **%15 indirim kuponu** kazanırsınız! (Kalan: `{5 - count}` davet)"
-
+async def show_main_menu(event, *, edit=False):
     text = (
-        "👥 **LisansArena Davet & Kazan Sistemi**\n\n"
-        f"👥 **Mevcut Davet Sayınız:** `{count} / 5`\n\n"
-        f"{coupon_info}\n\n"
-        "Arkadaşlarınızı davet edin, indirim kuponları kazanın! 🛍️\n\n"
-        "🔗 **Sizin Davet Linkiniz:**\n"
-        f"`https://t.me/{bot_username}?start=ref_{user_id}`\n\n"
-        "*(Yukarıdaki linke tıklayarak kopyalayabilir ve arkadaşlarınıza gönderebilirsiniz.)*"
+        "LİSANSARENA\n\n"
+        "Dijital ürünler, gerçek stok, bakiye ve sipariş takibi tek mağazada.\n\n"
+        "• Otomatik teslim ürünleri stoktan verilir\n"
+        "• Manuel ürünler en geç 24 saat içinde tamamlanır\n"
+        "• Bakiye ödemeleri doğrulama sonrası en geç 10 dakikada yansır"
     )
-    buttons = [
-        [Button.inline("↩️ Ana Menü", b"menu_main")]
-    ]
-    await safe_event_edit(event, text, buttons=buttons)
+    if edit:
+        await safe_edit(event, text, buttons=inline_menu())
+    else:
+        try:
+            await event.respond(text, buttons=mini_app_markup())
+            await event.respond("Hızlı işlemler", buttons=inline_menu())
+        except ButtonTypeInvalidError:
+            await event.respond(
+                f"{text}\n\nMağazayı sohbet ekranının altındaki Menü düğmesinden açabilirsin."
+            )
 
-@bot.on(events.CallbackQuery(data=b'menu_lang'))
-async def menu_lang_callback(event):
+
+async def show_products(event, *, edit=False):
     try:
-        await event.answer()
-    except Exception:
-        pass
-    await show_lang_selection(event, is_callback=True)
+        store, _, _ = await _store_user(event)
+        catalog = await asyncio.to_thread(store.storefront_catalog)
+        featured = [item for item in catalog if item.get("featured")][:6]
+        active = sum(1 for item in catalog if item.get("available"))
+        lines = [
+            "ÜRÜN KATALOĞU",
+            "",
+            f"{len(catalog)} ürün katalogda · {active} ürün doğrudan satışta",
+        ]
+        if featured:
+            lines.extend(["", "Vitrin:"])
+            lines.extend(f"• {item['name']} — {item['price']}" for item in featured)
+        lines.extend(["", "Tüm ürünler, kapaklar, stok ve teslim türleri mağazada gösterilir."])
+        if edit:
+            await safe_edit(event, "\n".join(lines), buttons=mini_app_markup("Kataloğu Aç"))
+        else:
+            await event.respond("\n".join(lines), buttons=mini_app_markup("Kataloğu Aç"))
+    except (StoreUnavailable, ValueError) as exc:
+        await respond_store_error(event, exc)
 
-@bot.on(events.CallbackQuery(data=b'menu_main'))
-async def main_menu_handler(event):
+
+async def show_balance(event, *, edit=False):
     try:
-        await event.answer()
-    except Exception:
-        pass
-    user_id = event.sender_id
-    await show_main_menu(event, user_id, is_callback=True)
-
-@bot.on(events.NewMessage(pattern='/guncelle'))
-async def guncelle_handler(event):
-    if event.sender_id != ADMIN_ID:
-        return
-        
-    await event.respond("⏳ Yerel LisansArena fiyat listesi yeniden yükleniyor...")
-    try:
-        load_products_from_links_json()
-        summary = "\n".join([f"- {cat['title']}: {len(cat['products'])} ürün" for cat_key, cat in CATEGORIES.items() if cat['products']])
-        await event.respond(f"✅ Ürünler başarıyla güncellendi ve hafızaya yüklendi!\n\nToplam {len(ALL_PRODUCTS_FLAT)} ürün bulundu:\n{summary}")
-    except Exception as e:
-        await event.respond(f"❌ Güncelleme hatası: {e}")
-
-# Category handler
-@bot.on(events.CallbackQuery(pattern=r'cat_(\w+)'))
-async def category_handler(event):
-    try:
-        await event.answer()
-    except Exception:
-        pass
-    user_id = event.sender_id
-    lang = user_lang_helper.get_user_lang(user_id) or "tr"
-    t = TEXTS[lang]
-    
-    cat_key = event.data.decode('utf-8').replace("cat_", "")
-    cat = CATEGORIES.get(cat_key)
-    if not cat:
-        err_msg = "Kategori bulunamadı!" if lang == "tr" else "Category not found!"
-        await event.answer(err_msg, alert=True)
-        return
-
-    buttons = []
-    for prod_key, prod in cat["products"].items():
-        price = prod['price']
-        if lang == "en":
-            price = user_lang_helper.convert_price_to_usd(price)
-            
-        label = f"{prod['title']} — {price}"
-        if len(label) > 64:
-            label = label[:61] + "..."
-        buttons.append([Button.inline(label, f"prod_{prod_key}".encode())])
-    buttons.append([Button.inline(t["main_menu"], b"menu_main")])
-
-    cat_title = t["cat_title_mapping"].get(cat_key, cat["title"])
-    await safe_event_edit(event, f"**{cat_title}**\n\n{t['select_product']}", buttons=buttons)
-
-# Product detail handler
-@bot.on(events.CallbackQuery(pattern=r'prod_(\w+)'))
-async def product_handler(event):
-    try:
-        await event.answer()
-    except Exception:
-        pass
-    user_id = event.sender_id
-    lang = user_lang_helper.get_user_lang(user_id) or "tr"
-    t = TEXTS[lang]
-
-    prod_key = event.data.decode('utf-8').replace("prod_", "")
-
-    product = None
-    cat_key_found = None
-    for ck, cat in CATEGORIES.items():
-        if prod_key in cat["products"]:
-            product = cat["products"][prod_key]
-            cat_key_found = ck
-            break
-
-    if not product:
-        err_msg = "Ürün bulunamadı!" if lang == "tr" else "Product not found!"
-        await event.answer(err_msg, alert=True)
-        return
-
-    product_with_id = dict(product, id=prod_key)
-    if is_product_reply_cooling_down(user_id, [product_with_id]):
-        await event.answer("Bu ürünün ödeme bilgisi kısa süre önce gönderildi. 10 dakika içinde tekrar gönderilmez.", alert=True)
-        return
-
-    price = product['price']
-    if lang == "en":
-        price = user_lang_helper.convert_price_to_usd(price)
-
-    display_product = dict(product, price=price)
-    desc_text, _session = payment_message_for(user_id, prod_key, display_product, lang)
-    
-    cat_title = t["cat_title_mapping"].get(cat_key_found, CATEGORIES[cat_key_found]['title'])
-    buttons = [
-        [Button.inline("📸 Dekont Gönder", f"verify_iban_{prod_key}".encode())],
-        [Button.inline(f"↩️ {cat_title}", f"cat_{cat_key_found}".encode())],
-        [Button.inline(t["main_menu"], b"menu_main")]
-    ]
-    await safe_event_edit(event, desc_text, buttons=buttons)
-    mark_product_reply_sent(user_id, [product_with_id])
-
-
-# IBAN Ödeme Bilgileri Gösterici
-@bot.on(events.CallbackQuery(pattern=r'iban_(\w+)'))
-async def iban_info_handler(event):
-    try:
-        await event.answer()
-    except Exception:
-        pass
-    user_id = event.sender_id
-    lang = user_lang_helper.get_user_lang(user_id) or "tr"
-    prod_key = event.data.decode('utf-8').replace("iban_", "")
-    
-    cat_key_found, product = find_product(prod_key)
-            
-    title = product['title'] if product else "Seçilen Ürün"
-    price = product['price'] if product else "0 TL"
-    
-    if lang == "en":
-        price = user_lang_helper.convert_price_to_usd(price)
-
-    product_with_id = dict(product or {}, id=prod_key, title=title, price=price)
-    if is_product_reply_cooling_down(user_id, [product_with_id]):
-        await event.answer("Bu ürünün IBAN bilgisi kısa süre önce gönderildi. 10 dakika içinde tekrar gönderilmez.", alert=True)
-        return
-
-    display_product = {"title": title, "price": price}
-    iban_text, _session = payment_message_for(user_id, prod_key, display_product, lang)
-    buttons = [
-        [Button.inline("📸 Dekont Gönder", f"verify_iban_{prod_key}".encode())],
-        [Button.inline("↩️ Ürün Sayfasına Dön", f"prod_{prod_key}".encode())],
-        [Button.inline("🏠 Ana Menü", b"menu_main")]
-    ]
-    await safe_event_edit(event, iban_text, buttons=buttons)
-    mark_product_reply_sent(user_id, [product_with_id])
-
-# Dekont Bekleme Durumu Başlatıcı
-@bot.on(events.CallbackQuery(pattern=r'verify_iban_(\w+)'))
-async def verify_iban_handler(event):
-    try:
-        await event.answer()
-    except Exception:
-        pass
-    user_id = event.sender_id
-    prod_key = event.data.decode('utf-8').replace("verify_iban_", "")
-    user_states[user_id] = f"AWAITING_DEKONT:{prod_key}"
-    
-    text = (
-        "📸 **Ödeme Doğrulama & Dekont Gönderimi**\n\n"
-        "Lütfen Havale/EFT ödemenize ait **dekont fotoğrafını veya ekran görüntüsünü** bu sohbete gönderin.\n\n"
-        "Dekontunuz yetkili ekibimize iletilecek. Banka hareketi manuel kontrol edilmeden ödeme onaylanmaz ve teslimat yapılmaz.\n\n"
-        "💬 İletişim / Canlı Destek: @LisansArenaAdmin\n"
-        "*(Vazgeçmek için /start yazabilirsiniz)*"
-    )
-    buttons = [
-        [Button.inline("↩️ Vazgeç ve Ana Menü", b"menu_main")]
-    ]
-    await safe_event_edit(event, text, buttons=buttons)
-
-# Support Menu
-@bot.on(events.CallbackQuery(data=b'menu_support'))
-async def support_menu_handler(event):
-    try:
-        await event.answer()
-    except Exception:
-        pass
-    user_id = event.sender_id
-    lang = user_lang_helper.get_user_lang(user_id) or "tr"
-    t = TEXTS[lang]
-    
-    user_states[user_id] = "AWAITING_SUPPORT"
-    buttons = [[Button.inline(t["cancel"], b"menu_main")]]
-    await safe_event_edit(event, f"{t['support_title']}\n\n{t['support_desc']}", buttons=buttons)
-
-PROCESSED_MESSAGE_EVENTS = set()
-
-
-async def handle_admin_reply(event, support_chat_id):
-    """Relay a support-chat reply to the customer and confirm delivery."""
-    if event.sender_id != ADMIN_ID and event.chat_id != support_chat_id:
-        return False
-    if not event.is_reply or not event.text:
-        return False
-    reply_msg = await event.get_reply_message()
-    if not reply_msg or not reply_msg.text:
-        return False
-    match = re.search(r"(?:Kullanıcı ID|User ID|ID):\*\*?\s*`?(\d+)`?", reply_msg.text, re.IGNORECASE)
-    if not match:
-        match = re.search(r"(\d{6,12})", reply_msg.text)
-    if not match:
-        return False
-    target_user_id = int(match.group(1))
-    target_lang = user_lang_helper.get_user_lang(target_user_id) or "tr"
-    text_to_send = event.text.strip()
-    clean_match = re.match(r"^(?:#reply|/reply)\s*(.*)$", text_to_send, re.DOTALL | re.IGNORECASE)
-    if clean_match:
-        text_to_send = clean_match.group(1).strip()
-    if not text_to_send:
-        await event.reply("⚠️ Lütfen boş mesaj göndermeyin.")
-        return True
-    try:
-        await bot.send_message(target_user_id, f"{TEXTS[target_lang]['reply_prefix']}{text_to_send}")
-        await event.reply("✅ Cevabınız kullanıcıya iletildi.")
-    except Exception as exc:
-        logger.error("Failed to reply to user %s: %s", target_user_id, exc)
-        await event.reply(f"❌ Cevap iletilemedi. Hata: {exc}")
-    return True
-
-
-async def handle_pending_receipt(event, support_chat_id, user_id):
-    """Forward receipt media for manual verification; never auto-deliver."""
-    state = user_states.get(user_id) or ""
-    if not state.startswith("AWAITING_DEKONT:"):
-        return False
-    prod_key = state.split(":", 1)[1]
-    _cat_key, product = find_product(prod_key)
-    product = product or {"title": "Seçilen Ürün", "price": "Bilinmiyor"}
-    session = PAYMENT_SESSIONS.get_or_create(user_id, prod_key)
-    buttons = [[Button.inline("🚫 Kullanıcıyı Engelle (Ban)", f"la_adm_ban_{user_id}".encode())]]
-    if not event.media:
-        await forward_customer_message(bot, event, support_chat_id, "LisansArena", buttons)
-        await event.respond(
-            "📸 Ödeme otomatik olarak onaylanmadı. Lütfen banka dekontunun fotoğrafını "
-            "veya ekran görüntüsünü bu sohbete gönderin."
+        store, user_id, _ = await _store_user(event)
+        wallet = await asyncio.to_thread(store.wallet_history, user_id, 5)
+        text = (
+            f"BAKİYEM\n\nMevcut bakiye: {wallet['balance']}\n\n"
+            "Bakiye paketini mağazada seçip ödeme bağlantısını oluşturabilirsin. "
+            "Ödemeler doğrulamaya bağlı olarak en geç 10 dakika içinde yansır."
         )
-        return True
-    user = await event.get_sender()
-    full_name = " ".join(filter(None, [getattr(user, "first_name", ""), getattr(user, "last_name", "")])) or "Yok"
-    header = (
-        "📸 **[LisansArena] Yeni Dekont — Manuel Kontrol Gerekli**\n"
-        f"👤 **Kullanıcı ID:** `{user_id}`\n"
-        f"👤 **Adı Soyadı:** {full_name}\n"
-        f"📦 **Ürün:** {product['title']}\n"
-        f"💰 **Beklenen tutar:** {product['price']}\n"
-        f"🧾 **Sipariş kodu:** `{session['code']}`\n\n"
-        "Banka hareketini doğrulamadan ürün teslim etmeyin. Bu mesajı yanıtlayarak kullanıcıya cevap gönderebilirsiniz."
-    )
+        if edit:
+            await safe_edit(event, text, buttons=mini_app_markup("Bakiye Yükle"))
+        else:
+            await event.respond(text, buttons=mini_app_markup("Bakiye Yükle"))
+    except (StoreUnavailable, ValueError) as exc:
+        await respond_store_error(event, exc)
+
+
+async def show_orders(event, *, edit=False):
     try:
-        await bot.send_message(support_chat_id, header, buttons=buttons)
-        await bot.forward_messages(support_chat_id, event.message)
-    except Exception as exc:
-        logger.error("Receipt forwarding failed for user %s: %s", user_id, exc)
-        await event.respond("⚠️ Dekont şu anda iletilemedi. Lütfen birkaç dakika sonra tekrar deneyin.")
-        return True
-    user_states[user_id] = None
-    await event.respond("✅ Dekontunuz alındı, kontrol ediliyor.")
-    record_event("receipt_submitted", "LisansArena", source="telegram_private", product=product.get("title", ""))
-    return True
+        store, user_id, _ = await _store_user(event)
+        rows = await asyncio.to_thread(store.order_history, user_id, 8)
+        lines = ["SİPARİŞLERİM", ""]
+        if not rows:
+            lines.append("Henüz siparişin yok.")
+        for order in rows:
+            lines.append(f"#{order['id']} · {order['product_name']} · {order['total']} · {order['status']}")
+        buttons = mini_app_markup("Siparişleri Aç")
+        if edit:
+            await safe_edit(event, "\n".join(lines), buttons=buttons)
+        else:
+            await event.respond("\n".join(lines), buttons=buttons)
+    except (StoreUnavailable, ValueError) as exc:
+        await respond_store_error(event, exc)
+
+
+async def show_profile(event, *, edit=False):
+    try:
+        store, user_id, sender = await _store_user(event)
+        summary = await asyncio.to_thread(store.user_summary, user_id)
+        referral = await asyncio.to_thread(store.referral_profile, user_id)
+        text = (
+            f"HESABIM\n\n"
+            f"Telegram: @{getattr(sender, 'username', '') or sender.id}\n"
+            f"Bakiye: {summary['balance']}\n"
+            f"Referans kodu: {referral['code']}\n"
+            f"Kayıtlı referans: {referral['count']}\n\n"
+            "Referans ödülü gerçek kârlılık ölçümü tamamlanana kadar kapalıdır."
+        )
+        if edit:
+            await safe_edit(event, text, buttons=inline_menu())
+        else:
+            await event.respond(text, buttons=inline_menu())
+    except (StoreUnavailable, ValueError) as exc:
+        await respond_store_error(event, exc)
+
+
+async def begin_ticket(event, ticket_type):
+    labels = {"support": "destek sorununu", "request": "aradığın ürünü", "refund": "sipariş numarası ve iade nedenini"}
+    PENDING_INPUT[event.sender_id] = ticket_type
+    await event.respond(
+        f"Lütfen {labels[ticket_type]} tek mesajda ayrıntılı yaz. İptal etmek için /start gönderebilirsin."
+    )
+
+
+async def save_ticket_from_message(event, ticket_type):
+    store, user_id, sender = await _store_user(event)
+    order_id = None
+    if ticket_type == "refund":
+        match = re.search(r"(?:#|sipariş\s*)?(\d+)", event.raw_text or "", re.I)
+        order_id = int(match.group(1)) if match else None
+    result = await asyncio.to_thread(
+        store.create_ticket,
+        user_id,
+        ticket_type,
+        event.raw_text,
+        order_id=order_id,
+    )
+    record_event("human_handoff", "LisansArena", source="telegram_private")
+    if SUPPORT_CHAT_ID:
+        username = f"@{sender.username}" if getattr(sender, "username", None) else "yok"
+        await bot.send_message(
+            SUPPORT_CHAT_ID,
+            f"📩 [LisansArena] {ticket_type.upper()} #{result['id']}\n"
+            f"Kullanıcı ID: {event.sender_id}\nKullanıcı: {username}\n\n{event.raw_text}",
+            parse_mode=None,
+        )
+    await event.respond(f"Talebin alındı: #{result['id']}. Yanıtını mağazadaki Profil > Taleplerim bölümünden takip edebilirsin.")
+
+
+def _bot_api(method, *, payload=None, files=None):
+    response = requests.post(
+        f"https://api.telegram.org/bot{BOT_TOKEN}/{method}",
+        json=payload if files is None else None,
+        data=payload if files is not None else None,
+        files=files,
+        timeout=25,
+    )
+    data = response.json() if response.content else {}
+    if response.status_code >= 400 or not data.get("ok"):
+        raise RuntimeError(data.get("description") or f"HTTP {response.status_code}")
+    return data
+
+
+def configure_bot_profile():
+    """Configure commands, descriptions, menu button and square logo."""
+    calls = (
+        ("setMyCommands", {"commands": [{"command": command, "description": description} for command, description in BOT_COMMANDS]}),
+        ("setChatMenuButton", {"menu_button": {"type": "web_app", "text": "🛍 Mağazayı Aç", "web_app": {"url": MINI_APP_URL}}}),
+        ("setMyName", {"name": "LisansArena"}),
+        ("setMyDescription", {"description": "Dijital ürünler, bakiye, otomatik ve manuel teslimat ile sipariş takibi için LisansArena mağazası."}),
+        ("setMyShortDescription", {"short_description": "Dijital ürün mağazası · Stok · Bakiye · Sipariş"}),
+    )
+    for method, payload in calls:
+        _bot_api(method, payload=payload)
+    logo = Path("static/lisansarena_logo_v2.png")
+    if logo.exists():
+        try:
+            with logo.open("rb") as handle:
+                _bot_api("setMyProfilePhoto", files={"photo": (logo.name, handle, "image/png")})
+        except Exception as exc:
+            # Some Bot API versions/accounts do not expose this method yet;
+            # command/menu configuration must still complete.
+            logger.warning("Profile photo configuration skipped: %s", exc)
+
+
+@bot.on(events.NewMessage(pattern=r"(?i)^/start(?:\s+(.+))?$"))
+async def start_handler(event):
+    PENDING_INPUT.pop(event.sender_id, None)
+    try:
+        store, user_id, _ = await _store_user(event)
+        start_value = (event.pattern_match.group(1) or "").strip()
+        if start_value.lower().startswith("ref_"):
+            await asyncio.to_thread(store.apply_referral_code, user_id, start_value[4:])
+    except (StoreUnavailable, ValueError) as exc:
+        await respond_store_error(event, exc)
+    await show_main_menu(event)
+
+
+@bot.on(events.NewMessage(pattern=r"(?i)^/magaza$"))
+async def store_handler(event):
+    await event.respond("LisansArena mağazası", buttons=mini_app_markup())
+
+
+@bot.on(events.NewMessage(pattern=r"(?i)^/urunler$"))
+async def products_handler(event):
+    await show_products(event)
+
+
+@bot.on(events.NewMessage(pattern=r"(?i)^/bakiye$"))
+async def balance_handler(event):
+    await show_balance(event)
+
+
+@bot.on(events.NewMessage(pattern=r"(?i)^/(siparisler|orders)$"))
+async def orders_handler(event):
+    await show_orders(event)
+
+
+@bot.on(events.NewMessage(pattern=r"(?i)^/hesaplar$"))
+async def accounts_handler(event):
+    await show_profile(event)
+
+
+@bot.on(events.NewMessage(pattern=r"(?i)^/gecmis$"))
+async def history_handler(event):
+    try:
+        store, user_id, _ = await _store_user(event)
+        wallet = await asyncio.to_thread(store.wallet_history, user_id, 12)
+        lines = [f"BAKİYE GEÇMİŞİ · {wallet['balance']}", ""]
+        lines.extend(f"• {row['entry_type']} · {row['amount']}" for row in wallet["entries"])
+        if not wallet["entries"]:
+            lines.append("Henüz hareket yok.")
+        await event.respond("\n".join(lines), parse_mode=None)
+    except (StoreUnavailable, ValueError) as exc:
+        await respond_store_error(event, exc)
+
+
+@bot.on(events.NewMessage(pattern=r"(?i)^/kullanim$"))
+async def guides_handler(event):
+    try:
+        store, user_id, _ = await _store_user(event)
+        rows = await asyncio.to_thread(store.order_history, user_id, 10)
+        delivered = [row for row in rows if row["status"] == "delivered"]
+        if not delivered:
+            await event.respond("Teslim edilmiş siparişin bulunmuyor.")
+            return
+        blocks = ["TESLİMAT VE KULLANIM"]
+        for row in delivered:
+            blocks.append(f"\n#{row['id']} · {row['product_name']}")
+            if row.get("delivery"):
+                blocks.append("Teslimat: " + " | ".join(row["delivery"]))
+            blocks.append("Rehber: " + (row.get("product_guide") or "Ürün talimatı için destek kaydı oluşturabilirsin."))
+        await event.respond("\n".join(blocks)[:3900], parse_mode=None)
+    except (StoreUnavailable, ValueError) as exc:
+        await respond_store_error(event, exc)
+
+
+@bot.on(events.NewMessage(pattern=r"(?i)^/talep$"))
+async def request_handler(event):
+    await begin_ticket(event, "request")
+
+
+@bot.on(events.NewMessage(pattern=r"(?i)^/destek$"))
+async def support_handler(event):
+    await begin_ticket(event, "support")
+
+
+@bot.on(events.NewMessage(pattern=r"(?i)^/iade$"))
+async def refund_handler(event):
+    await begin_ticket(event, "refund")
+
+
+@bot.on(events.NewMessage(pattern=r"(?i)^/referans$"))
+async def referral_handler(event):
+    await show_profile(event)
+
+
+@bot.on(events.NewMessage(pattern=r"(?i)^/cekilis$"))
+async def draws_handler(event):
+    try:
+        store, user_id, _ = await _store_user(event)
+        rows = await asyncio.to_thread(store.active_draws, user_id)
+        if not rows:
+            await event.respond("Şu anda aktif çekiliş yok. Açıldığında mağaza ve bu komutta görünür.")
+            return
+        text = ["AKTİF ÇEKİLİŞLER", ""] + [f"• {row['title']}" for row in rows]
+        await event.respond("\n".join(text), buttons=mini_app_markup("Çekilişleri Aç"))
+    except (StoreUnavailable, ValueError) as exc:
+        await respond_store_error(event, exc)
+
+
+@bot.on(events.NewMessage(pattern=r"(?i)^/(ayarlar|dil)$"))
+async def settings_handler(event):
+    await event.respond("Dil seçimi", buttons=[[Button.inline("Türkçe", b"lang_tr"), Button.inline("English", b"lang_en")]])
+
+
+@bot.on(events.NewMessage(pattern=r"(?i)^/yardim$"))
+async def help_handler(event):
+    text = "LİSANSARENA KOMUTLARI\n\n" + "\n".join(f"/{command} — {description}" for command, description in BOT_COMMANDS)
+    await event.respond(text, buttons=mini_app_markup())
+
+
+@bot.on(events.CallbackQuery(pattern=rb"^menu_(products|balance|orders|profile)$"))
+async def menu_callback(event):
+    await event.answer()
+    name = event.pattern_match.group(1).decode()
+    if name == "products": await show_products(event, edit=True)
+    elif name == "balance": await show_balance(event, edit=True)
+    elif name == "orders": await show_orders(event, edit=True)
+    else: await show_profile(event, edit=True)
+
+
+@bot.on(events.CallbackQuery(pattern=rb"^ticket_(support|request|refund)$"))
+async def ticket_callback(event):
+    await event.answer()
+    await begin_ticket(event, event.pattern_match.group(1).decode())
+
+
+@bot.on(events.CallbackQuery(pattern=rb"^lang_(tr|en)$"))
+async def language_callback(event):
+    await event.answer()
+    try:
+        store, user_id, _ = await _store_user(event)
+        language = event.pattern_match.group(1).decode()
+        await asyncio.to_thread(store.set_language, user_id, language)
+        await safe_edit(event, "Dil tercihin kaydedildi." if language == "tr" else "Language preference saved.", buttons=inline_menu())
+    except (StoreUnavailable, ValueError) as exc:
+        await respond_store_error(event, exc)
 
 
 @bot.on(events.NewMessage(incoming=True))
-@serialize_user_events
-async def message_handler(event):
-    if getattr(event, 'out', False):
+async def private_message_handler(event):
+    if getattr(event, "out", False) or not event.is_private or (event.raw_text or "").startswith("/"):
         return
-    if event.text and event.text.startswith('/'):
+    if event.sender_id == ADMIN_ID and event.is_reply:
+        original = await event.get_reply_message()
+        match = re.search(r"Kullanıcı ID:\s*(\d+)", original.raw_text or "") if original else None
+        if match:
+            await bot.send_message(int(match.group(1)), f"LisansArena destek yanıtı:\n\n{event.raw_text}", parse_mode=None)
+            await event.respond("Yanıt kullanıcıya iletildi.")
         return
-    config = load_config() or {}
-    support_chat_id = config.get("support_chat_id", ADMIN_ID)
-    if await handle_admin_reply(event, support_chat_id):
-        return
-
-    claim_scope = "lisansarena_sales"
-    event_key = (event.chat_id, getattr(event.message, 'id', None))
-    if event_key in PROCESSED_MESSAGE_EVENTS:
-        return
-    PROCESSED_MESSAGE_EVENTS.add(event_key)
-    if len(PROCESSED_MESSAGE_EVENTS) > 10000:
-        PROCESSED_MESSAGE_EVENTS.clear()
-    if not await async_claim_event(event, claim_scope):
-        return
-    user_id = event.sender_id
     record_event("dm_received", "LisansArena", source="telegram_private")
-    
-    ban_data = await async_get_document(f"lisansarena_ban_{user_id}")
-    if ban_data and ban_data.get("banned", False):
-        return
-
-    # Legacy checkout states are redirected to the manual IBAN flow.
-    if user_states.get(user_id) == "AWAITING_VERIFY_PAYMENT_INFO":
-        user_states[user_id] = None
-        await event.respond("LisansArena ödemeleri yalnızca IBAN ile alınır. Ürünü menüden seçip IBAN bilgileri veya dekont gönderme adımını kullanabilirsiniz.")
-        return
-
-    if await handle_pending_receipt(event, support_chat_id, user_id):
-        return
-
-    if user_states.get(user_id) == "AWAITING_SUPPORT":
-        if event.text.startswith('/'):
-            user_states[user_id] = None
-            return
-
-        lang = user_lang_helper.get_user_lang(user_id) or "tr"
-        t = TEXTS[lang]
-
-        support_chat_id = config.get("support_chat_id", ADMIN_ID)
-        if not support_chat_id:
-            await event.respond(t["support_inactive"])
-            user_states[user_id] = None
-            return
-
-        user = await event.get_sender()
-        username = f"@{user.username}" if user.username else "Yok"
-        first_name = user.first_name or ""
-        last_name = user.last_name or ""
-
-        admin_msg = (
-            f"📩 **[LisansArena] Yeni Destek Talebi!**\n"
-            f"👤 **Kullanıcı ID:** `{user_id}`\n"
-            f"👤 **Adı Soyadı:** {first_name} {last_name}\n"
-            f"💬 **Kullanıcı Adı:** {username}\n"
-            f"🌐 **Dil/Lang:** {lang.upper()}\n"
-            f"--------------------------------------\n\n"
-            f"{event.text}\n\n"
-            f"*(Bu mesajı yanıtlayarak (Reply) doğrudan kullanıcıya cevap gönderebilirsiniz.)*"
-        )
-
-        admin_buttons = [[Button.inline("🚫 Kullanıcıyı Engelle (Ban)", f"la_adm_ban_{user_id}".encode())]]
-
+    pending = PENDING_INPUT.pop(event.sender_id, None)
+    if pending:
         try:
-            await bot.send_message(ADMIN_ID, admin_msg, buttons=admin_buttons)
-            await event.respond(t["support_success"])
-            save_ticket_to_file("LisansArena", user_id, first_name, last_name, username, event.text)
-        except Exception as e:
-            logger.error(f"Failed to forward message to admin: {e}")
-            await event.respond(t["support_fail"])
-
-        user_states[user_id] = None
+            await save_ticket_from_message(event, pending)
+        except (StoreUnavailable, ValueError) as exc:
+            await respond_store_error(event, exc)
         return
 
-    buttons = [[Button.inline("🚫 Kullanıcıyı Engelle (Ban)", f"la_adm_ban_{user_id}".encode())]]
-    forwarded = await forward_customer_message(bot, event, support_chat_id, "LisansArena", buttons)
-    if forwarded:
-        record_event("dm_manual_forwarded", "LisansArena", source="telegram_private")
-
-    # Legacy product matching and IBAN checkout are retired. Keep every DM in
-    # the shared support queue, then direct the customer to the authenticated
-    # Mini App without inventing product/stock information in chat.
-    await event.respond(
-        "Ürünler, güncel stok, bakiye yükleme ve sipariş takibi artık LisansArena mağazasında. Aşağıdaki düğmeden güvenle açabilirsiniz.",
-        buttons=mini_app_markup(),
+    forwarded = await forward_customer_message(
+        bot, event, SUPPORT_CHAT_ID, "LisansArena"
     )
-    return
-
-    if is_unverified_payment_claim(event.text):
+    if forwarded:
+        record_event("human_handoff", "LisansArena", source="telegram_private")
+    if await claim_first_greeting("lisansarena", event.sender_id):
         await event.respond(
-            "📸 Ödemeniz henüz doğrulanmadı. Lütfen ürün sayfasındaki **Dekont Gönder** "
-            "butonuna basıp dekont görselini iletin. Banka hareketi kontrol edilmeden teslimat yapılmaz."
+            "Mesajın destek ekibine iletildi. Ürün, stok, bakiye ve sipariş işlemleri için mağazayı açabilirsin.",
+            buttons=mini_app_markup(),
         )
-        return
 
-    # Smart Product Matching
-    if event.text and not event.text.startswith('/'):
-        if not has_sales_intent(event.text):
-            logger.info("Ignoring non-sales message: %r", event.text)
-            if one_time_mode_enabled() and forwarded and await claim_first_greeting("lisansarena", user_id):
-                await event.respond(greeting_for("LisansArena"))
-                record_event("dm_greeting_sent", "LisansArena", source="telegram_private")
-            return
-        matched_products = match_multiple_products_from_text(event.text)
-        if matched_products:
-            matched_products = filter_products_not_cooling_down(user_id, matched_products)
-            if not matched_products:
-                logger.info("Suppressing duplicate product reply for user %s: %r", user_id, event.text)
-                return
-            lang = user_lang_helper.get_user_lang(user_id) or "tr"
-            t = TEXTS[lang]
-            
-            if len(matched_products) == 1:
-                matched_product = matched_products[0]
-                product_msg, _session = payment_message_for(
-                    user_id, matched_product["id"], matched_product, lang
-                )
-                buttons = receipt_buttons(matched_product["id"], t["support_btn"])
-            else:
-                product_msg = "🔍 **Aradığınız Ürünler / Matched Products:**\n\n"
-                buttons = []
-                for i, p in enumerate(matched_products[:4]):
-                    product_msg += f"{i+1}. **{p['title']}**\n💰 {t['price']}: {p['price']}\n\n"
-                    label = f"IBAN Bilgileri ({p['title'][:28]})"
-                    buttons.append([Button.inline(label, f"iban_{p['id']}".encode())])
-                product_msg += "📦 Ödeme öncesi stok teyidi alın. Ödeme ve teslimat yalnız IBAN/dekont ile manuel yürütülür."
-                buttons.append([Button.inline(t["support_btn"], b"menu_support")])
-                buttons.append([Button.inline("📋 Ana Menü / Main Menu", b"menu_main")])
-                
-            try:
-                await event.respond(product_msg, buttons=buttons)
-            except Exception:
-                PROCESSED_MESSAGE_EVENTS.discard(event_key)
-                await async_release_event_claim(event, claim_scope)
-                raise
-            mark_product_reply_sent(user_id, matched_products)
-            record_event("dm_reply_sent", "LisansArena", source="telegram_private", product=matched_products[0].get('title', '') if matched_products else '')
-            return
-        else:
-            # Yapay Zeka Akıllı Satış Asistanı
-            products = list(ALL_PRODUCTS_FLAT)
-            lang = user_lang_helper.get_user_lang(user_id) or "tr"
-            t = TEXTS[lang]
-            fallback_key = re.sub(r'\s+', ' ', event.text.strip().lower())
-            if is_product_reply_cooling_down(user_id, fallback_key=fallback_key):
-                logger.info("Suppressing duplicate AI fallback for user %s: %r", user_id, event.text)
-                return
-            
-            # Global per-user AI response rate limit (15 seconds)
-            now = time.monotonic()
-            last_reply = LAST_AI_REPLY_TIME.get(user_id, 0)
-            if now - last_reply < 15:
-                logger.info("Suppressing consecutive AI response for user %s (global AI cooldown)", user_id)
-                return
-                
-            ai_reply = get_ai_response(event.text, "LisansArena", products)
-            if ai_reply:
-                buttons = [
-                    [Button.inline(t["support_btn"], b"menu_support")],
-                    [Button.inline("📋 Ana Menü / Main Menu", b"menu_main")]
-                ]
-                try:
-                    await event.respond(ai_reply, buttons=buttons)
-                except Exception:
-                    PROCESSED_MESSAGE_EVENTS.discard(event_key)
-                    await async_release_event_claim(event, claim_scope)
-                    raise
-                LAST_AI_REPLY_TIME[user_id] = now
-                mark_product_reply_sent(user_id, fallback_key=fallback_key)
-                mark_auto_reply_sent(user_id)
-                record_event("dm_reply_sent", "LisansArena", source="telegram_private", product="AI")
-                logger.info(f"AI response for user {user_id}: '{event.text}'")
-                return
-
-@bot.on(events.CallbackQuery(pattern=r'la_adm_ban_(\d+)'))
-async def la_admin_ban_user_callback(event):
-    if event.sender_id != ADMIN_ID:
-        await event.answer("⚠️ Bu işlem için yetkiniz yok!", alert=True)
-        return
-        
-    target_user_id = int(event.pattern_match.group(1))
-    ban_doc_id = f"lisansarena_ban_{target_user_id}"
-    await async_set_document(ban_doc_id, {"banned": True, "id": target_user_id})
-    await event.answer("🚫 Kullanıcı engellendi.", alert=True)
-    original_text = event.message.text
-    await safe_event_edit(event, f"{original_text}\n\n⚙️ **Aksiyon:** Kullanıcı engellendi. (Yönetici: @{event.sender.username or event.sender_id})")
-
-async def get_bot_info():
-    global bot_username, BOT_USER_ID
-    try:
-        me = await bot.get_me()
-        bot_username = me.username or "LisansArenaBot"
-        BOT_USER_ID = me.id
-        logger.info(f"Bot dynamically resolved username: @{bot_username} | User ID: {BOT_USER_ID}")
-    except Exception as e:
-        logger.error(f"Failed to get bot info: {e}")
 
 async def main():
-    from telethon.errors import FloodWaitError
     while True:
         try:
             await bot.start(bot_token=BOT_TOKEN)
             try:
-                await asyncio.to_thread(configure_mini_app_menu_button)
-                logger.info("LisansArena Mini App menu button configured successfully.")
-            except Exception as menu_error:
-                logger.warning("Mini App menu button configuration failed: %s", menu_error)
-            await get_bot_info()
-            logger.info("LisansArena Sales Bot started successfully!")
+                await asyncio.to_thread(configure_bot_profile)
+                logger.info("Commands, profile and Mini App menu configured")
+            except Exception as exc:
+                logger.warning("Bot profile configuration warning: %s", exc)
+            me = await bot.get_me()
+            logger.info("LisansArena bot running as @%s", me.username)
             await bot.run_until_disconnected()
-        except FloodWaitError as e:
-            logger.warning(f"FloodWait: Telegram {e.seconds} saniye beklememizi istiyor. Bekleniyor...")
-            await asyncio.sleep(e.seconds + 5)
-            logger.info("FloodWait süresi bitti, tekrar deneniyor...")
-        except Exception as e:
-            logger.error(f"Bot başlatma hatası: {e}")
+        except FloodWaitError as exc:
+            await asyncio.sleep(exc.seconds + 5)
+        except Exception as exc:
+            logger.error("Bot runtime error: %s", exc)
             await asyncio.sleep(30)
 
-if __name__ == '__main__':
-    import asyncio
-    logger.info("Loading LisansArena products cache...")
-    load_products_from_links_json()
-    logger.info("Starting LisansArena Sales Bot...")
-    
+
+if __name__ == "__main__":
     bot.loop.run_until_complete(main())

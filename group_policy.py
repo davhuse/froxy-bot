@@ -18,6 +18,7 @@ POLICY_FILE = os.environ.get("GROUP_POLICY_FILE", "group_policies.json")
 MODERATION_FILE = os.environ.get("GROUP_MODERATION_FILE", "group_moderation.json")
 PLAIN_KEYVADI_CTA = "Sipariş için Telegram aramasına KeyVadiSatisBot yazabilirsiniz."
 PLAIN_FROXY_CTA = "Detaylar için Telegram aramasına FroxyDestekBOT yazabilirsiniz."
+PLAIN_LISANSARENA_CTA = "Sipariş için Telegram aramasına LisansArenaBot yazabilirsiniz."
 
 DEFAULT_POLICY = {
     "allow_urls": True,
@@ -259,6 +260,19 @@ def make_policy_compliant(message: str, policy: dict, brand: str) -> tuple[str, 
         ).strip()
         if PLAIN_FROXY_CTA not in text:
             text = f"{text}\n{PLAIN_FROXY_CTA}".strip()
+    elif no_links and brand.lower() == "lisansarena":
+        text = "\n".join(
+            line for line in text.splitlines()
+            if "lisansarenabot" not in line.casefold()
+            and "sipariş ve destek" not in line.casefold()
+            and "siparis ve destek" not in line.casefold()
+            and "stok, teslimat ve sipariş" not in line.casefold()
+            and "stok, teslimat ve siparis" not in line.casefold()
+            and "ürünü yaz" not in line.casefold()
+            and "urunu yaz" not in line.casefold()
+        ).strip()
+        if PLAIN_LISANSARENA_CTA not in text:
+            text = f"{text}\n{PLAIN_LISANSARENA_CTA}".strip()
     max_lines = policy.get("max_lines")
     if isinstance(max_lines, int) and max_lines > 0:
         lines = text.splitlines()
@@ -267,6 +281,8 @@ def make_policy_compliant(message: str, policy: dict, brand: str) -> tuple[str, 
             required_cta = PLAIN_KEYVADI_CTA
         elif no_links and brand.lower() == "froxy":
             required_cta = PLAIN_FROXY_CTA
+        elif no_links and brand.lower() == "lisansarena":
+            required_cta = PLAIN_LISANSARENA_CTA
         if required_cta and required_cta in lines and len(lines) > max_lines:
             lines = [line for line in lines if line != required_cta]
             lines = lines[:max_lines - 1] + [required_cta]
@@ -274,7 +290,9 @@ def make_policy_compliant(message: str, policy: dict, brand: str) -> tuple[str, 
             lines = lines[:max_lines]
         text = "\n".join(lines).strip()
     return text, {
-        "link_preview": False if no_links else None,
+        # A visible @bot mention may still expand into a preview card. Ads
+        # never need Telegram link previews, including otherwise normal groups.
+        "link_preview": False,
         "parse_mode": None if no_links else "md",
         "allow_media": bool(policy.get("allow_media")),
     }
