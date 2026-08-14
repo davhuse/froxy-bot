@@ -46,6 +46,9 @@ class SalesCatalogMatchingTests(unittest.TestCase):
             "marketü kuponu": "market",
             "disney": "disney",
             "discord": "discord",
+            "ofis": "office",
+            "office365": "office",
+            "windows keyi": "windows",
         }
         for query, expected in cases.items():
             with self.subTest(query=query):
@@ -69,6 +72,13 @@ class SalesCatalogMatchingTests(unittest.TestCase):
     def test_unrelated_message_does_not_select_random_product(self):
         self.assertEqual(match_sales_products("selam teslimat gecikti", self.all_products), [])
         self.assertFalse(has_sales_query("selam teslimat gecikti"))
+
+    def test_windows_and_office_are_independent_sequential_products(self):
+        windows = match_sales_products("windows keyi", self.keyvadi)
+        office = match_sales_products("office 365", self.keyvadi)
+        self.assertEqual(len(windows), 1)
+        self.assertEqual(len(office), 1)
+        self.assertNotEqual(windows[0]["id"], office[0]["id"])
 
 
 class PurchaseLinkTests(unittest.TestCase):

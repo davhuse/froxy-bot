@@ -19,6 +19,7 @@ ROOT = Path(__file__).resolve().parent
 CATALOG_FILES = {
     "keyvadi": ROOT / "keyvadi_shopier_links.json",
     "froxy": ROOT / "froxy_shopier_links.json",
+    "lisansarena": ROOT / "lisansarena_shopier_links.json",
 }
 SHOPIER_HOSTS = {"shopier.com", "www.shopier.com"}
 PUBLIC_BASE_URL = (
@@ -39,6 +40,8 @@ TEXT_ALIASES = {
     "win10": "windows 10",
     "win11": "windows 11",
     "office365": "office 365",
+    "ofis": "office",
+    "win key": "windows key",
     "adobe cc": "adobe creative cloud",
     "creative cloud": "adobe creative cloud",
     "marketu": "trendyol market",
@@ -132,7 +135,11 @@ def load_sales_catalog(brand: str) -> list[dict]:
 def refresh_catalog_from_shopier_api(brand: str) -> int:
     """Refresh one catalog when a Shopier personal access token is configured."""
     brand = str(brand).lower()
-    token_key = "SHOPIER_KEYVADI_ACCESS_TOKEN" if brand == "keyvadi" else "SHOPIER_FROXY_ACCESS_TOKEN"
+    token_key = {
+        "keyvadi": "SHOPIER_KEYVADI_ACCESS_TOKEN",
+        "froxy": "SHOPIER_FROXY_ACCESS_TOKEN",
+        "lisansarena": "SHOPIER_LISANSARENA_ACCESS_TOKEN",
+    }.get(brand, "")
     token = os.environ.get(token_key, "").strip()
     path = CATALOG_FILES.get(brand)
     if not token or not path:

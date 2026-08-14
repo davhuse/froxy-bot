@@ -38,6 +38,14 @@ class GroupStateTests(unittest.TestCase):
             publisher.classify_join_error(UsernameInvalidError(request=None)),
             "unresolvable",
         )
+        expired = type("InviteHashExpiredError", (Exception,), {})()
+        self.assertEqual(publisher.classify_join_error(expired), "invalid_invite")
+
+    def test_keyvadi_specific_group_approvals_do_not_enable_other_accounts(self):
+        self.assertEqual(
+            publisher.ACCOUNT_APPROVED_TARGET_OVERRIDES["KeyVadiOnline"],
+            {"ceksat", "kuponceking"},
+        )
 
     def test_pending_join_requests_are_account_specific(self):
         with tempfile.TemporaryDirectory() as directory:

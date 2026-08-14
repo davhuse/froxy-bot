@@ -59,6 +59,17 @@ async def async_run_claim(doc_id, fields):
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(None, firestore_helper.claim_document, doc_id, fields)
 
+
+async def claim_product_reply(user_id, product):
+    """Persist a one-product-per-private-chat claim across restarts."""
+    product_id = str(product.get("id") or product.get("url") or product.get("title") or "product")
+    safe_id = re.sub(r"[^a-zA-Z0-9_-]+", "_", product_id)[:100]
+    result = await async_run_claim(
+        f"support_product_once_keyvadi_{int(user_id)}_{safe_id}",
+        {"brand": "keyvadi", "user_id": int(user_id), "product_id": product_id},
+    )
+    return result is True
+
 PRODUCT_REPLY_COOLDOWN_SECONDS = 15 * 60
 PRODUCT_REPLY_COOLDOWNS = {}
 LAST_AI_REPLY_TIME = {}
@@ -1344,10 +1355,19 @@ async def message_handler(event):
             logger.info("Ignoring non-sales message: %r", event.text)
             return
         if matched_products:
-            matched_products = filter_products_outside_cooldown(user_id, matched_products)
-            if not matched_products:
+            candidate_products = filter_products_outside_cooldown(user_id, matched_products)
+            claimed_products = []
+            for product in candidate_products:
+                if await claim_product_reply(user_id, product):
+                    claimed_products.append(product)
+            if not claimed_products:
+                await event.respond(
+                    f"📌 **{matched_products[0]['title']}** için satın alma bağlantısı "
+                    "bu sohbette daha önce paylaşıldı. Farklı bir ürünün adını yazabilirsiniz."
+                )
                 logger.info("Suppressing duplicate product reply for user %s: %r", user_id, event.text)
                 return
+            matched_products = claimed_products
             attribution = USER_CTA_ATTRIBUTION.get(user_id, {})
             if attribution.get("expires_at", 0) <= time.monotonic():
                 attribution = {}

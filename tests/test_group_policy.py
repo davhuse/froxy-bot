@@ -123,6 +123,8 @@ class GroupPolicyTests(unittest.TestCase):
             "lisansarena",
         )
         self.assertTrue(text.endswith(group_policy.PLAIN_LISANSARENA_CTA))
+        self.assertIn("LisansArena ürün ve teslimat bilgisi", text)
+        self.assertNotIn("KeyVadi", text)
         self.assertNotIn("@", text)
         self.assertNotIn("t.me", text)
         self.assertFalse(options["link_preview"])

@@ -239,6 +239,13 @@ gruplar = [
     "Kuponcekm",
 ]
 
+# Account-specific approvals are additive to the shared target list. These
+# groups were confirmed as joined and usable by KeyVadi, but must not be
+# implicitly enabled for the other advertising accounts.
+ACCOUNT_APPROVED_TARGET_OVERRIDES = {
+    "KeyVadiOnline": {"ceksat", "kuponceking"},
+}
+
 
 def _hedef_listesini_dosyadan_genislet():
     """gruplar.txt icerigini hedef listesine ekler.
@@ -642,8 +649,8 @@ def account_flags(client_name):
 
 
 def ad_worker_dm_replies_enabled(client_name):
-    """Advertising user accounts own Froxy/KeyVadi direct-message sales replies."""
-    if account_brand(client_name) in {"froxy", "keyvadi"}:
+    """All three advertising accounts own their catalog DM sales flow."""
+    if account_brand(client_name) in {"froxy", "keyvadi", "lisansarena"}:
         return True
     override = os.environ.get("ENABLE_AD_WORKER_DM_REPLIES", "").strip().lower()
     return override in {"1", "true", "yes", "on"}
@@ -825,6 +832,8 @@ def classify_join_error(exc):
     message = str(exc).lower()
     if isinstance(exc, ChannelPrivateError):
         return 'access_review'
+    if 'InviteHashExpired' in error_type or 'invite hash' in message or 'expired and is not valid' in message:
+        return 'invalid_invite'
     if 'UserBannedInChannel' in error_type or 'user_banned_in_channel' in message:
         return 'account_blocked'
     if isinstance(exc, (UsernameNotOccupiedError, UsernameInvalidError, ValueError)) or 'no user has' in message:
@@ -1361,6 +1370,22 @@ def is_group_retry_blocked(grup_name, client_name, entity=None):
         except Exception:
             continue
     return False
+
+
+def active_group_failure_reason(grup_name, client_name, entity=None):
+    """Return the active retry reason for precise panel classification."""
+    failures = _load_json_file(GROUP_FAILURES_FILE, {})
+    now = datetime.now(timezone.utc)
+    for key in group_state_keys(grup_name, entity):
+        state = failures.get(key, {}).get(client_name, {})
+        if not isinstance(state, dict) or not state.get('retry_at'):
+            continue
+        try:
+            if now < datetime.fromisoformat(state['retry_at']):
+                return str(state.get('reason') or '')
+        except Exception:
+            continue
+    return ''
 
 def clear_group_failure(grup_name, client_name, entity=None):
     failures = _load_json_file(GROUP_FAILURES_FILE, {})
@@ -2363,7 +2388,14 @@ def _ascii_fold(text):
 
 def is_lisansarena_support_message(text):
     normalized = _ascii_fold(text)
-    return bool(normalized) and any(term in normalized for term in LISANSARENA_SUPPORT_TERMS)
+    # Product purchase questions must reach the catalog matcher.  Only
+    # payment-completion/problem terms belong to the human payment queue.
+    payment_terms = {
+        "iban", "dekont", "havale", "eft", "papara", "odeme yapt",
+        "odeme yapildi", "gonderdim", "gecmiyor", "gecersiz",
+        "param gitti", "bakiye yansimadi",
+    }
+    return bool(normalized) and any(term in normalized for term in payment_terms)
 
 async def presence_watchdog(client):
     # This was only a dashboard convenience, but its username resolution is a
@@ -2748,22 +2780,23 @@ def product_dm_reply_key(client_name, sender_id, product):
 
 
 async def reserve_product_dm_replies(client_name, sender_id, products, now=None):
-    """Keep only products not sent to this customer during the last 15 minutes."""
+    """Reserve products never sent in this private chat.
+
+    Product claims are permanent per account/customer/product. Different
+    products remain independent, so Windows and Office can be answered in
+    sequence without re-sending the same product card.
+    """
     now = time.time() if now is None else now
     available = []
     reserved_keys = []
     for product in products:
         reply_key = product_dm_reply_key(client_name, sender_id, product)
-        if now - USER_DM_PRODUCT_REPLY_TIME.get(reply_key, 0) < PRODUCT_DM_REPLY_COOLDOWN_SECONDS:
+        if reply_key in USER_DM_PRODUCT_REPLY_TIME:
             continue
         doc_id = f"ad_dm_product_{reply_key[0]}_{reply_key[1]}_{reply_key[2]}"
         state = await async_get_document(doc_id) or {}
-        try:
-            last_sent_at = float(state.get("last_sent_at", 0) or 0)
-        except (TypeError, ValueError):
-            last_sent_at = 0
-        if now - last_sent_at < PRODUCT_DM_REPLY_COOLDOWN_SECONDS:
-            USER_DM_PRODUCT_REPLY_TIME[reply_key] = last_sent_at
+        if state.get("sent_at") or state.get("last_sent_at"):
+            USER_DM_PRODUCT_REPLY_TIME[reply_key] = now
             continue
         # Reserve locally before sending so concurrent updates cannot duplicate.
         USER_DM_PRODUCT_REPLY_TIME[reply_key] = now
@@ -2774,7 +2807,10 @@ async def reserve_product_dm_replies(client_name, sender_id, products, now=None)
 
 async def confirm_product_dm_replies(reserved_keys, now):
     for _reply_key, doc_id in reserved_keys:
-        await async_set_document(doc_id, {"last_sent_at": float(now)})
+        await async_set_document(doc_id, {
+            "sent_at": float(now),
+            "rule": "one_product_once_per_private_chat",
+        })
 
 
 def release_product_dm_replies(reserved_keys):
@@ -2800,27 +2836,32 @@ def froxy_product_reply(product, source="ad_account_dm", arm=""):
         f"🛒 [Hemen Satın Al]({target})"
     )
 
+
+def lisansarena_product_reply(product, source="ad_account_dm", arm=""):
+    """Use LisansArena's own catalog identity and purchase CTA."""
+    target = purchase_url(product, "lisansarena", source, arm)
+    return (
+        f"📦 **{product['title']}**\n"
+        f"💳 Fiyat: {product.get('price') or 'Ürün sayfasında'}\n"
+        f"🛍️ [Ürünü İncele ve Satın Al]({target})"
+    )
+
+
+def duplicate_product_reply(product):
+    return (
+        f"📌 **{product.get('title', 'Bu ürün')}** için satın alma bağlantısı "
+        "bu sohbette daha önce paylaşıldı. Farklı bir ürünün adını yazabilirsiniz."
+    )
+
 def sales_followup_reply(context, text, brand="keyvadi"):
-    """Answer only from catalog facts; route policy questions to a human."""
+    """Do not recycle an old product card for an ambiguous follow-up."""
     products = context.get("products") or []
     if not products:
         return None
-    product = products[0]
-    normalized = (text or "").strip().lower()
-    if any(term in normalized for term in (
-        "fiyat", "ücret", "kaç para", "ne kadar", "link", "shopier",
-        "nasıl al", "satın al", "ödeme"
-    )):
-        return (
-            f"📌 **{product.get('title', 'Ürün')}**\n"
-            f"💰 Fiyat: {product.get('price', 'Bilgi için yazın')}\n"
-            "Satın alma seçeneği bir önceki mesajda bulunuyor."
-        )
     return (
-        f"📌 **{product.get('title', 'Ürün')}** için sorunuzu aldım.\n\n"
-        "Garanti, hesap değişikliği ve teslimat ayrıntıları ürün türüne göre "
-        "değişebilir. Yanlış bilgi vermemek için satıcı bu sohbetten net "
-        "olarak yanıtlayacak."
+        "Hangi ürünü sorduğunuzu netleştirebilir misiniz? Ürün adını yazarsanız "
+        "uygun seçenek ve satın alma bağlantısını kontrol edebilirim. "
+        "Kullanım, teslimat veya garanti ayrıntıları için destek ekibi yanıt verecektir."
     )
 
 async def claim_dm_reply_event(client_name, chat_id, msg_id):
@@ -3003,50 +3044,29 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         
         products = []
         if is_lisansarena:
-            if os.path.exists("lisansarena_shopier_links.json"):
-                try:
-                    with open("lisansarena_shopier_links.json", "r", encoding="utf-8") as f:
-                        data = json.load(f)
-                        for item in data:
-                            pid = item.get("id")
-                            title = item.get("title")
-                            url = item.get("url")
-                            pdata = item.get("priceData") or {}
-                            price_val = pdata.get("price", "0") if isinstance(pdata, dict) else "0"
-                            try:
-                                price_str = f"{float(price_val):.2f} TL"
-                            except:
-                                price_str = f"{price_val} TL"
-                            products.append({
-                                "id": pid,
-                                "title": title,
-                                "price": price_str,
-                                "url": url
-                            })
-                except Exception as e:
-                    print(f"⚠️ Error loading LisansArena products: {e}")
+            products = load_sales_catalog("lisansarena")
         elif is_keyvadi or is_froxy:
             products = load_sales_catalog("froxy" if is_froxy else "keyvadi")
 
         matched_products = []
+        candidate_products = []
         reserved_product_keys = []
         if products:
-            matched_products = match_sales_products(event.raw_text, products, limit=3)
-            if matched_products:
+            candidate_products = match_sales_products(event.raw_text, products, limit=3)
+            if candidate_products:
                 matched_products, reserved_product_keys = await reserve_product_dm_replies(
-                    client_name, sender_id, matched_products, now
+                    client_name, sender_id, candidate_products, now
                 )
                 if not matched_products:
                     print(
                         f"⏳ [{client_name}] @{getattr(sender, 'username', sender_id)} için "
-                        "aynı ürün bağlantısı 15 dakikalık bekleme süresinde."
+                        "ürün bağlantısı bu sohbette daha önce gönderilmiş."
                     )
-                    return
             
         reply_text = None
         matched_desc = ""
         if matched_products:
-            brand_name = "froxy" if is_froxy else "keyvadi"
+            brand_name = "froxy" if is_froxy else ("keyvadi" if is_keyvadi else "lisansarena")
             record_event(
                 "product_matched", client_name, source="telegram_private",
                 product=matched_products[0].get("title", ""),
@@ -3054,40 +3074,31 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
             )
             if len(matched_products) == 1:
                 reply_text = (
-                    (froxy_product_reply(matched_products[0]) if is_froxy else keyvadi_product_reply(matched_products[0]))
-                    if (is_keyvadi or is_froxy) else (
-                        "Ürün ve ödeme işlemleri Shopier kullanılmadan yürütülüyor. "
-                        "Ürünü almak için @LisansArenaBot üzerinden ilerleyebilir, "
-                        "IBAN/dekont desteği için @LisansArenaAdmin'e yazabilirsiniz."
-                        if is_lisansarena else matched_products[0]['url']
-                    )
+                    froxy_product_reply(matched_products[0]) if is_froxy
+                    else keyvadi_product_reply(matched_products[0]) if is_keyvadi
+                    else lisansarena_product_reply(matched_products[0])
                 )
                 matched_desc = matched_products[0]['title']
             else:
-                if is_lisansarena:
-                    reply_text = (
-                        "Birden fazla ürün eşleşti. Shopier kullanılmadan satış için "
-                        "@LisansArenaBot'a yazabilirsiniz; IBAN/dekont desteğini "
-                        "@LisansArenaAdmin sağlıyor."
-                    )
-                else:
-                    lines = ["🔍 **Uygun seçenekler:**"]
-                    for p in matched_products[:5]:
-                        target = purchase_url(p, brand_name, "ad_account_dm")
-                        lines.append(f"• **{p['title']}** — {p['price']}\n  [Hemen Satın Al]({target})")
-                    reply_text = "\n".join(lines)
+                lines = ["🔍 **Uygun seçenekler:**"]
+                for p in matched_products[:3]:
+                    target = purchase_url(p, brand_name, "ad_account_dm")
+                    button_text = "Ürünü İncele ve Satın Al" if is_lisansarena else "Hemen Satın Al"
+                    lines.append(f"• **{p['title']}** — {p['price']}\n  [{button_text}]({target})")
+                reply_text = "\n".join(lines)
                 matched_desc = ", ".join(p['title'] for p in matched_products)
+        elif candidate_products:
+            reply_text = duplicate_product_reply(candidate_products[0])
+            matched_desc = candidate_products[0].get('title', '')
         elif sales_context:
             reply_text = sales_followup_reply(
                 sales_context, event.raw_text, "froxy" if is_froxy else "keyvadi"
             )
             matched_desc = "Satış takip sorusu"
         elif is_lisansarena and has_explicit_sales_intent(event.raw_text):
-            # Katalog eslesmese bile LisansArena'da AI'nin Shopier URL'si
-            # uretmesine izin verme; satis sorusunu IBAN destek akisina aktar.
             reply_text = (
-                "Shopier kullanılmadan satış yapıyoruz. Ürün ve ödeme bilgisi için "
-                "@LisansArenaBot'a, IBAN/dekont desteği için @LisansArenaAdmin'e yazabilirsiniz."
+                "Aradığınız ürünü doğru bulabilmem için ürün adını ve varsa süre, "
+                "kişisel/ortak tercihinizi yazar mısınız?"
             )
             matched_desc = "LisansArena destek yönlendirmesi"
         else:
@@ -3104,24 +3115,7 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         if not reply_text:
             return
 
-        # Do not let an old product/AI template reintroduce the disabled
-        # Shopier/IBAN/Admin handoff under a different branch.
-        if is_lisansarena and reply_text:
-            blocked_payment_terms = ("shopier", "lisansarenaadmin", "iban", "dekont")
-            if any(term in reply_text.casefold() for term in blocked_payment_terms):
-                print(
-                    f"[{client_name}] LisansArena Shopier/IBAN otomatik yanıtı engellendi; "
-                    f"müşteriye mesaj gönderilmedi (@{getattr(sender, 'username', sender_id)})."
-                )
-                return
-
         lisansarena_reply_claim_id = None
-        if is_lisansarena:
-            lisansarena_reply_claim_id = await claim_lisansarena_auto_reply(
-                client_name, sender_id, event.chat_id
-            )
-            if not lisansarena_reply_claim_id:
-                return
 
         # KeyVadi must never send an automatic reply wave into one customer's
         # private chat. Persist one claim per customer so restarts or repeated
@@ -4027,6 +4021,9 @@ async def main():
                 g for g in protected_groups
                 if not is_excluded_ad_target(g, joined_dialogs.get(normalize_group_key(g)))
             }
+            approved_targets.update(
+                ACCOUNT_APPROVED_TARGET_OVERRIDES.get(client_name, set())
+            )
             dynamic_targets = live_joined_sales_targets(joined_dialogs, client_name)
             hedef_set, approval_candidates = reconcile_send_targets(
                 approved_targets, dynamic_targets
@@ -4046,7 +4043,8 @@ async def main():
             group_states = {
                 'sendable': [], 'cooldown': [], 'policy_smoke': [],
                 'moderation_hold': [], 'write_forbidden': [],
-                'not_joined': [], 'unsuitable': [], 'approval_candidates': [],
+                'not_joined': [], 'pending_invite': [], 'unsuitable': [], 'invalid_invite': [],
+                'approval_candidates': [],
             }
             def set_group_state(group_name, state_name):
                 normalized = normalize_group_key(group_name)
@@ -4120,7 +4118,13 @@ async def main():
                         set_group_state(username_lower, 'moderation_hold')
                         continue
                     if is_group_retry_blocked(username_lower, client_name, entity):
-                        set_group_state(username_lower, 'moderation_hold')
+                        failure_reason = active_group_failure_reason(
+                            username_lower, client_name, entity
+                        ).casefold()
+                        set_group_state(
+                            username_lower,
+                            'invalid_invite' if 'invite' in failure_reason else 'moderation_hold',
+                        )
                         continue
                     if visibility_check_pending(username_lower, entity=entity):
                         set_group_state(username_lower, 'moderation_hold')
@@ -4142,7 +4146,10 @@ async def main():
                     blast_targets.append(username_lower)
                 else:
                     debug_not_cached += 1
-                    set_group_state(username_lower, 'not_joined')
+                    set_group_state(
+                        username_lower,
+                        'pending_invite' if username_lower in account_pending_invites else 'not_joined',
+                    )
             # (Kapatıldı: Kullanıcı her hesabın katıldığı tüm gruplara göndermesini istiyor)
             # if len(active_clients) > 1:
             #     num_clients = len(active_clients)
@@ -4900,6 +4907,14 @@ async def main():
                             account_pending_invites.add(hedef_grup.lower())
                             save_pending_invites(client_name, account_pending_invites)
                             print(f"[{client_name}] ⏳ @{hedef_grup} -> Katılım isteği gönderildi (onay bekleniyor).")
+                        elif error_class == 'invalid_invite':
+                            record_group_failure(
+                                hedef_grup, client_name, 'invalid_invite', 30 * 24 * 60 * 60
+                            )
+                            print(
+                                f"[{client_name}] ⚠️ @{hedef_grup} -> davet bağlantısı geçersiz/süresi dolmuş; "
+                                "tekrar tekrar denenmeyecek."
+                            )
                         elif error_class == 'unresolvable':
                             record_group_failure(
                                 hedef_grup, client_name, 'UsernameInvalidReview', 24 * 60 * 60

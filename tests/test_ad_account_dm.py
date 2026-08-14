@@ -11,9 +11,9 @@ class AdAccountDmTests(unittest.IsolatedAsyncioTestCase):
     def test_froxy_and_keyvadi_ad_accounts_own_direct_messages(self):
         self.assertTrue(publisher.ad_worker_dm_replies_enabled("FroxyOnline"))
         self.assertTrue(publisher.ad_worker_dm_replies_enabled("KeyVadiOnline"))
-        self.assertFalse(publisher.ad_worker_dm_replies_enabled("LisansArenaOnline"))
+        self.assertTrue(publisher.ad_worker_dm_replies_enabled("LisansArenaOnline"))
 
-    async def test_same_product_is_sent_once_per_fifteen_minutes(self):
+    async def test_same_product_is_sent_once_per_private_chat(self):
         product = {"id": "42", "title": "ChatGPT Plus", "url": "https://example.com/42"}
         with patch.object(publisher, "async_get_document", new=AsyncMock(return_value=None)):
             first, _first_keys = await publisher.reserve_product_dm_replies(
@@ -28,7 +28,7 @@ class AdAccountDmTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(first, [product])
         self.assertEqual(repeated, [])
-        self.assertEqual(after_fifteen_minutes, [product])
+        self.assertEqual(after_fifteen_minutes, [])
 
     async def test_different_product_can_reply_without_waiting(self):
         first_product = {"id": "1", "title": "ChatGPT Plus"}

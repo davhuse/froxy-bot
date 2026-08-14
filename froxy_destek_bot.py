@@ -59,6 +59,20 @@ async def async_claim_event(event, scope):
     )
     return result is not False
 
+
+async def claim_product_reply(user_id, product):
+    """Persist a one-product-per-private-chat claim across restarts."""
+    product_id = str(product.get("id") or product.get("url") or product.get("title") or "product")
+    safe_id = re.sub(r"[^a-zA-Z0-9_-]+", "_", product_id)[:100]
+    loop = asyncio.get_event_loop()
+    result = await loop.run_in_executor(
+        None,
+        firestore_helper.claim_document,
+        f"support_product_once_froxy_{int(user_id)}_{safe_id}",
+        {"brand": "froxy", "user_id": int(user_id), "product_id": product_id},
+    )
+    return result is True
+
 API_ID = int(os.environ.get("TELEGRAM_API_ID", "0") or 0)
 API_HASH = os.environ.get("TELEGRAM_API_HASH", "").strip()
 CONFIG_FILE = "bot_config.json"
@@ -741,9 +755,18 @@ async def message_handler(event):
     if not is_admin_context and event.text:
         matched_products = match_sales_products(event.text, load_sales_catalog("froxy"), limit=3)
         if matched_products:
-            matched_products = filter_products_outside_cooldown(user_id, matched_products)
-            if not matched_products:
+            candidate_products = filter_products_outside_cooldown(user_id, matched_products)
+            claimed_products = []
+            for product in candidate_products:
+                if await claim_product_reply(user_id, product):
+                    claimed_products.append(product)
+            if not claimed_products:
+                await event.respond(
+                    f"📌 **{matched_products[0]['title']}** için satın alma bağlantısı "
+                    "bu sohbette daha önce paylaşıldı. Farklı bir ürünün adını yazabilirsiniz."
+                )
                 return
+            matched_products = claimed_products
             attribution = USER_CTA_ATTRIBUTION.get(user_id, {})
             if attribution.get("expires_at", 0) <= time.monotonic():
                 attribution = {}

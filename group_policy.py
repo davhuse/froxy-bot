@@ -18,7 +18,7 @@ POLICY_FILE = os.environ.get("GROUP_POLICY_FILE", "group_policies.json")
 MODERATION_FILE = os.environ.get("GROUP_MODERATION_FILE", "group_moderation.json")
 PLAIN_KEYVADI_CTA = "Sipariş için Telegram aramasına KeyVadiSatisBot yazabilirsiniz."
 PLAIN_FROXY_CTA = "Detaylar için Telegram aramasına FroxyDestekBOT yazabilirsiniz."
-PLAIN_LISANSARENA_CTA = "Sipariş için Telegram aramasına LisansArenaBot yazabilirsiniz."
+PLAIN_LISANSARENA_CTA = "LisansArena ürün ve teslimat bilgisi için Telegram aramasında LisansArenaBot yazabilirsiniz."
 
 DEFAULT_POLICY = {
     "allow_urls": True,
