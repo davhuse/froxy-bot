@@ -44,3 +44,8 @@ indirimruzgari1
 kuponindirimkodalisveris
 alisverisforumuguncel
 kuponindirimcek
+uygunkod
+kodpazari
+YemekSepetiKuponu
+kodalimsatim
+kuponalsatgurup
