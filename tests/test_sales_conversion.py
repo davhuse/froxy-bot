@@ -190,17 +190,17 @@ class CtaExperimentTests(unittest.TestCase):
             "complete",
         )
 
-    def test_test_arm_changes_only_cta_and_start_parameter_is_parseable(self):
+    def test_legacy_cta_helper_no_longer_generates_deep_link(self):
         message = "Ürün listesi aynen kalır. İletişim: @KeyVadiSatisBot"
         with patch("sales_conversion.cta_experiment_status", return_value={"phase": "initial_3_days"}), patch(
             "sales_conversion.cta_experiment_arm", return_value="test"
         ):
             updated, arm = apply_cta_experiment(message, "keyvadi", "example-group")
-        self.assertEqual(arm, "test")
+        self.assertEqual(arm, "plain_mention")
         self.assertTrue(updated.startswith("Ürün listesi aynen kalır."))
-        self.assertIn("Hemen Satın Al", updated)
-        start_value = updated.split("?start=", 1)[1].split(")", 1)[0]
-        self.assertEqual(parse_cta_start_parameter(start_value)["arm"], "test")
+        self.assertIn("@KeyVadiSatisBot", updated)
+        self.assertNotIn("https://", updated)
+        self.assertNotIn("?start=", updated)
 
 
 if __name__ == "__main__":

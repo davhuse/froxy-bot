@@ -19,6 +19,9 @@ MODERATION_FILE = os.environ.get("GROUP_MODERATION_FILE", "group_moderation.json
 PLAIN_KEYVADI_CTA = "Sipariş için Telegram aramasına KeyVadiSatisBot yazabilirsiniz."
 PLAIN_FROXY_CTA = "Detaylar için Telegram aramasına FroxyDestekBOT yazabilirsiniz."
 PLAIN_LISANSARENA_CTA = "LisansArena ürün ve teslimat bilgisi için Telegram aramasında LisansArenaBot yazabilirsiniz."
+VISIBLE_KEYVADI_CTA = "Sipariş ve güncel fiyat: @KeyVadiSatisBot"
+VISIBLE_FROXY_CTA = "Detay ve destek: @FroxyDestekBOT"
+VISIBLE_LISANSARENA_CTA = "Sipariş ve destek: @LisansArenaBot"
 
 DEFAULT_POLICY = {
     "allow_urls": True,
@@ -214,6 +217,67 @@ def apply_brand_link_safety(policy: dict, brand: str) -> dict:
     return deepcopy(policy)
 
 
+def persistent_moderation_warning(group_name=None, *, entity=None) -> bool:
+    """Keep historically warned groups on the safest CTA indefinitely."""
+    data = _load(MODERATION_FILE)
+    keys = {policy_key(group_name, entity), f"alias:{normalize_group(group_name)}"}
+    warning_statuses = {"moderation_deleted", "moderation_warning", "security_warning"}
+    warning_words = (
+        "izin verilmeyen link", "mesaj silindi", "spam", "sessize",
+        "yasaklı ürün", "yasakli urun",
+    )
+    for key in keys:
+        for state in (data.get(key, {}) or {}).values():
+            if not isinstance(state, dict):
+                continue
+            status = str(state.get("status", "")).casefold()
+            reason = str(state.get("reason", "")).casefold()
+            if status in warning_statuses or any(word in reason for word in warning_words):
+                return True
+    return False
+
+
+def apply_persistent_moderation_safety(policy: dict, group_name=None, *, entity=None) -> dict:
+    """Disable mention/link CTAs for groups with prior moderation evidence."""
+    result = deepcopy(policy)
+    if persistent_moderation_warning(group_name, entity=entity):
+        result.update({
+            "allow_urls": False,
+            "allow_deep_links": False,
+            "allow_mentions": False,
+        })
+    return result
+
+
+def visible_mention_allowed(policy: dict) -> bool:
+    """Whether a plain @bot CTA is safe for the current group policy."""
+    return all(bool(policy.get(name)) for name in (
+        "allow_urls", "allow_deep_links", "allow_mentions",
+    )) and not policy.get("smoke_required") and not policy.get("account_hold")
+
+
+def _brand_cta(brand: str, *, visible: bool) -> str:
+    ctas = {
+        "keyvadi": VISIBLE_KEYVADI_CTA if visible else PLAIN_KEYVADI_CTA,
+        "froxy": VISIBLE_FROXY_CTA if visible else PLAIN_FROXY_CTA,
+        "lisansarena": VISIBLE_LISANSARENA_CTA if visible else PLAIN_LISANSARENA_CTA,
+    }
+    return ctas.get(brand.casefold(), "")
+
+
+def _remove_brand_cta_lines(text: str, brand: str) -> str:
+    """Remove old CTA lines before adding exactly one policy-approved CTA."""
+    terms = {
+        "keyvadi": ("keyvadisatisbot", "sipariş adresi", "siparis adresi", "telegram aramas"),
+        "froxy": ("froxydestekbot", "froxy_destek", "detaylar için", "detaylar icin", "telegram aramas"),
+        "lisansarena": ("lisansarenabot", "sipariş ve destek", "siparis ve destek", "stok, teslimat", "ürünü yaz", "urunu yaz", "telegram aramas"),
+    }.get(brand.casefold(), ())
+    return "\n".join(
+        line for line in text.splitlines()
+        if not any(term in line.casefold() for term in terms)
+    ).strip()
+
+
 def _remove_forbidden_product_lines(message: str, forbidden: list[str]) -> str:
     folded_forbidden = [unicodedata.normalize("NFKD", item).encode("ascii", "ignore").decode().lower() for item in forbidden]
     kept = []
@@ -225,64 +289,29 @@ def _remove_forbidden_product_lines(message: str, forbidden: list[str]) -> str:
 
 
 def make_policy_compliant(message: str, policy: dict, brand: str) -> tuple[str, dict]:
-    """Return final Telegram text and send options after every experiment step."""
+    """Return final entity-free Telegram text and the policy CTA mode."""
     text = _remove_forbidden_product_lines(message or "", policy.get("forbidden_products", []))
-    no_links = not policy.get("allow_urls") or not policy.get("allow_deep_links")
-    if no_links:
-        # Remove both Markdown text URLs and bare links.  A visible @mention is
-        # also an entity, so it is removed when mentions are disabled.
-        text = re.sub(r"\[([^\]]+)\]\((?:https?://|tg://)[^)]+\)", r"\1", text)
-        text = re.sub(r"(?i)(?:https?://|tg://|t\.me/)\S+", "", text)
-        text = re.sub(r"(?i)\?start=[A-Za-z0-9_-]+", "", text)
+    # All outbound ads use raw text. This removes legacy deep-links and any
+    # TextUrl/Markdown syntax before the visible CTA is added.
+    text = re.sub(r"\[([^\]]+)\]\((?:https?://|tg://)[^)]+\)", r"\1", text)
+    text = re.sub(r"(?i)(?:https?://|tg://|t\.me/)\S+", "", text)
+    text = re.sub(r"(?i)\?start=[A-Za-z0-9_-]+", "", text)
+    text = re.sub(r"[*_`~]", "", text)
     if not policy.get("allow_mentions"):
         text = re.sub(r"(?<!\w)@[A-Za-z0-9_]{4,}", "", text)
     if not policy.get("allow_emojis"):
         text = "".join(ch for ch in text if unicodedata.category(ch) not in {"So", "Sk", "Cs"})
-    text = re.sub(r"[*_`~]", "", text) if no_links else text
     text = "\n".join(line.rstrip() for line in text.splitlines()).strip()
-    if no_links and brand.lower() == "keyvadi":
-        # Remove any CTA fragments left by Markdown stripping and add the one
-        # approved plain-text CTA.  It deliberately has no @ or URL entity.
-        text = "\n".join(
-            line for line in text.splitlines()
-            if "hemen satın al" not in line.casefold()
-            and "hemen satin al" not in line.casefold()
-            and "keyvadisatisbot" not in line.casefold()
-        ).strip()
-        if PLAIN_KEYVADI_CTA not in text:
-            text = f"{text}\n{PLAIN_KEYVADI_CTA}".strip()
-    elif no_links and brand.lower() == "froxy":
-        text = "\n".join(
-            line for line in text.splitlines()
-            if "froxy_destek" not in line.casefold()
-            and "froxy destek" not in line.casefold()
-            and "froxydestekbot" not in line.casefold()
-        ).strip()
-        if PLAIN_FROXY_CTA not in text:
-            text = f"{text}\n{PLAIN_FROXY_CTA}".strip()
-    elif no_links and brand.lower() == "lisansarena":
-        text = "\n".join(
-            line for line in text.splitlines()
-            if "lisansarenabot" not in line.casefold()
-            and "sipariş ve destek" not in line.casefold()
-            and "siparis ve destek" not in line.casefold()
-            and "stok, teslimat ve sipariş" not in line.casefold()
-            and "stok, teslimat ve siparis" not in line.casefold()
-            and "ürünü yaz" not in line.casefold()
-            and "urunu yaz" not in line.casefold()
-        ).strip()
-        if PLAIN_LISANSARENA_CTA not in text:
-            text = f"{text}\n{PLAIN_LISANSARENA_CTA}".strip()
+
+    visible = visible_mention_allowed(policy)
+    text = _remove_brand_cta_lines(text, brand)
+    required_cta = _brand_cta(brand, visible=visible)
+    if required_cta and required_cta not in text:
+        text = f"{text}\n{required_cta}".strip()
+
     max_lines = policy.get("max_lines")
     if isinstance(max_lines, int) and max_lines > 0:
         lines = text.splitlines()
-        required_cta = None
-        if no_links and brand.lower() == "keyvadi":
-            required_cta = PLAIN_KEYVADI_CTA
-        elif no_links and brand.lower() == "froxy":
-            required_cta = PLAIN_FROXY_CTA
-        elif no_links and brand.lower() == "lisansarena":
-            required_cta = PLAIN_LISANSARENA_CTA
         if required_cta and required_cta in lines and len(lines) > max_lines:
             lines = [line for line in lines if line != required_cta]
             lines = lines[:max_lines - 1] + [required_cta]
@@ -290,11 +319,10 @@ def make_policy_compliant(message: str, policy: dict, brand: str) -> tuple[str, 
             lines = lines[:max_lines]
         text = "\n".join(lines).strip()
     return text, {
-        # A visible @bot mention may still expand into a preview card. Ads
-        # never need Telegram link previews, including otherwise normal groups.
         "link_preview": False,
-        "parse_mode": None if no_links else "md",
+        "parse_mode": None,
         "allow_media": bool(policy.get("allow_media")),
+        "cta_mode": "plain_mention" if visible else "policy_plain_text",
     }
 
 

@@ -412,36 +412,22 @@ def parse_cta_start_parameter(value: str) -> dict | None:
 
 
 def apply_cta_experiment(message: str, brand: str, group_key: str) -> tuple[str, str]:
-    if brand not in {"keyvadi", "froxy"}:
+    """Legacy compatibility wrapper for the retired deep-link experiment.
+
+    Outbound ads now use a raw visible @ handle.  Keeping this function
+    entity-free prevents older callers from reintroducing a hidden start URL.
+    """
+    usernames = {
+        "keyvadi": "KeyVadiSatisBot",
+        "froxy": "FroxyDestekBOT",
+        "lisansarena": "LisansArenaBot",
+    }
+    username = usernames.get(str(brand).casefold())
+    if not username:
         return message, "none"
-    if cta_experiment_status()["phase"] in {"scheduled", "complete"}:
-        return message, "none"
-    arm = cta_experiment_arm(brand, group_key)
-    username = "KeyVadiSatisBot" if brand == "keyvadi" else "FroxyDestekBOT"
-    parameter = cta_start_parameter(brand, group_key, arm)
-    deep_link = f"https://t.me/{username}?start={parameter}"
-    linked_handle = f"[@{username}]({deep_link})"
-    updated = re.sub(rf"(?<!\[)@{re.escape(username)}", linked_handle, message)
-    if arm == "test":
-        # The base template already contains one contact handle. Replace that
-        # CTA instead of tagging the same bot a second time.
-        cleaned_lines = []
-        for line in updated.splitlines():
-            if linked_handle in line:
-                line = line.split(linked_handle, 1)[0]
-                line = re.sub(
-                    r"(?:İletişim|Sipariş Adresi|Canlı Destek ve Sipariş|"
-                    r"Hızlı Sipariş & Canlı Destek Botumuz|"
-                    r"Paneli (?:önce )?100 ücretsiz krediyle (?:deneyin|test edin|açın)|"
-                    r"100 ücretsiz krediyle (?:paneli )?(?:deneyin|başlayın))\s*:\s*$",
-                    "", line, flags=re.IGNORECASE,
-                ).rstrip()
-            if line.strip():
-                cleaned_lines.append(line)
-        updated = "\n".join(cleaned_lines).rstrip()
-        if brand == "froxy":
-            cta = f"Paneli aç, 100 ücretsiz krediyle dene: {linked_handle}"
-        else:
-            cta = f"Ürün adını DM'den yaz — fiyat ve Hemen Satın Al seçeneği anında gelsin: {linked_handle}"
-        updated = f"{updated}\n{cta}".strip()
-    return updated, arm
+    updated = re.sub(r"\[([^\]]+)\]\((?:https?://|tg://)[^)]+\)", r"\1", message or "")
+    updated = re.sub(r"(?i)(?:https?://|tg://|t\.me/)\S+", "", updated)
+    updated = re.sub(r"(?i)\?start=[A-Za-z0-9_-]+", "", updated)
+    if f"@{username}" not in updated:
+        updated = f"{updated.rstrip()}\n@{username}".strip()
+    return updated, "plain_mention"

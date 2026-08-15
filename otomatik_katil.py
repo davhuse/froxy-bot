@@ -25,6 +25,7 @@ from support_flow import save_ticket_record
 from group_policy import (
     account_is_held,
     apply_brand_link_safety,
+    apply_persistent_moderation_safety,
     apply_telegram_rights,
     is_moderation_warning,
     make_policy_compliant,
@@ -35,11 +36,11 @@ from group_policy import (
     record_moderation_hold,
     resolve_group_policy,
     update_policy,
+    visible_mention_allowed,
     visibility_check_pending,
     warning_targets_brand,
 )
 from sales_conversion import (
-    apply_cta_experiment,
     load_sales_catalog,
     match_sales_products,
     purchase_url,
@@ -93,6 +94,7 @@ def write_controlled_smoke_result(status, *, account=None, group=None, reason=No
 
 async def verify_ad_after_window(client, entity, message_id, client_name, group_name,
                                  seconds=600, experiment_arm=None, template=None,
+                                 cta_mode=None,
                                  raise_on_failure=False):
     """Record the controlled smoke-test result without blocking the blast worker."""
     await asyncio.sleep(seconds)
@@ -111,6 +113,7 @@ async def verify_ad_after_window(client, entity, message_id, client_name, group_
             "ad_sent", client_name,
             group=normalize_group_key(group_name), source="telegram_group",
             template=template or "fallback", arm=experiment_arm,
+            cta_mode=cta_mode,
         )
         set_cooldown(group_name, client_name, entity)
         update_stats(sent=1)
@@ -193,6 +196,7 @@ async def send_and_verify_ad(client, entity, message, client_name, group_name, o
             seconds=int(options.get("verification_seconds") or 600),
             experiment_arm=options.get("experiment_arm"),
             template=options.get("template"),
+            cta_mode=options.get("cta_mode"),
             raise_on_failure=True,
         )
     else:
@@ -201,6 +205,7 @@ async def send_and_verify_ad(client, entity, message, client_name, group_name, o
                 client, entity, message_id, client_name, group_name,
                 experiment_arm=options.get("experiment_arm"),
                 template=options.get("template"),
+                cta_mode=options.get("cta_mode"),
             )
         )
     return sent
@@ -4301,6 +4306,9 @@ async def main():
                     # deep-link entities.  Force one entity-free representation
                     # in every group before the A/B decision is reached.
                     group_policy = apply_brand_link_safety(group_policy, current_brand)
+                    group_policy = apply_persistent_moderation_safety(
+                        group_policy, grup_name, entity=entity
+                    )
                     if account_is_held(group_policy, current_brand):
                         print(
                             f"[{client_name}] ⏸️ @{grup_name} politika beklemesinde: "
@@ -4419,10 +4427,14 @@ async def main():
                             msg, grup_name, is_keyvadi, is_lisansarena, is_froxy
                         )
                         experiment_brand = "keyvadi" if is_keyvadi else ("froxy" if is_froxy else "lisansarena")
-                        if group_policy.get("allow_deep_links") and group_policy.get("allow_urls"):
-                            msg, experiment_arm = apply_cta_experiment(msg, experiment_brand, group_key)
-                        else:
-                            experiment_arm = "policy_plain_text"
+                        # Deep-link A/B attribution is disabled. Clean groups
+                        # receive a visible raw @ handle; warned groups keep
+                        # the existing search-style CTA.
+                        experiment_arm = (
+                            "plain_mention"
+                            if visible_mention_allowed(group_policy)
+                            else "policy_plain_text"
+                        )
                         # This is intentionally the final text transformation.
                         # No later step may re-introduce a URL/TextUrl entity.
                         msg, send_options = make_policy_compliant(

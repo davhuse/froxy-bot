@@ -16,15 +16,16 @@ class AdTemplateTests(unittest.TestCase):
             self.assertNotIn("@FroxyOnline", text, path.name)
             self.assertNotIn("#Froxy", text, path.name)
 
-    def test_froxy_test_cta_replaces_instead_of_duplicating_handle(self):
+    def test_froxy_cta_compatibility_helper_keeps_only_visible_handle(self):
         message = "Froxy AI paneli\nBilgi: @FroxyDestekBOT"
         with patch("sales_conversion.cta_experiment_status", return_value={"phase": "initial_3_days"}), patch(
             "sales_conversion.cta_experiment_arm", return_value="test"
         ):
             updated, arm = apply_cta_experiment(message, "froxy", "example-group")
-        self.assertEqual(arm, "test")
+        self.assertEqual(arm, "plain_mention")
         self.assertEqual(updated.count("@FroxyDestekBOT"), 1)
-        self.assertIn("100 ücretsiz krediyle dene", updated)
+        self.assertNotIn("https://", updated)
+        self.assertNotIn("?start=", updated)
 
     def test_lisansarena_templates_have_distinct_store_identity(self):
         paths = sorted((ROOT / "messages").glob("lisansarena_*.txt"))

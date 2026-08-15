@@ -36,7 +36,7 @@ class GroupPolicyTests(unittest.TestCase):
         self.assertFalse(policy["allow_urls"])
         self.assertFalse(policy["allow_deep_links"])
 
-    def test_default_group_keeps_measured_keyvadi_cta(self):
+    def test_default_group_uses_visible_keyvadi_mention_without_link(self):
         policy = group_policy.apply_brand_link_safety(group_policy.DEFAULT_POLICY, "keyvadi")
         message = (
             "Canva Pro 49,90 TL\n"
@@ -45,9 +45,31 @@ class GroupPolicyTests(unittest.TestCase):
         )
         text, options = group_policy.make_policy_compliant(message, policy, "keyvadi")
         self.assertIn("Canva Pro 49,90 TL", text)
-        self.assertIn("https://t.me/KeyVadiSatisBot?start=", text)
-        self.assertEqual(options["parse_mode"], "md")
+        self.assertIn("@KeyVadiSatisBot", text)
+        self.assertNotIn("https://", text)
+        self.assertNotIn("t.me", text)
+        self.assertNotIn("?start=", text)
+        self.assertEqual(options["parse_mode"], None)
+        self.assertEqual(options["cta_mode"], "plain_mention")
         self.assertFalse(options["link_preview"])
+
+    def test_persistent_moderation_warning_keeps_group_on_search_cta(self):
+        policy = dict(group_policy.DEFAULT_POLICY)
+        with tempfile.TemporaryDirectory() as directory:
+            path = str(Path(directory) / "moderation.json")
+            with patch.object(group_policy, "MODERATION_FILE", path):
+                group_policy.record_moderation_hold(
+                    "warned", "FroxyOnline", "izin verilmeyen link", hours=0
+                )
+                safe_policy = group_policy.apply_persistent_moderation_safety(
+                    policy, "warned"
+                )
+                text, options = group_policy.make_policy_compliant(
+                    "Ürün listesi\n@FroxyDestekBOT", safe_policy, "froxy"
+                )
+        self.assertNotIn("@", text)
+        self.assertTrue(text.endswith(group_policy.PLAIN_FROXY_CTA))
+        self.assertEqual(options["cta_mode"], "policy_plain_text")
 
     def test_darcy_spam_warning_is_detected(self):
         warning = "@KeyVadiDestek grup veya kanal spamı gönderdi. Eylem: Sessize aldım"
