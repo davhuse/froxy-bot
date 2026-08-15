@@ -18,7 +18,7 @@ Neler yapabilirsiniz?
 🛒 GÜNCEL ÜRÜN VE FİYAT LİSTESİ:
 • Gemini Pro (12 Ay Davet: 59.99₺ | 18 Ay Davet: 99.99₺)*
 • Gemini Pro + Antigravity (12 Ay: 169.99₺ | 18 Ay: 249.99₺)*
-• ChatGPT Plus (Kişisel: 99.99₺ | Ortak: 39.99₺ | + Codex: 199.99₺)**
+• ChatGPT Plus (Kişisel: 479.99₺ | Ortak: 39.99₺ | + Codex: 199.99₺)**
 • Codex SMS Doğrulama Kodu: 29.99₺
 • Gemini Ultra (1 Ay Kredisiz: 299.99₺ | 2.5K Kredili: 399.99₺)*
 • ChatGPT Go (3 Aylık İndirim Kodu): 49.99₺

@@ -20,7 +20,7 @@ new_texts_tr = '''        "pkg_btn_list": [
             ("🤖 Gemini Pro 18 Ay Davet (₺99.99)", "pkg_gemini_18m"),
             ("🚀 Gemini Pro + Antigravity 12 Ay (₺169.99)", "pkg_gemini_anti_12m"),
             ("🚀 Gemini Pro + Antigravity 18 Ay (₺249.99)", "pkg_gemini_anti_18m"),
-            ("💬 ChatGPT Plus Kişisel (₺99.99)", "pkg_chatgpt_kisisel"),
+            ("💬 ChatGPT Plus Kişisel (₺479.99)", "pkg_chatgpt_kisisel"),
             ("💬 ChatGPT Plus Ortak (₺39.99)", "pkg_chatgpt_ortak"),
             ("💻 ChatGPT Plus + Codex (₺199.99)", "pkg_chatgpt_codex"),
             ("📱 Codex SMS Doğrulama Kodu (₺29.99)", "pkg_codex_sms"),
