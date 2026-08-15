@@ -49,3 +49,8 @@ kodpazari
 YemekSepetiKuponu
 kodalimsatim
 kuponalsatgurup
+KodKuponMerkezi
+kuponkodmerkez
+indirimkana
+herkesibeklerimm
+bedavainternetkodalimsatim
