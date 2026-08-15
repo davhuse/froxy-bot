@@ -21,6 +21,9 @@ CATALOG_FILES = {
     "froxy": ROOT / "froxy_shopier_links.json",
     "lisansarena": ROOT / "lisansarena_shopier_links.json",
 }
+AUXILIARY_CATALOG_FILES = {
+    "lisansarena": ROOT / "lisansarena_catalog_additions.json",
+}
 SHOPIER_HOSTS = {"shopier.com", "www.shopier.com"}
 PUBLIC_BASE_URL = (
     os.environ.get("PUBLIC_BASE_URL")
@@ -32,7 +35,14 @@ TEXT_ALIASES = {
     "netfilix": "netflix",
     "netfli": "netflix",
     "chat gpt": "chatgpt",
+    "chatgbt": "chatgpt",
     "gpt": "chatgpt",
+    "personal": "kisisel",
+    "personel": "kisisel",
+    "30 gunluk": "30 gun",
+    "1 aylik": "1 ay",
+    "blu tv": "blutv",
+    "blue tv": "blutv",
     "you tube": "youtube",
     "yt premium": "youtube premium",
     "yt": "youtube",
@@ -56,7 +66,7 @@ BRAND_PHRASES = (
     "chatgpt", "netflix", "youtube", "adobe", "canva", "windows", "office",
     "gemini", "grok", "xbox", "spotify", "exxen", "trendyol yemek",
     "trendyol market", "duolingo", "semrush", "capcut", "scribd", "gamma",
-    "kiro", "steam", "shell", "whatsapp", "apple", "crunchyroll", "telegram",
+    "kiro", "steam", "shell", "whatsapp", "apple", "crunchyroll", "telegram", "blutv",
     "midjourney", "tradingview", "nordvpn", "vpn", "kaspersky", "envato",
     "freepik", "autocad", "figma", "elementor", "grammarly", "deepl",
     "ideogram", "quillbot", "discord", "hbo", "prime video", "perplexity",
@@ -67,7 +77,8 @@ BRAND_PHRASES = (
 VARIANT_TERMS = {
     "kisisel", "ortak", "ozel", "profil", "davet", "ultra", "pro", "plus",
     "ay", "aylik", "yil", "yillik", "hafta", "haftalik", "kredili", "kredisiz",
-    "1", "2", "3", "4", "6", "12", "18", "2500", "5k", "15k", "50k",
+    "1", "2", "3", "4", "6", "12", "18", "30", "2500", "5k", "15k", "50k",
+    "gun", "gunluk",
 }
 
 STOP_WORDS = {
@@ -104,7 +115,7 @@ def _normalize_product(item: dict) -> dict | None:
     product_id = str(item.get("id") or "").strip()
     title = str(item.get("title") or "").strip()
     url = str(item.get("url") or item.get("link") or "").strip()
-    if not product_id or not title or not is_allowed_shopier_url(url):
+    if not product_id or not title or not (is_allowed_shopier_url(url) or is_allowed_internal_purchase_url(url)):
         return None
     price = item.get("price")
     if not price and isinstance(item.get("priceData"), dict):
@@ -118,17 +129,25 @@ def load_sales_catalog(brand: str) -> list[dict]:
     path = CATALOG_FILES.get(str(brand).lower())
     if not path:
         return []
+    data_sets = []
     try:
-        data = json.loads(path.read_text(encoding="utf-8"))
+        data_sets.append(json.loads(path.read_text(encoding="utf-8")))
     except Exception:
-        return []
+        data_sets.append([])
+    auxiliary = AUXILIARY_CATALOG_FILES.get(str(brand).lower())
+    if auxiliary and auxiliary.exists():
+        try:
+            data_sets.append(json.loads(auxiliary.read_text(encoding="utf-8")))
+        except Exception:
+            pass
     products = []
     seen = set()
-    for item in data if isinstance(data, list) else []:
-        product = _normalize_product(item) if isinstance(item, dict) else None
-        if product and product["id"] not in seen:
-            seen.add(product["id"])
-            products.append(product)
+    for data in data_sets:
+        for item in data if isinstance(data, list) else []:
+            product = _normalize_product(item) if isinstance(item, dict) else None
+            if product and product["id"] not in seen:
+                seen.add(product["id"])
+                products.append(product)
     return products
 
 
@@ -206,6 +225,20 @@ def is_allowed_shopier_url(url: str) -> bool:
         return False
 
 
+def is_allowed_internal_purchase_url(url: str) -> bool:
+    """Allow only this deployment's Mini App as a temporary LA fallback."""
+    try:
+        parsed = urlparse(str(url))
+        base_host = (urlparse(PUBLIC_BASE_URL).hostname or "").lower()
+        return (
+            parsed.scheme == "https"
+            and (parsed.hostname or "").lower() == base_host
+            and parsed.path == "/la/app"
+        )
+    except Exception:
+        return False
+
+
 def _brand_phrases_in(text: str) -> list[str]:
     return [phrase for phrase in BRAND_PHRASES if re.search(rf"(?<!\w){re.escape(phrase)}(?!\w)", text)]
 
@@ -245,12 +278,18 @@ def match_sales_products(message: str, products: list[dict], limit: int = 3) -> 
             score -= 100
         if "kisisel" in query_tokens and "ortak" in title_tokens:
             score -= 100
+        if "kisisel" in query_tokens and "kisisel" in title_tokens:
+            score += 120
         if "ortak" in query_tokens and "kisisel" in title_tokens:
             score -= 100
+        if "ortak" in query_tokens and "ortak" in title_tokens:
+            score += 120
         scored.append((score, product))
     scored.sort(key=lambda pair: (-pair[0], _price_number(pair[1].get("price")), pair[1]["title"]))
     if not scored:
         return []
+    if ("kisisel" in query_tokens or "ortak" in query_tokens) and scored:
+        return [scored[0][1]]
     # A query containing duration/variant detail is specific when the best
     # candidate clearly beats the next one. Generic brand queries show choices.
     if variant_tokens and (len(scored) == 1 or scored[0][0] - scored[1][0] >= 25):

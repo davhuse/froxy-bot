@@ -22,6 +22,8 @@ from telethon.tl.types import KeyboardButtonRow, KeyboardButtonWebView, ReplyInl
 
 from lisansarena_store import StoreUnavailable, get_store
 from sales_metrics import record_event
+import firestore_helper
+from sales_conversion import load_sales_catalog, match_sales_products, purchase_url
 from support_flow import claim_first_greeting, forward_customer_message
 
 
@@ -52,6 +54,41 @@ CONFIG = _load_config()
 ADMIN_ID = int(os.environ.get("TELEGRAM_ADMIN_ID", CONFIG.get("admin_id", 0)) or 0)
 SUPPORT_CHAT_ID = int(CONFIG.get("support_chat_id") or ADMIN_ID or 0)
 PENDING_INPUT = {}
+
+
+async def claim_product_reply(user_id, product):
+    """Keep one automatic product card per product and private chat."""
+    product_id = str(product.get("id") or product.get("url") or product.get("title") or "product")
+    safe_id = re.sub(r"[^a-zA-Z0-9_-]+", "_", product_id)[:100]
+    claimed = await asyncio.to_thread(
+        firestore_helper.claim_document,
+        f"support_product_once_lisansarena_{int(user_id)}_{safe_id}",
+        {"brand": "lisansarena", "user_id": int(user_id), "product_id": product_id},
+        True,
+    )
+    return claimed is True
+
+
+async def send_product_card(event, matched_products):
+    claimed_products = []
+    for product in matched_products[:3]:
+        if await claim_product_reply(event.sender_id, product):
+            claimed_products.append(product)
+    if not claimed_products:
+        await event.respond("Bu ürünün satın alma seçeneği bu sohbette daha önce gönderildi. Farklı bir ürün adı yazabilirsin.")
+        return False
+    lines = ["LisansArena ürün seçenekleri", ""]
+    buttons = []
+    for product in claimed_products:
+        lines.append(f"• {product['title']} — {product.get('price') or 'Fiyat bilgisi için destek'}")
+        buttons.append([Button.url("🛒 Mağazada İncele", purchase_url(product, "lisansarena", "support_bot_dm"))])
+    buttons.append([Button.inline("💬 Destek", b"ticket_support")])
+    await event.respond("\n".join(lines), buttons=buttons)
+    first = claimed_products[0]
+    record_event("product_matched", "LisansArena", source="telegram_private", product=first.get("title", ""), product_count=len(claimed_products))
+    record_event("purchase_cta_sent", "LisansArena", source="telegram_private", product=first.get("title", ""), product_count=len(claimed_products))
+    record_event("dm_reply_sent", "LisansArena", source="telegram_private", product=first.get("title", ""))
+    return True
 
 if not API_ID or not API_HASH or not BOT_TOKEN:
     raise SystemExit("LisansArena Telegram credentials are not configured")
@@ -460,6 +497,18 @@ async def private_message_handler(event):
             await event.respond("Yanıt kullanıcıya iletildi.")
         return
     record_event("dm_received", "LisansArena", source="telegram_private")
+
+    # Product questions are handled before ticket forwarding, matching the
+    # ad-account and Froxy support flows. A product claim is per user/product,
+    # so asking about Windows does not suppress a later Office request.
+    if event.raw_text:
+        matched_products = match_sales_products(
+            event.raw_text, load_sales_catalog("lisansarena"), limit=3
+        )
+        if matched_products:
+            await send_product_card(event, matched_products)
+            return
+
     pending = PENDING_INPUT.pop(event.sender_id, None)
     if pending:
         try:

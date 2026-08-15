@@ -82,7 +82,9 @@ class SalesCatalogMatchingTests(unittest.TestCase):
 
     def test_lisansarena_catalog_supports_signed_purchase_links(self):
         from sales_conversion import make_purchase_token, parse_purchase_token
-        product = load_sales_catalog("lisansarena")[0]
+        catalog = load_sales_catalog("lisansarena")
+        product = next(item for item in catalog if item["id"] == "la-approved-chatgpt-kisisel")
+        self.assertEqual(product["price"], "529,99 TL")
         with patch.dict(os.environ, {"PURCHASE_LINK_SECRET": "unit-test-secret"}):
             token = make_purchase_token("lisansarena", product["id"], "ad_account_dm", "control")
             payload = parse_purchase_token(token)

@@ -73,7 +73,7 @@ class LisansArenaStoreTests(unittest.TestCase):
             for item in self.store.storefront_catalog()
         }
         expected = {
-            "ChatGPT Plus 30 Gün - Kişisel": 25000,
+            "ChatGPT Plus 30 Gün - Kişisel": 52999,
             "ChatGPT Plus 30 Gün - Ortak": 6990,
             "Gemini Pro 3 Aylık": 5990,
             "Gemini Ultra (2.5k Kredili Hesap)": 59999,
