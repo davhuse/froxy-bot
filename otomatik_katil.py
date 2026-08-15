@@ -3683,15 +3683,8 @@ async def main():
 
     async def run_worker(client, client_name, joined_dialogs):
         account_pending_invites = load_pending_invites(client_name)
-        if account_brand(client_name) == 'keyvadi' or '2' in client_name or 'keyvadi' in client_name.lower():
-            try:
-                from telethon.tl.functions.account import UpdateProfileRequest
-                await client(UpdateProfileRequest(
-                    about="Referanslar: t.me/satisrefim/9615 | Sipariş: KeyVadiSatisBot"
-                ))
-                print(f"✅ [{client_name}] KeyVadi hesabı biografisi güncellendi.")
-            except Exception as e:
-                print(f"⚠️ [{client_name}] Bio güncelleme uyarısı: {e}")
+        # Bio is user-managed. Do not overwrite the KeyVadi profile on every
+        # worker restart or blast cycle.
 
         protected_groups = get_all_protected_groups()
         cancelled_join_requests_handled = set()
@@ -5202,15 +5195,8 @@ async def main():
                 await asyncio.sleep(60)
 
     async def update_account_bios(client, name):
-        if account_brand(name) == 'keyvadi' or '2' in name or 'keyvadi' in name.lower():
-            try:
-                from telethon.tl.functions.account import UpdateProfileRequest
-                await client(UpdateProfileRequest(
-                    about="Referanslar: t.me/satisrefim/9615 | Sipariş: KeyVadiSatisBot"
-                ))
-                print(f"✅ [{name}] KeyVadi hesabı biografisi güncellendi.")
-            except Exception as e:
-                print(f"⚠️ [{name}] Bio güncelleme uyarısı: {e}")
+        # Intentionally disabled: profile bios must remain under manual control.
+        return
 
     # Workers ve arka plan görevlerini başlat
     tasks = []
@@ -5223,7 +5209,6 @@ async def main():
         else:
             print(f"ℹ️ [{name}] Reklam hesabı DM otomatik yanıtı kapalı.")
         register_telegram_code_forwarder(client, name)
-        tasks.append(update_account_bios(client, name))
         if not CONTROLLED_SMOKE_MODE or name == CONTROLLED_SMOKE_ACCOUNT:
             tasks.append(run_worker_supervisor(client, name, j_dialogs))
         else:
