@@ -18,6 +18,7 @@ from sales_conversion import (
     match_sales_products,
     parse_cta_start_parameter,
     parse_purchase_token,
+    purchase_target_url,
 )
 
 
@@ -42,6 +43,7 @@ class SalesCatalogMatchingTests(unittest.TestCase):
         cases = {
             "netfilix": "netflix",
             "gpt kisisel": "chatgpt",
+            "chat gbt plas uyeligi": "chatgpt",
             "market kuponu": "market",
             "marketü kuponu": "market",
             "disney": "disney",
@@ -93,6 +95,14 @@ class SalesCatalogMatchingTests(unittest.TestCase):
 
 
 class PurchaseLinkTests(unittest.TestCase):
+    def test_froxy_purchase_redirect_uses_froxy_website(self):
+        product = {"id": "49489691", "url": "https://www.shopier.com/froxyai/49489691"}
+        self.assertEqual(purchase_target_url("froxy", product), "https://froxyai.com")
+
+    def test_other_brands_keep_their_configured_target(self):
+        product = {"id": "x", "url": "https://www.shopier.com/keyvadi/x"}
+        self.assertEqual(purchase_target_url("keyvadi", product), product["url"])
+
     def test_signed_token_round_trip_and_tamper_rejection(self):
         product = load_sales_catalog("keyvadi")[0]
         with patch.dict(os.environ, {"PURCHASE_LINK_SECRET": "unit-test-secret"}):
@@ -110,7 +120,7 @@ class PurchaseLinkTests(unittest.TestCase):
         self.assertFalse(is_allowed_shopier_url("https://shopier.com.evil.example/123"))
         self.assertFalse(is_allowed_shopier_url("http://www.shopier.com/froxyai/123"))
 
-    def test_redirect_records_click_and_returns_shopier_302(self):
+    def test_redirect_records_click_and_returns_froxy_site_302(self):
         import app as web_app
 
         product = load_sales_catalog("froxy")[0]
@@ -119,7 +129,7 @@ class PurchaseLinkTests(unittest.TestCase):
             with patch.object(web_app, "record_event") as record:
                 response = web_app.app.test_client().get(f"/go/{token}")
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.headers["Location"], product["url"])
+        self.assertEqual(response.headers["Location"], "https://froxyai.com")
         self.assertEqual(record.call_args.args[:2], ("purchase_click", "froxy"))
 
     def test_redirect_rejects_invalid_token(self):

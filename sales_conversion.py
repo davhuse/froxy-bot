@@ -25,6 +25,9 @@ AUXILIARY_CATALOG_FILES = {
     "lisansarena": ROOT / "lisansarena_catalog_additions.json",
 }
 SHOPIER_HOSTS = {"shopier.com", "www.shopier.com"}
+BRAND_SITE_URLS = {
+    "froxy": "https://froxyai.com",
+}
 PUBLIC_BASE_URL = (
     os.environ.get("PUBLIC_BASE_URL")
     or os.environ.get("RENDER_EXTERNAL_URL")
@@ -35,7 +38,10 @@ TEXT_ALIASES = {
     "netfilix": "netflix",
     "netfli": "netflix",
     "chat gpt": "chatgpt",
+    "chat gbt": "chatgpt",
     "chatgbt": "chatgpt",
+    "plas": "plus",
+    "pluss": "plus",
     "gpt": "chatgpt",
     "personal": "kisisel",
     "personel": "kisisel",
@@ -237,6 +243,19 @@ def is_allowed_internal_purchase_url(url: str) -> bool:
         )
     except Exception:
         return False
+
+
+def purchase_target_url(brand: str, product: dict) -> str:
+    """Return the customer-facing purchase target for a known product.
+
+    Froxy's customer flow is handled on its own website. Other brands keep
+    their configured Shopier/internal target until their own storefront is
+    explicitly migrated.
+    """
+    site_url = BRAND_SITE_URLS.get(str(brand or "").strip().lower())
+    if site_url:
+        return site_url
+    return str(product.get("url") or "")
 
 
 def _brand_phrases_in(text: str) -> list[str]:

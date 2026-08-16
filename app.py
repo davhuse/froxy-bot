@@ -19,7 +19,7 @@ import base64
 import hashlib
 import atexit
 from sales_metrics import record_event, summarize as summarize_sales
-from sales_conversion import cta_experiment_status, parse_purchase_token, product_by_id, refresh_configured_catalogs
+from sales_conversion import cta_experiment_status, parse_purchase_token, product_by_id, purchase_target_url, refresh_configured_catalogs
 from blast_scheduler import load_blast_snapshot
 from shopier_orders import ingest_shopier_order, reconcile_configured_orders
 from group_policy import load_policies, moderation_snapshot
@@ -855,7 +855,7 @@ def purchase_redirect(token):
         source=payload.get('s', ''),
         arm=payload.get('a', ''),
     )
-    return redirect(product['url'], code=302)
+    return redirect(purchase_target_url(payload['b'], product), code=302)
 
 @app.route('/api/start', methods=['POST'])
 def start():

@@ -177,7 +177,7 @@ TEXTS = {
             "⚡ **Froxy AI Mağaza & Destek Paneline Hoş Geldiniz!**\n\n"
             "Birden fazla yapay zeka aracına para vermek yerine, hepsini tek panelden kullanabilirsiniz!\n"
             "GPT, Claude Sonnet 5, Gemini 3.5 Flash, DeepSeek V4 ve 1.100+ model aynı altyapıda.\n\n"
-            "🌐 **Web Sitemiz:** https://froxy.online\n\n"
+            "🌐 **Web Sitemiz:** https://froxyai.com\n\n"
             "Lütfen incelemek veya satın almak istediğiniz ürünü seçin 👇"
         ),
         "packages_btn": "👑 Üyelik Paketleri (Kredi)",
@@ -592,7 +592,7 @@ async def pkg_select_handler(event):
     # Get Shopier link from config
     config = load_config() or {}
     froxy_links = {**DEFAULT_FROXY_SHOPIER_LINKS, **config.get("froxy_shopier_links", {})}
-    shopier_url = froxy_links.get(pkg_key, "https://www.shopier.com/froxyai")
+    shopier_url = "https://froxyai.com"
 
     text = t["product_header"].format(
         title=p_data['title'],

@@ -42,7 +42,7 @@ old_welcome = '''            "🤖 **Froxy AI Destek Paneline Hoş Geldiniz!**\\
 new_welcome = '''            "⚡ **Froxy AI Mağaza & Destek Paneline Hoş Geldiniz!**\\n\\n"
             "Birden fazla yapay zeka aracına para vermek yerine, hepsini tek panelden kullanabilirsiniz!\\n"
             "GPT, Claude Sonnet 5, Gemini 3.5 Flash, DeepSeek V4 ve 1.100+ model aynı altyapıda.\\n\\n"
-            "🌐 **Web Sitemiz:** https://froxy.online\\n\\n"
+            "🌐 **Web Sitemiz:** https://froxyai.com\\n\\n"
             "Lütfen incelemek veya satın almak istediğiniz ürünü seçin 👇"'''
 
 code = code.replace(old_welcome, new_welcome)
