@@ -24,6 +24,28 @@ TERMINAL_TARGET_STATES = {
 }
 
 
+def is_recent_message_from_account(message, account_id, now=None, window_seconds=3600):
+    """Return whether Telegram already contains this account's recent message.
+
+    This guards against duplicate ads when a deploy loses the local blast
+    checkpoint before the remote state store is available.
+    """
+    if not message or getattr(message, "empty", False):
+        return False
+    if getattr(message, "sender_id", None) != int(account_id or 0):
+        return False
+    message_date = getattr(message, "date", None)
+    if message_date is None:
+        return False
+    if getattr(message_date, "tzinfo", None) is None:
+        message_date = message_date.replace(tzinfo=timezone.utc)
+    current = datetime.now(timezone.utc) if now is None else now
+    if getattr(current, "tzinfo", None) is None:
+        current = current.replace(tzinfo=timezone.utc)
+    age = (current - message_date).total_seconds()
+    return 0 <= age <= max(1, int(window_seconds))
+
+
 def _now_iso(now: float | None = None) -> str:
     return datetime.fromtimestamp(now or time.time(), timezone.utc).isoformat()
 

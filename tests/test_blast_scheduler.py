@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from blast_scheduler import BlastCoordinator
+from blast_scheduler import BlastCoordinator, is_recent_message_from_account
 
 
 class Clock:
@@ -14,6 +14,18 @@ class Clock:
 
 
 class BlastCoordinatorTests(unittest.TestCase):
+    def test_recent_message_guard_matches_only_same_account_inside_window(self):
+        from datetime import datetime, timedelta, timezone
+        from types import SimpleNamespace
+
+        now = datetime.now(timezone.utc)
+        recent = SimpleNamespace(sender_id=42, date=now - timedelta(minutes=5), empty=False)
+        old = SimpleNamespace(sender_id=42, date=now - timedelta(hours=2), empty=False)
+        other = SimpleNamespace(sender_id=99, date=now - timedelta(minutes=5), empty=False)
+        self.assertTrue(is_recent_message_from_account(recent, 42, now=now))
+        self.assertFalse(is_recent_message_from_account(old, 42, now=now))
+        self.assertFalse(is_recent_message_from_account(other, 42, now=now))
+
     def make_coordinator(self, directory, clock, owner="worker-a"):
         return BlastCoordinator(
             Path(directory) / "checkpoint.json",

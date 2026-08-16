@@ -11,7 +11,7 @@ import shutil
 import time
 import signal
 
-from blast_scheduler import BlastCoordinator
+from blast_scheduler import BlastCoordinator, is_recent_message_from_account
 
 try:
     sys.stdout.reconfigure(encoding='utf-8')
@@ -3733,6 +3733,7 @@ async def main():
                 pass
 
     async def run_worker(client, client_name, joined_dialogs):
+        blast_account_id = joined_dialogs.get("id") if isinstance(joined_dialogs, dict) else None
         account_pending_invites = load_pending_invites(client_name)
         # Bio is user-managed. Do not overwrite the KeyVadi profile on every
         # worker restart or blast cycle.
@@ -4389,6 +4390,31 @@ async def main():
                     if is_account_group_blocked(grup_name, client_name, entity):
                         print(f"[{client_name}] account-specific permanent block: @{grup_name}")
                         return {'status': 'skipped', 'reason': 'account_group_block'}
+
+                    # A Render restart can lose the local checkpoint while
+                    # Firestore is unavailable. Check recent Telegram history
+                    # before sending so a group reached in the last hour is
+                    # never hit again after a deploy.
+                    if blast_account_id:
+                        try:
+                            recent_messages = await client.get_messages(entity, limit=20)
+                            if any(
+                                is_recent_message_from_account(message, blast_account_id)
+                                for message in recent_messages or []
+                            ):
+                                print(
+                                    f"[{client_name}] 🛡️ @{grup_name} son saatte bu hesaptan mesaj almış; "
+                                    "checkpoint kaybına karşı tekrar atlanıyor."
+                                )
+                                set_cooldown(grup_name, client_name, entity)
+                                return {'status': 'skipped', 'reason': 'recent_message_guard'}
+                        except Exception as guard_error:
+                            # A read failure should not stop the account; the
+                            # normal local/distributed claims still apply.
+                            print(
+                                f"[{client_name}] ⚠️ @{grup_name} geçmiş mesaj koruması okunamadı: "
+                                f"{type(guard_error).__name__}"
+                            )
 
                     lock_claimed = False
                     distributed_claim_id = None
