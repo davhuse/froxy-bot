@@ -3734,6 +3734,7 @@ async def main():
 
     async def run_worker(client, client_name, joined_dialogs):
         blast_account_id = joined_dialogs.get("id") if isinstance(joined_dialogs, dict) else None
+        print(f"[{client_name}] 🛡️ Blast replay guard hesap ID: {blast_account_id or 'yok'}")
         account_pending_invites = load_pending_invites(client_name)
         # Bio is user-managed. Do not overwrite the KeyVadi profile on every
         # worker restart or blast cycle.
@@ -4397,7 +4398,7 @@ async def main():
                     # never hit again after a deploy.
                     if blast_account_id:
                         try:
-                            recent_messages = await client.get_messages(entity, limit=20)
+                            recent_messages = await client.get_messages(entity, limit=100)
                             if any(
                                 is_recent_message_from_account(message, blast_account_id)
                                 for message in recent_messages or []
