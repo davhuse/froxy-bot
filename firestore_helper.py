@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import os
+import sqlite3
 import threading
 import time
 import urllib.error
@@ -33,6 +34,76 @@ DOCUMENT_PREFIX = (
 
 _TOKEN_LOCK = threading.Lock()
 _GOOGLE_CREDENTIALS = None
+_LOCAL_LOCK = threading.Lock()
+
+
+def _local_db_path():
+    return os.environ.get("RUNTIME_CLAIM_DB", "runtime_claims.db").strip() or "runtime_claims.db"
+
+
+def _local_connect():
+    connection = sqlite3.connect(_local_db_path(), timeout=10)
+    connection.execute(
+        "CREATE TABLE IF NOT EXISTS runtime_claims ("
+        "doc_id TEXT PRIMARY KEY, fields TEXT NOT NULL, updated_at REAL NOT NULL)"
+    )
+    return connection
+
+
+def _local_get(doc_id):
+    try:
+        with _LOCAL_LOCK:
+            connection = _local_connect()
+            row = connection.execute(
+                "SELECT fields FROM runtime_claims WHERE doc_id = ?", (doc_id,)
+            ).fetchone()
+            connection.close()
+        return json.loads(row[0]) if row else None
+    except (OSError, sqlite3.Error, ValueError, TypeError):
+        return None
+
+
+def _local_claim(doc_id, fields_dict):
+    try:
+        with _LOCAL_LOCK:
+            connection = _local_connect()
+            cursor = connection.execute(
+                "INSERT OR IGNORE INTO runtime_claims(doc_id, fields, updated_at) VALUES (?, ?, ?)",
+                (doc_id, json.dumps(fields_dict or {}, ensure_ascii=False), time.time()),
+            )
+            connection.commit()
+            connection.close()
+            return cursor.rowcount == 1
+    except (OSError, sqlite3.Error, TypeError):
+        return None
+
+
+def _local_set(doc_id, fields_dict):
+    try:
+        with _LOCAL_LOCK:
+            connection = _local_connect()
+            connection.execute(
+                "INSERT INTO runtime_claims(doc_id, fields, updated_at) VALUES (?, ?, ?) "
+                "ON CONFLICT(doc_id) DO UPDATE SET fields=excluded.fields, updated_at=excluded.updated_at",
+                (doc_id, json.dumps(fields_dict or {}, ensure_ascii=False), time.time()),
+            )
+            connection.commit()
+            connection.close()
+        return True
+    except (OSError, sqlite3.Error, TypeError):
+        return False
+
+
+def _local_delete(doc_id):
+    try:
+        with _LOCAL_LOCK:
+            connection = _local_connect()
+            connection.execute("DELETE FROM runtime_claims WHERE doc_id = ?", (doc_id,))
+            connection.commit()
+            connection.close()
+        return True
+    except (OSError, sqlite3.Error):
+        return False
 
 
 def _service_account_credentials():
@@ -143,7 +214,7 @@ def get_document_with_meta(doc_id, quiet=False):
 
 def get_document(doc_id):
     fields, _ = get_document_with_meta(doc_id)
-    return fields
+    return fields if fields is not None else _local_get(doc_id)
 
 
 def set_document(doc_id, fields_dict):
@@ -153,10 +224,13 @@ def set_document(doc_id, fields_dict):
             method="PATCH",
             payload={"fields": _fields_to_firestore(fields_dict)},
         ) as response:
-            return response.status in (200, 201)
+            ok = response.status in (200, 201)
+            if ok:
+                _local_set(doc_id, fields_dict)
+            return ok
     except Exception as exc:
         print(f"Firestore save error for doc {doc_id}: {type(exc).__name__}")
-        return False
+        return _local_set(doc_id, fields_dict)
 
 
 def _commit(write, quiet=False):
@@ -177,13 +251,24 @@ def _commit(write, quiet=False):
 
 def claim_document(doc_id, fields_dict=None, quiet=False):
     """Atomically create a document; False means another worker claimed it."""
-    return _commit({
+    # Keep a local create-only mirror. It prevents duplicates during a
+    # Firestore outage and also stops a recovered Firestore instance from
+    # creating a second claim for a key already reserved locally.
+    if _local_get(doc_id) is not None:
+        return False
+    result = _commit({
         "update": {
             "name": f"{DOCUMENT_PREFIX}/{doc_id}",
             "fields": _fields_to_firestore(fields_dict or {}),
         },
         "currentDocument": {"exists": False},
     }, quiet=quiet)
+    if result is True:
+        _local_set(doc_id, fields_dict or {})
+        return True
+    if result is None:
+        return _local_claim(doc_id, fields_dict or {})
+    return result
 
 
 def compare_and_set_document(doc_id, fields_dict, update_time, quiet=False):
@@ -202,20 +287,23 @@ def delete_document(doc_id, update_time=None):
     write = {"delete": f"{DOCUMENT_PREFIX}/{doc_id}"}
     if update_time:
         write["currentDocument"] = {"updateTime": update_time}
-        return _commit(write)
+        result = _commit(write)
+        _local_delete(doc_id)
+        return result
     try:
         with _request(
             f"{BASE_URL}/{urllib.parse.quote(doc_id)}", method="DELETE"
         ) as response:
+            _local_delete(doc_id)
             return response.status in (200, 204)
     except urllib.error.HTTPError as exc:
         if exc.code == 404:
             return True
         print(f"Firestore delete error for doc {doc_id}: HTTP {exc.code}")
-        return False
+        return _local_delete(doc_id)
     except Exception as exc:
         print(f"Firestore delete error for doc {doc_id}: {type(exc).__name__}")
-        return False
+        return _local_delete(doc_id)
 
 
 def acquire_lease(doc_id, owner_id, ttl_seconds=120):
