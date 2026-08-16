@@ -14,6 +14,7 @@ import re
 import secrets
 import threading
 import time
+import urllib.error
 from urllib.parse import parse_qsl
 import urllib.parse
 import urllib.request
@@ -25,7 +26,7 @@ import pyotp
 from sqlalchemy import (
     Boolean, Column, DateTime, ForeignKey, Integer, LargeBinary, MetaData,
     String, Table, Text, UniqueConstraint, and_, create_engine, func, insert,
-    select, update,
+    inspect, select, text, update,
 )
 from sqlalchemy.engine import make_url
 from sqlalchemy.exc import ArgumentError, IntegrityError
@@ -35,6 +36,9 @@ la = Blueprint("lisansarena_store", __name__)
 metadata = MetaData()
 # Temporary 1 TL package for the real-payment release smoke test.
 TOPUP_AMOUNTS = (100, 10000, 20000, 50000, 100000, 200000, 500000)
+CUSTOM_TOPUP_MIN_CENTS = 1000
+CUSTOM_TOPUP_MAX_CENTS = 5_000_000
+SHOPIER_API = "https://api.shopier.com/v1"
 
 users = Table(
     "la_users", metadata,
@@ -101,6 +105,9 @@ topup_intents = Table(
     Column("amount_cents", Integer, nullable=False),
     Column("shopier_product_id", String(64)),
     Column("status", String(24), nullable=False),
+    Column("topup_mode", String(16), nullable=False, default="package"),
+    Column("listing_state", String(24), nullable=False, default="not_applicable"),
+    Column("closed_at", DateTime(timezone=True)),
     Column("expires_at", DateTime(timezone=True), nullable=False),
     Column("created_at", DateTime(timezone=True), nullable=False),
 )
@@ -328,6 +335,7 @@ class LisansArenaStore:
             raise StoreUnavailable("Stok anahtarı 128/192/256 bit olmalı")
         self.aes = AESGCM(key)
         metadata.create_all(self.engine)
+        self._migrate_topup_intents_schema()
         self._install_ledger_guards()
         self.import_legacy_drafts()
         self.backfill_product_display()
@@ -348,6 +356,30 @@ class LisansArenaStore:
         with self.engine.begin() as conn:
             for statement in statements:
                 conn.execute(text(statement))
+
+    def _migrate_topup_intents_schema(self):
+        """Apply the small additive migration required by custom top-ups.
+
+        The project intentionally has no migration runner.  These columns are
+        nullable/defaulted so an existing production database can be upgraded
+        safely during boot, while freshly-created databases get them from the
+        table definition above.
+        """
+        existing = {
+            column["name"]
+            for column in inspect(self.engine).get_columns("la_topup_intents")
+        }
+        additions = (
+            ("topup_mode", "VARCHAR(16) NOT NULL DEFAULT 'package'"),
+            ("listing_state", "VARCHAR(24) NOT NULL DEFAULT 'not_applicable'"),
+            ("closed_at", "TIMESTAMP"),
+        )
+        with self.engine.begin() as conn:
+            for name, definition in additions:
+                if name not in existing:
+                    conn.execute(text(
+                        f"ALTER TABLE la_topup_intents ADD COLUMN {name} {definition}"
+                    ))
 
     def import_legacy_drafts(self):
         """Synchronize the full Mini App catalogue independently of Shopier.
@@ -909,9 +941,146 @@ class LisansArenaStore:
                 ))
         return language
 
-    def create_topup(self, user_id, amount_cents):
-        amount_cents = int(amount_cents)
-        if amount_cents not in TOPUP_AMOUNTS:
+    def _shopier_api(self, path, method="GET", payload=None):
+        """Call Shopier without ever returning credential/provider internals to users."""
+        token = os.environ.get("SHOPIER_LISANSARENA_ACCESS_TOKEN", "").strip()
+        if not token:
+            raise StoreUnavailable("Shopier ödeme bağlantısı yapılandırılmadı")
+        data = json.dumps(payload, ensure_ascii=False).encode("utf-8") if payload is not None else None
+        api_request = urllib.request.Request(
+            f"{SHOPIER_API}{path}", data=data, method=method,
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                "User-Agent": "LisansArena-Store/1.0",
+            },
+        )
+        try:
+            with urllib.request.urlopen(api_request, timeout=30) as response:
+                raw = response.read()
+        except urllib.error.HTTPError as exc:
+            detail = exc.read().decode("utf-8", "replace")[:500]
+            raise RuntimeError(f"Shopier API {exc.code}: {detail}") from exc
+        return json.loads(raw.decode("utf-8")) if raw else {}
+
+    @staticmethod
+    def _shopier_rows(payload):
+        if isinstance(payload, list):
+            return payload
+        return payload.get("data") or payload.get("products") or []
+
+    def _recover_custom_listing(self, code):
+        """Find a listing after an ambiguous create timeout; never POST again."""
+        try:
+            rows = self._shopier_rows(self._shopier_api(
+                "/products?limit=50&customListing=true"
+            ))
+        except Exception:
+            return None
+        for product in rows:
+            title = str(product.get("title") or "")
+            product_id = str(product.get("id") or "")
+            if product_id and code in title:
+                return product_id
+        return None
+
+    def _close_shopier_listing(self, product_id):
+        self._shopier_api(f"/products/{urllib.parse.quote(str(product_id), safe='')}", "PUT", {
+            "stockQuantity": 0,
+        })
+
+    @staticmethod
+    def _customer_first_name(display_name):
+        first_name = re.sub(r"[\r\n\t]+", " ", str(display_name or "")).strip().split(" ", 1)[0]
+        return first_name[:40] or "Telegram müşterisi"
+
+    def _insert_custom_topup_intent(self, user_id, amount_cents):
+        now = utcnow()
+        expires_at = now + timedelta(hours=1)
+        with self.engine.begin() as conn:
+            customer = conn.execute(select(users).where(users.c.id == int(user_id))).mappings().first()
+            if not customer:
+                raise ValueError("Kullanıcı bulunamadı")
+            for _ in range(5):
+                code = f"LA-{secrets.token_hex(3).upper()}"
+                try:
+                    conn.execute(insert(topup_intents).values(
+                        code=code, user_id=int(user_id), amount_cents=amount_cents,
+                        status="creating", topup_mode="custom", listing_state="creating",
+                        expires_at=expires_at, created_at=now,
+                    ))
+                    return code, self._customer_first_name(customer["display_name"]), now, expires_at
+                except IntegrityError:
+                    continue
+        raise StoreUnavailable("Özel ödeme kodu oluşturulamadı")
+
+    def _create_custom_topup(self, user_id, amount_cents):
+        if not CUSTOM_TOPUP_MIN_CENTS <= amount_cents <= CUSTOM_TOPUP_MAX_CENTS or amount_cents % 100:
+            raise ValueError("Özel tutar 10 TL ile 50.000 TL arasında tam TL olmalı")
+        code, first_name, now, expires_at = self._insert_custom_topup_intent(user_id, amount_cents)
+        title = f"LisansArena Özel Bakiye — {first_name} — {code}"
+        payload = {
+            "title": title,
+            "description": (
+                f"{first_name} için {money(amount_cents)} LisansArena bakiye yüklemesi.\n"
+                f"Destek kodu: {code}\n"
+                "Bu ilan tek kullanımlıktır ve 1 saat geçerlidir. Sipariş notuna kod yazmak zorunlu değildir."
+            ),
+            "type": "digital",
+            "priceData": {
+                "currency": "TRY", "price": f"{Decimal(amount_cents) / 100:.2f}",
+                "discount": False, "discountedPrice": f"{Decimal(amount_cents) / 100:.2f}",
+                "shippingPrice": "0.00",
+            },
+            "stockQuantity": 1,
+            "shippingPayer": "sellerPays",
+            "customListing": True,
+            "customNote": f"İsteğe bağlı destek kodu: {code}",
+        }
+        product_id = ""
+        try:
+            response = self._shopier_api("/products", "POST", payload)
+            product_id = str(response.get("id") or "")
+            if not product_id:
+                raise RuntimeError("Shopier ürün kimliği döndürmedi")
+        except Exception as exc:
+            product_id = self._recover_custom_listing(code) or ""
+            if not product_id:
+                with self.engine.begin() as conn:
+                    conn.execute(update(topup_intents).where(topup_intents.c.code == code).values(
+                        status="creation_failed", listing_state="unknown",
+                    ))
+                raise StoreUnavailable("Özel ödeme ilanı şu an oluşturulamadı; lütfen tekrar deneyin") from exc
+
+        try:
+            with self.engine.begin() as conn:
+                conn.execute(update(topup_intents).where(topup_intents.c.code == code).values(
+                    shopier_product_id=product_id, status="pending", listing_state="open",
+                ))
+        except Exception as exc:
+            try:
+                self._close_shopier_listing(product_id)
+            except Exception:
+                pass
+            raise StoreUnavailable("Özel ödeme ilanı güvenle kaydedilemedi; lütfen tekrar deneyin") from exc
+        return {
+            "code": code, "amount": money(amount_cents),
+            "expires_at": expires_at.isoformat(), "payment_ready": True,
+            "shopier_product_id": product_id,
+            "shopier_url": f"https://www.shopier.com/lisansarena/{product_id}",
+            "mode": "custom", "note_required": False,
+        }
+
+    def create_topup(self, user_id, amount_cents, mode="package"):
+        try:
+            amount_cents = int(amount_cents)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("Geçersiz bakiye tutarı") from exc
+        mode = str(mode or "package").strip().lower()
+        if mode == "custom":
+            return self._create_custom_topup(user_id, amount_cents)
+        if mode != "package" or amount_cents not in TOPUP_AMOUNTS:
             raise ValueError("Geçersiz bakiye paketi")
         package_map = json.loads(os.environ.get("LISANSARENA_SHOPIER_TOPUP_PRODUCTS", "{}") or "{}")
         mapping_path = os.path.join(os.path.dirname(__file__), "lisansarena_topup_products.json")
@@ -927,6 +1096,7 @@ class LisansArenaStore:
             conn.execute(insert(topup_intents).values(
                 code=code, user_id=user_id, amount_cents=amount_cents,
                 shopier_product_id=product_id or None, status="pending",
+                topup_mode="package", listing_state="not_applicable",
                 expires_at=now + timedelta(hours=24), created_at=now,
             ))
         return {
@@ -935,6 +1105,7 @@ class LisansArenaStore:
             "payment_ready": True,
             "shopier_product_id": product_id,
             "shopier_url": f"https://www.shopier.com/lisansarena/{product_id}",
+            "mode": "package", "note_required": True,
         }
 
     def inspect_topup_code(self, code):
@@ -1015,6 +1186,9 @@ class LisansArenaStore:
                 "amount_cents": intent["amount_cents"],
                 "shopier_product_id": intent["shopier_product_id"],
                 "status": intent["status"],
+                "topup_mode": intent["topup_mode"],
+                "listing_state": intent["listing_state"],
+                "closed_at": intent["closed_at"].isoformat() if intent["closed_at"] else None,
                 "expires_at": intent["expires_at"].isoformat() if intent["expires_at"] else None,
             },
             "balance_cents": sum(int(row["amount_cents"] or 0) for row in ledger),
@@ -1121,6 +1295,7 @@ class LisansArenaStore:
 
     def process_webhooks(self, limit=20):
         processed = 0
+        custom_listings_to_close = []
         with self.engine.begin() as conn:
             events = conn.execute(select(shopier_orders).where(shopier_orders.c.status.in_(("pending", "refund_pending"))).limit(limit).with_for_update(skip_locked=True)).mappings().all()
             for event in events:
@@ -1148,9 +1323,6 @@ class LisansArenaStore:
                     conn.execute(update(shopier_orders).where(shopier_orders.c.id == event["id"]).values(status=status, processed_at=utcnow()))
                     processed += 1
                     continue
-                intent = None
-                if event["topup_code"]:
-                    intent = conn.execute(select(topup_intents).where(topup_intents.c.code == event["topup_code"]).with_for_update()).mappings().first()
                 status = "manual_review"
                 payload = json.loads(event["payload"])
                 line_items = payload.get("lineItems") or payload.get("line_items") or payload.get("items") or []
@@ -1160,6 +1332,22 @@ class LisansArenaStore:
                     received_quantity = int(first_item.get("quantity", 1))
                 except (TypeError, ValueError):
                     received_quantity = 0
+                code_intent = None
+                if event["topup_code"]:
+                    code_intent = conn.execute(select(topup_intents).where(
+                        topup_intents.c.code == event["topup_code"]
+                    ).with_for_update()).mappings().first()
+                product_intent = None
+                if received_product_id:
+                    product_intent = conn.execute(select(topup_intents).where(and_(
+                        topup_intents.c.shopier_product_id == received_product_id,
+                        topup_intents.c.topup_mode == "custom",
+                    )).with_for_update()).mappings().first()
+                # A custom listing is unique to one customer, so its product ID
+                # is authoritative. A supplied but different LA code is a
+                # deliberate mismatch and must go to review instead of credit.
+                note_conflicts = bool(product_intent and code_intent and product_intent["id"] != code_intent["id"])
+                intent = product_intent or code_intent
                 expires_at = intent["expires_at"] if intent else None
                 if expires_at is not None and expires_at.tzinfo is None:
                     expires_at = expires_at.replace(tzinfo=timezone.utc)
@@ -1168,7 +1356,13 @@ class LisansArenaStore:
                     received_product_id == str(intent["shopier_product_id"]) and
                     received_quantity == 1
                 )
-                if intent and intent["status"] == "pending" and expires_at > utcnow() and intent["amount_cents"] == event["amount_cents"] and product_matches:
+                code_required = bool(intent and intent["topup_mode"] != "custom")
+                code_matches = bool(intent and event["topup_code"] == intent["code"])
+                if (
+                    intent and intent["status"] == "pending" and expires_at > utcnow() and
+                    intent["amount_cents"] == event["amount_cents"] and product_matches and
+                    not note_conflicts and (not code_required or code_matches)
+                ):
                     try:
                         with conn.begin_nested():
                             conn.execute(insert(wallet_ledger).values(
@@ -1176,13 +1370,68 @@ class LisansArenaStore:
                                 entry_type="topup", reference_type="shopier_order",
                                 reference_id=event["order_number"], created_at=utcnow(),
                             ))
-                        conn.execute(update(topup_intents).where(topup_intents.c.id == intent["id"]).values(status="completed"))
+                        intent_values = {"status": "completed"}
+                        if intent["topup_mode"] == "custom":
+                            intent_values["listing_state"] = "closing"
+                            custom_listings_to_close.append(str(intent["shopier_product_id"]))
+                        conn.execute(update(topup_intents).where(topup_intents.c.id == intent["id"]).values(**intent_values))
                         status = "credited"
                     except IntegrityError:
                         status = "duplicate"
                 conn.execute(update(shopier_orders).where(shopier_orders.c.id == event["id"]).values(status=status, processed_at=utcnow()))
                 processed += 1
+        for product_id in custom_listings_to_close:
+            self.close_due_custom_topups(product_ids={product_id})
         return processed
+
+    def close_due_custom_topups(self, product_ids=None):
+        """Close paid or expired one-use custom listings without deleting audit data."""
+        now = utcnow()
+        requested = {str(product_id) for product_id in (product_ids or set()) if product_id}
+        with self.engine.begin() as conn:
+            conditions = [topup_intents.c.topup_mode == "custom"]
+            if requested:
+                conditions.append(topup_intents.c.shopier_product_id.in_(requested))
+                conditions.append(topup_intents.c.status.in_(("completed", "expired")))
+                conditions.append(topup_intents.c.listing_state != "closed")
+            else:
+                conditions.append(
+                    ((topup_intents.c.status == "pending") & (topup_intents.c.expires_at <= now)) |
+                    ((topup_intents.c.status.in_(("completed", "expired"))) & (topup_intents.c.listing_state != "closed"))
+                )
+            rows = conn.execute(select(topup_intents).where(and_(*conditions)).with_for_update(skip_locked=True)).mappings().all()
+            close_rows = []
+            for row in rows:
+                expires_at = row["expires_at"]
+                if expires_at is not None and expires_at.tzinfo is None:
+                    expires_at = expires_at.replace(tzinfo=timezone.utc)
+                if row["status"] == "pending" and expires_at <= now:
+                    conn.execute(update(topup_intents).where(topup_intents.c.id == row["id"]).values(
+                        status="expired", listing_state="closing", closed_at=now,
+                    ))
+                elif row["listing_state"] != "closed":
+                    conn.execute(update(topup_intents).where(topup_intents.c.id == row["id"]).values(
+                        listing_state="closing", closed_at=row["closed_at"] or now,
+                    ))
+                if row["shopier_product_id"]:
+                    close_rows.append((row["id"], str(row["shopier_product_id"])))
+
+        closed = 0
+        for intent_id, product_id in close_rows:
+            try:
+                self._close_shopier_listing(product_id)
+            except Exception:
+                with self.engine.begin() as conn:
+                    conn.execute(update(topup_intents).where(topup_intents.c.id == intent_id).values(
+                        listing_state="close_failed"
+                    ))
+                continue
+            with self.engine.begin() as conn:
+                conn.execute(update(topup_intents).where(topup_intents.c.id == intent_id).values(
+                    listing_state="closed", closed_at=now,
+                ))
+            closed += 1
+        return closed
 
     def expire_manual_orders(self):
         with self.engine.begin() as conn:
@@ -1387,7 +1636,10 @@ def api_wallet():
 @customer_required
 def api_topups():
     try:
-        return jsonify(get_store().create_topup(session["la_user_id"], (request.get_json(silent=True) or {}).get("amount_cents")))
+        data = request.get_json(silent=True) or {}
+        return jsonify(get_store().create_topup(
+            session["la_user_id"], data.get("amount_cents"), data.get("mode", "package")
+        ))
     except (ValueError, StoreUnavailable) as exc:
         return _json_error(exc, 503 if isinstance(exc, StoreUnavailable) else 400)
 
@@ -1659,6 +1911,7 @@ def start_store_worker():
                     interval = max(60, int(os.environ.get("LISANSARENA_RECONCILE_SECONDS", "300")))
                     next_reconciliation = now + interval
                 store.process_webhooks()
+                store.close_due_custom_topups()
                 store.expire_manual_orders()
             except Exception as exc:
                 print(f"[LisansArena Store] worker: {type(exc).__name__}: {exc}")

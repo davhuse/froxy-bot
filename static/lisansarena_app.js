@@ -237,32 +237,40 @@
       root.appendChild(button);
     });
   };
-  const createTopup = async () => {
-    if (!state.selectedTopup) return;
-    const button = byId("topupContinue"); button.disabled = true; button.textContent = "Bağlantı hazırlanıyor…";
+  const renderTopupResult = (result) => {
+    const root = byId("topupResult"); root.replaceChildren(); root.hidden = false;
+    addText(root, "span", "ÖDEME HAZIR", "payment-ready");
+    addText(root, "strong", `Sipariş kodun: ${result.code}`, "payment-code");
+    const custom = result.mode === "custom";
+    addText(root, "p", custom
+      ? `${result.amount} tutarındaki özel ilan yalnız sana ait. Sipariş notuna kod yazman zorunlu değil.`
+      : `${result.amount} bakiye yüklemesi için aşağıdaki kodu Shopier sipariş notuna aynen ekle.`);
+    const actions = document.createElement("div"); actions.className = "payment-result-actions";
+    const copy = addText(actions, "button", "Kodu kopyala", "copy-code"); copy.type = "button";
+    copy.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(result.code); copy.textContent = "Kopyalandı ✓"; haptic("success"); }
+      catch (_) { setNotice(`Kodu kopyalayamadık: ${result.code}`, true); }
+    });
+    const link = addText(actions, "a", "Shopier'de ödemeye geç", "shopier-payment");
+    link.href = result.shopier_url; link.rel = "noopener noreferrer";
+    link.addEventListener("click", (event) => {
+      watchTopup();
+      if (tg?.openLink) { event.preventDefault(); tg.openLink(result.shopier_url); }
+    });
+    root.appendChild(actions);
+    addText(root, "p", custom
+      ? "Özel ilan 1 saat geçerlidir. Ödeme doğrulandıktan sonra bakiye en geç 10 dakika içinde otomatik güncellenir."
+      : "Kod 24 saat geçerlidir. Ödeme doğrulandıktan sonra bakiye en geç 10 dakika içinde otomatik güncellenir.", "payment-confirmation-note");
+  };
+  const createTopup = async (mode, amount, button) => {
+    if (!amount) return;
+    const originalText = button.textContent; button.disabled = true; button.textContent = "Bağlantı hazırlanıyor…";
     try {
-      const result = await api("/api/la/topups", { method: "POST", body: JSON.stringify({ amount_cents: state.selectedTopup * 100 }) });
-      const root = byId("topupResult"); root.replaceChildren(); root.hidden = false;
-      addText(root, "span", "ÖDEME HAZIR", "payment-ready");
-      addText(root, "strong", `Sipariş kodun: ${result.code}`, "payment-code");
-      addText(root, "p", `${result.amount} bakiye yüklemesi için aşağıdaki kodu Shopier sipariş notuna aynen ekle.`);
-      const actions = document.createElement("div"); actions.className = "payment-result-actions";
-      const copy = addText(actions, "button", "Kodu kopyala", "copy-code"); copy.type = "button";
-      copy.addEventListener("click", async () => {
-        try { await navigator.clipboard.writeText(result.code); copy.textContent = "Kopyalandı ✓"; haptic("success"); }
-        catch (_) { setNotice(`Kodu kopyalayamadık: ${result.code}`, true); }
-      });
-      const link = addText(actions, "a", "Shopier'de ödemeye geç", "shopier-payment");
-      link.href = result.shopier_url; link.rel = "noopener noreferrer";
-      link.addEventListener("click", (event) => {
-        watchTopup();
-        if (tg?.openLink) { event.preventDefault(); tg.openLink(result.shopier_url); }
-      });
-      root.appendChild(actions);
-      addText(root, "p", "Kod 24 saat geçerlidir. Ödeme doğrulandıktan sonra bakiye en geç 10 dakika içinde otomatik güncellenir.", "payment-confirmation-note");
+      const result = await api("/api/la/topups", { method: "POST", body: JSON.stringify({ amount_cents: amount * 100, mode }) });
+      renderTopupResult(result);
       haptic("success");
     } catch (error) { setNotice(error.message, true); }
-    finally { button.disabled = false; button.textContent = "Ödeme adımına geç"; }
+    finally { button.disabled = false; button.textContent = originalText; }
   };
 
   const loadOrders = async () => {
@@ -348,7 +356,15 @@
   byId("search").addEventListener("input", renderProducts);
   byId("openCart").addEventListener("click", () => openDialog("cartDialog"));
   byId("checkoutButton").addEventListener("click", checkout);
-  byId("topupContinue").addEventListener("click", createTopup);
+  byId("topupContinue").addEventListener("click", () => createTopup("package", state.selectedTopup, byId("topupContinue")));
+  byId("customTopupAmount").addEventListener("input", () => {
+    const amount = Number(byId("customTopupAmount").value);
+    byId("customTopupContinue").disabled = !Number.isInteger(amount) || amount < 10 || amount > 50000;
+  });
+  byId("customTopupContinue").addEventListener("click", () => {
+    const amount = Number(byId("customTopupAmount").value);
+    createTopup("custom", amount, byId("customTopupContinue"));
+  });
   byId("ticketSubmit").addEventListener("click", submitTicket);
   byId("quantityMinus").addEventListener("click", () => { state.dialogQuantity = Math.max(1, state.dialogQuantity - 1); byId("dialogQuantity").textContent = state.dialogQuantity; haptic(); });
   byId("quantityPlus").addEventListener("click", () => { state.dialogQuantity = Math.min(10, state.dialogQuantity + 1); byId("dialogQuantity").textContent = state.dialogQuantity; haptic(); });

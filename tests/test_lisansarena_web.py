@@ -98,8 +98,10 @@ class LisansArenaWebTests(unittest.TestCase):
         script_response.close()
         self.assertIn("cartBar", html)
         self.assertIn("topupContinue", html)
+        self.assertIn("customTopupAmount", html)
         self.assertIn("en geç 10 dakika", html)
         self.assertIn("selectionChanged", script)
+        self.assertIn('createTopup("custom"', script)
         self.assertIn("/api/la/cart/checkout", script)
 
     def test_webhook_rejects_invalid_signature(self):

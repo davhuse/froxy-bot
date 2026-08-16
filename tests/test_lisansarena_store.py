@@ -239,6 +239,85 @@ class LisansArenaStoreTests(unittest.TestCase):
         self.assertEqual(result["amount"], "1,00 TL")
         self.assertTrue(result["shopier_url"].endswith("/49853325"))
 
+    def test_custom_topup_creates_a_coverless_one_use_listing(self):
+        with patch.object(self.store, "_shopier_api", return_value={"id": "custom-750"}) as api:
+            result = self.store.create_topup(self.user_id, 75000, "custom")
+        self.assertEqual(result["mode"], "custom")
+        self.assertFalse(result["note_required"])
+        self.assertTrue(result["shopier_url"].endswith("/custom-750"))
+        payload = api.call_args.args[2]
+        self.assertNotIn("media", payload)
+        self.assertEqual(payload["stockQuantity"], 1)
+        self.assertTrue(payload["customListing"])
+        self.assertIn("Test", payload["title"])
+        self.assertIn(result["code"], payload["description"])
+        with self.store.engine.connect() as conn:
+            intent = conn.execute(select(store_module.topup_intents).where(
+                store_module.topup_intents.c.code == result["code"]
+            )).mappings().one()
+        self.assertEqual(intent["topup_mode"], "custom")
+        self.assertEqual(intent["listing_state"], "open")
+        self.assertEqual(intent["shopier_product_id"], "custom-750")
+
+    def test_custom_topup_matches_product_without_note_and_rejects_wrong_note(self):
+        with self.store.engine.begin() as conn:
+            conn.execute(insert(store_module.topup_intents).values(
+                code="LA-C0FFEE", user_id=self.user_id, amount_cents=123400,
+                shopier_product_id="custom-1234", status="pending", topup_mode="custom",
+                listing_state="open", expires_at=store_module.utcnow() + timedelta(hours=1),
+                created_at=store_module.utcnow(),
+            ))
+        with patch.object(self.store, "_close_shopier_listing"):
+            self.store.ingest_webhook({
+                "id": "custom-paid", "paymentStatus": "paid", "total": "1234.00",
+                "note": "", "lineItems": [{"productId": "custom-1234", "quantity": 1}],
+            }, "custom-webhook")
+            self.assertEqual(self.store.process_webhooks(), 1)
+        with self.store.engine.connect() as conn:
+            self.assertEqual(self.store.balance(conn, self.user_id), 123400)
+            intent = conn.execute(select(store_module.topup_intents).where(
+                store_module.topup_intents.c.code == "LA-C0FFEE"
+            )).mappings().one()
+        self.assertEqual(intent["status"], "completed")
+        self.assertEqual(intent["listing_state"], "closed")
+
+        with self.store.engine.begin() as conn:
+            conn.execute(insert(store_module.topup_intents).values(
+                code="LA-ABC123", user_id=self.user_id, amount_cents=123400,
+                shopier_product_id="custom-other", status="pending", topup_mode="custom",
+                listing_state="open", expires_at=store_module.utcnow() + timedelta(hours=1),
+                created_at=store_module.utcnow(),
+            ))
+        self.store.ingest_webhook({
+            "id": "custom-wrong-note", "paymentStatus": "paid", "total": "1234.00",
+            "note": "LA-ABC123", "lineItems": [{"productId": "custom-1234", "quantity": 1}],
+        }, "custom-wrong-note")
+        self.assertEqual(self.store.process_webhooks(), 1)
+        with self.store.engine.connect() as conn:
+            self.assertEqual(self.store.balance(conn, self.user_id), 123400)
+
+    def test_custom_topup_range_and_expiry_close_listing(self):
+        with self.assertRaises(ValueError):
+            self.store.create_topup(self.user_id, 999, "custom")
+        with self.assertRaises(ValueError):
+            self.store.create_topup(self.user_id, 5_000_100, "custom")
+        with self.store.engine.begin() as conn:
+            conn.execute(insert(store_module.topup_intents).values(
+                code="LA-DEAD01", user_id=self.user_id, amount_cents=1000,
+                shopier_product_id="custom-expired", status="pending", topup_mode="custom",
+                listing_state="open", expires_at=store_module.utcnow() - timedelta(seconds=1),
+                created_at=store_module.utcnow(),
+            ))
+        with patch.object(self.store, "_close_shopier_listing") as close:
+            self.assertEqual(self.store.close_due_custom_topups(), 1)
+        close.assert_called_once_with("custom-expired")
+        with self.store.engine.connect() as conn:
+            intent = conn.execute(select(store_module.topup_intents).where(
+                store_module.topup_intents.c.code == "LA-DEAD01"
+            )).mappings().one()
+        self.assertEqual(intent["status"], "expired")
+        self.assertEqual(intent["listing_state"], "closed")
+
     def test_api_reconciliation_filters_unpaid_and_is_idempotent(self):
         paid = {
             "id": "order-api-1", "paymentStatus": "paid", "total": "100.00",

@@ -53,6 +53,13 @@
       <div class="section-heading"><span class="section-icon">₺</span><div><h2>Bakiye yükle</h2><p>Önce paketi seç, sonra ödeme bağlantısını oluştur.</p></div></div>
       <div id="topupPackages" class="packages" role="radiogroup" aria-label="Bakiye paketleri"></div>
       <button id="topupContinue" class="primary payment-action" type="button" disabled>Ödeme adımına geç</button>
+      <div class="custom-topup">
+        <div><strong>Özel tutar yükle</strong><span>10 TL – 50.000 TL arasında tam tutar seç.</span></div>
+        <label for="customTopupAmount">TL
+          <input id="customTopupAmount" type="number" min="10" max="50000" step="1" inputmode="numeric" placeholder="Örn. 750" autocomplete="off">
+        </label>
+        <button id="customTopupContinue" class="secondary payment-action" type="button" disabled>Özel ödeme bağlantısı oluştur</button>
+      </div>
       <p class="payment-note"><strong>Not:</strong> Ödemeler doğrulamaya bağlı olarak en geç 10 dakika içinde bakiyenize yansır.</p>
       <div id="topupResult" class="result" hidden></div>
       <div class="section-heading history-heading"><span class="section-icon">↺</span><div><h2>Bakiye geçmişi</h2><p>Yükleme ve harcama hareketlerin.</p></div></div>
