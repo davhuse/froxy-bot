@@ -246,7 +246,7 @@ class LisansArenaStoreTests(unittest.TestCase):
         self.assertFalse(result["note_required"])
         self.assertTrue(result["shopier_url"].endswith("/custom-750"))
         payload = api.call_args.args[2]
-        self.assertNotIn("media", payload)
+        self.assertEqual(payload["media"], [])
         self.assertEqual(payload["stockQuantity"], 1)
         self.assertTrue(payload["customListing"])
         self.assertIn("Test", payload["title"])

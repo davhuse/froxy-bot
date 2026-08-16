@@ -1028,6 +1028,9 @@ class LisansArenaStore:
                 "Bu ilan tek kullanımlıktır ve 1 saat geçerlidir. Sipariş notuna kod yazmak zorunlu değildir."
             ),
             "type": "digital",
+            # Shopier's schema requires the field, but an empty list keeps
+            # the customer-specific listing intentionally coverless.
+            "media": [],
             "priceData": {
                 "currency": "TRY", "price": f"{Decimal(amount_cents) / 100:.2f}",
                 "discount": False, "discountedPrice": f"{Decimal(amount_cents) / 100:.2f}",
