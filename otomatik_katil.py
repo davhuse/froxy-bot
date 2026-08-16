@@ -3181,7 +3181,13 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
             return
 
         generic_reply_claim_id = None
-        if not matched_products and matched_desc == "LisansArena destek yönlendirmesi":
+        if not matched_products and matched_desc in {
+            "LisansArena destek yönlendirmesi",
+            "İnsan desteği gerekli",
+        }:
+            # A no-match clarification is still an automatic reply.  Keep it
+            # one-time per account/customer just like product cards; otherwise
+            # every sales-intent follow-up can create a reply loop.
             generic_reply_claim_id = await claim_customer_auto_reply(
                 client_name, sender_id, event.chat_id, "clarification"
             )

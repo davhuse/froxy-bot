@@ -15,7 +15,7 @@ import firestore_helper
 from gemini_helper import get_ai_response
 from sales_catalog import filter_keyvadi_products
 from sales_metrics import record_event
-from support_flow import claim_first_greeting, forward_customer_message, greeting_for, one_time_mode_enabled, save_ticket_record
+from support_flow import claim_auto_reply_once, claim_first_greeting, forward_customer_message, greeting_for, one_time_mode_enabled, save_ticket_record
 from update_keyvadi_links_json import fetch_live_catalog, write_catalog_atomic
 from sales_conversion import (
     load_sales_catalog,
@@ -1361,11 +1361,12 @@ async def message_handler(event):
                 if await claim_product_reply(user_id, product):
                     claimed_products.append(product)
             if not claimed_products:
-                await event.respond(
-                    f"📌 **{matched_products[0]['title']}** için satın alma bağlantısı "
-                    "bu sohbette daha önce paylaşıldı. Farklı bir ürünün adını yazabilirsiniz."
-                )
                 logger.info("Suppressing duplicate product reply for user %s: %r", user_id, event.text)
+                record_event(
+                    "human_handoff", "KeyVadi", source="telegram_private",
+                    product=matched_products[0].get("title", ""),
+                    reason="duplicate_product_suppressed",
+                )
                 return
             matched_products = claimed_products
             attribution = USER_CTA_ATTRIBUTION.get(user_id, {})
@@ -1418,17 +1419,15 @@ async def message_handler(event):
             logger.info(f"Smart match for user {user_id}: '{event.text}' -> matched products successfully.")
             return
         elif SUPPORT_SALES_CONTEXT.get(user_id, {}).get("expires_at", 0) > time.monotonic():
-            lang = user_lang_helper.get_user_lang(user_id) or "tr"
-            t = TEXTS[lang]
             product = SUPPORT_SALES_CONTEXT[user_id]["product"]
-            await event.respond(
-                f"**{product['title']}** için kullanım, cihaz, teslimat veya garanti ayrıntısını yanlış aktarmamak için satıcı bu sohbetten yanıtlayacak.",
-                buttons=[[Button.inline(t["support_btn"], b"menu_support")]],
-            )
             record_event("human_handoff", "KeyVadi", source="telegram_private", product=product.get("title", ""), reason="unverified_product_fact")
-            record_event("dm_reply_sent", "KeyVadi", source="telegram_private", product="handoff")
+            logger.info("Product follow-up handed to panel without an automatic reply for user %s", user_id)
             return
         elif has_sales_intent(event.text):
+            if not await claim_auto_reply_once("KeyVadi", user_id, "clarification", event.chat_id):
+                logger.info("Suppressing repeated clarification reply for user %s", user_id)
+                record_event("human_handoff", "KeyVadi", source="telegram_private", reason="clarification_already_sent")
+                return
             lang = user_lang_helper.get_user_lang(user_id) or "tr"
             t = TEXTS[lang]
             await event.respond(
