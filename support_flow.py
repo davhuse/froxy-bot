@@ -127,6 +127,30 @@ async def claim_first_greeting(brand: str, user_id: int) -> bool:
     return claimed is True
 
 
+async def claim_auto_reply_once(brand: str, user_id: int, kind: str = "generic", chat_id=None) -> bool:
+    """Claim one non-product reply for a support conversation across restarts."""
+    safe_brand = "".join(char if char.isalnum() or char in "_-" else "_" for char in str(brand).lower())
+    safe_kind = "".join(char if char.isalnum() or char in "_-" else "_" for char in str(kind).lower())
+    doc_id = f"support_auto_reply_once_{safe_brand}_{int(user_id)}_{safe_kind}"
+    loop = asyncio.get_running_loop()
+    try:
+        claimed = await loop.run_in_executor(
+            None,
+            firestore_helper.claim_document,
+            doc_id,
+            {
+                "brand": brand,
+                "user_id": int(user_id),
+                "chat_id": int(chat_id) if chat_id is not None else int(user_id),
+                "kind": safe_kind,
+                "created_at": __import__("time").time(),
+            },
+        )
+    except Exception:
+        return False
+    return claimed is True
+
+
 async def forward_customer_message(bot, event, support_chat_id, brand: str, buttons=None) -> bool:
     """Forward every customer message to the support chat for a manual reply."""
     try:

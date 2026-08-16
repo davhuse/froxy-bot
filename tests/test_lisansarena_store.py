@@ -207,6 +207,33 @@ class LisansArenaStoreTests(unittest.TestCase):
             self.assertEqual(self.store.balance(conn, self.user_id), 10000)
             self.assertEqual(conn.execute(select(func.count()).select_from(store_module.wallet_ledger).where(store_module.wallet_ledger.c.entry_type == "topup")).scalar_one(), 1)
 
+    def test_missing_topup_note_stays_manual_review_and_manual_credit_is_idempotent(self):
+        with self.store.engine.begin() as conn:
+            conn.execute(insert(store_module.topup_intents).values(
+                code="LA-B2C3D4", user_id=self.user_id, amount_cents=50000,
+                shopier_product_id="balance-500", status="pending",
+                expires_at=store_module.utcnow() + timedelta(hours=1), created_at=store_module.utcnow(),
+            ))
+        self.store.ingest_webhook({
+            "id": "order-missing-note", "paymentStatus": "paid", "total": "500.00",
+            "note": "", "lineItems": [{"productId": "balance-500", "quantity": 1}],
+        }, "webhook-missing-note")
+        self.assertEqual(self.store.process_webhooks(), 1)
+        snapshot = self.store.inspect_topup_code("LA-B2C3D4")
+        self.assertEqual(snapshot["manual_review_candidates"][0]["status"], "manual_review")
+        self.assertFalse(snapshot["manual_review_candidates"][0]["code_in_note"])
+        self.assertEqual(snapshot["balance_cents"], 0)
+
+        first = self.store.apply_manual_credit_once(
+            self.user_id, 5000, "LA-B2C3D4:manual-50tl", "test correction", 1
+        )
+        second = self.store.apply_manual_credit_once(
+            self.user_id, 5000, "LA-B2C3D4:manual-50tl", "test correction", 1
+        )
+        self.assertTrue(first["applied"])
+        self.assertTrue(second["duplicate"])
+        self.assertEqual(self.store.inspect_topup_code("LA-B2C3D4")["balance_cents"], 5000)
+
     def test_one_lira_release_topup_uses_temporary_product(self):
         result = self.store.create_topup(self.user_id, 100)
         self.assertEqual(result["amount"], "1,00 TL")

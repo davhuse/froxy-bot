@@ -2799,11 +2799,21 @@ async def reserve_product_dm_replies(client_name, sender_id, products, now=None)
         if reply_key in USER_DM_PRODUCT_REPLY_TIME:
             continue
         doc_id = f"ad_dm_product_{reply_key[0]}_{reply_key[1]}_{reply_key[2]}"
-        state = await async_get_document(doc_id) or {}
-        if state.get("sent_at") or state.get("last_sent_at"):
+        # The create-only Firestore claim is the cross-process reservation.  A
+        # read followed by a write is racy when two ad-account workers overlap.
+        claimed = await async_claim_document(doc_id, {
+            "account": client_name,
+            "sender_id": int(sender_id),
+            "product_id": str(product.get("id") or product.get("url") or product.get("title") or "product"),
+            "reserved_at": float(now),
+            "rule": "one_product_once_per_private_chat",
+        })
+        if claimed is not True:
+            if claimed is None:
+                print(f"⚠️ [{client_name}] Ürün yanıt kilidi kullanılamıyor; güvenlik için kart atlanıyor.")
             USER_DM_PRODUCT_REPLY_TIME[reply_key] = now
             continue
-        # Reserve locally before sending so concurrent updates cannot duplicate.
+        # Keep a local marker for fast duplicate suppression in this process.
         USER_DM_PRODUCT_REPLY_TIME[reply_key] = now
         available.append(product)
         reserved_keys.append((reply_key, doc_id))
@@ -2811,16 +2821,45 @@ async def reserve_product_dm_replies(client_name, sender_id, products, now=None)
 
 
 async def confirm_product_dm_replies(reserved_keys, now):
-    for _reply_key, doc_id in reserved_keys:
-        await async_set_document(doc_id, {
-            "sent_at": float(now),
-            "rule": "one_product_once_per_private_chat",
-        })
+    # The Firestore create-only reservation already contains the durable
+    # claim. Keeping it is what makes the product card one-time across restarts.
+    return None
 
 
 def release_product_dm_replies(reserved_keys):
     for reply_key, _doc_id in reserved_keys:
         USER_DM_PRODUCT_REPLY_TIME.pop(reply_key, None)
+
+
+async def claim_customer_auto_reply(client_name, sender_id, chat_id, kind="generic"):
+    """Claim one non-product automatic reply for a customer conversation.
+
+    Product cards have their own per-product claims. This separate claim stops
+    follow-up/purchase/clarification text from becoming a reply wave after a
+    product card has already been sent.
+    """
+    safe_account = re.sub(r"[^a-zA-Z0-9_-]+", "_", str(client_name))
+    safe_kind = re.sub(r"[^a-zA-Z0-9_-]+", "_", str(kind))
+    doc_id = f"ad_dm_conversation_{safe_account}_{int(sender_id)}_{safe_kind}"
+    result = await async_claim_document(doc_id, {
+        "account": client_name,
+        "sender_id": int(sender_id),
+        "chat_id": int(chat_id),
+        "kind": safe_kind,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
+    return doc_id if result is True else None
+
+
+async def customer_has_claimed_product(client_name, sender_id, products):
+    """Check durable product claims after a worker restart."""
+    for product in products:
+        product_id = product.get("id") or product.get("url") or product.get("title") or "product"
+        safe_product = re.sub(r"[^a-zA-Z0-9_-]+", "_", str(product_id))[:120]
+        state = await async_get_document(f"ad_dm_product_{client_name}_{int(sender_id)}_{safe_product}")
+        if state and (state.get("sent_at") or state.get("reserved_at") or state.get("last_sent_at")):
+            return True
+    return False
 
 def keyvadi_product_reply(product, source="ad_account_dm", arm=""):
     """Send one concise purchase action without exposing a long raw URL."""
@@ -3093,16 +3132,35 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                 reply_text = "\n".join(lines)
                 matched_desc = ", ".join(p['title'] for p in matched_products)
         elif candidate_products:
-            reply_text = duplicate_product_reply(candidate_products[0])
-            matched_desc = candidate_products[0].get('title', '')
-        elif sales_context:
-            reply_text = sales_followup_reply(
-                sales_context,
-                event.raw_text,
-                "froxy" if is_froxy else ("keyvadi" if is_keyvadi else "lisansarena"),
+            # A repeated product is already visible in the conversation. Do
+            # not send a second card or a replacement sentence; the incoming
+            # message was already saved to the panel for human follow-up.
+            print(
+                f"⏭️ [{client_name}] @{getattr(sender, 'username', sender_id)} için "
+                "aynı ürün daha önce gönderildi; otomatik yanıt atlandı."
             )
-            matched_desc = "Satış takip sorusu"
+            return
+        elif sales_context:
+            # Follow-up, delivery, payment and bargaining questions are handed
+            # to the panel only. This branch used to create the repeated
+            # 'Satış takip sorusu' loop.
+            record_event(
+                "human_handoff", client_name, source="telegram_private",
+                product=(sales_context.get("products") or [{}])[0].get("title", ""),
+                reason="followup_after_product",
+            )
+            print(f"⏭️ [{client_name}] Ürün sonrası takip mesajı yalnızca panele aktarıldı.")
+            return
         elif is_lisansarena and has_explicit_sales_intent(event.raw_text):
+            # A restart may have cleared the in-memory sales context. Durable
+            # product claims still identify an existing sales conversation.
+            if await customer_has_claimed_product(client_name, sender_id, products):
+                record_event(
+                    "human_handoff", client_name, source="telegram_private",
+                    reason="followup_after_product_restart",
+                )
+                print(f"⏭️ [{client_name}] Önceki ürün kartı bulundu; takip mesajı panele bırakıldı.")
+                return
             reply_text = (
                 "Aradığınız ürünü doğru bulabilmem için ürün adını ve varsa süre, "
                 "kişisel/ortak tercihinizi yazar mısınız?"
@@ -3122,22 +3180,15 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         if not reply_text:
             return
 
-        lisansarena_reply_claim_id = None
-
-        # KeyVadi must never send an automatic reply wave into one customer's
-        # private chat. Persist one claim per customer so restarts or repeated
-        # incoming messages cannot create another automatic reply.
-        if is_keyvadi and not has_keyword and not matched_products:
-            one_reply_claim_id = f"keyvadi_dm_first_reply_{sender_id}"
-            one_reply_claimed = await async_claim_document(one_reply_claim_id, {
-                "account": client_name,
-                "chat_id": int(event.chat_id),
-                "sender_id": int(sender_id),
-            })
-            if one_reply_claimed is not True:
+        generic_reply_claim_id = None
+        if not matched_products and matched_desc == "LisansArena destek yönlendirmesi":
+            generic_reply_claim_id = await claim_customer_auto_reply(
+                client_name, sender_id, event.chat_id, "clarification"
+            )
+            if not generic_reply_claim_id:
                 print(
                     f"[AutoReply] [{client_name}] @{getattr(sender, 'username', sender_id)} "
-                    "already received an automatic DM reply; suppressing duplicate."
+                    "için açıklama yanıtı daha önce gönderildi veya kilit kullanılamıyor."
                 )
                 return
             
@@ -3163,8 +3214,8 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
             print(f"[{client_name}] ✉️ Özel mesaj otomatik yanıtlandı ({matched_desc}): @{sender.username or sender_id}")
         except Exception as e:
             release_product_dm_replies(reserved_product_keys)
-            if lisansarena_reply_claim_id:
-                await async_delete_document(lisansarena_reply_claim_id)
+            if generic_reply_claim_id:
+                await async_delete_document(generic_reply_claim_id)
             print(f"[{client_name}] ⚠️ Özel mesaj otomatik yanıtlanırken hata: {e}")
 
 DEAD_SESSION_ERRORS = (

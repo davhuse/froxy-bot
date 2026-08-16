@@ -75,7 +75,8 @@ async def send_product_card(event, matched_products):
         if await claim_product_reply(event.sender_id, product):
             claimed_products.append(product)
     if not claimed_products:
-        await event.respond("Bu ürünün satın alma seçeneği bu sohbette daha önce gönderildi. Farklı bir ürün adı yazabilirsin.")
+        # The original product card is already in the conversation. Keep the
+        # new message in the support queue without another automatic reply.
         return False
     lines = ["LisansArena ürün seçenekleri", ""]
     buttons = []

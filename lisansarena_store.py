@@ -937,6 +937,130 @@ class LisansArenaStore:
             "shopier_url": f"https://www.shopier.com/lisansarena/{product_id}",
         }
 
+    def inspect_topup_code(self, code):
+        """Return a read-only reconciliation snapshot for one LA top-up code."""
+        code = str(code or "").strip().upper()
+        if not re.fullmatch(r"LA-[A-F0-9]{6}", code):
+            raise ValueError("Geçersiz bakiye kodu")
+        with self.engine.connect() as conn:
+            intent = conn.execute(select(topup_intents).where(
+                topup_intents.c.code == code
+            )).mappings().first()
+            if not intent:
+                return {"code": code, "found": False}
+
+            user = conn.execute(select(users).where(
+                users.c.id == intent["user_id"]
+            )).mappings().first()
+            ledger = conn.execute(select(wallet_ledger).where(
+                wallet_ledger.c.user_id == intent["user_id"]
+            ).order_by(wallet_ledger.c.id.asc())).mappings().all()
+            order_rows = conn.execute(select(
+                orders,
+                products.c.name.label("product_name"),
+            ).select_from(orders.join(products, products.c.id == orders.c.product_id)).where(
+                orders.c.user_id == intent["user_id"]
+            ).order_by(orders.c.id.asc())).mappings().all()
+            shopier_rows = conn.execute(select(shopier_orders).where(
+                shopier_orders.c.topup_code == code
+            ).order_by(shopier_orders.c.id.asc())).mappings().all()
+            review_rows = conn.execute(select(shopier_orders).where(
+                shopier_orders.c.status == "manual_review"
+            ).order_by(shopier_orders.c.id.asc())).mappings().all()
+
+        def serialise_ledger(row):
+            return {
+                "id": row["id"],
+                "amount_cents": row["amount_cents"],
+                "entry_type": row["entry_type"],
+                "reference_type": row["reference_type"],
+                "reference_id": row["reference_id"],
+                "created_at": row["created_at"].isoformat() if row["created_at"] else None,
+            }
+
+        def decode_shopier(row):
+            payload = {}
+            try:
+                payload = json.loads(row["payload"] or "{}")
+            except (TypeError, ValueError):
+                pass
+            note = str(payload.get("note") or payload.get("orderNote") or payload.get("buyerNote") or "")
+            line_items = payload.get("lineItems") or payload.get("line_items") or payload.get("items") or []
+            return {
+                "order_number": row["order_number"],
+                "status": row["status"],
+                "amount_cents": row["amount_cents"],
+                "note": note,
+                "code_in_note": code in note.upper(),
+                "line_items": line_items,
+            }
+
+        shopier = [decode_shopier(row) for row in shopier_rows]
+        candidates = []
+        for row in review_rows:
+            item = decode_shopier(row)
+            product_ids = {
+                str(entry.get("productId") or entry.get("product_id") or entry.get("id") or "")
+                for entry in item["line_items"] if isinstance(entry, dict)
+            }
+            if item["amount_cents"] == intent["amount_cents"] and str(intent["shopier_product_id"] or "") in product_ids:
+                candidates.append(item)
+
+        return {
+            "code": code,
+            "found": True,
+            "intent": {
+                "user_id": intent["user_id"],
+                "telegram_id": user["telegram_id"] if user else None,
+                "amount_cents": intent["amount_cents"],
+                "shopier_product_id": intent["shopier_product_id"],
+                "status": intent["status"],
+                "expires_at": intent["expires_at"].isoformat() if intent["expires_at"] else None,
+            },
+            "balance_cents": sum(int(row["amount_cents"] or 0) for row in ledger),
+            "ledger": [serialise_ledger(row) for row in ledger],
+            "orders": [dict(row) for row in order_rows],
+            "shopier_orders": shopier,
+            "manual_review_candidates": candidates,
+        }
+
+    def apply_manual_credit_once(self, user_id, amount_cents, reference_id, reason, admin_id):
+        """Append one auditable manual credit; never updates/deletes the ledger."""
+        amount_cents = int(amount_cents)
+        if amount_cents <= 0:
+            raise ValueError("Manuel kredi tutarı pozitif olmalı")
+        reference_id = str(reference_id or "").strip()
+        reason = str(reason or "").strip()
+        if not reference_id or not reason:
+            raise ValueError("Manuel kredi referansı ve gerekçesi zorunlu")
+        now = utcnow()
+        with self.engine.begin() as conn:
+            user = conn.execute(select(users.c.id).where(users.c.id == int(user_id))).first()
+            if not user:
+                raise ValueError("Kullanıcı bulunamadı")
+            existing = conn.execute(select(wallet_ledger).where(and_(
+                wallet_ledger.c.entry_type == "manual_credit",
+                wallet_ledger.c.reference_type == "admin_adjustment",
+                wallet_ledger.c.reference_id == reference_id,
+            ))).mappings().first()
+            if existing:
+                return {"applied": False, "duplicate": True, "ledger_id": existing["id"]}
+            row_id = conn.execute(insert(wallet_ledger).values(
+                user_id=int(user_id), amount_cents=amount_cents,
+                entry_type="manual_credit", reference_type="admin_adjustment",
+                reference_id=reference_id, created_at=now,
+            ).returning(wallet_ledger.c.id)).scalar_one()
+            conn.execute(insert(audit_log).values(
+                admin_id=int(admin_id) if admin_id else None,
+                action="manual_wallet_credit", target=str(user_id),
+                detail=json.dumps({
+                    "amount_cents": amount_cents,
+                    "reference_id": reference_id,
+                    "reason": reason,
+                }, ensure_ascii=False), created_at=now,
+            ))
+        return {"applied": True, "duplicate": False, "ledger_id": row_id}
+
     def ingest_webhook(self, payload: dict, webhook_id: str | None):
         order_number = str(payload.get("orderNumber") or payload.get("order_number") or payload.get("id") or "").strip()
         if not order_number:
@@ -1390,6 +1514,36 @@ def admin_overview():
         "tickets": store.list_tickets(),
         "draws": store.active_draws(),
     })
+
+
+@la.get("/api/la/admin/reconcile/<code>")
+@admin_required
+def admin_reconcile_topup(code):
+    try:
+        return jsonify(get_store().inspect_topup_code(code))
+    except (ValueError, StoreUnavailable) as exc:
+        return _json_error(exc, 503 if isinstance(exc, StoreUnavailable) else 400)
+
+
+@la.post("/api/la/admin/reconcile/<code>/manual-credit-50")
+@admin_required
+def admin_manual_credit_50(code):
+    """Apply the requested 50 TL correction once, after code verification."""
+    store = get_store()
+    try:
+        snapshot = store.inspect_topup_code(code)
+        if not snapshot.get("found"):
+            return _json_error("Bakiye kodu bulunamadı", 404)
+        normalized = snapshot["code"]
+        result = store.apply_manual_credit_once(
+            snapshot["intent"]["user_id"], 5000,
+            f"{normalized}:manual-50tl",
+            "LA kodu için doğrulama sonrası eksik 50 TL manuel bakiye düzeltmesi",
+            session.get("la_admin_id"),
+        )
+        return jsonify({"code": normalized, "result": result, "snapshot": store.inspect_topup_code(normalized)})
+    except (ValueError, StoreUnavailable) as exc:
+        return _json_error(exc, 503 if isinstance(exc, StoreUnavailable) else 400)
 
 
 @la.post("/api/la/admin/products/<int:product_id>")

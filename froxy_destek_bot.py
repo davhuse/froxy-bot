@@ -11,7 +11,7 @@ import user_lang_helper
 import firestore_helper
 from sales_metrics import record_event
 from shopier_catalog import fetch_shopier_catalog, match_catalog_products
-from support_flow import claim_first_greeting, forward_customer_message, greeting_for, one_time_mode_enabled, save_ticket_record
+from support_flow import claim_auto_reply_once, claim_first_greeting, forward_customer_message, greeting_for, one_time_mode_enabled, save_ticket_record
 from sales_conversion import (
     has_sales_query,
     load_sales_catalog,
@@ -761,10 +761,8 @@ async def message_handler(event):
                 if await claim_product_reply(user_id, product):
                     claimed_products.append(product)
             if not claimed_products:
-                await event.respond(
-                    f"📌 **{matched_products[0]['title']}** için satın alma bağlantısı "
-                    "bu sohbette daha önce paylaşıldı. Farklı bir ürünün adını yazabilirsiniz."
-                )
+                # The original product card is already in the conversation;
+                # keep this follow-up in the panel without another reply.
                 return
             matched_products = claimed_products
             attribution = USER_CTA_ATTRIBUTION.get(user_id, {})
@@ -797,16 +795,11 @@ async def message_handler(event):
         context = SUPPORT_SALES_CONTEXT.get(user_id)
         if context and context.get("expires_at", 0) > asyncio.get_running_loop().time():
             product = context["product"]
-            lang = user_lang_helper.get_user_lang(user_id) or "tr"
-            t = TEXTS[lang]
-            await event.respond(
-                f"**{product['title']}** için kullanım, cihaz, teslimat veya garanti ayrıntısını yanlış aktarmamak için satıcı bu sohbetten yanıtlayacak.",
-                buttons=[[Button.inline(t["support_btn"], b"menu_support")]],
-            )
-            record_event("human_handoff", "Froxy AI", source="telegram_private", product=product.get("title", ""), reason="unverified_product_fact")
-            record_event("dm_reply_sent", "Froxy AI", source="telegram_private", product="handoff")
+            record_event("human_handoff", "Froxy AI", source="telegram_private", product=product.get("title", ""), reason="followup_after_product")
             return
         if has_sales_query(event.text):
+            if not await claim_auto_reply_once("Froxy AI", user_id, "clarification", event.chat_id):
+                return
             lang = user_lang_helper.get_user_lang(user_id) or "tr"
             t = TEXTS[lang]
             await event.respond(

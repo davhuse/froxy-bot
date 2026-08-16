@@ -15,7 +15,7 @@ class AdAccountDmTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_same_product_is_sent_once_per_private_chat(self):
         product = {"id": "42", "title": "ChatGPT Plus", "url": "https://example.com/42"}
-        with patch.object(publisher, "async_get_document", new=AsyncMock(return_value=None)):
+        with patch.object(publisher, "async_claim_document", new=AsyncMock(return_value=True)):
             first, _first_keys = await publisher.reserve_product_dm_replies(
                 "KeyVadiOnline", 123, [product], now=1000
             )
@@ -33,7 +33,7 @@ class AdAccountDmTests(unittest.IsolatedAsyncioTestCase):
     async def test_different_product_can_reply_without_waiting(self):
         first_product = {"id": "1", "title": "ChatGPT Plus"}
         second_product = {"id": "2", "title": "Gemini Pro"}
-        with patch.object(publisher, "async_get_document", new=AsyncMock(return_value=None)):
+        with patch.object(publisher, "async_claim_document", new=AsyncMock(return_value=True)):
             first, _ = await publisher.reserve_product_dm_replies(
                 "FroxyOnline", 123, [first_product], now=1000
             )
@@ -43,6 +43,14 @@ class AdAccountDmTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(first, [first_product])
         self.assertEqual(second, [second_product])
+
+    async def test_followup_reply_has_one_durable_conversation_claim(self):
+        with patch.object(publisher, "async_claim_document", new=AsyncMock(return_value=True)) as claim:
+            first = await publisher.claim_customer_auto_reply("FroxyOnline", 123, 123, "generic")
+            self.assertTrue(first)
+            claim.return_value = False
+            second = await publisher.claim_customer_auto_reply("FroxyOnline", 123, 123, "generic")
+        self.assertIsNone(second)
 
 
 if __name__ == "__main__":
