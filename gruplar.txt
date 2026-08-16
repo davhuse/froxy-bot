@@ -58,3 +58,5 @@ kuponyaticaret
 cek_kupon_kod_ilan
 Minakuponkodsatis
 bedavainternetkod
+indirimcek
+kuponindirimlisatis
