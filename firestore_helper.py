@@ -316,6 +316,16 @@ def acquire_lease(doc_id, owner_id, ttl_seconds=120):
         "expires_at": now + int(ttl_seconds),
     }
     if fields is None:
+        # Firestore can be temporarily unavailable while the running Render
+        # instance still owns the local fallback lease. Renew that local copy
+        # instead of stopping the Telegram worker every heartbeat interval.
+        local_fields = _local_get(doc_id)
+        if local_fields is not None:
+            local_owner = str(local_fields.get("owner_id", ""))
+            local_expires_at = int(local_fields.get("expires_at", 0) or 0)
+            if local_owner != owner_id and local_expires_at > now:
+                return False
+            return _local_set(doc_id, new_fields)
         return claim_document(doc_id, new_fields)
     current_owner = str(fields.get("owner_id", ""))
     expires_at = int(fields.get("expires_at", 0) or 0)

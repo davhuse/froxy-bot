@@ -23,6 +23,16 @@ class FirestoreFallbackTests(unittest.TestCase):
             self.assertTrue(firestore_helper.delete_document("product-2"))
             self.assertTrue(firestore_helper.claim_document("product-2", {"brand": "froxy"}))
 
+    def test_local_runtime_lease_renews_when_firestore_is_unavailable(self):
+        with tempfile.TemporaryDirectory() as directory, patch.dict(
+            os.environ, {"RUNTIME_CLAIM_DB": os.path.join(directory, "claims.db")}
+        ), patch.object(firestore_helper, "get_document_with_meta", return_value=(None, None)), patch.object(
+            firestore_helper, "_commit", return_value=None
+        ):
+            self.assertTrue(firestore_helper.acquire_lease("runtime", "owner-a", ttl_seconds=120))
+            self.assertTrue(firestore_helper.acquire_lease("runtime", "owner-a", ttl_seconds=120))
+            self.assertFalse(firestore_helper.acquire_lease("runtime", "owner-b", ttl_seconds=120))
+
 
 if __name__ == "__main__":
     unittest.main()
