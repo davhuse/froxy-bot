@@ -18,6 +18,7 @@ from sales_conversion import (
     match_sales_products,
     parse_cta_start_parameter,
     parse_purchase_token,
+    listing_url,
     purchase_target_url,
 )
 
@@ -121,6 +122,7 @@ class PurchaseLinkTests(unittest.TestCase):
     def test_froxy_purchase_redirect_uses_product_shopier_listing(self):
         product = {"id": "49489691", "url": "https://www.shopier.com/froxyai/49489691"}
         self.assertEqual(purchase_target_url("froxy", product), product["url"])
+        self.assertEqual(listing_url(product), product["url"])
 
     def test_other_brands_keep_their_configured_target(self):
         product = {"id": "x", "url": "https://www.shopier.com/keyvadi/x"}

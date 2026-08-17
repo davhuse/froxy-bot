@@ -376,6 +376,11 @@ def purchase_url(product: dict, brand: str, source: str, arm: str = "") -> str:
     return f"{PUBLIC_BASE_URL}/go/{token}" if token else product["url"]
 
 
+def listing_url(product: dict) -> str:
+    """Return the public product listing URL shown to customers."""
+    return str(product.get("url") or "")
+
+
 EXPERIMENT_START = datetime.fromisoformat(
     os.environ.get("CTA_EXPERIMENT_START", "2026-08-13T00:00:00+00:00").replace("Z", "+00:00")
 )

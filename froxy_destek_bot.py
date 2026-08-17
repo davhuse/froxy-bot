@@ -17,7 +17,7 @@ from sales_conversion import (
     load_sales_catalog,
     match_sales_products,
     parse_cta_start_parameter,
-    purchase_url,
+    listing_url,
 )
 
 # Logging configuration
@@ -620,7 +620,7 @@ async def pkg_select_handler(event):
             "credits": "",
             "desc": "Ürün detayları ve güvenli ödeme Shopier ürün sayfasında gösterilir.",
         }
-    shopier_url = purchase_url(selected_product, "froxy", "support_bot_menu") if selected_product else ""
+    shopier_url = listing_url(selected_product) if selected_product else ""
 
     text = t["product_header"].format(
         title=p_data['title'],
@@ -805,7 +805,7 @@ async def message_handler(event):
             for product in matched_products:
                 price = product.get("price") or "Fiyat ürün sayfasında"
                 lines.append(f"• **{product['title']}** — {price}")
-                buttons.append([Button.url(f"🛒 {product['title'][:40]}", purchase_url(product, "froxy", "support_bot_dm", arm))])
+                buttons.append([Button.url(f"🛒 {product['title'][:40]}", listing_url(product))])
             buttons.append([Button.inline(t["support_btn"], b"menu_support")])
             await event.respond("\n".join(lines), buttons=buttons)
             mark_product_reply_sent(user_id, matched_products)
