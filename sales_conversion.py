@@ -12,7 +12,7 @@ import unicodedata
 import urllib.request
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import quote, urlparse
 
 
 ROOT = Path(__file__).resolve().parent
@@ -25,9 +25,6 @@ AUXILIARY_CATALOG_FILES = {
     "lisansarena": ROOT / "lisansarena_catalog_additions.json",
 }
 SHOPIER_HOSTS = {"shopier.com", "www.shopier.com"}
-BRAND_SITE_URLS = {
-    "froxy": "https://froxyai.com",
-}
 PUBLIC_BASE_URL = (
     os.environ.get("PUBLIC_BASE_URL")
     or os.environ.get("RENDER_EXTERNAL_URL")
@@ -38,8 +35,8 @@ TEXT_ALIASES = {
     "netfilix": "netflix",
     "netfli": "netflix",
     "chat gpt": "chatgpt",
-    "chat gbt": "chatgpt",
     "chatgbt": "chatgpt",
+    "chat gbt": "chatgpt",
     "plas": "plus",
     "pluss": "plus",
     "gpt": "chatgpt",
@@ -117,10 +114,12 @@ def normalize_alias_literal(value: str) -> str:
     )
 
 
-def _normalize_product(item: dict) -> dict | None:
+def _normalize_product(item: dict, brand: str = "") -> dict | None:
     product_id = str(item.get("id") or "").strip()
     title = str(item.get("title") or "").strip()
     url = str(item.get("url") or item.get("link") or "").strip()
+    if not url and str(brand).lower() == "lisansarena" and product_id:
+        url = f"{PUBLIC_BASE_URL}/la/app?product={quote(product_id, safe='')}"
     if not product_id or not title or not (is_allowed_shopier_url(url) or is_allowed_internal_purchase_url(url)):
         return None
     price = item.get("price")
@@ -150,7 +149,7 @@ def load_sales_catalog(brand: str) -> list[dict]:
     seen = set()
     for data in data_sets:
         for item in data if isinstance(data, list) else []:
-            product = _normalize_product(item) if isinstance(item, dict) else None
+            product = _normalize_product(item, brand) if isinstance(item, dict) else None
             if product and product["id"] not in seen:
                 seen.add(product["id"])
                 products.append(product)
@@ -202,7 +201,7 @@ def refresh_catalog_from_shopier_api(brand: str) -> int:
             "description": raw.get("description") or old.get("description", ""),
             "stockStatus": raw.get("stockStatus") or old.get("stockStatus", ""),
             "stockQuantity": raw.get("stockQuantity", old.get("stockQuantity")),
-        })
+        }, brand)
         if item:
             refreshed.append(item)
     if not refreshed:
@@ -246,15 +245,7 @@ def is_allowed_internal_purchase_url(url: str) -> bool:
 
 
 def purchase_target_url(brand: str, product: dict) -> str:
-    """Return the customer-facing purchase target for a known product.
-
-    Froxy's customer flow is handled on its own website. Other brands keep
-    their configured Shopier/internal target until their own storefront is
-    explicitly migrated.
-    """
-    site_url = BRAND_SITE_URLS.get(str(brand or "").strip().lower())
-    if site_url:
-        return site_url
+    """Return the product-specific Shopier or Mini App purchase target."""
     return str(product.get("url") or "")
 
 
@@ -303,11 +294,18 @@ def match_sales_products(message: str, products: list[dict], limit: int = 3) -> 
             score -= 100
         if "ortak" in query_tokens and "ortak" in title_tokens:
             score += 120
+        if "codex" in query_tokens and "chatgpt" in query_tokens:
+            if "codex" in title_tokens and "chatgpt" in title_tokens:
+                score += 180
+            elif "sms" in title_tokens:
+                score -= 160
         scored.append((score, product))
     scored.sort(key=lambda pair: (-pair[0], _price_number(pair[1].get("price")), pair[1]["title"]))
     if not scored:
         return []
     if ("kisisel" in query_tokens or "ortak" in query_tokens) and scored:
+        return [scored[0][1]]
+    if "chatgpt" in query_tokens and "codex" in query_tokens and scored:
         return [scored[0][1]]
     # A query containing duration/variant detail is specific when the best
     # candidate clearly beats the next one. Generic brand queries show choices.

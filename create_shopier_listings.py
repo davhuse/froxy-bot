@@ -57,7 +57,7 @@ products = [
     {"name": "Crunchyroll Premium (3 Aylık)", "price": 99.00, "category": "Entertainment", "desc": "Crunchyroll Premium 3 Aylık Üyelik."},
 
     # YAPAY ZEKA (AI)
-    {"name": "ChatGPT Plus 30 Gün - Kişisel", "price": 529.99, "category": "AI", "desc": "ChatGPT Plus 30 günlük kişisel kullanım. Teslimat bilgileri sipariş sonrasında iletilir."},
+    {"name": "ChatGPT Plus 30 Gün - Kişisel", "price": 499.90, "category": "AI", "desc": "ChatGPT Plus 30 günlük kişisel kullanım. Teslimat bilgileri sipariş sonrasında iletilir."},
     {"name": "Gemini Pro (1 Yıllık Hesap)", "price": 299.99, "category": "AI", "desc": "Gemini Pro 1 Yıllık Kullanım Hesabı. Gelişmiş Google AI asistanına kesintisiz erişim. Giriş garantilidir."},
     {"name": "Gemini Pro (Davet Linki)", "price": 124.99, "category": "AI", "desc": "Gemini Pro Davet Linki ile kendi hesabınızı aktifleştirme. Giriş garantilidir."},
     {"name": "Gemini Ultra (Davet Linki)", "price": 399.99, "category": "AI", "desc": "Gemini Ultra Davet Linki. Google'ın en gelişmiş yapay zeka modeli. Full kullanım garantisi sağlanır."},

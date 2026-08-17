@@ -33,7 +33,7 @@ class AdTemplateTests(unittest.TestCase):
             "lisansarena_1.txt", "lisansarena_2.txt", "lisansarena_3.txt"
         ])
         required_prices = (
-            "529,99 TL", "69,90 TL", "59,90 TL", "99,99 TL", "599,99 TL",
+            "499,90 TL", "69,90 TL", "59,90 TL", "99,99 TL", "599,99 TL",
             "119,90 TL", "149,99 TL", "83,99 TL", "224,99 TL", "94,49 TL",
             "47,24 TL", "36,74 TL", "36,99 TL", "39,90 TL", "29,90 TL",
             "89,90 TL", "63 TL", "70 TL", "244,99 TL", "49,99 TL", "14,99 TL",

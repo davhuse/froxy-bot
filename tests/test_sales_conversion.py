@@ -86,18 +86,41 @@ class SalesCatalogMatchingTests(unittest.TestCase):
         from sales_conversion import make_purchase_token, parse_purchase_token
         catalog = load_sales_catalog("lisansarena")
         product = next(item for item in catalog if item["id"] == "la-approved-chatgpt-kisisel")
-        self.assertEqual(product["price"], "529,99 TL")
+        self.assertEqual(product["price"], "499,90 TL")
         with patch.dict(os.environ, {"PURCHASE_LINK_SECRET": "unit-test-secret"}):
             token = make_purchase_token("lisansarena", product["id"], "ad_account_dm", "control")
             payload = parse_purchase_token(token)
         self.assertEqual(payload["b"], "lisansarena")
         self.assertEqual(payload["p"], product["id"])
 
+    def test_lisansarena_auxiliary_products_get_internal_purchase_targets(self):
+        from sales_conversion import make_purchase_token, parse_purchase_token
+        catalog = load_sales_catalog("lisansarena")
+        auxiliary_ids = {
+            "la-email-netflix-ortak", "la-approved-chatgpt-ortak",
+            "la-approved-gemini-pro-3ay", "la-approved-discord-nitro-14x",
+        }
+        products = [item for item in catalog if item["id"] in auxiliary_ids]
+        self.assertEqual({item["id"] for item in products}, auxiliary_ids)
+        for product in products:
+            self.assertIn("/la/app?product=", product["url"])
+            with patch.dict(os.environ, {"PURCHASE_LINK_SECRET": "unit-test-secret"}):
+                token = make_purchase_token("lisansarena", product["id"], "support_bot_dm")
+                payload = parse_purchase_token(token)
+            self.assertEqual(payload["p"], product["id"])
+
+    def test_froxy_chatgpt_prices_and_codex_variant_are_specific(self):
+        froxy = load_sales_catalog("froxy")
+        personal = match_sales_products("chat gbt plus kişisel", froxy)
+        codex = match_sales_products("chatgpt codex dahil", froxy)
+        self.assertEqual([(item["id"], item["price"]) for item in personal], [("49489691", "499,90 TL")])
+        self.assertEqual([(item["id"], item["price"]) for item in codex], [("49489721", "599,90 TL")])
+
 
 class PurchaseLinkTests(unittest.TestCase):
-    def test_froxy_purchase_redirect_uses_froxy_website(self):
+    def test_froxy_purchase_redirect_uses_product_shopier_listing(self):
         product = {"id": "49489691", "url": "https://www.shopier.com/froxyai/49489691"}
-        self.assertEqual(purchase_target_url("froxy", product), "https://froxyai.com")
+        self.assertEqual(purchase_target_url("froxy", product), product["url"])
 
     def test_other_brands_keep_their_configured_target(self):
         product = {"id": "x", "url": "https://www.shopier.com/keyvadi/x"}
@@ -120,7 +143,7 @@ class PurchaseLinkTests(unittest.TestCase):
         self.assertFalse(is_allowed_shopier_url("https://shopier.com.evil.example/123"))
         self.assertFalse(is_allowed_shopier_url("http://www.shopier.com/froxyai/123"))
 
-    def test_redirect_records_click_and_returns_froxy_site_302(self):
+    def test_redirect_records_click_and_returns_froxy_shopier_302(self):
         import app as web_app
 
         product = load_sales_catalog("froxy")[0]
@@ -129,7 +152,7 @@ class PurchaseLinkTests(unittest.TestCase):
             with patch.object(web_app, "record_event") as record:
                 response = web_app.app.test_client().get(f"/go/{token}")
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.headers["Location"], "https://froxyai.com")
+        self.assertEqual(response.headers["Location"], product["url"])
         self.assertEqual(record.call_args.args[:2], ("purchase_click", "froxy"))
 
     def test_redirect_rejects_invalid_token(self):

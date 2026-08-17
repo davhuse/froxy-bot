@@ -565,7 +565,7 @@ def strict_group_safe_copy(group_key, is_keyvadi, is_lisansarena, is_froxy):
     if is_lisansarena:
         lines = [
             "LisansArena dijital ürünler",
-            "ChatGPT Plus kişisel 529,99 TL | ortak 69,90 TL",
+            "ChatGPT Plus kişisel 499,90 TL | ortak 69,90 TL",
             "Gemini Pro 3 ay 59,90 TL | 12 ay 99,99 TL",
             "Canva Pro 1 yıl 83,99 TL | Adobe 1 hafta 59,90 TL",
             "Windows 10/11 Pro 70 TL | Office 365 1 yıl 70 TL",

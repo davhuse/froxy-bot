@@ -109,9 +109,9 @@ DEFAULT_FROXY_PRODUCTS = [
     {"id": "49489749", "title": "Gemini Ultra (1 Aylık 2500 Kredili)", "price": "399,00 TL", "url": "https://www.shopier.com/froxyai/49489749"},
     {"id": "49489734", "title": "Gemini Ultra (1 Aylık Kredisiz)", "price": "299,00 TL", "url": "https://www.shopier.com/froxyai/49489734"},
     {"id": "49489726", "title": "Codex SMS Doğrulama Kodu", "price": "29,00 TL", "url": "https://www.shopier.com/froxyai/49489726"},
-    {"id": "49489721", "title": "ChatGPT Plus + Codex (1 Aylık)", "price": "199,99 TL", "url": "https://www.shopier.com/froxyai/49489721"},
+    {"id": "49489721", "title": "ChatGPT Plus + Codex (1 Aylık)", "price": "599,90 TL", "url": "https://www.shopier.com/froxyai/49489721"},
     {"id": "49489705", "title": "ChatGPT Plus (1 Aylık Ortak)", "price": "39,99 TL", "url": "https://www.shopier.com/froxyai/49489705"},
-    {"id": "49489691", "title": "ChatGPT Plus 30 Gün - Kişisel", "price": "479,99 TL", "url": "https://www.shopier.com/froxyai/49489691"},
+    {"id": "49489691", "title": "ChatGPT Plus 30 Gün - Kişisel", "price": "499,90 TL", "url": "https://www.shopier.com/froxyai/49489691"},
     {"id": "49489681", "title": "Gemini Pro + Antigravity (18 Aylık)", "price": "249,99 TL", "url": "https://www.shopier.com/froxyai/49489681"},
     {"id": "49489671", "title": "Gemini Pro + Antigravity (12 Aylık)", "price": "169,99 TL", "url": "https://www.shopier.com/froxyai/49489671"},
     {"id": "49489662", "title": "Gemini Pro (18 Aylık Davet)", "price": "99,99 TL", "url": "https://www.shopier.com/froxyai/49489662"},
@@ -196,9 +196,9 @@ TEXTS = {
             ("🤖 Gemini Pro 18 Ay Davet (₺99.99)", "pkg_gemini_18m"),
             ("🚀 Gemini Pro + Antigravity 12 Ay (₺169.99)", "pkg_gemini_anti_12m"),
             ("🚀 Gemini Pro + Antigravity 18 Ay (₺249.99)", "pkg_gemini_anti_18m"),
-            ("💬 ChatGPT Plus Kişisel (₺479.99)", "pkg_chatgpt_kisisel"),
+            ("💬 ChatGPT Plus Kişisel (₺499.90)", "pkg_chatgpt_kisisel"),
             ("💬 ChatGPT Plus Ortak (₺39.99)", "pkg_chatgpt_ortak"),
-            ("💻 ChatGPT Plus + Codex (₺199.99)", "pkg_chatgpt_codex"),
+            ("💻 ChatGPT Plus + Codex (₺599.90)", "pkg_chatgpt_codex"),
             ("📱 Codex SMS Doğrulama Kodu (₺29.99)", "pkg_codex_sms"),
             ("💎 Gemini Ultra Kredisiz (₺299.99)", "pkg_gemini_ultra_kredisiz"),
             ("💎 Gemini Ultra 2500 Kredili (₺399.99)", "pkg_gemini_ultra_25k"),
@@ -281,8 +281,9 @@ TEXTS = {
         "ai_btn_list": [
             ("🤖 Gemini Pro 12M Invite ($2.00)", "pkg_gemini_12m"),
             ("🤖 Gemini Pro 18M Invite ($3.00)", "pkg_gemini_18m"),
-            ("💬 ChatGPT Plus Personal ($3.00)", "pkg_chatgpt_kisisel"),
+            ("💬 ChatGPT Plus Personal (₺499.90)", "pkg_chatgpt_kisisel"),
             ("💬 ChatGPT Plus Shared ($1.50)", "pkg_chatgpt_ortak"),
+            ("💻 ChatGPT Plus + Codex (₺599.90)", "pkg_chatgpt_codex"),
             ("🔍 Perplexity Pro 1M Shared ($2.50)", "pkg_perplexity_ortak")
         ],
         "pkg_menu_title": "💳 **Froxy AI Credit Packages**\n\n"
@@ -585,14 +586,41 @@ async def pkg_select_handler(event):
     t = TEXTS[lang]
 
     pkg_key = event.data.decode('utf-8').replace("pkg_", "")
+    package_product_ids = {
+        "baslangic": "47408136",
+        "populer": "47408138",
+        "profesyonel": "47408141",
+        "gelistirici": "47408145",
+        "isletme": "47408149",
+        "kurumsal": "47408150",
+        "chatgpt_kisisel": "49489691",
+        "chatgpt_codex": "49489721",
+        "chatgpt_ortak": "49489705",
+        "codex_sms": "49489726",
+        "gemini_12m": "49489651",
+        "gemini_18m": "49489662",
+        "gemini_anti_12m": "49489671",
+        "gemini_anti_18m": "49489681",
+        "gemini_ultra_kredisiz": "49489734",
+        "gemini_ultra_25k": "49489749",
+        "chatgpt_go": "49489754",
+        "perplexity_ortak": "49489768",
+    }
+    selected_id = package_product_ids.get(pkg_key)
+    selected_product = next((p for p in load_sales_catalog("froxy") if str(p.get("id")) == selected_id), None)
+    if not selected_product:
+        selected_product = next((p for p in FROXY_PRODUCTS if str(p.get("id")) == selected_id), None)
+    if not selected_product:
+        selected_product = next((p for p in DEFAULT_FROXY_PRODUCTS if str(p.get("id")) == selected_id), None)
     p_data = t["products"].get(pkg_key)
     if not p_data:
-        p_data = {"title": pkg_key.replace("pkg_", "").replace("_", " ").title(), "price": "", "credits": "", "desc": "Harici ürün (Shopier sayfasından inceleyin)."}
-
-    # Get Shopier link from config
-    config = load_config() or {}
-    froxy_links = {**DEFAULT_FROXY_SHOPIER_LINKS, **config.get("froxy_shopier_links", {})}
-    shopier_url = "https://froxyai.com"
+        p_data = {
+            "title": selected_product.get("title") if selected_product else pkg_key.replace("_", " ").title(),
+            "price": selected_product.get("price", "") if selected_product else "",
+            "credits": "",
+            "desc": "Ürün detayları ve güvenli ödeme Shopier ürün sayfasında gösterilir.",
+        }
+    shopier_url = purchase_url(selected_product, "froxy", "support_bot_menu") if selected_product else ""
 
     text = t["product_header"].format(
         title=p_data['title'],
@@ -602,7 +630,7 @@ async def pkg_select_handler(event):
     )
     
     buttons = [
-        [Button.url(t["buy_shopier"], shopier_url)],
+        [Button.url(t["buy_shopier"], shopier_url)] if shopier_url else [Button.inline("💬 Destek üzerinden sipariş", b"menu_support")],
         [Button.inline(t["back_to_pkgs"], b"menu_packages")]
     ]
     try:
