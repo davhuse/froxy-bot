@@ -84,6 +84,14 @@ VARIANT_TERMS = {
     "gun", "gunluk",
 }
 
+# Froxy's approved customer-facing prices. The public showroom can lag behind
+# the configured campaign/catalog price, so these IDs must not be overwritten
+# by a stale showroom value during a bot restart.
+FROXY_PRICE_OVERRIDES = {
+    "49489691": "499,90 TL",  # ChatGPT Plus 30 Gün - Kişisel
+    "49489721": "599,90 TL",  # ChatGPT Plus + Codex (1 Aylık)
+}
+
 STOP_WORDS = {
     "var", "mi", "mu", "ve", "de", "da", "icin", "misiniz", "olur", "yok",
     "acaba", "urun", "hesap", "kodu", "kupon", "hocam", "kanka", "bir",
@@ -112,6 +120,15 @@ def normalize_alias_literal(value: str) -> str:
         char for char in unicodedata.normalize("NFKD", text)
         if not unicodedata.combining(char)
     )
+
+
+def apply_froxy_price_overrides(product: dict) -> dict:
+    """Apply approved Froxy prices to showroom/API product records."""
+    result = dict(product or {})
+    override = FROXY_PRICE_OVERRIDES.get(str(result.get("id") or ""))
+    if override:
+        result["price"] = override
+    return result
 
 
 def _normalize_product(item: dict, brand: str = "") -> dict | None:

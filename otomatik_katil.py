@@ -41,6 +41,8 @@ from group_policy import (
     warning_targets_brand,
 )
 from sales_conversion import (
+    apply_froxy_price_overrides,
+    listing_url,
     load_sales_catalog,
     match_sales_products,
     purchase_url,
@@ -2873,7 +2875,8 @@ def keyvadi_product_reply(product, source="ad_account_dm", arm=""):
 
 def froxy_product_reply(product, source="ad_account_dm", arm=""):
     """Return the exact Froxy Shopier product and keep the panel visible."""
-    target = purchase_url(product, "froxy", source, arm)
+    product = apply_froxy_price_overrides(product)
+    target = listing_url(product)
     return (
         f"📌 **{product['title']}**\n"
         f"💰 Fiyat: {product.get('price', 'Ürün sayfasında')}\n"
@@ -3126,7 +3129,8 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
             else:
                 lines = ["🔍 **Uygun seçenekler:**"]
                 for p in matched_products[:3]:
-                    target = purchase_url(p, brand_name, "ad_account_dm")
+                    p = apply_froxy_price_overrides(p) if is_froxy else p
+                    target = listing_url(p) if is_froxy else purchase_url(p, brand_name, "ad_account_dm")
                     button_text = "Ürünü İncele ve Satın Al" if is_lisansarena else "Hemen Satın Al"
                     lines.append(f"• **{p['title']}** — {p['price']}\n  [{button_text}]({target})")
                 reply_text = "\n".join(lines)

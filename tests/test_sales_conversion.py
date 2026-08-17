@@ -12,6 +12,7 @@ from sales_conversion import (
     cta_experiment_arm,
     cta_experiment_status,
     has_sales_query,
+    apply_froxy_price_overrides,
     is_allowed_shopier_url,
     load_sales_catalog,
     make_purchase_token,
@@ -119,6 +120,12 @@ class SalesCatalogMatchingTests(unittest.TestCase):
 
 
 class PurchaseLinkTests(unittest.TestCase):
+    def test_froxy_approved_prices_override_stale_showroom_values(self):
+        personal = apply_froxy_price_overrides({"id": "49489691", "price": "499,99 TL"})
+        codex = apply_froxy_price_overrides({"id": "49489721", "price": "599,99 TL"})
+        self.assertEqual(personal["price"], "499,90 TL")
+        self.assertEqual(codex["price"], "599,90 TL")
+
     def test_froxy_purchase_redirect_uses_product_shopier_listing(self):
         product = {"id": "49489691", "url": "https://www.shopier.com/froxyai/49489691"}
         self.assertEqual(purchase_target_url("froxy", product), product["url"])

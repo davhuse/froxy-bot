@@ -13,6 +13,7 @@ from sales_metrics import record_event
 from shopier_catalog import fetch_shopier_catalog, match_catalog_products
 from support_flow import claim_auto_reply_once, claim_first_greeting, forward_customer_message, greeting_for, one_time_mode_enabled, save_ticket_record
 from sales_conversion import (
+    apply_froxy_price_overrides,
     has_sales_query,
     load_sales_catalog,
     match_sales_products,
@@ -132,7 +133,10 @@ FROXY_PRODUCTS = []
 def load_froxy_products():
     global FROXY_PRODUCTS
     try:
-        FROXY_PRODUCTS = fetch_shopier_catalog("froxyai")
+        FROXY_PRODUCTS = [
+            apply_froxy_price_overrides(product)
+            for product in fetch_shopier_catalog("froxyai")
+        ]
         if not FROXY_PRODUCTS:
             raise ValueError("Shopier showroom returned no products")
         logger.info("Loaded %s products from the Froxy Shopier showroom.", len(FROXY_PRODUCTS))

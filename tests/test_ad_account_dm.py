@@ -52,6 +52,17 @@ class AdAccountDmTests(unittest.IsolatedAsyncioTestCase):
             second = await publisher.claim_customer_auto_reply("FroxyOnline", 123, 123, "generic")
         self.assertIsNone(second)
 
+    def test_froxy_product_reply_uses_direct_shopier_listing(self):
+        reply = publisher.froxy_product_reply({
+            "id": "49489691",
+            "title": "ChatGPT Plus 30 Gün - Kişisel",
+            "price": "499,99 TL",
+            "url": "https://www.shopier.com/froxyai/49489691",
+        })
+        self.assertIn("499,90 TL", reply)
+        self.assertIn("https://www.shopier.com/froxyai/49489691", reply)
+        self.assertNotIn("/go/", reply)
+
 
 if __name__ == "__main__":
     unittest.main()
