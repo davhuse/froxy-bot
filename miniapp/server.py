@@ -27,7 +27,10 @@ if sys.platform.startswith("win"):
         pass
 
 from flask import Flask, jsonify, request, send_from_directory
-from shopier_dynamic import create_dynamic_shopier_listing, check_and_sync_shopier_orders
+try:
+    from shopier_dynamic import create_dynamic_shopier_listing, check_and_sync_shopier_orders
+except ImportError:
+    from .shopier_dynamic import create_dynamic_shopier_listing, check_and_sync_shopier_orders
 
 BASE_DIR = Path(__file__).resolve().parent
 PRODUCTS_DB_PATH = BASE_DIR / "products_db.json"

@@ -1,6 +1,8 @@
 // KeyVadi Ultra-Premium Mini App Controller (v6.0 - Vitrin Category & Instant Sync)
 
 const tg = window.Telegram?.WebApp || null;
+const API_BASE = window.location.pathname.startsWith('/keyvadi') ? '/keyvadi' : '';
+const api = path => `${API_BASE}${path}`;
 
 // Initialize Telegram WebApp SDK
 if (tg) {
@@ -79,7 +81,7 @@ async function registerAndSyncUserProfile() {
     return;
   }
   try {
-    const res = await fetch(`/api/user/${tgUser.id}`, {
+    const res = await fetch(api(`/api/user/${tgUser.id}`), {
       method: 'POST',
       headers: authHeaders(),
       body: JSON.stringify({ init_data: telegramInitData })
@@ -141,7 +143,7 @@ function startBackgroundBalanceSync() {
   if (!tgUser || !telegramInitData) return;
   setInterval(async () => {
     try {
-      const res = await fetch(`/api/user/${tgUser.id}`, { headers: authHeaders() });
+      const res = await fetch(api(`/api/user/${tgUser.id}`), { headers: authHeaders() });
       if (res.ok) {
         const data = await res.json();
         if (data.success && data.user) {
@@ -319,7 +321,7 @@ window.buyWithWallet = async function() {
   }
 
   try {
-    const res = await fetch('/api/user/purchase', {
+    const res = await fetch(api('/api/user/purchase'), {
       method: 'POST',
       headers: authHeaders(),
       body: JSON.stringify({
@@ -419,7 +421,7 @@ window.proceedShopierTopup = async function() {
   showToast(`${amount} TL için anlık Shopier ilanı açılıyor...`, '⚡');
 
   try {
-    const res = await fetch('/api/balance/create-dynamic-topup', {
+    const res = await fetch(api('/api/balance/create-dynamic-topup'), {
       method: 'POST',
       headers: authHeaders(),
       body: JSON.stringify({

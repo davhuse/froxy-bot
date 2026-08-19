@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, jsonify, redirect, abort
+from werkzeug.middleware.dispatcher import DispatcherMiddleware
 import subprocess
 import os
 import sys
@@ -2125,6 +2126,16 @@ def start_background_threads():
 
 start_background_threads()
 start_store_worker()
+
+# KeyVadi Mini App is mounted under the same stateless web service. Its
+# mutable JSON state remains on the stateful Render API/worker deployment;
+# this mount keeps the public storefront URL consistent on Wasmer.
+try:
+    from miniapp.server import app as keyvadi_miniapp
+    app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {'/keyvadi': keyvadi_miniapp})
+    print('[App] KeyVadi Mini App mounted at /keyvadi')
+except Exception as exc:
+    print(f'[App] KeyVadi Mini App mount unavailable: {exc}')
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
