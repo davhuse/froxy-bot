@@ -7,7 +7,7 @@ if sys.platform.startswith('win'):
     sys.stdout.reconfigure(encoding='utf-8')
 
 def fetch_logs():
-    url = "https://froxy-bot.onrender.com/api/logs"
+    url = "https://froxy-bot-qy0a.onrender.com/api/logs"
     try:
         req = urllib.request.Request(url)
         token = os.environ.get("PANEL_ADMIN_TOKEN", "").strip()
