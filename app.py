@@ -12,12 +12,16 @@ import re
 import threading
 import time
 import asyncio
-import psutil
+try:
+    import psutil
+except ImportError:  # Wasmer Edge/WASIX does not provide a psutil wheel.
+    psutil = None
 import socket
 import hmac
 import base64
 import hashlib
 import atexit
+import signal
 from sales_metrics import record_event, summarize as summarize_sales
 from sales_conversion import cta_experiment_status, parse_purchase_token, product_by_id, purchase_target_url, refresh_configured_catalogs
 from blast_scheduler import load_blast_snapshot
@@ -188,6 +192,15 @@ def bot_runtime_enabled():
     opt in explicitly with BOT_RUNTIME_ENABLED=true; Render is the default
     owner for production.
     """
+    if (
+        os.environ.get("WASMER_EDGE", "").strip().lower() in {"1", "true", "yes", "on"}
+        and os.environ.get("WASMER_TELEGRAM_WORKER", "0").strip().lower()
+        not in {"1", "true", "yes", "on"}
+    ):
+        # Edge apps are stateless by default; keep Telegram sessions on the
+        # dedicated persistent worker until Wasmer persistent workloads are
+        # explicitly enabled and smoke-tested.
+        return False
     value = os.environ.get("BOT_RUNTIME_ENABLED", "").strip().lower()
     if value in {"0", "false", "no", "off"}:
         return False
@@ -263,8 +276,56 @@ def command_runs_python_script(process_name, command_line, script_name):
     return is_python and wanted in script_args
 
 
+class _ProcHandle:
+    """Minimal psutil-compatible process handle for the WASIX fallback."""
+
+    def __init__(self, pid):
+        self.pid = int(pid)
+
+    def children(self, recursive=False):
+        return []
+
+    def terminate(self):
+        os.kill(self.pid, signal.SIGTERM)
+
+    def kill(self):
+        os.kill(self.pid, signal.SIGKILL)
+
+    def wait(self, timeout=None):
+        deadline = time.time() + (timeout or 0)
+        while True:
+            try:
+                os.kill(self.pid, 0)
+            except OSError:
+                return 0
+            if timeout is not None and time.time() >= deadline:
+                raise TimeoutError()
+            time.sleep(0.1)
+
+
 def get_processes_by_script(script_name):
     """Return every Python process running a script, including stale duplicates."""
+    if psutil is None:
+        # WASIX has no psutil wheel. Keep a small /proc fallback for ordinary
+        # Linux deployments and leave it empty on platforms without /proc.
+        found = []
+        proc_root = "/proc"
+        try:
+            for entry in os.listdir(proc_root):
+                if not entry.isdigit():
+                    continue
+                pid = int(entry)
+                try:
+                    raw = open(os.path.join(proc_root, entry, "cmdline"), "rb").read()
+                    cmd = [part.decode("utf-8", "replace") for part in raw.split(b"\0") if part]
+                    name = open(os.path.join(proc_root, entry, "comm"), encoding="utf-8").read().strip()
+                    if command_runs_python_script(name, cmd, script_name):
+                        found.append(_ProcHandle(pid))
+                except (FileNotFoundError, PermissionError, OSError):
+                    continue
+        except (FileNotFoundError, PermissionError, OSError):
+            return []
+        return found
     found = {}
     try:
         for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
@@ -304,7 +365,7 @@ def kill_process_by_script(script_name):
                 except: pass
             proc.terminate()
             try: proc.wait(timeout=3)
-            except psutil.TimeoutExpired: proc.kill()
+            except Exception: proc.kill()
             killed = True
         except Exception:
             pass

@@ -1,7 +1,6 @@
 Flask
 Telethon
 requests
-psutil
 google-auth
 gunicorn
 SQLAlchemy>=2.0,<3
