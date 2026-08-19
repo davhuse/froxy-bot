@@ -50,9 +50,9 @@ from PIL import Image, ImageDraw, ImageFont
 # 33 Products list from database
 products = [
     # EGLENCE & MUZIK
-    {"name": "YouTube Premium (3 Aylık Kod)", "price": 44.99, "category": "Entertainment", "desc": "YouTube Premium 3 Aylık Aktivasyon Kodu. Reklamsız video izleme ve YouTube Music Premium dahildir. UYARI: Yeni hesaplarda veya daha önce Premium alınmamış hesaplarda aktifleştirilmelidir."},
+    {"name": "YouTube Premium (3 Aylık Kod)", "price": 19.90, "category": "Entertainment", "desc": "YouTube Premium 3 Aylık Aktivasyon Kodu. Reklamsız video izleme ve YouTube Music Premium dahildir."},
     {"name": "Spotify Premium (4 Aylık Kod)", "price": 34.99, "category": "Entertainment", "desc": "Spotify Premium 4 Aylık Aktivasyon Kodu. Kendi kişisel hesabınıza tanımlanır. Reklamsız ve yüksek kaliteli müzik keyfi. UYARI: Daha önce Premium üyeliği aktif edilmemiş (yeni/bireysel) hesaplarda geçerlidir."},
-    {"name": "Netflix 4K Ultra HD (Kişisel Profil)", "price": 89.99, "category": "Entertainment", "desc": "Kişisel Netflix 4K Ultra HD Profili. Ortak hesapta size ait özel profil ve şifreleme ile full garanti sağlanır."},
+    {"name": "Netflix 4K Ultra HD (Kişisel Profil)", "price": 119.90, "category": "Entertainment", "desc": "Kişisel Netflix 4K Ultra HD Profili."},
     {"name": "Exxen Reklamsız (3 Aylık)", "price": 34.99, "category": "Entertainment", "desc": "Exxen Reklamsız 3 Aylık Üyelik. Giriş bilgileri sipariş sonrasında teslim edilir."},
     {"name": "Crunchyroll Premium (3 Aylık)", "price": 99.00, "category": "Entertainment", "desc": "Crunchyroll Premium 3 Aylık Üyelik."},
 
@@ -71,14 +71,14 @@ products = [
 
     # DIJITAL ARACLAR & YAZILIMLAR
     {"name": "Canva Pro (1 Yıllık Yetki)", "price": 79.99, "category": "Design", "desc": "Canva Pro 1 Yıllık Yetkilendirme. Kendi kişisel hesabınıza Pro özellikleri tanımlanır."},
-    {"name": "Canva Pro Öğretmen (1 Yıllık)", "price": 149.99, "category": "Design", "desc": "Canva Pro Öğretmen 1 Yıllık Üyelik. Kendi mail adresinize tanımlanır. Sınıf açıp öğrenci ekleme yetkisi mevcuttur."},
+    {"name": "Canva Pro Öğretmen (1 Yıllık)", "price": 79.90, "category": "Design", "desc": "Canva Pro Öğretmen 1 Yıllık Üyelik."},
     {"name": "Adobe Express (3 Aylık)", "price": 99.99, "category": "Design", "desc": "Adobe Express 3 Aylık Pro Üyelik. Kendi hesabınıza tanımlanır. 1 hafta garanti sağlanır."},
     {"name": "Adobe Creative Cloud (1 Haftalık)", "price": 69.99, "category": "Design", "desc": "Adobe Creative Cloud Tüm Uygulamalar 1 Haftalık Üyelik. 1 hafta garanti sağlanır."},
     {"name": "Adobe Creative Cloud (1 Aylık)", "price": 119.99, "category": "Design", "desc": "Adobe Creative Cloud Tüm Uygulamalar 1 Aylık Üyelik. 1 hafta garanti sağlanır."},
     {"name": "Adobe Creative Cloud (4 Aylık)", "price": 249.99, "category": "Design", "desc": "Adobe Creative Cloud Tüm Uygulamalar 4 Aylık Üyelik. 1 hafta garanti sağlanır."},
     {"name": "CapCut Pro (1 Haftalık Hesap)", "price": 99.99, "category": "Design", "desc": "CapCut Pro 1 Haftalık Kullanım Hesabı. 3 gün kullanım garantisi sağlanır."},
     {"name": "Kiro (10k Kredili Hesap)", "price": 499.99, "category": "Design", "desc": "Kiro 10.000 Kredili Görsel ve Video Üretim Hesabı. Giriş garantilidir."},
-    {"name": "Duolingo Super Sınırsız", "price": 69.99, "category": "Design", "desc": "Duolingo Super Sınırsız Dil Eğitimi."},
+    {"name": "Duolingo Super Sınırsız", "price": 49.90, "category": "Design", "desc": "Duolingo Super Sınırsız Dil Eğitimi."},
     {"name": "Scribd Premium (3 Aylık)", "price": 99.99, "category": "Design", "desc": "Scribd Premium 3 Aylık Üyelik."},
     {"name": "TradingView Premium (3 Aylık)", "price": 349.99, "category": "Design", "desc": "TradingView Premium 3 Aylık Erişim. Sınırsız grafik ve indikatör yerleşimi."},
 

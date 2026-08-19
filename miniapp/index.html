@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>KeyVadi — Premium Dijital Lisans & E-Pin Store</title>
+  
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- Telegram WebApp SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="style.css?v=6.0" />
+</head>
+<body>
+  <!-- Ambient Aurora Glow Orbs -->
+  <div class="aurora-bg">
+    <div class="aurora-orb orb-1"></div>
+    <div class="aurora-orb orb-2"></div>
+    <div class="aurora-orb orb-3"></div>
+  </div>
+
+  <div id="app" class="app-container">
+    
+    <!-- TOP HEADER -->
+    <header class="app-header">
+      <div class="header-left">
+        <div class="brand-avatar">
+          <span class="avatar-icon">⚡</span>
+          <span class="online-indicator" title="Sistem Aktif"></span>
+        </div>
+        <div class="brand-info">
+          <div class="brand-name">KEYVADI<span class="brand-badge">PRO</span></div>
+          <div class="user-greeting" id="headerUserName">Yükleniyor...</div>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <button class="balance-pill" onclick="switchTab('walletTab')" title="Bakiye Yükle">
+          <div class="balance-glow"></div>
+          <span class="balance-icon">💳</span>
+          <span class="balance-amount dynamic-balance">₺0.00</span>
+          <span class="balance-plus">+</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- TAB 1: MAĞAZA (STORE) -->
+    <main id="storeTab" class="tab-view active">
+      
+      <!-- STORIES / HIGHLIGHTS CAROUSEL -->
+      <section class="stories-section">
+        <div class="stories-track">
+          
+          <div class="story-card story-gold" onclick="setCategory('vitrin', this)">
+            <div class="story-glow"></div>
+            <div class="story-icon">⭐</div>
+            <div class="story-title">Vitrin İlanları</div>
+            <div class="story-desc">En Çok Satanlar</div>
+            <div class="story-tag">Öne Çıkan</div>
+          </div>
+
+          <div class="story-card story-blue" onclick="switchTab('walletTab')">
+            <div class="story-glow"></div>
+            <div class="story-icon">⚡</div>
+            <div class="story-title">Otomatik Bakiye</div>
+            <div class="story-desc">Güvenli ödeme</div>
+            <div class="story-tag">Shopier</div>
+          </div>
+
+          <div class="story-card story-purple" onclick="setCategory('ai', this)">
+            <div class="story-glow"></div>
+            <div class="story-icon">🤖</div>
+            <div class="story-title">Yapay Zeka</div>
+            <div class="story-desc">GPT-4o & Gemini</div>
+            <div class="story-tag">%70 İndirim</div>
+          </div>
+
+          <div class="story-card story-green" onclick="notifySupport()">
+            <div class="story-glow"></div>
+            <div class="story-icon">🛡️</div>
+            <div class="story-title">%100 Güvence</div>
+            <div class="story-desc">7/24 Canlı Destek</div>
+            <div class="story-tag">Garantili</div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- SEARCH BAR -->
+      <section class="search-section">
+        <div class="search-input-wrapper">
+          <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input type="text" id="searchInput" placeholder="61 ürün içinde ara (Netflix, ChatGPT, Canva...)" autocomplete="off" />
+          <button id="searchClear" class="search-clear-btn" style="display: none;">✕</button>
+        </div>
+      </section>
+
+      <!-- CATEGORY CHIPS SLIDER -->
+      <section class="categories-section">
+        <div class="categories-scroll" id="categoryChips">
+          <button class="category-chip active" data-cat="all" onclick="setCategory('all', this)">
+            <span class="cat-icon">⚡</span>
+            <span>Tümü</span>
+          </button>
+          <button class="category-chip" data-cat="vitrin" onclick="setCategory('vitrin', this)">
+            <span class="cat-icon">⭐</span>
+            <span>Vitrin İlanları</span>
+          </button>
+          <button class="category-chip" data-cat="ai" onclick="setCategory('ai', this)">
+            <span class="cat-icon">🤖</span>
+            <span>Yapay Zeka</span>
+          </button>
+          <button class="category-chip" data-cat="cinema" onclick="setCategory('cinema', this)">
+            <span class="cat-icon">🎬</span>
+            <span>Sinema & Dizi</span>
+          </button>
+          <button class="category-chip" data-cat="gaming" onclick="setCategory('gaming', this)">
+            <span class="cat-icon">🎮</span>
+            <span>Oyun & E-Pin</span>
+          </button>
+          <button class="category-chip" data-cat="design" onclick="setCategory('design', this)">
+            <span class="cat-icon">🎨</span>
+            <span>Tasarım & Edit</span>
+          </button>
+          <button class="category-chip" data-cat="software" onclick="setCategory('software', this)">
+            <span class="cat-icon">💻</span>
+            <span>Yazılım & Lisans</span>
+          </button>
+          <button class="category-chip" data-cat="social" onclick="setCategory('social', this)">
+            <span class="cat-icon">📱</span>
+            <span>Sosyal Medya</span>
+          </button>
+          <button class="category-chip" data-cat="coupons" onclick="setCategory('coupons', this)">
+            <span class="cat-icon">🎟️</span>
+            <span>Kupon & Puan</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- SECTION HEADER -->
+      <div class="section-title-row">
+        <div class="section-heading">
+          <span class="heading-glow-bar"></span>
+          <h2 id="currentCategoryHeading">Tüm Ürünler</h2>
+        </div>
+        <span class="badge-count" id="filteredCountBadge">61 Ürün</span>
+      </div>
+
+      <!-- PRODUCTS GRID -->
+      <section class="products-grid" id="productsGrid">
+        <!-- Dynamically rendered via app.js -->
+      </section>
+
+    </main>
+
+    <!-- TAB 2: BAKİYE YÜKLE (WALLET / TOP-UP) -->
+    <main id="walletTab" class="tab-view">
+      <div class="view-header">
+        <h2>Cüzdan & Bakiye</h2>
+        <p>İstediğin tutar için sana özel Shopier ödeme ilanı oluşturulur.</p>
+      </div>
+
+      <!-- WALLET BALANCE HERO CARD -->
+      <div class="wallet-hero-card">
+        <div class="wallet-card-glow"></div>
+        <div class="wallet-hero-top">
+          <span class="wallet-label">Kullanılabilir Cüzdan Bakiyesi</span>
+          <span class="wallet-status-badge">⚡ Aktif</span>
+        </div>
+        <div class="wallet-hero-amount dynamic-balance">₺0.00</div>
+        <div class="wallet-hero-footer">
+          <span>Müşteri No: <strong id="walletUserShortId">—</strong></span>
+          <span class="instant-tag">🚀 7/24 Anında Yükleme</span>
+        </div>
+      </div>
+
+      <!-- DYNAMIC SHOPIER TOPUP CARD -->
+      <div class="glass-card topup-card">
+        <div class="card-header-row">
+          <div class="card-header-icon">💳</div>
+          <div>
+            <h3>Shopier ile Kredi / Banka Kartı</h3>
+            <span class="card-subtext">İstediğin tutarı yaz, sana özel sıfır ilan açılsın</span>
+          </div>
+        </div>
+
+        <div class="topup-presets">
+          <button class="topup-btn" onclick="selectTopupPreset(25, this)">₺25</button>
+          <button class="topup-btn" onclick="selectTopupPreset(50, this)">₺50</button>
+          <button class="topup-btn selected" onclick="selectTopupPreset(100, this)">₺100</button>
+          <button class="topup-btn" onclick="selectTopupPreset(250, this)">₺250</button>
+          <button class="topup-btn" onclick="selectTopupPreset(500, this)">₺500</button>
+          <button class="topup-btn" onclick="selectTopupPreset(1000, this)">₺1000</button>
+        </div>
+
+        <div class="custom-amount-group">
+          <label for="customTopupInput">Özel Yüklenecek Tutar (TL)</label>
+          <div class="input-with-currency">
+            <span class="currency-symbol">₺</span>
+            <input type="number" id="customTopupInput" value="100" min="5" max="50000" step="1" />
+          </div>
+        </div>
+
+        <button class="btn-primary-action" id="btnProceedTopup" onclick="proceedShopierTopup()">
+          <span class="btn-icon">⚡</span>
+          <span>Shopier ile 3D Güvenli Öde</span>
+        </button>
+
+        <div class="topup-info-bullets">
+          <div class="info-bullet">✓ Kart bilgisi KeyVadi tarafından saklanmaz.</div>
+          <div class="info-bullet">✓ Ödemeler doğrulamaya bağlı olarak en geç 10 dakika içinde bakiyeye yansır.</div>
+          <div class="info-bullet">✓ Ödeme veya süre sonrasında ilan kapatılır.</div>
+        </div>
+      </div>
+
+      <!-- HAVALE / EFT / ENPARA CARD -->
+      <div class="glass-card iban-card">
+        <div class="card-header-row">
+          <div class="card-header-icon">🏦</div>
+          <div>
+            <h3>Havale / EFT / FAST (Enpara)</h3>
+            <span class="card-subtext">Komisyonsuz direkt banka transferi</span>
+          </div>
+        </div>
+
+        <!-- UYARI KUTUSU: AÇIKLAMA YAZMAYIN -->
+        <div class="iban-warning-banner">
+          <span class="warn-icon">⚠️</span>
+          <div>
+            <strong>ÖNEMLİ BİLGİ:</strong>
+            <p>Havale / EFT yaparken <strong>açıklama kısmını kesinlikle BOŞ bırakınız</strong> (Hiçbir şey yazmayınız).</p>
+          </div>
+        </div>
+
+        <div class="iban-box">
+          <div class="iban-row">
+            <span class="iban-label">Alıcı Adı:</span>
+            <span class="iban-val">Hülya Rençber</span>
+          </div>
+          <div class="iban-row">
+            <span class="iban-label">Banka:</span>
+            <span class="iban-val">Enpara / QNB Finansbank</span>
+          </div>
+          <div class="iban-row code-row">
+            <span class="iban-code">TR93 0015 7000 0000 0120 2988 14</span>
+            <button class="btn-copy-sm" onclick="copyIBAN('TR930015700000000120298814')">Kopyala</button>
+          </div>
+        </div>
+
+        <button class="btn-secondary-action" onclick="notifyPayment()">
+          <span>💬 Ödeme Bildirimi Yap (WhatsApp / Telegram Destek)</span>
+        </button>
+      </div>
+
+    </main>
+
+    <!-- TAB 3: REFERANS & KAZANÇ (AFFILIATE) -->
+    <main id="referralTab" class="tab-view">
+      <div class="view-header">
+        <h2>Referans & Kazanç</h2>
+        <p>Arkadaşlarını davet et, her alışverişlerinden %10 anında nakit kazan!</p>
+      </div>
+
+      <!-- AFFILIATE STATS HERO -->
+      <div class="affiliate-hero-card">
+        <div class="affiliate-card-glow"></div>
+        <div class="affiliate-stats-grid">
+          <div class="stat-box">
+            <span class="stat-num" id="refCountVal">0</span>
+            <span class="stat-label">Kayıtlı Referans</span>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-box">
+            <span class="stat-num text-gold" id="refEarningsVal">₺0,00</span>
+            <span class="stat-label">Toplam Kazanç</span>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-box">
+            <span class="stat-num text-green">%10</span>
+            <span class="stat-label">Komisyon Oranı</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- REFERRAL LINK BOX -->
+      <div class="glass-card">
+        <h3>Özel Davet Bağlantın</h3>
+        <p class="card-subtext">Bu linki Telegram gruplarında veya arkadaşlarınla paylaş:</p>
+        
+        <div class="ref-link-group">
+          <input type="text" id="refLinkInput" readonly value="" />
+          <button class="btn-copy-ref" onclick="copyRefLink()">
+            <span>📋 Kopyala</span>
+          </button>
+        </div>
+
+        <button class="btn-primary-action btn-share-tg" onclick="shareOnTelegram()">
+          <span>✈️ Telegram'da Paylaş</span>
+        </button>
+      </div>
+
+      <!-- HOW IT WORKS -->
+      <div class="glass-card">
+        <h3>Nasıl Çalışır?</h3>
+        <div class="steps-list">
+          <div class="step-item">
+            <div class="step-badge">1</div>
+            <div>
+              <strong>Linkini Paylaş</strong>
+              <p>Özel referans linkini arkadaşlarına veya kanallarına gönder.</p>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-badge">2</div>
+            <div>
+              <strong>Arkadaşın Alışveriş Yapsın</strong>
+              <p>Linkinle bota gelen kullanıcı indirimli lisans satın alır.</p>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-badge">3</div>
+            <div>
+              <strong>%10 Nakit Anında Cüzdanda</strong>
+              <p>Her sipariş tutarının %10'u anında cüzdan bakiyene eklenir.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- TAB 4: PROFİL & DESTEK (PROFILE) -->
+    <main id="profileTab" class="tab-view">
+      <div class="view-header">
+        <h2>Kullanıcı Profili</h2>
+        <p>Hesap detayların, siparişlerin ve canlı destek.</p>
+      </div>
+
+      <div class="glass-card profile-hero-card">
+        <div class="profile-avatar-large">
+          <span>👤</span>
+        </div>
+        <h3 id="profileUserName">KeyVadi Müşteri</h3>
+        <div class="profile-meta">
+          <span>Telegram ID: <strong id="profileUserId">—</strong></span>
+          <span class="profile-tier-badge">👑 VIP Üye</span>
+        </div>
+      </div>
+
+      <div class="glass-card">
+        <h3>Hızlı İşlemler</h3>
+        <div class="quick-actions-grid">
+          <button class="quick-btn" onclick="switchTab('walletTab')">
+            <span class="q-icon">💳</span>
+            <span>Bakiye Yükle</span>
+          </button>
+          <button class="quick-btn" onclick="switchTab('referralTab')">
+            <span class="q-icon">🎁</span>
+            <span>Referanslarım</span>
+          </button>
+          <button class="quick-btn" onclick="notifySupport()">
+            <span class="q-icon">💬</span>
+            <span>Canlı Destek</span>
+          </button>
+          <button class="quick-btn" onclick="window.open('https://www.shopier.com/keyvadi', '_blank')">
+            <span class="q-icon">🛍️</span>
+            <span>Shopier Mağaza</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="glass-card">
+        <h3>🛡️ Güvence & Garanti Politikası</h3>
+        <div class="guarantee-box">
+          <p>KeyVadi üzerinden alınan tüm lisans, hesap ve e-pinler süreleri boyunca telafi ve değişim garantimiz altındadır. Herhangi bir sorunda Telegram destek ekibimiz 7/24 hizmetinizdedir.</p>
+        </div>
+        <button class="btn-primary-action" onclick="notifySupport()">
+          <span>💬 @KeyVadiDestek ile İletişime Geç</span>
+        </button>
+      </div>
+    </main>
+
+    <!-- FLOATING DOCK BOTTOM NAVIGATION -->
+    <nav class="bottom-dock">
+      <div class="dock-container">
+        
+        <button class="dock-item active" data-tab="storeTab" onclick="switchTab('storeTab')">
+          <div class="dock-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+          </div>
+          <span class="dock-label">Mağaza</span>
+          <span class="dock-dot"></span>
+        </button>
+
+        <button class="dock-item" data-tab="walletTab" onclick="switchTab('walletTab')">
+          <div class="dock-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
+          </div>
+          <span class="dock-label">Bakiye</span>
+          <span class="dock-dot"></span>
+        </button>
+
+        <button class="dock-item" data-tab="referralTab" onclick="switchTab('referralTab')">
+          <div class="dock-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          </div>
+          <span class="dock-label">Referans</span>
+          <span class="dock-dot"></span>
+        </button>
+
+        <button class="dock-item" data-tab="profileTab" onclick="switchTab('profileTab')">
+          <div class="dock-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="7" r="4"></circle><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path></svg>
+          </div>
+          <span class="dock-label">Profil</span>
+          <span class="dock-dot"></span>
+        </button>
+
+      </div>
+    </nav>
+
+    <!-- PRODUCT DETAIL MODAL (BOTTOM SHEET) -->
+    <div id="productDetailModal" class="modal-backdrop">
+      <div class="modal-sheet">
+        <button class="modal-close-btn" onclick="closeProductModal()">✕</button>
+        <div class="modal-drag-bar"></div>
+        
+        <div class="modal-hero-img-wrapper">
+          <img id="modalProductImg" src="" alt="Ürün Görseli" />
+          <span id="modalBadge" class="modal-badge-pill">POPÜLER</span>
+        </div>
+
+        <div class="modal-body-content">
+          <h2 id="modalProductTitle">Ürün Adı</h2>
+          <div class="modal-price-row">
+            <span class="modal-price-label">Fiyat:</span>
+            <span id="modalProductPrice" class="modal-price-val">₺0.00</span>
+          </div>
+
+          <p id="modalProductDesc" class="modal-desc">Ürün açıklaması burada yer alır.</p>
+
+          <div class="modal-features-list">
+            <div class="modal-feat-item">📦 <strong>Teslimat türü ve stok satın alma öncesi belirtilir</strong></div>
+            <div class="modal-feat-item">💬 <strong>Sipariş sonrası destek ekibi yardımcı olur</strong></div>
+            <div class="modal-feat-item">💳 <strong>Shopier veya cüzdan bakiyesi ile ödeme</strong></div>
+          </div>
+
+          <div class="modal-actions-stack">
+            <button class="btn-modal-shopier" onclick="buyViaShopier()">
+              <span>⚡ Shopier ile Doğrudan Satın Al</span>
+            </button>
+            <button class="btn-modal-wallet" onclick="buyWithWallet()">
+              <span>💰 Cüzdan Bakiyesi ile Al</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toastNotification" class="toast-popup"></div>
+
+  </div>
+
+  <!-- Main JavaScript Logic -->
+  <script src="app.js?v=6.0"></script>
+</body>
+</html>
