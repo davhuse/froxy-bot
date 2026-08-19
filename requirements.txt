@@ -1,5 +1,4 @@
 Flask
-Telethon
 requests
 google-auth
 gunicorn

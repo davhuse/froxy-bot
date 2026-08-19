@@ -1903,9 +1903,14 @@ def shopier_callback():
     except Exception as e:
         print(f"⚠️ Shopier webhook processing error: {e}")
         return str(e), 500
-from telethon import TelegramClient
-from telethon.sessions import StringSession
-from telethon.errors import SessionPasswordNeededError
+try:
+    from telethon import TelegramClient
+    from telethon.sessions import StringSession
+    from telethon.errors import SessionPasswordNeededError
+except ImportError:  # Web-only Wasmer build keeps Telegram workers on Render.
+    TelegramClient = None
+    StringSession = None
+    SessionPasswordNeededError = Exception
 
 telegram_logins = {}
 
@@ -1929,6 +1934,8 @@ async def disconnect_auth_client(client):
 
 @app.route('/api/telegram/send-code', methods=['POST'])
 def tg_send_code():
+    if TelegramClient is None:
+        return jsonify({"success": False, "message": "Telegram doğrulama bu web worker'da kapalı; aktif worker Render üzerinde çalışıyor."}), 503
     data = request.json or {}
     phone = data.get("phone", "").strip()
     api_id = os.environ.get('TELEGRAM_API_ID', '').strip()
@@ -1979,6 +1986,8 @@ def tg_send_code():
 
 @app.route('/api/telegram/verify-code', methods=['POST'])
 def tg_verify_code():
+    if TelegramClient is None:
+        return jsonify({"success": False, "message": "Telegram doğrulama bu web worker'da kapalı; aktif worker Render üzerinde çalışıyor."}), 503
     data = request.json or {}
     code = data.get("code", "").strip()
     slot = data.get("slot", "1")
@@ -2021,6 +2030,8 @@ def tg_verify_code():
 
 @app.route('/api/telegram/verify-password', methods=['POST'])
 def tg_verify_password():
+    if TelegramClient is None:
+        return jsonify({"success": False, "message": "Telegram doğrulama bu web worker'da kapalı; aktif worker Render üzerinde çalışıyor."}), 503
     data = request.json or {}
     password = data.get("password", "").strip()
     slot = data.get("slot", "1")
