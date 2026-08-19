@@ -19,7 +19,11 @@ from urllib.parse import parse_qsl
 import urllib.parse
 import urllib.request
 
-from argon2 import PasswordHasher
+try:
+    from argon2 import PasswordHasher
+except ImportError:  # Wasmer web build keeps Argon2-only admin login on Render.
+    PasswordHasher = None
+from werkzeug.security import check_password_hash
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from flask import Blueprint, abort, jsonify, render_template, request, send_file, session
 import pyotp
@@ -1737,7 +1741,10 @@ def admin_page():
                 row = conn.execute(select(admins).where(and_(admins.c.username == username, admins.c.active.is_(True)))).mappings().first()
             if not row:
                 raise ValueError("Giriş reddedildi")
-            PasswordHasher().verify(row["password_hash"], password)
+            if PasswordHasher is not None:
+                PasswordHasher().verify(row["password_hash"], password)
+            elif not check_password_hash(row["password_hash"], password):
+                raise ValueError("Giriş reddedildi")
             if not pyotp.TOTP(row["totp_secret"]).verify(otp, valid_window=1):
                 raise ValueError("Giriş reddedildi")
             session.clear()
