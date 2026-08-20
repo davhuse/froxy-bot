@@ -209,7 +209,12 @@ class BlastCoordinator:
                     record["initialized_v3"] = True
                     record["status"] = "queued" if desired_due <= now else "waiting"
                     changed = True
-            if changed:
+            # The web process reads the local checkpoint for its status API.
+            # When a fresh deploy restores an already-initialized state from
+            # Firestore, no account field necessarily changes; materialize the
+            # remote snapshot locally anyway so the panel and worker report the
+            # same queue immediately after startup.
+            if changed or not self.path.exists():
                 self._persist()
             return self.snapshot()
 

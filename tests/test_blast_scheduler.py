@@ -1,6 +1,7 @@
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from blast_scheduler import BlastCoordinator, is_recent_message_from_account
 
@@ -44,6 +45,30 @@ class BlastCoordinatorTests(unittest.TestCase):
             self.assertFalse(scheduler.try_acquire_turn("FroxyOnline"))
             self.assertTrue(scheduler.try_acquire_turn("KeyVadiOnline"))
             self.assertFalse(scheduler.try_acquire_turn("LisansArenaOnline"))
+
+    def test_remote_checkpoint_is_materialized_for_status_api(self):
+        with tempfile.TemporaryDirectory() as directory:
+            clock = Clock()
+            checkpoint = Path(directory) / "checkpoint.json"
+            seed = self.make_coordinator(directory, clock)
+            seed.initialize_accounts({"KeyVadiOnline": 600})
+            remote_state = seed.snapshot()
+            checkpoint.unlink()
+
+            with patch.object(BlastCoordinator, "_load_remote", return_value=remote_state):
+                restored = BlastCoordinator(
+                    checkpoint,
+                    remote=True,
+                    owner_id="after-deploy",
+                    now_fn=clock,
+                )
+            restored.initialize_accounts({"KeyVadiOnline": 600})
+
+            self.assertTrue(checkpoint.exists())
+            self.assertEqual(
+                restored.snapshot()["accounts"]["KeyVadiOnline"]["due_at"],
+                remote_state["accounts"]["KeyVadiOnline"]["due_at"],
+            )
 
     def test_deploy_resumes_same_targets_and_never_repeats_accepted(self):
         with tempfile.TemporaryDirectory() as directory:
