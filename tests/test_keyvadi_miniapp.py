@@ -33,6 +33,14 @@ class KeyVadiMiniAppTests(unittest.TestCase):
         response = self.client.post("/api/balance/simulate-payment", json={"user_id": 123, "amount": 10})
         self.assertEqual(response.status_code, 404)
 
+    def test_support_bot_main_menu_uses_signed_webview_not_plain_url(self):
+        source = (ROOT / "froxy_bot.py").read_text(encoding="utf-8")
+        start = source.index("async def show_main_menu")
+        end = source.index("@bot.on(events.CallbackQuery", start)
+        menu_source = source[start:end]
+        self.assertIn('buttons = mini_app_markup("Mağazayı Aç")', menu_source)
+        self.assertNotIn("Button.url", menu_source)
+
     def test_purchase_idempotency_prevents_double_charge(self):
         with patch.dict(os.environ, {"KEYVADI_ALLOW_DEV_AUTH": "1", "APP_ENV": "test"}):
             self.client.post("/api/user/123", json={"user_id": 123})

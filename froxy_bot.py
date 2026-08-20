@@ -836,16 +836,11 @@ async def show_main_menu(event, user_id, is_callback=False):
         "Netflix, ChatGPT Plus, Canva Pro, Gemini, Xbox Game Pass, FC26, Steam Key ve tüm lisanslar **%70 indirimli** ve **7/24 anında otomatik teslimatla** KeyVadi Mini App'te!\n\n"
         "👇 **Alışverişe başlamak ve bakiyenizi yönetmek için tıklayın:**"
     )
-    buttons = [
-        [Button.url("🚀 KeyVadi Mağazasını Aç (Mini App)", KEYVADI_MINI_APP_URL)],
-        [
-            Button.url("💳 Bakiye Yükle", f"{KEYVADI_MINI_APP_URL}#walletTab"),
-            Button.url("🎁 %10 Nakit Kazan", f"{KEYVADI_MINI_APP_URL}#referralTab")
-        ],
-        [
-            Button.url("💬 Canlı Destek (@KeyVadiDestek)", "https://t.me/KeyVadiDestek")
-        ]
-    ]
+    # A normal URL button opens Telegram's browser without signed WebApp
+    # initData, which makes balance and Shopier operations correctly fail
+    # authentication.  Use Telegram's WebView reply button so the same page
+    # receives the verified Telegram identity required by the finance APIs.
+    buttons = mini_app_markup("Mağazayı Aç")
     if is_callback:
         await safe_event_edit(event, welcome, buttons=buttons)
     else:

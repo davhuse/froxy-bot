@@ -2193,10 +2193,20 @@ class _MountedRootMiddleware:
         return self.wsgi_app(environ, start_response)
 try:
     from miniapp.server import app as keyvadi_miniapp
-    mounts['/keyvadi'] = keyvadi_miniapp
+    mounts['/keyvadi'] = _MountedRootMiddleware(keyvadi_miniapp)
     print('[App] KeyVadi Mini App mounted at /keyvadi')
 except Exception as exc:
     print(f'[App] KeyVadi Mini App mount unavailable: {exc}')
+
+try:
+    # Keep the Antigravity-built LisansArena storefront intact.  Its static
+    # assets and Shopier balance endpoints are relative to this mount and must
+    # not be replaced by the older server-rendered compatibility page.
+    from miniapp_lisansarena.server import app as lisansarena_miniapp
+    mounts['/la/app'] = _MountedRootMiddleware(lisansarena_miniapp)
+    print('[App] LisansArena Mini App mounted at /la/app')
+except Exception as exc:
+    print(f'[App] LisansArena Mini App mount unavailable: {exc}')
 
 if mounts:
     app.wsgi_app = DispatcherMiddleware(app.wsgi_app, mounts)
