@@ -299,7 +299,13 @@ def health_check():
     if not remote_credentials_configured():
         return {"configured": False, "reachable": False, "status": "missing_credentials"}
     try:
-        with _request(f"{BASE_URL}/__codex_health__") as response:
+        # Do not probe with a synthetic document ID: Firestore reserves IDs
+        # beginning and ending with double underscores (for example
+        # ``__codex_health__``) and answers with INVALID_ARGUMENT.  Listing a
+        # single document from the existing collection proves the same API,
+        # project and credentials are reachable without mutating data.
+        url = f"{BASE_URL}?pageSize=1"
+        with _request(url) as response:
             response.read(1)
         return {"configured": True, "reachable": True, "status": "ready"}
     except urllib.error.HTTPError as exc:
