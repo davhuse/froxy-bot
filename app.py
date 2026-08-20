@@ -2192,15 +2192,24 @@ def start_background_threads():
 start_background_threads()
 start_store_worker()
 
-# KeyVadi Mini App is mounted under the same stateless web service. Its
-# mutable JSON state remains on the stateful Render API/worker deployment;
-# this mount keeps the public storefront URL consistent on Wasmer.
+# KeyVadi & LisansArena Mini Apps mounted under the web service
+mounts = {}
 try:
     from miniapp.server import app as keyvadi_miniapp
-    app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {'/keyvadi': keyvadi_miniapp})
+    mounts['/keyvadi'] = keyvadi_miniapp
     print('[App] KeyVadi Mini App mounted at /keyvadi')
 except Exception as exc:
     print(f'[App] KeyVadi Mini App mount unavailable: {exc}')
+
+try:
+    from miniapp_lisansarena.server import app as lisansarena_miniapp
+    mounts['/la/app'] = lisansarena_miniapp
+    print('[App] LisansArena Mini App mounted at /la/app')
+except Exception as exc:
+    print(f'[App] LisansArena Mini App mount unavailable: {exc}')
+
+if mounts:
+    app.wsgi_app = DispatcherMiddleware(app.wsgi_app, mounts)
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))

@@ -68,3 +68,8 @@ venv/
 miniapp/users_data.json
 miniapp/pending_topups.json
 miniapp/credited_orders.json
+miniapp/active_topups.json
+miniapp_lisansarena/users_data.json
+miniapp_lisansarena/active_topups.json
+
+miniapp_lisansarena/pending_topups.json

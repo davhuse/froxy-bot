@@ -1,277 +1,233 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-KeyVadi — BarlasMedya Tarzı Dinamik Shopier Bakiye Motoru (v3.0)
-- Kullanıcının Telegram adı, soyadı ve ID'si ile anlık sıfır Shopier ilanı açar.
-- Ödeme yapıldığında Shopier Orders API'den teyit edip bakiyeyi anında cüzdana yükler.
-- Ödenen veya 1 saat içinde satın alınmayan sahipsiz ilanları Shopier'dan otomatik SİLER (mağaza temiz kalır).
+KeyVadi — Dinamik Shopier Bakiye Motoru ve Otomatik İlan Kapatıcı (v8.0)
+Özellikler:
+- Anlık bakiye ilanı açma (Shopier REST API v1)
+- Ödeme yapılınca anında bakiyeyi tanımlayıp ilanı silme
+- Kullanıcı satın almazsa, iptal ederse veya çıkarsa ilanı ANINDA Shopier'dan silme
+- Arka planda 5 dakikayı (300sn) aşan tüm satın alınmamış ilanları otomatik temizleme
 """
 
 import os
 import sys
 import json
 import time
+import threading
 import requests
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
-ROOT_DIR = BASE_DIR.parent
-CREDITED_ORDERS_PATH = BASE_DIR / "credited_orders.json"
-PENDING_TOPUPS_PATH = BASE_DIR / "pending_topups.json"
+ACTIVE_TOPUPS_FILE = BASE_DIR / "active_topups.json"
 
-def get_shopier_token():
-    return os.environ.get("SHOPIER_KEYVADI_ACCESS_TOKEN", "").strip()
+# KeyVadi Shopier Bearer Token
+KEYVADI_TOKEN = (os.environ.get("SHOPIER_KEYVADI_ACCESS_TOKEN") or os.environ.get("SHOPIER_BEARER_TOKEN") or "").strip()
 
-def load_json_file(path, default_val):
-    if path.exists():
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            return default_val
-    return default_val
+_cleaner_started = False
+_lock = threading.Lock()
 
-def save_json_file(path, data):
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+def load_active_topups():
+    with _lock:
+        if ACTIVE_TOPUPS_FILE.exists():
+            try:
+                with open(ACTIVE_TOPUPS_FILE, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception:
+                return {}
+        return {}
 
-CACHED_CDN_URL = "https://cdn.shopier.app/pictures_large/keyvadi_a71b72ba-c88a-4be2-a240-08d0a7f22888.png"
+def save_active_topups(data):
+    with _lock:
+        with open(ACTIVE_TOPUPS_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
 
-def delete_shopier_product(product_id: str):
-    """Shopier'dan ilanı siler (ödenen veya süresi geçen dinamik ilanları temizler)"""
-    token = get_shopier_token()
-    if not token or not product_id:
+def cancel_and_delete_topup(product_id: str) -> bool:
+    """Belirtilen ilanı hem Shopier'dan hem de yerel tablodan anında siler."""
+    pid = str(product_id).strip()
+    if not pid:
         return False
+
+    headers = {
+        "Authorization": f"Bearer {KEYVADI_TOKEN}",
+        "User-Agent": "Mozilla/5.0"
+    }
+
     try:
-        headers = {"Authorization": f"Bearer {token}"}
-        res = requests.delete(f"https://api.shopier.com/v1/products/{product_id}", headers=headers, timeout=5)
-        return res.status_code in [200, 204]
-    except Exception:
-        return False
+        requests.delete(f"https://api.shopier.com/v1/products/{pid}", headers=headers, timeout=8)
+    except Exception as e:
+        print(f"[KeyVadi Cancel Error] {e}")
+
+    topups = load_active_topups()
+    if pid in topups:
+        del topups[pid]
+        save_active_topups(topups)
+    return True
+
+def cleanup_user_previous_topups(user_id: int):
+    """Kullanıcının daha önce açılmış olup satın alınmamış ilanlarını siler."""
+    topups = load_active_topups()
+    pids_to_del = []
+    for pid, info in topups.items():
+        if str(info.get("user_id")) == str(user_id) and info.get("status") == "pending":
+            pids_to_del.append(pid)
+    
+    for pid in pids_to_del:
+        cancel_and_delete_topup(pid)
 
 def create_dynamic_shopier_listing(amount: float, user_id: int, user_name: str = "", username: str = "", idempotency_key: str = "") -> dict:
-    """
-    Shopier REST API üzerinden anlık, tam istenen tutarda dinamik sıfır ürün ilanı açar.
-    Kullanıcının Telegram Adı, Soyadı, @kullanıcıadı ve ID'sini başlığa ve açıklamaya işler.
-    """
-    token = get_shopier_token()
-    if not token:
-        return {"success": False, "error": "Shopier bağlantısı yapılandırılmamış", "is_live_shopier": False}
-    amount_str = f"{amount:.2f}"
-    
-    display_user = f"{user_name}".strip()
-    if not display_user:
-        display_user = "Müşteri"
+    """Shopier REST API v1 ile KeyVadi için anlık ilan açar."""
+    # Önceki açık kalanları temizle
+    cleanup_user_previous_topups(user_id)
 
-    pending = load_json_file(PENDING_TOPUPS_PATH, {})
-    if idempotency_key:
-        for existing in pending.values():
-            if (existing.get("user_id") == user_id and
-                    existing.get("idempotency_key") == idempotency_key and
-                    existing.get("status") == "pending"):
-                return {"success": True, "duplicate": True,
-                        "product_id": existing.get("product_id"),
-                        "payment_url": existing.get("payment_url"),
-                        "amount": existing.get("amount"), "is_live_shopier": True}
-
-    product_title = f"KeyVadi Bakiye (₺{amount_str}) - {display_user}"
-    product_desc = (
-        f"KeyVadi Telegram Mini App Otomatik Bakiye Yükleme.\n"
-        f"Müşteri: {display_user}\n"
-        f"Yüklenecek Tutar: {amount_str} TL\n"
-        f"Ödeme doğrulamaya bağlı olarak en geç 10 dakika içinde bakiyeye yansır."
-    )
-
+    token = KEYVADI_TOKEN
     headers = {
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
-        "Accept": "application/json",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
     }
+
+    display_name = user_name or (f"@{username}" if username else f"Müşteri #{user_id}")
+    clean_amount = round(float(amount), 2)
+    
     payload = {
-        "title": product_title,
+        "title": f"KeyVadi Cüzdan Bakiye Yükleme ({clean_amount:.2f} TL) - {display_name}",
         "type": "digital",
-        "description": product_desc,
+        "description": f"KeyVadi Otomatik Bakiye Yükleme | Telegram ID: {user_id} | Ad: {display_name}",
+        "stockQuantity": 1,
+        "shippingPayer": "sellerPays",
         "priceData": {
             "currency": "TRY",
-            "price": amount_str,
+            "price": clean_amount,
             "discount": False,
-            "discountedPrice": amount_str,
-            "shippingPrice": "0.00"
+            "shippingPrice": 0.0
         },
-        "stockQuantity": 999,
-        "shippingPayer": "sellerPays",
         "media": [
             {
                 "type": "image",
-                "url": CACHED_CDN_URL,
+                "url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/master-ball.png",
                 "placement": 1
             }
         ]
     }
 
     try:
-        res = requests.post("https://api.shopier.com/v1/products", headers=headers, json=payload, timeout=8)
-        if res.status_code == 200:
+        res = requests.post("https://api.shopier.com/v1/products", headers=headers, json=payload, timeout=15)
+        if res.status_code in [200, 201]:
             data = res.json()
-            product_id = str(data.get("id"))
-            shopier_url = f"https://www.shopier.com/keyvadi/{product_id}"
+            pid = str(data.get("id"))
+            pay_url = f"https://www.shopier.com/{pid}"
 
-            pending[product_id] = {
-                "product_id": product_id,
+            topups = load_active_topups()
+            topups[pid] = {
                 "user_id": user_id,
-                "user_name": display_user,
-                "amount": amount,
-                "idempotency_key": idempotency_key,
+                "amount": clean_amount,
                 "created_at": time.time(),
+                "payment_url": pay_url,
                 "status": "pending",
-                "payment_url": shopier_url
+                "idempotency_key": idempotency_key
             }
-            save_json_file(PENDING_TOPUPS_PATH, pending)
+            save_active_topups(topups)
 
-            print(f"[+] Dinamik Shopier İlanı Açıldı: {product_id} -> {shopier_url} ({amount} TL | {display_user})")
             return {
                 "success": True,
-                "product_id": product_id,
-                "payment_url": shopier_url,
-                "amount": amount,
+                "product_id": pid,
+                "payment_url": pay_url,
+                "amount": clean_amount,
                 "is_live_shopier": True
             }
         else:
-            print(f"[!] Shopier API Error ({res.status_code}): {res.text}")
+            print(f"[KeyVadi Shopier Error] {res.status_code}: {res.text}")
+            return {
+                "success": False,
+                "error": f"Shopier API Hatası ({res.status_code}): {res.text}"
+            }
     except Exception as e:
-        print(f"[!] Shopier API Exception: {e}")
+        print(f"[KeyVadi Shopier Exception] {e}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
 
-    return {
-        "success": False,
-        "error": "Shopier ilanı oluşturulamadı",
-        "amount": amount,
-        "is_live_shopier": False
+def check_and_sync_shopier_orders(users_data_path: Path):
+    """Gelen Shopier siparişlerini kontrol edip bakiyeyi anında tanımlar ve ilanı siler."""
+    token = KEYVADI_TOKEN
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "User-Agent": "Mozilla/5.0"
     }
 
-def cleanup_abandoned_shopier_listings():
-    """
-    1 saatten eski olan ve ödenmemiş sahipsiz dinamik ilanları Shopier'dan siler.
-    Böylece Shopier mağazanızda gereksiz ilan birikmez.
-    """
-    pending = load_json_file(PENDING_TOPUPS_PATH, {})
-    now = time.time()
-    to_delete = []
-
-    for pid, info in list(pending.items()):
-        created = info.get("created_at", now)
-        # 1 hour timeout (3600 seconds)
-        if now - created > 3600 and info.get("status") == "pending":
-            print(f"[*] Sahipsiz dinamik ilan siliniyor: {pid} ({info.get('amount')} TL)")
-            delete_shopier_product(pid)
-            to_delete.append(pid)
-
-    if to_delete:
-        for pid in to_delete:
-            pending.pop(pid, None)
-        save_json_file(PENDING_TOPUPS_PATH, pending)
-
-def check_and_sync_shopier_orders(users_db_path) -> list:
-    """
-    Shopier son siparişleri tarar, paymentStatus == 'paid' olan ödemeleri
-    kullanıcının cüzdan bakiyesine ekler ve tamamlanan ilanı Shopier'dan siler.
-    """
-    token = get_shopier_token()
-    if not token:
+    topups = load_active_topups()
+    if not topups:
         return []
 
-    credited = load_json_file(CREDITED_ORDERS_PATH, [])
-    pending = load_json_file(PENDING_TOPUPS_PATH, {})
-    newly_credited = []
-
+    credited_orders = []
     try:
-        headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
-        res = requests.get("https://api.shopier.com/v1/orders?limit=20", headers=headers, timeout=8)
+        res = requests.get("https://api.shopier.com/v1/orders?limit=20", headers=headers, timeout=12)
         if res.status_code == 200:
-            data = res.json()
-            orders = data if isinstance(data, list) else data.get("orders", [])
-            
-            if users_db_path.exists():
-                with open(users_db_path, "r", encoding="utf-8") as f:
-                    users = json.load(f)
-            else:
-                users = {}
+            orders = res.json()
+            if isinstance(orders, list):
+                for ord_item in orders:
+                    items = ord_item.get("items", [])
+                    ord_status = ord_item.get("status")
+                    if ord_status not in ["paid", "shipped", "delivered", "completed", "processing"]:
+                        continue
 
-            for order in orders:
-                order_id = str(order.get("id"))
-                if order_id in credited:
-                    continue
+                    for item in items:
+                        pid = str(item.get("productId") or item.get("id"))
+                        if pid in topups and topups[pid]["status"] == "pending":
+                            t_info = topups[pid]
+                            uid = str(t_info["user_id"])
+                            amt = float(t_info["amount"])
 
-                # Check payment status
-                payment_status = str(order.get("paymentStatus", "")).lower()
-                order_status = str(order.get("status", "")).lower()
+                            if users_data_path.exists():
+                                try:
+                                    with open(users_data_path, "r", encoding="utf-8") as f:
+                                        users = json.load(f)
+                                    if uid in users:
+                                        users[uid]["balance"] = round(users[uid].get("balance", 0.0) + amt, 2)
+                                        with open(users_data_path, "w", encoding="utf-8") as f:
+                                            json.dump(users, f, ensure_ascii=False, indent=2)
+                                except Exception as ue:
+                                    print(f"[KeyVadi User Save Error] {ue}")
 
-                if payment_status == "paid" or order_status in ["paid", "completed", "success"]:
-                    items = order.get("lineItems", [])
-                    for itm in items:
-                        p_title = itm.get("productTitle", "") or itm.get("title", "")
-                        p_id = str(itm.get("productId", ""))
-                        
-                        pending_info = pending.get(p_id)
-                        target_user_id = None
-                        amount = float(itm.get("price", 0.0))
+                            t_info["status"] = "completed"
+                            topups[pid] = t_info
+                            save_active_topups(topups)
+                            credited_orders.append({"user_id": uid, "amount": amt, "product_id": pid})
 
-                        if pending_info:
-                            target_user_id = str(pending_info.get("user_id"))
-                            amount = float(pending_info.get("amount", amount))
-                        elif "ID:" in p_title:
                             try:
-                                target_user_id = p_title.split("ID:")[1].strip().split("]")[0].split()[0]
+                                requests.delete(f"https://api.shopier.com/v1/products/{pid}", headers=headers, timeout=8)
                             except Exception:
                                 pass
-
-                        if target_user_id:
-                            uid = str(target_user_id)
-                            if uid not in users:
-                                users[uid] = {
-                                    "id": int(target_user_id),
-                                    "username": "",
-                                    "first_name": "Müşteri",
-                                    "balance": 0.0,
-                                    "referrals_count": 0,
-                                    "referral_earnings": 0.0,
-                                    "orders": []
-                                }
-
-                            users[uid]["balance"] += amount
-                            users[uid]["orders"].append({
-                                "type": "bakiye_yukleme",
-                                "amount": amount,
-                                "order_id": order_id,
-                                "date": time.strftime("%Y-%m-%d %H:%M:%S")
-                            })
-
-                            credited.append(order_id)
-                            newly_credited.append({
-                                "order_id": order_id,
-                                "user_id": target_user_id,
-                                "amount": amount
-                            })
-
-                            # Otomatik temizleme: Tamamlanan dinamik ilanı Shopier'dan sil
-                            if p_id in pending:
-                                delete_shopier_product(p_id)
-                                pending.pop(p_id, None)
-
-            if newly_credited:
-                with open(users_db_path, "w", encoding="utf-8") as f:
-                    json.dump(users, f, ensure_ascii=False, indent=2)
-                save_json_file(CREDITED_ORDERS_PATH, credited)
-                save_json_file(PENDING_TOPUPS_PATH, pending)
-                print(f"[+] {len(newly_credited)} yeni Shopier ödemesi kullanıcılara işlendi!")
-
     except Exception as e:
-        print(f"[!] Shopier sync error: {e}")
+        print(f"[KeyVadi Shopier Sync Error] {e}")
 
-    # Otomatik eski sahipsiz ilanları temizle
-    try:
-        cleanup_abandoned_shopier_listings()
-    except Exception:
-        pass
+    now = time.time()
+    expired_pids = []
+    for pid, info in list(topups.items()):
+        if info.get("status") == "pending" and (now - info.get("created_at", now)) > 300:
+            expired_pids.append(pid)
+    
+    for pid in expired_pids:
+        print(f"[KeyVadi Auto-Cleaner] Süresi dolan ilan siliniyor: {pid}")
+        cancel_and_delete_topup(pid)
 
-    return newly_credited
+    return credited_orders
+
+def start_background_shopier_cleaner(users_data_path: Path):
+    """Her 20 saniyede bir siparişleri kontrol eder ve satın alınmayan ilanları siler."""
+    global _cleaner_started
+    if _cleaner_started:
+        return
+    _cleaner_started = True
+
+    def _worker():
+        while True:
+            try:
+                check_and_sync_shopier_orders(users_data_path)
+            except Exception as e:
+                print(f"[KeyVadi Cleaner Worker Error] {e}")
+            time.sleep(20)
+
+    t = threading.Thread(target=_worker, daemon=True)
+    t.start()
+    print("[KeyVadi] Otomatik İlan Temizleme Arka Plan Servisi Başlatıldı (20s döngü, 5dk TTL).")
