@@ -39,7 +39,7 @@ API_HASH = os.environ.get("TELEGRAM_API_HASH", "").strip()
 BOT_TOKEN = os.environ.get("LISANSARENA_BOT_TOKEN", "").strip()
 MINI_APP_URL = os.environ.get(
     "LISANSARENA_MINI_APP_URL",
-    "https://froxy-bot-live.onrender.com/la/app",
+    "https://froxy-bot-live.onrender.com/lisansarena/",
 ).strip()
 
 

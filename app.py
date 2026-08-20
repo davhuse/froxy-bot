@@ -2204,7 +2204,9 @@ except Exception as exc:
 try:
     from miniapp_lisansarena.server import app as lisansarena_miniapp
     mounts['/la/app'] = lisansarena_miniapp
+    mounts['/lisansarena'] = lisansarena_miniapp
     print('[App] LisansArena Mini App mounted at /la/app')
+    print('[App] LisansArena Mini App alias mounted at /lisansarena')
 except Exception as exc:
     print(f'[App] LisansArena Mini App mount unavailable: {exc}')
 
