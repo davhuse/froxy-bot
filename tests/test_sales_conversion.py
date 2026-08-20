@@ -24,6 +24,20 @@ from sales_conversion import (
 )
 
 
+class FakeShopierResponse:
+    def __init__(self, payload):
+        self.payload = payload
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_args):
+        return False
+
+    def read(self):
+        return json.dumps(self.payload).encode("utf-8")
+
+
 class SalesCatalogMatchingTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -117,6 +131,21 @@ class SalesCatalogMatchingTests(unittest.TestCase):
         codex = match_sales_products("chatgpt codex dahil", froxy)
         self.assertEqual([(item["id"], item["price"]) for item in personal], [("49489691", "499,90 TL")])
         self.assertEqual([(item["id"], item["price"]) for item in codex], [("49489721", "599,90 TL")])
+
+    def test_shopier_catalog_uses_documented_limit_and_paginates(self):
+        import sales_conversion
+
+        first_page = [{"id": str(index)} for index in range(50)]
+        second_page = [{"id": "50"}]
+        with patch.object(
+            sales_conversion.urllib.request,
+            "urlopen",
+            side_effect=[FakeShopierResponse(first_page), FakeShopierResponse(second_page)],
+        ) as urlopen:
+            products = sales_conversion._fetch_shopier_products("test-token")
+        self.assertEqual(len(products), 51)
+        self.assertIn("limit=50&page=1", urlopen.call_args_list[0].args[0].full_url)
+        self.assertIn("limit=50&page=2", urlopen.call_args_list[1].args[0].full_url)
 
 
 class PurchaseLinkTests(unittest.TestCase):

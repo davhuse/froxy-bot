@@ -174,6 +174,36 @@ def load_sales_catalog(brand: str) -> list[dict]:
     return products
 
 
+def _fetch_shopier_products(token: str) -> list[dict]:
+    """Read every Shopier product using the documented 50-item page limit."""
+    products = []
+    seen_ids = set()
+    for page in range(1, 101):
+        request = urllib.request.Request(
+            f"https://api.shopier.com/v1/products?limit=50&page={page}",
+            headers={"Authorization": f"Bearer {token}", "Accept": "application/json"},
+        )
+        with urllib.request.urlopen(request, timeout=30) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+        rows = payload if isinstance(payload, list) else (
+            payload.get("data") or payload.get("products") or []
+        )
+        if not isinstance(rows, list):
+            raise RuntimeError("Shopier API returned an invalid products payload")
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            product_id = str(row.get("id") or "").strip()
+            dedupe_key = product_id or json.dumps(row, ensure_ascii=False, sort_keys=True)
+            if dedupe_key in seen_ids:
+                continue
+            seen_ids.add(dedupe_key)
+            products.append(row)
+        if len(rows) < 50:
+            break
+    return products
+
+
 def refresh_catalog_from_shopier_api(brand: str) -> int:
     """Refresh one catalog when a Shopier personal access token is configured."""
     brand = str(brand).lower()
@@ -193,15 +223,7 @@ def refresh_catalog_from_shopier_api(brand: str) -> int:
             "updated_at": datetime.now(timezone.utc).isoformat(),
         }
         return 0
-    request = urllib.request.Request(
-        "https://api.shopier.com/v1/products?limit=100",
-        headers={"Authorization": f"Bearer {token}", "Accept": "application/json"},
-    )
-    with urllib.request.urlopen(request, timeout=30) as response:
-        payload = json.loads(response.read().decode("utf-8"))
-    raw_products = payload if isinstance(payload, list) else (
-        payload.get("data") or payload.get("products") or []
-    )
+    raw_products = _fetch_shopier_products(token)
     current = {item["id"]: item for item in load_sales_catalog(brand)}
     refreshed = []
     for raw in raw_products:
