@@ -648,11 +648,8 @@ window.proceedShopierTopup = async function() {
   }
 };
 
-window.addEventListener('beforeunload', () => {
-  if (window.currentActiveTopupPid) {
-    navigator.sendBeacon(api('/api/balance/cancel-topup'), JSON.stringify({ product_id: window.currentActiveTopupPid }));
-  }
-});
+// Do not cancel here: opening Shopier or returning from its checkout can fire
+// beforeunload. Abandoned listings are closed by the server-side TTL cleaner.
 
 // Copy Referral Link
 window.copyRefLink = function() {

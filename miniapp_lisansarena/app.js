@@ -655,11 +655,8 @@
     }
   };
 
-  window.addEventListener('beforeunload', () => {
-    if (window.currentActiveTopupPid) {
-      navigator.sendBeacon(api('/api/balance/cancel-topup'), JSON.stringify({ product_id: window.currentActiveTopupPid }));
-    }
-  });
+  // Opening Shopier may unload the Mini App; cancellation is server-side and
+  // TTL based so a real payment is never deleted while checkout is opening.
 
   // Referral Copy & Share
   window.copyRefLink = function () {

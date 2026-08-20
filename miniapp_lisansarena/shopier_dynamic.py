@@ -114,7 +114,7 @@ def create_dynamic_shopier_listing(amount: float, user_id: int, user_name: str =
         if res.status_code in [200, 201]:
             data = res.json()
             pid = str(data.get("id"))
-            pay_url = f"https://www.shopier.com/{pid}"
+            pay_url = f"https://www.shopier.com/lisansarena/{pid}"
 
             topups = load_active_topups()
             topups[pid] = {
@@ -163,16 +163,17 @@ def check_and_sync_shopier_orders(users_data_path: Path):
     try:
         res = requests.get("https://api.shopier.com/v1/orders?limit=20", headers=headers, timeout=12)
         if res.status_code == 200:
-            orders = res.json()
+            payload = res.json()
+            orders = payload if isinstance(payload, list) else (payload.get("orders") or payload.get("data") or [])
             if isinstance(orders, list):
                 for ord_item in orders:
-                    items = ord_item.get("items", [])
-                    ord_status = ord_item.get("status")
-                    if ord_status not in ["paid", "shipped", "delivered", "completed", "processing"]:
+                    items = ord_item.get("lineItems") or ord_item.get("line_items") or ord_item.get("items") or []
+                    ord_status = str(ord_item.get("paymentStatus") or ord_item.get("status") or ord_item.get("orderStatus") or "").lower()
+                    if ord_status not in ["paid", "shipped", "delivered", "completed", "processing", "success"]:
                         continue
 
                     for item in items:
-                        pid = str(item.get("productId") or item.get("id"))
+                        pid = str(item.get("productId") or item.get("product_id") or item.get("id") or "")
                         if pid in topups and topups[pid]["status"] == "pending":
                             t_info = topups[pid]
                             uid = str(t_info["user_id"])
@@ -184,6 +185,15 @@ def check_and_sync_shopier_orders(users_data_path: Path):
                                         users = json.load(f)
                                     if uid in users:
                                         users[uid]["balance"] = round(users[uid].get("balance", 0.0) + amt, 2)
+                                        users[uid].setdefault("orders", []).append({
+                                            "type": "bakiye_yukleme",
+                                            "order_id": str(ord_item.get("id") or ord_item.get("orderId") or pid),
+                                            "product_id": pid,
+                                            "title": "LisansArena bakiye yükleme",
+                                            "amount": amt,
+                                            "status": "completed",
+                                            "created_at": int(time.time())
+                                        })
                                         with open(users_data_path, "w", encoding="utf-8") as f:
                                             json.dump(users, f, ensure_ascii=False, indent=2)
                                 except Exception as ue:
