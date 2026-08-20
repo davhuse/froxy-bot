@@ -38,15 +38,25 @@ logger = logging.getLogger("LisansArenaBot")
 API_ID = int(os.environ.get("TELEGRAM_API_ID", "0") or 0)
 API_HASH = os.environ.get("TELEGRAM_API_HASH", "").strip()
 BOT_TOKEN = os.environ.get("LISANSARENA_BOT_TOKEN", "").strip()
-_configured_mini_app_url = os.environ.get(
-    "LISANSARENA_MINI_APP_URL",
-    "https://froxy-bot-live.onrender.com/la/app/",
-).strip()
-if _configured_mini_app_url.rstrip("/").endswith("/lisansarena"):
-    _configured_mini_app_url = (
-        _configured_mini_app_url.rstrip("/")[:-len("/lisansarena")] + "/la/app/"
-    )
-MINI_APP_URL = _configured_mini_app_url.rstrip("/") + "/"
+# The old JSON storefront and the PostgreSQL storefront used to live at
+# different Render paths.  Keep the bot on the canonical PostgreSQL route even
+# if an old deployment left LISANSARENA_MINI_APP_URL behind in the environment.
+_configured_mini_app_url = os.environ.get("LISANSARENA_MINI_APP_URL", "").strip()
+_canonical_mini_app_url = "https://froxy-bot-live.onrender.com/la/app/"
+if _configured_mini_app_url:
+    from urllib.parse import urlsplit, urlunsplit
+
+    _parts = urlsplit(_configured_mini_app_url)
+    _path = _parts.path.rstrip("/")
+    _old_storefront = _path.endswith("/lisansarena") or _parts.netloc in {
+        "froxy-bot-wjzr.onrender.com",
+        "froxy-bot-qy0a.onrender.com",
+    }
+    if _old_storefront or _parts.netloc != "froxy-bot-live.onrender.com":
+        _configured_mini_app_url = _canonical_mini_app_url
+    elif _path == "/la/app":
+        _configured_mini_app_url = urlunsplit((_parts.scheme, _parts.netloc, "/la/app/", "", ""))
+MINI_APP_URL = (_configured_mini_app_url or _canonical_mini_app_url).rstrip("/") + "/"
 
 
 def _load_config():
@@ -61,6 +71,47 @@ ADMIN_ID = int(os.environ.get("TELEGRAM_ADMIN_ID", CONFIG.get("admin_id", 0)) or
 SUPPORT_CHAT_ID = int(CONFIG.get("support_chat_id") or ADMIN_ID or 0)
 PENDING_INPUT = {}
 USER_EVENT_LOCKS = {}
+
+
+async def claim_command_event(event, command):
+    """Suppress a duplicate Telegram command update across all processes.
+
+    Telegram may redeliver an update while a bot reconnects, and an old
+    deployment can briefly overlap a new one.  The durable claim is keyed by
+    the Telegram message id, so only one process is allowed to answer it.
+    """
+    event_id = getattr(getattr(event, "message", None), "id", None)
+    if event_id is None or event.sender_id is None:
+        return False
+    claimed = await claim_support_event(
+        "LisansArena", event.sender_id, event_id, f"command_{command}"
+    )
+    if not claimed:
+        record_event(
+            "duplicate_suppressed", "LisansArena", source="telegram_private",
+            reason=f"command_{command}_already_claimed",
+        )
+    return claimed
+
+
+def once_per_command(command):
+    """Decorate a command handler with durable per-update idempotency."""
+    def decorator(handler):
+        async def wrapped(event, *args, **kwargs):
+            if not await claim_command_event(event, command):
+                return
+            try:
+                return await handler(event, *args, **kwargs)
+            except Exception:
+                # A failed handler must be retryable after the transient error.
+                await release_support_event(
+                    "LisansArena", event.sender_id,
+                    getattr(getattr(event, "message", None), "id", 0),
+                    f"command_{command}",
+                )
+                raise
+        return wrapped
+    return decorator
 
 
 def serialize_user_events(handler):
@@ -387,6 +438,7 @@ def configure_bot_profile():
 
 
 @bot.on(events.NewMessage(pattern=r"(?i)^/start(?:\s+(.+))?$"))
+@once_per_command("start")
 async def start_handler(event):
     PENDING_INPUT.pop(event.sender_id, None)
     try:
@@ -400,31 +452,37 @@ async def start_handler(event):
 
 
 @bot.on(events.NewMessage(pattern=r"(?i)^/magaza$"))
+@once_per_command("magaza")
 async def store_handler(event):
     await event.respond("LisansArena mağazası", buttons=mini_app_markup())
 
 
 @bot.on(events.NewMessage(pattern=r"(?i)^/urunler$"))
+@once_per_command("urunler")
 async def products_handler(event):
     await show_products(event)
 
 
 @bot.on(events.NewMessage(pattern=r"(?i)^/bakiye$"))
+@once_per_command("bakiye")
 async def balance_handler(event):
     await show_balance(event)
 
 
 @bot.on(events.NewMessage(pattern=r"(?i)^/(siparisler|orders)$"))
+@once_per_command("siparisler")
 async def orders_handler(event):
     await show_orders(event)
 
 
 @bot.on(events.NewMessage(pattern=r"(?i)^/hesaplar$"))
+@once_per_command("hesaplar")
 async def accounts_handler(event):
     await show_profile(event)
 
 
 @bot.on(events.NewMessage(pattern=r"(?i)^/gecmis$"))
+@once_per_command("gecmis")
 async def history_handler(event):
     try:
         store, user_id, _ = await _store_user(event)
@@ -439,6 +497,7 @@ async def history_handler(event):
 
 
 @bot.on(events.NewMessage(pattern=r"(?i)^/kullanim$"))
+@once_per_command("kullanim")
 async def guides_handler(event):
     try:
         store, user_id, _ = await _store_user(event)
@@ -459,26 +518,31 @@ async def guides_handler(event):
 
 
 @bot.on(events.NewMessage(pattern=r"(?i)^/talep$"))
+@once_per_command("talep")
 async def request_handler(event):
     await begin_ticket(event, "request")
 
 
 @bot.on(events.NewMessage(pattern=r"(?i)^/destek$"))
+@once_per_command("destek")
 async def support_handler(event):
     await begin_ticket(event, "support")
 
 
 @bot.on(events.NewMessage(pattern=r"(?i)^/iade$"))
+@once_per_command("iade")
 async def refund_handler(event):
     await begin_ticket(event, "refund")
 
 
 @bot.on(events.NewMessage(pattern=r"(?i)^/referans$"))
+@once_per_command("referans")
 async def referral_handler(event):
     await show_profile(event)
 
 
 @bot.on(events.NewMessage(pattern=r"(?i)^/cekilis$"))
+@once_per_command("cekilis")
 async def draws_handler(event):
     try:
         store, user_id, _ = await _store_user(event)
@@ -493,11 +557,13 @@ async def draws_handler(event):
 
 
 @bot.on(events.NewMessage(pattern=r"(?i)^/(ayarlar|dil)$"))
+@once_per_command("ayarlar_dil")
 async def settings_handler(event):
     await event.respond("Dil seçimi", buttons=[[Button.inline("Türkçe", b"lang_tr"), Button.inline("English", b"lang_en")]])
 
 
 @bot.on(events.NewMessage(pattern=r"(?i)^/yardim$"))
+@once_per_command("yardim")
 async def help_handler(event):
     text = "LİSANSARENA KOMUTLARI\n\n" + "\n".join(f"/{command} — {description}" for command, description in BOT_COMMANDS)
     await event.respond(text, buttons=mini_app_markup())
@@ -591,11 +657,19 @@ async def main():
     while True:
         try:
             await bot.start(bot_token=BOT_TOKEN)
-            try:
-                await asyncio.to_thread(configure_bot_profile)
-                logger.info("Commands, profile and Mini App menu configured")
-            except Exception as exc:
-                logger.warning("Bot profile configuration warning: %s", exc)
+            # BotFather configuration is not part of the reconnect loop.  The
+            # Bot API rate-limits repeated setMyCommands/setChatMenuButton
+            # calls for many hours, which used to leave an old Mini App URL in
+            # the Telegram menu after a restart.  Set it explicitly only when
+            # an operator asks for a one-time refresh.
+            if os.environ.get("LISANSARENA_CONFIGURE_PROFILE", "0").strip().lower() in {"1", "true", "yes"}:
+                try:
+                    await asyncio.to_thread(configure_bot_profile)
+                    logger.info("Commands, profile and Mini App menu configured")
+                except Exception as exc:
+                    logger.warning("Bot profile configuration warning: %s", exc)
+            else:
+                logger.info("Bot profile configuration skipped; canonical Mini App URL is %s", MINI_APP_URL)
             me = await bot.get_me()
             logger.info("LisansArena bot running as @%s", me.username)
             await bot.run_until_disconnected()
