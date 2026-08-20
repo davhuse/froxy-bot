@@ -1050,9 +1050,16 @@ class LisansArenaStore:
                 "Bu ilan tek kullanımlıktır ve 1 saat geçerlidir. Sipariş notuna kod yazmak zorunlu değildir."
             ),
             "type": "digital",
-            # Shopier's schema requires the field, but an empty list keeps
-            # the customer-specific listing intentionally coverless.
-            "media": [],
+            # Shopier now rejects an empty media list. Use the store logo so
+            # customer-specific listings remain lightweight and valid.
+            "media": [{
+                "type": "image",
+                "url": os.environ.get(
+                    "LISANSARENA_TOPUP_MEDIA_URL",
+                    "https://froxy-bot-live.onrender.com/la/app/assets/lisansarena_logo.png",
+                ).strip(),
+                "placement": 1,
+            }],
             "priceData": {
                 "currency": "TRY", "price": f"{Decimal(amount_cents) / 100:.2f}",
                 "discount": False, "discountedPrice": f"{Decimal(amount_cents) / 100:.2f}",

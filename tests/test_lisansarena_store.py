@@ -239,14 +239,16 @@ class LisansArenaStoreTests(unittest.TestCase):
         self.assertEqual(result["amount"], "1,00 TL")
         self.assertTrue(result["shopier_url"].endswith("/49853325"))
 
-    def test_custom_topup_creates_a_coverless_one_use_listing(self):
+    def test_custom_topup_creates_a_logo_only_one_use_listing(self):
         with patch.object(self.store, "_shopier_api", return_value={"id": "custom-750"}) as api:
             result = self.store.create_topup(self.user_id, 75000, "custom")
         self.assertEqual(result["mode"], "custom")
         self.assertFalse(result["note_required"])
         self.assertTrue(result["shopier_url"].endswith("/custom-750"))
         payload = api.call_args.args[2]
-        self.assertEqual(payload["media"], [])
+        self.assertEqual(len(payload["media"]), 1)
+        self.assertEqual(payload["media"][0]["type"], "image")
+        self.assertTrue(payload["media"][0]["url"].endswith("/assets/lisansarena_logo.png"))
         self.assertEqual(payload["stockQuantity"], 1)
         self.assertTrue(payload["customListing"])
         self.assertIn("Test", payload["title"])

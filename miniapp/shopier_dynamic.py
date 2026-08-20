@@ -21,6 +21,10 @@ ACTIVE_TOPUPS_FILE = BASE_DIR / "active_topups.json"
 
 # KeyVadi Shopier Bearer Token
 KEYVADI_TOKEN = (os.environ.get("SHOPIER_KEYVADI_ACCESS_TOKEN") or os.environ.get("SHOPIER_BEARER_TOKEN") or "").strip()
+KEYVADI_TOPUP_MEDIA_URL = os.environ.get(
+    "KEYVADI_TOPUP_MEDIA_URL",
+    "https://froxy-bot-live.onrender.com/keyvadi/assets/keyvadi_logo.png",
+).strip()
 
 _cleaner_started = False
 _lock = threading.Lock()
@@ -116,7 +120,7 @@ def create_dynamic_shopier_listing(amount: float, user_id: int, user_name: str =
             "discount": False,
             "shippingPrice": 0.0
         },
-        "media": []
+        "media": [{"type": "image", "url": KEYVADI_TOPUP_MEDIA_URL, "placement": 1}]
     }
 
     try:
