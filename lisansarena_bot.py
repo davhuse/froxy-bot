@@ -54,6 +54,24 @@ CONFIG = _load_config()
 ADMIN_ID = int(os.environ.get("TELEGRAM_ADMIN_ID", CONFIG.get("admin_id", 0)) or 0)
 SUPPORT_CHAT_ID = int(CONFIG.get("support_chat_id") or ADMIN_ID or 0)
 PENDING_INPUT = {}
+USER_EVENT_LOCKS = {}
+
+
+def serialize_user_events(handler):
+    """Serialize one customer's updates so one Telegram event cannot race.
+
+    Firestore is still the cross-process idempotency authority; this lock
+    closes the smaller same-process race between product matching, greeting
+    and support forwarding.
+    """
+    async def serialized(event, *args, **kwargs):
+        user_id = getattr(event, "sender_id", None)
+        if user_id is None:
+            return await handler(event, *args, **kwargs)
+        lock = USER_EVENT_LOCKS.setdefault(int(user_id), asyncio.Lock())
+        async with lock:
+            return await handler(event, *args, **kwargs)
+    return serialized
 
 
 async def claim_product_reply(user_id, product):
@@ -500,6 +518,7 @@ async def language_callback(event):
 
 
 @bot.on(events.NewMessage(incoming=True))
+@serialize_user_events
 async def private_message_handler(event):
     if getattr(event, "out", False) or not event.is_private or (event.raw_text or "").startswith("/"):
         return
