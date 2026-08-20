@@ -4,6 +4,7 @@ import logging
 import re
 import asyncio
 import time
+import urllib.request
 from telethon import TelegramClient, events, Button
 from telethon.errors import MessageNotModifiedError
 from telethon.sessions import StringSession
@@ -104,6 +105,56 @@ if not config:
 BOT_TOKEN = os.environ.get("FROXY_SUPPORT_BOT_TOKEN", "").strip()
 ADMIN_ID = int(os.environ.get("FROXY_ADMIN_ID", config.get("froxy_admin_id", config.get("admin_id", 0))) or 0)
 BOT_USER_ID = None
+FROXY_SHOPIER_URL = "https://www.shopier.com/froxyai"
+
+BOT_COMMANDS = [
+    ("start", "Froxy Shopier mağazasını aç"),
+    ("magaza", "Shopier mağazasını aç"),
+    ("destek", "Destek talebi oluştur"),
+    ("dil", "Dil seçimini değiştir"),
+]
+
+
+def _bot_api_call(method, payload):
+    request = urllib.request.Request(
+        f"https://api.telegram.org/bot{BOT_TOKEN}/{method}",
+        data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    with urllib.request.urlopen(request, timeout=20) as response:
+        result = json.loads(response.read().decode("utf-8"))
+    if not result.get("ok"):
+        raise RuntimeError(result.get("description") or method)
+    return result
+
+
+def configure_bot_profile():
+    """Keep Froxy's public Telegram identity Shopier-only."""
+    calls = (
+        ("setMyCommands", {
+            "commands": [
+                {"command": command, "description": description}
+                for command, description in BOT_COMMANDS
+            ]
+        }),
+        ("setChatMenuButton", {
+            "menu_button": {
+                "type": "web_app",
+                "text": "🛒 Shopier Mağazası",
+                "web_app": {"url": FROXY_SHOPIER_URL},
+            }
+        }),
+        ("setMyName", {"name": "Froxy"}),
+        ("setMyDescription", {
+            "description": "Dijital ürünler ve üyelikler için Froxy Shopier mağazası. Ürün adını yazın; ilgili Shopier ilanı gelsin."
+        }),
+        ("setMyShortDescription", {
+            "short_description": "Dijital ürünler · Shopier mağazası · Destek"
+        }),
+    )
+    for method, payload in calls:
+        _bot_api_call(method, payload)
 
 DEFAULT_FROXY_PRODUCTS = [
     {"id": "49489768", "title": "Perplexity Pro (1 Aylık Ortak)", "price": "69,99 TL", "url": "https://www.shopier.com/froxyai/49489768"},
@@ -179,16 +230,14 @@ bot = TelegramClient("froxy_destek_bot_session", API_ID, API_HASH)
 TEXTS = {
     "tr": {
         "welcome": (
-            "⚡ **Froxy AI Mağaza & Destek Paneline Hoş Geldiniz!**\n\n"
-            "Birden fazla yapay zeka aracına para vermek yerine, hepsini tek panelden kullanabilirsiniz!\n"
-            "GPT, Claude Sonnet 5, Gemini 3.5 Flash, DeepSeek V4 ve 1.100+ model aynı altyapıda.\n\n"
-            "🌐 **Web Sitemiz:** https://froxyai.com\n\n"
-            "Lütfen incelemek veya satın almak istediğiniz ürünü seçin 👇"
+            "🛒 **Froxy Shopier Mağazasına Hoş Geldiniz!**\n\n"
+            "Dijital ürünleri güvenli ödeme ile Shopier üzerinden inceleyebilirsiniz.\n"
+            "Aradığınız ürünün adını yazarsanız ilgili tekil Shopier ilanını da gönderebilirim."
         ),
         "packages_btn": "👑 Üyelik Paketleri (Kredi)",
         "ai_tools_btn": "🤖 Yapay Zeka Paketleri (AI Tools)",
         "support_btn": "📞 Canlı Destek & İletişim",
-        "web_btn": "🌐 froxyai.com'u Ziyaret Et",
+        "web_btn": "🛒 Shopier Mağazasını Aç",
         "lang_btn": "🌐 Dil Seçimi / Language",
         "main_menu": "↩️ Ana Menü",
         "pkg_btn_list": [
@@ -210,16 +259,15 @@ TEXTS = {
             ("⚡ ChatGPT Go 3 Aylık Kod (₺49.99)", "pkg_chatgpt_go"),
             ("🔍 Perplexity Pro 1 Aylık Ortak (₺69.99)", "pkg_perplexity_ortak")
         ],
-        "pkg_menu_title": "💳 **Froxy AI Kredi Paketleri**\n\n"
-                          "Tüm paketlerde ChatGPT, Claude, Gemini, DeepSeek ve 1100+ AI modele erişim!\n"
-                          "Yeni üyeler 100 ücretsiz krediyle başlar.\n\n"
-                          "Detaylarını görmek istediğiniz paketi seçin:",
+        "pkg_menu_title": "🛒 **Froxy Shopier Ürünleri**\n\n"
+                          "Ürün ayrıntıları ve güncel ödeme seçeneği Shopier ilanında gösterilir.\n\n"
+                          "İncelemek istediğiniz ürünü seçin:",
         "back_to_pkgs": "↩️ Paketlere Dön",
         "buy_shopier": "💳 Shopier ile Güvenli Satın Al",
-        "buy_web": "🌐 froxyai.com'dan Satın Al",
-        "product_header": "🌟 **{title}**\n\n💰 **Fiyat:** {price}\n🎯 **Kredi:** {credits}\n\n📝 **Detaylar:**\n{desc}\n\nSatın almak için aşağıdaki butona tıklayın. Ödeme sonrası krediniz anında tanımlanır.",
+        "buy_web": "🛒 Shopier'den Satın Al",
+        "product_header": "🌟 **{title}**\n\n💰 **Fiyat:** {price}\n\n📝 **Detaylar:**\n{desc}\n\nGüvenli ödeme için aşağıdaki Shopier düğmesini kullanın.",
         "support_title": "📞 **Froxy AI Destek Talebi**",
-        "support_desc": "Kredi paketi, hesap sorunu veya destek talebinizi detaylıca yazıp bu sohbete gönderin.\n\nMesajınız doğrudan Froxy AI ekibimize iletilecektir. En kısa sürede yanıt alacaksınız.",
+        "support_desc": "Ürün, Shopier ödemesi veya destek talebinizi detaylıca yazıp bu sohbete gönderin.\n\nMesajınız doğrudan Froxy ekibine iletilecektir. En kısa sürede yanıt alacaksınız.",
         "cancel": "↩️ Vazgeç ve İptal Et",
         "support_success": "✅ Mesajınız Froxy AI ekibine iletildi. En kısa sürede yanıt alacaksınız.",
         "support_fail": "⚠️ Mesajınız iletilemedi. Lütfen daha sonra tekrar deneyiniz.",
@@ -267,15 +315,14 @@ TEXTS = {
     },
     "en": {
         "welcome": (
-            "🤖 **Welcome to Froxy AI Support Panel!**\n\n"
-            "Our credit packages that allow you to use ChatGPT, Claude, Gemini, and 1100+ AI models from a single panel are here at the most affordable prices!\n\n"
-            "🌐 **Our Website:** froxyai.com\n\n"
-            "Please select the action you want to perform 👇"
+            "🛒 **Welcome to the Froxy Shopier Store!**\n\n"
+            "Browse digital products and memberships with secure checkout on Shopier.\n"
+            "You can also type a product name to receive its individual Shopier listing."
         ),
         "packages_btn": "👑 Membership Packages (Credits)",
         "ai_tools_btn": "🤖 AI Tools & Packages",
         "support_btn": "📞 Live Support & Contact",
-        "web_btn": "🌐 Visit froxyai.com",
+        "web_btn": "🛒 Open Shopier Store",
         "lang_btn": "🌐 Language / Dil",
         "main_menu": "↩️ Main Menu",
         "pkg_btn_list": [
@@ -291,16 +338,15 @@ TEXTS = {
             ("💻 ChatGPT Plus + Codex (₺599.90)", "pkg_chatgpt_codex"),
             ("🔍 Perplexity Pro 1M Shared ($2.50)", "pkg_perplexity_ortak")
         ],
-        "pkg_menu_title": "💳 **Froxy AI Credit Packages**\n\n"
-                          "Access ChatGPT, Claude, Gemini, DeepSeek, and 1100+ AI models in all packages!\n"
-                          "New members start with 100 free credits.\n\n"
-                          "Select the package you want to view details:",
+        "pkg_menu_title": "🛒 **Froxy Shopier Products**\n\n"
+                          "Product details and the current checkout option are shown on Shopier.\n\n"
+                          "Select the product you want to view:",
         "back_to_pkgs": "↩️ Back to Packages",
         "buy_shopier": "💳 Secure Purchase with Shopier",
-        "buy_web": "🌐 Purchase from froxyai.com",
-        "product_header": "🌟 **{title}**\n\n💰 **Price:** {price}\n🎯 **Credits:** {credits}\n\n📝 **Details:**\n{desc}\n\nClick the button below to purchase. Your credits will be assigned instantly after payment.",
+        "buy_web": "🛒 Purchase on Shopier",
+        "product_header": "🌟 **{title}**\n\n💰 **Price:** {price}\n\n📝 **Details:**\n{desc}\n\nUse the Shopier button below for secure checkout.",
         "support_title": "📞 **Froxy AI Support Request**",
-        "support_desc": "Please write the credit package, account issue, or support request in detail and send it to this chat.\n\nYour message will be forwarded directly to our Froxy AI team. You will receive a response as soon as possible.",
+        "support_desc": "Describe the product, Shopier payment, or support request and send it to this chat.\n\nYour message will be forwarded directly to the Froxy team.",
         "cancel": "↩️ Cancel & Go Back",
         "support_success": "✅ Your message has been forwarded to the Froxy AI team. You will receive a response as soon as possible.",
         "support_fail": "⚠️ Your message could not be delivered. Please try again later.",
@@ -375,13 +421,9 @@ async def show_main_menu(event, user_id, is_callback=False):
     )
     
     buttons = [
-        [Button.inline(t["packages_btn"], b"menu_packages")],
-        [Button.inline(t.get("ai_tools_btn", "🤖 Yapay Zeka Paketleri (AI Tools)"), b"menu_ai_tools")],
-        [Button.inline("💳 Ödememi Doğrula / Verify Payment", b"menu_verify_payment")],
-        [Button.inline("👥 Arkadaşını Davet Et / Invite Friends", b"menu_referral")],
+        [Button.url(t["web_btn"], FROXY_SHOPIER_URL)],
         [Button.inline(t["support_btn"], b"menu_support")],
         [Button.inline(t["lang_btn"], b"menu_lang")],
-        [Button.url(t["web_btn"], "https://froxyai.com")]
     ]
     
     if is_callback:
@@ -395,16 +437,12 @@ async def verify_payment_callback(event):
         await event.answer()
     except:
         pass
-    user_id = event.sender_id
-    user_states[user_id] = "AWAITING_VERIFY_PAYMENT_INFO"
-    
     text = (
-        "💳 **Shopier Ödeme Doğrulama**\n\n"
-        "Ödeme yaparken kullandığınız **E-posta** adresini veya **Telefon** numarasını yazıp bu sohbete gönderin. "
-        "Kredileriniz saniyeler içinde otomatik olarak hesabınıza tanımlanacaktır.\n\n"
-        "*(Vazgeçmek için /start yazabilirsiniz)*"
+        "🛒 **Froxy Shopier Mağazası**\n\n"
+        "Ödeme ve sipariş takibi Shopier üzerinden yürütülür. Mağazayı aşağıdaki düğmeden açabilirsiniz."
     )
     buttons = [
+        [Button.url("🛒 Shopier Mağazasını Aç", FROXY_SHOPIER_URL)],
         [Button.inline("↩️ Vazgeç ve Geri Dön", b"menu_main")]
     ]
     await safe_event_edit(event, text, buttons=buttons)
@@ -424,12 +462,9 @@ async def start_handler(event):
     user_states[user_id] = None
     
     message_text = event.message.message or ""
-    ref_id = None
     if " " in message_text:
         parts = message_text.split(" ", 1)
         param = parts[1].strip()
-        if param.startswith("ref_"):
-            ref_id = param.replace("ref_", "")
         cta_data = parse_cta_start_parameter(param)
         if cta_data and cta_data["brand"] == "froxy":
             USER_CTA_ATTRIBUTION[user_id] = {
@@ -441,45 +476,10 @@ async def start_handler(event):
                 arm=cta_data["arm"], group_hash=cta_data["group_hash"],
             )
             
-    user_doc_id = f"user_{user_id}"
-    user_data = firestore_helper.get_document(user_doc_id)
-    is_new = False
-    
-    if not user_data:
-        is_new = True
-        user_data = {
-            "credits": 100,
-            "referred_by": ref_id or "",
-            "id": user_id
-        }
-        if ref_id:
-            user_data["credits"] = 200
-        firestore_helper.set_document(user_doc_id, user_data)
-        
-        if ref_id:
-            ref_doc_id = f"user_{ref_id}"
-            ref_data = firestore_helper.get_document(ref_doc_id)
-            if ref_data:
-                ref_data["credits"] = ref_data.get("credits", 100) + 500
-                firestore_helper.set_document(ref_doc_id, ref_data)
-                try:
-                    await bot.send_message(int(ref_id), "🎉 **Tebrikler!** Davet ettiğiniz bir arkadaşınız bota katıldı. Hesabınıza **+500 Kredi** yüklendi!")
-                except Exception:
-                    pass
-            else:
-                ref_data = {
-                    "credits": 600,
-                    "referred_by": "",
-                    "id": int(ref_id)
-                }
-                firestore_helper.set_document(ref_doc_id, ref_data)
-
     lang = user_lang_helper.get_user_lang(user_id)
     if not lang:
         await show_lang_selection(event)
     else:
-        if is_new and ref_id:
-            await event.respond("🎁 **Davet Bonusu:** Bota davet linkiyle katıldığınız için hesabınıza **+100 Hediye Kredi** tanımlandı! (Toplam 200 Kredi)")
         await show_main_menu(event, user_id)
 
 @bot.on(events.NewMessage(pattern=r'/lang|/dil'))
@@ -487,6 +487,29 @@ async def lang_cmd_handler(event):
     user_id = event.sender_id
     user_states[user_id] = None
     await show_lang_selection(event)
+
+
+@bot.on(events.NewMessage(pattern=r'/magaza'))
+async def store_cmd_handler(event):
+    if not await async_claim_event(event, "froxy_support"):
+        return
+    await event.respond(
+        "🛒 Froxy Shopier mağazasını aşağıdaki düğmeden açabilirsiniz.",
+        buttons=[[Button.url("🛒 Shopier Mağazasını Aç", FROXY_SHOPIER_URL)]],
+    )
+
+
+@bot.on(events.NewMessage(pattern=r'/destek'))
+async def support_cmd_handler(event):
+    if not await async_claim_event(event, "froxy_support"):
+        return
+    user_states[event.sender_id] = "AWAITING_SUPPORT"
+    lang = user_lang_helper.get_user_lang(event.sender_id) or "tr"
+    t = TEXTS[lang]
+    await event.respond(
+        f"{t['support_title']}\n\n{t['support_desc']}",
+        buttons=[[Button.inline(t["cancel"], b"menu_main")]],
+    )
 
 @bot.on(events.CallbackQuery(pattern=r'lang_(\w+)'))
 async def lang_select_callback(event):
@@ -516,26 +539,14 @@ async def packages_menu_handler(event):
         await event.answer()
     except:
         pass
-    user_id = event.sender_id
-    lang = user_lang_helper.get_user_lang(user_id) or "tr"
-    t = TEXTS[lang]
-    
-    user_data = firestore_helper.get_document(f"user_{user_id}") or {"credits": 100}
-    credits = user_data.get("credits", 100)
-
-    buttons = []
-    for label, pkg_key in t["pkg_btn_list"]:
-        buttons.append([Button.inline(label, pkg_key.encode())])
-    buttons.append([Button.inline(t["main_menu"], b"menu_main")])
-
-    title_text = (
-        f"💰 **Mevcut Krediniz:** `{credits} Kredi`\n\n"
-        f"{t['pkg_menu_title']}"
+    await safe_event_edit(
+        event,
+        "🛒 Ürünleri ve güncel fiyatları Froxy Shopier mağazasında inceleyebilirsiniz.",
+        buttons=[
+            [Button.url("🛒 Shopier Mağazasını Aç", FROXY_SHOPIER_URL)],
+            [Button.inline("↩️ Ana Menü", b"menu_main")],
+        ],
     )
-    try:
-        await safe_event_edit(event, title_text, buttons=buttons)
-    except Exception:
-        pass
 
 @bot.on(events.CallbackQuery(data=b'menu_ai_tools'))
 async def ai_tools_menu_handler(event):
@@ -560,24 +571,14 @@ async def ai_tools_menu_handler(event):
 
 @bot.on(events.CallbackQuery(data=b'menu_referral'))
 async def menu_referral_handler(event):
-    user_id = event.sender_id
-    user_data = firestore_helper.get_document(f"user_{user_id}") or {"credits": 100}
-    credits = user_data.get("credits", 100)
-    
-    text = (
-        "👥 **Froxy AI Davet & Kazan Sistemi**\n\n"
-        f"💰 **Mevcut Krediniz:** `{credits} Kredi`\n\n"
-        "Arkadaşlarınızı davet ederek ücretsiz krediler kazanabilirsiniz! 🎁\n\n"
-        "• Davet ettiğiniz her yeni üye için **+500 Kredi** kazanırsınız.\n"
-        "• Davet linkinizle katılan arkadaşınız **100 Hediye Kredi** kazanır.\n\n"
-        "🔗 **Sizin Davet Linkiniz:**\n"
-        f"`https://t.me/FroxyDestekBOT?start=ref_{user_id}`\n\n"
-        "*(Yukarıdaki linke tıklayarak kopyalayabilir ve arkadaşlarınıza gönderebilirsiniz.)*"
+    await safe_event_edit(
+        event,
+        "🛒 Froxy satışları Shopier mağazası üzerinden yürütülür.",
+        buttons=[
+            [Button.url("🛒 Shopier Mağazasını Aç", FROXY_SHOPIER_URL)],
+            [Button.inline("↩️ Ana Menü", b"menu_main")],
+        ],
     )
-    buttons = [
-        [Button.inline("↩️ Ana Menü", b"menu_main")]
-    ]
-    await safe_event_edit(event, text, buttons=buttons)
 
 # Package detail handler
 @bot.on(events.CallbackQuery(pattern=r'pkg_(\w+)'))
@@ -617,14 +618,12 @@ async def pkg_select_handler(event):
         selected_product = next((p for p in FROXY_PRODUCTS if str(p.get("id")) == selected_id), None)
     if not selected_product:
         selected_product = next((p for p in DEFAULT_FROXY_PRODUCTS if str(p.get("id")) == selected_id), None)
-    p_data = t["products"].get(pkg_key)
-    if not p_data:
-        p_data = {
-            "title": selected_product.get("title") if selected_product else pkg_key.replace("_", " ").title(),
-            "price": selected_product.get("price", "") if selected_product else "",
-            "credits": "",
-            "desc": "Ürün detayları ve güvenli ödeme Shopier ürün sayfasında gösterilir.",
-        }
+    p_data = {
+        "title": selected_product.get("title") if selected_product else pkg_key.replace("_", " ").title(),
+        "price": selected_product.get("price", "") if selected_product else "",
+        "credits": "",
+        "desc": "Ürün detayları ve güvenli ödeme Shopier ürün sayfasında gösterilir.",
+    }
     shopier_url = listing_url(selected_product) if selected_product else ""
 
     text = t["product_header"].format(
@@ -744,10 +743,7 @@ async def message_handler(event):
         return
 
     if one_time_mode_enabled() and not is_admin_context:
-        buttons = [[
-            Button.inline("➕ 100 Kredi Ekle", f"adm_add_{user_id}_100".encode()),
-            Button.inline("🚫 Kullanıcıyı Engelle (Ban)", f"adm_ban_{user_id}".encode()),
-        ]]
+        buttons = [[Button.inline("🚫 Kullanıcıyı Engelle (Ban)", f"adm_ban_{user_id}".encode())]]
         if await forward_customer_message(bot, event, support_chat_id, "Froxy AI", buttons):
             record_event("dm_manual_forwarded", "Froxy AI", source="telegram_private")
             if await claim_first_greeting("froxy", user_id):
@@ -899,17 +895,7 @@ async def message_handler(event):
             f"*(Bu mesajı yanıtlayarak (Reply) doğrudan kullanıcıya cevap gönderebilirsiniz.)*"
         )
 
-        # Admin action buttons
-        admin_buttons = [
-            [
-                Button.inline("➕ 100 Kredi Ekle", f"adm_add_{user_id}_100".encode()),
-                Button.inline("➕ 1.000 Kredi Ekle", f"adm_add_{user_id}_1000".encode())
-            ],
-            [
-                Button.inline("➕ 5.000 Kredi Ekle", f"adm_add_{user_id}_5000".encode()),
-                Button.inline("🚫 Kullanıcıyı Engelle (Ban)", f"adm_ban_{user_id}".encode())
-            ]
-        ]
+        admin_buttons = [[Button.inline("🚫 Kullanıcıyı Engelle (Ban)", f"adm_ban_{user_id}".encode())]]
 
         try:
             await bot.send_message(admin_chat_id, admin_msg, buttons=admin_buttons)
@@ -976,26 +962,7 @@ async def admin_add_credits_callback(event):
         await event.answer("⚠️ Bu işlem için yetkiniz yok!", alert=True)
         return
         
-    target_user_id = int(event.pattern_match.group(1))
-    amount = int(event.pattern_match.group(2))
-    
-    user_doc_id = f"user_{target_user_id}"
-    user_data = firestore_helper.get_document(user_doc_id) or {
-        "credits": 100,
-        "referred_by": "",
-        "id": target_user_id
-    }
-    user_data["credits"] = user_data.get("credits", 100) + amount
-    firestore_helper.set_document(user_doc_id, user_data)
-    
-    try:
-        await bot.send_message(target_user_id, f"🎁 **Yönetici Bonusu:** Hesabınıza **+{amount} Kredi** tanımlandı! Yeni bakiyeniz: `{user_data['credits']} Kredi`")
-    except Exception:
-        pass
-        
-    await event.answer(f"✅ Kullanıcıya {amount} kredi tanımlandı.", alert=True)
-    original_text = event.message.text
-    await safe_event_edit(event, f"{original_text}\n\n⚙️ **Aksiyon:** Kullanıcıya {amount} kredi tanımlandı. (Yönetici: @{event.sender.username or event.sender_id})")
+    await event.answer("Froxy kredi sistemi kapatıldı; satışlar yalnız Shopier üzerinden yürütülür.", alert=True)
 
 @bot.on(events.CallbackQuery(pattern=r'adm_ban_(\d+)'))
 async def admin_ban_user_callback(event):
@@ -1029,6 +996,11 @@ if __name__ == '__main__':
                 await bot.start(bot_token=BOT_TOKEN)
                 me = await bot.get_me()
                 BOT_USER_ID = me.id
+                try:
+                    configure_bot_profile()
+                    logger.info("Froxy Telegram profile and menu configured for Shopier.")
+                except Exception as exc:
+                    logger.warning("Froxy Telegram profile configuration failed: %s", exc)
                 logger.info(f"Froxy AI Support Bot started successfully! Bot User ID: {BOT_USER_ID}")
                 await bot.run_until_disconnected()
             except FloodWaitError as e:

@@ -586,11 +586,11 @@ def strict_group_safe_copy(group_key, is_keyvadi, is_lisansarena, is_froxy):
         lines.append("Güncel fiyat ve teslimat bilgisi için özel mesaj.")
         return "\n".join(lines)
     return "\n".join([
-        "Froxy AI tek panel otomasyon hizmeti",
-        "GPT, Claude, Gemini ve DeepSeek modelleri",
-        "Görsel üretimi, dosya analizi ve teknik kurulum",
-        "Paketler 129,99 TL'den başlıyor",
-        "Detaylı bilgi ve fiyat için özel mesaj.",
+        "Froxy dijital ürün mağazası",
+        "ChatGPT Plus kişisel 499,90 TL | ortak 39,99 TL",
+        "ChatGPT Plus ve Codex 599,90 TL",
+        "Gemini Pro 12 ay 59,99 TL | 18 ay 99,99 TL",
+        "Güncel ürün ve güvenli ödeme Shopier mağazasında.",
     ])
 
 
@@ -2029,9 +2029,8 @@ DM_TEMPLATES = {
     "ai": (
         "Merhaba 👋\n\n"
         "Yapay zeka ile ilgili mesajınızı gördüm. "
-        "ChatGPT, Claude, Gemini ve 1100+ AI modelini tek panelden kullanabilirsiniz — "
-        "üstelik ilk 100 kredi ücretsiz!\n\n"
-        "Detaylar için: @FroxyDestekBOT\n"
+        "ChatGPT, Gemini, Codex ve diğer dijital ürünlerin güncel Shopier ilanlarını inceleyebilirsiniz.\n\n"
+        "Shopier ürünü için: @FroxyDestekBOT\n"
         "İyi günler! 🙏"
     ),
     "kupon": (
@@ -2885,7 +2884,7 @@ def keyvadi_product_reply(product, source="ad_account_dm", arm=""):
 
 
 def froxy_product_reply(product, source="ad_account_dm", arm=""):
-    """Return the exact Froxy Shopier product and keep the panel visible."""
+    """Return the exact Froxy Shopier product listing."""
     product = apply_froxy_price_overrides(product)
     target = listing_url(product)
     return (

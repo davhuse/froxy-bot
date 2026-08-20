@@ -1,13 +1,8 @@
-FROXY AI | 1.100+ YAPAY ZEKÂ MODELİ TEK PANELDE
-GPT, Claude, Gemini ve DeepSeek modelleri arasında tek ekrandan geçiş yapın.
-• Kodlama, hata analizi ve proje desteği
-• Metin, özet, çeviri ve araştırma
-• Görsel üretimi ile PDF/dosya analizi
-• Hazır AI araçları ve düzenli model güncellemeleri
-Güncel paketler:
+FROXY | DİJİTAL ÜRÜNLER SHOPIER MAĞAZASI
+Güncel ürünler doğrudan Shopier ilanı üzerinden güvenli ödeme ile sunulur.
 • Gemini Pro 12 Ay 59,99 TL | 18 Ay 99,99 TL
 • Gemini Pro + Antigravity 12 Ay 169,99 TL | 18 Ay 249,99 TL
 • ChatGPT Plus kişisel 499,90 TL | ortak 39,99 TL | Codex dahil 599,90 TL
 • Gemini Ultra 299,99 TL | 2.5K kredili 399,99 TL
 • ChatGPT Go 3 Ay 49,99 TL | Perplexity Pro 69,99 TL
-Paneli önce 100 ücretsiz krediyle deneyin: @FroxyDestekBOT
+Ürün adını yazın; ilgili Shopier ilanı gelsin: @FroxyDestekBOT

@@ -15,6 +15,19 @@ class AdTemplateTests(unittest.TestCase):
             self.assertEqual(text.count("@FroxyDestekBOT"), 1, path.name)
             self.assertNotIn("@FroxyOnline", text, path.name)
             self.assertNotIn("#Froxy", text, path.name)
+            self.assertIn("shopier", text.lower(), path.name)
+            self.assertNotIn("froxyai.com", text.lower(), path.name)
+            self.assertNotIn("1.100", text, path.name)
+            self.assertNotIn("1100", text, path.name)
+            self.assertNotIn("ücretsiz kredi", text.lower(), path.name)
+
+    def test_froxy_support_public_flow_is_shopier_only(self):
+        source = (ROOT / "froxy_destek_bot.py").read_text(encoding="utf-8")
+        self.assertIn('FROXY_SHOPIER_URL = "https://www.shopier.com/froxyai"', source)
+        self.assertIn('"text": "🛒 Shopier Mağazası"', source)
+        self.assertNotIn("froxyai.com", source.lower())
+        self.assertNotIn("1.100", source)
+        self.assertNotIn("1100+", source)
 
     def test_froxy_cta_compatibility_helper_keeps_only_visible_handle(self):
         message = "Froxy AI paneli\nBilgi: @FroxyDestekBOT"
