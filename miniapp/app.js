@@ -303,9 +303,12 @@ function renderProductGrid() {
     <div class="product-card" onclick="openProductModal('${p.id}')">
       <div class="card-img-wrapper">
         <img class="card-img" src="${p.image}?v=9.0" alt="${p.title}" loading="lazy" onerror="this.src='assets/keyvadi_banner_new_1781380687628.png'"/>
-        <span class="card-badge">${(p.showcase || p.is_vitrin) ? "VİTRİN" : (p.category_label || CATEGORY_NAMES[p.category] || 'ÜRÜN')}</span>
       </div>
       <div class="card-content">
+        <div class="card-meta-row">
+          <span class="card-category">${p.category_label || CATEGORY_NAMES[p.category] || 'DİJİTAL ÜRÜN'}</span>
+          ${(p.showcase || p.is_vitrin) ? '<span class="card-showcase">VİTRİN</span>' : ''}
+        </div>
         <div class="card-title">${p.title}</div>
         <div class="card-price-row">
           <span class="card-price">${p.price}</span>
