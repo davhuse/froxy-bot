@@ -393,7 +393,10 @@ function renderAdCountdowns() {
                 state.phase === 'configuration_error' ? 'Yapılandırma Hatası' :
                 state.phase === 'stopped' ? 'Durduruldu' : 'Telegram Bağlı Değil';
             value.style.color = '#f87171';
-            meta.textContent = state.lastError || 'Yetkilendirilmiş Telegram bağlantısı yok';
+            meta.textContent = state.lastError ||
+                (state.phase === 'stopped'
+                    ? 'Telegram worker sunucusu kapalı; oturum yetkilendirmesi henüz kontrol edilmedi'
+                    : 'Yetkilendirilmiş Telegram bağlantısı yok');
         } else if (state.queueActive && state.queueState) {
             const current = state.queueState.current_index || 0;
             const total = state.queueState.total_groups || 0;
