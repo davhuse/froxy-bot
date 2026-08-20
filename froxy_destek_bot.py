@@ -11,7 +11,7 @@ import user_lang_helper
 import firestore_helper
 from sales_metrics import record_event
 from shopier_catalog import fetch_shopier_catalog, match_catalog_products
-from support_flow import claim_auto_reply_once, claim_first_greeting, forward_customer_message, greeting_for, one_time_mode_enabled, save_ticket_record
+from support_flow import claim_auto_reply_once, claim_first_greeting, claim_support_event, forward_customer_message, greeting_for, one_time_mode_enabled, release_product_claim, release_support_event, save_ticket_record
 from sales_conversion import (
     apply_froxy_price_overrides,
     has_sales_query,
@@ -56,9 +56,9 @@ async def async_claim_event(event, scope):
     fields = {"scope": scope, "chat_id": event.chat_id, "message_id": message_id}
     loop = asyncio.get_event_loop()
     result = await loop.run_in_executor(
-        None, firestore_helper.claim_document, doc_id, fields
+        None, firestore_helper.claim_remote_document, doc_id, fields
     )
-    return result is not False
+    return result is True
 
 
 async def claim_product_reply(user_id, product):
@@ -68,7 +68,7 @@ async def claim_product_reply(user_id, product):
     loop = asyncio.get_event_loop()
     result = await loop.run_in_executor(
         None,
-        firestore_helper.claim_document,
+        firestore_helper.claim_remote_document,
         f"support_product_once_froxy_{int(user_id)}_{safe_id}",
         {"brand": "froxy", "user_id": int(user_id), "product_id": product_id},
     )
@@ -681,6 +681,61 @@ async def message_handler(event):
         return
 
     is_admin_context = event.sender_id == admin_chat_id or event.chat_id == support_chat_id
+
+    # Resolve sales intent before the generic greeting.  Product questions
+    # must result in one product card, not a greeting followed by a card.
+    matched_products = []
+    if not is_admin_context and event.text:
+        matched_products = match_sales_products(event.text, load_sales_catalog("froxy"), limit=3)
+
+    if matched_products:
+        reply_event_id = getattr(event.message, "id", None)
+        if reply_event_id is None or not await claim_support_event("Froxy AI", user_id, reply_event_id, "product_card"):
+            record_event("duplicate_suppressed", "Froxy AI", source="telegram_private", reason="product_event_already_claimed")
+            return
+        candidate_products = filter_products_outside_cooldown(user_id, matched_products)
+        claimed_products = []
+        for product in candidate_products:
+            if await claim_product_reply(user_id, product):
+                claimed_products.append(product)
+        if not claimed_products:
+            record_event("duplicate_suppressed", "Froxy AI", source="telegram_private", reason="product_already_sent")
+            return
+        matched_products = claimed_products
+        attribution = USER_CTA_ATTRIBUTION.get(user_id, {})
+        if attribution.get("expires_at", 0) <= time.monotonic():
+            attribution = {}
+            USER_CTA_ATTRIBUTION.pop(user_id, None)
+        arm = attribution.get("arm", "")
+        lang = user_lang_helper.get_user_lang(user_id) or "tr"
+        t = TEXTS[lang]
+        lines = ["🔎 **Uygun Froxy ürünleri:**", ""]
+        buttons = []
+        for product in matched_products:
+            price = product.get("price") or "Fiyat ürün sayfasında"
+            lines.append(f"• **{product['title']}** — {price}")
+            buttons.append([Button.url(f"🛒 {product['title'][:40]}", listing_url(product))])
+        buttons.append([Button.inline(t["support_btn"], b"menu_support")])
+        try:
+            await event.respond("\n".join(lines), buttons=buttons)
+        except Exception:
+            await release_support_event("Froxy AI", user_id, reply_event_id, "product_card")
+            for product in matched_products:
+                await release_product_claim(
+                    "froxy", user_id,
+                    str(product.get("id") or product.get("url") or product.get("title") or "product"),
+                )
+            raise
+        mark_product_reply_sent(user_id, matched_products)
+        SUPPORT_SALES_CONTEXT[user_id] = {
+            "product": dict(matched_products[0]),
+            "expires_at": asyncio.get_running_loop().time() + 15 * 60,
+        }
+        record_event("product_matched", "Froxy AI", source="telegram_private", product=matched_products[0].get("title", ""), product_count=len(matched_products), arm=arm)
+        record_event("purchase_cta_sent", "Froxy AI", source="telegram_private", product=matched_products[0].get("title", ""), product_count=len(matched_products), arm=arm)
+        record_event("dm_reply_sent", "Froxy AI", source="telegram_private", product=matched_products[0].get("title", ""))
+        return
+
     if one_time_mode_enabled() and not is_admin_context:
         buttons = [[
             Button.inline("➕ 100 Kredi Ekle", f"adm_add_{user_id}_100".encode()),
@@ -785,45 +840,6 @@ async def message_handler(event):
         return
 
     if not is_admin_context and event.text:
-        matched_products = match_sales_products(event.text, load_sales_catalog("froxy"), limit=3)
-        if matched_products:
-            candidate_products = filter_products_outside_cooldown(user_id, matched_products)
-            claimed_products = []
-            for product in candidate_products:
-                if await claim_product_reply(user_id, product):
-                    claimed_products.append(product)
-            if not claimed_products:
-                # The original product card is already in the conversation;
-                # keep this follow-up in the panel without another reply.
-                return
-            matched_products = claimed_products
-            attribution = USER_CTA_ATTRIBUTION.get(user_id, {})
-            if attribution.get("expires_at", 0) <= time.monotonic():
-                attribution = {}
-                USER_CTA_ATTRIBUTION.pop(user_id, None)
-            arm = attribution.get("arm", "")
-            lang = user_lang_helper.get_user_lang(user_id) or "tr"
-            t = TEXTS[lang]
-            lines = ["🔎 **Uygun Froxy ürünleri:**", ""]
-            buttons = []
-            for product in matched_products:
-                price = product.get("price") or "Fiyat ürün sayfasında"
-                lines.append(f"• **{product['title']}** — {price}")
-                buttons.append([Button.url(f"🛒 {product['title'][:40]}", listing_url(product))])
-            buttons.append([Button.inline(t["support_btn"], b"menu_support")])
-            await event.respond("\n".join(lines), buttons=buttons)
-            mark_product_reply_sent(user_id, matched_products)
-            SUPPORT_SALES_CONTEXT[user_id] = {
-                "product": dict(matched_products[0]),
-                "expires_at": asyncio.get_running_loop().time() + 15 * 60,
-            }
-            record_event("product_matched", "Froxy AI", source="telegram_private", product=matched_products[0].get("title", ""), product_count=len(matched_products), arm=arm)
-            record_event("purchase_cta_sent", "Froxy AI", source="telegram_private", product=matched_products[0].get("title", ""), product_count=len(matched_products), arm=arm)
-            record_event(
-                "dm_reply_sent", "Froxy AI", source="telegram_private",
-                product=matched_products[0].get("title", ""),
-            )
-            return
         context = SUPPORT_SALES_CONTEXT.get(user_id)
         if context and context.get("expires_at", 0) > asyncio.get_running_loop().time():
             product = context["product"]

@@ -138,7 +138,12 @@ def _auth_headers():
     with _TOKEN_LOCK:
         if not credentials.valid or credentials.expired:
             credentials.refresh(Request())
-        return {"Authorization": f"Bearer {credentials.token}"}
+    return {"Authorization": f"Bearer {credentials.token}"}
+
+
+def remote_credentials_configured():
+    """Whether this process can use Firestore as a durable coordination store."""
+    return bool(os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON", "").strip() or API_KEY)
 
 
 def _url(url):
@@ -271,6 +276,41 @@ def claim_document(doc_id, fields_dict=None, quiet=False):
     return result
 
 
+def claim_remote_document(doc_id, fields_dict=None, quiet=False):
+    """Atomically claim a document without falling back to ephemeral disk.
+
+    Customer-facing replies and distributed blast sends must not silently use
+    Render's temporary filesystem.  ``None`` means the durable backend is not
+    configured or unavailable; callers should fail closed in that case.
+    """
+    if not remote_credentials_configured():
+        return None
+    return _commit({
+        "update": {
+            "name": f"{DOCUMENT_PREFIX}/{doc_id}",
+            "fields": _fields_to_firestore(fields_dict or {}),
+        },
+        "currentDocument": {"exists": False},
+    }, quiet=quiet)
+
+
+def health_check():
+    """Return a non-secret Firestore connectivity/configuration summary."""
+    if not remote_credentials_configured():
+        return {"configured": False, "reachable": False, "status": "missing_credentials"}
+    try:
+        with _request(f"{BASE_URL}/__codex_health__") as response:
+            response.read(1)
+        return {"configured": True, "reachable": True, "status": "ready"}
+    except urllib.error.HTTPError as exc:
+        # A missing document still proves that the project/API key is reachable.
+        if exc.code == 404:
+            return {"configured": True, "reachable": True, "status": "ready"}
+        return {"configured": True, "reachable": False, "status": f"http_{exc.code}"}
+    except Exception as exc:
+        return {"configured": True, "reachable": False, "status": type(exc).__name__}
+
+
 def compare_and_set_document(doc_id, fields_dict, update_time, quiet=False):
     if not update_time:
         return False
@@ -306,6 +346,19 @@ def delete_document(doc_id, update_time=None):
         return _local_delete(doc_id)
 
 
+def delete_remote_document(doc_id):
+    """Delete a durable coordination claim without touching local fallback state."""
+    if not remote_credentials_configured():
+        return False
+    try:
+        with _request(
+            f"{BASE_URL}/{urllib.parse.quote(doc_id)}", method="DELETE"
+        ) as response:
+            return response.status in (200, 204)
+    except urllib.error.HTTPError as exc:
+        return exc.code == 404
+    except Exception:
+        return False
 def acquire_lease(doc_id, owner_id, ttl_seconds=120):
     """Acquire or renew an expiring single-owner lease with Firestore CAS."""
     now = int(time.time())

@@ -10,12 +10,13 @@ import time
 from telethon import TelegramClient, events, Button
 from telethon.errors import MessageNotModifiedError
 from telethon.sessions import StringSession
+from telethon.tl.types import KeyboardButtonRow, KeyboardButtonWebView, ReplyInlineMarkup
 import user_lang_helper
 import firestore_helper
 from gemini_helper import get_ai_response
 from sales_catalog import filter_keyvadi_products
 from sales_metrics import record_event
-from support_flow import claim_auto_reply_once, claim_first_greeting, forward_customer_message, greeting_for, one_time_mode_enabled, save_ticket_record
+from support_flow import claim_auto_reply_once, claim_first_greeting, claim_support_event, forward_customer_message, greeting_for, one_time_mode_enabled, release_product_claim, release_support_event, save_ticket_record
 from update_keyvadi_links_json import fetch_live_catalog, write_catalog_atomic
 from sales_conversion import (
     load_sales_catalog,
@@ -48,7 +49,7 @@ async def async_claim_event(event, scope):
     if not doc_id:
         return True
     result = await async_run_claim(doc_id, {"scope": scope, "chat_id": event.chat_id, "message_id": getattr(event.message, 'id', None)})
-    return result is not False
+    return result is True
 
 async def async_release_event_claim(event, scope):
     doc_id = get_event_claim_doc_id(event, scope)
@@ -57,7 +58,7 @@ async def async_release_event_claim(event, scope):
 
 async def async_run_claim(doc_id, fields):
     loop = asyncio.get_event_loop()
-    return await loop.run_in_executor(None, firestore_helper.claim_document, doc_id, fields)
+    return await loop.run_in_executor(None, firestore_helper.claim_remote_document, doc_id, fields)
 
 
 async def claim_product_reply(user_id, product):
@@ -172,7 +173,12 @@ if not config:
 BOT_TOKEN = os.environ.get("KEYVADI_SUPPORT_BOT_TOKEN", "").strip()
 ADMIN_ID = int(os.environ.get("TELEGRAM_ADMIN_ID", config.get("admin_id", 0)) or 0)
 BOT_USER_ID = None
+PROFILE_CONFIGURED = False
 SHOPIER_LINKS = config.get("shopier_links", {})
+KEYVADI_MINI_APP_URL = os.environ.get(
+    "KEYVADI_MINI_APP_URL",
+    "https://froxy-bot-live.onrender.com/keyvadi/",
+).strip().rstrip("/") + "/"
 
 if not BOT_TOKEN or BOT_TOKEN == "YOUR_TELEGRAM_BOT_TOKEN":
     logger.error("KEYVADI_SUPPORT_BOT_TOKEN is not configured. Exiting.")
@@ -183,6 +189,59 @@ user_states = {}
 
 # Initialize client
 bot = TelegramClient(StringSession(), API_ID, API_HASH)
+
+BOT_COMMANDS = [
+    ("start", "KeyVadi ana menüyü aç"),
+    ("magaza", "KeyVadi mağazasını aç"),
+    ("urunler", "Ürün kataloğunu görüntüle"),
+    ("destek", "Destek talebi oluştur"),
+    ("referans", "Referans bağlantını görüntüle"),
+    ("dil", "Dil seçimini değiştir"),
+]
+
+
+def _bot_api_call(method, payload):
+    request = urllib.request.Request(
+        f"https://api.telegram.org/bot{BOT_TOKEN}/{method}",
+        data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    with urllib.request.urlopen(request, timeout=20) as response:
+        result = json.loads(response.read().decode("utf-8"))
+    if not result.get("ok"):
+        raise RuntimeError(result.get("description") or method)
+    return result
+
+
+def configure_bot_profile():
+    """Configure the KeyVadi command list and persistent Mini App entry."""
+    _bot_api_call("setMyCommands", {
+        "commands": [
+            {"command": command, "description": description}
+            for command, description in BOT_COMMANDS
+        ]
+    })
+    _bot_api_call("setChatMenuButton", {
+        "menu_button": {
+            "type": "web_app",
+            "text": "🛍 Mağazayı Aç",
+            "web_app": {"url": KEYVADI_MINI_APP_URL},
+        }
+    })
+    _bot_api_call("setMyName", {"name": "KeyVadi"})
+    _bot_api_call("setMyDescription", {
+        "description": "Dijital ürünler, lisanslar, abonelikler ve güvenli Shopier alışverişi için KeyVadi mağazası."
+    })
+    _bot_api_call("setMyShortDescription", {
+        "short_description": "Dijital ürün mağazası · Shopier · Destek"
+    })
+
+
+def mini_app_markup(label="Mağazayı Aç"):
+    return ReplyInlineMarkup(rows=[KeyboardButtonRow(buttons=[
+        KeyboardButtonWebView(text=f"🛍 {label}", url=KEYVADI_MINI_APP_URL)
+    ])])
 
 @bot.on(events.CallbackQuery())
 async def acknowledge_callback(event):
@@ -830,7 +889,7 @@ async def show_main_menu(event, user_id, is_callback=False):
         if cat["products"]:
             title = t["cat_title_mapping"].get(cat_key, cat["title"])
             buttons.append([Button.inline(title, f"cat_{cat_key}".encode())])
-            
+    buttons.insert(0, [Button.url("🛍 Mağazayı Aç", KEYVADI_MINI_APP_URL)])
     buttons.append([Button.inline("💳 Ödememi Doğrula / Verify Payment", b"menu_verify_payment")])
     buttons.append([Button.inline("👥 Arkadaşını Davet Et / Invite Friends", b"menu_referral")])
     buttons.append([Button.inline(t["support_btn"], b"menu_support")])
@@ -935,6 +994,16 @@ async def lang_cmd_handler(event):
     user_id = event.sender_id
     user_states[user_id] = None
     await show_lang_selection(event)
+
+
+@bot.on(events.NewMessage(pattern=r'(?i)^/magaza$'))
+async def store_cmd_handler(event):
+    await event.respond("KeyVadi mağazası", buttons=mini_app_markup())
+
+
+@bot.on(events.NewMessage(pattern=r'(?i)^/urunler$'))
+async def products_cmd_handler(event):
+    await event.respond("Ürün kataloğunu açmak için aşağıdaki düğmeye dokunun.", buttons=mini_app_markup("Ürünleri Aç"))
 
 @bot.on(events.CallbackQuery(pattern=r'lang_(\w+)'))
 async def lang_select_callback(event):
@@ -1281,9 +1350,13 @@ async def message_handler(event):
     admin_chat_id = config.get("admin_id", ADMIN_ID)
     support_chat_id = config.get("support_chat_id", admin_chat_id)
     is_admin_context = event.sender_id == admin_chat_id or event.chat_id == support_chat_id
+    matched_products = []
+    if not is_admin_context and event.text:
+        matched_products = match_sales_products(event.text, load_sales_catalog("keyvadi"), limit=3)
+
     if one_time_mode_enabled() and not is_admin_context:
         buttons = [[Button.inline("🚫 Kullanıcıyı Engelle (Ban)", f"kv_adm_ban_{user_id}".encode())]]
-        if await forward_customer_message(bot, event, support_chat_id, "KeyVadi", buttons):
+        if not matched_products and await forward_customer_message(bot, event, support_chat_id, "KeyVadi", buttons):
             record_event("dm_manual_forwarded", "KeyVadi", source="telegram_private")
             if await claim_first_greeting("keyvadi", user_id):
                 await event.respond(greeting_for("KeyVadi"))
@@ -1348,13 +1421,17 @@ async def message_handler(event):
     # If user is NOT in any special state and NOT admin, try to match a product
     if event.text and not event.text.startswith('/'):
         full_catalog = load_sales_catalog("keyvadi")
-        matched_products = match_sales_products(event.text, full_catalog, limit=3)
+        matched_products = matched_products or match_sales_products(event.text, full_catalog, limit=3)
         # A product name by itself (for example "Gemini" or "Perplexity") is
         # valid sales intent even when the customer does not say "fiyat/link".
         if not has_sales_intent(event.text) and not matched_products:
             logger.info("Ignoring non-sales message: %r", event.text)
             return
         if matched_products:
+            reply_event_id = getattr(event.message, "id", None)
+            if reply_event_id is None or not await claim_support_event("KeyVadi", user_id, reply_event_id, "product_card"):
+                record_event("duplicate_suppressed", "KeyVadi", source="telegram_private", reason="product_event_already_claimed")
+                return
             candidate_products = filter_products_outside_cooldown(user_id, matched_products)
             claimed_products = []
             for product in candidate_products:
@@ -1407,6 +1484,12 @@ async def message_handler(event):
             except Exception:
                 PROCESSED_MESSAGE_EVENTS.discard(event_key)
                 await async_release_event_claim(event, claim_scope)
+                await release_support_event("KeyVadi", user_id, reply_event_id, "product_card")
+                for product in matched_products:
+                    await release_product_claim(
+                        "keyvadi", user_id,
+                        str(product.get("id") or product.get("url") or product.get("title") or "product"),
+                    )
                 raise
             mark_product_reply_sent(user_id, matched_products)
             SUPPORT_SALES_CONTEXT[user_id] = {
@@ -1514,13 +1597,20 @@ if __name__ == '__main__':
     load_products_from_file_or_scrape()
     
     async def start_with_retry():
-        global BOT_USER_ID
+        global BOT_USER_ID, PROFILE_CONFIGURED
         while True:
             try:
                 logger.info("Starting KeyVadi Sales Bot (@KeyVadiSatisBot)...")
                 await bot.start(bot_token=BOT_TOKEN)
                 me = await bot.get_me()
                 BOT_USER_ID = me.id
+                if not PROFILE_CONFIGURED:
+                    try:
+                        await asyncio.to_thread(configure_bot_profile)
+                        PROFILE_CONFIGURED = True
+                        logger.info("KeyVadi commands and Mini App menu configured")
+                    except Exception as profile_error:
+                        logger.warning("KeyVadi profile configuration warning: %s", profile_error)
                 logger.info(f"KeyVadi Sales Bot started successfully! Bot User ID: {BOT_USER_ID}")
                 await bot.run_until_disconnected()
             except FloodWaitError as e:

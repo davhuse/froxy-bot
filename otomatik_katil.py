@@ -2321,7 +2321,7 @@ async def async_claim_document(doc_id, fields_dict):
     loop = asyncio.get_event_loop()
     import firestore_helper
     return await loop.run_in_executor(
-        None, firestore_helper.claim_document, doc_id, fields_dict
+        None, firestore_helper.claim_remote_document, doc_id, fields_dict
     )
 
 async def async_delete_document(doc_id):
@@ -2367,13 +2367,6 @@ async def claim_distributed_group_send(grup_name, client_name, entity=None):
     account_key = re.sub(r'[^a-zA-Z0-9_-]+', '_', client_name)
     hour_bucket = datetime.now(timezone.utc).strftime('%Y%m%d%H')
     doc_id = f"blast_send_{account_key}_{group_key}_{hour_bucket}"
-    # The selected production owner uses the durable local lock plus the
-    # one-hour cooldown.  Firestore is unavailable on that Render service;
-    # do not turn an optional cross-instance lock into a complete ad outage.
-    # Other instances keep the strict distributed claim and therefore cannot
-    # become a second sender by accident.
-    if os.environ.get('DISABLE_RUNTIME_LEASE', '').strip().lower() in {'1', 'true', 'yes', 'on'}:
-        return f"local:{doc_id}"
     result = await async_claim_document(doc_id, {
         'account': client_name,
         'group': str(grup_name),

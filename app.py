@@ -755,6 +755,71 @@ def status():
     })
 
 
+@app.route('/api/system-checkup', methods=['GET'])
+def system_checkup():
+    """Read-only health summary for bots, durable claims, store and blast queue."""
+    try:
+        import firestore_helper
+        claim_service = firestore_helper.health_check()
+    except Exception as exc:
+        claim_service = {
+            'configured': False,
+            'reachable': False,
+            'status': type(exc).__name__,
+        }
+
+    expected_processes = {
+        'keyvadi_support': len(get_processes_by_script('froxy_bot.py')),
+        'froxy_support': len(get_processes_by_script('froxy_destek_bot.py')),
+        'lisansarena_support': len(get_processes_by_script('lisansarena_bot.py')),
+        'blast_worker': len(get_processes_by_script('otomatik_katil.py')),
+    }
+    store_health = {'configured': bool(os.environ.get('LISANSARENA_DATABASE_URL') or os.environ.get('DATABASE_URL'))}
+    try:
+        from lisansarena_store import get_store
+        store = get_store()
+        with store.engine.connect() as connection:
+            connection.execute(__import__('sqlalchemy').text('SELECT 1'))
+        store_health.update({'reachable': True, 'status': 'ready'})
+    except Exception as exc:
+        store_health.update({'reachable': False, 'status': type(exc).__name__})
+
+    process_health = {
+        name: count == 1 for name, count in expected_processes.items()
+    }
+    overall = (
+        'healthy'
+        if all(process_health.values())
+        and claim_service.get('reachable') is True
+        and store_health.get('reachable') is True
+        else 'degraded'
+    )
+    return jsonify({
+        'status': overall,
+        'build': os.environ.get('RENDER_GIT_COMMIT', 'unknown')[:12],
+        'processes': expected_processes,
+        'processes_healthy': process_health,
+        'durable_claims': claim_service,
+        'lisansarena_store': store_health,
+        'keyvadi_mini_app': {
+            'url': os.environ.get(
+                'KEYVADI_MINI_APP_URL',
+                'https://froxy-bot-live.onrender.com/keyvadi/',
+            ),
+            'mounted': True,
+        },
+        'group_state_files': {
+            name: os.path.exists(os.path.join(base_dir, name))
+            for name in (
+                'blast_checkpoint_v3.json',
+                'group_cooldown.json',
+                'group_failures.json',
+                'account_group_blocks.json',
+            )
+        },
+    })
+
+
 @app.route('/api/group-status', methods=['GET'])
 def group_status():
     def load_json_file(path, default):
@@ -1765,7 +1830,7 @@ def api_groups():
 def keep_alive():
     import urllib.request
     time.sleep(30)  # App'in ayağa kalkmasını bekle
-    render_url = os.environ.get("RENDER_EXTERNAL_URL", "https://froxy-bot-qy0a.onrender.com")
+    render_url = os.environ.get("RENDER_EXTERNAL_URL", "https://froxy-bot-live.onrender.com")
     ping_url = render_url.rstrip('/') + "/api/status"
     print(f"[KeepAlive] Başlatıldı. Her 10dk {ping_url} adresine ping atılacak.")
     while True:

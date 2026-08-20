@@ -28,7 +28,7 @@ SHOPIER_HOSTS = {"shopier.com", "www.shopier.com"}
 PUBLIC_BASE_URL = (
     os.environ.get("PUBLIC_BASE_URL")
     or os.environ.get("RENDER_EXTERNAL_URL")
-    or "https://froxy-bot-qy0a.onrender.com"
+    or "https://froxy-bot-live.onrender.com"
 ).rstrip("/")
 
 TEXT_ALIASES = {

@@ -119,12 +119,74 @@ async def claim_first_greeting(brand: str, user_id: int) -> bool:
     loop = asyncio.get_running_loop()
     try:
         claimed = await loop.run_in_executor(
-            None, firestore_helper.claim_document, doc_id,
+            None, firestore_helper.claim_remote_document, doc_id,
             {"brand": brand, "created_at": __import__("time").time()},
         )
     except Exception:
         return False
     return claimed is True
+
+
+async def claim_support_event(brand: str, user_id: int, event_id: int, kind: str) -> bool:
+    """Claim one customer-facing reply for one incoming Telegram event.
+
+    Product claims are intentionally separate because a user may ask for
+    different products in the same private chat.  This event-level claim
+    prevents a reconnect or duplicate update from emitting the same greeting,
+    clarification, or support response twice.
+    """
+    safe_brand = "".join(char if char.isalnum() or char in "_-" else "_" for char in str(brand).lower())
+    safe_kind = "".join(char if char.isalnum() or char in "_-" else "_" for char in str(kind).lower())
+    doc_id = f"support_reply_{safe_brand}_{int(user_id)}_{int(event_id)}_{safe_kind}"
+    loop = asyncio.get_running_loop()
+    try:
+        claimed = await loop.run_in_executor(
+            None,
+            firestore_helper.claim_remote_document,
+            doc_id,
+            {
+                "brand": brand,
+                "user_id": int(user_id),
+                "event_id": int(event_id),
+                "kind": safe_kind,
+                "created_at": __import__("time").time(),
+            },
+        )
+    except Exception:
+        return False
+    return claimed is True
+
+
+def support_event_claim_id(brand: str, user_id: int, event_id: int, kind: str) -> str:
+    safe_brand = "".join(char if char.isalnum() or char in "_-" else "_" for char in str(brand).lower())
+    safe_kind = "".join(char if char.isalnum() or char in "_-" else "_" for char in str(kind).lower())
+    return f"support_reply_{safe_brand}_{int(user_id)}_{int(event_id)}_{safe_kind}"
+
+
+async def release_support_event(brand: str, user_id: int, event_id: int, kind: str) -> bool:
+    loop = asyncio.get_running_loop()
+    try:
+        return await loop.run_in_executor(
+            None,
+            firestore_helper.delete_remote_document,
+            support_event_claim_id(brand, user_id, event_id, kind),
+        )
+    except Exception:
+        return False
+
+
+async def release_product_claim(brand: str, user_id: int, product_id: str) -> bool:
+    safe_brand = "".join(char if char.isalnum() or char in "_-" else "_" for char in str(brand).lower())
+    safe_id = "".join(char if char.isalnum() or char in "_-" else "_" for char in str(product_id))[:100]
+    loop = asyncio.get_running_loop()
+    try:
+        return await loop.run_in_executor(
+            None,
+            firestore_helper.delete_remote_document,
+            f"support_product_once_{safe_brand}_{int(user_id)}_{safe_id}",
+        )
+    except Exception:
+        return False
 
 
 async def claim_auto_reply_once(brand: str, user_id: int, kind: str = "generic", chat_id=None) -> bool:
@@ -136,7 +198,7 @@ async def claim_auto_reply_once(brand: str, user_id: int, kind: str = "generic",
     try:
         claimed = await loop.run_in_executor(
             None,
-            firestore_helper.claim_document,
+            firestore_helper.claim_remote_document,
             doc_id,
             {
                 "brand": brand,

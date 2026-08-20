@@ -24,7 +24,7 @@ from lisansarena_store import StoreUnavailable, get_store
 from sales_metrics import record_event
 import firestore_helper
 from sales_conversion import load_sales_catalog, match_sales_products, purchase_url
-from support_flow import claim_first_greeting, forward_customer_message
+from support_flow import claim_first_greeting, claim_support_event, forward_customer_message, release_product_claim, release_support_event
 
 
 logging.basicConfig(
@@ -39,7 +39,7 @@ API_HASH = os.environ.get("TELEGRAM_API_HASH", "").strip()
 BOT_TOKEN = os.environ.get("LISANSARENA_BOT_TOKEN", "").strip()
 MINI_APP_URL = os.environ.get(
     "LISANSARENA_MINI_APP_URL",
-    "https://froxy-bot-qy0a.onrender.com/la/app",
+    "https://froxy-bot-live.onrender.com/la/app",
 ).strip()
 
 
@@ -61,7 +61,7 @@ async def claim_product_reply(user_id, product):
     product_id = str(product.get("id") or product.get("url") or product.get("title") or "product")
     safe_id = re.sub(r"[^a-zA-Z0-9_-]+", "_", product_id)[:100]
     claimed = await asyncio.to_thread(
-        firestore_helper.claim_document,
+        firestore_helper.claim_remote_document,
         f"support_product_once_lisansarena_{int(user_id)}_{safe_id}",
         {"brand": "lisansarena", "user_id": int(user_id), "product_id": product_id},
         True,
@@ -70,6 +70,10 @@ async def claim_product_reply(user_id, product):
 
 
 async def send_product_card(event, matched_products):
+    event_id = getattr(event.message, "id", None)
+    if event_id is None or not await claim_support_event("LisansArena", event.sender_id, event_id, "product_card"):
+        record_event("duplicate_suppressed", "LisansArena", source="telegram_private", reason="product_event_already_claimed")
+        return False
     claimed_products = []
     for product in matched_products[:3]:
         if await claim_product_reply(event.sender_id, product):
@@ -84,7 +88,16 @@ async def send_product_card(event, matched_products):
         lines.append(f"• {product['title']} — {product.get('price') or 'Fiyat bilgisi için destek'}")
         buttons.append([Button.url("🛒 Mağazada İncele", purchase_url(product, "lisansarena", "support_bot_dm"))])
     buttons.append([Button.inline("💬 Destek", b"ticket_support")])
-    await event.respond("\n".join(lines), buttons=buttons)
+    try:
+        await event.respond("\n".join(lines), buttons=buttons)
+    except Exception:
+        await release_support_event("LisansArena", event.sender_id, event_id, "product_card")
+        for product in claimed_products:
+            await release_product_claim(
+                "lisansarena", event.sender_id,
+                str(product.get("id") or product.get("url") or product.get("title") or "product"),
+            )
+        raise
     first = claimed_products[0]
     record_event("product_matched", "LisansArena", source="telegram_private", product=first.get("title", ""), product_count=len(claimed_products))
     record_event("purchase_cta_sent", "LisansArena", source="telegram_private", product=first.get("title", ""), product_count=len(claimed_products))
@@ -496,6 +509,11 @@ async def private_message_handler(event):
         if match:
             await bot.send_message(int(match.group(1)), f"LisansArena destek yanıtı:\n\n{event.raw_text}", parse_mode=None)
             await event.respond("Yanıt kullanıcıya iletildi.")
+        return
+    incoming_event_id = getattr(event.message, "id", None)
+    if incoming_event_id is None or not await claim_support_event(
+        "LisansArena", event.sender_id, incoming_event_id, "incoming"
+    ):
         return
     record_event("dm_received", "LisansArena", source="telegram_private")
 
