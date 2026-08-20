@@ -26,6 +26,19 @@ class SalesMetricsTests(unittest.TestCase):
         self.assertEqual(summary["funnel"]["qualified_leads"], 1)
         self.assertEqual(summary["dm_classes"]["delivery_problem"], 1)
 
+    def test_summary_excludes_events_before_release_baseline(self):
+        events = [
+            {"event_id": "old", "ts": "2026-08-20T15:59:59+00:00", "kind": "ad_sent", "account": "keyvadi"},
+            {"event_id": "new", "ts": "2026-08-20T16:00:01+00:00", "kind": "ad_sent", "account": "keyvadi"},
+        ]
+        with patch.dict(os.environ, {"SALES_METRICS_BASELINE_AT": "2026-08-20T16:00:00+00:00"}), patch.object(
+            sales_metrics, "_read_durable_events", return_value=events
+        ), patch.object(sales_metrics, "read_events", return_value=[]):
+            summary = sales_metrics.summarize(7)
+        self.assertEqual(summary["event_count"], 1)
+        self.assertEqual(summary["funnel"]["ad_sent"], 1)
+        self.assertEqual(summary["baseline_at"], "2026-08-20T16:00:00+00:00")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -25,7 +25,7 @@ except ImportError:  # Wasmer web build keeps Argon2-only admin login on Render.
     PasswordHasher = None
 from werkzeug.security import check_password_hash
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-from flask import Blueprint, abort, jsonify, render_template, request, send_file, session
+from flask import Blueprint, abort, jsonify, redirect, render_template, request, send_file, session
 import pyotp
 from sqlalchemy import (
     Boolean, Column, DateTime, ForeignKey, Integer, LargeBinary, MetaData,
@@ -1581,6 +1581,18 @@ def _json_error(exc, status=400):
 
 
 @la.get("/la/app")
+def mini_app_redirect():
+    """Keep one canonical Mini App URL so relative/browser caches never split."""
+    return redirect("/la/app/", code=308)
+
+
+@la.get("/lisansarena")
+@la.get("/lisansarena/")
+def mini_app_legacy_redirect():
+    return redirect("/la/app/", code=308)
+
+
+@la.get("/la/app/")
 def mini_app():
     return render_template("lisansarena_app.html")
 

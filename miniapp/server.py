@@ -102,7 +102,8 @@ def authenticated_user():
     user = verify_telegram_init_data(raw)
     if user:
         return user
-    if os.environ.get("KEYVADI_ALLOW_DEV_AUTH", "0") == "1":
+    runtime_env = os.environ.get("APP_ENV", os.environ.get("FLASK_ENV", "production")).strip().lower()
+    if os.environ.get("KEYVADI_ALLOW_DEV_AUTH", "0") == "1" and runtime_env in {"development", "test", "local"}:
         data = request.get_json(silent=True) or {}
         user_id = data.get("user_id") or request.args.get("user_id")
         if user_id:
@@ -276,7 +277,8 @@ def simulate_payment():
     """
     Önizleme ve test amaçlı anında bakiye yükleme simülasyonu.
     """
-    if os.environ.get("KEYVADI_ALLOW_SIMULATE_PAYMENT", "0") != "1":
+    runtime_env = os.environ.get("APP_ENV", os.environ.get("FLASK_ENV", "production")).strip().lower()
+    if os.environ.get("KEYVADI_ALLOW_SIMULATE_PAYMENT", "0") != "1" or runtime_env not in {"development", "test", "local"}:
         return jsonify({"success": False, "error": "Test ödeme endpointi kapalı"}), 404
     data = request.get_json() or {}
     user_id = str(data.get("user_id", 8797763469))
@@ -362,6 +364,9 @@ def purchase_cart():
     items = data.get("items", [])
     if not items:
         return jsonify({"success": False, "error": "Sepet boş"}), 400
+    idempotency_key = str(data.get("idempotency_key") or "").strip()[:160]
+    if not idempotency_key:
+        return jsonify({"success": False, "error": "Güvenli sepet anahtarı eksik"}), 400
 
     products = {str(p.get("id")): p for p in load_products()}
     total_cost = 0.0
@@ -369,9 +374,18 @@ def purchase_cart():
 
     for it in items:
         pid = str(it.get("id"))
-        qty = int(it.get("qty", 1))
+        try:
+            qty = int(it.get("qty", 1))
+        except (TypeError, ValueError):
+            return jsonify({"success": False, "error": "Ürün adedi geçersiz"}), 400
         if pid in products:
             p = products[pid]
+            max_qty = max(1, min(int(p.get("max_qty") or 1), 10))
+            if qty < 1 or qty > max_qty:
+                return jsonify({"success": False, "error": f"{p.get('title')}: en fazla {max_qty} adet alınabilir"}), 400
+            stock = p.get("stock")
+            if isinstance(stock, (int, float)) and stock >= 0 and qty > int(stock):
+                return jsonify({"success": False, "error": f"Stok yetersiz: {p.get('title')}"}), 409
             p_price = float(p.get("price_num", 0.0))
             subtotal = p_price * qty
             total_cost += subtotal
@@ -382,6 +396,7 @@ def purchase_cart():
                 "price": p_price,
                 "subtotal": subtotal,
                 "status": "pending_delivery",
+                "cart_idempotency_key": idempotency_key,
                 "created_at": int(time.time())
             })
 
@@ -394,8 +409,25 @@ def purchase_cart():
         users = load_users()
         uid = str(user_id)
         user = users.get(uid) or get_or_create_user(int(user_id))
+        duplicates = [
+            order for order in user.get("orders", [])
+            if order.get("cart_idempotency_key") == idempotency_key
+        ]
+        if duplicates:
+            return jsonify({
+                "success": True, "duplicate": True,
+                "message": "Bu sepet daha önce işlendi.",
+                "new_balance": user["balance"], "orders": duplicates,
+            })
         if user["balance"] < total_cost:
-            return jsonify({"success": False, "error": f"Yetersiz bakiye! Gerekli: ₺{total_cost:.2f}, Mevcut: ₺{user['balance']:.2f}"}), 400
+            shortfall = round(total_cost - float(user["balance"]), 2)
+            return jsonify({
+                "success": False,
+                "error": f"Yetersiz bakiye! Gerekli: ₺{total_cost:.2f}, Mevcut: ₺{user['balance']:.2f}",
+                "required_amount": total_cost,
+                "balance": float(user["balance"]),
+                "balance_shortfall": shortfall,
+            }), 400
         
         user["balance"] = round(user["balance"] - total_cost, 2)
         user.setdefault("orders", []).extend(valid_orders)

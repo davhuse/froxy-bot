@@ -2198,15 +2198,6 @@ try:
 except Exception as exc:
     print(f'[App] KeyVadi Mini App mount unavailable: {exc}')
 
-try:
-    from miniapp_lisansarena.server import app as lisansarena_miniapp
-    mounts['/la/app'] = _MountedRootMiddleware(lisansarena_miniapp)
-    mounts['/lisansarena'] = _MountedRootMiddleware(lisansarena_miniapp)
-    print('[App] LisansArena Mini App mounted at /la/app')
-    print('[App] LisansArena Mini App alias mounted at /lisansarena')
-except Exception as exc:
-    print(f'[App] LisansArena Mini App mount unavailable: {exc}')
-
 if mounts:
     app.wsgi_app = DispatcherMiddleware(app.wsgi_app, mounts)
 

@@ -22,6 +22,7 @@ from customer_intent import classify_customer_message
 
 _WRITE_LOCK = threading.Lock()
 _DEFAULT_FILE = "sales_metrics.jsonl"
+_BASELINE_FILE = Path(__file__).with_name("sales_metrics_baseline.json")
 _DURABLE_DOC_ID = "sales_metrics_journal_v1"
 _DURABLE_QUEUE: "queue.Queue[dict[str, Any]]" = queue.Queue(maxsize=500)
 _DURABLE_STARTED = False
@@ -55,6 +56,22 @@ def _private_key(*parts: Any) -> str:
 def _path() -> Path:
     configured = os.environ.get("SALES_METRICS_FILE", "").strip()
     return Path(configured or _DEFAULT_FILE)
+
+
+def _baseline_at() -> datetime | None:
+    configured = os.environ.get("SALES_METRICS_BASELINE_AT", "").strip()
+    if not configured and _BASELINE_FILE.exists():
+        try:
+            configured = str(json.loads(_BASELINE_FILE.read_text(encoding="utf-8")).get("start_at") or "").strip()
+        except (OSError, TypeError, ValueError, json.JSONDecodeError):
+            configured = ""
+    if not configured:
+        return None
+    try:
+        value = datetime.fromisoformat(configured.replace("Z", "+00:00"))
+        return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+    except ValueError:
+        return None
 
 
 def record_event(kind: str, account: str, **fields: Any) -> None:
@@ -227,7 +244,11 @@ def summarize(days: int = 7) -> dict[str, Any]:
     events_by_id = {}
     for event in _read_durable_events(days) + read_events(days):
         events_by_id[str(event.get("event_id") or json.dumps(event, sort_keys=True))] = event
-    events = list(events_by_id.values())
+    baseline_at = _baseline_at()
+    events = [
+        event for event in events_by_id.values()
+        if baseline_at is None or _event_is_newer_than(event, baseline_at)
+    ]
     by_kind: dict[str, int] = {}
     by_account: dict[str, dict[str, int | float]] = {}
     revenue = 0.0
@@ -344,6 +365,7 @@ def summarize(days: int = 7) -> dict[str, Any]:
             ) if dimension_bucket.get("ad_sent", 0) else 0.0
     return {
         "days": int(days),
+        "baseline_at": baseline_at.isoformat() if baseline_at else None,
         "event_count": len(events),
         "by_kind": by_kind,
         "by_account": by_account,

@@ -5,7 +5,7 @@ KeyVadi — Dinamik Shopier Bakiye Motoru ve Otomatik İlan Kapatıcı (v8.0)
 - Anlık bakiye ilanı açma (Shopier REST API v1)
 - Ödeme yapılınca anında bakiyeyi tanımlayıp ilanı silme
 - Kullanıcı satın almazsa, iptal ederse veya çıkarsa ilanı ANINDA Shopier'dan silme
-- Arka planda 5 dakikayı (300sn) aşan tüm satın alınmamış ilanları otomatik temizleme
+- Arka planda bir saati aşan tüm satın alınmamış ilanları otomatik kapatma
 """
 
 import os
@@ -188,22 +188,29 @@ def check_and_sync_shopier_orders(users_data_path: Path):
                             t_info = topups[pid]
                             uid = str(t_info["user_id"])
                             amt = float(t_info["amount"])
+                            order_id = str(ord_item.get("id") or ord_item.get("orderId") or pid)
 
                             if users_data_path.exists():
                                 try:
                                     with open(users_data_path, "r", encoding="utf-8") as f:
                                         users = json.load(f)
                                     if uid in users:
-                                        users[uid]["balance"] = round(users[uid].get("balance", 0.0) + amt, 2)
-                                        users[uid].setdefault("orders", []).append({
-                                            "type": "bakiye_yukleme",
-                                            "order_id": str(ord_item.get("id") or ord_item.get("orderId") or pid),
-                                            "product_id": pid,
-                                            "title": "KeyVadi bakiye yükleme",
-                                            "amount": amt,
-                                            "status": "completed",
-                                            "created_at": int(time.time())
-                                        })
+                                        already_credited = any(
+                                            str(row.get("order_id")) == order_id
+                                            and row.get("type") == "bakiye_yukleme"
+                                            for row in users[uid].get("orders", [])
+                                        )
+                                        if not already_credited:
+                                            users[uid]["balance"] = round(users[uid].get("balance", 0.0) + amt, 2)
+                                            users[uid].setdefault("orders", []).append({
+                                                "type": "bakiye_yukleme",
+                                                "order_id": order_id,
+                                                "product_id": pid,
+                                                "title": "KeyVadi bakiye yükleme",
+                                                "amount": amt,
+                                                "status": "completed",
+                                                "created_at": int(time.time())
+                                            })
                                         with open(users_data_path, "w", encoding="utf-8") as f:
                                             json.dump(users, f, ensure_ascii=False, indent=2)
                                 except Exception as ue:

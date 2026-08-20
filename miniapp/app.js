@@ -17,13 +17,9 @@ if (tg) {
   }
 }
 
-// User Profile extraction from Telegram
-const tgUser = tg?.initDataUnsafe?.user || {
-  id: 8797763469,
-  first_name: "KeyVadi",
-  last_name: "Müşterisi",
-  username: "KeyVadiSatisBot"
-};
+// Public catalogue may be browsed on the web; account and money operations
+// always require a real Telegram WebApp identity.
+const tgUser = tg?.initDataUnsafe?.user || null;
 const telegramInitData = tg?.initData || '';
 
 function authHeaders() {
@@ -92,12 +88,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderUserInfo();
   updateCartUI();
   setupEventListeners();
-  await registerAndSyncUserProfile();
+  if (tgUser && telegramInitData) await registerAndSyncUserProfile();
   await loadProducts();
-  startBackgroundBalanceSync();
+  if (tgUser && telegramInitData) startBackgroundBalanceSync();
 });
 
 async function registerAndSyncUserProfile() {
+  if (!tgUser || !telegramInitData) return false;
   try {
     const res = await fetch(api(`/api/user/${tgUser.id}`), {
       method: 'POST',
@@ -127,6 +124,7 @@ async function loadProducts() {
     const data = await res.json();
     if (data.success && data.products) {
       state.products = data.products;
+      renderCategoryChips();
       filterAndRenderProducts();
     }
   } catch (e) {
@@ -150,6 +148,17 @@ function startBackgroundBalanceSync() {
 }
 
 function renderUserInfo() {
+  if (!tgUser) {
+    const nameEl = document.getElementById('headerUserName');
+    if (nameEl) nameEl.textContent = 'Kataloğu inceliyorsun';
+    const profNameEl = document.getElementById('profileName');
+    if (profNameEl) profNameEl.textContent = 'Telegram bağlantısı gerekli';
+    const profBadge = document.getElementById('profileBadgeId');
+    if (profBadge) profBadge.textContent = 'Mağazayı bottan aç';
+    const wallUid = document.getElementById('walletUserId');
+    if (wallUid) wallUid.textContent = 'Bakiye için Telegram doğrulaması gerekir';
+    return;
+  }
   const nameEl = document.getElementById('headerUserName');
   if (nameEl) {
     nameEl.textContent = `${tgUser.first_name || 'Müşteri'} ${tgUser.last_name || ''}`.trim() || 'KeyVadi Üyesi';
@@ -216,16 +225,36 @@ function renderOrders() {
 
 // Category filter names
 const CATEGORY_NAMES = {
-  all: 'Popüler Lisanslar',
-  vitrin: '⭐ Vitrin & Özel Seçimler',
-  ai: '🤖 Yapay Zeka & LLM',
-  gaming: '🎮 Oyun & E-Pin',
-  streaming: '🎬 Sinema & Müzik',
-  design: '🎨 Tasarım & Araçlar',
-  software: '💻 Yazılım & Key',
-  social: '💬 Hesap & Sosyal',
-  coupons: '🎟️ Kupon & İndirim'
+  all: 'Tüm Ürünler',
+  vitrin: 'Vitrin Seçimleri',
+  ai: 'Yapay Zekâ',
+  design: 'Tasarım & Çalışma',
+  entertainment: 'Eğlence',
+  gaming: 'Oyun',
+  security: 'Güvenlik',
+  deals: 'Fırsatlar'
 };
+
+const CATEGORY_ICONS = { all: '⌂', vitrin: '★', ai: 'AI', design: '✦', entertainment: '▶', gaming: '◆', security: '✓', deals: '%' };
+
+function renderCategoryChips() {
+  const root = document.getElementById('categoriesScroll');
+  if (!root) return;
+  const available = new Set(state.products.map(product => product.category));
+  const categories = ['all', 'vitrin', 'ai', 'design', 'entertainment', 'gaming', 'security', 'deals']
+    .filter(category => category === 'all' || category === 'vitrin' || available.has(category));
+  root.replaceChildren(...categories.map(category => {
+    const button = document.createElement('button');
+    button.className = `category-chip${state.selectedCategory === category ? ' active' : ''}`;
+    button.dataset.cat = category;
+    button.type = 'button';
+    const icon = document.createElement('span'); icon.className = 'cat-icon'; icon.textContent = CATEGORY_ICONS[category];
+    const label = document.createElement('span'); label.textContent = CATEGORY_NAMES[category];
+    button.append(icon, label);
+    button.addEventListener('click', () => window.setCategory(category, button));
+    return button;
+  }));
+}
 
 function filterAndRenderProducts() {
   const { products, selectedCategory, searchQuery } = state;
@@ -274,13 +303,14 @@ function renderProductGrid() {
     <div class="product-card" onclick="openProductModal('${p.id}')">
       <div class="card-img-wrapper">
         <img class="card-img" src="${p.image}?v=9.0" alt="${p.title}" loading="lazy" onerror="this.src='assets/keyvadi_banner_new_1781380687628.png'"/>
-        <span class="card-badge">${(p.showcase || p.is_vitrin) ? "⭐ VİTRİN" : "⚡ ORİJİNAL"}</span>
+        <span class="card-badge">${(p.showcase || p.is_vitrin) ? "VİTRİN" : (p.category_label || CATEGORY_NAMES[p.category] || 'ÜRÜN')}</span>
       </div>
       <div class="card-content">
         <div class="card-title">${p.title}</div>
         <div class="card-price-row">
           <span class="card-price">${p.price}</span>
         </div>
+        <div class="card-delivery">${p.delivery_label || 'Teslimat ödeme öncesi doğrulanır'}</div>
         <div class="card-actions" onclick="event.stopPropagation()">
           <button class="btn-buy" onclick="addKvProductToCart('${p.id}')" title="Sepete Ekle">
             <span>🛒 + Sepet</span>
@@ -315,8 +345,9 @@ window.addKvProductToCart = function(productId) {
   if (!product) return;
 
   const existing = state.cart.find(it => String(it.id) === String(product.id));
+  const maxQty = Math.max(1, Number(product.max_qty || 1));
   if (existing) {
-    existing.qty += 1;
+    existing.qty = Math.min(maxQty, existing.qty + 1);
   } else {
     state.cart.push({
       id: String(product.id),
@@ -324,6 +355,8 @@ window.addKvProductToCart = function(productId) {
       price: product.price,
       price_num: Number(product.price_num || 0),
       image: product.image,
+      delivery_label: product.delivery_label,
+      max_qty: maxQty,
       qty: 1
     });
   }
@@ -341,7 +374,7 @@ window.addModalProductToKvCart = function() {
 window.updateKvCartQty = function(productId, change) {
   const item = state.cart.find(it => String(it.id) === String(productId));
   if (item) {
-    item.qty += change;
+    item.qty = Math.min(Math.max(1, Number(item.max_qty || 1)), item.qty + change);
     if (item.qty <= 0) {
       state.cart = state.cart.filter(it => String(it.id) !== String(productId));
     }
@@ -359,6 +392,7 @@ window.removeKvCartItem = function(productId) {
 
 window.clearKvFullCart = function() {
   state.cart = [];
+  localStorage.removeItem('keyvadi_cart_idempotency');
   saveKvCart();
   renderKvCartItems();
   showToast("Sepetiniz temizlendi.", "🗑️");
@@ -397,6 +431,7 @@ function renderKvCartItems() {
       <div class="cart-item-info">
         <div class="cart-item-title">${it.title}</div>
         <div class="cart-item-price">₺${(it.price_num * it.qty).toFixed(2)}</div>
+        <div class="cart-item-delivery">${it.delivery_label || 'Teslimat ödeme öncesi doğrulanır'}</div>
       </div>
       <div class="cart-qty-ctrl">
         <button class="btn-qty" onclick="updateKvCartQty('${it.id}', -1)">-</button>
@@ -414,11 +449,19 @@ function renderKvCartItems() {
 
 window.checkoutKvCartWithWallet = async function() {
   if (state.cart.length === 0) return;
+  if (!tgUser || !telegramInitData) {
+    showToast('Satın alma için mağazayı @KeyVadiSatisBot içinden açın.', '⚠️');
+    return;
+  }
   const totalCost = state.cart.reduce((sum, it) => sum + (it.price_num * it.qty), 0);
 
   if (state.walletBalance < totalCost) {
     showToast(`Yetersiz Bakiye! Gerekli: ₺${totalCost.toFixed(2)}, Mevcut: ₺${state.walletBalance.toFixed(2)}`, '⚠️');
     setTimeout(() => {
+      const shortfall = Math.max(5, Math.ceil((totalCost - state.walletBalance) * 100) / 100);
+      const input = document.getElementById('customTopupInput');
+      if (input) input.value = shortfall.toFixed(2);
+      state.selectedTopupAmount = shortfall;
       switchTab('walletTab');
     }, 1200);
     return;
@@ -430,7 +473,8 @@ window.checkoutKvCartWithWallet = async function() {
       headers: authHeaders(),
       body: JSON.stringify({
         user_id: tgUser.id,
-        items: state.cart
+        items: state.cart,
+        idempotency_key: getCartIdempotencyKey()
       })
     });
     const data = await res.json();
@@ -438,6 +482,7 @@ window.checkoutKvCartWithWallet = async function() {
       state.walletBalance = data.new_balance;
       updateBalanceUI();
       window.clearKvFullCart();
+      localStorage.removeItem('keyvadi_cart_idempotency');
       showToast(data.message || "🎉 Sepetiniz başarıyla satın alındı!", "💰");
     } else {
       showToast(`Hata: ${data.error || 'İşlem başarısız'}`, '⚠️');
@@ -458,8 +503,10 @@ window.openProductModal = function(productId) {
   document.getElementById('modalProductImg').src = `${product.image}?v=9.0`;
   document.getElementById('modalProductTitle').textContent = product.title;
   document.getElementById('modalProductPrice').textContent = product.price;
-  document.getElementById('modalProductDesc').textContent = product.description || `${product.title} - KeyVadi güvencesiyle anında teslimat.`;
-  document.getElementById('modalBadge').textContent = (product.showcase || product.is_vitrin) ? "⭐ VİTRİN" : "⚡ ORİJİNAL";
+  document.getElementById('modalProductDesc').textContent = product.description || `${product.title}. Teslimat ve uygunluk bilgileri ödeme öncesi doğrulanır.`;
+  document.getElementById('modalBadge').textContent = (product.showcase || product.is_vitrin) ? "VİTRİN" : (product.category_label || CATEGORY_NAMES[product.category] || 'ÜRÜN');
+  document.getElementById('modalDeliveryInfo').textContent = product.delivery_label || 'Teslimat ödeme öncesi doğrulanır';
+  document.getElementById('modalEligibilityInfo').textContent = 'Hesap uygunluğu ve varsa garanti süresi ürün detayında doğrulanır';
 
   const modal = document.getElementById('productDetailModal');
   if (modal) modal.classList.add('active');
@@ -490,6 +537,10 @@ window.buyViaShopier = function(url) {
 window.buyWithWallet = async function() {
   const product = state.selectedProduct;
   if (!product) return;
+  if (!tgUser || !telegramInitData) {
+    showToast('Satın alma için mağazayı @KeyVadiSatisBot içinden açın.', '⚠️');
+    return;
+  }
 
   triggerHaptic('medium');
 
@@ -509,7 +560,8 @@ window.buyWithWallet = async function() {
       headers: authHeaders(),
       body: JSON.stringify({
         product_id: product.id,
-        user_id: tgUser.id
+        user_id: tgUser.id,
+        idempotency_key: globalThis.crypto?.randomUUID?.() || `kv-buy-${Date.now()}-${product.id}`
       })
     });
     const data = await res.json();
@@ -569,6 +621,15 @@ window.setCategory = function(category, element) {
   filterAndRenderProducts();
 };
 
+function getCartIdempotencyKey() {
+  let value = localStorage.getItem('keyvadi_cart_idempotency');
+  if (!value) {
+    value = globalThis.crypto?.randomUUID?.() || `kv-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    localStorage.setItem('keyvadi_cart_idempotency', value);
+  }
+  return value;
+}
+
 window.selectTopupPreset = function(amount, element) {
   triggerHaptic('light');
   state.selectedTopupAmount = amount;
@@ -592,9 +653,19 @@ window.handleCustomAmount = function(val) {
 
 // DYNAMIC SHOPIER TOPUP
 window.proceedShopierTopup = async function() {
+  if (!tgUser || !telegramInitData) {
+    showToast('Bakiye yüklemek için mağazayı @KeyVadiSatisBot içinden açın.', '⚠️');
+    return;
+  }
   triggerHaptic('medium');
   const amountInput = document.getElementById('customTopupInput');
   const amount = parseFloat(amountInput?.value) || state.selectedTopupAmount;
+  const topupKeyName = `keyvadi_topup_${tgUser.id}_${amount}`;
+  let topupIdempotency = localStorage.getItem(topupKeyName);
+  if (!topupIdempotency) {
+    topupIdempotency = globalThis.crypto?.randomUUID?.() || `kv-topup-${tgUser.id}-${amount}-${Date.now()}`;
+    localStorage.setItem(topupKeyName, topupIdempotency);
+  }
   
   if (amount < 5) {
     showToast('Minimum yükleme tutarı 5 TL\'dir.', '⚠️');
@@ -618,12 +689,14 @@ window.proceedShopierTopup = async function() {
         amount: amount,
         user_id: tgUser.id,
         user_name: `${tgUser.first_name} ${tgUser.last_name}`.trim(),
-        username: tgUser.username || ""
+        username: tgUser.username || "",
+        idempotency_key: topupIdempotency
       })
     });
 
     const data = await res.json();
     if (data.success && data.payment_url) {
+      localStorage.removeItem(topupKeyName);
       window.currentActiveTopupPid = data.product_id;
       showToast(`Ödeme sayfası açılıyor! (${amount} TL)`, '💳');
       
@@ -665,6 +738,10 @@ window.copyRefLink = function() {
 
 // Share via Telegram
 window.shareOnTelegram = function() {
+  if (!tgUser) {
+    showToast('Referans bağlantısı için mağazayı Telegram botundan açın.', '⚠️');
+    return;
+  }
   triggerHaptic('medium');
   const refLink = document.getElementById('refLinkInput')?.value || `https://t.me/KeyVadiSatisBot?start=ref_${tgUser.id}`;
   const shareText = `🔥 KeyVadi ile ChatGPT Plus, Netflix, Canva Pro, FC26 ve tüm lisanslar %70 indirimli!\n\nHemen mağazayı açmak için tıkla:`;

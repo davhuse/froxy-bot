@@ -100,19 +100,23 @@ class LisansArenaWebTests(unittest.TestCase):
         response.close()
 
     def test_mini_app_contains_selection_cart_and_ten_minute_payment_copy(self):
-        html_response = self.client.get("/la/app")
-        script_response = self.client.get("/la/app/app.js")
+        redirect_response = self.client.get("/la/app")
+        self.assertEqual(redirect_response.status_code, 308)
+        self.assertEqual(redirect_response.headers["Location"], "/la/app/")
+        html_response = self.client.get("/la/app/")
+        script_response = self.client.get("/static/lisansarena_app.js")
         html = html_response.get_data(as_text=True)
         script = script_response.get_data(as_text=True)
         html_response.close()
         script_response.close()
-        self.assertIn("cartItemsContainer", html)
-        self.assertIn("btnProceedTopup", html)
-        self.assertIn("customAmountInput", html)
+        self.assertIn("cartItems", html)
+        self.assertIn("checkoutButton", html)
+        self.assertIn("customTopupAmount", html)
         self.assertIn("en geç 10 dakika", html)
-        self.assertIn("setTopupAmount", script)
-        self.assertIn("startDynamicTopup", script)
-        self.assertIn("/api/user/purchase-cart", script)
+        self.assertIn("createTopup", script)
+        self.assertIn("/api/la/topups", script)
+        self.assertIn("/api/la/cart/checkout", script)
+        self.assertIn("lisansarena_resume_cart", script)
 
     def test_webhook_rejects_invalid_signature(self):
         with patch.dict(os.environ, {"LISANSARENA_SHOPIER_WEBHOOK_SECRET": "secret"}):

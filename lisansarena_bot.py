@@ -38,10 +38,15 @@ logger = logging.getLogger("LisansArenaBot")
 API_ID = int(os.environ.get("TELEGRAM_API_ID", "0") or 0)
 API_HASH = os.environ.get("TELEGRAM_API_HASH", "").strip()
 BOT_TOKEN = os.environ.get("LISANSARENA_BOT_TOKEN", "").strip()
-MINI_APP_URL = os.environ.get(
+_configured_mini_app_url = os.environ.get(
     "LISANSARENA_MINI_APP_URL",
-    "https://froxy-bot-live.onrender.com/lisansarena/",
+    "https://froxy-bot-live.onrender.com/la/app/",
 ).strip()
+if _configured_mini_app_url.rstrip("/").endswith("/lisansarena"):
+    _configured_mini_app_url = (
+        _configured_mini_app_url.rstrip("/")[:-len("/lisansarena")] + "/la/app/"
+    )
+MINI_APP_URL = _configured_mini_app_url.rstrip("/") + "/"
 
 
 def _load_config():

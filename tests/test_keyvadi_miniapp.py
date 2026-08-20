@@ -34,7 +34,7 @@ class KeyVadiMiniAppTests(unittest.TestCase):
         self.assertEqual(response.status_code, 404)
 
     def test_purchase_idempotency_prevents_double_charge(self):
-        with patch.dict(os.environ, {"KEYVADI_ALLOW_DEV_AUTH": "1"}):
+        with patch.dict(os.environ, {"KEYVADI_ALLOW_DEV_AUTH": "1", "APP_ENV": "test"}):
             self.client.post("/api/user/123", json={"user_id": 123})
             users = server.load_users()
             users["123"]["balance"] = 100.0

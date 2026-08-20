@@ -4,6 +4,7 @@
     csrf: "", products: [], user: null, category: "", quantities: {},
     cart: new Map(), selectedProduct: null, dialogQuantity: 1,
     selectedTopup: null, ticketType: "support", ticketContext: {},
+    walletBalanceCents: 0, pendingCartResume: false,
   };
   const tg = globalThis.Telegram && globalThis.Telegram.WebApp;
   const byId = (id) => document.getElementById(id);
@@ -22,6 +23,26 @@
     if (className) node.className = className;
     parent.appendChild(node);
     return node;
+  };
+  const saveCart = () => {
+    try {
+      localStorage.setItem("lisansarena_cart_v2", JSON.stringify(
+        [...state.cart.values()].map(({ product, quantity }) => ({ product_id: product.id, quantity }))
+      ));
+    } catch (_) {}
+  };
+  const restoreCart = () => {
+    try {
+      const rows = JSON.parse(localStorage.getItem("lisansarena_cart_v2") || "[]");
+      if (!Array.isArray(rows)) return;
+      rows.forEach((row) => {
+        const product = state.products.find((item) => String(item.id) === String(row.product_id));
+        if (!product || !product.available) return;
+        const limit = product.delivery_type === "automatic" ? Math.max(1, Math.min(10, Number(product.stock || 0))) : 10;
+        const quantity = Math.max(1, Math.min(limit, Number(row.quantity || 1)));
+        state.cart.set(product.id, { product, quantity });
+      });
+    } catch (_) {}
   };
   const api = async (url, options = {}) => {
     const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
@@ -77,7 +98,8 @@
     return "Talep üzerine stok ve teslimat doğrulanır";
   };
   const adjustCardQuantity = (product, amount, label) => {
-    const next = Math.max(1, Math.min(10, (state.quantities[product.id] || 1) + amount));
+    const limit = product.delivery_type === "automatic" ? Math.max(1, Math.min(10, Number(product.stock || 0))) : 10;
+    const next = Math.max(1, Math.min(limit, (state.quantities[product.id] || 1) + amount));
     state.quantities[product.id] = next;
     label.textContent = String(next);
     haptic();
@@ -145,6 +167,8 @@
     byId("productCount").textContent = active ? `${active} ürün satışta · ${state.products.length} ürün katalogda` : `${state.products.length} ürün katalogda`;
     renderCategories();
     renderProducts();
+    if (!state.cart.size) restoreCart();
+    updateCart();
   };
 
   const openProduct = (product) => {
@@ -163,8 +187,10 @@
   };
   const addToCart = (product, quantity) => {
     const current = state.cart.get(product.id);
-    const next = Math.min(10, (current ? current.quantity : 0) + Number(quantity || 1));
+    const limit = product.delivery_type === "automatic" ? Math.max(1, Math.min(10, Number(product.stock || 0))) : 10;
+    const next = Math.min(limit, (current ? current.quantity : 0) + Number(quantity || 1));
     state.cart.set(product.id, { product, quantity: next });
+    saveCart();
     updateCart();
     haptic("success");
     setNotice(`${product.name} sepete eklendi.`);
@@ -187,18 +213,30 @@
       row.className = "cart-item";
       const image = document.createElement("img"); image.src = product.image_url || "/la/assets/logo"; image.alt = ""; row.appendChild(image);
       const copy = document.createElement("div"); addText(copy, "strong", product.name); addText(copy, "small", `${quantity} adet · ${money(product.price_cents * quantity)}`); row.appendChild(copy);
-      const remove = addText(row, "button", "×"); remove.type = "button"; remove.addEventListener("click", () => { state.cart.delete(product.id); updateCart(); haptic(); });
+      const remove = addText(row, "button", "×"); remove.type = "button"; remove.addEventListener("click", () => { state.cart.delete(product.id); saveCart(); updateCart(); haptic(); });
       root.appendChild(row);
     });
     if (!state.cart.size) addText(root, "p", "Sepetin boş.", "empty");
   };
   const checkout = async () => {
     if (!state.cart.size) return;
+    const totalCents = [...state.cart.values()].reduce((sum, { product, quantity }) => sum + Number(product.price_cents || 0) * quantity, 0);
+    if (state.walletBalanceCents < totalCents) {
+      const shortfall = Math.ceil((totalCents - state.walletBalanceCents) / 100);
+      closeDialog("cartDialog");
+      switchTab("balance");
+      byId("customTopupAmount").value = String(shortfall);
+      byId("customTopupContinue").disabled = shortfall < 10 || shortfall > 50000;
+      state.pendingCartResume = true;
+      try { localStorage.setItem("lisansarena_resume_cart", "1"); } catch (_) {}
+      setNotice(`Sepetin için ${money(totalCents - state.walletBalanceCents)} bakiye gerekiyor. Özel tutar hazırlandı.`, true);
+      return;
+    }
     const button = byId("checkoutButton");
     button.disabled = true; button.textContent = "Sipariş oluşturuluyor…";
     try {
       const result = await api("/api/la/cart/checkout", { method: "POST", body: JSON.stringify({ items: [...state.cart.values()].map(({ product, quantity }) => ({ product_id: product.id, quantity })) }) });
-      state.cart.clear(); updateCart(); closeDialog("cartDialog");
+      state.cart.clear(); saveCart(); updateCart(); closeDialog("cartDialog");
       const automatic = result.orders.filter((order) => order.status === "delivered");
       const message = automatic.length ? `Sipariş tamamlandı. Teslimat bilgisi Siparişler bölümünde.` : "Sipariş alındı. Manuel ürünler en geç 24 saat içinde teslim edilecek.";
       setNotice(message); switchTab("orders");
@@ -209,6 +247,7 @@
 
   const loadWallet = async () => {
     const data = await api("/api/la/wallet");
+    state.walletBalanceCents = Number(data.balance_cents || 0);
     byId("walletButton").querySelector("strong").textContent = data.balance;
     const root = byId("walletEntries"); root.replaceChildren();
     (data.entries || []).slice(0, 20).forEach((entry) => {
@@ -217,6 +256,14 @@
       const line = document.createElement("div"); addText(line, "span", entry.reference_id); addText(line, "span", entry.amount); row.appendChild(line); root.appendChild(row);
     });
     if (!data.entries.length) addText(root, "p", "Henüz bakiye hareketi yok.", "empty");
+    const cartTotal = [...state.cart.values()].reduce((sum, { product, quantity }) => sum + Number(product.price_cents || 0) * quantity, 0);
+    const resumeRequested = state.pendingCartResume || localStorage.getItem("lisansarena_resume_cart") === "1";
+    if (resumeRequested && cartTotal > 0 && state.walletBalanceCents >= cartTotal) {
+      state.pendingCartResume = false;
+      try { localStorage.removeItem("lisansarena_resume_cart"); } catch (_) {}
+      setNotice("Bakiye hazır. Sepetin korunuyor; satın alma işlemini onaylayabilirsin.");
+      openDialog("cartDialog");
+    }
   };
   let topupTimer = null;
   const watchTopup = () => {
@@ -261,6 +308,10 @@
     addText(root, "p", custom
       ? "Özel ilan 1 saat geçerlidir. Ödeme doğrulandıktan sonra bakiye en geç 10 dakika içinde otomatik güncellenir."
       : "Kod 24 saat geçerlidir. Ödeme doğrulandıktan sonra bakiye en geç 10 dakika içinde otomatik güncellenir.", "payment-confirmation-note");
+    if (state.cart.size) {
+      state.pendingCartResume = true;
+      try { localStorage.setItem("lisansarena_resume_cart", "1"); } catch (_) {}
+    }
   };
   const createTopup = async (mode, amount, button) => {
     if (!amount) return;
@@ -367,7 +418,11 @@
   });
   byId("ticketSubmit").addEventListener("click", submitTicket);
   byId("quantityMinus").addEventListener("click", () => { state.dialogQuantity = Math.max(1, state.dialogQuantity - 1); byId("dialogQuantity").textContent = state.dialogQuantity; haptic(); });
-  byId("quantityPlus").addEventListener("click", () => { state.dialogQuantity = Math.min(10, state.dialogQuantity + 1); byId("dialogQuantity").textContent = state.dialogQuantity; haptic(); });
+  byId("quantityPlus").addEventListener("click", () => {
+    const product = state.selectedProduct;
+    const limit = product?.delivery_type === "automatic" ? Math.max(1, Math.min(10, Number(product.stock || 0))) : 10;
+    state.dialogQuantity = Math.min(limit, state.dialogQuantity + 1); byId("dialogQuantity").textContent = state.dialogQuantity; haptic();
+  });
   byId("productAction").addEventListener("click", () => {
     const product = state.selectedProduct; if (!product) return;
     closeDialog("productDialog");

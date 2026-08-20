@@ -14,7 +14,7 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   
   <!-- CSS -->
-  <link rel="stylesheet" href="style.css?v=9.0" />
+  <link rel="stylesheet" href="style.css?v=10.0" />
 </head>
 <body>
   
@@ -133,14 +133,7 @@
       <!-- CATEGORIES HORIZONTAL SCROLL -->
       <section class="categories-section">
         <div class="categories-scroll" id="categoriesScroll">
-          <button class="category-chip active" data-cat="all" onclick="setCategory('all', this)">
-            <span class="cat-icon">🔥</span>
-            <span>Tüm Ürünler</span>
-          </button>
-          <button class="category-chip" data-cat="vitrin" onclick="setCategory('vitrin', this)">
-            <span class="cat-icon">⭐</span>
-            <span>Vitrin</span>
-          </button>
+          <!-- Six sales-focused categories are rendered from the live catalogue. -->
         </div>
       </section>
 
@@ -460,9 +453,9 @@
           <p id="modalProductDesc" class="modal-desc">Ürün açıklaması burada yer alır.</p>
 
           <div class="modal-features-list">
-            <div class="modal-feat-item">📦 <strong>Otomatik ve anında teslimat</strong></div>
-            <div class="modal-feat-item">💬 <strong>7/24 @KeyVadiDestek garantisi</strong></div>
-            <div class="modal-feat-item">💳 <strong>Shopier veya Cüzdan Bakiyesi ile ödeme</strong></div>
+            <div class="modal-feat-item">📦 <strong id="modalDeliveryInfo">Teslimat bilgisi yükleniyor</strong></div>
+            <div class="modal-feat-item">✓ <strong id="modalEligibilityInfo">Uygunluk şartları ödeme öncesi doğrulanır</strong></div>
+            <div class="modal-feat-item">💳 <strong>Shopier veya cüzdan bakiyesiyle ödeme</strong></div>
           </div>
 
           <div class="modal-actions-stack">
@@ -487,6 +480,6 @@
   </div>
 
   <!-- Main JavaScript Logic -->
-  <script src="app.js?v=9.0"></script>
+  <script src="app.js?v=10.0"></script>
 </body>
 </html>
