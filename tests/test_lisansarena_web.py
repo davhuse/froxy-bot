@@ -47,6 +47,20 @@ class LisansArenaWebTests(unittest.TestCase):
         self.assertEqual(response.get_json()["storefront_count"], 49)
         self.assertEqual(response.get_json()["duplicate_records_hidden"], 1)
 
+    def test_shopier_refresh_failure_degrades_system_health(self):
+        with patch.object(self.web, "get_processes_by_script", return_value=[object()]), \
+                patch("firestore_helper.health_check", return_value={"reachable": True}), \
+                patch("lisansarena_store.store_health", return_value={"reachable": True}), \
+                patch.object(self.web, "catalog_refresh_status", return_value={
+                    "keyvadi": {"state": "refresh_failed", "http_status": 403},
+                    "froxy": {"state": "not_configured"},
+                    "lisansarena": {"state": "fresh"},
+                }):
+            response = self.client.get("/api/system-checkup")
+        body = response.get_json()
+        self.assertEqual(body["status"], "degraded")
+        self.assertFalse(body["shopier_sync_healthy"])
+
     def test_database_url_normalizes_render_postgres_and_quotes(self):
         normalized = store_module.normalize_database_url(
             "  'postgresql://user:pass@database.internal/store'  "

@@ -795,11 +795,17 @@ def system_checkup():
     process_health = {
         name: count == 1 for name, count in expected_processes.items()
     }
+    shopier_health = catalog_refresh_status()
+    shopier_sync_healthy = not any(
+        item.get('state') == 'refresh_failed'
+        for item in shopier_health.values()
+    )
     overall = (
         'healthy'
         if all(process_health.values())
         and claim_service.get('reachable') is True
         and store_health.get('reachable') is True
+        and shopier_sync_healthy
         else 'degraded'
     )
     return jsonify({
@@ -810,7 +816,8 @@ def system_checkup():
         'durable_claims': claim_service,
         'lisansarena_store': store_health,
         'lisansarena_traffic_enabled': store_health.get('reachable') is True,
-        'shopier_catalogs': catalog_refresh_status(),
+        'shopier_catalogs': shopier_health,
+        'shopier_sync_healthy': shopier_sync_healthy,
         'keyvadi_mini_app': {
             'url': os.environ.get(
                 'KEYVADI_MINI_APP_URL',
