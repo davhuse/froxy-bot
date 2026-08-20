@@ -17,10 +17,7 @@ if sys.platform.startswith("win"):
     except Exception:
         pass
 
-try:
-    from .blueprint import la_bp
-except ImportError:
-    from blueprint import la_bp
+from .blueprint import la_bp
 
 BASE_DIR = Path(__file__).resolve().parent
 app = Flask(__name__)
