@@ -44,6 +44,8 @@ class LisansArenaWebTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.get_json()["ok"])
         self.assertEqual(response.get_json()["product_count"], 50)
+        self.assertEqual(response.get_json()["storefront_count"], 49)
+        self.assertEqual(response.get_json()["duplicate_records_hidden"], 1)
 
     def test_database_url_normalizes_render_postgres_and_quotes(self):
         normalized = store_module.normalize_database_url(
@@ -85,7 +87,7 @@ class LisansArenaWebTests(unittest.TestCase):
         self.assertTrue(auth_data["user"]["referral_code"].startswith("LA-"))
         catalog = self.client.get("/api/la/catalog")
         self.assertEqual(catalog.status_code, 200)
-        self.assertEqual(len(catalog.get_json()["products"]), 50)
+        self.assertEqual(len(catalog.get_json()["products"]), 49)
 
     def test_brand_asset_is_served(self):
         response = self.client.get("/la/assets/brand")
@@ -101,26 +103,23 @@ class LisansArenaWebTests(unittest.TestCase):
 
     def test_mini_app_contains_selection_cart_and_ten_minute_payment_copy(self):
         root_response = self.client.get("/la/app")
-        self.assertEqual(root_response.status_code, 200)
+        self.assertEqual(root_response.status_code, 308)
+        self.assertTrue(root_response.headers["Location"].endswith("/la/app/"))
         html_response = self.client.get("/la/app/")
-        script_response = self.client.get("/la/app/app.js")
-        products_response = self.client.get("/la/app/api/products")
+        script_response = self.client.get("/static/lisansarena_app.js")
         html = html_response.get_data(as_text=True)
         script = script_response.get_data(as_text=True)
-        products = products_response.get_json()
         html_response.close()
         script_response.close()
         root_response.close()
-        products_response.close()
-        self.assertIn("cartItemsContainer", html)
-        self.assertIn("btnProceedTopup", html)
-        self.assertIn("customAmountInput", html)
+        self.assertIn('id="cartItems"', html)
+        self.assertIn('id="topupContinue"', html)
+        self.assertIn('id="customTopupAmount"', html)
         self.assertIn("en geç 10 dakika", html)
-        self.assertIn("startDynamicTopup", script)
-        self.assertIn("/api/balance/create-dynamic-topup", script)
-        self.assertIn("/api/user/purchase-cart", script)
-        self.assertTrue(products["success"])
-        self.assertEqual(products["count"], 34)
+        self.assertIn("/api/la/topups", script)
+        self.assertIn("/api/la/cart/checkout", script)
+        self.assertNotIn("8797763469", html)
+        self.assertNotIn("8797763469", script)
 
     def test_webhook_rejects_invalid_signature(self):
         with patch.dict(os.environ, {"LISANSARENA_SHOPIER_WEBHOOK_SECRET": "secret"}):

@@ -52,6 +52,22 @@ class AdAccountDmTests(unittest.IsolatedAsyncioTestCase):
             second = await publisher.claim_customer_auto_reply("FroxyOnline", 123, 123, "generic")
         self.assertIsNone(second)
 
+    async def test_dm_event_fails_closed_without_durable_claim(self):
+        publisher.PROCESSED_DM_MSG_IDS.clear()
+        with patch.object(
+            publisher, "async_claim_document", new=AsyncMock(return_value=None)
+        ):
+            claim = await publisher.claim_dm_reply_event("FroxyOnline", 123, 99)
+        self.assertIsNone(claim)
+        self.assertNotIn(("FroxyOnline", 123, 99), publisher.PROCESSED_DM_MSG_IDS)
+
+    def test_null_context_product_is_safe(self):
+        self.assertEqual(publisher.context_product_title({"products": [None]}), "")
+        self.assertEqual(
+            publisher.context_product_title({"products": [None, {"title": "Office"}]}),
+            "Office",
+        )
+
     def test_froxy_product_reply_uses_direct_shopier_listing(self):
         reply = publisher.froxy_product_reply({
             "id": "49489691",

@@ -26,8 +26,15 @@ class GroupStateTests(unittest.TestCase):
         )
 
     def test_numeric_telegram_target_is_not_treated_as_username(self):
-        self.assertEqual(publisher.telegram_target_reference("@-3608209943"), -3608209943)
+        self.assertEqual(publisher.telegram_target_reference("@-3608209943"), -1003608209943)
         self.assertEqual(publisher.telegram_target_reference("@ceksat"), "ceksat")
+
+    def test_legacy_numeric_target_resolves_existing_supergroup_dialog(self):
+        entity = self._entity(username=None, entity_id=3608209943)
+        joined = {"-1003608209943": entity}
+        self.assertIs(
+            publisher.joined_entity_for_target(joined, "-3608209943"), entity
+        )
 
     def test_join_errors_are_classified_without_global_blacklist(self):
         self.assertEqual(

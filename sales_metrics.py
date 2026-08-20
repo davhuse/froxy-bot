@@ -53,6 +53,11 @@ def _private_key(*parts: Any) -> str:
     return hmac.new(secret.encode("utf-8"), raw, hashlib.sha256).hexdigest()[:32]
 
 
+def conversation_key(account: str, user_id: Any) -> str:
+    """Return the stable, privacy-preserving key shared by one sales conversation."""
+    return _private_key("conversation", canonical_account(account), user_id)
+
+
 def _path() -> Path:
     configured = os.environ.get("SALES_METRICS_FILE", "").strip()
     return Path(configured or _DEFAULT_FILE)
@@ -118,7 +123,7 @@ def record_dm_event(account: str, user_id: Any, message: str, *,
     fields: dict[str, Any] = {
         "source": source,
         "dm_class": intent,
-        "conversation_key": _private_key("conversation", brand, user_id),
+        "conversation_key": conversation_key(brand, user_id),
     }
     if message_id is not None:
         fields["message_key"] = _private_key("message", brand, user_id, message_id)
@@ -261,6 +266,16 @@ def summarize(days: int = 7) -> dict[str, Any]:
     qualified_conversations: set[str] = set()
     account_conversations: dict[str, set[str]] = {}
     account_qualified: dict[str, set[str]] = {}
+    matched_conversations: set[str] = set()
+    account_matched: dict[str, set[str]] = {}
+    unique_ctas: set[str] = set()
+    unique_clicks: set[str] = set()
+    account_ctas: dict[str, set[str]] = {}
+    account_clicks: dict[str, set[str]] = {}
+    product_ctas: dict[str, set[str]] = {}
+    product_clicks: dict[str, set[str]] = {}
+    arm_ctas: dict[str, set[str]] = {}
+    arm_clicks: dict[str, set[str]] = {}
     dm_classes: dict[str, int] = {}
     for event in events:
         kind = str(event.get("kind", "unknown"))
@@ -283,6 +298,18 @@ def summarize(days: int = 7) -> dict[str, Any]:
             if dm_class == "sales_lead":
                 qualified_conversations.add(conversation_key)
                 account_qualified.setdefault(account, set()).add(conversation_key)
+        elif kind == "product_matched":
+            matched_key = str(event.get("conversation_key") or event.get("event_id") or "")
+            matched_conversations.add(matched_key)
+            account_matched.setdefault(account, set()).add(matched_key)
+        elif kind == "purchase_cta_sent":
+            cta_key = str(event.get("cta_key") or event.get("event_id") or "")
+            unique_ctas.add(cta_key)
+            account_ctas.setdefault(account, set()).add(cta_key)
+        elif kind == "purchase_click":
+            cta_key = str(event.get("cta_key") or event.get("event_id") or "")
+            unique_clicks.add(cta_key)
+            account_clicks.setdefault(account, set()).add(cta_key)
         if kind == "shopier_order":
             bucket["orders"] = int(bucket["orders"]) + 1
             try:
@@ -319,10 +346,18 @@ def summarize(days: int = 7) -> dict[str, Any]:
                 product_bucket["cost"] = round(float(product_bucket.get("cost", 0)) + event_amount, 2)
             elif kind in {"shopier_refund", "refund"}:
                 product_bucket["refunds"] = round(float(product_bucket.get("refunds", 0)) + event_amount, 2)
+            if kind == "purchase_cta_sent":
+                product_ctas.setdefault(product, set()).add(str(event.get("cta_key") or event.get("event_id")))
+            elif kind == "purchase_click":
+                product_clicks.setdefault(product, set()).add(str(event.get("cta_key") or event.get("event_id")))
         arm = str(event.get("arm") or "").strip()
         if arm:
             arm_bucket = by_arm.setdefault(arm, {})
             arm_bucket[kind] = arm_bucket.get(kind, 0) + 1
+            if kind == "purchase_cta_sent":
+                arm_ctas.setdefault(arm, set()).add(str(event.get("cta_key") or event.get("event_id")))
+            elif kind == "purchase_click":
+                arm_clicks.setdefault(arm, set()).add(str(event.get("cta_key") or event.get("event_id")))
     ads = by_kind.get("ad_sent", 0)
     dms = by_kind.get("dm_received", 0)
     orders = by_kind.get("shopier_order", 0)
@@ -334,18 +369,28 @@ def summarize(days: int = 7) -> dict[str, Any]:
     for account, bucket in by_account.items():
         bucket["unique_conversations"] = len(account_conversations.get(account, set()))
         bucket["qualified_leads"] = len(account_qualified.get(account, set()))
+        bucket["matched_conversations"] = len(account_matched.get(account, set()))
+        bucket["unique_purchase_ctas"] = len(account_ctas.get(account, set()))
+        bucket["unique_purchase_clicks"] = len(account_clicks.get(account, set()))
+    for product, bucket in by_product.items():
+        bucket["unique_purchase_ctas"] = len(product_ctas.get(product, set()))
+        bucket["unique_purchase_clicks"] = len(product_clicks.get(product, set()))
+    for arm, bucket in by_arm.items():
+        bucket["unique_purchase_ctas"] = len(arm_ctas.get(arm, set()))
+        bucket["unique_purchase_clicks"] = len(arm_clicks.get(arm, set()))
 
     def add_rates(bucket):
         bucket["ad_to_open_pct"] = round(
             (bucket.get("ad_cta_open", 0) / bucket.get("ad_sent", 0)) * 100, 2
         ) if bucket.get("ad_sent", 0) else 0.0
-        lead_denominator = bucket.get("qualified_leads", bucket.get("dm_received", 0))
+        lead_denominator = bucket.get("unique_conversations", bucket.get("dm_received", 0))
         bucket["dm_to_match_pct"] = round(
-            (bucket.get("product_matched", 0) / lead_denominator) * 100, 2
+            (bucket.get("matched_conversations", bucket.get("product_matched", 0)) / lead_denominator) * 100, 2
         ) if lead_denominator else 0.0
         bucket["match_to_click_pct"] = round(
-            (bucket.get("purchase_click", 0) / bucket.get("product_matched", 0)) * 100, 2
-        ) if bucket.get("product_matched", 0) else 0.0
+            (bucket.get("unique_purchase_clicks", bucket.get("purchase_click", 0))
+             / bucket.get("unique_purchase_ctas", bucket.get("purchase_cta_sent", 0))) * 100, 2
+        ) if bucket.get("unique_purchase_ctas", bucket.get("purchase_cta_sent", 0)) else 0.0
         bucket["click_to_order_pct"] = round(
             (bucket.get("shopier_order", 0) / bucket.get("purchase_click", 0)) * 100, 2
         ) if bucket.get("purchase_click", 0) else 0.0
@@ -382,14 +427,21 @@ def summarize(days: int = 7) -> dict[str, Any]:
             "raw_dm_received": dms,
             "unique_conversations": len(unique_conversations),
             "qualified_leads": len(qualified_conversations),
-            "product_matched": matched, "purchase_cta_sent": ctas,
-            "purchase_click": clicks, "human_handoff": handoffs, "orders": orders,
-            "ad_to_dm_pct": round((dms / ads) * 100, 2) if ads else 0.0,
+            "product_matched": matched,
+            "matched_conversations": len(matched_conversations),
+            "purchase_cta_sent": ctas,
+            "unique_purchase_ctas": len(unique_ctas),
+            "purchase_click": clicks,
+            "unique_purchase_clicks": len(unique_clicks),
+            "human_handoff": handoffs, "orders": orders,
+            "ad_to_dm_pct": round((len(unique_conversations) / ads) * 100, 2) if ads else 0.0,
             "ad_to_open_pct": round((opens / ads) * 100, 2) if ads else 0.0,
             "dm_to_match_pct": round(
-                (matched / len(qualified_conversations)) * 100, 2
-            ) if qualified_conversations else 0.0,
-            "match_to_click_pct": round((clicks / matched) * 100, 2) if matched else 0.0,
+                (len(matched_conversations) / len(unique_conversations)) * 100, 2
+            ) if unique_conversations else 0.0,
+            "match_to_click_pct": round(
+                (len(unique_clicks) / len(unique_ctas)) * 100, 2
+            ) if unique_ctas else 0.0,
             "click_to_order_pct": round((orders / clicks) * 100, 2) if clicks else 0.0,
             "dm_to_order_pct": round((orders / dms) * 100, 2) if dms else 0.0,
             "handoff_pct": round((handoffs / dms) * 100, 2) if dms else 0.0,

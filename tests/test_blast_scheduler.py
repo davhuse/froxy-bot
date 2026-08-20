@@ -135,6 +135,22 @@ class BlastCoordinatorTests(unittest.TestCase):
             self.assertEqual(scheduler.remaining_wait("KeyVadiOnline"), 3600)
             self.assertFalse(scheduler.try_acquire_turn("KeyVadiOnline"))
 
+    def test_snapshot_reports_persisted_cycle_outcomes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            clock = Clock()
+            scheduler = self.make_coordinator(directory, clock)
+            scheduler.initialize_accounts({"KeyVadiOnline": 0})
+            scheduler.try_acquire_turn("KeyVadiOnline")
+            scheduler.begin_cycle("KeyVadiOnline", ["a", "b", "c"], ["one"])
+            for index, status in enumerate(("accepted", "failed", "skipped")):
+                scheduler.claim_target("KeyVadiOnline", index)
+                scheduler.finish_target("KeyVadiOnline", index, status)
+            state = scheduler.snapshot()["accounts"]["KeyVadiOnline"]
+            self.assertEqual(state["accepted_targets"], 1)
+            self.assertEqual(state["failed_targets"], 1)
+            self.assertEqual(state["skipped_targets"], 1)
+            self.assertEqual(state["pending_targets"], 0)
+
 
 if __name__ == "__main__":
     unittest.main()

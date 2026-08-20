@@ -21,11 +21,11 @@ from telethon.sessions import StringSession
 from telethon.tl.types import KeyboardButtonRow, KeyboardButtonWebView, ReplyInlineMarkup
 
 from lisansarena_store import StoreUnavailable, get_store
-from sales_metrics import record_dm_event, record_event
+from sales_metrics import conversation_key, record_dm_event, record_event
 from customer_intent import INTENT_SALES_LEAD
 import firestore_helper
 from sales_conversion import load_sales_catalog, match_sales_products, purchase_url
-from support_flow import claim_first_greeting, claim_support_event, forward_customer_message, release_product_claim, release_support_event
+from support_flow import claim_first_greeting, claim_support_event, forward_customer_message, release_product_claim, release_support_event, respond_with_floodwait
 
 
 logging.basicConfig(
@@ -106,6 +106,8 @@ async def send_product_card(event, matched_products):
         # The original product card is already in the conversation. Keep the
         # new message in the support queue without another automatic reply.
         return False
+    for product in claimed_products:
+        product["_cta_id"] = os.urandom(8).hex()
     lines = ["LisansArena ürün seçenekleri", ""]
     buttons = []
     for product in claimed_products:
@@ -113,7 +115,7 @@ async def send_product_card(event, matched_products):
         buttons.append([Button.url("🛒 Mağazada İncele", purchase_url(product, "lisansarena", "support_bot_dm"))])
     buttons.append([Button.inline("💬 Destek", b"ticket_support")])
     try:
-        await event.respond("\n".join(lines), buttons=buttons)
+        await respond_with_floodwait(event, "\n".join(lines), buttons=buttons)
     except Exception:
         await release_support_event("LisansArena", event.sender_id, event_id, "product_card")
         for product in claimed_products:
@@ -123,8 +125,14 @@ async def send_product_card(event, matched_products):
             )
         raise
     first = claimed_products[0]
-    record_event("product_matched", "LisansArena", source="telegram_private", product=first.get("title", ""), product_count=len(claimed_products))
-    record_event("purchase_cta_sent", "LisansArena", source="telegram_private", product=first.get("title", ""), product_count=len(claimed_products))
+    safe_conversation = conversation_key("LisansArena", event.sender_id)
+    record_event("product_matched", "LisansArena", source="telegram_private", product=first.get("title", ""), product_count=len(claimed_products), conversation_key=safe_conversation)
+    for product in claimed_products:
+        record_event(
+            "purchase_cta_sent", "LisansArena", source="telegram_private",
+            product=product.get("title", ""), product_id=product.get("id", ""),
+            cta_key=product.get("_cta_id", ""), conversation_key=safe_conversation,
+        )
     record_event("dm_reply_sent", "LisansArena", source="telegram_private", product=first.get("title", ""))
     return True
 

@@ -42,7 +42,7 @@
   } catch (e) {}
 
   const tgUser = tg?.initDataUnsafe?.user || {
-    id: 8797763469,
+    id: null,
     first_name: "LisansArena",
     last_name: "Müşterisi",
     username: "LisansArenaOnline"

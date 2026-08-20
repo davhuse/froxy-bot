@@ -44,7 +44,7 @@ class LisansArenaStoreTests(unittest.TestCase):
                 reference_type="test", reference_id=reference, created_at=store_module.utcnow(),
             ))
 
-    def test_full_50_product_catalog_is_sellable_in_the_mini_app(self):
+    def test_full_catalog_hides_duplicate_product_names_in_the_mini_app(self):
         with self.store.engine.connect() as conn:
             count = conn.execute(select(func.count()).select_from(store_module.products)).scalar_one()
             published = conn.execute(select(func.count()).select_from(store_module.products).where(store_module.products.c.published.is_(True))).scalar_one()
@@ -53,7 +53,9 @@ class LisansArenaStoreTests(unittest.TestCase):
 
     def test_storefront_has_a_real_cart_action_and_generated_cover_for_every_product(self):
         catalog = self.store.storefront_catalog()
-        self.assertEqual(len(catalog), 50)
+        self.assertEqual(len(catalog), 49)
+        normalized_names = {" ".join(item["name"].casefold().split()) for item in catalog}
+        self.assertEqual(len(normalized_names), len(catalog))
         self.assertTrue(all(item["available"] is True for item in catalog))
         self.assertTrue(all(item["category"] != "Taslak aktarım" for item in catalog))
         self.assertTrue(all(item["image_url"].startswith("/static/la-cover-") for item in catalog))

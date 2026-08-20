@@ -449,6 +449,17 @@ class BlastCoordinator:
                 record["accepted_targets"] = sum(
                     1 for item in targets if item.get("state") == "accepted"
                 )
+                record["failed_targets"] = sum(
+                    1 for item in targets if item.get("state") == "failed"
+                )
+                record["skipped_targets"] = sum(
+                    1 for item in targets
+                    if item.get("state") in {"skipped", "skipped_uncertain"}
+                )
+                record["pending_targets"] = sum(
+                    1 for item in targets
+                    if item.get("state") not in TERMINAL_TARGET_STATES
+                )
                 record["current_group"] = (
                     targets[record.get("cursor", 0)].get("group")
                     if targets and 0 <= int(record.get("cursor", 0) or 0) < len(targets)

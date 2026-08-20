@@ -14,6 +14,7 @@ import tempfile
 from contextlib import contextmanager
 
 import firestore_helper
+from telethon.errors import FloodWaitError
 
 
 TICKETS_FILE = "tickets.json"
@@ -105,6 +106,15 @@ def save_incoming_ticket(brand: str, event, user) -> None:
 
 def one_time_mode_enabled() -> bool:
     return os.environ.get("SUPPORT_ONE_TIME_GREETING", "1").strip().lower() not in {"0", "false", "no", "off"}
+
+
+async def respond_with_floodwait(event, *args, **kwargs):
+    """Deliver one claimed support reply after at most one Telegram FloodWait."""
+    try:
+        return await event.respond(*args, **kwargs)
+    except FloodWaitError as exc:
+        await asyncio.sleep(max(1, int(exc.seconds or 1)) + 1)
+        return await event.respond(*args, **kwargs)
 
 
 async def claim_first_greeting(brand: str, user_id: int) -> bool:

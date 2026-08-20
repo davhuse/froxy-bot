@@ -30,6 +30,7 @@ PUBLIC_BASE_URL = (
     or os.environ.get("RENDER_EXTERNAL_URL")
     or "https://froxy-bot-live.onrender.com"
 ).rstrip("/")
+CATALOG_REFRESH_STATUS: dict[str, dict] = {}
 
 TEXT_ALIASES = {
     "netfilix": "netflix",
@@ -183,7 +184,14 @@ def refresh_catalog_from_shopier_api(brand: str) -> int:
     }.get(brand, "")
     token = os.environ.get(token_key, "").strip()
     path = CATALOG_FILES.get(brand)
-    if not token or not path:
+    if not path:
+        return 0
+    if not token:
+        CATALOG_REFRESH_STATUS[brand] = {
+            "state": "not_configured",
+            "catalog_source": "local_cache",
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }
         return 0
     request = urllib.request.Request(
         "https://api.shopier.com/v1/products?limit=100",
@@ -226,6 +234,12 @@ def refresh_catalog_from_shopier_api(brand: str) -> int:
     temporary = path.with_suffix(path.suffix + ".tmp")
     temporary.write_text(json.dumps(refreshed, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     os.replace(temporary, path)
+    CATALOG_REFRESH_STATUS[brand] = {
+        "state": "fresh",
+        "catalog_source": "shopier_api",
+        "product_count": len(refreshed),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
     return len(refreshed)
 
 
@@ -234,8 +248,40 @@ def refresh_configured_catalogs() -> dict[str, int]:
     for brand in CATALOG_FILES:
         try:
             result[brand] = refresh_catalog_from_shopier_api(brand)
-        except Exception:
+        except Exception as exc:
             result[brand] = 0
+            CATALOG_REFRESH_STATUS[brand] = {
+                "state": "refresh_failed",
+                "catalog_source": "local_cache",
+                "error_type": type(exc).__name__,
+                "http_status": getattr(exc, "code", None),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            }
+    return result
+
+
+def catalog_refresh_status() -> dict[str, dict]:
+    """Return non-secret freshness metadata for the health dashboard."""
+    result = {}
+    for brand, path in CATALOG_FILES.items():
+        status = dict(CATALOG_REFRESH_STATUS.get(brand) or {})
+        status.setdefault(
+            "state",
+            "not_checked" if os.environ.get({
+                "keyvadi": "SHOPIER_KEYVADI_ACCESS_TOKEN",
+                "froxy": "SHOPIER_FROXY_ACCESS_TOKEN",
+                "lisansarena": "SHOPIER_LISANSARENA_ACCESS_TOKEN",
+            }[brand], "").strip() else "not_configured",
+        )
+        status.setdefault("catalog_source", "local_cache")
+        status["cached_product_count"] = len(load_sales_catalog(brand))
+        try:
+            status["cache_updated_at"] = datetime.fromtimestamp(
+                path.stat().st_mtime, timezone.utc
+            ).isoformat()
+        except OSError:
+            status["cache_updated_at"] = None
+        result[brand] = status
     return result
 
 
@@ -353,13 +399,15 @@ def _signing_secret() -> bytes:
     return value.encode("utf-8")
 
 
-def make_purchase_token(brand: str, product_id: str, source: str, arm: str = "") -> str | None:
+def make_purchase_token(brand: str, product_id: str, source: str, arm: str = "",
+                        cta_id: str = "") -> str | None:
     secret = _signing_secret()
     if not secret:
         return None
     payload = {
         "b": str(brand).lower(), "p": str(product_id), "s": str(source)[:40],
         "a": str(arm)[:16], "e": int((datetime.now(timezone.utc) + timedelta(days=30)).timestamp()),
+        "c": str(cta_id or os.urandom(8).hex())[:32],
     }
     raw = json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")
     body = base64.urlsafe_b64encode(raw).rstrip(b"=")
@@ -389,7 +437,9 @@ def parse_purchase_token(token: str) -> dict | None:
 
 
 def purchase_url(product: dict, brand: str, source: str, arm: str = "") -> str:
-    token = make_purchase_token(brand, product.get("id", ""), source, arm)
+    token = make_purchase_token(
+        brand, product.get("id", ""), source, arm, product.get("_cta_id", "")
+    )
     return f"{PUBLIC_BASE_URL}/go/{token}" if token else product["url"]
 
 

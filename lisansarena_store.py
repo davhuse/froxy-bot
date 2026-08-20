@@ -590,7 +590,7 @@ class LisansArenaStore:
             return [{**dict(row), "price": money(row["price_cents"]), "stock": int(row["stock"])} for row in rows]
 
     def storefront_catalog(self):
-        """Show every product; drafts remain requestable but not purchasable."""
+        """Show every unique product; drafts remain requestable but not purchasable."""
         with self.engine.connect() as conn:
             stock_count = select(func.count(inventory.c.id)).where(and_(inventory.c.product_id == products.c.id, inventory.c.sold_order_id.is_(None))).scalar_subquery()
             rows = conn.execute(
@@ -605,9 +605,14 @@ class LisansArenaStore:
                 )
             ).mappings()
             result = []
+            seen_product_names = set()
             for row in rows:
                 item = dict(row)
                 item["name"] = clean_storefront_text(item["name"])
+                semantic_name = " ".join(item["name"].casefold().split())
+                if semantic_name in seen_product_names:
+                    continue
+                seen_product_names.add(semantic_name)
                 item["description"] = clean_storefront_text(item.get("description")) or "Ürün ayrıntıları ve teslimat bilgileri hazırlanıyor."
                 item["guide"] = clean_storefront_text(item.get("guide"))
                 item["category"] = storefront_category(item["name"])
@@ -1623,7 +1628,14 @@ def la_store_health_endpoint():
         store = get_store()
         with store.engine.connect() as conn:
             product_count = conn.execute(select(func.count()).select_from(products)).scalar_one()
-        return jsonify({"ok": True, "database": "ready", "product_count": product_count})
+        storefront_count = len(store.storefront_catalog())
+        return jsonify({
+            "ok": True,
+            "database": "ready",
+            "product_count": product_count,
+            "storefront_count": storefront_count,
+            "duplicate_records_hidden": max(0, int(product_count) - storefront_count),
+        })
     except StoreUnavailable:
         return jsonify({"ok": False, "database": "unavailable", "error": "Mağaza veritabanı hazır değil"}), 503
     except Exception:

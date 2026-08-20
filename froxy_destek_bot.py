@@ -10,10 +10,10 @@ from telethon.errors import MessageNotModifiedError
 from telethon.sessions import StringSession
 import user_lang_helper
 import firestore_helper
-from sales_metrics import record_dm_event, record_event
+from sales_metrics import conversation_key, record_dm_event, record_event
 from customer_intent import INTENT_SALES_LEAD
 from shopier_catalog import fetch_shopier_catalog, match_catalog_products
-from support_flow import claim_auto_reply_once, claim_first_greeting, claim_support_event, forward_customer_message, greeting_for, one_time_mode_enabled, release_product_claim, release_support_event, save_ticket_record
+from support_flow import claim_auto_reply_once, claim_first_greeting, claim_support_event, forward_customer_message, greeting_for, one_time_mode_enabled, release_product_claim, release_support_event, respond_with_floodwait, save_ticket_record
 from sales_conversion import (
     apply_froxy_price_overrides,
     has_sales_query,
@@ -708,6 +708,8 @@ async def message_handler(event):
             record_event("duplicate_suppressed", "Froxy AI", source="telegram_private", reason="product_already_sent")
             return
         matched_products = claimed_products
+        for product in matched_products:
+            product["_cta_id"] = os.urandom(8).hex()
         attribution = USER_CTA_ATTRIBUTION.get(user_id, {})
         if attribution.get("expires_at", 0) <= time.monotonic():
             attribution = {}
@@ -723,7 +725,7 @@ async def message_handler(event):
             buttons.append([Button.url(f"🛒 {product['title'][:40]}", listing_url(product))])
         buttons.append([Button.inline(t["support_btn"], b"menu_support")])
         try:
-            await event.respond("\n".join(lines), buttons=buttons)
+            await respond_with_floodwait(event, "\n".join(lines), buttons=buttons)
         except Exception:
             await release_support_event("Froxy AI", user_id, reply_event_id, "product_card")
             for product in matched_products:
@@ -737,8 +739,15 @@ async def message_handler(event):
             "product": dict(matched_products[0]),
             "expires_at": asyncio.get_running_loop().time() + 15 * 60,
         }
-        record_event("product_matched", "Froxy AI", source="telegram_private", product=matched_products[0].get("title", ""), product_count=len(matched_products), arm=arm)
-        record_event("purchase_cta_sent", "Froxy AI", source="telegram_private", product=matched_products[0].get("title", ""), product_count=len(matched_products), arm=arm)
+        safe_conversation = conversation_key("Froxy AI", user_id)
+        record_event("product_matched", "Froxy AI", source="telegram_private", product=matched_products[0].get("title", ""), product_count=len(matched_products), arm=arm, conversation_key=safe_conversation)
+        for product in matched_products:
+            record_event(
+                "purchase_cta_sent", "Froxy AI", source="telegram_private",
+                product=product.get("title", ""), product_id=product.get("id", ""),
+                cta_key=product.get("_cta_id", ""), arm=arm,
+                conversation_key=safe_conversation,
+            )
         record_event("dm_reply_sent", "Froxy AI", source="telegram_private", product=matched_products[0].get("title", ""))
         return
 

@@ -20,7 +20,7 @@ except Exception:
     pass
 from gemini_helper import get_ai_response, get_ad_variation
 from sales_catalog import filter_keyvadi_products
-from sales_metrics import record_dm_event, record_event
+from sales_metrics import conversation_key, record_dm_event, record_event
 from customer_intent import INTENT_SALES_LEAD
 from support_flow import save_ticket_record
 from group_policy import (
@@ -480,7 +480,7 @@ TICARET_FORUM_MAX_CHARS = 700
 TICARET_FORUM_FALLBACKS = {
     'keyvadi': (
         "\u2b50 KEYVADI DIJITAL URUNLER\n"
-        "Canva, Netflix, YouTube, Adobe, yapay zeka ve oyun urunlerinde hizli teslimat.\n\n"
+        "Canva, Netflix, YouTube, Adobe, yapay zeka ve oyun urunleri.\n\n"
         "One cikanlar: Canva Pro 1 Yil | YouTube Premium | Netflix 4K | Gemini Pro | Steam Key\n\n"
         "Siparis ve guncel fiyatlar: @KeyVadiSatisBot"
     ),
@@ -568,8 +568,8 @@ def strict_group_safe_copy(group_key, is_keyvadi, is_lisansarena, is_froxy):
             "YouTube Premium 1 ay 30 TL | Steam oyun ürünleri mevcut",
         ]
         if not is_satcek:
-            lines.insert(4, "Netflix 4K kişisel profil 59,99 TL")
-        lines.append("Hızlı teslimat ve güncel fiyat bilgisi için özel mesaj.")
+            lines.insert(4, "Netflix 4K kişisel profil 119,90 TL")
+        lines.append("Teslimat türü, stok ve güncel fiyat bilgisi için özel mesaj.")
         return "\n".join(lines)
     if is_lisansarena:
         lines = [
@@ -836,8 +836,30 @@ def telegram_target_reference(value):
     """Return numeric Telegram IDs as integers, never as fake usernames."""
     normalized = normalize_group_key(value)
     if re.fullmatch(r'-?\d+', normalized):
-        return int(normalized)
+        numeric = int(normalized)
+        # Telegram channel/supergroup dialog IDs use the ``-100`` prefix.
+        # One legacy target was stored as ``-<channel id>`` and was therefore
+        # sent to Telethon as an impossible basic-chat ID.  Basic chat IDs fit
+        # in a signed 32-bit value; larger negative values are channel IDs.
+        if numeric < -(2 ** 31) and not str(numeric).startswith("-100"):
+            return int(f"-100{abs(numeric)}")
+        return numeric
     return normalized
+
+
+def joined_entity_for_target(joined_dialogs, value):
+    """Resolve a configured target against every stable dialog-ID spelling."""
+    normalized = normalize_group_key(value)
+    candidates = [normalized]
+    reference = telegram_target_reference(normalized)
+    candidates.append(str(reference))
+    if isinstance(reference, int) and str(reference).startswith("-100"):
+        candidates.append(str(reference)[4:])
+    for candidate in candidates:
+        entity = joined_dialogs.get(candidate)
+        if entity is not None:
+            return entity
+    return None
 
 
 def classify_join_error(exc):
@@ -2782,6 +2804,19 @@ def active_sales_context(user_key, now=None):
         return None
     return context
 
+
+def context_product_title(context):
+    """Return the first valid contextual product without trusting old state."""
+    if not isinstance(context, dict):
+        return ""
+    products = context.get("products")
+    if not isinstance(products, list):
+        return ""
+    for product in products:
+        if isinstance(product, dict):
+            return str(product.get("title") or "")
+    return ""
+
 def remember_sales_context(user_key, products, now=None):
     now = time.time() if now is None else now
     USER_DM_SALES_CONTEXT[user_key] = {
@@ -2838,9 +2873,11 @@ async def confirm_product_dm_replies(reserved_keys, now):
     return None
 
 
-def release_product_dm_replies(reserved_keys):
-    for reply_key, _doc_id in reserved_keys:
+async def release_product_dm_replies(reserved_keys):
+    """Release both local and distributed reservations after a failed send."""
+    for reply_key, doc_id in reserved_keys:
         USER_DM_PRODUCT_REPLY_TIME.pop(reply_key, None)
+        await async_delete_document(doc_id)
 
 
 async def claim_customer_auto_reply(client_name, sender_id, chat_id, kind="generic"):
@@ -2922,9 +2959,9 @@ def sales_followup_reply(context, text, brand="keyvadi"):
     )
 
 async def claim_dm_reply_event(client_name, chat_id, msg_id):
-    """Return False when this exact incoming DM is already being processed."""
+    """Return a durable claim ID, or ``None`` when processing must stop."""
     if not msg_id:
-        return True
+        return None
     dedupe_key = (client_name, chat_id, msg_id)
     if dedupe_key in PROCESSED_DM_MSG_IDS:
         return False
@@ -2942,9 +2979,26 @@ async def claim_dm_reply_event(client_name, chat_id, msg_id):
         "chat_id": int(chat_id),
         "message_id": int(msg_id),
     })
-    # None means Firestore was temporarily unavailable. The local claim still
-    # protects the normal single-worker runtime, so do not drop a sales lead.
-    return claimed is not False
+    # Cross-process durability is mandatory. Continuing on a local-only claim
+    # reintroduces duplicate replies whenever two workers briefly overlap.
+    if claimed is not True:
+        PROCESSED_DM_MSG_IDS.discard(dedupe_key)
+        return None
+    return claim_id
+
+
+async def send_dm_reply_with_floodwait(event, reply_text, client_name):
+    """Wait out one Telegram FloodWait without consuming the durable DM claim."""
+    try:
+        return await event.reply(reply_text)
+    except FloodWaitError as exc:
+        wait_seconds = max(1, int(getattr(exc, "seconds", 1) or 1)) + 1
+        print(
+            f"[{client_name}] ⏳ DM FloodWait {wait_seconds - 1}sn; "
+            "aynı yanıt tek kez erteleniyor."
+        )
+        await asyncio.sleep(wait_seconds)
+        return await event.reply(reply_text)
 
 def register_auto_reply_handler(client, client_name, our_user_ids):
     @client.on(events.NewMessage(incoming=True))
@@ -3021,7 +3075,8 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         # still working (or two Render workers briefly overlapped), both paths
         # could send the same Shopier link. The in-memory claim closes the local
         # race; Firestore's create-only claim closes the cross-process race.
-        if not await claim_dm_reply_event(client_name, event.chat_id, msg_id):
+        dm_event_claim_id = await claim_dm_reply_event(client_name, event.chat_id, msg_id)
+        if not dm_event_claim_id:
             print(
                 f"⏭️ [{client_name}] Aynı DM olayı daha önce işlendi; "
                 f"mükerrer ürün linki engellendi ({event.chat_id}/{msg_id})."
@@ -3043,6 +3098,7 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
             print(f"[{client_name}] Panel DM kaydı yazılamadı: {type(exc).__name__}")
 
         user_key = (client_name, sender_id)
+        dm_conversation_key = conversation_key(client_name, sender_id)
 
         now = time.time()
         sales_context = active_sales_context(user_key, now)
@@ -3132,7 +3188,10 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                 "product_matched", client_name, source="telegram_private",
                 product=matched_products[0].get("title", ""),
                 product_count=len(matched_products),
+                conversation_key=dm_conversation_key,
             )
+            for product in matched_products:
+                product["_cta_id"] = os.urandom(8).hex()
             if len(matched_products) == 1:
                 reply_text = (
                     froxy_product_reply(matched_products[0]) if is_froxy
@@ -3164,8 +3223,9 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
             # 'Satış takip sorusu' loop.
             record_event(
                 "human_handoff", client_name, source="telegram_private",
-                product=(sales_context.get("products") or [{}])[0].get("title", ""),
+                product=context_product_title(sales_context),
                 reason=("followup_after_product" if sales_context else dm_intent),
+                conversation_key=dm_conversation_key,
             )
             print(f"⏭️ [{client_name}] Ürün sonrası takip mesajı yalnızca panele aktarıldı.")
             return
@@ -3176,6 +3236,7 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                 record_event(
                     "human_handoff", client_name, source="telegram_private",
                     reason="followup_after_product_restart",
+                    conversation_key=dm_conversation_key,
                 )
                 print(f"⏭️ [{client_name}] Önceki ürün kartı bulundu; takip mesajı panele bırakıldı.")
                 return
@@ -3193,7 +3254,10 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                 "kişisel/ortak ya da süre tercihinizi yazar mısınız?"
             )
             matched_desc = "İnsan desteği gerekli"
-            record_event("human_handoff", client_name, source="telegram_private", reason="no_product_match")
+            record_event(
+                "human_handoff", client_name, source="telegram_private",
+                reason="no_product_match", conversation_key=dm_conversation_key,
+            )
 
         if not reply_text:
             return
@@ -3217,7 +3281,7 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                 return
             
         try:
-            await event.reply(reply_text)
+            await send_dm_reply_with_floodwait(event, reply_text, client_name)
             record_event(
                 "dm_reply_sent",
                 client_name,
@@ -3225,11 +3289,15 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                 source="telegram_private",
             )
             if matched_products:
-                record_event(
-                    "purchase_cta_sent", client_name,
-                    product=matched_products[0].get('title', ''),
-                    product_count=len(matched_products), source="telegram_private",
-                )
+                for product in matched_products:
+                    record_event(
+                        "purchase_cta_sent", client_name,
+                        product=product.get('title', ''),
+                        product_id=product.get('id', ''),
+                        cta_key=product.get('_cta_id', ''),
+                        conversation_key=dm_conversation_key,
+                        source="telegram_private",
+                    )
             USER_DM_LAST_REPLY_TIME[user_key] = now
             USER_DM_LAST_REPLY_TEXT[user_key] = normalized_text
             if matched_products:
@@ -3237,9 +3305,11 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                 await confirm_product_dm_replies(reserved_product_keys, now)
             print(f"[{client_name}] ✉️ Özel mesaj otomatik yanıtlandı ({matched_desc}): @{sender.username or sender_id}")
         except Exception as e:
-            release_product_dm_replies(reserved_product_keys)
+            await release_product_dm_replies(reserved_product_keys)
             if generic_reply_claim_id:
                 await async_delete_document(generic_reply_claim_id)
+            await async_delete_document(dm_event_claim_id)
+            PROCESSED_DM_MSG_IDS.discard((client_name, event.chat_id, msg_id))
             print(f"[{client_name}] ⚠️ Özel mesaj otomatik yanıtlanırken hata: {e}")
 
 DEAD_SESSION_ERRORS = (
@@ -4185,7 +4255,7 @@ async def main():
                 joined_dialogs, client_name, approved_targets
             )
             for username_lower in hedef_set:
-                entity = joined_dialogs.get(username_lower)
+                entity = joined_entity_for_target(joined_dialogs, username_lower)
                 if (blacklist_keys.intersection(group_state_keys(username_lower, entity))
                         or is_excluded_ad_target(username_lower, entity)):
                     debug_blacklisted += 1
@@ -4195,8 +4265,7 @@ async def main():
                     debug_blacklisted += 1
                     set_group_state(username_lower, 'write_forbidden')
                     continue
-                if username_lower in joined_dialogs:
-                    entity = joined_dialogs[username_lower]
+                if entity is not None:
                     if getattr(entity, 'broadcast', False):
                         set_group_state(username_lower, 'unsuitable')
                         continue
@@ -4863,6 +4932,12 @@ async def main():
                 # Mesaj geçmişini kaydet
                 save_msg_history(msg_history)
 
+                cycle_snapshot = await asyncio.to_thread(blast_coordinator.snapshot)
+                cycle_record = (cycle_snapshot.get('accounts') or {}).get(client_name, {})
+                cycle_sent_count = int(cycle_record.get('accepted_targets', 0) or 0)
+                cycle_failed_count = int(cycle_record.get('failed_targets', 0) or 0)
+                cycle_skipped_count = int(cycle_record.get('skipped_targets', 0) or 0)
+
                 # Cooldown'lari hemen buluta yaz.  Periyodik senkron 5 dakikada
                 # bir calisiyor; tur bitisi ile o senkron arasinda bir yeniden
                 # baslatma olursa bu turun kayitlari kaybolur ve gruplara 1 saat
@@ -4886,18 +4961,24 @@ async def main():
                         phase='completed',
                         target_groups=len(hedef_set),
                         sendable_groups=len(blast_targets),
-                        sent_count=sent_count,
-                        failed_count=fail_count,
+                        sent_count=cycle_sent_count,
+                        failed_count=cycle_failed_count,
+                        skipped_count=cycle_skipped_count,
                     )
-                    print(f"\n[{client_name}] 📊 BLAST SONUÇ: {sent_count} başarılı, {fail_count} başarısız / {len(blast_targets)} toplam")
+                    print(
+                        f"\n[{client_name}] 📊 BLAST SONUÇ: {cycle_sent_count} başarılı, "
+                        f"{cycle_failed_count} başarısız, {cycle_skipped_count} atlandı / "
+                        f"{len(blast_targets)} toplam"
+                    )
                 else:
                     update_ad_account_status(
                         client_name,
                         phase='interrupted',
                         target_groups=len(hedef_set),
                         sendable_groups=len(blast_targets),
-                        sent_count=sent_count,
-                        failed_count=fail_count,
+                        sent_count=cycle_sent_count,
+                        failed_count=cycle_failed_count,
+                        skipped_count=cycle_skipped_count,
                     )
                     print(f"\n[{client_name}] Blast yarım kaldı; sonraki başlangıçta kalan gruplardan devam edilecek.")
 

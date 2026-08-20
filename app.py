@@ -24,7 +24,7 @@ import hashlib
 import atexit
 import signal
 from sales_metrics import record_event, summarize as summarize_sales
-from sales_conversion import cta_experiment_status, parse_purchase_token, product_by_id, purchase_target_url, refresh_configured_catalogs
+from sales_conversion import catalog_refresh_status, cta_experiment_status, parse_purchase_token, product_by_id, purchase_target_url, refresh_configured_catalogs
 from blast_scheduler import load_blast_snapshot
 from shopier_orders import ingest_shopier_order, reconcile_configured_orders
 from group_policy import load_policies, moderation_snapshot
@@ -744,6 +744,16 @@ def status():
             'due_at': queue_state.get('due_at'),
             'current_index': cursor + 1 if targets and cursor < len(targets) else None,
             'total_groups': len(targets),
+            'sent_count': sum(1 for item in targets if item.get('state') == 'accepted'),
+            'failed_count': sum(1 for item in targets if item.get('state') == 'failed'),
+            'skipped_count': sum(
+                1 for item in targets
+                if item.get('state') in {'skipped', 'skipped_uncertain'}
+            ),
+            'pending_count': sum(
+                1 for item in targets
+                if item.get('state') not in {'accepted', 'failed', 'skipped', 'skipped_uncertain'}
+            ),
             'pause_reason': queue_state.get('pause_reason'),
         }
     return jsonify({
@@ -800,6 +810,7 @@ def system_checkup():
         'durable_claims': claim_service,
         'lisansarena_store': store_health,
         'lisansarena_traffic_enabled': store_health.get('reachable') is True,
+        'shopier_catalogs': catalog_refresh_status(),
         'keyvadi_mini_app': {
             'url': os.environ.get(
                 'KEYVADI_MINI_APP_URL',
@@ -891,14 +902,29 @@ def account_restrictions():
 
 @app.route('/api/stats', methods=['GET'])
 def stats():
-    done_count = 0
-    if os.path.exists("progress.txt"):
-        try:
-            with open("progress.txt", "r", encoding="utf-8") as f:
-                done_count = len([line.strip() for line in f if line.strip()])
-        except:
-            pass
-            
+    checkpoint = load_blast_snapshot(os.path.join(base_dir, 'blast_checkpoint_v3.json'))
+    account_cycles = {}
+    for account, state in (checkpoint.get('accounts') or {}).items():
+        current = state.get('targets') or []
+        account_cycles[account] = current or state.get('last_targets') or []
+    total_groups = sum(len(items) for items in account_cycles.values())
+    done_count = sum(
+        1 for items in account_cycles.values() for item in items
+        if item.get('state') in {'accepted', 'failed', 'skipped', 'skipped_uncertain'}
+    )
+    sent_count = sum(
+        1 for items in account_cycles.values() for item in items
+        if item.get('state') == 'accepted'
+    )
+    failed_count = sum(
+        1 for items in account_cycles.values() for item in items
+        if item.get('state') == 'failed'
+    )
+    skipped_count = sum(
+        1 for items in account_cycles.values() for item in items
+        if item.get('state') in {'skipped', 'skipped_uncertain'}
+    )
+
     blacklist_count = 0
     if os.path.exists("blacklist.txt"):
         try:
@@ -907,35 +933,6 @@ def stats():
         except:
             pass
             
-    sent_count = 0
-    if os.path.exists("bot_log.txt"):
-        try:
-            with open("bot_log.txt", "r", encoding="utf-8", errors="replace") as f:
-                for line in f:
-                    if "gönderildi!" in line.lower() or "gonderildi!" in line.lower():
-                        sent_count += 1
-        except:
-            pass
-            
-    total_groups = 0
-    try:
-        with open("otomatik_katil.py", "r", encoding="utf-8") as f:
-            content = f.read()
-            # gruplar listesindeki elemanları say (her satırdaki tırnak içi string)
-            import re
-            match = re.search(r'gruplar\s*=\s*\[([^\]]+)\]', content, re.DOTALL)
-            if match:
-                items = [x.strip().strip('"').strip("'") for x in match.group(1).split(',') if x.strip().strip('"').strip("'")]
-                total_groups = len(items)
-        # auto_groups.txt'deki grupları da ekle
-        if os.path.exists("auto_groups.txt"):
-            with open("auto_groups.txt", "r", encoding="utf-8") as f:
-                auto_g = [x.strip() for x in f if x.strip()]
-                total_groups += len(auto_g)
-    except Exception as e:
-        print(f"Error reading total groups: {e}")
-        total_groups = 410 # Fallback default
-
     auto_discovered = 0
     if os.path.exists("auto_groups.txt"):
         try:
@@ -949,6 +946,8 @@ def stats():
         "done_groups": done_count,
         "blacklist_groups": blacklist_count,
         "sent_messages": sent_count,
+        "failed_messages": failed_count,
+        "skipped_groups": skipped_count,
         "auto_discovered": auto_discovered
     })
 
@@ -1030,6 +1029,7 @@ def purchase_redirect(token):
         product_id=product['id'],
         source=payload.get('s', ''),
         arm=payload.get('a', ''),
+        cta_key=payload.get('c', ''),
     )
     return redirect(purchase_target_url(payload['b'], product), code=302)
 
@@ -2198,15 +2198,11 @@ try:
 except Exception as exc:
     print(f'[App] KeyVadi Mini App mount unavailable: {exc}')
 
-try:
-    # Keep the Antigravity-built LisansArena storefront intact.  Its static
-    # assets and Shopier balance endpoints are relative to this mount and must
-    # not be replaced by the older server-rendered compatibility page.
-    from miniapp_lisansarena.server import app as lisansarena_miniapp
-    mounts['/la/app'] = _MountedRootMiddleware(lisansarena_miniapp)
-    print('[App] LisansArena Mini App mounted at /la/app')
-except Exception as exc:
-    print(f'[App] LisansArena Mini App mount unavailable: {exc}')
+# LisansArena is intentionally *not* mounted through DispatcherMiddleware.
+# Its PostgreSQL-backed Blueprint owns /la/app/, /api/la/* and the wallet/order
+# flow.  Mounting the legacy JSON application here shadowed those routes and
+# exposed an obsolete 34-product catalogue with a hard-coded test customer.
+print('[App] LisansArena PostgreSQL Mini App served at /la/app/')
 
 if mounts:
     app.wsgi_app = DispatcherMiddleware(app.wsgi_app, mounts)

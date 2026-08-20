@@ -15,9 +15,9 @@ import user_lang_helper
 import firestore_helper
 from gemini_helper import get_ai_response
 from sales_catalog import filter_keyvadi_products
-from sales_metrics import record_dm_event, record_event
+from sales_metrics import conversation_key, record_dm_event, record_event
 from customer_intent import INTENT_SALES_LEAD
-from support_flow import claim_auto_reply_once, claim_first_greeting, claim_support_event, forward_customer_message, greeting_for, one_time_mode_enabled, release_product_claim, release_support_event, save_ticket_record
+from support_flow import claim_auto_reply_once, claim_first_greeting, claim_support_event, forward_customer_message, greeting_for, one_time_mode_enabled, release_product_claim, release_support_event, respond_with_floodwait, save_ticket_record
 from update_keyvadi_links_json import fetch_live_catalog, write_catalog_atomic
 from sales_conversion import (
     load_sales_catalog,
@@ -814,7 +814,7 @@ TEXTS = {
         },
         "select_product": "Detaylarını görmek ve satın almak istediğiniz ürünü seçin:",
         "price": "Fiyat",
-        "product_footer": "✅ Anında teslim · 7/24 destek · Güvenli ödeme\n\nSatın almak için aşağıdaki butona tıklayın. Ödeme sonrası teslimat anında gerçekleştirilir.",
+        "product_footer": "✅ Teslimat türü ürün detayında · 7/24 destek · Güvenli ödeme\n\nSatın almak için aşağıdaki butona tıklayın. Teslimat yöntemi ürün bilgisine göre uygulanır.",
         "buy_btn": "💳 Shopier ile Güvenli Satın Al",
         "support_title": "📞 **Destek Talebi & Sipariş Verme**",
         "support_desc": "Satın almak istediğiniz ürün, sipariş sorunu veya destek talebinizi detaylıca yazıp bu sohbete gönderin.\n\nMesajınız doğrudan admin ekibimize iletilecektir. En kısa sürede yanıt alacaksınız.",
@@ -833,7 +833,7 @@ async def show_main_menu(event, user_id, is_callback=False):
         "⚡ **KEYVADI PRO — Dijital Lisans & E-Pin Mağazası**\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
         "🎉 **KeyVadi'ye Hoş Geldiniz!**\n\n"
-        "Netflix, ChatGPT Plus, Canva Pro, Gemini, Xbox Game Pass, FC26, Steam Key ve tüm lisanslar **%70 indirimli** ve **7/24 anında otomatik teslimatla** KeyVadi Mini App'te!\n\n"
+        "Netflix, ChatGPT Plus, Canva Pro, Gemini, Xbox Game Pass, FC26, Steam Key ve lisanslar güncel stok ve teslimat bilgileriyle KeyVadi Mini App'te!\n\n"
         "👇 **Alışverişe başlamak ve bakiyenizi yönetmek için tıklayın:**"
     )
     # A normal URL button opens Telegram's browser without signed WebApp
@@ -1401,6 +1401,8 @@ async def message_handler(event):
                 )
                 return
             matched_products = claimed_products
+            for product in matched_products:
+                product["_cta_id"] = os.urandom(8).hex()
             attribution = USER_CTA_ATTRIBUTION.get(user_id, {})
             if attribution.get("expires_at", 0) <= time.monotonic():
                 attribution = {}
@@ -1435,7 +1437,7 @@ async def message_handler(event):
                 buttons.append([Button.inline(t["support_btn"], b"menu_support")])
                 
             try:
-                await event.respond(product_msg, buttons=buttons)
+                await respond_with_floodwait(event, product_msg, buttons=buttons)
             except Exception:
                 PROCESSED_MESSAGE_EVENTS.discard(event_key)
                 await async_release_event_claim(event, claim_scope)
@@ -1451,8 +1453,15 @@ async def message_handler(event):
                 "product": dict(matched_products[0]),
                 "expires_at": time.monotonic() + 15 * 60,
             }
-            record_event("product_matched", "KeyVadi", source="telegram_private", product=matched_products[0].get('title', ''), product_count=len(matched_products), arm=arm)
-            record_event("purchase_cta_sent", "KeyVadi", source="telegram_private", product=matched_products[0].get('title', ''), product_count=len(matched_products), arm=arm)
+            safe_conversation = conversation_key("KeyVadi", user_id)
+            record_event("product_matched", "KeyVadi", source="telegram_private", product=matched_products[0].get('title', ''), product_count=len(matched_products), arm=arm, conversation_key=safe_conversation)
+            for product in matched_products:
+                record_event(
+                    "purchase_cta_sent", "KeyVadi", source="telegram_private",
+                    product=product.get('title', ''), product_id=product.get('id', ''),
+                    cta_key=product.get('_cta_id', ''), arm=arm,
+                    conversation_key=safe_conversation,
+                )
             record_event("dm_reply_sent", "KeyVadi", source="telegram_private", product=matched_products[0].get('title', '') if matched_products else '')
             logger.info(f"Smart match for user {user_id}: '{event.text}' -> matched products successfully.")
             return
