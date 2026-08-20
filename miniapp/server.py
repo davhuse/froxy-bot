@@ -28,9 +28,9 @@ if sys.platform.startswith("win"):
 
 from flask import Flask, jsonify, request, send_from_directory
 try:
-    from shopier_dynamic import create_dynamic_shopier_listing, check_and_sync_shopier_orders, cancel_and_delete_topup, start_background_shopier_cleaner
+    from shopier_dynamic import create_dynamic_shopier_listing, check_and_sync_shopier_orders, cancel_and_delete_topup, load_active_topups, start_background_shopier_cleaner
 except ImportError:
-    from .shopier_dynamic import create_dynamic_shopier_listing, check_and_sync_shopier_orders, cancel_and_delete_topup, start_background_shopier_cleaner
+    from .shopier_dynamic import create_dynamic_shopier_listing, check_and_sync_shopier_orders, cancel_and_delete_topup, load_active_topups, start_background_shopier_cleaner
 
 BASE_DIR = Path(__file__).resolve().parent
 PRODUCTS_DB_PATH = BASE_DIR / "products_db.json"
@@ -187,6 +187,8 @@ def get_or_update_user_profile(user_id):
         pass
 
     telegram_user = authenticated_user()
+    if not telegram_user or int(telegram_user.get("id", 0)) != int(user_id):
+        return auth_error()
     data = request.get_json(silent=True) or {}
 
     if telegram_user:
@@ -214,15 +216,11 @@ def create_dynamic_topup():
     """
     data = request.get_json(silent=True) or {}
     telegram_user = authenticated_user()
-    
-    if telegram_user:
-        user_id = int(telegram_user["id"])
-        user_name = telegram_user.get("first_name", "KeyVadi Müşteri")
-        username = telegram_user.get("username", "")
-    else:
-        user_id = int(data.get("user_id") or 8797763469)
-        user_name = str(data.get("user_name") or "KeyVadi Müşteri")
-        username = str(data.get("username") or "")
+    if not telegram_user:
+        return auth_error()
+    user_id = int(telegram_user["id"])
+    user_name = telegram_user.get("first_name", "KeyVadi Müşteri")
+    username = telegram_user.get("username", "")
     
     try:
         amount = float(data.get("amount", 50.0))
@@ -245,15 +243,25 @@ def create_dynamic_topup():
 def cancel_topup():
     """Kullanıcı vazgeçtiğinde veya sayfadan ayrıldığında ilanı anında siler."""
     data = request.get_json(silent=True) or {}
+    telegram_user = authenticated_user()
+    if not telegram_user:
+        return auth_error()
     product_id = str(data.get("product_id", "")).strip()
     if product_id:
+        owner = (load_active_topups().get(product_id) or {}).get("user_id")
+        if str(owner) != str(telegram_user["id"]):
+            return jsonify({"success": False, "error": "Bu ilan size ait değil"}), 403
         cancel_and_delete_topup(product_id)
         return jsonify({"success": True, "message": "İlan silindi"})
     return jsonify({"success": False, "error": "Geçersiz product_id"}), 400
 
 @app.route("/api/balance/sync-orders", methods=["GET"])
 def sync_orders():
+    telegram_user = authenticated_user()
+    if not telegram_user:
+        return auth_error()
     credited = check_and_sync_shopier_orders(USER_DATA_PATH)
+    credited = [row for row in credited if str(row.get("user_id")) == str(telegram_user["id"])]
     return jsonify({
         "success": True,
         "credited_orders": credited,
@@ -292,10 +300,9 @@ def simulate_payment():
 def purchase_product():
     data = request.get_json(silent=True) or {}
     telegram_user = authenticated_user()
-    if telegram_user:
-        user_id = int(telegram_user["id"])
-    else:
-        user_id = int(data.get("user_id") or 8797763469)
+    if not telegram_user:
+        return auth_error()
+    user_id = int(telegram_user["id"])
     product_id = str(data.get("product_id"))
 
     if not user_id or not product_id:
@@ -348,10 +355,9 @@ def purchase_product():
 def purchase_cart():
     data = request.get_json(silent=True) or {}
     telegram_user = authenticated_user()
-    if telegram_user:
-        user_id = int(telegram_user["id"])
-    else:
-        user_id = int(data.get("user_id") or 8797763469)
+    if not telegram_user:
+        return auth_error()
+    user_id = int(telegram_user["id"])
     
     items = data.get("items", [])
     if not items:
@@ -405,6 +411,9 @@ def purchase_cart():
 
 @app.route("/api/referrals/<int:user_id>", methods=["GET"])
 def get_referral_info(user_id):
+    telegram_user = authenticated_user()
+    if not telegram_user or int(telegram_user.get("id", 0)) != int(user_id):
+        return auth_error()
     user = get_or_create_user(user_id)
     return jsonify({
         "success": True,

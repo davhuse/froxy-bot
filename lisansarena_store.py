@@ -319,6 +319,24 @@ def normalize_database_url(value):
         raise StoreUnavailable("LisansArena veritabanı bağlantısı geçersiz") from exc
     if parsed.get_backend_name() not in {"postgresql", "sqlite"}:
         raise StoreUnavailable("LisansArena veritabanı türü desteklenmiyor")
+    # Render internal database hostnames (``dpg-...-a``) resolve only inside
+    # the workspace that owns the database.  After this service was moved to
+    # a new Render workspace, the preserved URL stopped resolving.  Use the
+    # documented regional external hostname while preserving credentials and
+    # every other URL component.  Never rewrite arbitrary/private hosts.
+    render_runtime = bool(
+        os.environ.get("RENDER") or os.environ.get("RENDER_SERVICE_ID")
+        or os.environ.get("RENDER_EXTERNAL_URL")
+    )
+    host = str(parsed.host or "")
+    if (
+        render_runtime
+        and parsed.get_backend_name() == "postgresql"
+        and re.fullmatch(r"dpg-[a-z0-9-]+-a", host)
+    ):
+        region = re.sub(r"[^a-z0-9-]", "", os.environ.get("RENDER_REGION", "oregon").casefold()) or "oregon"
+        parsed = parsed.set(host=f"{host}.{region}-postgres.render.com")
+        return parsed.render_as_string(hide_password=False)
     return url
 
 
@@ -1455,19 +1473,51 @@ class LisansArenaStore:
 
 _store = None
 _store_error = None
+_store_error_at = 0.0
+_store_lock = threading.Lock()
 _worker_started = False
 
 
-def get_store():
-    global _store, _store_error
-    if _store is None and _store_error is None:
-        try:
-            _store = LisansArenaStore()
-        except Exception as exc:
-            _store_error = str(exc)
+def get_store(force_retry=False):
+    """Return the store, retrying transient initialization failures.
+
+    Older builds cached one database error forever, so a short PostgreSQL
+    outage left the Mini App in ``StoreUnavailable`` until a deploy.  A
+    bounded retry window heals that state without creating an engine on every
+    request.
+    """
+    global _store, _store_error, _store_error_at
+    retry_seconds = max(5, int(os.environ.get("LISANSARENA_STORE_RETRY_SECONDS", "30")))
+    should_retry = force_retry or not _store_error or (time.monotonic() - _store_error_at >= retry_seconds)
+    if _store is None and should_retry:
+        with _store_lock:
+            should_retry = force_retry or not _store_error or (time.monotonic() - _store_error_at >= retry_seconds)
+            if _store is None and should_retry:
+                try:
+                    _store = LisansArenaStore()
+                    _store_error = None
+                    _store_error_at = 0.0
+                except Exception as exc:
+                    _store_error = str(exc)
+                    _store_error_at = time.monotonic()
     if _store is None:
         raise StoreUnavailable(_store_error or "Mağaza kullanılamıyor")
     return _store
+
+
+def store_health(force_retry=False):
+    try:
+        store = get_store(force_retry=force_retry)
+        with store.engine.connect() as connection:
+            connection.execute(text("SELECT 1"))
+        return {"configured": True, "reachable": True, "status": "ready"}
+    except Exception as exc:
+        return {
+            "configured": bool(os.environ.get("LISANSARENA_DATABASE_URL") or os.environ.get("DATABASE_URL")),
+            "reachable": False,
+            "status": type(exc).__name__,
+            "reason": str(exc)[:240],
+        }
 
 
 def verify_telegram_init_data(init_data: str, bot_token: str, max_age=24 * 60 * 60):
@@ -1549,7 +1599,7 @@ def logo_asset():
 
 
 @la.get("/api/la/health")
-def store_health():
+def la_store_health_endpoint():
     try:
         store = get_store()
         with store.engine.connect() as conn:

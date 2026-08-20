@@ -1,0 +1,37 @@
+{
+  "generated_at": "2026-08-20",
+  "auto_join": false,
+  "auto_target": false,
+  "candidates": [
+    {
+      "username": "kuponfirsati",
+      "members": 443,
+      "fit": "high",
+      "status": "join_approval_required",
+      "evidence": "Güncel kupon, yemek ve Uber satış ilanları var.",
+      "required_action": "Katılım onayından sonra kuralları oku ve tek linksiz smoke testi yap."
+    },
+    {
+      "username": "kuponceksatis",
+      "members": 15414,
+      "fit": "high_conditional",
+      "status": "requirements_not_met",
+      "evidence": "Aktif çek ve kupon satış kitlesi.",
+      "required_action": "Satış referans konusu ve en az 20 gerçek referans tamamlanmalı; .com bağlantısı kullanılmamalı."
+    },
+    {
+      "username": "toptan_wholesale_tr",
+      "members": 4556,
+      "fit": "secondary",
+      "status": "rules_verification_required",
+      "evidence": "Genel reklam ve toptan satış kitlesi.",
+      "required_action": "Dijital ürün reklamına izin verildiği doğrulanmalı."
+    }
+  ],
+  "rejected": [
+    {"username": "kuponindirimsohbet", "reason": "Reklam yasak"},
+    {"username": "hesapsatistrsohbet", "reason": "Link ve reklam yasak"},
+    {"username": "hesapalimsatim12", "reason": "Oyun odaklı ve reklam yasak"},
+    {"username": "kcksohbet", "reason": "Yalnız destek sohbeti"}
+  ]
+}

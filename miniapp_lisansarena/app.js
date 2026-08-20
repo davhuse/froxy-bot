@@ -10,6 +10,12 @@
   const tg = window.Telegram?.WebApp;
   const API_BASE = window.location.pathname.startsWith('/la/app') ? '/la/app' : '';
   const api = path => `${API_BASE}${path}`;
+  const telegramInitData = tg?.initData || '';
+  function authHeaders() {
+    const headers = { 'Content-Type': 'application/json' };
+    if (telegramInitData) headers['X-Telegram-Init-Data'] = telegramInitData;
+    return headers;
+  }
   if (tg) {
     tg.ready();
     tg.expand();
@@ -142,8 +148,9 @@
     try {
       const res = await fetch(api('/api/user/profile'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify({
+          init_data: telegramInitData,
           user_id: tgUser.id,
           username: tgUser.username || "",
           first_name: tgUser.first_name || "",
@@ -165,7 +172,7 @@
   // Fetch Referral Data
   async function fetchReferralData() {
     try {
-      const res = await fetch(api(`/api/referrals/${tgUser.id}`));
+      const res = await fetch(api(`/api/referrals/${tgUser.id}`), { headers: authHeaders() });
       const data = await res.json();
       if (data.success) {
         userProfile.referrals_count = data.referrals_count || 0;
@@ -183,7 +190,7 @@
   // Sync Orders Silently
   async function syncOrdersSilently() {
     try {
-      const res = await fetch(api('/api/balance/sync-orders'));
+      const res = await fetch(api('/api/balance/sync-orders'), { headers: authHeaders() });
       const data = await res.json();
       if (data.success && data.credited_orders && data.credited_orders.length > 0) {
         await fetchUserProfile();
@@ -483,8 +490,9 @@
     try {
       const res = await fetch(api('/api/user/purchase-cart'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify({
+          init_data: telegramInitData,
           user_id: tgUser.id,
           items: cart
         })
@@ -543,8 +551,9 @@
     try {
       const res = await fetch(api('/api/user/purchase'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify({
+          init_data: telegramInitData,
           user_id: tgUser.id,
           product_id: selectedModalProduct.id
         })
@@ -597,8 +606,9 @@
     try {
       const res = await fetch(api('/api/balance/create-dynamic-topup'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify({
+          init_data: telegramInitData,
           user_id: tgUser.id,
           user_name: userProfile.full_name || `${tgUser.first_name} ${tgUser.last_name}`.trim(),
           username: tgUser.username || "",
@@ -648,8 +658,11 @@
     if (window.currentActiveTopupPid) {
       fetch(api('/api/balance/cancel-topup'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ product_id: window.currentActiveTopupPid })
+        headers: authHeaders(),
+        body: JSON.stringify({
+          init_data: telegramInitData,
+          product_id: window.currentActiveTopupPid
+        })
       }).catch(() => {});
       window.currentActiveTopupPid = null;
     }

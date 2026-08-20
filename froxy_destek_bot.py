@@ -9,7 +9,8 @@ from telethon.errors import MessageNotModifiedError
 from telethon.sessions import StringSession
 import user_lang_helper
 import firestore_helper
-from sales_metrics import record_event
+from sales_metrics import record_dm_event, record_event
+from customer_intent import INTENT_SALES_LEAD
 from shopier_catalog import fetch_shopier_catalog, match_catalog_products
 from support_flow import claim_auto_reply_once, claim_first_greeting, claim_support_event, forward_customer_message, greeting_for, one_time_mode_enabled, release_product_claim, release_support_event, save_ticket_record
 from sales_conversion import (
@@ -682,10 +683,16 @@ async def message_handler(event):
 
     is_admin_context = event.sender_id == admin_chat_id or event.chat_id == support_chat_id
 
+    dm_intent = record_dm_event(
+        "Froxy AI", user_id, event.text or "",
+        message_id=getattr(event.message, "id", None),
+        has_sales_context=bool(SUPPORT_SALES_CONTEXT.get(user_id)),
+    )
+
     # Resolve sales intent before the generic greeting.  Product questions
     # must result in one product card, not a greeting followed by a card.
     matched_products = []
-    if not is_admin_context and event.text:
+    if not is_admin_context and event.text and dm_intent == INTENT_SALES_LEAD:
         matched_products = match_sales_products(event.text, load_sales_catalog("froxy"), limit=3)
 
     if matched_products:
@@ -742,7 +749,6 @@ async def message_handler(event):
             Button.inline("🚫 Kullanıcıyı Engelle (Ban)", f"adm_ban_{user_id}".encode()),
         ]]
         if await forward_customer_message(bot, event, support_chat_id, "Froxy AI", buttons):
-            record_event("dm_received", "Froxy AI", source="telegram_private")
             record_event("dm_manual_forwarded", "Froxy AI", source="telegram_private")
             if await claim_first_greeting("froxy", user_id):
                 await event.respond(greeting_for("Froxy AI"))
@@ -840,6 +846,12 @@ async def message_handler(event):
         return
 
     if not is_admin_context and event.text:
+        if dm_intent != INTENT_SALES_LEAD:
+            record_event(
+                "human_handoff", "Froxy AI", source="telegram_private",
+                reason=dm_intent,
+            )
+            return
         context = SUPPORT_SALES_CONTEXT.get(user_id)
         if context and context.get("expires_at", 0) > asyncio.get_running_loop().time():
             product = context["product"]

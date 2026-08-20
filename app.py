@@ -91,9 +91,14 @@ def protect_privileged_panel_api():
         '/api/group-status', '/api/config', '/api/account-restrictions',
         '/api/start', '/api/stop', '/api/lisansarena/start', '/api/lisansarena/stop',
         '/api/ad-smoke/start', '/api/ad-smoke/status',
+        '/api/supplier-opportunities', '/api/procurement',
+        '/api/sales/group-candidates',
     )
     if request.path not in protected:
-        return None
+        if request.path.startswith('/api/procurement/'):
+            pass
+        else:
+            return None
     expected = os.environ.get('PANEL_ADMIN_TOKEN', '').strip()
     supplied = request.headers.get('X-Admin-Token', '').strip()
     if not expected or not supplied or not hmac.compare_digest(expected, supplied):
@@ -774,15 +779,8 @@ def system_checkup():
         'lisansarena_support': len(get_processes_by_script('lisansarena_bot.py')),
         'blast_worker': len(get_processes_by_script('otomatik_katil.py')),
     }
-    store_health = {'configured': bool(os.environ.get('LISANSARENA_DATABASE_URL') or os.environ.get('DATABASE_URL'))}
-    try:
-        from lisansarena_store import get_store
-        store = get_store()
-        with store.engine.connect() as connection:
-            connection.execute(__import__('sqlalchemy').text('SELECT 1'))
-        store_health.update({'reachable': True, 'status': 'ready'})
-    except Exception as exc:
-        store_health.update({'reachable': False, 'status': type(exc).__name__})
+    from lisansarena_store import store_health as inspect_lisansarena_store
+    store_health = inspect_lisansarena_store()
 
     process_health = {
         name: count == 1 for name, count in expected_processes.items()
@@ -801,6 +799,7 @@ def system_checkup():
         'processes_healthy': process_health,
         'durable_claims': claim_service,
         'lisansarena_store': store_health,
+        'lisansarena_traffic_enabled': store_health.get('reachable') is True,
         'keyvadi_mini_app': {
             'url': os.environ.get(
                 'KEYVADI_MINI_APP_URL',
@@ -963,6 +962,56 @@ def sales_summary():
     summary = summarize_sales(days)
     summary['cta_experiment'] = cta_experiment_status()
     return jsonify(summary)
+
+
+@app.route('/api/supplier-opportunities', methods=['GET'])
+def supplier_opportunities_api():
+    from supplier_opportunities import load_opportunities
+    return jsonify(load_opportunities())
+
+
+@app.route('/api/sales/group-candidates', methods=['GET'])
+def sales_group_candidates_api():
+    path = os.path.join(base_dir, 'group_candidates_sales_20260820.json')
+    try:
+        with open(path, 'r', encoding='utf-8') as handle:
+            return jsonify(json.load(handle))
+    except (OSError, ValueError, json.JSONDecodeError):
+        return jsonify({'error': 'Aday raporu okunamadı'}), 500
+
+
+@app.route('/api/procurement', methods=['GET', 'POST'])
+def procurement_api():
+    from supplier_opportunities import create_procurement_request, list_procurement_requests
+    if request.method == 'GET':
+        return jsonify({'requests': list_procurement_requests()})
+    data = request.get_json(silent=True) or {}
+    try:
+        row = create_procurement_request(
+            str(data.get('opportunity_id') or ''),
+            str(data.get('customer_reference') or ''),
+            int(data.get('quantity') or 1),
+        )
+        return jsonify(row), 201
+    except (TypeError, ValueError, RuntimeError) as exc:
+        return jsonify({'error': str(exc)}), 400
+
+
+@app.route('/api/procurement/<request_id>', methods=['POST'])
+def procurement_update_api(request_id):
+    from supplier_opportunities import update_procurement_request
+    data = request.get_json(silent=True) or {}
+    try:
+        row = update_procurement_request(
+            request_id,
+            action=str(data.get('action') or ''),
+            observed_unit_cost_cents=data.get('observed_unit_cost_cents'),
+            stock_available=data.get('stock_available'),
+            admin_id=request.headers.get('X-Admin-Id', 'panel'),
+        )
+        return jsonify(row)
+    except (TypeError, ValueError, RuntimeError) as exc:
+        return jsonify({'error': str(exc)}), 400
 
 
 @app.route('/go/<token>', methods=['GET'])
@@ -1887,84 +1936,21 @@ def clear_tickets():
 
 @app.route('/api/shopier/callback', methods=['POST'])
 def shopier_callback():
-    from datetime import datetime
-    import firestore_helper
     try:
         data = request.form.to_dict()
         if not data:
             data = request.json or {}
-        # Current Shopier webhooks send the official Order model as JSON.
-        # Keep the legacy OSB form parser below during the migration window.
-        if data.get("id"):
-            account = request.headers.get("Shopier-Account-Id") or "Shopier"
-            ingest_shopier_order(data, account, "webhook")
-            return "OK", 200
-        platform_order_id = data.get("platform_order_id")
-        email = data.get("email", "").strip().lower()
-        phone = data.get("phone", "").strip()
-        product_name = data.get("product_name", "")
-        total_amount = data.get("total_amount", "0")
-        
-        if not platform_order_id or not email:
+        order_id = (
+            data.get("orderNumber") or data.get("order_number") or data.get("id")
+            or data.get("platform_order_id") or data.get("platformOrderId")
+        )
+        if not order_id:
             return jsonify({"success": False, "message": "Missing required fields"}), 400
-
-        order_claim_id = "shopier_order_" + re.sub(r'[^a-zA-Z0-9_-]+', '_', str(platform_order_id))
-        if firestore_helper.claim_document(order_claim_id, {
-            "order_id": str(platform_order_id),
-            "received_at": datetime.now().isoformat(),
-        }) is False:
-            return "OK", 200
-
-        print(f"[Shopier] Received order callback: {platform_order_id}")
-            
-        phone_clean = phone.replace("+", "").replace(" ", "").strip()
-        
-        email_doc_id = "order_email_" + email.replace("@", "_").replace(".", "_")
-        email_doc = firestore_helper.get_document(email_doc_id) or {"orders": []}
-        
-        if not any(o.get("order_id") == platform_order_id for o in email_doc.get("orders", [])):
-            email_doc["orders"].append({
-                "order_id": platform_order_id,
-                "product_name": product_name,
-                "amount": total_amount,
-                "claimed": False,
-                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            })
-            firestore_helper.set_document(email_doc_id, email_doc)
-            try:
-                amount = float(str(total_amount).replace(',', '.'))
-            except (TypeError, ValueError):
-                amount = 0.0
-            lowered_product = str(product_name).casefold()
-            bundle = ""
-            if "öğrenci paketi" in lowered_product or "ogrenci paketi" in lowered_product:
-                bundle = "Öğrenci Paketi"
-            elif "eğlence paketi" in lowered_product or "eglence paketi" in lowered_product:
-                bundle = "Eğlence Paketi"
-            elif "ai/üretkenlik" in lowered_product or "ai/uretkenlik" in lowered_product:
-                bundle = "AI/Üretkenlik Paketi"
-            record_event(
-                "shopier_order",
-                data.get("shop_slug") or data.get("shop") or "Shopier",
-                amount=amount,
-                product=product_name,
-                bundle=bundle,
-                status="paid",
-            )
-            
-        if phone_clean:
-            phone_doc_id = "order_phone_" + phone_clean
-            phone_doc = firestore_helper.get_document(phone_doc_id) or {"orders": []}
-            if not any(o.get("order_id") == platform_order_id for o in phone_doc.get("orders", [])):
-                phone_doc["orders"].append({
-                    "order_id": platform_order_id,
-                    "product_name": product_name,
-                    "amount": total_amount,
-                    "claimed": False,
-                    "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                })
-                firestore_helper.set_document(phone_doc_id, phone_doc)
-                
+        account = (
+            data.get("shop_slug") or data.get("shop")
+            or request.headers.get("Shopier-Account-Id") or "shopier"
+        )
+        ingest_shopier_order(data, account, "webhook")
         return "OK", 200
     except Exception as e:
         print(f"⚠️ Shopier webhook processing error: {e}")
@@ -2194,6 +2180,17 @@ start_store_worker()
 
 # KeyVadi & LisansArena Mini Apps mounted under the web service
 mounts = {}
+
+class _MountedRootMiddleware:
+    """Normalize DispatcherMiddleware's empty mounted path to Flask's root."""
+    def __init__(self, wsgi_app):
+        self.wsgi_app = wsgi_app
+
+    def __call__(self, environ, start_response):
+        if not environ.get('PATH_INFO'):
+            environ = dict(environ)
+            environ['PATH_INFO'] = '/'
+        return self.wsgi_app(environ, start_response)
 try:
     from miniapp.server import app as keyvadi_miniapp
     mounts['/keyvadi'] = keyvadi_miniapp
@@ -2203,8 +2200,8 @@ except Exception as exc:
 
 try:
     from miniapp_lisansarena.server import app as lisansarena_miniapp
-    mounts['/la/app'] = lisansarena_miniapp
-    mounts['/lisansarena'] = lisansarena_miniapp
+    mounts['/la/app'] = _MountedRootMiddleware(lisansarena_miniapp)
+    mounts['/lisansarena'] = _MountedRootMiddleware(lisansarena_miniapp)
     print('[App] LisansArena Mini App mounted at /la/app')
     print('[App] LisansArena Mini App alias mounted at /lisansarena')
 except Exception as exc:

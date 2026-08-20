@@ -75,6 +75,22 @@ def cleanup_user_previous_topups(user_id: int):
 
 def create_dynamic_shopier_listing(amount: float, user_id: int, user_name: str = "", username: str = "", idempotency_key: str = "") -> dict:
     """Shopier REST API v1 ile KeyVadi için anlık ilan açar."""
+    if not KEYVADI_TOKEN:
+        return {"success": False, "error": "Shopier erişim anahtarı yapılandırılmamış"}
+    if idempotency_key:
+        existing = next((
+            (pid, info) for pid, info in load_active_topups().items()
+            if str(info.get("user_id")) == str(user_id)
+            and info.get("idempotency_key") == idempotency_key
+            and info.get("status") == "pending"
+        ), None)
+        if existing:
+            pid, info = existing
+            return {
+                "success": True, "duplicate": True, "product_id": pid,
+                "payment_url": info["payment_url"], "amount": info["amount"],
+                "is_live_shopier": True,
+            }
     # Önceki açık kalanları temizle
     cleanup_user_previous_topups(user_id)
 
@@ -91,7 +107,7 @@ def create_dynamic_shopier_listing(amount: float, user_id: int, user_name: str =
     payload = {
         "title": f"KeyVadi Cüzdan Bakiye Yükleme ({clean_amount:.2f} TL) - {display_name}",
         "type": "digital",
-        "description": f"KeyVadi Otomatik Bakiye Yükleme | Telegram ID: {user_id} | Ad: {display_name}",
+        "description": f"KeyVadi özel bakiye yükleme | Müşteri: {display_name}",
         "stockQuantity": 1,
         "shippingPayer": "sellerPays",
         "priceData": {
@@ -100,13 +116,7 @@ def create_dynamic_shopier_listing(amount: float, user_id: int, user_name: str =
             "discount": False,
             "shippingPrice": 0.0
         },
-        "media": [
-            {
-                "type": "image",
-                "url": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/master-ball.png",
-                "placement": 1
-            }
-        ]
+        "media": []
     }
 
     try:
@@ -214,7 +224,7 @@ def check_and_sync_shopier_orders(users_data_path: Path):
     now = time.time()
     expired_pids = []
     for pid, info in list(topups.items()):
-        if info.get("status") == "pending" and (now - info.get("created_at", now)) > 300:
+        if info.get("status") == "pending" and (now - info.get("created_at", now)) > 3600:
             expired_pids.append(pid)
     
     for pid in expired_pids:

@@ -20,7 +20,8 @@ except Exception:
     pass
 from gemini_helper import get_ai_response, get_ad_variation
 from sales_catalog import filter_keyvadi_products
-from sales_metrics import record_event
+from sales_metrics import record_dm_event, record_event
+from customer_intent import INTENT_SALES_LEAD
 from support_flow import save_ticket_record
 from group_policy import (
     account_is_held,
@@ -111,11 +112,17 @@ async def verify_ad_after_window(client, entity, message_id, client_name, group_
             "ad_visible_10m", client_name,
             group=normalize_group_key(group_name), source="telegram_visibility_check",
         )
+        template_name = template or "fallback"
+        hero_product = {
+            "sales_hero_duolingo.txt": "Duolingo Sınıf Daveti",
+            "sales_hero_capcut.txt": "CapCut Pro 30 Gün - Ortak Hesap",
+            "sales_hero_netflix_youtube.txt": "Netflix/YouTube Testi",
+        }.get(template_name, "")
         record_event(
             "ad_sent", client_name,
             group=normalize_group_key(group_name), source="telegram_group",
-            template=template or "fallback", arm=experiment_arm,
-            cta_mode=cta_mode,
+            template=template_name, arm=experiment_arm,
+            cta_mode=cta_mode, product=hero_product,
         )
         set_cooldown(group_name, client_name, entity)
         update_stats(sent=1)
@@ -1721,6 +1728,17 @@ LISANSARENA_MESSAGES = [
     os.path.join(MESSAGES_DIR, 'lisansarena_3.txt'),
 ]
 
+# Single-product conversion templates stay behind a release flag until each
+# supplier passes a real delivery/code QA.  This prevents an unverified
+# no-stock offer from being advertised while still making the experiment ready
+# for a controlled 14-day rollout.
+if os.environ.get('SALES_HERO_ADS_ENABLED', '0').strip().lower() in {'1', 'true', 'yes', 'on'}:
+    KEYVADI_MESSAGES.extend([
+        os.path.join(MESSAGES_DIR, 'sales_hero_duolingo.txt'),
+        os.path.join(MESSAGES_DIR, 'sales_hero_capcut.txt'),
+        os.path.join(MESSAGES_DIR, 'sales_hero_netflix_youtube.txt'),
+    ])
+
 # Mesaj geçmişi (aynı gruba aynı mesaj gitmesin)
 def load_msg_history():
     if os.path.exists(MSG_HISTORY_FILE):
@@ -3037,7 +3055,11 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
             return
 
         print(f"📥 [{client_name}] DM Alındı: GÖNDEREN={sender_id} (@{getattr(sender, 'username', '')}) MESAJ='{event.raw_text}'")
-        record_event("dm_received", client_name, source="telegram_private")
+        dm_intent = record_dm_event(
+            client_name, sender_id, event.raw_text or "",
+            message_id=getattr(event.message, "id", None),
+            has_sales_context=bool(sales_context),
+        )
 
         msg_text = (event.raw_text or "").strip().lower()
         if not msg_text:
@@ -3091,7 +3113,7 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         matched_products = []
         candidate_products = []
         reserved_product_keys = []
-        if products:
+        if products and dm_intent == INTENT_SALES_LEAD:
             candidate_products = match_sales_products(event.raw_text, products, limit=3)
             if candidate_products:
                 matched_products, reserved_product_keys = await reserve_product_dm_replies(
@@ -3137,14 +3159,14 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                 "aynı ürün daha önce gönderildi; otomatik yanıt atlandı."
             )
             return
-        elif sales_context:
+        elif sales_context or dm_intent != INTENT_SALES_LEAD:
             # Follow-up, delivery, payment and bargaining questions are handed
             # to the panel only. This branch used to create the repeated
             # 'Satış takip sorusu' loop.
             record_event(
                 "human_handoff", client_name, source="telegram_private",
                 product=(sales_context.get("products") or [{}])[0].get("title", ""),
-                reason="followup_after_product",
+                reason=("followup_after_product" if sales_context else dm_intent),
             )
             print(f"⏭️ [{client_name}] Ürün sonrası takip mesajı yalnızca panele aktarıldı.")
             return
@@ -3952,6 +3974,32 @@ async def main():
                 )
                 await asyncio.sleep(min(60, pause_seconds))
                 continue
+
+            # LisansArena traffic is fail-closed while its wallet/order store
+            # is unavailable.  The account remains connected and its durable
+            # checkpoint is preserved; the coordinator can serve the next
+            # healthy account instead of advertising a broken checkout.
+            if account_brand(client_name) == 'lisansarena' and os.environ.get(
+                'LISANSARENA_ADS_REQUIRE_STORE', '1'
+            ).strip().lower() not in {'0', 'false', 'no', 'off'}:
+                try:
+                    from lisansarena_store import store_health
+                    la_health = await asyncio.to_thread(store_health)
+                except Exception as exc:
+                    la_health = {'reachable': False, 'status': type(exc).__name__}
+                if la_health.get('reachable') is not True:
+                    reason = f"store_unavailable:{la_health.get('status', 'unknown')}"
+                    await asyncio.to_thread(
+                        blast_coordinator.pause_account, client_name, 300, reason
+                    )
+                    update_ad_account_status(
+                        client_name, phase='paused', hold_reason=reason,
+                        remaining_seconds=300, remaining_minutes=5,
+                        next_blast_at=utc_after_seconds_iso(300),
+                    )
+                    print(f"[{client_name}] ⏸️ Mağaza sağlıklı değil; reklam trafiği 5 dakika ertelendi.")
+                    await asyncio.sleep(30)
+                    continue
 
             # Three Telegram sessions stay connected, but exactly one account
             # owns the advertising turn. The durable coordinator also restores

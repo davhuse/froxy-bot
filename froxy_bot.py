@@ -15,7 +15,8 @@ import user_lang_helper
 import firestore_helper
 from gemini_helper import get_ai_response
 from sales_catalog import filter_keyvadi_products
-from sales_metrics import record_event
+from sales_metrics import record_dm_event, record_event
+from customer_intent import INTENT_SALES_LEAD
 from support_flow import claim_auto_reply_once, claim_first_greeting, claim_support_event, forward_customer_message, greeting_for, one_time_mode_enabled, release_product_claim, release_support_event, save_ticket_record
 from update_keyvadi_links_json import fetch_live_catalog, write_catalog_atomic
 from sales_conversion import (
@@ -823,78 +824,28 @@ TEXTS = {
         "support_inactive": "⚠️ Üzgünüz, şu anda destek sistemi aktif değil (Admin ID tanımlanmamış). Lütfen daha sonra deneyin.",
         "reply_prefix": "📨 **KeyVadi Destek Ekibinden Cevap:**\n\n",
         "choose_lang": "Lütfen dilinizi seçin / Please choose your language:"
-    },
-    "en": {
-        "welcome": (
-            "⚡ **Welcome to KeyVadi Sales Panel!**\n\n"
-            "Premium artificial intelligence accounts, licenses, verified mobile accounts, and special deals at the best prices!\n\n"
-            "Please select the action you want to perform 👇"
-        ),
-        "support_btn": "📞 Live Support & Contact",
-        "lang_btn": "🌐 Language / Dil",
-        "main_menu": "↩️ Main Menu",
-        "cat_title_mapping": {
-            "ai": "🌟 Yapay Zeka (AI) Çözümleri / AI Solutions",
-            "streaming": "📺 Dizi, Film & Müzik / Streaming",
-            "design": "🎨 Tasarım, Eğitim & Verimlilik / Productivity",
-            "social": "💬 Discord & Sosyal Platformlar / Social",
-            "coupons": "🎟️ Kupon, İndirim & Bakiye / Coupons",
-            "games": "🎮 Oyun & Game Pass / Games",
-            "accounts": "📱 Telegram, WhatsApp & Mobil Hesaplar / Accounts",
-            "license": "🔑 Windows, Office & Diğer Lisanslar / Licenses"
-        },
-        "select_product": "Select the product you want to view details and purchase:",
-        "price": "Price",
-        "product_footer": "✅ Instant delivery · 24/7 support · Secure payment\n\nClick the button below to purchase. Delivery is made instantly after payment.",
-        "buy_btn": "💳 Secure Purchase with Shopier",
-        "support_title": "📞 **Support Request & Ordering**",
-        "support_desc": "Please write the product you want to buy, order issue, or support request in detail and send it to this chat.\n\nYour message will be forwarded directly to our admin team. You will receive a response as soon as possible.",
-        "cancel": "↩️ Cancel & Go Back",
-        "support_success": "✅ Your message has been forwarded to our team. You will receive a response as soon as possible.",
-        "support_fail": "⚠️ Your message could not be delivered. Please try again later.",
-        "support_inactive": "⚠️ Sorry, the support system is currently offline (Admin ID not set). Please try again later.",
-        "reply_prefix": "📨 **Reply from KeyVadi Support Team:**\n\n",
-        "choose_lang": "Please choose your language / Lütfen dilinizi seçin:"
     }
 }
 
-# Language Selection Screen Helper
-async def show_lang_selection(event, is_callback=False):
-    text = "Lütfen dilinizi seçin / Please choose your language:"
-    buttons = [
-        [Button.inline("🇹🇷 Türkçe", b"lang_tr"), Button.inline("🇺🇸 English", b"lang_en")]
-    ]
-    if is_callback:
-        await safe_event_edit(event, text, buttons=buttons)
-    else:
-        await event.respond(text, buttons=buttons)
-
-# Main Menu Helper
+# Main Menu Helper — Streamlined Mini App First Experience
 async def show_main_menu(event, user_id, is_callback=False):
-    lang = user_lang_helper.get_user_lang(user_id) or "tr"
-    t = TEXTS[lang]
-    
-    presence = await async_get_document("habil_presence") or {}
-    is_online = presence.get("is_online", False)
-    status_emoji = "🟢 **Destek Çevrimiçi / Support Online**" if is_online else "🔴 **Destek Çevrimdışı / Support Offline**"
-    
     welcome = (
-        f"{status_emoji}\n"
-        f"━━━━━━━━━━━━━━━━━━━\n\n"
-        f"{t['welcome']}"
+        "⚡ **KEYVADI PRO — Dijital Lisans & E-Pin Mağazası**\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "🎉 **KeyVadi'ye Hoş Geldiniz!**\n\n"
+        "Netflix, ChatGPT Plus, Canva Pro, Gemini, Xbox Game Pass, FC26, Steam Key ve tüm lisanslar **%70 indirimli** ve **7/24 anında otomatik teslimatla** KeyVadi Mini App'te!\n\n"
+        "👇 **Alışverişe başlamak ve bakiyenizi yönetmek için tıklayın:**"
     )
-    
-    buttons = []
-    for cat_key, cat in CATEGORIES.items():
-        if cat["products"]:
-            title = t["cat_title_mapping"].get(cat_key, cat["title"])
-            buttons.append([Button.inline(title, f"cat_{cat_key}".encode())])
-    buttons.insert(0, [Button.url("🛍 Mağazayı Aç", KEYVADI_MINI_APP_URL)])
-    buttons.append([Button.inline("💳 Ödememi Doğrula / Verify Payment", b"menu_verify_payment")])
-    buttons.append([Button.inline("👥 Arkadaşını Davet Et / Invite Friends", b"menu_referral")])
-    buttons.append([Button.inline(t["support_btn"], b"menu_support")])
-    buttons.append([Button.inline(t["lang_btn"], b"menu_lang")])
-    
+    buttons = [
+        [Button.url("🚀 KeyVadi Mağazasını Aç (Mini App)", KEYVADI_MINI_APP_URL)],
+        [
+            Button.url("💳 Bakiye Yükle", f"{KEYVADI_MINI_APP_URL}#walletTab"),
+            Button.url("🎁 %10 Nakit Kazan", f"{KEYVADI_MINI_APP_URL}#referralTab")
+        ],
+        [
+            Button.url("💬 Canlı Destek (@KeyVadiDestek)", "https://t.me/KeyVadiDestek")
+        ]
+    ]
     if is_callback:
         await safe_event_edit(event, welcome, buttons=buttons)
     else:
@@ -1217,7 +1168,10 @@ async def message_handler(event):
         return
     user_id = event.sender_id
     logger.info(f"New message from user {user_id}: '{event.text}'")
-    record_event("dm_received", "KeyVadi", source="telegram_private")
+    dm_intent = record_dm_event(
+        "KeyVadi", user_id, event.text or "",
+        message_id=getattr(event.message, "id", None),
+    )
     
     ban_data = await async_get_document(f"keyvadi_ban_{user_id}")
     if ban_data and ban_data.get("banned", False):
@@ -1351,7 +1305,7 @@ async def message_handler(event):
     support_chat_id = config.get("support_chat_id", admin_chat_id)
     is_admin_context = event.sender_id == admin_chat_id or event.chat_id == support_chat_id
     matched_products = []
-    if not is_admin_context and event.text:
+    if not is_admin_context and event.text and dm_intent == INTENT_SALES_LEAD:
         matched_products = match_sales_products(event.text, load_sales_catalog("keyvadi"), limit=3)
 
     if one_time_mode_enabled() and not is_admin_context:
@@ -1420,6 +1374,12 @@ async def message_handler(event):
     # ── Smart Product Matching for free-text messages ──
     # If user is NOT in any special state and NOT admin, try to match a product
     if event.text and not event.text.startswith('/'):
+        if not is_admin_context and dm_intent != INTENT_SALES_LEAD:
+            record_event(
+                "human_handoff", "KeyVadi", source="telegram_private",
+                reason=dm_intent,
+            )
+            return
         full_catalog = load_sales_catalog("keyvadi")
         matched_products = matched_products or match_sales_products(event.text, full_catalog, limit=3)
         # A product name by itself (for example "Gemini" or "Perplexity") is

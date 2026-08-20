@@ -8,21 +8,25 @@ Connects with LisansArena Shopier REST API.
 import os
 import sys
 import json
+import hashlib
+import hmac
 import time
 import tempfile
 import threading
 from pathlib import Path
+from urllib.parse import parse_qsl
 from flask import Blueprint, jsonify, request, send_from_directory
 
 try:
-    from .shopier_dynamic import create_dynamic_shopier_listing, check_and_sync_shopier_orders, cancel_and_delete_topup, start_background_shopier_cleaner
+    from .shopier_dynamic import create_dynamic_shopier_listing, check_and_sync_shopier_orders, cancel_and_delete_topup, load_active_topups, start_background_shopier_cleaner
 except ImportError:
-    from shopier_dynamic import create_dynamic_shopier_listing, check_and_sync_shopier_orders, cancel_and_delete_topup, start_background_shopier_cleaner
+    from shopier_dynamic import create_dynamic_shopier_listing, check_and_sync_shopier_orders, cancel_and_delete_topup, load_active_topups, start_background_shopier_cleaner
 
 BASE_DIR = Path(__file__).resolve().parent
 PRODUCTS_DB_PATH = BASE_DIR / "products_db.json"
 USER_DATA_PATH = BASE_DIR / "users_data.json"
 DATA_LOCK = threading.RLock()
+MAX_INIT_DATA_AGE = int(os.environ.get("LISANSARENA_INIT_DATA_MAX_AGE", "86400"))
 
 la_bp = Blueprint("lisansarena_miniapp", __name__, static_folder=str(BASE_DIR), static_url_path="")
 
@@ -55,6 +59,51 @@ def save_users(data):
         finally:
             if os.path.exists(tmp_name):
                 os.unlink(tmp_name)
+
+
+def _telegram_bot_token():
+    return os.environ.get("LISANSARENA_BOT_TOKEN", "").strip()
+
+
+def verify_telegram_init_data(raw_init_data):
+    if not raw_init_data or not _telegram_bot_token():
+        return None
+    try:
+        pairs = dict(parse_qsl(raw_init_data, keep_blank_values=True))
+        supplied_hash = pairs.pop("hash", "")
+        auth_date = int(pairs.get("auth_date", "0"))
+        if not supplied_hash or not auth_date or abs(time.time() - auth_date) > MAX_INIT_DATA_AGE:
+            return None
+        check = "\n".join(f"{key}={pairs[key]}" for key in sorted(pairs))
+        secret = hmac.new(b"WebAppData", _telegram_bot_token().encode(), hashlib.sha256).digest()
+        expected = hmac.new(secret, check.encode(), hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(expected, supplied_hash):
+            return None
+        user = json.loads(pairs.get("user", "{}"))
+        return user if isinstance(user, dict) and user.get("id") else None
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return None
+
+
+def authenticated_user():
+    raw = request.headers.get("X-Telegram-Init-Data", "")
+    data = request.get_json(silent=True) or {} if request.is_json else {}
+    if not raw:
+        raw = data.get("init_data", "")
+    user = verify_telegram_init_data(raw)
+    if user:
+        return user
+    if os.environ.get("LISANSARENA_ALLOW_DEV_AUTH", "0") == "1" and data.get("user_id"):
+        return {
+            "id": int(data["user_id"]), "username": data.get("username", ""),
+            "first_name": data.get("first_name", "Müşteri"),
+            "last_name": data.get("last_name", ""),
+        }
+    return None
+
+
+def auth_error():
+    return jsonify({"success": False, "error": "Telegram doğrulaması gerekli"}), 401
 
 def get_or_create_user(user_id, username="", first_name="", last_name=""):
     users = load_users()
@@ -131,14 +180,14 @@ def get_or_update_user_profile(user_id):
     except Exception:
         pass
 
-    if request.method == "POST":
-        data = request.get_json(silent=True) or {}
-        username = data.get("username", "")
-        first_name = data.get("first_name", "")
-        last_name = data.get("last_name", "")
-        user = get_or_create_user(user_id, username=username, first_name=first_name, last_name=last_name)
-    else:
-        user = get_or_create_user(user_id)
+    telegram_user = authenticated_user()
+    if not telegram_user or int(telegram_user.get("id", 0)) != int(user_id):
+        return auth_error()
+    user = get_or_create_user(
+        user_id, username=telegram_user.get("username", ""),
+        first_name=telegram_user.get("first_name", ""),
+        last_name=telegram_user.get("last_name", ""),
+    )
 
     return jsonify({
         "success": True,
@@ -148,15 +197,21 @@ def get_or_update_user_profile(user_id):
 @la_bp.route("/api/user/profile", methods=["GET", "POST"])
 def user_profile_endpoint():
     data = request.get_json(silent=True) or {}
-    user_id = int(data.get("user_id", 8797763469))
+    telegram_user = authenticated_user()
+    if not telegram_user:
+        return auth_error()
+    user_id = int(telegram_user["id"])
     return get_or_update_user_profile(user_id)
 
 @la_bp.route("/api/balance/create-dynamic-topup", methods=["POST"])
 def create_dynamic_topup():
     data = request.get_json(silent=True) or {}
-    user_id = int(data.get("user_id", 8797763469))
-    user_name = data.get("user_name", "LisansArena Müşteri")
-    username = data.get("username", "")
+    telegram_user = authenticated_user()
+    if not telegram_user:
+        return auth_error()
+    user_id = int(telegram_user["id"])
+    user_name = telegram_user.get("first_name", "LisansArena Müşteri")
+    username = telegram_user.get("username", "")
     
     try:
         amount = float(data.get("amount", 50.0))
@@ -179,15 +234,25 @@ def create_dynamic_topup():
 def cancel_topup():
     """Kullanıcı ödeme yapmaktan vazgeçtiğinde veya sayfadan çıktığında ilanı anında siler."""
     data = request.get_json(silent=True) or {}
+    telegram_user = authenticated_user()
+    if not telegram_user:
+        return auth_error()
     product_id = str(data.get("product_id", "")).strip()
     if product_id:
+        owner = (load_active_topups().get(product_id) or {}).get("user_id")
+        if str(owner) != str(telegram_user["id"]):
+            return jsonify({"success": False, "error": "Bu ilan size ait değil"}), 403
         cancel_and_delete_topup(product_id)
         return jsonify({"success": True, "message": "İlan başarıyla silindi"})
     return jsonify({"success": False, "error": "Geçersiz product_id"}), 400
 
 @la_bp.route("/api/balance/sync-orders", methods=["GET"])
 def sync_orders():
+    telegram_user = authenticated_user()
+    if not telegram_user:
+        return auth_error()
     credited = check_and_sync_shopier_orders(USER_DATA_PATH)
+    credited = [row for row in credited if str(row.get("user_id")) == str(telegram_user["id"])]
     return jsonify({
         "success": True,
         "credited_orders": credited,
@@ -200,7 +265,10 @@ start_background_shopier_cleaner(USER_DATA_PATH)
 @la_bp.route("/api/user/purchase", methods=["POST"])
 def purchase_product():
     data = request.get_json(silent=True) or {}
-    user_id = data.get("user_id")
+    telegram_user = authenticated_user()
+    if not telegram_user:
+        return auth_error()
+    user_id = telegram_user["id"]
     product_id = str(data.get("product_id"))
 
     if not user_id or not product_id:
@@ -240,7 +308,10 @@ def purchase_product():
 @la_bp.route("/api/user/purchase-cart", methods=["POST"])
 def purchase_cart():
     data = request.get_json(silent=True) or {}
-    user_id = data.get("user_id")
+    telegram_user = authenticated_user()
+    if not telegram_user:
+        return auth_error()
+    user_id = telegram_user["id"]
     items = data.get("items", [])
 
     if not user_id or not items:
@@ -294,6 +365,9 @@ def purchase_cart():
 
 @la_bp.route("/api/referrals/<int:user_id>", methods=["GET"])
 def get_referral_info(user_id):
+    telegram_user = authenticated_user()
+    if not telegram_user or int(telegram_user.get("id", 0)) != int(user_id):
+        return auth_error()
     user = get_or_create_user(user_id)
     return jsonify({
         "success": True,

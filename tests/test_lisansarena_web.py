@@ -60,6 +60,16 @@ class LisansArenaWebTests(unittest.TestCase):
             store_module.normalize_database_url(secret)
         self.assertNotIn(secret, str(raised.exception))
 
+    def test_old_render_internal_database_host_uses_regional_external_dns(self):
+        with patch.dict(os.environ, {"RENDER": "true", "RENDER_REGION": "oregon"}):
+            normalized = store_module.normalize_database_url(
+                "postgresql://user:pass@dpg-example123-a/store"
+            )
+        self.assertEqual(
+            normalized,
+            "postgresql+psycopg://user:pass@dpg-example123-a.oregon-postgres.render.com/store",
+        )
+
     def test_telegram_auth_establishes_customer_session(self):
         token = "123:test-token"
         user = json.dumps({"id": 42, "first_name": "Test", "username": "testuser"}, separators=(",", ":"))
@@ -91,18 +101,18 @@ class LisansArenaWebTests(unittest.TestCase):
 
     def test_mini_app_contains_selection_cart_and_ten_minute_payment_copy(self):
         html_response = self.client.get("/la/app")
-        script_response = self.client.get("/static/lisansarena_app.js")
+        script_response = self.client.get("/la/app/app.js")
         html = html_response.get_data(as_text=True)
         script = script_response.get_data(as_text=True)
         html_response.close()
         script_response.close()
-        self.assertIn("cartBar", html)
-        self.assertIn("topupContinue", html)
-        self.assertIn("customTopupAmount", html)
+        self.assertIn("cartItemsContainer", html)
+        self.assertIn("btnProceedTopup", html)
+        self.assertIn("customAmountInput", html)
         self.assertIn("en geç 10 dakika", html)
-        self.assertIn("selectionChanged", script)
-        self.assertIn('createTopup("custom"', script)
-        self.assertIn("/api/la/cart/checkout", script)
+        self.assertIn("setTopupAmount", script)
+        self.assertIn("startDynamicTopup", script)
+        self.assertIn("/api/user/purchase-cart", script)
 
     def test_webhook_rejects_invalid_signature(self):
         with patch.dict(os.environ, {"LISANSARENA_SHOPIER_WEBHOOK_SECRET": "secret"}):

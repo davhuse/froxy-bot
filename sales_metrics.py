@@ -8,6 +8,8 @@ observable without storing message contents or customer PII.
 from __future__ import annotations
 
 import json
+import hashlib
+import hmac
 import os
 import threading
 import queue
@@ -16,12 +18,38 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any
 
+from customer_intent import classify_customer_message
+
 _WRITE_LOCK = threading.Lock()
 _DEFAULT_FILE = "sales_metrics.jsonl"
 _DURABLE_DOC_ID = "sales_metrics_journal_v1"
 _DURABLE_QUEUE: "queue.Queue[dict[str, Any]]" = queue.Queue(maxsize=500)
 _DURABLE_STARTED = False
 _DURABLE_START_LOCK = threading.Lock()
+
+
+_ACCOUNT_ALIASES = {
+    "keyvadi": "keyvadi", "keyvadi online": "keyvadi", "keyvadionline": "keyvadi",
+    "keyvadi satis": "keyvadi", "keyvadi bot": "keyvadi",
+    "froxy": "froxy", "froxy ai": "froxy", "froxyonline": "froxy",
+    "froxy online": "froxy", "froxy destek": "froxy",
+    "lisansarena": "lisansarena", "lisans arena": "lisansarena",
+    "lisansarenaonline": "lisansarena", "lisans arena online": "lisansarena",
+}
+
+
+def canonical_account(account: str) -> str:
+    raw = str(account or "unknown").strip()
+    key = " ".join(raw.casefold().replace("_", " ").replace("-", " ").split())
+    return _ACCOUNT_ALIASES.get(key, key.replace(" ", "") or "unknown")
+
+
+def _private_key(*parts: Any) -> str:
+    secret = os.environ.get("METRICS_HASH_SECRET", "").strip()
+    if not secret:
+        secret = os.environ.get("SECRET_KEY", "sales-metrics-local-fallback")
+    raw = "|".join(str(part) for part in parts).encode("utf-8")
+    return hmac.new(secret.encode("utf-8"), raw, hashlib.sha256).hexdigest()[:32]
 
 
 def _path() -> Path:
@@ -39,7 +67,7 @@ def record_event(kind: str, account: str, **fields: Any) -> None:
         "event_id": uuid.uuid4().hex,
         "ts": datetime.now(timezone.utc).isoformat(),
         "kind": str(kind),
-        "account": str(account),
+        "account": canonical_account(account),
     }
     for key, value in fields.items():
         if value is None or isinstance(value, (dict, list, tuple, set)):
@@ -59,6 +87,26 @@ def record_event(kind: str, account: str, **fields: Any) -> None:
     except Exception:
         # Metrics must never stop a Telegram handler or a webhook.
         return
+
+
+def record_dm_event(account: str, user_id: Any, message: str, *,
+                    message_id: Any = None, source: str = "telegram_private",
+                    product_matched: bool = False,
+                    has_sales_context: bool = False) -> str:
+    """Record one DM without storing customer identity or message contents."""
+    brand = canonical_account(account)
+    intent = classify_customer_message(
+        message, product_matched=product_matched, has_sales_context=has_sales_context
+    )
+    fields: dict[str, Any] = {
+        "source": source,
+        "dm_class": intent,
+        "conversation_key": _private_key("conversation", brand, user_id),
+    }
+    if message_id is not None:
+        fields["message_key"] = _private_key("message", brand, user_id, message_id)
+    record_event("dm_received", brand, **fields)
+    return intent
 
 
 def _queue_durable_event(event: dict[str, Any]) -> None:
@@ -91,8 +139,13 @@ def _append_durable(event: dict[str, Any]) -> None:
         import firestore_helper
     except Exception:
         return
+    try:
+        event_day = datetime.fromisoformat(str(event.get("ts", "")).replace("Z", "+00:00")).strftime("%Y%m%d")
+    except (TypeError, ValueError):
+        event_day = datetime.now(timezone.utc).strftime("%Y%m%d")
+    document_id = f"sales_metrics_{event_day}"
     for _ in range(2):
-        fields, update_time = firestore_helper.get_document_with_meta(_DURABLE_DOC_ID, quiet=True)
+        fields, update_time = firestore_helper.get_document_with_meta(document_id, quiet=True)
         existing: list[dict[str, Any]] = []
         if fields and fields.get("events_json"):
             try:
@@ -106,13 +159,14 @@ def _append_durable(event: dict[str, Any]) -> None:
         cutoff = datetime.now(timezone.utc) - timedelta(days=30)
         existing = [item for item in existing if _event_is_newer_than(item, cutoff)]
         existing.append(event)
-        # Keep document far below Firestore's size limit.
-        existing = existing[-1000:]
+        # Daily shards keep a full high-volume day while remaining below
+        # Firestore's 1 MiB document limit for these small scalar events.
+        existing = existing[-2500:]
         payload = {"events_json": json.dumps(existing, ensure_ascii=False, separators=(",", ":"))}
         if fields is None:
-            if firestore_helper.claim_document(_DURABLE_DOC_ID, payload, quiet=True) is True:
+            if firestore_helper.claim_document(document_id, payload, quiet=True) is True:
                 return
-        elif firestore_helper.compare_and_set_document(_DURABLE_DOC_ID, payload, update_time, quiet=True) is True:
+        elif firestore_helper.compare_and_set_document(document_id, payload, update_time, quiet=True) is True:
             return
 
 
@@ -147,10 +201,24 @@ def read_events(days: int = 7) -> list[dict[str, Any]]:
 def _read_durable_events(days: int) -> list[dict[str, Any]]:
     try:
         import firestore_helper
-        fields = firestore_helper.get_document(_DURABLE_DOC_ID) or {}
-        raw = json.loads(str(fields.get("events_json", "[]")))
         cutoff = datetime.now(timezone.utc) - timedelta(days=max(1, int(days)))
-        return [item for item in raw if isinstance(item, dict) and _event_is_newer_than(item, cutoff)]
+        rows: list[dict[str, Any]] = []
+        # Read legacy rolling data once, then one bounded document per UTC day.
+        document_ids = [_DURABLE_DOC_ID]
+        for offset in range(max(1, int(days)) + 1):
+            day = (datetime.now(timezone.utc) - timedelta(days=offset)).strftime("%Y%m%d")
+            document_ids.append(f"sales_metrics_{day}")
+        for document_id in document_ids:
+            fields = firestore_helper.get_document(document_id) or {}
+            try:
+                raw = json.loads(str(fields.get("events_json", "[]")))
+            except (TypeError, ValueError, json.JSONDecodeError):
+                continue
+            rows.extend(
+                item for item in raw
+                if isinstance(item, dict) and _event_is_newer_than(item, cutoff)
+            )
+        return rows
     except Exception:
         return []
 
@@ -163,16 +231,37 @@ def summarize(days: int = 7) -> dict[str, Any]:
     by_kind: dict[str, int] = {}
     by_account: dict[str, dict[str, int | float]] = {}
     revenue = 0.0
+    procurement_cost = 0.0
+    refunds = 0.0
     bundles: dict[str, dict[str, int | float]] = {}
     by_product: dict[str, dict[str, int | float]] = {}
     by_arm: dict[str, dict[str, int | float]] = {}
+    unique_conversations: set[str] = set()
+    qualified_conversations: set[str] = set()
+    account_conversations: dict[str, set[str]] = {}
+    account_qualified: dict[str, set[str]] = {}
+    dm_classes: dict[str, int] = {}
     for event in events:
         kind = str(event.get("kind", "unknown"))
         by_kind[kind] = by_kind.get(kind, 0) + 1
-        account = str(event.get("account", "unknown"))
+        account = canonical_account(str(event.get("account", "unknown")))
         bucket = by_account.setdefault(account, {"events": 0, "orders": 0, "revenue": 0.0})
         bucket["events"] = int(bucket["events"]) + 1
         bucket[kind] = int(bucket.get(kind, 0)) + 1
+        if kind == "dm_received":
+            conversation_key = str(event.get("conversation_key") or "").strip()
+            if not conversation_key:
+                # Historical events lacked a safe conversation identifier;
+                # count them as separate unknown conversations rather than
+                # silently pretending they belong to one customer.
+                conversation_key = f"legacy:{event.get('event_id', id(event))}"
+            unique_conversations.add(conversation_key)
+            account_conversations.setdefault(account, set()).add(conversation_key)
+            dm_class = str(event.get("dm_class") or "unknown")
+            dm_classes[dm_class] = dm_classes.get(dm_class, 0) + 1
+            if dm_class == "sales_lead":
+                qualified_conversations.add(conversation_key)
+                account_qualified.setdefault(account, set()).add(conversation_key)
         if kind == "shopier_order":
             bucket["orders"] = int(bucket["orders"]) + 1
             try:
@@ -186,10 +275,29 @@ def summarize(days: int = 7) -> dict[str, Any]:
                 item = bundles.setdefault(bundle, {"orders": 0, "revenue": 0.0})
                 item["orders"] = int(item["orders"]) + 1
                 item["revenue"] = round(float(item["revenue"]) + amount, 2)
+        elif kind in {"procurement_fulfilled", "shopier_refund", "refund"}:
+            try:
+                amount = float(event.get("amount", 0) or 0)
+            except (TypeError, ValueError):
+                amount = 0.0
+            if kind == "procurement_fulfilled":
+                procurement_cost += amount
+            else:
+                refunds += amount
         product = str(event.get("product") or "").strip()
         if product:
             product_bucket = by_product.setdefault(product, {})
             product_bucket[kind] = product_bucket.get(kind, 0) + 1
+            try:
+                event_amount = float(event.get("amount", 0) or 0)
+            except (TypeError, ValueError):
+                event_amount = 0.0
+            if kind == "shopier_order":
+                product_bucket["revenue"] = round(float(product_bucket.get("revenue", 0)) + event_amount, 2)
+            elif kind == "procurement_fulfilled":
+                product_bucket["cost"] = round(float(product_bucket.get("cost", 0)) + event_amount, 2)
+            elif kind in {"shopier_refund", "refund"}:
+                product_bucket["refunds"] = round(float(product_bucket.get("refunds", 0)) + event_amount, 2)
         arm = str(event.get("arm") or "").strip()
         if arm:
             arm_bucket = by_arm.setdefault(arm, {})
@@ -202,13 +310,18 @@ def summarize(days: int = 7) -> dict[str, Any]:
     clicks = by_kind.get("purchase_click", 0)
     handoffs = by_kind.get("human_handoff", 0)
     opens = by_kind.get("ad_cta_open", 0)
+    for account, bucket in by_account.items():
+        bucket["unique_conversations"] = len(account_conversations.get(account, set()))
+        bucket["qualified_leads"] = len(account_qualified.get(account, set()))
+
     def add_rates(bucket):
         bucket["ad_to_open_pct"] = round(
             (bucket.get("ad_cta_open", 0) / bucket.get("ad_sent", 0)) * 100, 2
         ) if bucket.get("ad_sent", 0) else 0.0
+        lead_denominator = bucket.get("qualified_leads", bucket.get("dm_received", 0))
         bucket["dm_to_match_pct"] = round(
-            (bucket.get("product_matched", 0) / bucket.get("dm_received", 0)) * 100, 2
-        ) if bucket.get("dm_received", 0) else 0.0
+            (bucket.get("product_matched", 0) / lead_denominator) * 100, 2
+        ) if lead_denominator else 0.0
         bucket["match_to_click_pct"] = round(
             (bucket.get("purchase_click", 0) / bucket.get("product_matched", 0)) * 100, 2
         ) if bucket.get("product_matched", 0) else 0.0
@@ -221,22 +334,39 @@ def summarize(days: int = 7) -> dict[str, Any]:
     for dimension in (by_account, by_product, by_arm):
         for dimension_bucket in dimension.values():
             add_rates(dimension_bucket)
+            dimension_bucket["net_profit"] = round(
+                float(dimension_bucket.get("revenue", 0))
+                - float(dimension_bucket.get("cost", 0))
+                - float(dimension_bucket.get("refunds", 0)), 2
+            )
+            dimension_bucket["net_profit_per_1000_visible_ads"] = round(
+                dimension_bucket["net_profit"] * 1000 / int(dimension_bucket.get("ad_sent", 0)), 2
+            ) if dimension_bucket.get("ad_sent", 0) else 0.0
     return {
         "days": int(days),
         "event_count": len(events),
         "by_kind": by_kind,
         "by_account": by_account,
         "revenue": round(revenue, 2),
+        "procurement_cost": round(procurement_cost, 2),
+        "refunds": round(refunds, 2),
+        "net_profit": round(revenue - procurement_cost - refunds, 2),
         "by_bundle": bundles,
         "by_product": by_product,
         "by_arm": by_arm,
+        "dm_classes": dm_classes,
         "funnel": {
             "ad_sent": ads, "ad_cta_open": opens, "dm_received": dms,
+            "raw_dm_received": dms,
+            "unique_conversations": len(unique_conversations),
+            "qualified_leads": len(qualified_conversations),
             "product_matched": matched, "purchase_cta_sent": ctas,
             "purchase_click": clicks, "human_handoff": handoffs, "orders": orders,
             "ad_to_dm_pct": round((dms / ads) * 100, 2) if ads else 0.0,
             "ad_to_open_pct": round((opens / ads) * 100, 2) if ads else 0.0,
-            "dm_to_match_pct": round((matched / dms) * 100, 2) if dms else 0.0,
+            "dm_to_match_pct": round(
+                (matched / len(qualified_conversations)) * 100, 2
+            ) if qualified_conversations else 0.0,
             "match_to_click_pct": round((clicks / matched) * 100, 2) if matched else 0.0,
             "click_to_order_pct": round((orders / clicks) * 100, 2) if clicks else 0.0,
             "dm_to_order_pct": round((orders / dms) * 100, 2) if dms else 0.0,

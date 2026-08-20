@@ -21,7 +21,8 @@ from telethon.sessions import StringSession
 from telethon.tl.types import KeyboardButtonRow, KeyboardButtonWebView, ReplyInlineMarkup
 
 from lisansarena_store import StoreUnavailable, get_store
-from sales_metrics import record_event
+from sales_metrics import record_dm_event, record_event
+from customer_intent import INTENT_SALES_LEAD
 import firestore_helper
 from sales_conversion import load_sales_catalog, match_sales_products, purchase_url
 from support_flow import claim_first_greeting, claim_support_event, forward_customer_message, release_product_claim, release_support_event
@@ -534,12 +535,15 @@ async def private_message_handler(event):
         "LisansArena", event.sender_id, incoming_event_id, "incoming"
     ):
         return
-    record_event("dm_received", "LisansArena", source="telegram_private")
+    dm_intent = record_dm_event(
+        "LisansArena", event.sender_id, event.raw_text or "",
+        message_id=incoming_event_id,
+    )
 
     # Product questions are handled before ticket forwarding, matching the
     # ad-account and Froxy support flows. A product claim is per user/product,
     # so asking about Windows does not suppress a later Office request.
-    if event.raw_text:
+    if event.raw_text and dm_intent == INTENT_SALES_LEAD:
         matched_products = match_sales_products(
             event.raw_text, load_sales_catalog("lisansarena"), limit=3
         )
@@ -559,7 +563,10 @@ async def private_message_handler(event):
         bot, event, SUPPORT_CHAT_ID, "LisansArena"
     )
     if forwarded:
-        record_event("human_handoff", "LisansArena", source="telegram_private")
+        record_event(
+            "human_handoff", "LisansArena", source="telegram_private",
+            reason=dm_intent,
+        )
     if await claim_first_greeting("lisansarena", event.sender_id):
         await event.respond(
             "Mesajın destek ekibine iletildi. Ürün, stok, bakiye ve sipariş işlemleri için mağazayı açabilirsin.",
