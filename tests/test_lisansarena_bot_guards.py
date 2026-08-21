@@ -52,6 +52,14 @@ class LisansArenaBotGuardTests(unittest.TestCase):
     def test_generic_private_handler_does_not_answer_commands(self):
         self.assertIn('or (event.raw_text or "").startswith("/")', SOURCE)
 
+    def test_mini_app_first_integration(self):
+        self.assertIn('buttons = mini_app_markup("Mağazayı Aç (Mini App)")', SOURCE)
+        self.assertIn('miniapp_lisansarena', SOURCE)
+        self.assertIn('get_or_create_la_user', SOURCE)
+        self.assertIn('load_la_users', SOURCE)
+        self.assertIn('save_la_users', SOURCE)
+
 
 if __name__ == "__main__":
     unittest.main()
+
