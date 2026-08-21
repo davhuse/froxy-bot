@@ -688,7 +688,23 @@ window.buyViaShopier = async function(productId) {
     });
     const data = await res.json();
     if (data.success && data.payment_url) {
+      window.currentActiveTopupPid = data.product_id;
       startKvRealtimePaymentWatcher();
+
+      const topupRedirectModal = document.getElementById('topupRedirectModal');
+      const topupRedirectBtn = document.getElementById('topupRedirectBtn');
+      const badgeEl = document.getElementById('redirectModalBadge');
+      const titleEl = document.getElementById('redirectModalTitle');
+      const descEl = document.getElementById('redirectModalDesc');
+
+      if (badgeEl) badgeEl.textContent = '⚡ KARTLA DİREKT SATIN ALMA';
+      if (titleEl) titleEl.textContent = `${product.title} Ödemesi Bekleniyor...`;
+      if (descEl) descEl.innerHTML = `<strong>${product.title}</strong> için güvenli 3D ödeme sayfası açıldı. Ödeme tamamlandığında lisans kodunuz anında bu ekrana ve <strong>Siparişlerim</strong> sekmesine aktarılacaktır.`;
+      if (topupRedirectBtn) topupRedirectBtn.href = data.payment_url;
+
+      closeProductModal();
+      if (topupRedirectModal) topupRedirectModal.classList.add('active');
+
       showToast('Shopier ödeme sayfası açılıyor...', '💳');
       if (tg?.openLink) {
         tg.openLink(data.payment_url);
@@ -710,6 +726,16 @@ window.buyViaShopier = async function(productId) {
       btn.disabled = false;
     }
   }
+};
+
+window.closeTopupRedirectModal = function() {
+  const topupRedirectModal = document.getElementById('topupRedirectModal');
+  if (topupRedirectModal) topupRedirectModal.classList.remove('active');
+};
+
+window.manualCheckPayment = async function() {
+  showToast('🔄 Ödeme durumu kontrol ediliyor...', '⚡');
+  await registerAndSyncUserProfile();
 };
 
 window.buyWithWallet = async function() {
@@ -879,16 +905,27 @@ window.proceedShopierTopup = async function() {
       localStorage.removeItem(topupKeyName);
       window.currentActiveTopupPid = data.product_id;
       startKvRealtimePaymentWatcher();
+
+      const topupRedirectModal = document.getElementById('topupRedirectModal');
+      const topupRedirectBtn = document.getElementById('topupRedirectBtn');
+      const badgeEl = document.getElementById('redirectModalBadge');
+      const titleEl = document.getElementById('redirectModalTitle');
+      const descEl = document.getElementById('redirectModalDesc');
+
+      if (badgeEl) badgeEl.textContent = '💰 CÜZDAN BAKİYESİ YÜKLEME';
+      if (titleEl) titleEl.textContent = `₺${amount}.00 Bakiye Yükleme Bekleniyor...`;
+      if (descEl) descEl.innerHTML = `<strong>₺${amount}.00</strong> cüzdan bakiye yüklemesi için güvenli 3D ödeme sayfası açıldı. Ödeme onaylandığında bakiyeniz anında cüzdanınıza yansıyacaktır.`;
+      if (topupRedirectBtn) topupRedirectBtn.href = data.payment_url;
+
+      if (topupRedirectModal) topupRedirectModal.classList.add('active');
       showToast(`Ödeme sayfası açılıyor! (${amount} TL)`, '💳');
       
       if (tg?.openLink) {
         tg.openLink(data.payment_url);
       }
       try {
-        window.location.href = data.payment_url;
-      } catch (e) {
         window.open(data.payment_url, '_blank');
-      }
+      } catch (e) {}
     } else {
       showToast('Shopier bağlantısı oluşturulamadı. Tekrar deneyin.', '⚠️');
     }

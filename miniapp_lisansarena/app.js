@@ -771,6 +771,13 @@
         window.currentActiveTopupPid = data.product_id;
         window.startRealtimePaymentWatcher();
 
+        const badgeEl = document.getElementById('redirectModalBadge');
+        const titleEl = document.getElementById('redirectModalTitle');
+        const descEl = document.getElementById('redirectModalDesc');
+        if (badgeEl) badgeEl.textContent = '⚡ KARTLA DİREKT SATIN ALMA';
+        if (titleEl) titleEl.textContent = `${selectedModalProduct.title} Ödemesi Bekleniyor...`;
+        if (descEl) descEl.innerHTML = `<strong>${selectedModalProduct.title}</strong> için güvenli 3D ödeme sayfası açıldı. Ödeme tamamlandığında lisans kodunuz anında bu ekrana ve <strong>Siparişlerim</strong> sekmesine aktarılacaktır.`;
+
         if (tg?.openLink) {
           tg.openLink(data.payment_url);
         }
@@ -854,6 +861,13 @@
         window.currentActiveTopupPid = data.product_id;
         window.startRealtimePaymentWatcher();
 
+        const badgeEl = document.getElementById('redirectModalBadge');
+        const titleEl = document.getElementById('redirectModalTitle');
+        const descEl = document.getElementById('redirectModalDesc');
+        if (badgeEl) badgeEl.textContent = '💰 CÜZDAN BAKİYESİ YÜKLEME';
+        if (titleEl) titleEl.textContent = `₺${amt}.00 Bakiye Yükleme Bekleniyor...`;
+        if (descEl) descEl.innerHTML = `<strong>₺${amt}.00</strong> cüzdan bakiye yüklemesi için güvenli 3D ödeme sayfası açıldı. Ödeme tamamlandığında bakiyeniz anında cüzdanınıza yansıyacaktır.`;
+
         if (tg?.openLink) {
           tg.openLink(data.payment_url);
         }
@@ -883,6 +897,12 @@
         `;
       }
     }
+  };
+
+  window.manualCheckPayment = async function () {
+    window.showToast("🔄 Ödeme durumu kontrol ediliyor...");
+    await window.syncOrdersSilently(true);
+    await window.syncProfileSilently();
   };
 
   window.closeTopupRedirectModal = function () {

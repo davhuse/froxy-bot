@@ -458,18 +458,56 @@
       </div>
     </div>
 
-    <!-- DYNAMIC TOPUP REDIRECT MODAL -->
+    <!-- DYNAMIC PAYMENT REDIRECT & LIVE WAITING MODAL -->
     <div id="topupRedirectModal" class="cyber-modal">
       <div class="modal-overlay" onclick="closeTopupRedirectModal()"></div>
       <div class="modal-card modal-compact text-center">
-        <div class="topup-ready-icon">⚡</div>
-        <h2>Ödeme İlanınız Hazır!</h2>
-        <p>Aşağıdaki butona tıklayarak güvenli 3D Shopier ödeme sayfasına geçebilirsiniz. Ödeme sonrası bakiyeniz anında cüzdanınıza aktarılır.</p>
         
-        <a id="topupRedirectBtn" href="#" target="_blank" class="btn-buy-shopier m-top-15">
-          <span>🚀 Shopier Ödeme Sayfasına Git</span>
+        <div class="redirect-radar-container">
+          <div class="redirect-radar-ring"></div>
+          <div class="redirect-radar-ring-delayed"></div>
+          <div class="redirect-radar-icon">💳</div>
+        </div>
+
+        <div class="redirect-badge-live">
+          <span class="live-indicator-dot"></span>
+          <span id="redirectModalBadge">3D SECURE GÜVENLİ ÖDEME</span>
+        </div>
+
+        <h2 id="redirectModalTitle">Ödemeniz Bekleniyor...</h2>
+        <p id="redirectModalDesc">Shopier güvenli ödeme sayfası açıldı. İşleminizi tamamladığınızda lisans kodunuz anında bu ekrana ve <strong>Siparişlerim</strong> sekmesine aktarılacaktır.</p>
+
+        <div class="redirect-steps-list">
+          <div class="redirect-step-card">
+            <div class="step-num-bubble">1</div>
+            <div class="step-info-text">
+              <strong>Ödemeyi Tamamlayın</strong>
+              Kart veya bakiye bilgilerinizle 3D Secure onayını verin.
+            </div>
+          </div>
+          <div class="redirect-step-card">
+            <div class="step-num-bubble">2</div>
+            <div class="step-info-text">
+              <strong>Otomatik Lisans Teslimatı</strong>
+              Ödeme onaylandığı an bu ekran kapanır ve siparişiniz teslim edilir.
+            </div>
+          </div>
+        </div>
+
+        <div class="redirect-waiting-bar">
+          <span class="live-indicator-dot"></span>
+          <span>Canlı Takip Aktif — Saniyeler içinde algılanır</span>
+        </div>
+        
+        <a id="topupRedirectBtn" href="#" target="_blank" class="btn-buy-shopier">
+          <span>🚀 Ödeme Sayfasına Git / Tekrar Aç</span>
         </a>
-        <button class="btn-secondary m-top-10" onclick="closeTopupRedirectModal()">Vazgeç / Kapat</button>
+
+        <button class="btn-check-payment-now" onclick="manualCheckPayment()">
+          <span>🔄 Ödemeyi Kontrol Et</span>
+        </button>
+
+        <button class="btn-secondary m-top-10" onclick="closeTopupRedirectModal()">✕ Arka Planda Bekle / Kapat</button>
       </div>
     </div>
 
