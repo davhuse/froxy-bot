@@ -274,26 +274,6 @@ def manual_sweep_clean():
     sweep_orphan_shopier_products()
     return jsonify({"success": True, "message": "Shopier sweep temizliği tamamlandı"})
 
-@la_bp.route("/api/debug/delete-test/<pid>", methods=["GET", "POST"])
-def debug_delete_test(pid):
-    token = (os.environ.get("SHOPIER_LISANSARENA_ACCESS_TOKEN") or os.environ.get("LISANSARENA_SHOPIER_BEARER_TOKEN") or LISANSARENA_TOKEN).strip()
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "User-Agent": "Mozilla/5.0"
-    }
-    try:
-        res = requests.delete(f"https://api.shopier.com/v1/products/{pid}", headers=headers, timeout=10)
-        return jsonify({
-            "success": True,
-            "has_token": bool(token),
-            "token_prefix": token[:6] + "..." if token else "none",
-            "product_id": pid,
-            "shopier_status_code": res.status_code,
-            "shopier_response_text": res.text
-        })
-    except Exception as exc:
-        return jsonify({"success": False, "error": str(exc)})
-
 # Arka plan otomatik ilan temizleyicisini baslat
 start_background_shopier_cleaner(USER_DATA_PATH)
 
