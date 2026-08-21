@@ -226,11 +226,12 @@ def check_and_sync_shopier_orders(users_data_path: Path):
     except Exception as e:
         print(f"[LisansArena Shopier Sync Error] {e}")
 
-    # Süresi dolan (TTL > 300s = 5dk) ve ödenmemiş ilanları Shopier'dan sil
+    # Süresi dolan (Varsayılan TTL: 15 dk / 900 sn) ve ödenmemiş ilanları Shopier'dan sil
     now = time.time()
+    ttl_seconds = int(os.environ.get("LISANSARENA_TOPUP_TTL_SECONDS", "900"))
     expired_pids = []
     for pid, info in list(topups.items()):
-        if info.get("status") == "pending" and (now - info.get("created_at", now)) > 3600:
+        if info.get("status") == "pending" and (now - info.get("created_at", now)) > ttl_seconds:
             expired_pids.append(pid)
     
     for pid in expired_pids:
