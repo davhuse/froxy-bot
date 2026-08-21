@@ -251,18 +251,28 @@ async def forward_customer_message(bot, event, support_chat_id, brand: str, butt
 
 
 def greeting_for(brand: str) -> str:
-    packages = (
-        "• Öğrenci Paketi: Canva Pro + Duolingo Super\n"
-        "• Eğlence Paketi: Netflix 4K + Spotify Premium\n"
-        "• AI/Üretkenlik Paketi: Gemini Pro 18 Ay Davet + Canva Pro"
-    )
-    if brand.lower() == "froxy ai":
+    brand_lower = brand.lower()
+    if brand_lower == "keyvadi":
         return (
-            "Merhaba, yardımcı olayım. Froxy AI kredi paketi veya teknik destek "
-            "talebinizi yazın; ekibimiz size dönüş yapacak."
+            "👋 **KeyVadi Destek Hattına Hoş Geldiniz!**\n\n"
+            "Steam Random Keyler, FC26, Xbox Game Pass, Minecraft Koleksiyon Pelerinleri, "
+            "Netflix 4K ve dijital e-pinler hakkında sormak istediğiniz her şeyi yazabilirsiniz.\n\n"
+            "Mesajınız ekibimize iletildi, en kısa sürede dönüş yapılacaktır."
+        )
+    if brand_lower in ("lisansarena", "lisans arena"):
+        return (
+            "👋 **LisansArena Müşteri Hizmetlerine Hoş Geldiniz!**\n\n"
+            "Adobe CC, Canva Pro, Microsoft Office 365, Windows 10/11 Pro, CapCut Pro ve yapay "
+            "zeka araçlarımız 7/24 otomatik teslimat ve değişim garantimiz altındadır.\n\n"
+            "Talebiniz müşteri temsilcimize başarıyla aktarıldı, en kısa sürede size dönülecektir."
+        )
+    if brand_lower == "froxy ai":
+        return (
+            "👋 **Froxy AI Destek Merkezine Hoş Geldiniz!**\n\n"
+            "Froxy AI paketleri, kredi yüklemeleri veya teknik destek talebinizi "
+            "yazın; ekibimiz en kısa sürede size dönüş yapacaktır."
         )
     return (
-        "Merhaba, yardımcı olayım. Paket fırsatlarımız:\n"
-        f"{packages}\n\n"
-        "İstediğiniz paket ya da ürünü yazın; ekibimiz size dönüş yapacak."
+        "👋 **Merhaba, Destek Hattımıza Hoş Geldiniz!**\n\n"
+        "İstediğiniz paket ya da ürünü yazın; ekibimiz en kısa sürede size dönüş yapacaktır."
     )

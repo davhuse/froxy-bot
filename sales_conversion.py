@@ -73,8 +73,9 @@ BRAND_PHRASES = (
     "kiro", "steam", "shell", "whatsapp", "apple", "crunchyroll", "telegram", "blutv",
     "midjourney", "tradingview", "nordvpn", "vpn", "kaspersky", "envato",
     "freepik", "autocad", "figma", "elementor", "grammarly", "deepl",
-    "ideogram", "quillbot", "discord", "hbo", "prime video", "perplexity",
-    "magnific", "zula", "fc26", "codex", "antigravity", "disney",
+    "ideogram", "quillbot", "discord", "hbo", "prime video", "prime", "perplexity",
+    "magnific", "zula", "fc26", "codex", "antigravity", "disney", "minecraft",
+    "cape", "pelerin", "roblox", "instagram", "takipci", "gmail", "claude",
     "baslangic", "populer", "profesyonel", "gelistirici", "isletme", "kurumsal",
 )
 

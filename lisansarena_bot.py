@@ -326,11 +326,15 @@ async def safe_edit(event, text, **kwargs):
 
 async def show_main_menu(event, *, edit=False):
     welcome = (
-        "⚡ **LİSANSARENA — Dijital Lisans & E-Pin Mağazası**\n"
+        "🛡️ **LİSANSARENA — Kurumsal & Bireysel Dijital Lisans Arenası** 🏆\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        "🎉 **LisansArena'ya Hoş Geldiniz!**\n\n"
-        "Windows, Office, Adobe Creative Cloud, Canva Pro, ChatGPT Plus, Steam Key ve lisanslar güncel stok ve **7/24 anında otomatik teslimatla** LisansArena Mini App'te!\n\n"
-        "👇 **Alışverişe başlamak, bakiye yüklemek ve siparişlerinizi yönetmek için tıklayın:**"
+        "✨ **LisansArena Resmi İşlem Paneline Hoş Geldiniz!**\n\n"
+        "Adobe Creative Cloud, Canva Pro, Microsoft Office 365, Windows 10/11 Pro, CapCut Pro, Envato Elements, Freepik, Netflix 4K ve yapay zeka araçları orijinal lisans güvencesiyle tek platformda!\n\n"
+        "🌟 **LisansArena Güvenceleri:**\n"
+        "• 🛡️ Tüm Lisans ve Hesaplarda Süresi Boyunca Değişim & Telafi Garantisi\n"
+        "• ⚡ 7/24 Anında Otomatik Lisans Anahtarı Teslimatı\n"
+        "• 🔒 Shopier 3D Secure / Kredi Kartı / Cüzdan ile Güvenli Ödeme\n\n"
+        "👇 **Lisansları incelemek ve sipariş vermek için mağazayı açın:**"
     )
     buttons = mini_app_markup("Mağazayı Aç (Mini App)")
     if edit:
@@ -346,17 +350,18 @@ async def show_main_menu(event, *, edit=False):
 
 async def show_products(event, *, edit=False):
     text = (
-        "🛍️ **LİSANSARENA ÜRÜN KATALOĞU**\n\n"
-        "Tüm yapay zeka araçları, tasarım yazılımları, orijinal Windows/Office lisansları ve oyun hesapları tek arayüzde!\n\n"
-        "🌟 **Kategoriler:**\n"
-        "• 🤖 **Yapay Zeka:** ChatGPT Plus, Gemini Pro, Grok, Perplexity Pro\n"
-        "• 🎨 **Tasarım & Ofis:** Canva Pro, Adobe Creative Cloud, CapCut Pro\n"
-        "• 🔑 **Orijinal Lisans:** Windows 11 Pro, Office 365, Kaspersky\n"
-        "• 🎮 **Oyun & Eğlence:** Steam Key, Xbox Game Pass, FC26, Netflix 4K\n\n"
-        "⚡ **7/24 Anında Otomatik Teslimat · 3D Secure Güvenli Ödeme**\n\n"
+        "🛍️ **LİSANSARENA ÜRÜN VE LİSANS KATALOĞU**\n\n"
+        "Tüm profesyonel tasarım yazılımları, kurumsal Office lisansları ve yapay zeka abonelikleri:\n\n"
+        "🌟 **Öne Çıkan Kategoriler:**\n"
+        "• 🎨 **Tasarım & Edit:** CapCut Pro, Adobe Creative Cloud, Canva Pro, Envato, Freepik\n"
+        "• 🔑 **Orijinal Lisans:** Windows 10/11 Pro, Office 365 Pro Plus, Antivirüs\n"
+        "• 🎬 **Yayın & Eğlence:** Netflix 4K, Spotify Premium, YouTube Premium, Exxen, Prime Video\n"
+        "• 🤖 **Yapay Zeka:** ChatGPT Plus, Gemini Pro, Perplexity Pro\n"
+        "• 🎮 **Oyun & E-Pin:** Minecraft Capeleri, Steam Random Key\n\n"
+        "⚡ **7/24 Anında Otomatik Teslimat · Shopier 3D Secure Güvencesi**\n\n"
         "👇 Kataloğu incelemek ve sepete eklemek için mağazayı açın:"
     )
-    buttons = mini_app_markup("Ürünleri İncele")
+    buttons = mini_app_markup("🛍️ Ürünleri İncele")
     if edit:
         await safe_edit(event, text, buttons=buttons)
     else:
@@ -739,12 +744,6 @@ async def private_message_handler(event):
             await event.respond("✅ Yanıt kullanıcıya iletildi.")
         return
 
-    incoming_event_id = getattr(event.message, "id", None)
-    if incoming_event_id is None or not await claim_support_event(
-        "LisansArena", event.sender_id, incoming_event_id, "incoming"
-    ):
-        return
-
     sender = await event.get_sender()
     sender_id = event.sender_id
     uname = getattr(sender, 'username', '') or ''
@@ -767,6 +766,7 @@ async def private_message_handler(event):
     except Exception as exc:
         logger.warning("Ticket kaydı oluşturulamadı: %s", exc)
 
+    incoming_event_id = getattr(event.message, "id", None)
     dm_intent = record_dm_event(
         "LisansArena", event.sender_id, event.raw_text or "",
         message_id=incoming_event_id,
@@ -799,10 +799,10 @@ async def private_message_handler(event):
 
     if await claim_first_greeting("lisansarena", event.sender_id):
         await event.respond(
-            "👋 **LisansArena'ya Hoş Geldiniz!**\n\n"
-            "Mesajınız canlı destek ekibimize iletildi, en kısa sürede dönüş yapılacaktır.\n\n"
-            "Ürünlerimizi incelemek, bakiye yüklemek ve 7/24 anında teslimatlı sipariş vermek için aşağıdaki butondan mağazamızı açabilirsiniz.",
-            buttons=mini_app_markup("🛍️ Mağazayı Aç (Mini App)"),
+            "👋 **LisansArena Müşteri Hizmetlerine Hoş Geldiniz!**\n\n"
+            "Talebiniz canlı destek ekibimize iletildi, en kısa sürede buradan yanıt alacaksınız.\n\n"
+            "Orijinal lisansları incelemek, bakiye yüklemek ve 7/24 anında teslimatla sipariş vermek için aşağıdaki butondan mağazamızı açabilirsiniz.",
+            buttons=mini_app_markup("🛍️ LisansArena Mağazasını Aç"),
         )
 
 

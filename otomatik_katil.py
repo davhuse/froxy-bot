@@ -3069,6 +3069,21 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         if sender_id in our_user_ids:
             return
 
+        is_keyvadi, is_lisansarena, is_froxy = account_flags(client_name)
+        panel_brand = "Froxy AI" if is_froxy else ("KeyVadi" if is_keyvadi else "LisansArena")
+        print(f"📥 [{client_name}] ({panel_brand}) DM Alındı: GÖNDEREN={sender_id} (@{uname}) MESAJ='{event.raw_text}'", flush=True)
+        try:
+            save_ticket_record(
+                panel_brand,
+                sender_id,
+                fname,
+                getattr(sender, 'last_name', '') or '',
+                f"@{uname}" if uname else "Yok",
+                event.raw_text or '',
+            )
+        except Exception as exc:
+            print(f"[{client_name}] Panel DM kaydı yazılamadı: {type(exc).__name__}")
+
         # Claim the update before product matching or AI work. Previously the
         # message was added to PROCESSED_DM_MSG_IDS only after event.reply(). If
         # Telethon delivered the same update twice while the first handler was
@@ -3082,20 +3097,6 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                 f"mükerrer ürün linki engellendi ({event.chat_id}/{msg_id})."
             )
             return
-
-        is_keyvadi, is_lisansarena, is_froxy = account_flags(client_name)
-        panel_brand = "Froxy AI" if is_froxy else ("KeyVadi" if is_keyvadi else "LisansArena")
-        try:
-            save_ticket_record(
-                panel_brand,
-                sender_id,
-                getattr(sender, 'first_name', '') or '',
-                getattr(sender, 'last_name', '') or '',
-                f"@{sender.username}" if getattr(sender, 'username', None) else "Yok",
-                event.raw_text or '',
-            )
-        except Exception as exc:
-            print(f"[{client_name}] Panel DM kaydı yazılamadı: {type(exc).__name__}")
 
         user_key = (client_name, sender_id)
         dm_conversation_key = conversation_key(client_name, sender_id)

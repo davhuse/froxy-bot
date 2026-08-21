@@ -830,16 +830,16 @@ TEXTS = {
 # Main Menu Helper — Streamlined Mini App First Experience
 async def show_main_menu(event, user_id, is_callback=False):
     welcome = (
-        "⚡ **KEYVADI PRO — Dijital Lisans & E-Pin Mağazası**\n"
+        "🎮 **KEYVADI PRO — Dijital E-Pin & Oyun Mağazası** ⚡\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        "🎉 **KeyVadi'ye Hoş Geldiniz!**\n\n"
-        "Netflix, ChatGPT Plus, Canva Pro, Gemini, Xbox Game Pass, FC26, Steam Key ve lisanslar güncel stok ve teslimat bilgileriyle KeyVadi Mini App'te!\n\n"
-        "👇 **Alışverişe başlamak ve bakiyenizi yönetmek için tıklayın:**"
+        "👋 **KeyVadi Dünyasına Hoş Geldiniz!**\n\n"
+        "Steam Random Keyler, FC26, Xbox Game Pass, Minecraft Koleksiyon Pelerinleri, Netflix 4K, ChatGPT Plus ve popüler dijital e-pinler en uygun fiyat garantisiyle burada!\n\n"
+        "💎 **Öne Çıkan Ayrıcalıklar:**\n"
+        "• ⚡ 7/24 Anında Otomatik Kod & Lisans Teslimatı\n"
+        "• 💳 3D Secure ile Güvenli Bakiye Yükleme\n"
+        "• 🎁 Arkadaşını Davet Et, Harcamalarından %10 Nakit Kazan!\n\n"
+        "👇 **Alışverişe başlamak veya bakiyenizi yönetmek için tıklayın:**"
     )
-    # A normal URL button opens Telegram's browser without signed WebApp
-    # initData, which makes balance and Shopier operations correctly fail
-    # authentication.  Use Telegram's WebView reply button so the same page
-    # receives the verified Telegram identity required by the finance APIs.
     buttons = mini_app_markup("Mağazayı Aç")
     if is_callback:
         await safe_event_edit(event, welcome, buttons=buttons)
