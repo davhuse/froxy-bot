@@ -572,6 +572,74 @@
     }
   };
 
+  // Buy Single with Direct Dynamic Shopier Listing (Zero Ban Risk)
+  window.buyWithDirectShopier = async function () {
+    if (!selectedModalProduct) return;
+    const price = Number(selectedModalProduct.price_num || 0);
+
+    if (price < 5) {
+      window.showToast("⚠️ Minimum işlem tutarı ₺5'dir.");
+      return;
+    }
+
+    const modalShopierBtn = document.getElementById('modalShopierBuyBtn');
+    if (modalShopierBtn) {
+      modalShopierBtn.disabled = true;
+      modalShopierBtn.innerHTML = `<span>⏳ İlan Hazırlanıyor...</span>`;
+    }
+
+    try {
+      window.showToast("⚡ Güvenli 3D Shopier ödeme sayfası hazırlanıyor...");
+      const res = await fetch(api('/api/balance/create-dynamic-topup'), {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({
+          init_data: telegramInitData,
+          user_id: tgUser.id,
+          user_name: userProfile.full_name || `${tgUser.first_name} ${tgUser.last_name}`.trim(),
+          username: tgUser.username || "",
+          amount: price,
+          idempotency_key: `la_buy_${selectedModalProduct.id}_${tgUser.id}_${Date.now()}`
+        })
+      });
+
+      const data = await res.json();
+
+      if (data.success && data.payment_url) {
+        window.currentActiveTopupPid = data.product_id;
+
+        if (tg?.openLink) {
+          tg.openLink(data.payment_url);
+        }
+
+        if (topupRedirectBtn) {
+          topupRedirectBtn.href = data.payment_url;
+        }
+        closeProductModal();
+        if (topupRedirectModal) {
+          topupRedirectModal.classList.add('active');
+        }
+
+        try {
+          window.open(data.payment_url, '_blank');
+        } catch (e) {}
+
+      } else {
+        window.showToast(`⚠️ Ödeme Başlatılamadı: ${data.error || 'Bilinmeyen hata'}`);
+      }
+    } catch (e) {
+      window.showToast("⚠️ Ödeme servisine bağlanırken hata oluştu.");
+    } finally {
+      if (modalShopierBtn) {
+        modalShopierBtn.disabled = false;
+        modalShopierBtn.innerHTML = `
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+          <span>💳 Kartla Direkt Satın Al</span>
+        `;
+      }
+    }
+  };
+
   // Topup Amount Selection
   window.setTopupAmount = function (amt, btn) {
     activeTopupAmount = amt;
