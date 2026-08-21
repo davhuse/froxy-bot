@@ -463,6 +463,35 @@
       </div>
     </div>
 
+    <!-- PURCHASE SUCCESS MODAL -->
+    <div id="purchaseSuccessModal" class="modal-backdrop">
+      <div class="modal-sheet" style="max-height: 80vh; text-align: center;">
+        <button class="modal-close-btn" onclick="closePurchaseSuccessModal()">✕</button>
+        <div class="modal-drag-bar"></div>
+        <div style="font-size: 3.2rem; margin: 10px 0 6px; filter: drop-shadow(0 0 16px rgba(0, 240, 255, 0.7));">🎉</div>
+        <h2 id="successModalTitle" style="font-family: var(--font-heading); font-size: 1.25rem; font-weight: 800; color: #FFFFFF;">Siparişiniz Başarıyla Alındı!</h2>
+        <p id="successModalDesc" style="color: var(--text-muted); font-size: 0.84rem; line-height: 1.5; margin: 6px 0 14px;">Ödemeniz onaylandı. Lisans anahtarınız ve teslimat bilgileriniz Siparişlerim alanına işlendi.</p>
+        
+        <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid var(--border-cyan); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 6px; text-align: left;">
+          <div style="display: flex; justify-content: space-between; font-size: 0.82rem; color: var(--text-muted);">
+            <span>Ürün / Sipariş:</span>
+            <strong id="successModalProduct" style="color: #FFFFFF;">Dijital Ürün</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 0.82rem; color: var(--text-muted);">
+            <span>Tutar:</span>
+            <strong id="successModalAmount" style="color: var(--primary-cyan); font-size: 1rem;">₺0.00</strong>
+          </div>
+        </div>
+
+        <button class="btn-primary-action" onclick="goToOrdersFromSuccess()" style="margin-bottom: 8px;">
+          <span>📦 Siparişlerime Git</span>
+        </button>
+        <button class="btn-secondary-action" onclick="closePurchaseSuccessModal()" style="width: 100%; height: 42px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); color: #fff; border-radius: var(--radius-sm); font-weight: 700; cursor: pointer;">
+          <span>🛍️ Alışverişe Devam Et</span>
+        </button>
+      </div>
+    </div>
+
     <!-- TOAST NOTIFICATION -->
     <div id="toastNotification" class="toast-popup"></div>
 

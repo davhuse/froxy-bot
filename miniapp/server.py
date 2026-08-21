@@ -18,6 +18,14 @@ import threading
 from urllib.parse import parse_qsl
 from pathlib import Path
 
+try:
+    from license_delivery import allocate_license
+except ImportError:
+    try:
+        from ..license_delivery import allocate_license
+    except Exception:
+        def allocate_license(t): return {"status": "pending_delivery", "license_key": None}
+
 # Ensure UTF-8 output on Windows console
 if sys.platform.startswith("win"):
     try:
@@ -334,11 +342,15 @@ def purchase_product():
         if user["balance"] < price:
             return jsonify({"success": False, "error": "Yetersiz bakiye"}), 400
         user["balance"] -= price
+        alloc = allocate_license(product.get("title", ""))
         order = {
+            "order_id": f"KV-{int(time.time())}",
             "product_id": product_id,
             "title": product.get("title"),
             "price": price,
-            "status": "pending_delivery",
+            "status": alloc.get("status", "pending_delivery"),
+            "license_key": alloc.get("license_key"),
+            "delivery_note": alloc.get("delivery_note", "7/24 Teslimat"),
             "idempotency_key": idem or None,
             "created_at": int(time.time())
         }
@@ -348,7 +360,7 @@ def purchase_product():
 
     return jsonify({
         "success": True,
-        "message": "Sipariş kaydınız alındı; teslimat doğrulanıyor.",
+        "message": "🎉 Siparişiniz başarıyla alındı!" if order.get("status") == "delivered" else "Sipariş kaydınız alındı; teslimat doğrulanıyor.",
         "new_balance": user["balance"],
         "order": order
     })
@@ -389,13 +401,17 @@ def purchase_cart():
             p_price = float(p.get("price_num", 0.0))
             subtotal = p_price * qty
             total_cost += subtotal
+            alloc = allocate_license(p.get("title", ""))
             valid_orders.append({
+                "order_id": f"KV-{int(time.time())}",
                 "product_id": pid,
                 "title": p.get("title"),
                 "qty": qty,
                 "price": p_price,
                 "subtotal": subtotal,
-                "status": "pending_delivery",
+                "status": alloc.get("status", "pending_delivery"),
+                "license_key": alloc.get("license_key"),
+                "delivery_note": alloc.get("delivery_note", "7/24 Teslimat"),
                 "cart_idempotency_key": idempotency_key,
                 "created_at": int(time.time())
             })

@@ -152,7 +152,34 @@
         </div>
       </section>
 
-      <!-- ==================== TAB 2: CART (SEPET) ==================== -->
+      <!-- ==================== TAB 2: SİPARİŞLERİM (ORDERS) ==================== -->
+      <section id="tab-orders" class="tab-pane">
+        <div class="vault-panel-card">
+          <div class="panel-header">
+            <div class="p-icon-glow">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+            </div>
+            <div>
+              <h2>Siparişlerim & Lisanslarım</h2>
+              <p>Satın aldığınız lisans anahtarları ve teslimat geçmişi</p>
+            </div>
+          </div>
+
+          <div id="dedicatedOrdersList" class="orders-list-cyber">
+            <!-- Dynamically populated -->
+          </div>
+
+          <div class="warranty-card m-top-15">
+            <div class="w-head">
+              <span class="w-icon">🛡️</span>
+              <strong>Garanti & Telafi Güvencesi</strong>
+            </div>
+            <p>LisansArena üzerinden satın alınan tüm orijinal lisans ve abonelikler süresi boyunca telafi ve değişim garantimiz altındadır. Kodunuzla ilgili 7/24 canlı destek ekibimize yazabilirsiniz.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== TAB 3: CART (SEPET) ==================== -->
       <section id="tab-cart" class="tab-pane">
         <div class="vault-panel-card">
           <div class="panel-header">
@@ -201,7 +228,7 @@
         </div>
       </section>
 
-      <!-- ==================== TAB 3: WALLET ==================== -->
+      <!-- ==================== TAB 4: WALLET ==================== -->
       <section id="tab-wallet" class="tab-pane">
         <div class="vault-panel-card">
           <div class="panel-header">
@@ -262,7 +289,7 @@
         </div>
       </section>
 
-      <!-- ==================== TAB 4: REFERRAL ==================== -->
+      <!-- ==================== TAB 5: REFERRAL ==================== -->
       <section id="tab-referral" class="tab-pane">
         <div class="vault-panel-card">
           <div class="panel-header">
@@ -306,7 +333,7 @@
         </div>
       </section>
 
-      <!-- ==================== TAB 5: SUPPORT & PROFILE ==================== -->
+      <!-- ==================== TAB 6: SUPPORT & PROFILE ==================== -->
       <section id="tab-support" class="tab-pane">
         <div class="vault-panel-card">
           <div class="profile-hero-badge">
@@ -316,11 +343,6 @@
             <h3 id="profileFullName">LisansArena Müşterisi</h3>
             <span class="user-id-tag" id="profileUserId">ID: —</span>
           </div>
-
-          <section class="la-orders-card">
-            <div class="la-orders-heading"><span>📦</span><div><strong>Siparişlerim</strong><small>Sipariş no, ürün, tutar ve durum</small></div></div>
-            <div id="laOrdersList" class="la-orders-list" aria-live="polite"></div>
-          </section>
 
           <div class="support-channels-grid">
             <a href="https://t.me/LisansArenaOnline" target="_blank" class="channel-card tg-card">
@@ -362,6 +384,11 @@
           <span>Mağaza</span>
         </button>
 
+        <button class="dock-btn" data-tab="orders" onclick="switchVaultTab('orders')">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+          <span>Siparişler</span>
+        </button>
+
         <button class="dock-btn" data-tab="cart" onclick="switchVaultTab('cart')">
           <div class="dock-cart-wrap">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
@@ -373,11 +400,6 @@
         <button class="dock-btn" data-tab="wallet" onclick="switchVaultTab('wallet')">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M16 12h.01"/><path d="M2 10h20"/></svg>
           <span>Cüzdan</span>
-        </button>
-
-        <button class="dock-btn" data-tab="referral" onclick="switchVaultTab('referral')">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          <span>Kazanç</span>
         </button>
 
         <button class="dock-btn" data-tab="support" onclick="switchVaultTab('support')">
@@ -439,6 +461,36 @@
           <span>🚀 Shopier Ödeme Sayfasına Git</span>
         </a>
         <button class="btn-secondary m-top-10" onclick="closeTopupRedirectModal()">Vazgeç / Kapat</button>
+      </div>
+    </div>
+
+    <!-- PURCHASE SUCCESS & GO TO ORDERS MODAL -->
+    <div id="purchaseSuccessModal" class="cyber-modal">
+      <div class="modal-overlay" onclick="closePurchaseSuccessModal()"></div>
+      <div class="modal-card modal-compact text-center">
+        <div class="success-glow-badge">🎉</div>
+        <h2 id="successModalTitle">Siparişiniz Başarıyla Alındı!</h2>
+        <p id="successModalDesc">Ödemeniz onaylandı. Lisans anahtarınız ve teslimat bilgileriniz Siparişlerim alanına işlendi.</p>
+        
+        <div class="success-order-summary">
+          <div class="sos-row">
+            <span>Ürün / Sipariş:</span>
+            <strong id="successModalProduct">Dijital Ürün</strong>
+          </div>
+          <div class="sos-row">
+            <span>Tutar:</span>
+            <strong class="sos-price" id="successModalAmount">₺0.00</strong>
+          </div>
+        </div>
+
+        <div class="success-actions-stack">
+          <button class="btn-vault-action" onclick="goToOrdersFromSuccess()">
+            <span>📦 Siparişlerime Git</span>
+          </button>
+          <button class="btn-secondary m-top-10" onclick="closePurchaseSuccessModal()">
+            <span>🛍️ Alışverişe Devam Et</span>
+          </button>
+        </div>
       </div>
     </div>
 

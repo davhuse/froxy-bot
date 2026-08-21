@@ -23,6 +23,14 @@ try:
 except ImportError:
     from shopier_dynamic import create_dynamic_shopier_listing, check_and_sync_shopier_orders, cancel_and_delete_topup, load_active_topups, start_background_shopier_cleaner, sweep_orphan_shopier_products
 
+try:
+    from license_delivery import allocate_license
+except ImportError:
+    try:
+        from ..license_delivery import allocate_license
+    except Exception:
+        def allocate_license(t): return {"status": "pending_delivery", "license_key": None}
+
 BASE_DIR = Path(__file__).resolve().parent
 PRODUCTS_DB_PATH = BASE_DIR / "products_db.json"
 USER_DATA_PATH = BASE_DIR / "users_data.json"
@@ -302,11 +310,15 @@ def purchase_product():
         if user["balance"] < price:
             return jsonify({"success": False, "error": "Yetersiz bakiye"}), 400
         user["balance"] -= price
+        alloc = allocate_license(product.get("title", ""))
         order = {
+            "order_id": f"LA-{int(time.time())}",
             "product_id": product_id,
             "title": product.get("title"),
             "price": price,
-            "status": "pending_delivery",
+            "status": alloc.get("status", "pending_delivery"),
+            "license_key": alloc.get("license_key"),
+            "delivery_note": alloc.get("delivery_note", "7/24 Teslimat"),
             "created_at": int(time.time())
         }
         user.setdefault("orders", []).append(order)
@@ -315,7 +327,7 @@ def purchase_product():
 
     return jsonify({
         "success": True,
-        "message": "Sipariş kaydınız alındı; teslimat sağlanıyor.",
+        "message": "🎉 Siparişiniz başarıyla alındı!" if order.get("status") == "delivered" else "Sipariş kaydınız alındı; teslimat sağlanıyor.",
         "new_balance": user["balance"],
         "order": order
     })
@@ -344,13 +356,17 @@ def purchase_cart():
             p_price = float(p.get("price_num", 0.0))
             subtotal = p_price * qty
             total_cost += subtotal
+            alloc = allocate_license(p.get("title", ""))
             valid_orders.append({
+                "order_id": f"LA-{int(time.time())}",
                 "product_id": pid,
                 "title": p.get("title"),
                 "qty": qty,
                 "price": p_price,
                 "subtotal": subtotal,
-                "status": "pending_delivery",
+                "status": alloc.get("status", "pending_delivery"),
+                "license_key": alloc.get("license_key"),
+                "delivery_note": alloc.get("delivery_note", "7/24 Teslimat"),
                 "created_at": int(time.time())
             })
 

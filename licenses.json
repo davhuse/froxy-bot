@@ -1,21 +1,62 @@
 {
   "canva": [
-    "CANVA-PRO-TEST-KEY-1",
-    "CANVA-PRO-TEST-KEY-2"
+    "CANVA-PRO-EDU-KOD-1",
+    "CANVA-PRO-EDU-KOD-2"
   ],
   "adobe": [
-    "ADOBE-CC-TEST-KEY-1"
+    "ADOBE-CC-PRO-KEY-1",
+    "ADOBE-CC-PRO-KEY-2"
   ],
   "windows": [
-    "WIN-PRO-TEST-KEY-1"
+    "W269N-WFGWX-YVC9B-4J6C9-T83GX",
+    "VK7JG-NPHTM-C97JM-9MPGT-3V66T"
   ],
   "office": [
-    "OFFICE-365-TEST-KEY-1"
+    "OFFICE-365-PROPLUS-HESAP-1",
+    "OFFICE-365-PROPLUS-HESAP-2"
   ],
   "netflix": [
-    "NETFLIX-4K-TEST-KEY-1"
+    "NETFLIX-4K-UHD-GIRISTOKEN-1"
   ],
   "youtube": [
-    "YOUTUBE-PRE-TEST-KEY-1"
+    "YT-PREMIUM-DAVET-LINK-1"
+  ],
+  "spotify": [
+    "SPOTIFY-PREM-INVITE-1"
+  ],
+  "steam": [
+    "STEAM-VIP-RANDOM-KEY-98421",
+    "STEAM-VIP-RANDOM-KEY-11729"
+  ],
+  "minecraft": [
+    "MC-MIGRATOR-CAPE-CODE-4412",
+    "MC-FOUNDER-CAPE-CODE-8921"
+  ],
+  "capcut": [
+    "CAPCUT-PRO-PC-1YEAR-TOKEN-1"
+  ],
+  "exxen": [
+    "EXXEN-REKLAMSIZ-GIRIS-1"
+  ],
+  "prime": [
+    "PRIME-VIDEO-PREMIUM-1"
+  ],
+  "hbo": [
+    "HBO-MAX-ULTRAHD-1"
+  ],
+  "roblox": [
+    "ROBLOX-OFFSALE-ACCOUNT-1"
+  ],
+  "envato": [
+    "ENVATO-ELEMENTS-TOKEN-1"
+  ],
+  "freepik": [
+    "FREEPIK-PREMIUM-TOKEN-1"
+  ],
+  "chatgpt": [
+    "CHATGPT-PLUS-4O-TOKEN-1"
+  ],
+  "gemini": [
+    "GEMINI-ADVANCED-PRO-TOKEN-1"
   ]
 }

@@ -1,4 +1,4 @@
-﻿// KeyVadi Ultra-Premium Mini App Controller (v11.0 - Next-Gen Glassmorphism & Direct Shopier Engine)
+// KeyVadi Ultra-Premium Mini App Controller (v11.0 - Next-Gen Glassmorphism & Direct Shopier Engine)
 
 const tg = window.Telegram?.WebApp || null;
 const API_BASE = window.location.pathname.startsWith('/keyvadi') ? '/keyvadi' : '';
@@ -90,6 +90,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (tgUser && telegramInitData) await registerAndSyncUserProfile();
   await loadProducts();
   if (tgUser && telegramInitData) startBackgroundBalanceSync();
+
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('payment') === 'success' || urlParams.get('order') === 'success') {
+    showPurchaseSuccessModal("Shopier Ödemesi Onaylandı", null);
+    try { window.history.replaceState({}, document.title, window.location.pathname); } catch (e) {}
+  }
 });
 
 async function registerAndSyncUserProfile() {
@@ -197,11 +203,12 @@ function renderOrders() {
     return;
   }
   const labels = {
-    pending_delivery: 'Teslim Edildi / İşlemde',
-    processing: 'İşlemde',
-    paid: 'Ödeme Alındı',
-    completed: 'Tamamlandı',
-    cancelled: 'İptal Edildi'
+    delivered: '✅ Teslim Edildi',
+    pending_delivery: '⏳ Hazırlanıyor',
+    processing: '⏳ İşlemde',
+    paid: '⚡ Ödeme Alındı',
+    completed: '✅ Tamamlandı',
+    cancelled: '❌ İptal Edildi'
   };
 
   orders.slice(0, 30).forEach((order, index) => {
@@ -219,13 +226,60 @@ function renderOrders() {
     meta.textContent = `No: ${number} • ${formatTL(amount)}${date && !Number.isNaN(date.getTime()) ? ` • ${date.toLocaleString('tr-TR')}` : ''}`;
     
     const status = document.createElement('span');
-    status.className = 'order-status';
-    status.textContent = labels[order.status] || 'Tamamlandı';
+    status.className = `order-status ${order.status === 'delivered' || order.status === 'completed' ? 'delivered' : 'pending'}`;
+    status.textContent = labels[order.status] || (order.license_key ? '✅ Teslim Edildi' : '⏳ Hazırlanıyor');
     
     item.append(title, meta, status);
+
+    if (order.license_key) {
+      const codeBox = document.createElement('div');
+      codeBox.style.cssText = 'background: rgba(0, 240, 255, 0.1); border: 1px dashed var(--primary-cyan); border-radius: 6px; padding: 8px 10px; margin-top: 8px; display: flex; justify-content: space-between; align-items: center; gap: 8px;';
+      
+      const codeText = document.createElement('span');
+      codeText.style.cssText = 'font-family: monospace; font-weight: 700; font-size: 0.82rem; color: #fff; word-break: break-all;';
+      codeText.textContent = `🔑 ${order.license_key}`;
+
+      const copyBtn = document.createElement('button');
+      copyBtn.type = 'button';
+      copyBtn.style.cssText = 'background: var(--primary-cyan); color: #000; border: none; border-radius: 4px; padding: 4px 8px; font-size: 0.72rem; font-weight: 800; cursor: pointer; white-space: nowrap;';
+      copyBtn.textContent = 'KOPYALA';
+      copyBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        navigator.clipboard.writeText(order.license_key).then(() => {
+          showToast('Lisans anahtarı kopyalandı!', '📋');
+          triggerHaptic('success');
+        });
+      });
+
+      codeBox.append(codeText, copyBtn);
+      item.append(codeBox);
+    }
+
     container.append(item);
   });
 }
+
+// Success Modal Functions
+window.showPurchaseSuccessModal = function(title, amount) {
+  const modal = document.getElementById('purchaseSuccessModal');
+  if (!modal) return;
+  const prodEl = document.getElementById('successModalProduct');
+  if (prodEl) prodEl.textContent = title || 'Dijital Ürün / Lisans';
+  const amtEl = document.getElementById('successModalAmount');
+  if (amtEl) amtEl.textContent = amount ? formatTL(amount) : 'Ödeme Onaylandı';
+  modal.classList.add('active');
+  triggerHaptic('success');
+};
+
+window.closePurchaseSuccessModal = function() {
+  const modal = document.getElementById('purchaseSuccessModal');
+  if (modal) modal.classList.remove('active');
+};
+
+window.goToOrdersFromSuccess = function() {
+  closePurchaseSuccessModal();
+  switchTab('ordersTab');
+};
 
 // Category mappings
 const CATEGORY_NAMES = {
@@ -501,8 +555,8 @@ window.checkoutKvCartWithWallet = async function() {
       updateBalanceUI();
       window.clearKvFullCart();
       localStorage.removeItem('keyvadi_cart_idempotency');
-      showToast(data.message || "🎉 Sepetiniz başarıyla satın alındı!", "💰");
       await registerAndSyncUserProfile();
+      showPurchaseSuccessModal('Sepet Alışverişi', totalCost);
     } else {
       showToast(`Hata: ${data.error || 'İşlem başarısız'}`, '⚠️');
     }
@@ -637,10 +691,9 @@ window.buyWithWallet = async function() {
     if (data.success) {
       state.walletBalance = data.new_balance;
       updateBalanceUI();
-      triggerHaptic('success');
-      showToast(data.message || 'Siparişiniz başarıyla alındı!', '🎉');
       closeProductModal();
       await registerAndSyncUserProfile();
+      showPurchaseSuccessModal(product.title, product.price_num);
     } else {
       showToast(data.error || 'İşlem başarısız', '⚠️');
     }

@@ -125,6 +125,12 @@
     await fetchUserProfile();
     await fetchReferralData();
 
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('payment') === 'success' || urlParams.get('order') === 'success') {
+      showPurchaseSuccessModal("Shopier Ödemesi Onaylandı", null);
+      try { window.history.replaceState({}, document.title, window.location.pathname); } catch (e) {}
+    }
+
     // Auto sync paid orders every 15 seconds
     setInterval(syncOrdersSilently, 15000);
   });
@@ -212,33 +218,135 @@
   }
 
   function renderOrders() {
-    if (!laOrdersList) return;
-    laOrdersList.replaceChildren();
+    const dedicatedList = document.getElementById('dedicatedOrdersList');
+    const legacyList = document.getElementById('laOrdersList');
+    const containers = [dedicatedList, legacyList].filter(Boolean);
+    
+    if (containers.length === 0) return;
+    
+    containers.forEach(c => c.replaceChildren());
     const orders = Array.isArray(userProfile.orders) ? [...userProfile.orders].reverse() : [];
+    
     if (!orders.length) {
-      const empty = document.createElement('p');
-      empty.className = 'la-orders-empty';
-      empty.textContent = 'Henüz bir siparişiniz bulunmuyor.';
-      laOrdersList.append(empty);
+      containers.forEach(c => {
+        const empty = document.createElement('div');
+        empty.className = 'la-orders-empty';
+        empty.style.cssText = 'padding: 30px 15px; text-align: center; color: var(--text-muted);';
+        empty.innerHTML = `
+          <div style="font-size: 2.2rem; margin-bottom: 8px;">📦</div>
+          <p style="font-size: 0.88rem; font-weight: 600;">Henüz bir siparişiniz bulunmuyor.</p>
+        `;
+        c.append(empty);
+      });
       return;
     }
-    const labels = { pending_delivery: 'Teslimat hazırlanıyor', processing: 'İşlemde', paid: 'Ödeme alındı', completed: 'Tamamlandı', cancelled: 'İptal edildi' };
-    orders.slice(0, 20).forEach((order, index) => {
-      const row = document.createElement('div');
-      row.className = 'la-order-row';
-      const title = document.createElement('strong');
-      title.textContent = order.title || order.product_name || 'Bakiye yükleme';
+
+    const labels = {
+      delivered: '✅ Teslim Edildi',
+      pending_delivery: '⏳ Hazırlanıyor',
+      processing: '⏳ İşlemde',
+      paid: '⚡ Ödeme Alındı',
+      completed: '✅ Tamamlandı',
+      cancelled: '❌ İptal Edildi'
+    };
+
+    orders.slice(0, 30).forEach((order, index) => {
+      const card = document.createElement('div');
+      card.className = 'order-card-cyber';
+
+      const topRow = document.createElement('div');
+      topRow.className = 'order-card-top';
+
+      const title = document.createElement('h3');
+      title.className = 'order-card-title';
+      title.textContent = order.title || order.product_name || 'LisansArena Lisans Siparişi';
+
+      const isDelivered = order.status === 'delivered' || order.status === 'completed' || Boolean(order.license_key);
+      const statusBadge = document.createElement('span');
+      statusBadge.className = `order-status-badge ${isDelivered ? 'delivered' : 'pending'}`;
+      statusBadge.textContent = labels[order.status] || (isDelivered ? '✅ Teslim Edildi' : '⏳ Hazırlanıyor');
+
+      topRow.append(title, statusBadge);
+
       const number = order.order_id || order.id || order.product_id || `LA-${String(index + 1).padStart(5, '0')}`;
       const amount = Number(order.subtotal ?? order.price ?? order.amount ?? 0).toFixed(2);
       const date = order.created_at ? new Date(Number(order.created_at) * 1000) : null;
-      const meta = document.createElement('span');
-      meta.textContent = `Sipariş: ${number} • ₺${amount}${date && !Number.isNaN(date.getTime()) ? ` • ${date.toLocaleString('tr-TR')}` : ''}`;
-      const status = document.createElement('em');
-      status.textContent = labels[order.status] || 'İşlemde';
-      row.append(title, meta, status);
-      laOrdersList.append(row);
+      const dateStr = date && !Number.isNaN(date.getTime()) ? date.toLocaleString('tr-TR') : 'Şimdi';
+
+      const metaGrid = document.createElement('div');
+      metaGrid.className = 'order-meta-grid';
+      metaGrid.innerHTML = `
+        <div class="order-meta-item">
+          <span class="order-meta-label">Sipariş No</span>
+          <span class="order-meta-val">${number}</span>
+        </div>
+        <div class="order-meta-item">
+          <span class="order-meta-label">Tutar</span>
+          <span class="order-meta-val price-highlight">₺${amount}</span>
+        </div>
+        <div class="order-meta-item" style="grid-column: span 2;">
+          <span class="order-meta-label">Tarih</span>
+          <span class="order-meta-val">${dateStr}</span>
+        </div>
+      `;
+
+      card.append(topRow, metaGrid);
+
+      if (order.license_key) {
+        const codeBox = document.createElement('div');
+        codeBox.className = 'license-code-box';
+
+        const codeText = document.createElement('span');
+        codeText.className = 'license-code-text';
+        codeText.textContent = `🔑 ${order.license_key}`;
+
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'btn-copy-code';
+        copyBtn.type = 'button';
+        copyBtn.textContent = 'KOPYALA';
+        copyBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          window.copyOrderLicenseCode(order.license_key);
+        });
+
+        codeBox.append(codeText, copyBtn);
+        card.append(codeBox);
+      }
+
+      if (dedicatedList) dedicatedList.append(card.cloneNode(true));
+      if (legacyList) legacyList.append(card);
     });
   }
+
+  // Success Modal Functions
+  window.showPurchaseSuccessModal = function (title, amount) {
+    const modal = document.getElementById('purchaseSuccessModal');
+    if (!modal) return;
+    const prodEl = document.getElementById('successModalProduct');
+    if (prodEl) prodEl.textContent = title || 'Dijital Ürün / Lisans';
+    const amtEl = document.getElementById('successModalAmount');
+    if (amtEl) amtEl.textContent = amount ? `₺${Number(amount).toFixed(2)}` : 'Ödeme Onaylandı';
+    modal.classList.add('active');
+    if (tg?.HapticFeedback) {
+      tg.HapticFeedback.notificationOccurred('success');
+    }
+  };
+
+  window.closePurchaseSuccessModal = function () {
+    const modal = document.getElementById('purchaseSuccessModal');
+    if (modal) modal.classList.remove('active');
+  };
+
+  window.goToOrdersFromSuccess = function () {
+    closePurchaseSuccessModal();
+    switchVaultTab('orders');
+  };
+
+  window.copyOrderLicenseCode = function (code) {
+    navigator.clipboard.writeText(code).then(() => {
+      window.showToast('Lisans anahtarı panoya kopyalandı! 📋');
+    });
+  };
 
   // Tab Switching
   window.switchVaultTab = function (tabName) {
@@ -502,7 +610,7 @@
         userProfile.balance = data.new_balance;
         updateUI();
         window.clearFullCart();
-        window.showToast(data.message || "🎉 Sepetiniz başarıyla satın alındı!");
+        showPurchaseSuccessModal("Sepet Alışverişi", totalCost);
       } else {
         window.showToast(`⚠️ Hata: ${data.error || 'İşlem gerçekleştirilemedi'}`);
       }
@@ -562,8 +670,8 @@
       if (data.success) {
         userProfile.balance = data.new_balance;
         updateUI();
-        window.showToast("🎉 Sipariş başarıyla oluşturuldu! Teslimat sağlanıyor.");
         closeProductModal();
+        showPurchaseSuccessModal(selectedModalProduct.title, price);
       } else {
         window.showToast(`⚠️ Hata: ${data.error || 'İşlem gerçekleştirilemedi'}`);
       }
