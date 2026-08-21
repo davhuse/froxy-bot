@@ -2205,11 +2205,13 @@ try:
 except Exception as exc:
     print(f'[App] KeyVadi Mini App mount unavailable: {exc}')
 
-# LisansArena is intentionally *not* mounted through DispatcherMiddleware.
-# Its PostgreSQL-backed Blueprint owns /la/app/, /api/la/* and the wallet/order
-# flow.  Mounting the legacy JSON application here shadowed those routes and
-# exposed an obsolete 34-product catalogue with a hard-coded test customer.
-print('[App] LisansArena PostgreSQL Mini App served at /la/app/')
+try:
+    from miniapp_lisansarena.server import app as lisansarena_miniapp
+    mounts['/la/app'] = _MountedRootMiddleware(lisansarena_miniapp)
+    mounts['/lisansarena'] = _MountedRootMiddleware(lisansarena_miniapp)
+    print('[App] LisansArena CyberVault Mini App mounted at /la/app and /lisansarena')
+except Exception as exc:
+    print(f'[App] LisansArena Mini App mount unavailable: {exc}')
 
 if mounts:
     app.wsgi_app = DispatcherMiddleware(app.wsgi_app, mounts)
