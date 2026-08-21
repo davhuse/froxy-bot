@@ -473,7 +473,7 @@ def bot_watchdog():
         print("[Watchdog] BOT_RUNTIME_ENABLED=false; Telegram processes will not be started.")
         return
     print("🛡️ [Watchdog] Bot takip sistemi başlatıldı. Botlar her 15 saniyede bir denetlenecek.")
-    time.sleep(30) # Give the web server 30 seconds to bind and report healthy first
+    time.sleep(2) # Fast boot on start
     
     while True:
         try:
@@ -535,7 +535,7 @@ def bot_watchdog():
                             f.write(str(ad_process.pid))
                     except:
                         pass
-                    time.sleep(10)  # Stagger startup to prevent RAM/CPU spikes
+                    time.sleep(1)
                 else:
                     ad_process = ad_proc_os
             else:
@@ -570,7 +570,7 @@ def bot_watchdog():
                             f.write(str(support_process.pid))
                     except:
                         pass
-                    time.sleep(10)  # Stagger startup to prevent RAM/CPU spikes
+                    time.sleep(1)
                 else:
                     support_process = support_proc_os
             else:
@@ -619,7 +619,7 @@ def bot_watchdog():
                             f.write(str(froxy_process.pid))
                     except:
                         pass
-                    time.sleep(10)  # Stagger startup to prevent RAM/CPU spikes
+                    time.sleep(1)
                 else:
                     froxy_process = froxy_proc_os
             else:
@@ -662,7 +662,7 @@ def bot_watchdog():
                             f.write(str(lisansarena_process.pid))
                     except:
                         pass
-                    time.sleep(10)
+                    time.sleep(1)
                 else:
                     lisansarena_process = la_proc_os
             else:

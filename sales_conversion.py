@@ -141,6 +141,9 @@ def _normalize_product(item: dict, brand: str = "") -> dict | None:
         url = f"{PUBLIC_BASE_URL}/la/app?product={quote(product_id, safe='')}"
     if not product_id or not title or not (is_allowed_shopier_url(url) or is_allowed_internal_purchase_url(url)):
         return None
+    lower_title = title.lower()
+    if any(k in lower_title for k in ("bakiye", "cüzdan", "cuzdan", "yükleme", "yukleme")):
+        return None
     price = item.get("price")
     if not price and isinstance(item.get("priceData"), dict):
         price = item["priceData"].get("price")
