@@ -35,6 +35,7 @@ from support_flow import (
     release_product_claim,
     release_support_event,
     respond_with_floodwait,
+    save_ticket_record,
 )
 
 logging.basicConfig(
@@ -743,6 +744,28 @@ async def private_message_handler(event):
         "LisansArena", event.sender_id, incoming_event_id, "incoming"
     ):
         return
+
+    sender = await event.get_sender()
+    sender_id = event.sender_id
+    uname = getattr(sender, 'username', '') or ''
+    fname = getattr(sender, 'first_name', '') or ''
+    lname = getattr(sender, 'last_name', '') or ''
+    msg_text = event.raw_text or ''
+
+    logger.info(f"📥 [LisansArena] DM Alındı: GÖNDEREN={sender_id} (@{uname}) MESAJ='{msg_text}'")
+    print(f"📥 [LisansArena] DM Alındı: GÖNDEREN={sender_id} (@{uname}) MESAJ='{msg_text}'", flush=True)
+
+    try:
+        save_ticket_record(
+            "LisansArena",
+            sender_id,
+            fname,
+            lname,
+            f"@{uname}" if uname else "Yok",
+            msg_text,
+        )
+    except Exception as exc:
+        logger.warning("Ticket kaydı oluşturulamadı: %s", exc)
 
     dm_intent = record_dm_event(
         "LisansArena", event.sender_id, event.raw_text or "",

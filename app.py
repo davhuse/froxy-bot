@@ -1211,6 +1211,24 @@ def get_dm_logs():
                 continue
             with open(log_path, 'r', encoding='utf-8', errors='replace') as f:
                 result.extend(line for line in f if any(marker in line for marker in markers))
+
+        if os.path.exists("tickets.json"):
+            try:
+                with open("tickets.json", "r", encoding="utf-8") as f:
+                    tickets = json.load(f)
+                    if isinstance(tickets, list):
+                        for t in tickets[:limit]:
+                            bot_type = t.get("bot_type", "Destek")
+                            uid = t.get("user_id", "")
+                            uname = t.get("username", "Yok")
+                            msg = t.get("message", "")
+                            ts = t.get("timestamp", "")
+                            t_line = f"[{ts}] 📥 [{bot_type}] DM Alındı: GÖNDEREN={uid} ({uname}) MESAJ='{msg}'\n"
+                            if not any(f"GÖNDEREN={uid}" in r and msg in r for r in result):
+                                result.append(t_line)
+            except Exception:
+                pass
+
         return jsonify({"logs": result[-limit:]})
     except Exception as e:
         return jsonify({"logs": [f"DM log okuma hatasi: {str(e)}"]})

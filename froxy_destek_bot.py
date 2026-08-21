@@ -682,6 +682,28 @@ async def message_handler(event):
 
     is_admin_context = event.sender_id == admin_chat_id or event.chat_id == support_chat_id
 
+    sender = await event.get_sender()
+    uname = getattr(sender, 'username', '') or ''
+    fname = getattr(sender, 'first_name', '') or ''
+    lname = getattr(sender, 'last_name', '') or ''
+    msg_text = event.text or ''
+
+    logger.info(f"📥 [Froxy AI] DM Alındı: GÖNDEREN={user_id} (@{uname}) MESAJ='{msg_text}'")
+    print(f"📥 [Froxy AI] DM Alındı: GÖNDEREN={user_id} (@{uname}) MESAJ='{msg_text}'", flush=True)
+
+    if not is_admin_context:
+        try:
+            save_ticket_record(
+                "Froxy AI",
+                user_id,
+                fname,
+                lname,
+                f"@{uname}" if uname else "Yok",
+                msg_text,
+            )
+        except Exception as exc:
+            logger.warning("Ticket kaydı hatası: %s", exc)
+
     dm_intent = record_dm_event(
         "Froxy AI", user_id, event.text or "",
         message_id=getattr(event.message, "id", None),
