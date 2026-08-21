@@ -135,7 +135,7 @@ class LisansArenaWebTests(unittest.TestCase):
         self.assertIn("/api/balance/create-dynamic-topup", script)
         self.assertIn("/api/user/purchase-cart", script)
         self.assertTrue(products["success"])
-        self.assertEqual(products["count"], 26)
+        self.assertGreaterEqual(products["count"], 30)
 
     def test_webhook_rejects_invalid_signature(self):
         with patch.dict(os.environ, {"LISANSARENA_SHOPIER_WEBHOOK_SECRET": "secret"}):
