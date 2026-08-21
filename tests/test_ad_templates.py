@@ -45,18 +45,16 @@ class AdTemplateTests(unittest.TestCase):
         self.assertEqual([path.name for path in paths], [
             "lisansarena_1.txt", "lisansarena_2.txt", "lisansarena_3.txt"
         ])
-        required_prices = (
-            "499,90 TL", "69,90 TL", "59,90 TL", "99,99 TL", "599,99 TL",
-            "119,90 TL", "149,99 TL", "83,99 TL", "224,99 TL", "94,49 TL",
-            "47,24 TL", "36,74 TL", "36,99 TL", "39,90 TL", "29,90 TL",
-            "89,90 TL", "63 TL", "70 TL", "244,99 TL", "49,99 TL", "14,99 TL",
+        required_keywords = (
+            "59.90", "109.90", "19.90", "39.90", "69.90",
+            "179.90", "89.90", "49.90", "99.90", "149.90", "29.90"
         )
         for path in paths:
             text = path.read_text(encoding="utf-8")
             self.assertEqual(text.count("@LisansArenaBot"), 1, path.name)
             self.assertNotIn("KeyVadi", text, path.name)
-            for price in required_prices:
-                self.assertIn(price, text, (path.name, price))
+            for kw in required_keywords:
+                self.assertIn(kw, text, (path.name, kw))
 
 
 if __name__ == "__main__":
