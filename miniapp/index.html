@@ -267,13 +267,23 @@
       </div>
 
       <div class="glass-card orders-history-card">
-        <div class="card-header-row">
-          <div class="card-header-icon">📦</div>
-          <div>
-            <h3>Satın Alınan Lisanslar</h3>
-            <span class="card-subtext">Sipariş ID, ürün, tutar ve teslimat durumu</span>
+        <div class="card-header-row" style="display: flex; justify-content: space-between; align-items: center;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div class="card-header-icon">📦</div>
+            <div>
+              <h3>Satın Alınan Lisanslar</h3>
+              <span class="card-subtext">Sipariş ID, ürün, tutar ve teslimat durumu</span>
+            </div>
           </div>
+          <button type="button" onclick="manualRefreshKvData()" style="background: rgba(0, 240, 255, 0.15); border: 1px solid var(--primary-cyan); color: #fff; border-radius: 8px; padding: 6px 12px; font-size: 0.76rem; font-weight: 700; cursor: pointer; white-space: nowrap;">
+            🔄 Yenile
+          </button>
         </div>
+
+        <div style="background: rgba(0, 240, 255, 0.08); border: 1px solid rgba(0, 240, 255, 0.25); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 0.78rem; color: var(--text-muted); line-height: 1.45; margin: 10px 0;">
+          ⚡ <strong>Anında Teslimat:</strong> Satın alım tamamlandığında lisans kodunuz saniyeler içinde otomatik olarak bu ekrana düşer. Yenilemek için <strong>'🔄 Yenile'</strong> butonuna dokunabilirsiniz.
+        </div>
+
         <div id="ordersList" class="orders-list" aria-live="polite">
           <!-- Dynamically populated orders -->
         </div>

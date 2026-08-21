@@ -155,14 +155,23 @@
       <!-- ==================== TAB 2: SİPARİŞLERİM (ORDERS) ==================== -->
       <section id="tab-orders" class="tab-pane">
         <div class="vault-panel-card">
-          <div class="panel-header">
-            <div class="p-icon-glow">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+          <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div class="p-icon-glow">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+              </div>
+              <div>
+                <h2>Siparişlerim & Lisanslarım</h2>
+                <p>Satın aldığınız lisans anahtarları ve teslimat geçmişi</p>
+              </div>
             </div>
-            <div>
-              <h2>Siparişlerim & Lisanslarım</h2>
-              <p>Satın aldığınız lisans anahtarları ve teslimat geçmişi</p>
-            </div>
+            <button type="button" onclick="manualRefreshData()" style="background: rgba(121,40,202,0.2); border: 1px solid var(--neon-violet); color: #fff; border-radius: 8px; padding: 6px 12px; font-size: 0.76rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px; white-space: nowrap;">
+              🔄 Yenile
+            </button>
+          </div>
+
+          <div style="background: rgba(121, 40, 202, 0.1); border: 1px solid rgba(121, 40, 202, 0.3); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 0.76rem; color: var(--text-muted); line-height: 1.45; margin-top: 10px;">
+            ⚡ <strong>Anında Teslimat:</strong> Kart veya cüzdanla yapılan satın alımlarda lisans kodunuz saniyeler içinde otomatik olarak bu ekrana tanımlanır. Sayfayı yenilemek için <strong>'🔄 Yenile'</strong> butonuna dokunabilirsiniz.
           </div>
 
           <div id="dedicatedOrdersList" class="orders-list-cyber">

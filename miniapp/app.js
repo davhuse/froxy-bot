@@ -137,20 +137,74 @@ async function loadProducts() {
   }
 }
 
-function startBackgroundBalanceSync() {
-  setInterval(async () => {
-    try {
-      const res = await fetch(api('/api/balance/sync-orders'), {
-        headers: authHeaders()
-      });
-      const data = await res.json();
-      if (data.success && data.credited_orders && data.credited_orders.length > 0) {
-        await registerAndSyncUserProfile();
-        showToast("🎉 Bakiye yüklemeniz onaylandı ve cüzdanınıza yansıtıldı!", "💰");
+let isKvSyncing = false;
+async function syncKvOrdersSilently(triggerSuccessOnNewOrder = true) {
+  if (isKvSyncing) return;
+  isKvSyncing = true;
+  try {
+    const prevOrderCount = Array.isArray(state.orders) ? state.orders.length : 0;
+    const prevLastOrderId = prevOrderCount > 0 ? (state.orders[state.orders.length - 1].order_id || '') : '';
+
+    const res = await fetch(api('/api/balance/sync-orders'), {
+      headers: authHeaders()
+    });
+    const data = await res.json();
+    await registerAndSyncUserProfile();
+
+    if (data.success && data.credited_orders && data.credited_orders.length > 0) {
+      showToast("🎉 Bakiye yüklemeniz onaylandı ve cüzdanınıza yansıtıldı!", "💰");
+    }
+
+    if (triggerSuccessOnNewOrder) {
+      const currentOrders = Array.isArray(state.orders) ? state.orders : [];
+      if (currentOrders.length > prevOrderCount) {
+        const latestOrder = currentOrders[currentOrders.length - 1];
+        if (latestOrder && (latestOrder.order_id || '') !== prevLastOrderId) {
+          showPurchaseSuccessModal(latestOrder.title || "Dijital Lisans", latestOrder.subtotal || latestOrder.price);
+        }
       }
-    } catch (e) {}
-  }, 15000);
+    }
+  } catch (e) {
+  } finally {
+    isKvSyncing = false;
+  }
 }
+
+function startBackgroundBalanceSync() {
+  setInterval(() => syncKvOrdersSilently(true), 12000);
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      syncKvOrdersSilently(true);
+    }
+  });
+  window.addEventListener('focus', () => {
+    syncKvOrdersSilently(true);
+  });
+}
+
+// Active Realtime Polling when user clicks Shopier payment in KeyVadi
+let kvActivePollingInterval = null;
+window.startKvRealtimePaymentWatcher = function() {
+  if (kvActivePollingInterval) clearInterval(kvActivePollingInterval);
+  let pollsLeft = 40; // 40 x 3s = 120 seconds active watcher
+  kvActivePollingInterval = setInterval(async () => {
+    pollsLeft--;
+    if (pollsLeft <= 0) {
+      clearInterval(kvActivePollingInterval);
+      kvActivePollingInterval = null;
+      return;
+    }
+    await syncKvOrdersSilently(true);
+  }, 3000);
+};
+
+window.manualRefreshKvData = async function() {
+  showToast("Veriler güncelleniyor...", "🔄");
+  await loadProducts();
+  await syncKvOrdersSilently(false);
+  showToast("Siparişler ve bakiye güncellendi!", "✅");
+};
 
 function renderUserInfo() {
   if (!tgUser) {
@@ -634,6 +688,7 @@ window.buyViaShopier = async function(productId) {
     });
     const data = await res.json();
     if (data.success && data.payment_url) {
+      startKvRealtimePaymentWatcher();
       showToast('Shopier ödeme sayfası açılıyor...', '💳');
       if (tg?.openLink) {
         tg.openLink(data.payment_url);
@@ -823,6 +878,7 @@ window.proceedShopierTopup = async function() {
     if (data.success && data.payment_url) {
       localStorage.removeItem(topupKeyName);
       window.currentActiveTopupPid = data.product_id;
+      startKvRealtimePaymentWatcher();
       showToast(`Ödeme sayfası açılıyor! (${amount} TL)`, '💳');
       
       if (tg?.openLink) {

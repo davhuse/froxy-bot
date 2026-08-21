@@ -131,8 +131,18 @@
       try { window.history.replaceState({}, document.title, window.location.pathname); } catch (e) {}
     }
 
-    // Auto sync paid orders every 15 seconds
-    setInterval(syncOrdersSilently, 15000);
+    // Auto sync paid orders every 12 seconds
+    setInterval(() => syncOrdersSilently(true), 12000);
+
+    // Instant auto-refresh when switching back to Telegram from Shopier
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        syncOrdersSilently(true);
+      }
+    });
+    window.addEventListener('focus', () => {
+      syncOrdersSilently(true);
+    });
   });
 
   // Fetch Products
@@ -193,17 +203,61 @@
     }
   }
 
-  // Sync Orders Silently
-  async function syncOrdersSilently() {
+  // Manual Refresh
+  window.manualRefreshData = async function () {
+    window.showToast("🔄 Bilgiler güncelleniyor...");
+    await fetchProducts();
+    await syncOrdersSilently(false);
+    window.showToast("✅ Siparişler ve bakiye güncellendi!");
+  };
+
+  // Sync Orders Silently & Real-time Auto-Detection
+  let isSyncing = false;
+  async function syncOrdersSilently(triggerSuccessOnNewOrder = true) {
+    if (isSyncing) return;
+    isSyncing = true;
     try {
+      const prevOrderCount = Array.isArray(userProfile.orders) ? userProfile.orders.length : 0;
+      const prevLastOrderId = prevOrderCount > 0 ? (userProfile.orders[userProfile.orders.length - 1].order_id || '') : '';
+      
       const res = await fetch(api('/api/balance/sync-orders'), { headers: authHeaders() });
       const data = await res.json();
+      await fetchUserProfile();
+      
       if (data.success && data.credited_orders && data.credited_orders.length > 0) {
-        await fetchUserProfile();
         window.showToast("🎉 Bakiye yüklemeniz onaylandı ve cüzdanınıza yansıtıldı!");
       }
-    } catch (e) {}
+
+      if (triggerSuccessOnNewOrder) {
+        const currentOrders = Array.isArray(userProfile.orders) ? userProfile.orders : [];
+        if (currentOrders.length > prevOrderCount) {
+          const latestOrder = currentOrders[currentOrders.length - 1];
+          if (latestOrder && (latestOrder.order_id || '') !== prevLastOrderId) {
+            showPurchaseSuccessModal(latestOrder.title || "Dijital Lisans", latestOrder.subtotal || latestOrder.price);
+          }
+        }
+      }
+    } catch (e) {
+    } finally {
+      isSyncing = false;
+    }
   }
+
+  // Active Polling when Shopier payment initiated
+  let activePollingInterval = null;
+  window.startRealtimePaymentWatcher = function () {
+    if (activePollingInterval) clearInterval(activePollingInterval);
+    let pollsLeft = 40; // 40 x 3s = 120 seconds active watcher
+    activePollingInterval = setInterval(async () => {
+      pollsLeft--;
+      if (pollsLeft <= 0) {
+        clearInterval(activePollingInterval);
+        activePollingInterval = null;
+        return;
+      }
+      await syncOrdersSilently(true);
+    }, 3000);
+  };
 
   // Update UI Elements
   function updateUI() {
@@ -715,6 +769,7 @@
 
       if (data.success && data.payment_url) {
         window.currentActiveTopupPid = data.product_id;
+        window.startRealtimePaymentWatcher();
 
         if (tg?.openLink) {
           tg.openLink(data.payment_url);
@@ -797,6 +852,7 @@
 
       if (data.success && data.payment_url) {
         window.currentActiveTopupPid = data.product_id;
+        window.startRealtimePaymentWatcher();
 
         if (tg?.openLink) {
           tg.openLink(data.payment_url);
