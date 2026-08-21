@@ -233,14 +233,23 @@ def create_dynamic_topup():
 @la_bp.route("/api/balance/cancel-topup", methods=["POST"])
 def cancel_topup():
     """Kullanıcı ödeme yapmaktan vazgeçtiğinde veya sayfadan çıktığında ilanı anında siler."""
-    data = request.get_json(silent=True) or {}
+    data = {}
+    try:
+        data = request.get_json(silent=True) or {}
+    except Exception:
+        pass
+    if not data and request.data:
+        try:
+            data = json.loads(request.data.decode("utf-8"))
+        except Exception:
+            pass
+
     telegram_user = authenticated_user()
-    if not telegram_user:
-        return auth_error()
     product_id = str(data.get("product_id", "")).strip()
     if product_id:
-        owner = (load_active_topups().get(product_id) or {}).get("user_id")
-        if str(owner) != str(telegram_user["id"]):
+        active_map = load_active_topups()
+        owner = (active_map.get(product_id) or {}).get("user_id")
+        if owner and telegram_user and str(owner) != str(telegram_user["id"]):
             return jsonify({"success": False, "error": "Bu ilan size ait değil"}), 403
         cancel_and_delete_topup(product_id)
         return jsonify({"success": True, "message": "İlan başarıyla silindi"})

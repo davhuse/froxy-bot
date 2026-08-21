@@ -49,14 +49,16 @@ def cancel_and_delete_topup(product_id: str) -> bool:
     if not pid:
         return False
 
+    token = (os.environ.get("SHOPIER_LISANSARENA_ACCESS_TOKEN") or os.environ.get("LISANSARENA_SHOPIER_BEARER_TOKEN") or LISANSARENA_TOKEN).strip()
     headers = {
-        "Authorization": f"Bearer {LISANSARENA_TOKEN}",
+        "Authorization": f"Bearer {token}",
         "User-Agent": "Mozilla/5.0"
     }
 
     # Shopier API delete
     try:
-        requests.delete(f"https://api.shopier.com/v1/products/{pid}", headers=headers, timeout=8)
+        res = requests.delete(f"https://api.shopier.com/v1/products/{pid}", headers=headers, timeout=8)
+        print(f"[LisansArena Cancel] Product {pid} silindi (HTTP {res.status_code})")
     except Exception as e:
         print(f"[LisansArena Cancel Error] {e}")
 
@@ -79,7 +81,8 @@ def cleanup_user_previous_topups(user_id: int):
 
 def create_dynamic_shopier_listing(amount: float, user_id: int, user_name: str = "", username: str = "", idempotency_key: str = "") -> dict:
     """Shopier REST API v1 ile LisansArena için anlık ilan açar."""
-    if not LISANSARENA_TOKEN:
+    token = (os.environ.get("SHOPIER_LISANSARENA_ACCESS_TOKEN") or os.environ.get("LISANSARENA_SHOPIER_BEARER_TOKEN") or LISANSARENA_TOKEN).strip()
+    if not token:
         return {"success": False, "error": "Shopier erişim anahtarı yapılandırılmamış"}
     if idempotency_key:
         existing = next((
@@ -98,7 +101,6 @@ def create_dynamic_shopier_listing(amount: float, user_id: int, user_name: str =
     # Önceki açık kalanları temizle
     cleanup_user_previous_topups(user_id)
 
-    token = LISANSARENA_TOKEN
     headers = {
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
@@ -161,82 +163,105 @@ def create_dynamic_shopier_listing(amount: float, user_id: int, user_name: str =
             "error": str(e)
         }
 
+def sweep_orphan_shopier_products():
+    """Shopier üzerindeki tüm açık kalmış dinamik bakiye ilanlarını tarar ve süresi dolan veya yetim kalanları siler."""
+    token = (os.environ.get("SHOPIER_LISANSARENA_ACCESS_TOKEN") or os.environ.get("LISANSARENA_SHOPIER_BEARER_TOKEN") or LISANSARENA_TOKEN).strip()
+    if not token:
+        return
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "User-Agent": "Mozilla/5.0"
+    }
+    try:
+        res = requests.get("https://api.shopier.com/v1/products?limit=50", headers=headers, timeout=12)
+        if res.status_code == 200:
+            payload = res.json()
+            products_list = payload if isinstance(payload, list) else (payload.get("products") or payload.get("data") or [])
+            now = time.time()
+            ttl_seconds = int(os.environ.get("LISANSARENA_TOPUP_TTL_SECONDS", "900"))
+            topups = load_active_topups()
+            for prod in products_list:
+                title = str(prod.get("title") or "")
+                desc = str(prod.get("description") or "")
+                pid = str(prod.get("id") or "")
+                if "LisansArena Cüzdan Bakiye Yükleme" in title or "LisansArena özel bakiye" in desc:
+                    info = topups.get(pid)
+                    if info:
+                        created_at = info.get("created_at", now)
+                        if (now - created_at) > ttl_seconds and info.get("status") == "pending":
+                            print(f"[LisansArena Auto-Cleaner] Süresi dolan ilan siliniyor: {pid}")
+                            cancel_and_delete_topup(pid)
+                    else:
+                        print(f"[LisansArena Auto-Cleaner] Açıkta kalan bakiye ilanı siliniyor: {pid} ({title})")
+                        cancel_and_delete_topup(pid)
+    except Exception as e:
+        print(f"[LisansArena Sweep Error] {e}")
+
 def check_and_sync_shopier_orders(users_data_path: Path):
     """Gelen Shopier siparişlerini kontrol edip bakiyeyi anında tanımlar ve ilanı siler."""
-    token = LISANSARENA_TOKEN
+    token = (os.environ.get("SHOPIER_LISANSARENA_ACCESS_TOKEN") or os.environ.get("LISANSARENA_SHOPIER_BEARER_TOKEN") or LISANSARENA_TOKEN).strip()
     headers = {
         "Authorization": f"Bearer {token}",
         "User-Agent": "Mozilla/5.0"
     }
 
     topups = load_active_topups()
-    if not topups:
-        return []
-
     credited_orders = []
-    try:
-        res = requests.get("https://api.shopier.com/v1/orders?limit=20", headers=headers, timeout=12)
-        if res.status_code == 200:
-            payload = res.json()
-            orders = payload if isinstance(payload, list) else (payload.get("orders") or payload.get("data") or [])
-            if isinstance(orders, list):
-                for ord_item in orders:
-                    items = ord_item.get("lineItems") or ord_item.get("line_items") or ord_item.get("items") or []
-                    ord_status = str(ord_item.get("paymentStatus") or ord_item.get("status") or ord_item.get("orderStatus") or "").lower()
-                    if ord_status not in ["paid", "shipped", "delivered", "completed", "processing", "success"]:
-                        continue
+    if topups:
+        try:
+            res = requests.get("https://api.shopier.com/v1/orders?limit=20", headers=headers, timeout=12)
+            if res.status_code == 200:
+                payload = res.json()
+                orders = payload if isinstance(payload, list) else (payload.get("orders") or payload.get("data") or [])
+                if isinstance(orders, list):
+                    for ord_item in orders:
+                        items = ord_item.get("lineItems") or ord_item.get("line_items") or ord_item.get("items") or []
+                        ord_status = str(ord_item.get("paymentStatus") or ord_item.get("status") or ord_item.get("orderStatus") or "").lower()
+                        if ord_status not in ["paid", "shipped", "delivered", "completed", "processing", "success"]:
+                            continue
 
-                    for item in items:
-                        pid = str(item.get("productId") or item.get("product_id") or item.get("id") or "")
-                        if pid in topups and topups[pid]["status"] == "pending":
-                            t_info = topups[pid]
-                            uid = str(t_info["user_id"])
-                            amt = float(t_info["amount"])
+                        for item in items:
+                            pid = str(item.get("productId") or item.get("product_id") or item.get("id") or "")
+                            if pid in topups and topups[pid]["status"] == "pending":
+                                t_info = topups[pid]
+                                uid = str(t_info["user_id"])
+                                amt = float(t_info["amount"])
 
-                            if users_data_path.exists():
+                                if users_data_path.exists():
+                                    try:
+                                        with open(users_data_path, "r", encoding="utf-8") as f:
+                                            users = json.load(f)
+                                        if uid in users:
+                                            users[uid]["balance"] = round(users[uid].get("balance", 0.0) + amt, 2)
+                                            users[uid].setdefault("orders", []).append({
+                                                "type": "bakiye_yukleme",
+                                                "order_id": str(ord_item.get("id") or ord_item.get("orderId") or pid),
+                                                "product_id": pid,
+                                                "title": "LisansArena bakiye yükleme",
+                                                "amount": amt,
+                                                "status": "completed",
+                                                "created_at": int(time.time())
+                                            })
+                                            with open(users_data_path, "w", encoding="utf-8") as f:
+                                                json.dump(users, f, ensure_ascii=False, indent=2)
+                                    except Exception as ue:
+                                        print(f"[User Save Error] {ue}")
+
+                                t_info["status"] = "completed"
+                                topups[pid] = t_info
+                                save_active_topups(topups)
+                                credited_orders.append({"user_id": uid, "amount": amt, "product_id": pid})
+
+                                # Satın alındı, ilanı derhal sil
                                 try:
-                                    with open(users_data_path, "r", encoding="utf-8") as f:
-                                        users = json.load(f)
-                                    if uid in users:
-                                        users[uid]["balance"] = round(users[uid].get("balance", 0.0) + amt, 2)
-                                        users[uid].setdefault("orders", []).append({
-                                            "type": "bakiye_yukleme",
-                                            "order_id": str(ord_item.get("id") or ord_item.get("orderId") or pid),
-                                            "product_id": pid,
-                                            "title": "LisansArena bakiye yükleme",
-                                            "amount": amt,
-                                            "status": "completed",
-                                            "created_at": int(time.time())
-                                        })
-                                        with open(users_data_path, "w", encoding="utf-8") as f:
-                                            json.dump(users, f, ensure_ascii=False, indent=2)
-                                except Exception as ue:
-                                    print(f"[User Save Error] {ue}")
+                                    requests.delete(f"https://api.shopier.com/v1/products/{pid}", headers=headers, timeout=8)
+                                except Exception:
+                                    pass
+        except Exception as e:
+            print(f"[LisansArena Shopier Sync Error] {e}")
 
-                            t_info["status"] = "completed"
-                            topups[pid] = t_info
-                            save_active_topups(topups)
-                            credited_orders.append({"user_id": uid, "amount": amt, "product_id": pid})
-
-                            # Satın alındı, ilanı derhal sil
-                            try:
-                                requests.delete(f"https://api.shopier.com/v1/products/{pid}", headers=headers, timeout=8)
-                            except Exception:
-                                pass
-    except Exception as e:
-        print(f"[LisansArena Shopier Sync Error] {e}")
-
-    # Süresi dolan (Varsayılan TTL: 15 dk / 900 sn) ve ödenmemiş ilanları Shopier'dan sil
-    now = time.time()
-    ttl_seconds = int(os.environ.get("LISANSARENA_TOPUP_TTL_SECONDS", "900"))
-    expired_pids = []
-    for pid, info in list(topups.items()):
-        if info.get("status") == "pending" and (now - info.get("created_at", now)) > ttl_seconds:
-            expired_pids.append(pid)
-    
-    for pid in expired_pids:
-        print(f"[LisansArena Auto-Cleaner] Süresi dolan ilan siliniyor: {pid}")
-        cancel_and_delete_topup(pid)
+    # Shopier üzerindeki tüm yetim ve açık kalmış bakiye ilanlarını temizle
+    sweep_orphan_shopier_products()
 
     return credited_orders
 
@@ -257,4 +282,4 @@ def start_background_shopier_cleaner(users_data_path: Path):
 
     t = threading.Thread(target=_worker, daemon=True)
     t.start()
-    print("[LisansArena] Otomatik İlan Temizleme Arka Plan Servisi Başlatıldı (20s döngü, 5dk TTL).")
+    print("[LisansArena] Otomatik İlan Temizleme Arka Plan Servisi Başlatıldı (20s döngü, 15dk TTL).")

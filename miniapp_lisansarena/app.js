@@ -668,8 +668,24 @@
     }
   };
 
-  // Opening Shopier may unload the Mini App; cancellation is server-side and
-  // TTL based so a real payment is never deleted while checkout is opening.
+  window.addEventListener('pagehide', function () {
+    if (window.currentActiveTopupPid) {
+      const payload = JSON.stringify({
+        init_data: telegramInitData,
+        product_id: window.currentActiveTopupPid
+      });
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon(api('/api/balance/cancel-topup'), new Blob([payload], { type: 'application/json' }));
+      } else {
+        fetch(api('/api/balance/cancel-topup'), {
+          method: 'POST',
+          headers: authHeaders(),
+          body: payload,
+          keepalive: true
+        }).catch(() => {});
+      }
+    }
+  });
 
   // Referral Copy & Share
   window.copyRefLink = function () {
