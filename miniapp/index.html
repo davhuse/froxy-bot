@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>KeyVadi — Dijital Ürün & Lisans App</title>
+  <title>KeyVadi — Dijital Lisans & E-Pin Mağazası</title>
   
-  <!-- Fonts -->
+  <!-- Modern Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -13,12 +13,12 @@
   <!-- Telegram WebApp SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   
-  <!-- CSS -->
-  <link rel="stylesheet" href="style.css?v=10.0" />
+  <!-- CSS Stylesheet -->
+  <link rel="stylesheet" href="style.css?v=11.0" />
 </head>
 <body>
   
-  <!-- BACKGROUND PARTICLES & GLOW -->
+  <!-- AMBIENT BACKGROUND & GLOWING PARTICLES -->
   <div class="ambient-background">
     <div class="glow-orb orb-primary"></div>
     <div class="glow-orb orb-secondary"></div>
@@ -32,11 +32,11 @@
     <header class="app-header">
       <div class="header-left">
         <div class="brand-avatar">
-          <img src="assets/keyvadi_logo.png" alt="KeyVadi Logo" class="brand-logo-img">
+          <img src="assets/keyvadi_logo.png" alt="KeyVadi Logo" class="brand-logo-img" onerror="this.src='assets/keyvadi_banner_new_1781380687628.png'">
           <span class="online-indicator" title="Sistem Aktif"></span>
         </div>
         <div class="brand-info">
-          <div class="brand-name">KEYVADI<span class="brand-badge">APP</span></div>
+          <div class="brand-name">KEYVADI<span class="brand-badge">PRO</span></div>
           <div class="user-greeting" id="headerUserName">Yükleniyor...</div>
         </div>
       </div>
@@ -44,10 +44,11 @@
       <div class="header-right">
         <!-- CART BUTTON -->
         <button class="header-cart-btn" onclick="switchTab('cartTab')" title="Sepetim">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
           <span class="cart-badge-count" id="headerCartCount">0</span>
         </button>
 
+        <!-- BALANCE PILL -->
         <button class="balance-pill" onclick="switchTab('walletTab')" title="Bakiye Yükle">
           <div class="balance-glow"></div>
           <span class="balance-icon">💳</span>
@@ -86,36 +87,36 @@
             <span class="story-icon">🎮</span>
             <div>
               <div class="story-title">Oyun & Pin</div>
-              <div class="story-desc">FC26, Steam, Zula</div>
+              <div class="story-desc">FC26, Steam, Game Pass</div>
             </div>
             <span class="story-tag">ANINDA</span>
           </div>
 
-          <div class="story-card story-green" onclick="setCategory('streaming', this)">
+          <div class="story-card story-green" onclick="setCategory('entertainment', this)">
             <span class="story-icon">🎬</span>
             <div>
-              <div class="story-title">Sinema & Dizi</div>
-              <div class="story-desc">Netflix 4K, Spotify, YT</div>
+              <div class="story-title">Sinema & Müzik</div>
+              <div class="story-desc">Netflix, Spotify, YouTube</div>
             </div>
             <span class="story-tag">4K ULTRA</span>
           </div>
 
-          <div class="story-card story-blue" onclick="setCategory('software', this)">
-            <span class="story-icon">💻</span>
+          <div class="story-card story-blue" onclick="setCategory('design', this)">
+            <span class="story-icon">🎨</span>
             <div>
-              <div class="story-title">Yazılım & Key</div>
-              <div class="story-desc">Windows 11, Office 365</div>
+              <div class="story-title">Tasarım & Edit</div>
+              <div class="story-desc">CapCut, Adobe, Envato</div>
             </div>
-            <span class="story-tag">ORİJİNAL</span>
+            <span class="story-tag">PRO</span>
           </div>
 
-          <div class="story-card story-gold" onclick="setCategory('coupons', this)">
-            <span class="story-icon">🎟️</span>
+          <div class="story-card story-purple" onclick="setCategory('security', this)">
+            <span class="story-icon">🛡️</span>
             <div>
-              <div class="story-title">Kupon & İndirim</div>
-              <div class="story-desc">Trendyol, Shell Yakıt</div>
+              <div class="story-title">Yazılım & Antivirüs</div>
+              <div class="story-desc">Kaspersky, Windows, Office</div>
             </div>
-            <span class="story-tag">FIRSAT</span>
+            <span class="story-tag">ORİJİNAL</span>
           </div>
 
         </div>
@@ -125,7 +126,7 @@
       <section class="search-section">
         <div class="search-input-wrapper">
           <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-          <input type="text" id="searchInput" placeholder="ChatGPT, Canva, Steam veya kupon ara..." />
+          <input type="text" id="searchInput" placeholder="ChatGPT, CapCut, Steam, Netflix ara..." />
           <button id="searchClear" class="search-clear-btn" style="display:none;">✕</button>
         </div>
       </section>
@@ -133,7 +134,7 @@
       <!-- CATEGORIES HORIZONTAL SCROLL -->
       <section class="categories-section">
         <div class="categories-scroll" id="categoriesScroll">
-          <!-- Six sales-focused categories are rendered from the live catalogue. -->
+          <!-- Dynamically generated category chips -->
         </div>
       </section>
 
@@ -142,13 +143,13 @@
         <div class="section-title-row">
           <div class="section-heading">
             <span class="heading-glow-bar"></span>
-            <h2 id="currentCategoryHeading">Popüler Lisanslar</h2>
+            <h2 id="currentCategoryHeading">Tüm Ürünler</h2>
           </div>
-          <span id="filteredCountBadge" class="badge-count">61 Ürün</span>
+          <span id="filteredCountBadge" class="badge-count">Yükleniyor...</span>
         </div>
 
         <div id="productsGrid" class="products-grid">
-          <!-- Dynamically populated -->
+          <!-- Dynamically populated product cards -->
         </div>
       </section>
 
@@ -190,7 +191,7 @@
         <div id="kvCartEmptyState" class="cart-empty-state">
           <div class="empty-icon">🛒</div>
           <h3 style="color: #fff; margin-bottom: 6px;">Sepetiniz Boş</h3>
-          <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 16px;">Mağazadan lisansları sepetinize ekleyerek toplu veya tekli sipariş verebilirsiniz.</p>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">Mağazadan lisansları sepetinize ekleyerek toplu sipariş verebilirsiniz.</p>
           <button class="btn-primary-action" onclick="switchTab('storeTab')">
             <span>Mağazayı Keşfet</span>
           </button>
@@ -202,10 +203,10 @@
     <main id="walletTab" class="tab-view">
       <div class="view-header">
         <h2>Cüzdan & Bakiye</h2>
-        <p>Bakiye yükleyin, anında indirimli alışveriş yapın</p>
+        <p>Bakiye yükleyin, 7/24 anında indirimli alışveriş yapın</p>
       </div>
 
-      <!-- HERO CARD -->
+      <!-- HERO WALLET CARD -->
       <div class="wallet-hero-card">
         <div class="wallet-card-glow"></div>
         <div class="wallet-hero-top">
@@ -214,8 +215,8 @@
         </div>
         <div class="wallet-hero-amount dynamic-balance">₺0.00</div>
         <div class="wallet-hero-footer">
-          <span id="walletUserId">ID: 8797763469</span>
-          <span class="instant-tag">⚡ Otomatik Yükleme</span>
+          <span id="walletUserId">ID: Yükleniyor...</span>
+          <span class="instant-tag">⚡ Otomatik 3D Secure</span>
         </div>
       </div>
 
@@ -258,11 +259,48 @@
       </div>
     </main>
 
-    <!-- TAB 4: REFERANS (REFERRALS) -->
+    <!-- TAB 4: SİPARİŞLERİM & KODLARIM -->
+    <main id="ordersTab" class="tab-view">
+      <div class="view-header">
+        <h2>Siparişlerim & Lisanslarım</h2>
+        <p>Satın aldığınız lisans anahtarları ve teslimat geçmişi</p>
+      </div>
+
+      <div class="glass-card orders-history-card">
+        <div class="card-header-row">
+          <div class="card-header-icon">📦</div>
+          <div>
+            <h3>Satın Alınan Lisanslar</h3>
+            <span class="card-subtext">Sipariş ID, ürün, tutar ve teslimat durumu</span>
+          </div>
+        </div>
+        <div id="ordersList" class="orders-list" aria-live="polite">
+          <!-- Dynamically populated orders -->
+        </div>
+      </div>
+
+      <div class="glass-card" style="margin-top: 14px;">
+        <div class="card-header-row">
+          <div class="card-header-icon">🛡️</div>
+          <div>
+            <h3>Garanti & Telafi Güvencesi</h3>
+            <span class="card-subtext">7/24 kesintisiz müşteri desteği</span>
+          </div>
+        </div>
+        <p class="card-subtext" style="font-size: 0.84rem; line-height: 1.6; margin-top: 8px;">
+          KeyVadi üzerinden alınan tüm lisans, hesap ve e-pinler süreleri boyunca telafi ve değişim garantimiz altındadır. Kodunuzla ilgili herhangi bir sorunuzda canlı desteğimize yazabilirsiniz.
+        </p>
+        <button class="btn-primary-action" onclick="notifySupport()" style="margin-top: 14px;">
+          <span>💬 Canlı Desteğe Bağlan</span>
+        </button>
+      </div>
+    </main>
+
+    <!-- TAB 5: REFERANS (REFERRALS) -->
     <main id="referralTab" class="tab-view">
       <div class="view-header">
         <h2>Davet Et & Kazan</h2>
-        <p>Arkadaşlarını davet et, harcamalarından %10 komisyon kazan!</p>
+        <p>Arkadaşlarını davet et, harcamalarından %10 nakit kazan!</p>
       </div>
 
       <div class="affiliate-hero-card">
@@ -321,66 +359,10 @@
             <span class="step-badge">3</span>
             <div>
               <strong>%10 Anında Kazan</strong>
-              <p>Her başarılı bakiye yüklemesinde %10 nakit bakiye cüzdanına otomatik yansısın.</p>
+              <p>Her başarılı yüklemede %10 nakit bakiye cüzdanına otomatik yansısın.</p>
             </div>
           </div>
         </div>
-      </div>
-    </main>
-
-    <!-- TAB 5: PROFİL & DESTEK -->
-    <main id="profileTab" class="tab-view">
-      <div class="view-header">
-        <h2>Hesap & Destek</h2>
-        <p>Müşteri paneli ve canlı destek</p>
-      </div>
-
-      <div class="glass-card profile-hero-card">
-        <div class="profile-avatar-large">
-          <img src="assets/keyvadi_logo.png" alt="KeyVadi Logo" class="profile-logo-img">
-        </div>
-        <h3 id="profileName">KeyVadi Müşterisi</h3>
-        <div class="profile-meta">
-          <span id="profileBadgeId">ID: 8797763469</span>
-          <span class="profile-tier-badge">VIP Üye</span>
-        </div>
-      </div>
-
-      <div class="glass-card orders-history-card">
-        <div class="card-header-row">
-          <div class="card-header-icon">📦</div>
-          <div><h3>Siparişlerim</h3><span class="card-subtext">Sipariş no, ürün, tutar ve teslimat durumu</span></div>
-        </div>
-        <div id="ordersList" class="orders-list" aria-live="polite"></div>
-      </div>
-
-      <div class="glass-card">
-        <div class="card-header-row">
-          <div class="card-header-icon">💬</div>
-          <div>
-            <h3>Hızlı Erişim & Destek</h3>
-            <span class="card-subtext">7/24 kesintisiz müşteri desteği</span>
-          </div>
-        </div>
-
-        <div class="quick-actions-grid">
-          <div class="quick-btn" onclick="notifySupport()">
-            <span class="q-icon">💬</span>
-            <span>Canlı Destek</span>
-          </div>
-          <div class="quick-btn" onclick="window.open('https://www.shopier.com/keyvadi', '_blank')">
-            <span class="q-icon">🛍️</span>
-            <span>Web Mağaza</span>
-          </div>
-        </div>
-
-        <div class="guarantee-box">
-          <p>KeyVadi üzerinden alınan tüm lisans, hesap ve e-pinler süreleri boyunca telafi ve değişim garantimiz altındadır. Herhangi bir sorunda Telegram destek ekibimiz 7/24 hizmetinizdedir.</p>
-        </div>
-
-        <button class="btn-primary-action" onclick="notifySupport()">
-          <span>💬 @KeyVadiDestek ile İletişime Geç</span>
-        </button>
       </div>
     </main>
 
@@ -413,19 +395,19 @@
           <span class="dock-dot"></span>
         </button>
 
+        <button class="dock-item" data-tab="ordersTab" onclick="switchTab('ordersTab')">
+          <div class="dock-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+          </div>
+          <span class="dock-label">Siparişler</span>
+          <span class="dock-dot"></span>
+        </button>
+
         <button class="dock-item" data-tab="referralTab" onclick="switchTab('referralTab')">
           <div class="dock-icon">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
           </div>
-          <span class="dock-label">Referans</span>
-          <span class="dock-dot"></span>
-        </button>
-
-        <button class="dock-item" data-tab="profileTab" onclick="switchTab('profileTab')">
-          <div class="dock-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="7" r="4"></circle><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path></svg>
-          </div>
-          <span class="dock-label">Profil</span>
+          <span class="dock-label">Kazan</span>
           <span class="dock-dot"></span>
         </button>
 
@@ -439,7 +421,7 @@
         <div class="modal-drag-bar"></div>
         
         <div class="modal-hero-img-wrapper">
-          <img id="modalProductImg" src="" alt="Ürün Görseli" />
+          <img id="modalProductImg" src="" alt="Ürün Görseli" onerror="this.src='assets/keyvadi_banner_new_1781380687628.png'" />
           <span id="modalBadge" class="modal-badge-pill">POPÜLER</span>
         </div>
 
@@ -453,22 +435,29 @@
           <p id="modalProductDesc" class="modal-desc">Ürün açıklaması burada yer alır.</p>
 
           <div class="modal-features-list">
-            <div class="modal-feat-item">📦 <strong id="modalDeliveryInfo">Teslimat bilgisi yükleniyor</strong></div>
-            <div class="modal-feat-item">✓ <strong id="modalEligibilityInfo">Uygunluk şartları ödeme öncesi doğrulanır</strong></div>
-            <div class="modal-feat-item">💳 <strong>Shopier veya cüzdan bakiyesiyle ödeme</strong></div>
+            <div class="modal-feat-item">⚡ <strong id="modalDeliveryInfo">7/24 Anında Otomatik Teslimat</strong></div>
+            <div class="modal-feat-item">🛡️ <strong id="modalEligibilityInfo">Orijinal Lisans & Garanti Güvencesi</strong></div>
+            <div class="modal-feat-item">💳 <strong>3D Secure Kredi Kartı veya Cüzdan ile Ödeme</strong></div>
           </div>
 
           <div class="modal-actions-stack">
-            <button class="btn-modal-cart" onclick="addModalProductToKvCart()">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-              <span>+ Sepete Ekle</span>
+            <!-- 1-CLICK DIRECT SHOPIER BUTTON -->
+            <button class="btn-modal-shopier" id="btnModalDirectShopier" onclick="buyViaShopier()">
+              <span>⚡ Kartla Direkt Satın Al (Shopier)</span>
             </button>
-            <button class="btn-modal-shopier" onclick="buyViaShopier()">
-              <span>⚡ Shopier ile Doğrudan Satın Al</span>
-            </button>
-            <button class="btn-modal-wallet" onclick="buyWithWallet()">
-              <span>💰 Cüzdan Bakiyesi ile Al</span>
-            </button>
+            
+            <div class="modal-actions-dual">
+              <!-- ADD TO CART -->
+              <button class="btn-modal-cart" onclick="addModalProductToKvCart()">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                <span>+ Sepete Ekle</span>
+              </button>
+              
+              <!-- BUY WITH WALLET -->
+              <button class="btn-modal-wallet" onclick="buyWithWallet()">
+                <span>💰 Cüzdanla Al</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -480,6 +469,6 @@
   </div>
 
   <!-- Main JavaScript Logic -->
-  <script src="app.js?v=10.0"></script>
+  <script src="app.js?v=11.0"></script>
 </body>
 </html>

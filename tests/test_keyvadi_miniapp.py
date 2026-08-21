@@ -59,6 +59,14 @@ class KeyVadiMiniAppTests(unittest.TestCase):
         self.assertTrue(second.json["duplicate"])
         self.assertEqual(len(server.load_users()["123"]["orders"]), 1)
 
+    def test_miniapp_html_contains_orders_tab_and_direct_shopier(self):
+        index_html = (MINIAPP / "index.html").read_text(encoding="utf-8")
+        self.assertIn('id="ordersTab"', index_html)
+        self.assertIn('btnModalDirectShopier', index_html)
+        self.assertIn('ordersList', index_html)
+        self.assertIn('categoriesScroll', index_html)
+        self.assertIn('buyViaShopier', index_html)
+
 
 if __name__ == "__main__":
     unittest.main()

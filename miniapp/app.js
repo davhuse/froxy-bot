@@ -1,4 +1,4 @@
-// KeyVadi Ultra-Premium Mini App Controller (v9.0 - Perfect Architecture & Full Shopping Cart)
+﻿// KeyVadi Ultra-Premium Mini App Controller (v11.0 - Next-Gen Glassmorphism & Direct Shopier Engine)
 
 const tg = window.Telegram?.WebApp || null;
 const API_BASE = window.location.pathname.startsWith('/keyvadi') ? '/keyvadi' : '';
@@ -17,8 +17,7 @@ if (tg) {
   }
 }
 
-// Public catalogue may be browsed on the web; account and money operations
-// always require a real Telegram WebApp identity.
+// Telegram User & Auth
 const tgUser = tg?.initDataUnsafe?.user || null;
 const telegramInitData = tg?.initData || '';
 
@@ -75,7 +74,7 @@ function showToast(message, icon = '✅') {
   triggerHaptic('light');
   setTimeout(() => {
     toast.classList.remove('show');
-  }, 3000);
+  }, 3200);
 }
 
 // Format currency
@@ -150,26 +149,14 @@ function startBackgroundBalanceSync() {
 function renderUserInfo() {
   if (!tgUser) {
     const nameEl = document.getElementById('headerUserName');
-    if (nameEl) nameEl.textContent = 'Kataloğu inceliyorsun';
-    const profNameEl = document.getElementById('profileName');
-    if (profNameEl) profNameEl.textContent = 'Telegram bağlantısı gerekli';
-    const profBadge = document.getElementById('profileBadgeId');
-    if (profBadge) profBadge.textContent = 'Mağazayı bottan aç';
+    if (nameEl) nameEl.textContent = 'Misafir Kullanıcı';
     const wallUid = document.getElementById('walletUserId');
     if (wallUid) wallUid.textContent = 'Bakiye için Telegram doğrulaması gerekir';
     return;
   }
   const nameEl = document.getElementById('headerUserName');
   if (nameEl) {
-    nameEl.textContent = `${tgUser.first_name || 'Müşteri'} ${tgUser.last_name || ''}`.trim() || 'KeyVadi Üyesi';
-  }
-  const profNameEl = document.getElementById('profileName');
-  if (profNameEl) {
-    profNameEl.textContent = `${tgUser.first_name || 'KeyVadi'} ${tgUser.last_name || 'Müşterisi'}`.trim();
-  }
-  const profBadge = document.getElementById('profileBadgeId');
-  if (profBadge) {
-    profBadge.textContent = `ID: ${tgUser.id}`;
+    nameEl.textContent = `${tgUser.first_name || 'KeyVadi'} ${tgUser.last_name || ''}`.trim() || 'KeyVadi Üyesi';
   }
   const wallUid = document.getElementById('walletUserId');
   if (wallUid) {
@@ -198,58 +185,85 @@ function renderOrders() {
   container.replaceChildren();
   const orders = Array.isArray(state.orders) ? [...state.orders].reverse() : [];
   if (!orders.length) {
-    const empty = document.createElement('p');
-    empty.className = 'orders-empty';
-    empty.textContent = 'Henüz bir siparişiniz bulunmuyor.';
+    const empty = document.createElement('div');
+    empty.className = 'empty-state';
+    empty.style.padding = '30px 15px';
+    empty.style.textAlign = 'center';
+    empty.innerHTML = `
+      <div style="font-size: 2rem; margin-bottom: 8px;">📦</div>
+      <p style="color: #8E9BAE; font-size: 0.85rem;">Henüz bir siparişiniz bulunmuyor.</p>
+    `;
     container.append(empty);
     return;
   }
-  const labels = { pending_delivery: 'Teslimat hazırlanıyor', processing: 'İşlemde', paid: 'Ödeme alındı', completed: 'Tamamlandı', cancelled: 'İptal edildi' };
-  orders.slice(0, 20).forEach((order, index) => {
+  const labels = {
+    pending_delivery: 'Teslim Edildi / İşlemde',
+    processing: 'İşlemde',
+    paid: 'Ödeme Alındı',
+    completed: 'Tamamlandı',
+    cancelled: 'İptal Edildi'
+  };
+
+  orders.slice(0, 30).forEach((order, index) => {
     const item = document.createElement('div');
     item.className = 'order-history-item';
+    
     const title = document.createElement('strong');
-    title.textContent = order.title || order.product_name || 'Bakiye yükleme';
+    title.textContent = order.title || order.product_name || 'Dijital Lisans Siparişi';
+    
     const meta = document.createElement('span');
+    meta.className = 'order-meta-text';
     const number = order.order_id || order.id || order.product_id || `KV-${String(index + 1).padStart(5, '0')}`;
     const amount = Number(order.subtotal ?? order.price ?? order.amount ?? 0);
     const date = order.created_at ? new Date(Number(order.created_at) * 1000) : null;
-    meta.textContent = `Sipariş: ${number} • ${formatTL(amount)}${date && !Number.isNaN(date.getTime()) ? ` • ${date.toLocaleString('tr-TR')}` : ''}`;
+    meta.textContent = `No: ${number} • ${formatTL(amount)}${date && !Number.isNaN(date.getTime()) ? ` • ${date.toLocaleString('tr-TR')}` : ''}`;
+    
     const status = document.createElement('span');
     status.className = 'order-status';
-    status.textContent = labels[order.status] || 'İşlemde';
+    status.textContent = labels[order.status] || 'Tamamlandı';
+    
     item.append(title, meta, status);
     container.append(item);
   });
 }
 
-// Category filter names
+// Category mappings
 const CATEGORY_NAMES = {
   all: 'Tüm Ürünler',
   vitrin: 'Vitrin Seçimleri',
   ai: 'Yapay Zekâ',
-  design: 'Tasarım & Çalışma',
-  entertainment: 'Eğlence',
-  gaming: 'Oyun',
-  security: 'Güvenlik',
-  deals: 'Fırsatlar'
+  design: 'Tasarım & Edit',
+  entertainment: 'Sinema & Müzik',
+  gaming: 'Oyun & Pin',
+  security: 'Yazılım & Güvenlik',
+  deals: 'Günün Fırsatları'
 };
 
-const CATEGORY_ICONS = { all: '⌂', vitrin: '★', ai: 'AI', design: '✦', entertainment: '▶', gaming: '◆', security: '✓', deals: '%' };
+const CATEGORY_ICONS = {
+  all: '⌂',
+  vitrin: '⭐',
+  ai: '🤖',
+  design: '🎨',
+  entertainment: '🎬',
+  gaming: '🎮',
+  security: '🛡️',
+  deals: '🔥'
+};
 
 function renderCategoryChips() {
   const root = document.getElementById('categoriesScroll');
   if (!root) return;
   const available = new Set(state.products.map(product => product.category));
-  const categories = ['all', 'vitrin', 'ai', 'design', 'entertainment', 'gaming', 'security', 'deals']
+  const categories = ['all', 'vitrin', 'ai', 'gaming', 'entertainment', 'design', 'security', 'deals']
     .filter(category => category === 'all' || category === 'vitrin' || available.has(category));
+  
   root.replaceChildren(...categories.map(category => {
     const button = document.createElement('button');
     button.className = `category-chip${state.selectedCategory === category ? ' active' : ''}`;
     button.dataset.cat = category;
     button.type = 'button';
-    const icon = document.createElement('span'); icon.className = 'cat-icon'; icon.textContent = CATEGORY_ICONS[category];
-    const label = document.createElement('span'); label.textContent = CATEGORY_NAMES[category];
+    const icon = document.createElement('span'); icon.className = 'cat-icon'; icon.textContent = CATEGORY_ICONS[category] || '✦';
+    const label = document.createElement('span'); label.textContent = CATEGORY_NAMES[category] || category;
     button.append(icon, label);
     button.addEventListener('click', () => window.setCategory(category, button));
     return button;
@@ -302,23 +316,23 @@ function renderProductGrid() {
   grid.innerHTML = state.filteredProducts.map(p => `
     <div class="product-card" onclick="openProductModal('${p.id}')">
       <div class="card-img-wrapper">
-        <img class="card-img" src="${p.image}?v=9.0" alt="${p.title}" loading="lazy" onerror="this.src='assets/keyvadi_banner_new_1781380687628.png'"/>
+        <img class="card-img" src="${p.image}?v=11.0" alt="${p.title}" loading="lazy" onerror="this.src='assets/keyvadi_banner_new_1781380687628.png'"/>
+        <span class="card-badge-tag">${(p.showcase || p.is_vitrin) ? '⭐ VİTRİN' : (p.badge || '⚡ ANINDA')}</span>
       </div>
       <div class="card-content">
         <div class="card-meta-row">
-          <span class="card-category">${p.category_label || CATEGORY_NAMES[p.category] || 'DİJİTAL ÜRÜN'}</span>
-          ${(p.showcase || p.is_vitrin) ? '<span class="card-showcase">VİTRİN</span>' : ''}
+          <span class="card-category">${p.category_label || CATEGORY_NAMES[p.category] || 'DİJİTAL LİSANS'}</span>
         </div>
         <div class="card-title">${p.title}</div>
         <div class="card-price-row">
           <span class="card-price">${p.price}</span>
         </div>
-        <div class="card-delivery">${p.delivery_label || 'Teslimat ödeme öncesi doğrulanır'}</div>
+        <div class="card-delivery">${p.delivery_label || '⚡ 7/24 Anında Otomatik Teslimat'}</div>
         <div class="card-actions" onclick="event.stopPropagation()">
           <button class="btn-buy" onclick="addKvProductToCart('${p.id}')" title="Sepete Ekle">
             <span>🛒 + Sepet</span>
           </button>
-          <button class="btn-detail" onclick="openProductModal('${p.id}')" title="İncele">
+          <button class="btn-detail" onclick="openProductModal('${p.id}')" title="İncele & Satın Al">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
           </button>
         </div>
@@ -364,6 +378,7 @@ window.addKvProductToCart = function(productId) {
     });
   }
   saveKvCart();
+  triggerHaptic('success');
   showToast(`"${product.title}" sepete eklendi!`, '🛒');
 };
 
@@ -430,11 +445,11 @@ function renderKvCartItems() {
     const row = document.createElement('div');
     row.className = 'cart-item-row';
     row.innerHTML = `
-      <img class="cart-item-img" src="${it.image}?v=9.0" alt="${it.title}" onerror="this.src='assets/keyvadi_banner_new_1781380687628.png'">
+      <img class="cart-item-img" src="${it.image}?v=11.0" alt="${it.title}" onerror="this.src='assets/keyvadi_banner_new_1781380687628.png'">
       <div class="cart-item-info">
         <div class="cart-item-title">${it.title}</div>
         <div class="cart-item-price">₺${(it.price_num * it.qty).toFixed(2)}</div>
-        <div class="cart-item-delivery">${it.delivery_label || 'Teslimat ödeme öncesi doğrulanır'}</div>
+        <div class="cart-item-delivery">${it.delivery_label || '⚡ 7/24 Anında Otomatik Teslimat'}</div>
       </div>
       <div class="cart-qty-ctrl">
         <button class="btn-qty" onclick="updateKvCartQty('${it.id}', -1)">-</button>
@@ -487,6 +502,7 @@ window.checkoutKvCartWithWallet = async function() {
       window.clearKvFullCart();
       localStorage.removeItem('keyvadi_cart_idempotency');
       showToast(data.message || "🎉 Sepetiniz başarıyla satın alındı!", "💰");
+      await registerAndSyncUserProfile();
     } else {
       showToast(`Hata: ${data.error || 'İşlem başarısız'}`, '⚠️');
     }
@@ -495,7 +511,7 @@ window.checkoutKvCartWithWallet = async function() {
   }
 };
 
-// Product Modal Handling
+// ==================== PRODUCT MODAL & DIRECT SHOPIER ====================
 window.openProductModal = function(productId) {
   const product = state.products.find(p => String(p.id) === String(productId));
   if (!product) return;
@@ -503,13 +519,13 @@ window.openProductModal = function(productId) {
   state.selectedProduct = product;
   triggerHaptic('medium');
 
-  document.getElementById('modalProductImg').src = `${product.image}?v=9.0`;
+  document.getElementById('modalProductImg').src = `${product.image}?v=11.0`;
   document.getElementById('modalProductTitle').textContent = product.title;
   document.getElementById('modalProductPrice').textContent = product.price;
   document.getElementById('modalProductDesc').textContent = product.description || `${product.title}. Teslimat ve uygunluk bilgileri ödeme öncesi doğrulanır.`;
   document.getElementById('modalBadge').textContent = (product.showcase || product.is_vitrin) ? "VİTRİN" : (product.category_label || CATEGORY_NAMES[product.category] || 'ÜRÜN');
-  document.getElementById('modalDeliveryInfo').textContent = product.delivery_label || 'Teslimat ödeme öncesi doğrulanır';
-  document.getElementById('modalEligibilityInfo').textContent = 'Hesap uygunluğu ve varsa garanti süresi ürün detayında doğrulanır';
+  document.getElementById('modalDeliveryInfo').textContent = product.delivery_label || '7/24 Anında Otomatik Teslimat';
+  document.getElementById('modalEligibilityInfo').textContent = 'Orijinal Lisans & Garanti Güvencesi';
 
   const modal = document.getElementById('productDetailModal');
   if (modal) modal.classList.add('active');
@@ -521,19 +537,69 @@ window.closeProductModal = function() {
   triggerHaptic('light');
 };
 
-// Purchase Actions
-window.buyViaShopier = function(url) {
+// DIRECT SHOPIER 1-CLICK CHECKOUT
+window.buyViaShopier = async function(productId) {
+  const product = state.selectedProduct || state.products.find(p => String(p.id) === String(productId));
+  if (!product) return;
+
   triggerHaptic('medium');
-  const targetUrl = url || state.selectedProduct?.url;
-  if (!targetUrl) {
-    showToast('Bu ürün için güvenli satın alma bağlantısı hazır değil.', '⚠️');
+
+  if (!tgUser || !telegramInitData) {
+    const targetUrl = product.url || 'https://www.shopier.com/keyvadi';
+    if (tg?.openLink) tg.openLink(targetUrl);
+    else window.open(targetUrl, '_blank');
     return;
   }
-  
-  if (tg?.openLink) {
-    tg.openLink(targetUrl);
-  } else {
-    window.open(targetUrl, '_blank');
+
+  const amount = Number(product.price_num || 0);
+  if (amount < 5) {
+    showToast('Geçersiz ürün tutarı.', '⚠️');
+    return;
+  }
+
+  const btn = document.getElementById('btnModalDirectShopier');
+  const oldText = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.innerHTML = '<span>⏳ Ödeme Sayfası Açılıyor...</span>';
+    btn.disabled = true;
+  }
+
+  showToast(`"${product.title}" için 3D Secure sayfası hazırlanıyor...`, '⚡');
+
+  try {
+    const res = await fetch(api('/api/balance/create-dynamic-topup'), {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({
+        amount: amount,
+        user_id: tgUser.id,
+        user_name: `${tgUser.first_name || ''} ${tgUser.last_name || ''}`.trim() || 'KeyVadi Müşteri',
+        username: tgUser.username || '',
+        idempotency_key: `kv-buy-direct-${tgUser.id}-${product.id}-${Date.now()}`
+      })
+    });
+    const data = await res.json();
+    if (data.success && data.payment_url) {
+      showToast('Shopier ödeme sayfası açılıyor...', '💳');
+      if (tg?.openLink) {
+        tg.openLink(data.payment_url);
+      } else {
+        window.open(data.payment_url, '_blank');
+      }
+    } else {
+      const fallbackUrl = product.url || 'https://www.shopier.com/keyvadi';
+      if (tg?.openLink) tg.openLink(fallbackUrl);
+      else window.open(fallbackUrl, '_blank');
+    }
+  } catch (e) {
+    const fallbackUrl = product.url || 'https://www.shopier.com/keyvadi';
+    if (tg?.openLink) tg.openLink(fallbackUrl);
+    else window.open(fallbackUrl, '_blank');
+  } finally {
+    if (btn) {
+      btn.innerHTML = oldText;
+      btn.disabled = false;
+    }
   }
 };
 
@@ -572,8 +638,9 @@ window.buyWithWallet = async function() {
       state.walletBalance = data.new_balance;
       updateBalanceUI();
       triggerHaptic('success');
-      showToast(data.message || 'Sipariş kaydınız oluşturuldu.', '🎉');
+      showToast(data.message || 'Siparişiniz başarıyla alındı!', '🎉');
       closeProductModal();
+      await registerAndSyncUserProfile();
     } else {
       showToast(data.error || 'İşlem başarısız', '⚠️');
     }
@@ -601,6 +668,8 @@ window.switchTab = function(tabId) {
 
   if (tabId === 'cartTab') {
     renderKvCartItems();
+  } else if (tabId === 'ordersTab') {
+    renderOrders();
   }
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -691,7 +760,7 @@ window.proceedShopierTopup = async function() {
       body: JSON.stringify({
         amount: amount,
         user_id: tgUser.id,
-        user_name: `${tgUser.first_name} ${tgUser.last_name}`.trim(),
+        user_name: `${tgUser.first_name || ''} ${tgUser.last_name || ''}`.trim() || 'KeyVadi Müşteri',
         username: tgUser.username || "",
         idempotency_key: topupIdempotency
       })
@@ -723,9 +792,6 @@ window.proceedShopierTopup = async function() {
     }
   }
 };
-
-// Do not cancel here: opening Shopier or returning from its checkout can fire
-// beforeunload. Abandoned listings are closed by the server-side TTL cleaner.
 
 // Copy Referral Link
 window.copyRefLink = function() {
