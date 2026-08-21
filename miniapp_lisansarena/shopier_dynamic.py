@@ -184,7 +184,13 @@ def sweep_orphan_shopier_products():
                 title = str(prod.get("title") or "")
                 desc = str(prod.get("description") or "")
                 pid = str(prod.get("id") or "")
-                if "LisansArena Cüzdan Bakiye Yükleme" in title or "LisansArena özel bakiye" in desc:
+                title_lower = title.lower()
+                desc_lower = desc.lower()
+                is_topup = (
+                    ("lisansarena" in title_lower and ("bakiye" in title_lower or "cüzdan" in title_lower or "cuzdan" in title_lower or "yükle" in title_lower or "yukle" in title_lower))
+                    or ("özel bakiye" in desc_lower or "ozel bakiye" in desc_lower or "bakiye yükleme" in desc_lower)
+                )
+                if is_topup:
                     info = topups.get(pid)
                     if info:
                         created_at = info.get("created_at", now)

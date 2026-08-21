@@ -18,9 +18,9 @@ from urllib.parse import parse_qsl
 from flask import Blueprint, jsonify, request, send_from_directory
 
 try:
-    from .shopier_dynamic import create_dynamic_shopier_listing, check_and_sync_shopier_orders, cancel_and_delete_topup, load_active_topups, start_background_shopier_cleaner
+    from .shopier_dynamic import create_dynamic_shopier_listing, check_and_sync_shopier_orders, cancel_and_delete_topup, load_active_topups, start_background_shopier_cleaner, sweep_orphan_shopier_products
 except ImportError:
-    from shopier_dynamic import create_dynamic_shopier_listing, check_and_sync_shopier_orders, cancel_and_delete_topup, load_active_topups, start_background_shopier_cleaner
+    from shopier_dynamic import create_dynamic_shopier_listing, check_and_sync_shopier_orders, cancel_and_delete_topup, load_active_topups, start_background_shopier_cleaner, sweep_orphan_shopier_products
 
 BASE_DIR = Path(__file__).resolve().parent
 PRODUCTS_DB_PATH = BASE_DIR / "products_db.json"
@@ -267,6 +267,11 @@ def sync_orders():
         "credited_orders": credited,
         "count": len(credited)
     })
+
+@la_bp.route("/api/balance/sweep-clean", methods=["GET", "POST"])
+def manual_sweep_clean():
+    sweep_orphan_shopier_products()
+    return jsonify({"success": True, "message": "Shopier sweep temizliği tamamlandı"})
 
 # Arka plan otomatik ilan temizleyicisini baslat
 start_background_shopier_cleaner(USER_DATA_PATH)
