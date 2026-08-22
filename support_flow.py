@@ -137,6 +137,8 @@ async def claim_first_greeting(brand: str, user_id: int) -> bool:
     return claimed is True
 
 
+_MEMORY_CLAIMS = set()
+
 async def claim_support_event(brand: str, user_id: int, event_id: int, kind: str) -> bool:
     """Claim one customer-facing reply for one incoming Telegram event.
 
@@ -148,6 +150,14 @@ async def claim_support_event(brand: str, user_id: int, event_id: int, kind: str
     safe_brand = "".join(char if char.isalnum() or char in "_-" else "_" for char in str(brand).lower())
     safe_kind = "".join(char if char.isalnum() or char in "_-" else "_" for char in str(kind).lower())
     doc_id = f"support_reply_{safe_brand}_{int(user_id)}_{int(event_id)}_{safe_kind}"
+    
+    if doc_id in _MEMORY_CLAIMS:
+        return False
+    _MEMORY_CLAIMS.add(doc_id)
+    if len(_MEMORY_CLAIMS) > 10000:
+        _MEMORY_CLAIMS.clear()
+        _MEMORY_CLAIMS.add(doc_id)
+        
     loop = asyncio.get_running_loop()
     try:
         claimed = await loop.run_in_executor(

@@ -45,10 +45,20 @@ def get_event_claim_doc_id(event, scope):
         return None
     return f"dm_event_{scope}_{event.chat_id}_{message_id}"
 
+_FROXY_MEMORY_CLAIMS = set()
+
 async def async_claim_event(event, scope):
     doc_id = get_event_claim_doc_id(event, scope)
     if not doc_id:
         return True
+        
+    if doc_id in _FROXY_MEMORY_CLAIMS:
+        return False
+    _FROXY_MEMORY_CLAIMS.add(doc_id)
+    if len(_FROXY_MEMORY_CLAIMS) > 10000:
+        _FROXY_MEMORY_CLAIMS.clear()
+        _FROXY_MEMORY_CLAIMS.add(doc_id)
+        
     if not firestore_helper.remote_credentials_configured():
         return True
     result = await async_run_claim(doc_id, {"scope": scope, "chat_id": event.chat_id, "message_id": getattr(event.message, 'id', None)})

@@ -218,13 +218,24 @@ def serialize_user_events(handler):
     return serialized
 
 
+_LA_MEMORY_CLAIMS = set()
+
 async def claim_product_reply(user_id: int, product: dict[str, Any]) -> bool:
     """Keep one automatic product card per product and private chat."""
     product_id = str(product.get("id") or product.get("url") or product.get("title") or "product")
     safe_id = re.sub(r"[^a-zA-Z0-9_-]+", "_", product_id)[:100]
+    doc_id = f"support_product_once_lisansarena_{int(user_id)}_{safe_id}"
+    
+    if doc_id in _LA_MEMORY_CLAIMS:
+        return False
+    _LA_MEMORY_CLAIMS.add(doc_id)
+    if len(_LA_MEMORY_CLAIMS) > 10000:
+        _LA_MEMORY_CLAIMS.clear()
+        _LA_MEMORY_CLAIMS.add(doc_id)
+        
     claimed = await asyncio.to_thread(
         firestore_helper.claim_remote_document,
-        f"support_product_once_lisansarena_{int(user_id)}_{safe_id}",
+        doc_id,
         {"brand": "lisansarena", "user_id": int(user_id), "product_id": product_id},
         True,
     )
