@@ -833,18 +833,88 @@ async def show_main_menu(event, user_id, is_callback=False):
         "🎮 **KEYVADI PRO — Dijital E-Pin & Oyun Mağazası** ⚡\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
         "👋 **KeyVadi Dünyasına Hoş Geldiniz!**\n\n"
-        "Steam Random Keyler, FC26, Xbox Game Pass, Minecraft Koleksiyon Pelerinleri, Netflix 4K, ChatGPT Plus ve popüler dijital e-pinler en uygun fiyat garantisiyle burada!\n\n"
+        "YouTube Premium, Canva Pro, Netflix 4K, ChatGPT Plus, Steam VIP Random Key, FC26, Xbox Game Pass ve tüm orijinal lisanslar %70 indirimle burada!\n\n"
         "💎 **Öne Çıkan Ayrıcalıklar:**\n"
         "• ⚡ 7/24 Anında Otomatik Kod & Lisans Teslimatı\n"
-        "• 💳 3D Secure ile Güvenli Bakiye Yükleme\n"
+        "• 💳 3D Secure ile Güvenli Kartla Satın Alma & Bakiye Yükleme\n"
         "• 🎁 Arkadaşını Davet Et, Harcamalarından %10 Nakit Kazan!\n\n"
-        "👇 **Alışverişe başlamak veya bakiyenizi yönetmek için tıklayın:**"
+        "👇 **Alışverişe başlamak ve mağazayı açmak için aşağıdaki butona tıklayın:**"
     )
     buttons = mini_app_markup("Mağazayı Aç")
     if is_callback:
         await safe_event_edit(event, welcome, buttons=buttons)
     else:
         await event.respond(welcome, buttons=buttons)
+
+@bot.on(events.CallbackQuery(data=b'menu_orders'))
+async def menu_orders_handler(event):
+    try:
+        await event.answer()
+    except Exception:
+        pass
+    user_id = event.sender_id
+    
+    users = {}
+    users_file = Path("miniapp/users_data.json")
+    if users_file.exists():
+        try:
+            users = json.loads(users_file.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+    u = users.get(str(user_id), {})
+    orders = u.get("orders", [])
+    
+    if not orders:
+        text = (
+            "📦 **Sipariş Geçmişiniz**\n\n"
+            "Henüz kayıtlı bir siparişiniz bulunmamaktadır.\n\n"
+            "Mağazadan dilediğiniz ürünü 7/24 anında teslimat güvencesiyle satın alabilirsiniz!"
+        )
+        buttons = [
+            [Button.url("🛍️ KeyVadi Mağazasını Aç", f"{KEYVADI_MINI_APP_URL}")],
+            [Button.inline("↩️ Ana Menü", b"menu_main")]
+        ]
+        await safe_event_edit(event, text, buttons=buttons)
+        return
+
+    lines = ["📦 **Son Siparişleriniz:**\n"]
+    for idx, o in enumerate(reversed(orders[-5:]), 1):
+        title = o.get("title") or "Dijital Ürün"
+        status = "✅ Teslim Edildi" if o.get("status") in ("delivered", "completed") or o.get("license_key") else "⏳ Hazırlanıyor"
+        price = o.get("subtotal") or o.get("price") or o.get("amount") or 0
+        lines.append(f"{idx}. **{title}** — `₺{price}` ({status})")
+        if o.get("license_key"):
+            lines.append(f"   🔑 Lisans Kodu: `{o.get('license_key')}`")
+        elif o.get("status") == "pending_delivery":
+            lines.append("   💬 *Manuel teslimat / Destek için @KeyVadiDestek ile iletişime geçin.*")
+        lines.append("")
+
+    text = "\n".join(lines)
+    buttons = [
+        [Button.url("🛍️ Siparişlerimi Mini App'te Gör", KEYVADI_MINI_APP_URL)],
+        [Button.inline("↩️ Ana Menü", b"menu_main")]
+    ]
+    await safe_event_edit(event, text, buttons=buttons)
+
+@bot.on(events.CallbackQuery(data=b'menu_topup'))
+async def menu_topup_handler(event):
+    try:
+        await event.answer()
+    except Exception:
+        pass
+    text = (
+        "💰 **KeyVadi Bakiye Yükleme (3D Secure)**\n\n"
+        "Shopier altyapısı ile kredi/banka kartınızla güvenle anında bakiye yükleyebilirsiniz.\n\n"
+        "• Minimum yükleme: ₺5.00\n"
+        "• 3D Secure onayından sonra bakiyeniz **saniyeler içinde** cüzdanınıza aktarılır.\n"
+        "• Yüklediğiniz bakiye ile dilediğiniz zaman tek tıkla lisans satın alabilirsiniz.\n\n"
+        "👇 **Bakiye yüklemek için aşağıdaki butona tıklayın:**"
+    )
+    buttons = [
+        [Button.url("⚡ Cüzdanı Aç & Bakiye Yükle", KEYVADI_MINI_APP_URL)],
+        [Button.inline("↩️ Ana Menü", b"menu_main")]
+    ]
+    await safe_event_edit(event, text, buttons=buttons)
 
 @bot.on(events.CallbackQuery(data=b'menu_verify_payment'))
 async def verify_payment_callback(event):

@@ -131,6 +131,25 @@ async function loadProducts() {
       state.products = data.products;
       renderCategoryChips();
       filterAndRenderProducts();
+
+      // Deep-link auto-open product or tab
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const targetParam = urlParams.get('product') || tg?.initDataUnsafe?.start_param;
+        if (targetParam) {
+          if (targetParam === 'orders') {
+            switchTab('ordersTab');
+          } else if (targetParam === 'wallet') {
+            switchTab('walletTab');
+          } else {
+            const cleanId = String(targetParam).replace(/^p_/, '').trim().toLowerCase();
+            const matched = state.products.find(p => String(p.id).toLowerCase() === cleanId);
+            if (matched) {
+              setTimeout(() => openProductModal(matched.id), 250);
+            }
+          }
+        }
+      } catch (err) {}
     }
   } catch (e) {
     console.error('Products load error:', e);
