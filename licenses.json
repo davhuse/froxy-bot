@@ -18,8 +18,16 @@
   "netflix": [
     "NETFLIX-4K-UHD-GIRISTOKEN-1"
   ],
-  "youtube": [
-    "YT-PREMIUM-DAVET-LINK-1"
+  "keyvadi_youtube": [
+    "2grozvu84t642",
+    "2grxvb3fc2rec",
+    "2gs6i8mi1cro3"
+  ],
+  "lisansarena_youtube": [
+    "2grkcrd66ws20",
+    "2gvic7zfk2tot",
+    "2gvzixb57vmva",
+    "2gw15erfzyto"
   ],
   "spotify": [
     "SPOTIFY-PREM-INVITE-1"
@@ -55,8 +63,5 @@
   ],
   "chatgpt": [
     "CHATGPT-PLUS-4O-TOKEN-1"
-  ],
-  "gemini": [
-    "GEMINI-ADVANCED-PRO-TOKEN-1"
   ]
 }

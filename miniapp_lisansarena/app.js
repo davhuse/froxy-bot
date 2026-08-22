@@ -378,16 +378,37 @@
 
         codeBox.append(codeText, copyBtn);
         card.append(codeBox);
+
+        const isYoutube = order.redeem_url || /youtube/i.test(order.title || order.product_name || '');
+        if (isYoutube) {
+          const ytGuide = document.createElement('div');
+          ytGuide.style.cssText = 'background: rgba(255, 0, 80, 0.1); border: 1px solid rgba(255, 0, 80, 0.3); border-radius: var(--radius-sm); padding: 10px 12px; margin-top: 6px; font-size: 0.76rem; color: #fff; line-height: 1.4;';
+          ytGuide.innerHTML = `
+            <div style="display:flex; align-items:center; gap:6px; color:#FF0050; font-weight:800; margin-bottom:4px;">
+              <span>🔗</span>
+              <span>YouTube Etkinleştirme Rehberi</span>
+            </div>
+            <div style="margin-bottom:6px;">Kodunuzu <a href="https://youtube.com/redeem" target="_blank" style="color:var(--neon-pink); font-weight:800; text-decoration:underline;">youtube.com/redeem</a> linkinden kullanabilirsiniz.</div>
+            <div style="color:var(--text-muted); font-size:0.72rem;">⚠️ <strong>Önemli:</strong> Yeni açılmış bir Google hesabı ve daha önce YouTube Premium kullanılmamış yeni bir kart ile aktif ettiğinizden emin olunuz.</div>
+          `;
+          card.append(ytGuide);
+        }
       } else {
+        const isEmail = order.needs_email || /duolingo|gemini|canva/i.test(order.title || order.product_name || '');
         const manualBox = document.createElement('div');
         manualBox.className = 'manual-delivery-box';
         manualBox.innerHTML = `
-          <div class="mdb-header">
-            <span>💬</span>
-            <strong>Manuel Teslimat / Temsilci Bekleniyor</strong>
+          <div class="mdb-header" style="color:${isEmail ? '#A855F7' : '#FBBF24'};">
+            <span>${isEmail ? '📧' : '💬'}</span>
+            <strong>${isEmail ? 'E-Posta Tanımlaması Bekleniyor' : 'Manuel Teslimat / Temsilci Bekleniyor'}</strong>
           </div>
-          <p class="mdb-desc">Bu ürün temsilci teslimatı kapsamındadır. Lütfen aşağıdaki butona dokunarak destek temsilcimize sipariş kodunuzu (<strong>#${number}</strong>) iletiniz; temsilcimiz hesabınızı/lisansınızı anında teslim edecektir.</p>
-          <a href="https://t.me/LisansArenaOnline" target="_blank" class="btn-support-contact">
+          <p class="mdb-desc">
+            ${isEmail 
+              ? `Bu ürün üyelik e-posta tanımlaması ile teslim edilir. Lütfen aşağıdaki butona dokunarak destek ekibimize sipariş kodunuz (<strong>#${number}</strong>) ile birlikte <strong>E-posta (Mail)</strong> adresinizi iletiniz; üyeliğiniz anında tanımlanacaktır.`
+              : `Bu ürün temsilci teslimatı kapsamındadır. Lütfen aşağıdaki butona dokunarak destek temsilcimize sipariş kodunuzu (<strong>#${number}</strong>) iletiniz; temsilcimiz hesabınızı/lisansınızı anında teslim edecektir.`
+            }
+          </p>
+          <a href="https://t.me/LisansArenaOnline" target="_blank" class="btn-support-contact" style="${isEmail ? 'background: linear-gradient(135deg, #A855F7, #EC4899); color:#fff;' : ''}">
             <span>🚀 @LisansArenaOnline ile İletişime Geç</span>
           </a>
         `;

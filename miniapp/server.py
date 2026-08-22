@@ -342,7 +342,7 @@ def purchase_product():
         if user["balance"] < price:
             return jsonify({"success": False, "error": "Yetersiz bakiye"}), 400
         user["balance"] -= price
-        alloc = allocate_license(product.get("title", ""))
+        alloc = allocate_license(product.get("title", ""), brand="keyvadi")
         order = {
             "order_id": f"KV-{int(time.time())}",
             "product_id": product_id,
@@ -351,6 +351,10 @@ def purchase_product():
             "status": alloc.get("status", "pending_delivery"),
             "license_key": alloc.get("license_key"),
             "delivery_note": alloc.get("delivery_note", "7/24 Teslimat"),
+            "support_handle": alloc.get("support_handle", "@KeyVadiDestek"),
+            "redeem_url": alloc.get("redeem_url"),
+            "activation_guide": alloc.get("activation_guide"),
+            "needs_email": alloc.get("needs_email", False),
             "idempotency_key": idem or None,
             "created_at": int(time.time())
         }
@@ -401,7 +405,7 @@ def purchase_cart():
             p_price = float(p.get("price_num", 0.0))
             subtotal = p_price * qty
             total_cost += subtotal
-            alloc = allocate_license(p.get("title", ""))
+            alloc = allocate_license(p.get("title", ""), brand="keyvadi")
             valid_orders.append({
                 "order_id": f"KV-{int(time.time())}",
                 "product_id": pid,
@@ -412,6 +416,10 @@ def purchase_cart():
                 "status": alloc.get("status", "pending_delivery"),
                 "license_key": alloc.get("license_key"),
                 "delivery_note": alloc.get("delivery_note", "7/24 Teslimat"),
+                "support_handle": alloc.get("support_handle", "@KeyVadiDestek"),
+                "redeem_url": alloc.get("redeem_url"),
+                "activation_guide": alloc.get("activation_guide"),
+                "needs_email": alloc.get("needs_email", False),
                 "cart_idempotency_key": idempotency_key,
                 "created_at": int(time.time())
             })

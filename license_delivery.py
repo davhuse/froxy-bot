@@ -38,11 +38,35 @@ CATEGORY_KEYWORDS = [
     ("envato", ["envato"]),
     ("freepik", ["freepik"]),
     ("chatgpt", ["chatgpt", "gpt-4", "chat gpt", "openai"]),
+    ("duolingo", ["duolingo", "super duolingo"]),
     ("gemini", ["gemini"]),
     ("claude", ["claude"]),
     ("instagram", ["instagram", "takipci"]),
     ("gmail", ["gmail", "google hesap"]),
 ]
+
+PRODUCT_GUIDES = {
+    "youtube": {
+        "redeem_url": "https://youtube.com/redeem",
+        "guide": "https://youtube.com/redeem linkinden kodunuzu kullanabilirsiniz. Yeni hesap ve yeni kartla aldığınızdan emin olun.",
+        "needs_email": False
+    },
+    "duolingo": {
+        "redeem_url": None,
+        "guide": "Bu ürün hesap tanımlamalıdır. Lütfen destek ekibimize sipariş numaranızla birlikte Duolingo'ya kayıtlı E-posta (Mail) adresinizi iletiniz.",
+        "needs_email": True
+    },
+    "gemini": {
+        "redeem_url": None,
+        "guide": "Bu ürün davet/lisans tanımlamalıdır. Lütfen destek ekibimize sipariş numaranızla birlikte Google (Gmail) E-posta adresinizi iletiniz.",
+        "needs_email": True
+    },
+    "canva": {
+        "redeem_url": None,
+        "guide": "Gerekli durumlarda destek ekibimize Canva E-posta adresinizi iletebilirsiniz.",
+        "needs_email": True
+    }
+}
 
 
 def resolve_category(product_text: str) -> str | None:
@@ -88,12 +112,19 @@ def save_licenses_stock(data: dict[str, list[str]]) -> None:
 def allocate_license(product_title_or_id: str, brand: str = "keyvadi") -> dict[str, Any]:
     """
     Attempt to automatically allocate a license key from stock for the given product.
-    Returns a dict with allocation details and support routing if manual.
+    Supports brand-specific pools (e.g. keyvadi_youtube, lisansarena_youtube),
+    redeem URLs, and email delivery routing.
     """
     cat = resolve_category(product_title_or_id)
     b = str(brand or "").lower().strip()
-    support_handle = "@LisansArenaOnline" if "lisans" in b else "@KeyVadiDestek"
+    brand_slug = "lisansarena" if "lisans" in b else "keyvadi"
+    support_handle = "@LisansArenaOnline" if brand_slug == "lisansarena" else "@KeyVadiDestek"
     
+    guide_info = PRODUCT_GUIDES.get(cat, {}) if cat else {}
+    redeem_url = guide_info.get("redeem_url")
+    activation_guide = guide_info.get("guide")
+    needs_email = guide_info.get("needs_email", False)
+
     if not cat:
         return {
             "allocated": False,
@@ -102,31 +133,50 @@ def allocate_license(product_title_or_id: str, brand: str = "keyvadi") -> dict[s
             "status": "pending_delivery",
             "delivery_note": f"Manuel teslimat / Temsilci ({support_handle}) iletecektir",
             "support_handle": support_handle,
+            "redeem_url": None,
+            "activation_guide": None,
+            "needs_email": False,
         }
 
     with STOCK_LOCK:
         stocks = load_licenses_stock()
-        keys = stocks.get(cat, [])
+        brand_cat = f"{brand_slug}_{cat}"
+        pool_key = brand_cat if (brand_cat in stocks and len(stocks[brand_cat]) > 0) else cat
+        keys = stocks.get(pool_key, [])
         if keys:
             license_key = str(keys.pop(0)).strip()
-            stocks[cat] = keys
+            stocks[pool_key] = keys
             save_licenses_stock(stocks)
+            delivery_note = "⚡ 7/24 Anında Otomatik Teslim Edildi"
+            if activation_guide:
+                delivery_note += f"\n📌 {activation_guide}"
             return {
                 "allocated": True,
                 "category": cat,
                 "license_key": license_key,
                 "status": "delivered",
-                "delivery_note": "⚡ 7/24 Anında Otomatik Teslim Edildi",
+                "delivery_note": delivery_note,
                 "support_handle": support_handle,
+                "redeem_url": redeem_url,
+                "activation_guide": activation_guide,
+                "needs_email": needs_email,
             }
+
+    if needs_email:
+        delivery_note = f"Lütfen {support_handle} hesabına sipariş kodunuzla birlikte E-posta (Mail) adresinizi iletiniz; üyeliğiniz hemen tanımlanacaktır."
+    else:
+        delivery_note = f"Stok hazırlanıyor / Temsilci ({support_handle}) iletecektir"
 
     return {
         "allocated": False,
         "category": cat,
         "license_key": None,
         "status": "pending_delivery",
-        "delivery_note": f"Stok hazırlanıyor / Temsilci ({support_handle}) iletecektir",
+        "delivery_note": delivery_note,
         "support_handle": support_handle,
+        "redeem_url": redeem_url,
+        "activation_guide": activation_guide,
+        "needs_email": needs_email,
     }
 
 

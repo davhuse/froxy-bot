@@ -320,6 +320,9 @@ def purchase_product():
             "license_key": alloc.get("license_key"),
             "delivery_note": alloc.get("delivery_note", "7/24 Teslimat"),
             "support_handle": alloc.get("support_handle", "@LisansArenaOnline"),
+            "redeem_url": alloc.get("redeem_url"),
+            "activation_guide": alloc.get("activation_guide"),
+            "needs_email": alloc.get("needs_email", False),
             "created_at": int(time.time())
         }
         user.setdefault("orders", []).append(order)
@@ -369,6 +372,9 @@ def purchase_cart():
                 "license_key": alloc.get("license_key"),
                 "delivery_note": alloc.get("delivery_note", "7/24 Teslimat"),
                 "support_handle": alloc.get("support_handle", "@LisansArenaOnline"),
+                "redeem_url": alloc.get("redeem_url"),
+                "activation_guide": alloc.get("activation_guide"),
+                "needs_email": alloc.get("needs_email", False),
                 "created_at": int(time.time())
             })
 
