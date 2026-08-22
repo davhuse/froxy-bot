@@ -87,6 +87,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderUserInfo();
   updateCartUI();
   setupEventListeners();
+  startFlashDealsTimer();
+  drawWheel();
   if (tgUser && telegramInitData) await registerAndSyncUserProfile();
   await loadProducts();
   if (tgUser && telegramInitData) startBackgroundBalanceSync();
@@ -475,11 +477,17 @@ function renderProductGrid() {
     return;
   }
 
-  grid.innerHTML = state.filteredProducts.map(p => `
+  grid.innerHTML = state.filteredProducts.map((p, idx) => {
+    const isVitrin = p.showcase || p.is_vitrin;
+    const urgencyBadge = isVitrin && (idx % 3 === 0) 
+      ? `<div style="font-size:0.68rem; color:#FFB800; font-weight:800; margin-top:2px;">🔥 Son ${2 + (idx % 3)} Adet Kaldı!</div>` 
+      : (isVitrin ? `<div style="font-size:0.68rem; color:var(--primary-cyan); font-weight:700; margin-top:2px;">👥 ${8 + ((idx * 3) % 15)} Kişi İnceliyor</div>` : '');
+
+    return `
     <div class="product-card" onclick="openProductModal('${p.id}')">
       <div class="card-img-wrapper">
         <img class="card-img" src="${p.image}?v=11.0" alt="${p.title}" loading="lazy" onerror="this.src='assets/keyvadi_banner_new_1781380687628.png'"/>
-        <span class="card-badge-tag">${(p.showcase || p.is_vitrin) ? '⭐ VİTRİN' : (p.badge || '⚡ ANINDA')}</span>
+        <span class="card-badge-tag">${isVitrin ? '⭐ VİTRİN' : (p.badge || '⚡ ANINDA')}</span>
       </div>
       <div class="card-content">
         <div class="card-meta-row">
@@ -489,6 +497,7 @@ function renderProductGrid() {
         <div class="card-price-row">
           <span class="card-price">${p.price}</span>
         </div>
+        ${urgencyBadge}
         <div class="card-delivery">${p.delivery_label || '⚡ 7/24 Anında Otomatik Teslimat'}</div>
         <div class="card-actions" onclick="event.stopPropagation()">
           <button class="btn-buy" onclick="addKvProductToCart('${p.id}')" title="Sepete Ekle">
@@ -500,7 +509,7 @@ function renderProductGrid() {
         </div>
       </div>
     </div>
-  `).join('');
+  `;}).join('');
 }
 
 // ==================== KEYVADI CART (SEPET) SYSTEM ====================
@@ -1067,3 +1076,162 @@ function setupEventListeners() {
     });
   }
 }
+
+// ==================== FLASH DEALS COUNTDOWN ====================
+function startFlashDealsTimer() {
+  const timerEl = document.getElementById('flashTimer');
+  if (!timerEl) return;
+  function update() {
+    const now = new Date();
+    const midnight = new Date();
+    midnight.setHours(24, 0, 0, 0);
+    const diff = Math.max(0, midnight - now);
+    const h = String(Math.floor(diff / 3600000)).padStart(2, '0');
+    const m = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
+    const s = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
+    timerEl.textContent = `${h}:${m}:${s}`;
+  }
+  update();
+  setInterval(update, 1000);
+}
+
+// ==================== DAILY SPIN & WIN ====================
+const WHEEL_SEGMENTS = [
+  { label: "₺1.00", color: "#00F0FF", text: "#000" },
+  { label: "%10 İndirim", color: "#A855F7", text: "#fff" },
+  { label: "₺2.00", color: "#FFB800", text: "#000" },
+  { label: "%15 VIP", color: "#EC4899", text: "#fff" },
+  { label: "₺3.00", color: "#3B82F6", text: "#fff" },
+  { label: "🌟 ₺5.00", color: "#EAB308", text: "#000" },
+  { label: "Pas", color: "#334155", text: "#94A3B8" },
+  { label: "₺0.50", color: "#10B981", text: "#000" }
+];
+
+let wheelAngle = 0;
+let isSpinning = false;
+
+function drawWheel() {
+  const canvas = document.getElementById('wheelCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const size = canvas.width;
+  const center = size / 2;
+  const radius = center - 8;
+  const count = WHEEL_SEGMENTS.length;
+  const step = (Math.PI * 2) / count;
+
+  ctx.clearRect(0, 0, size, size);
+
+  for (let i = 0; i < count; i++) {
+    const angle = wheelAngle + (i * step);
+    ctx.beginPath();
+    ctx.moveTo(center, center);
+    ctx.arc(center, center, radius, angle, angle + step);
+    ctx.closePath();
+    ctx.fillStyle = WHEEL_SEGMENTS[i].color;
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "rgba(0,0,0,0.4)";
+    ctx.stroke();
+
+    // Text
+    ctx.save();
+    ctx.translate(center, center);
+    ctx.rotate(angle + step / 2);
+    ctx.textAlign = "right";
+    ctx.fillStyle = WHEEL_SEGMENTS[i].text;
+    ctx.font = "bold 11px Inter, sans-serif";
+    ctx.fillText(WHEEL_SEGMENTS[i].label, radius - 14, 4);
+    ctx.restore();
+  }
+}
+
+window.openSpinModal = function() {
+  const modal = document.getElementById('spinModal');
+  if (!modal) return;
+  modal.classList.add('active');
+  const resBox = document.getElementById('spinResultBox');
+  if (resBox) resBox.style.display = 'none';
+  const spinBtn = document.getElementById('spinBtn');
+  if (spinBtn) spinBtn.disabled = false;
+  drawWheel();
+  triggerHaptic('light');
+};
+
+window.closeSpinModal = function() {
+  const modal = document.getElementById('spinModal');
+  if (modal) modal.classList.remove('active');
+};
+
+window.startSpinWheel = async function() {
+  if (isSpinning) return;
+  isSpinning = true;
+  const spinBtn = document.getElementById('spinBtn');
+  if (spinBtn) spinBtn.disabled = true;
+
+  try {
+    const res = await fetch(api('/api/user/spin'), {
+      method: 'POST',
+      headers: authHeaders({ 'Content-Type': 'application/json' })
+    });
+    const data = await res.json();
+
+    if (!data.success) {
+      showToast(data.error || "Bugün zaten çark çevirdiniz!", "⏳");
+      isSpinning = false;
+      if (spinBtn) spinBtn.disabled = false;
+      return;
+    }
+
+    const targetSegment = data.segment ?? 0;
+    const count = WHEEL_SEGMENTS.length;
+    const step = (Math.PI * 2) / count;
+
+    // Calculate landing angle so pointer at TOP (3*PI/2) points to target segment
+    const targetAngle = (Math.PI * 1.5) - (targetSegment * step + step / 2) + (Math.PI * 2 * 6); // 6 full rotations
+    const startAngle = wheelAngle % (Math.PI * 2);
+    const totalRotation = targetAngle - startAngle;
+
+    const startTime = performance.now();
+    const duration = 4000; // 4 seconds
+
+    function animate(currentTime) {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(1, elapsed / duration);
+      // Ease out cubic
+      const ease = 1 - Math.pow(1 - progress, 3);
+      wheelAngle = startAngle + (totalRotation * ease);
+      drawWheel();
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        isSpinning = false;
+        triggerHaptic('success');
+
+        // Update balance in UI
+        if (data.new_balance !== undefined) {
+          state.user.balance = data.new_balance;
+          renderUserInfo();
+        }
+
+        // Show result box
+        const resBox = document.getElementById('spinResultBox');
+        const resIcon = document.getElementById('spinResultIcon');
+        const resTitle = document.getElementById('spinResultTitle');
+        const resDesc = document.getElementById('spinResultDesc');
+        if (resBox && resTitle && resDesc) {
+          resIcon.textContent = data.reward_type === 'none' ? '🍀' : (data.reward_type === 'balance' ? '💰' : '🎟️');
+          resTitle.textContent = data.reward_type === 'none' ? 'Şansını Yarın Dene!' : 'Tebrikler Kazandınız!';
+          resDesc.textContent = data.message || data.reward_text;
+          resBox.style.display = 'block';
+        }
+      }
+    }
+    requestAnimationFrame(animate);
+  } catch (err) {
+    isSpinning = false;
+    if (spinBtn) spinBtn.disabled = false;
+    showToast("Çark çevrilemedi, lütfen tekrar deneyin.", "⚠️");
+  }
+};

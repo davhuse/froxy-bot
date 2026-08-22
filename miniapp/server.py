@@ -465,6 +465,78 @@ def purchase_cart():
         "orders": valid_orders
     })
 
+@app.route("/api/user/spin", methods=["POST"])
+def spin_daily_wheel():
+    import random
+    telegram_user = authenticated_user()
+    if not telegram_user:
+        return auth_error()
+    user_id = int(telegram_user["id"])
+    
+    with DATA_LOCK:
+        users = load_users()
+        uid = str(user_id)
+        user = users.get(uid) or get_or_create_user(
+            user_id,
+            username=telegram_user.get("username", ""),
+            first_name=telegram_user.get("first_name", "Müşteri"),
+            last_name=telegram_user.get("last_name", "")
+        )
+        
+        now = int(time.time())
+        last_spin = int(user.get("last_spin_at", 0))
+        cooldown = 86400  # 24 hours
+        
+        if (now - last_spin) < cooldown:
+            remaining_secs = cooldown - (now - last_spin)
+            hours = remaining_secs // 3600
+            mins = (remaining_secs % 3600) // 60
+            return jsonify({
+                "success": False,
+                "error": f"Günde 1 kez çark çevirebilirsiniz. Kalan süre: {hours} sa {mins} dk.",
+                "next_spin_in": remaining_secs
+            }), 429
+            
+        prizes = [
+            {"segment": 0, "type": "balance", "amount": 1.0, "text": "₺1.00 Bakiye"},
+            {"segment": 1, "type": "coupon", "code": "KEYVADI10", "text": "%10 İndirim Kuponu (KEYVADI10)"},
+            {"segment": 2, "type": "balance", "amount": 2.0, "text": "₺2.00 Bakiye"},
+            {"segment": 3, "type": "coupon", "code": "KEYVADI15", "text": "%15 VIP İndirim Kuponu (KEYVADI15)"},
+            {"segment": 4, "type": "balance", "amount": 3.0, "text": "₺3.00 Süper Bakiye"},
+            {"segment": 5, "type": "balance", "amount": 5.0, "text": "🌟 ₺5.00 Büyük Ödül!"},
+            {"segment": 6, "type": "none", "text": "Pas / Şansını Yarın Tekrar Dene"},
+            {"segment": 7, "type": "balance", "amount": 0.5, "text": "₺0.50 Bakiye"}
+        ]
+        weights = [30, 20, 20, 10, 10, 5, 3, 2]
+        chosen = random.choices(prizes, weights=weights, k=1)[0]
+        
+        user["last_spin_at"] = now
+        if chosen["type"] == "balance":
+            user["balance"] = round(user["balance"] + chosen["amount"], 2)
+            user.setdefault("orders", []).append({
+                "type": "spin_reward",
+                "order_id": f"SPIN-{now}",
+                "title": f"🎁 Günlük Çark Ödülü: {chosen['text']}",
+                "amount": chosen["amount"],
+                "date": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(now)),
+                "created_at": now,
+                "status": "completed"
+            })
+            
+        users[uid] = user
+        save_users(users)
+        
+        return jsonify({
+            "success": True,
+            "segment": chosen["segment"],
+            "reward_type": chosen["type"],
+            "reward_text": chosen["text"],
+            "reward_amount": chosen.get("amount", 0.0),
+            "coupon_code": chosen.get("code"),
+            "new_balance": user["balance"],
+            "message": f"Tebrikler! {chosen['text']} kazandınız!"
+        })
+
 @app.route("/api/referrals/<int:user_id>", methods=["GET"])
 def get_referral_info(user_id):
     telegram_user = authenticated_user()

@@ -171,7 +171,13 @@ if not config:
     logger.error("bot_config.json could not be loaded. Exiting.")
     exit(1)
 
-BOT_TOKEN = os.environ.get("KEYVADI_SUPPORT_BOT_TOKEN", "").strip()
+BOT_TOKEN = (
+    os.environ.get("KEYVADI_SUPPORT_BOT_TOKEN") or
+    os.environ.get("KEYVADI_BOT_TOKEN") or
+    config.get("support_bot_token") or
+    config.get("keyvadi_bot_token") or
+    ""
+).strip()
 ADMIN_ID = int(os.environ.get("TELEGRAM_ADMIN_ID", config.get("admin_id", 0)) or 0)
 BOT_USER_ID = None
 PROFILE_CONFIGURED = False

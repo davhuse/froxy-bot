@@ -561,7 +561,8 @@ def bot_watchdog():
                     support_process = subprocess.Popen(
                         [sys.executable, '-u', 'froxy_bot.py'],
                         stdout=file_out,
-                        stderr=subprocess.STDOUT,
+                        stderr=file_out,
+                        cwd=base_dir,
                         creationflags=flags,
                         env=env
                     )
@@ -1272,7 +1273,8 @@ def support_start():
         support_process = subprocess.Popen(
             [sys.executable, '-u', 'froxy_bot.py'],
             stdout=file_out,
-            stderr=subprocess.STDOUT,
+            stderr=file_out,
+            cwd=base_dir,
             creationflags=flags,
             env=env
         )

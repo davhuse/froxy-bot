@@ -1774,3 +1774,128 @@ body {
   box-shadow: 0 4px 14px rgba(0, 240, 255, 0.25);
   margin-top: 4px;
 }
+
+/* ==================== FLASH DEALS BANNER ==================== */
+.flash-deals-banner {
+  position: relative;
+  background: linear-gradient(135deg, rgba(255, 0, 80, 0.12), rgba(0, 240, 255, 0.08));
+  border: 1px solid rgba(255, 0, 80, 0.35);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(255, 0, 80, 0.15);
+  transition: all 0.25s ease;
+}
+
+.flash-deals-banner:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 0, 80, 0.6);
+  box-shadow: 0 6px 25px rgba(255, 0, 80, 0.25);
+}
+
+.fdb-glow {
+  position: absolute;
+  top: -30px;
+  right: -30px;
+  width: 90px;
+  height: 90px;
+  background: radial-gradient(circle, rgba(255, 0, 80, 0.4), transparent 70%);
+  pointer-events: none;
+}
+
+.fdb-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.fdb-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 900;
+  color: #FF0050;
+  letter-spacing: 0.5px;
+}
+
+.fdb-timer-box {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.fdb-timer-digits {
+  font-family: monospace;
+  font-size: 0.84rem;
+  font-weight: 800;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 0, 80, 0.4);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.fdb-body {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.fdb-title {
+  font-size: 0.86rem;
+  font-weight: 800;
+  color: #fff;
+  margin: 0 0 4px 0;
+}
+
+.fdb-prices {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fdb-old {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+.fdb-new {
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: var(--primary-cyan);
+}
+
+.fdb-save {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #000;
+  background: #FF0050;
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.fdb-action-btn {
+  background: linear-gradient(135deg, #FF0050, #FF5E00);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.76rem;
+  font-weight: 800;
+  padding: 8px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 2px 10px rgba(255, 0, 80, 0.4);
+  transition: transform 0.15s ease;
+}
+
+.fdb-action-btn:hover {
+  transform: scale(1.05);
+}
