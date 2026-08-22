@@ -335,7 +335,7 @@ def is_allowed_internal_purchase_url(url: str) -> bool:
 
 def purchase_target_url(brand: str, product: dict) -> str:
     """Return the product-specific Shopier or Mini App purchase target."""
-    return str(product.get("url") or "")
+    return str(product.get("url") or product.get("shopier_url") or "")
 
 
 def _brand_phrases_in(text: str) -> list[str]:
@@ -466,12 +466,12 @@ def purchase_url(product: dict, brand: str, source: str, arm: str = "") -> str:
     token = make_purchase_token(
         brand, product.get("id", ""), source, arm, product.get("_cta_id", "")
     )
-    return f"{PUBLIC_BASE_URL}/go/{token}" if token else product["url"]
+    return f"{PUBLIC_BASE_URL}/go/{token}" if token else str(product.get("url") or product.get("shopier_url") or "")
 
 
 def listing_url(product: dict) -> str:
     """Return the public product listing URL shown to customers."""
-    return str(product.get("url") or "")
+    return str(product.get("url") or product.get("shopier_url") or "")
 
 
 EXPERIMENT_START = datetime.fromisoformat(
