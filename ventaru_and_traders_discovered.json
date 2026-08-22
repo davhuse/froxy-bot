@@ -1,0 +1,15 @@
+[
+  {
+    "username": "kuponceksatisi",
+    "title": "KUPON ÇEK KOD SATIŞI",
+    "matched_phrases": [
+      "Kazandırio 500 TL",
+      "TOD Taraftar Paketi",
+      "Migros 500/150"
+    ],
+    "sample_messages": [
+      "=Yemeksepeti ilk sipariş şartı olmayan 500/250 yemek indirim kodu 100₺ =Biletinial Bipuan 250₺ kod 150₺ =Shell 75₺ Altli",
+      "➤Kazandırio  Kapak 3 tl  ➤Gri Kapak 4 tl  ➤Cİps Şeridi 5 tl  ➤Getir 100 kod 25 tl  ➤Yemeksepeti 500/250 Kod 80 tl  ➤Shel"
+    ]
+  }
+]

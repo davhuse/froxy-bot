@@ -1,0 +1,156 @@
+{
+  "new_groups": [],
+  "excluded_groups": [
+    {
+      "username": "kodceksatismerkezi",
+      "title": "Kod & Çek İlan Satışı 🇹🇷"
+    },
+    {
+      "username": "kuponceking",
+      "title": "KUPON ÇEKİNG"
+    },
+    {
+      "username": "kuponsatislari0",
+      "title": "KOD SATIŞI 👌"
+    },
+    {
+      "username": "ceksatkupon2",
+      "title": "Altın Sarı kupon kod alım satım"
+    },
+    {
+      "username": "Kuponcekm",
+      "title": "Kupon-Kod-Çek Satıșı"
+    },
+    {
+      "username": "YuceKuponSatis",
+      "title": "𝐊𝐎𝐃 𝐕𝐄 𝐊𝐔𝐏𝐎𝐍 𝐒𝐀𝐓𝐈𝐒̧ 𝐆𝐑𝐔𝐁𝐔"
+    },
+    {
+      "username": "kuponhesapsatis",
+      "title": "Kupon Hesap Kod Satış"
+    },
+    {
+      "username": "indirimkodusatis",
+      "title": "KUPON KOD SATIŞI 🇹🇷"
+    },
+    {
+      "username": "kodkuponmarketi",
+      "title": "Kod & Kupon Marketi"
+    },
+    {
+      "username": "kuponsatisgrup",
+      "title": "Kupon-Kod Satış Grubu"
+    },
+    {
+      "username": "mukyemek",
+      "title": "Mük Yemek-Hb-Dijital lisans"
+    },
+    {
+      "username": "ticaretZ",
+      "title": "𝙏𝙄̇𝘾𝘼𝙍𝙀𝙏𝙕"
+    },
+    {
+      "username": "kuponyaticaret",
+      "title": "Kuponya Çek Satış Platformu"
+    },
+    {
+      "username": "bedavainternetkod",
+      "title": "İnternet Kapak Kod Ticaret"
+    },
+    {
+      "username": "bedavainternetkodalimsatim",
+      "title": "Bedava İnternet Kod Alım Satım"
+    },
+    {
+      "username": "kuponindirimcek",
+      "title": "Kupon İndirim Fırsat"
+    },
+    {
+      "username": "indirimcek",
+      "title": "Kupon Promosyon İndirim Çeki"
+    },
+    {
+      "username": "kuponkodhesapilan",
+      "title": "Kupon kod ilan satış grubu"
+    },
+    {
+      "username": "kuponkodalimsatimm",
+      "title": "Kupon Kod Alım Satım"
+    },
+    {
+      "username": "ceksatkupon",
+      "title": "İbr Çek-Sat Kupon"
+    },
+    {
+      "username": "xAlimSatiim",
+      "title": "BEDAVA İNTERNET VE KAMPYANLARİ VE KOD SATIŞİ"
+    },
+    {
+      "username": "kodmalf",
+      "title": "KUPON ALIM SATIM GURBU"
+    },
+    {
+      "username": "kuponvekodsatisgrubu",
+      "title": "Kupon & Kod Satış Grubu"
+    },
+    {
+      "username": "kuponindirimkodalisveris",
+      "title": "KUPON İNDİRİM KOD ALIŞVERİŞ"
+    },
+    {
+      "username": "indirim363",
+      "title": "KUPON-KOD SATIŞ GRUBU"
+    },
+    {
+      "username": "cek_kupon_kod_ilan",
+      "title": "Kod & Çek"
+    },
+    {
+      "username": "satiskodtakasi",
+      "title": "SATIŞ & KOD ALIŞ VERİŞ"
+    },
+    {
+      "username": "ceksatistakasgrup",
+      "title": "Çek Satış Takas Paylaşım Grubu"
+    },
+    {
+      "username": "uygunkod",
+      "title": "Uygun Kod & Kupon Satış 🎫"
+    },
+    {
+      "username": "wishx_2",
+      "title": "Kod Satış Takas"
+    },
+    {
+      "username": "kuponkodalimsatim",
+      "title": "Kupon kod alım satım"
+    },
+    {
+      "username": "indirimruzgari1",
+      "title": "İndirim Rüzgarı - (al,sat,takas)"
+    },
+    {
+      "username": "ticaretyapn",
+      "title": "Kod Çek - SATIŞ"
+    },
+    {
+      "username": "KodKuponMerkezi",
+      "title": "Gold Kupon Merkezi"
+    },
+    {
+      "username": "Minakuponkodsatis",
+      "title": "Kupon kod internet satış platformu"
+    },
+    {
+      "username": "alisverisforumuguncel",
+      "title": "🚀Alışveriş Forumu Kupon Satış"
+    }
+  ],
+  "skipped_groups": [
+    {
+      "username": null,
+      "title": "CEHENNETTİN FEDERASYONU",
+      "reason": "SKIP:not_megagroup"
+    }
+  ]
+}

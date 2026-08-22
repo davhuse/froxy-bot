@@ -2233,6 +2233,13 @@ try:
 except Exception as exc:
     print(f'[App] LisansArena Mini App mount unavailable: {exc}')
 
+try:
+    from miniapp_froxy.server import app as froxy_miniapp
+    mounts['/froxy'] = _MountedRootMiddleware(froxy_miniapp)
+    print('[App] Froxy Mini App mounted at /froxy')
+except Exception as exc:
+    print(f'[App] Froxy Mini App mount unavailable: {exc}')
+
 if mounts:
     app.wsgi_app = DispatcherMiddleware(app.wsgi_app, mounts)
 

@@ -1,0 +1,46 @@
+{
+  "kuponceksatisi": {
+    "username": "kuponceksatisi",
+    "title": "KUPON ÇEK KOD SATIŞI",
+    "members": null,
+    "has_trader": false,
+    "traders_found": [],
+    "queries": [
+      "+800 REFERANS",
+      "Netflix Premium"
+    ],
+    "sample_messages": [],
+    "all_senders": [
+      "Muhammed_ctn01"
+    ]
+  },
+  "cepstokduyuru": {
+    "username": "cepstokduyuru",
+    "title": "Cepstok Destek Duyuru",
+    "members": 17915,
+    "has_trader": true,
+    "traders_found": [
+      "Ventaru1234567890",
+      "AuraDijital"
+    ],
+    "queries": [
+      "GetCommonChats"
+    ],
+    "sample_messages": [],
+    "all_senders": []
+  },
+  "bonussaatisohbet": {
+    "username": "bonussaatisohbet",
+    "title": "Bonus Saati | Sohbet",
+    "members": 32658,
+    "has_trader": true,
+    "traders_found": [
+      "Ventaru1234567890"
+    ],
+    "queries": [
+      "GetCommonChats"
+    ],
+    "sample_messages": [],
+    "all_senders": []
+  }
+}

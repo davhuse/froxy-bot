@@ -1,0 +1,17 @@
+{
+  "generated_at": "2026-08-15T22:53:32.994933+00:00",
+  "read_only": true,
+  "no_join_or_send": true,
+  "summary": {
+    "mode": "blocked_before_search",
+    "blocked_reason": "Telegram bot oturumları diyalog ve native grup aramasını çalıştıramaz",
+    "telegram_account": {
+      "id": 8845484139,
+      "username": "FroxyDestekBOT",
+      "bot": true
+    },
+    "no_join_or_send": true,
+    "next_step": "Kullanıcı hesabına ait yetkili Telethon session ile tekrar çalıştırılmalı"
+  },
+  "candidates": []
+}

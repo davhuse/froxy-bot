@@ -1,0 +1,45 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - strong [ref=e3]: LisansArena
+    - generic [ref=e4]: Güvenli dijital mağaza
+  - banner [ref=e5]:
+    - generic [ref=e6]:
+      - img "LisansArena logosu" [ref=e7]
+      - generic [ref=e8]:
+        - generic [ref=e9]: DİJİTAL MAĞAZA
+        - heading "LisansArena" [level=1] [ref=e10]
+    - button "Bakiyem —" [ref=e11] [cursor=pointer]:
+      - generic [ref=e12]: Bakiyem
+      - strong [ref=e13]: —
+  - main [ref=e14]:
+    - generic [ref=e15]:
+      - img "LisansArena dijital ürün mağazası" [ref=e16]
+      - generic [ref=e18]:
+        - generic [ref=e19]: TEK MAĞAZA · NET TESLİMAT
+        - strong [ref=e20]: Dijital ürününü kolayca seç
+        - generic [ref=e21]: Stok, teslim türü ve sipariş durumunu tek ekranda gör.
+    - generic [ref=e22]: Telegram hesabın doğrulanıyor…
+    - navigation "Mağaza bölümleri" [ref=e25]:
+      - button "⌂ Mağaza" [ref=e26] [cursor=pointer]:
+        - generic [ref=e27]: ⌂
+        - text: Mağaza
+      - button "₺ Bakiye" [ref=e28] [cursor=pointer]:
+        - generic [ref=e29]: ₺
+        - text: Bakiye
+      - button "✓ Siparişler" [ref=e30] [cursor=pointer]:
+        - generic [ref=e31]: ✓
+        - text: Siparişler
+      - button "● Profil" [ref=e32] [cursor=pointer]:
+        - generic [ref=e33]: ●
+        - text: Profil
+    - generic [ref=e34]:
+      - generic [ref=e35]:
+        - generic [ref=e36]: ⌕
+        - searchbox [ref=e37]
+      - generic "Kategoriler" [ref=e38]
+      - generic [ref=e39]:
+        - generic [ref=e40]:
+          - strong [ref=e41]: Ürünler hazırlanıyor
+          - generic [ref=e42]: Ürünü seç, adetini belirle ve doğrudan sepete ekle.
+        - generic [ref=e43]: Güvenli katalog
+    - text: ✓ ✓ ✓ ✓ ✓ ✓

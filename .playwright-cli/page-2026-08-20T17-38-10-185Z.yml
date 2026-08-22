@@ -1,0 +1,441 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - generic [ref=e4]:
+      - img "LisansArena Logo" [ref=e6]
+      - generic [ref=e8]:
+        - generic [ref=e9]:
+          - generic [ref=e10]: LISANSARENA
+          - generic [ref=e11]: APP
+        - generic [ref=e12]: 7/24 OTO TESLİMAT
+    - generic [ref=e14]:
+      - button "0" [ref=e15] [cursor=pointer]
+      - button "₺0.00 +" [ref=e21] [cursor=pointer]:
+        - generic [ref=e25]: ₺0.00
+        - generic [ref=e26]: +
+  - main [ref=e27]:
+    - generic [ref=e28]:
+      - generic [ref=e30]:
+        - generic [ref=e31]: ⚡ LİSANSARENA RESMİ APP
+        - heading "Yapay Zeka & Lisans Arenası" [level=1] [ref=e32]
+        - paragraph [ref=e33]: Güncel Ürünler • 3D Secure Shopier • Ürüne Göre Otomatik veya Manuel Teslimat
+        - generic [ref=e34]:
+          - generic [ref=e35]:
+            - strong [ref=e36]: "50"
+            - generic [ref=e37]: Katalog Ürünü
+          - generic [ref=e39]:
+            - strong [ref=e40]: 7/24
+            - generic [ref=e41]: Canlı Destek
+          - generic [ref=e43]:
+            - strong [ref=e44]: Açık
+            - generic [ref=e45]: Teslim Koşulu
+      - textbox "Yapay zeka, lisans veya oyun ara..." [ref=e50]
+      - generic [ref=e51]:
+        - button "🔥 Tümü" [ref=e52] [cursor=pointer]:
+          - generic [ref=e53]: 🔥
+          - generic [ref=e54]: Tümü
+        - button "⭐ Vitrin" [ref=e55] [cursor=pointer]:
+          - generic [ref=e56]: ⭐
+          - generic [ref=e57]: Vitrin
+        - button "🤖 Yapay Zeka" [ref=e58] [cursor=pointer]:
+          - generic [ref=e59]: 🤖
+          - generic [ref=e60]: Yapay Zeka
+        - button "🎮 Oyun & E-Pin" [ref=e61] [cursor=pointer]:
+          - generic [ref=e62]: 🎮
+          - generic [ref=e63]: Oyun & E-Pin
+        - button "🎨 Tasarım" [ref=e64] [cursor=pointer]:
+          - generic [ref=e65]: 🎨
+          - generic [ref=e66]: Tasarım
+        - button "💻 Yazılım & Key" [ref=e67] [cursor=pointer]:
+          - generic [ref=e68]: 💻
+          - generic [ref=e69]: Yazılım & Key
+        - button "🎬 Sinema & Dizi" [ref=e70] [cursor=pointer]:
+          - generic [ref=e71]: 🎬
+          - generic [ref=e72]: Sinema & Dizi
+        - button "💬 Hesap & Sosyal" [ref=e73] [cursor=pointer]:
+          - generic [ref=e74]: 💬
+          - generic [ref=e75]: Hesap & Sosyal
+        - button "🎟️ Kupon & Yakıt" [ref=e76] [cursor=pointer]:
+          - generic [ref=e77]: 🎟️
+          - generic [ref=e78]: Kupon & Yakıt
+      - generic [ref=e79]:
+        - heading "Tüm Lisanslar" [level=2] [ref=e82]
+        - generic [ref=e83]: 34 Ürün
+      - generic [ref=e84]:
+        - generic [ref=e85]:
+          - generic [ref=e86]:
+            - img "FC26 + Online Her Seyi Degisen Hesap" [ref=e87]
+            - generic [ref=e88]: 💎 VIP Lisans
+          - generic [ref=e89]:
+            - heading "FC26 + Online Her Seyi Degisen Hesap" [level=3] [ref=e90]
+            - generic [ref=e91]: 299,99 TL
+            - generic [ref=e93]:
+              - button "🛒 + Sepete Ekle" [ref=e94] [cursor=pointer]
+              - button "➔" [ref=e96] [cursor=pointer]
+        - generic [ref=e97]:
+          - generic [ref=e98]:
+            - img "FC26 + Online Her Seyi Degisen Hesap" [ref=e99]
+            - generic [ref=e100]: 💎 VIP Lisans
+          - generic [ref=e101]:
+            - heading "FC26 + Online Her Seyi Degisen Hesap" [level=3] [ref=e102]
+            - generic [ref=e103]: 299,99 TL
+            - generic [ref=e105]:
+              - button "🛒 + Sepete Ekle" [ref=e106] [cursor=pointer]
+              - button "➔" [ref=e108] [cursor=pointer]
+        - generic [ref=e109]:
+          - generic [ref=e110]:
+            - img "Zula Random Hesap" [ref=e111]
+            - generic [ref=e112]: ⚡ Orijinal
+          - generic [ref=e113]:
+            - heading "Zula Random Hesap" [level=3] [ref=e114]
+            - generic [ref=e115]: 5,00 TL
+            - generic [ref=e117]:
+              - button "🛒 + Sepete Ekle" [ref=e118] [cursor=pointer]
+              - button "➔" [ref=e120] [cursor=pointer]
+        - generic [ref=e121]:
+          - generic [ref=e122]:
+            - img "Steam 200 Dolar Random Key" [ref=e123]
+            - generic [ref=e124]: 💎 VIP Lisans
+          - generic [ref=e125]:
+            - heading "Steam 200 Dolar Random Key" [level=3] [ref=e126]
+            - generic [ref=e127]: 30,00 TL
+            - generic [ref=e129]:
+              - button "🛒 + Sepete Ekle" [ref=e130] [cursor=pointer]
+              - button "➔" [ref=e132] [cursor=pointer]
+        - generic [ref=e133]:
+          - generic [ref=e134]:
+            - img "Canva Pro Öğretmen (1 Yıllık)" [ref=e135]
+            - generic [ref=e136]: 💎 VIP Lisans
+          - generic [ref=e137]:
+            - heading "Canva Pro Öğretmen (1 Yıllık)" [level=3] [ref=e138]
+            - generic [ref=e139]: 149,99 TL
+            - generic [ref=e141]:
+              - button "🛒 + Sepete Ekle" [ref=e142] [cursor=pointer]
+              - button "➔" [ref=e144] [cursor=pointer]
+        - generic [ref=e145]:
+          - generic [ref=e146]:
+            - img "Canva Pro (1 Yıllık Yetki)" [ref=e147]
+            - generic [ref=e148]: 💎 VIP Lisans
+          - generic [ref=e149]:
+            - heading "Canva Pro (1 Yıllık Yetki)" [level=3] [ref=e150]
+            - generic [ref=e151]: 83,99 TL
+            - generic [ref=e153]:
+              - button "🛒 + Sepete Ekle" [ref=e154] [cursor=pointer]
+              - button "➔" [ref=e156] [cursor=pointer]
+        - generic [ref=e157]:
+          - generic [ref=e158]:
+            - img "Shell 75 TL Akaryakıt Puanı" [ref=e159]
+            - generic [ref=e160]: ⚡ Orijinal
+          - generic [ref=e161]:
+            - heading "Shell 75 TL Akaryakıt Puanı" [level=3] [ref=e162]
+            - generic [ref=e163]: 14,99 TL
+            - generic [ref=e165]:
+              - button "🛒 + Sepete Ekle" [ref=e166] [cursor=pointer]
+              - button "➔" [ref=e168] [cursor=pointer]
+        - generic [ref=e169]:
+          - generic [ref=e170]:
+            - img "Gemini Pro Premium Hesap (12 Aylık)" [ref=e171]
+            - generic [ref=e172]: 💎 VIP Lisans
+          - generic [ref=e173]:
+            - heading "Gemini Pro Premium Hesap (12 Aylık)" [level=3] [ref=e174]
+            - generic [ref=e175]: 209,89 TL
+            - generic [ref=e177]:
+              - button "🛒 + Sepete Ekle" [ref=e178] [cursor=pointer]
+              - button "➔" [ref=e180] [cursor=pointer]
+        - generic [ref=e181]:
+          - generic [ref=e182]:
+            - img "Gemini Pro Davet (12 Aylık)" [ref=e183]
+            - generic [ref=e184]: 💎 VIP Lisans
+          - generic [ref=e185]:
+            - heading "Gemini Pro Davet (12 Aylık)" [level=3] [ref=e186]
+            - generic [ref=e187]: 99,99 TL
+            - generic [ref=e189]:
+              - button "🛒 + Sepete Ekle" [ref=e190] [cursor=pointer]
+              - button "➔" [ref=e192] [cursor=pointer]
+        - generic [ref=e193]:
+          - generic [ref=e194]:
+            - img "Gemini Ultra (2.5k Kredili Hesap)" [ref=e195]
+            - generic [ref=e196]: 💎 VIP Lisans
+          - generic [ref=e197]:
+            - heading "Gemini Ultra (2.5k Kredili Hesap)" [level=3] [ref=e198]
+            - generic [ref=e199]: 599,99 TL
+            - generic [ref=e201]:
+              - button "🛒 + Sepete Ekle" [ref=e202] [cursor=pointer]
+              - button "➔" [ref=e204] [cursor=pointer]
+        - generic [ref=e205]:
+          - generic [ref=e206]:
+            - img "Gemini Ultra (Davet Linki)" [ref=e207]
+            - generic [ref=e208]: 💎 VIP Lisans
+          - generic [ref=e209]:
+            - heading "Gemini Ultra (Davet Linki)" [level=3] [ref=e210]
+            - generic [ref=e211]: 419,99 TL
+            - generic [ref=e213]:
+              - button "🛒 + Sepete Ekle" [ref=e214] [cursor=pointer]
+              - button "➔" [ref=e216] [cursor=pointer]
+        - generic [ref=e217]:
+          - generic [ref=e218]:
+            - img "Gamma Pro (1 Aylık Hesap)" [ref=e219]
+            - generic [ref=e220]: ⚡ Orijinal
+          - generic [ref=e221]:
+            - heading "Gamma Pro (1 Aylık Hesap)" [level=3] [ref=e222]
+            - generic [ref=e223]: 299,99 TL
+            - generic [ref=e225]:
+              - button "🛒 + Sepete Ekle" [ref=e226] [cursor=pointer]
+              - button "➔" [ref=e228] [cursor=pointer]
+        - generic [ref=e229]:
+          - generic [ref=e230]:
+            - img "Gamma Ultra (1 Aylık Hesap)" [ref=e231]
+            - generic [ref=e232]: ⚡ Orijinal
+          - generic [ref=e233]:
+            - heading "Gamma Ultra (1 Aylık Hesap)" [level=3] [ref=e234]
+            - generic [ref=e235]: 472,49 TL
+            - generic [ref=e237]:
+              - button "🛒 + Sepete Ekle" [ref=e238] [cursor=pointer]
+              - button "➔" [ref=e240] [cursor=pointer]
+        - generic [ref=e241]:
+          - generic [ref=e242]:
+            - img "Super Grok (12 Aylık Hesap)" [ref=e243]
+            - generic [ref=e244]: 💎 VIP Lisans
+          - generic [ref=e245]:
+            - heading "Super Grok (12 Aylık Hesap)" [level=3] [ref=e246]
+            - generic [ref=e247]: 2.414,99 TL
+            - generic [ref=e249]:
+              - button "🛒 + Sepete Ekle" [ref=e250] [cursor=pointer]
+              - button "➔" [ref=e252] [cursor=pointer]
+        - generic [ref=e253]:
+          - generic [ref=e254]:
+            - img "Super Grok (6 Aylık Hesap)" [ref=e255]
+            - generic [ref=e256]: 💎 VIP Lisans
+          - generic [ref=e257]:
+            - heading "Super Grok (6 Aylık Hesap)" [level=3] [ref=e258]
+            - generic [ref=e259]: 1.574,99 TL
+            - generic [ref=e261]:
+              - button "🛒 + Sepete Ekle" [ref=e262] [cursor=pointer]
+              - button "➔" [ref=e264] [cursor=pointer]
+        - generic [ref=e265]:
+          - generic [ref=e266]:
+            - img "Super Grok (3 Aylık Hesap)" [ref=e267]
+            - generic [ref=e268]: 💎 VIP Lisans
+          - generic [ref=e269]:
+            - heading "Super Grok (3 Aylık Hesap)" [level=3] [ref=e270]
+            - generic [ref=e271]: 997,49 TL
+            - generic [ref=e273]:
+              - button "🛒 + Sepete Ekle" [ref=e274] [cursor=pointer]
+              - button "➔" [ref=e276] [cursor=pointer]
+        - generic [ref=e277]:
+          - generic [ref=e278]:
+            - img "Super Grok (1 Aylık Hesap)" [ref=e279]
+            - generic [ref=e280]: 💎 VIP Lisans
+          - generic [ref=e281]:
+            - heading "Super Grok (1 Aylık Hesap)" [level=3] [ref=e282]
+            - generic [ref=e283]: 472,49 TL
+            - generic [ref=e285]:
+              - button "🛒 + Sepete Ekle" [ref=e286] [cursor=pointer]
+              - button "➔" [ref=e288] [cursor=pointer]
+        - generic [ref=e289]:
+          - generic [ref=e290]:
+            - img "Steam İstediğiniz Oyun (Ortak Hesap)" [ref=e291]
+            - generic [ref=e292]: 💎 VIP Lisans
+          - generic [ref=e293]:
+            - heading "Steam İstediğiniz Oyun (Ortak Hesap)" [level=3] [ref=e294]
+            - generic [ref=e295]: 63,00 TL
+            - generic [ref=e297]:
+              - button "🛒 + Sepete Ekle" [ref=e298] [cursor=pointer]
+              - button "➔" [ref=e300] [cursor=pointer]
+        - generic [ref=e301]:
+          - generic [ref=e302]:
+            - img "Windows 10/11 Pro Lisans Anahtarı (Key)" [ref=e303]
+            - generic [ref=e304]: 💎 VIP Lisans
+          - generic [ref=e305]:
+            - heading "Windows 10/11 Pro Lisans Anahtarı (Key)" [level=3] [ref=e306]
+            - generic [ref=e307]: 70,00 TL
+            - generic [ref=e309]:
+              - button "🛒 + Sepete Ekle" [ref=e310] [cursor=pointer]
+              - button "➔" [ref=e312] [cursor=pointer]
+        - generic [ref=e313]:
+          - generic [ref=e314]:
+            - img "Microsoft Office 365 (1 Yıllık Hesap)" [ref=e315]
+            - generic [ref=e316]: ⚡ Orijinal
+          - generic [ref=e317]:
+            - heading "Microsoft Office 365 (1 Yıllık Hesap)" [level=3] [ref=e318]
+            - generic [ref=e319]: 70,00 TL
+            - generic [ref=e321]:
+              - button "🛒 + Sepete Ekle" [ref=e322] [cursor=pointer]
+              - button "➔" [ref=e324] [cursor=pointer]
+        - generic [ref=e325]:
+          - generic [ref=e326]:
+            - img "Eski Tarihli Telegram Hesabı (+1 No'lu)" [ref=e327]
+            - generic [ref=e328]: 💎 VIP Lisans
+          - generic [ref=e329]:
+            - heading "Eski Tarihli Telegram Hesabı (+1 No'lu)" [level=3] [ref=e330]
+            - generic [ref=e331]: 149,90 TL
+            - generic [ref=e333]:
+              - button "🛒 + Sepete Ekle" [ref=e334] [cursor=pointer]
+              - button "➔" [ref=e336] [cursor=pointer]
+        - generic [ref=e337]:
+          - generic [ref=e338]:
+            - img "Perplexity Pro (1 Aylık Hesap)" [ref=e339]
+            - generic [ref=e340]: 💎 VIP Lisans
+          - generic [ref=e341]:
+            - heading "Perplexity Pro (1 Aylık Hesap)" [level=3] [ref=e342]
+            - generic [ref=e343]: 119,90 TL
+            - generic [ref=e345]:
+              - button "🛒 + Sepete Ekle" [ref=e346] [cursor=pointer]
+              - button "➔" [ref=e348] [cursor=pointer]
+        - generic [ref=e349]:
+          - generic [ref=e350]:
+            - img "Super Duolingo Sınırsız (Ortak Hesap)" [ref=e351]
+            - generic [ref=e352]: ⚡ Orijinal
+          - generic [ref=e353]:
+            - heading "Super Duolingo Sınırsız (Ortak Hesap)" [level=3] [ref=e354]
+            - generic [ref=e355]: 49,90 TL
+            - generic [ref=e357]:
+              - button "🛒 + Sepete Ekle" [ref=e358] [cursor=pointer]
+              - button "➔" [ref=e360] [cursor=pointer]
+        - generic [ref=e361]:
+          - generic [ref=e362]:
+            - img "DeepL AI (1 Aylık) - Kişisel Hesap" [ref=e363]
+            - generic [ref=e364]: ⚡ Orijinal
+          - generic [ref=e365]:
+            - heading "DeepL AI (1 Aylık) - Kişisel Hesap" [level=3] [ref=e366]
+            - generic [ref=e367]: 59,90 TL
+            - generic [ref=e369]:
+              - button "🛒 + Sepete Ekle" [ref=e370] [cursor=pointer]
+              - button "➔" [ref=e372] [cursor=pointer]
+        - generic [ref=e373]:
+          - generic [ref=e374]:
+            - img "DeepL AI (1 Aylık) - Ortak Hesap" [ref=e375]
+            - generic [ref=e376]: ⚡ Orijinal
+          - generic [ref=e377]:
+            - heading "DeepL AI (1 Aylık) - Ortak Hesap" [level=3] [ref=e378]
+            - generic [ref=e379]: 29,90 TL
+            - generic [ref=e381]:
+              - button "🛒 + Sepete Ekle" [ref=e382] [cursor=pointer]
+              - button "➔" [ref=e384] [cursor=pointer]
+        - generic [ref=e385]:
+          - generic [ref=e386]:
+            - img "Scribd (1 Aylık) - Kişisel Hesap" [ref=e387]
+            - generic [ref=e388]: ⚡ Orijinal
+          - generic [ref=e389]:
+            - heading "Scribd (1 Aylık) - Kişisel Hesap" [level=3] [ref=e390]
+            - generic [ref=e391]: 59,90 TL
+            - generic [ref=e393]:
+              - button "🛒 + Sepete Ekle" [ref=e394] [cursor=pointer]
+              - button "➔" [ref=e396] [cursor=pointer]
+        - generic [ref=e397]:
+          - generic [ref=e398]:
+            - img "Scribd (1 Aylık) - Ortak Hesap" [ref=e399]
+            - generic [ref=e400]: ⚡ Orijinal
+          - generic [ref=e401]:
+            - heading "Scribd (1 Aylık) - Ortak Hesap" [level=3] [ref=e402]
+            - generic [ref=e403]: 29,90 TL
+            - generic [ref=e405]:
+              - button "🛒 + Sepete Ekle" [ref=e406] [cursor=pointer]
+              - button "➔" [ref=e408] [cursor=pointer]
+        - generic [ref=e409]:
+          - generic [ref=e410]:
+            - img "Magnific AI Ortak (1 Aylık Business Hesap)" [ref=e411]
+            - generic [ref=e412]: ⚡ Orijinal
+          - generic [ref=e413]:
+            - heading "Magnific AI Ortak (1 Aylık Business Hesap)" [level=3] [ref=e414]
+            - generic [ref=e415]: 49,90 TL
+            - generic [ref=e417]:
+              - button "🛒 + Sepete Ekle" [ref=e418] [cursor=pointer]
+              - button "➔" [ref=e420] [cursor=pointer]
+        - generic [ref=e421]:
+          - generic [ref=e422]:
+            - img "Adobe Creative Cloud (1 Aylık) - Ortak Hesap" [ref=e423]
+            - generic [ref=e424]: 💎 VIP Lisans
+          - generic [ref=e425]:
+            - heading "Adobe Creative Cloud (1 Aylık) - Ortak Hesap" [level=3] [ref=e426]
+            - generic [ref=e427]: 49,90 TL
+            - generic [ref=e429]:
+              - button "🛒 + Sepete Ekle" [ref=e430] [cursor=pointer]
+              - button "➔" [ref=e432] [cursor=pointer]
+        - generic [ref=e433]:
+          - generic [ref=e434]:
+            - img "Adobe Creative Cloud (1 Haftalık) - Kendi Hesabınıza" [ref=e435]
+            - generic [ref=e436]: 💎 VIP Lisans
+          - generic [ref=e437]:
+            - heading "Adobe Creative Cloud (1 Haftalık) - Kendi Hesabınıza" [level=3] [ref=e438]
+            - generic [ref=e439]: 59,90 TL
+            - generic [ref=e441]:
+              - button "🛒 + Sepete Ekle" [ref=e442] [cursor=pointer]
+              - button "➔" [ref=e444] [cursor=pointer]
+        - generic [ref=e445]:
+          - generic [ref=e446]:
+            - img "Grammarly Pro (1 Aylık) - Ortak Hesap" [ref=e447]
+            - generic [ref=e448]: ⚡ Orijinal
+          - generic [ref=e449]:
+            - heading "Grammarly Pro (1 Aylık) - Ortak Hesap" [level=3] [ref=e450]
+            - generic [ref=e451]: 49,90 TL
+            - generic [ref=e453]:
+              - button "🛒 + Sepete Ekle" [ref=e454] [cursor=pointer]
+              - button "➔" [ref=e456] [cursor=pointer]
+        - generic [ref=e457]:
+          - generic [ref=e458]:
+            - img "Grammarly Pro (1 Haftalık) - Kendi Hesabınıza" [ref=e459]
+            - generic [ref=e460]: ⚡ Orijinal
+          - generic [ref=e461]:
+            - heading "Grammarly Pro (1 Haftalık) - Kendi Hesabınıza" [level=3] [ref=e462]
+            - generic [ref=e463]: 79,90 TL
+            - generic [ref=e465]:
+              - button "🛒 + Sepete Ekle" [ref=e466] [cursor=pointer]
+              - button "➔" [ref=e468] [cursor=pointer]
+        - generic [ref=e469]:
+          - generic [ref=e470]:
+            - img "Crunchyroll Özel Profil (1 Aylık)" [ref=e471]
+            - generic [ref=e472]: ⚡ Orijinal
+          - generic [ref=e473]:
+            - heading "Crunchyroll Özel Profil (1 Aylık)" [level=3] [ref=e474]
+            - generic [ref=e475]: 59,90 TL
+            - generic [ref=e477]:
+              - button "🛒 + Sepete Ekle" [ref=e478] [cursor=pointer]
+              - button "➔" [ref=e480] [cursor=pointer]
+        - generic [ref=e481]:
+          - generic [ref=e482]:
+            - img "Crunchyroll Ortak Hesap (1 Aylık)" [ref=e483]
+            - generic [ref=e484]: ⚡ Orijinal
+          - generic [ref=e485]:
+            - heading "Crunchyroll Ortak Hesap (1 Aylık)" [level=3] [ref=e486]
+            - generic [ref=e487]: 39,90 TL
+            - generic [ref=e489]:
+              - button "🛒 + Sepete Ekle" [ref=e490] [cursor=pointer]
+              - button "➔" [ref=e492] [cursor=pointer]
+  - navigation:
+    - generic [ref=e493]:
+      - button "Mağaza" [ref=e494] [cursor=pointer]
+      - button "0 Sepet" [ref=e500] [cursor=pointer]:
+        - generic [ref=e501]: "0"
+        - generic [ref=e507]: Sepet
+      - button "Cüzdan" [ref=e508] [cursor=pointer]
+      - button "Kazanç" [ref=e512] [cursor=pointer]
+      - button "Destek" [ref=e519] [cursor=pointer]
+  - generic:
+    - generic:
+      - button "✕"
+      - generic:
+        - img "Ürün Görseli"
+        - generic: VIP Lisans
+      - generic:
+        - heading "Ürün Adı" [level=2]
+        - generic:
+          - generic: "Fiyat:"
+          - generic: ₺0.00
+        - paragraph: Ürün açıklaması
+        - generic:
+          - generic: ⚡ Teslim türü ürün açıklamasında belirtilir
+          - generic: 🛡️ Garanti yalnız ürün koşullarında yazan süre için geçerlidir
+          - generic: 🔒 3D Secure Güvenli Shopier Ödemesi
+        - generic:
+          - button "+ Sepete Ekle"
+          - link "Shopier ile Satın Al":
+            - /url: "#"
+          - button "💰 Cüzdan Bakiyesiyle Al (₺0.00)"
+  - generic:
+    - generic:
+      - generic: ⚡
+      - heading "Ödeme İlanınız Hazır!" [level=2]
+      - paragraph: Aşağıdaki butona tıklayarak güvenli 3D Shopier ödeme sayfasına geçebilirsiniz. Ödeme sonrası bakiyeniz anında cüzdanınıza aktarılır.
+      - link "🚀 Shopier Ödeme Sayfasına Git":
+        - /url: "#"
+      - button "Vazgeç / Kapat"

@@ -421,6 +421,7 @@ async def show_main_menu(event, user_id, is_callback=False):
     )
     
     buttons = [
+        [Button.url("🛒 Froxy Mini App Mağaza", "https://froxy-bot-live.onrender.com/froxy/")],
         [Button.url(t["web_btn"], FROXY_SHOPIER_URL)],
         [Button.inline(t["support_btn"], b"menu_support")],
         [Button.inline(t["lang_btn"], b"menu_lang")],

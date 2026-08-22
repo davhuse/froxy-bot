@@ -61,23 +61,38 @@ def load_products():
 
 def load_users():
     with DATA_LOCK:
+        try:
+            import firestore_helper
+            doc = firestore_helper.get_document("keyvadi_users_data")
+            if doc and "users" in doc:
+                return doc["users"]
+        except Exception:
+            pass
         if USER_DATA_PATH.exists():
-            with open(USER_DATA_PATH, "r", encoding="utf-8") as f:
-                return json.load(f)
+            try:
+                with open(USER_DATA_PATH, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception:
+                pass
     return {}
 
 def save_users(data):
     with DATA_LOCK:
-        fd, tmp_name = tempfile.mkstemp(prefix="users_", suffix=".json", dir=str(BASE_DIR))
         try:
+            import firestore_helper
+            firestore_helper.set_document("keyvadi_users_data", {"users": data})
+        except Exception as exc:
+            print(f"[KeyVadi] Firestore save_users error: {exc}")
+        try:
+            fd, tmp_name = tempfile.mkstemp(prefix="users_", suffix=".json", dir=str(BASE_DIR))
             with os.fdopen(fd, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
                 f.flush()
                 os.fsync(f.fileno())
             os.replace(tmp_name, USER_DATA_PATH)
-        finally:
+        except Exception as e:
             if os.path.exists(tmp_name):
-                os.unlink(tmp_name)
+                os.remove(tmp_name)
 
 def _telegram_bot_token():
     return (os.environ.get("KEYVADI_BOT_TOKEN") or

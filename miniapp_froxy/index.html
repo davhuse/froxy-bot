@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Froxy — Dijital Lisans & E-Pin Mağazası</title>
+  
+  <!-- Modern Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Telegram WebApp SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  
+  <!-- CSS Stylesheet -->
+  <link rel="stylesheet" href="style.css?v=11.0" />
+</head>
+<body>
+  
+  <!-- AMBIENT BACKGROUND & GLOWING PARTICLES -->
+  <div class="ambient-background">
+    <div class="glow-orb orb-primary"></div>
+    <div class="glow-orb orb-secondary"></div>
+    <div class="glow-orb orb-accent"></div>
+    <div class="grid-overlay"></div>
+  </div>
+
+  <div id="app" class="app-container">
+    
+    <!-- TOP HEADER -->
+    <header class="app-header">
+      <div class="header-left">
+        <div class="brand-avatar">
+          <img src="assets/froxy_logo.png" alt="Froxy Logo" class="brand-logo-img" onerror="this.src='assets/froxy_banner_new_1781380687628.png'">
+          <span class="online-indicator" title="Sistem Aktif"></span>
+        </div>
+        <div class="brand-info">
+          <div class="brand-name">FROXY<span class="brand-badge">PRO</span></div>
+          <div class="user-greeting" id="headerUserName">Yükleniyor...</div>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <!-- CART BUTTON -->
+        <button class="header-cart-btn" onclick="switchTab('cartTab')" title="Sepetim">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+          <span class="cart-badge-count" id="headerCartCount">0</span>
+        </button>
+
+        <!-- BALANCE PILL -->
+        <button class="balance-pill" onclick="switchTab('walletTab')" title="Bakiye Yükle">
+          <div class="balance-glow"></div>
+          <span class="balance-icon">💳</span>
+          <span class="balance-amount dynamic-balance">₺0.00</span>
+          <span class="balance-plus">+</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- TAB 1: MAĞAZA (STORE) -->
+    <main id="storeTab" class="tab-view active">
+      
+      <!-- STORIES / HIGHLIGHTS CAROUSEL -->
+      <section class="stories-section">
+        <div class="stories-track">
+          
+          <div class="story-card story-gold" onclick="openSpinModal()" style="background: linear-gradient(135deg, rgba(255, 184, 0, 0.2), rgba(0, 240, 255, 0.15)); border-color: rgba(255, 184, 0, 0.5);">
+            <span class="story-icon">🎡</span>
+            <div>
+              <div class="story-title" style="color: #FFB800;">Şans Çarkı</div>
+              <div class="story-desc">Ücretsiz çevir & bakiye kazan</div>
+            </div>
+            <span class="story-tag" style="background: #FFB800; color: #000;">GÜNLÜK HEDİYE</span>
+          </div>
+
+          <div class="story-card story-gold" onclick="setCategory('vitrin', this)">
+            <span class="story-icon">⭐</span>
+            <div>
+              <div class="story-title">Vitrin Lisanslar</div>
+              <div class="story-desc">En çok tercih edilenler</div>
+            </div>
+            <span class="story-tag">POPÜLER</span>
+          </div>
+
+          <div class="story-card story-blue" onclick="setCategory('ai', this)">
+            <span class="story-icon">🤖</span>
+            <div>
+              <div class="story-title">Yapay Zeka</div>
+              <div class="story-desc">ChatGPT, Canva, Gemini</div>
+            </div>
+            <span class="story-tag">%70 İNDİRİM</span>
+          </div>
+
+          <div class="story-card story-purple" onclick="setCategory('gaming', this)">
+            <span class="story-icon">🎮</span>
+            <div>
+              <div class="story-title">Oyun & Pin</div>
+              <div class="story-desc">FC26, Steam, Game Pass</div>
+            </div>
+            <span class="story-tag">ANINDA</span>
+          </div>
+
+          <div class="story-card story-green" onclick="setCategory('entertainment', this)">
+            <span class="story-icon">🎬</span>
+            <div>
+              <div class="story-title">Sinema & Müzik</div>
+              <div class="story-desc">Netflix, Spotify, YouTube</div>
+            </div>
+            <span class="story-tag">4K ULTRA</span>
+          </div>
+
+          <div class="story-card story-blue" onclick="setCategory('design', this)">
+            <span class="story-icon">🎨</span>
+            <div>
+              <div class="story-title">Tasarım & Edit</div>
+              <div class="story-desc">CapCut, Adobe, Envato</div>
+            </div>
+            <span class="story-tag">PRO</span>
+          </div>
+
+          <div class="story-card story-purple" onclick="setCategory('security', this)">
+            <span class="story-icon">🛡️</span>
+            <div>
+              <div class="story-title">Yazılım & Antivirüs</div>
+              <div class="story-desc">Kaspersky, Windows, Office</div>
+            </div>
+            <span class="story-tag">ORİJİNAL</span>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- FLASH DEALS COUNTDOWN BANNER -->
+      <section class="flash-deals-banner" onclick="openProductModal('47669105')">
+        <div class="fdb-glow"></div>
+        <div class="fdb-header">
+          <div class="fdb-badge">
+            <span class="fdb-fire">🔥</span>
+            <span>GÜNÜN SÜPER FIRSATI</span>
+          </div>
+          <div class="fdb-timer-box">
+            <span>Sona Eriyor:</span>
+            <span class="fdb-timer-digits" id="flashTimer">05:42:18</span>
+          </div>
+        </div>
+        <div class="fdb-body">
+          <div class="fdb-info">
+            <h4 class="fdb-title">YouTube Premium (3 Aylık Kod)</h4>
+            <div class="fdb-prices">
+              <span class="fdb-old">₺79.90</span>
+              <span class="fdb-new">₺19.90</span>
+              <span class="fdb-save">%75 TASARRUF</span>
+            </div>
+          </div>
+          <button class="fdb-action-btn" type="button" onclick="event.stopPropagation(); openProductModal('47669105');">
+            Fırsatı Yakala ⚡
+          </button>
+        </div>
+      </section>
+
+      <!-- SEARCH BAR -->
+      <section class="search-section">
+        <div class="search-input-wrapper">
+          <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input type="text" id="searchInput" placeholder="ChatGPT, CapCut, Steam, Netflix ara..." />
+          <button id="searchClear" class="search-clear-btn" style="display:none;">✕</button>
+        </div>
+      </section>
+
+      <!-- CATEGORIES HORIZONTAL SCROLL -->
+      <section class="categories-section">
+        <div class="categories-scroll" id="categoriesScroll">
+          <!-- Dynamically generated category chips -->
+        </div>
+      </section>
+
+      <!-- PRODUCTS FEED -->
+      <section class="products-section">
+        <div class="section-title-row">
+          <div class="section-heading">
+            <span class="heading-glow-bar"></span>
+            <h2 id="currentCategoryHeading">Tüm Ürünler</h2>
+          </div>
+          <span id="filteredCountBadge" class="badge-count">Yükleniyor...</span>
+        </div>
+
+        <div id="productsGrid" class="products-grid">
+          <!-- Dynamically populated product cards -->
+        </div>
+      </section>
+
+    </main>
+
+    <!-- TAB 2: SEPET (CART) -->
+    <main id="cartTab" class="tab-view">
+      <div class="view-header">
+        <h2>Alışveriş Sepetim</h2>
+        <p>Eklediğiniz lisansları cüzdan bakiyenizle anında satın alın</p>
+      </div>
+
+      <div class="glass-card">
+        <div id="kvCartItemsContainer" class="cart-items-list">
+          <!-- Dynamically populated -->
+        </div>
+
+        <!-- CART SUMMARY -->
+        <div id="kvCartSummaryBox" class="cart-summary-box" style="display: none;">
+          <div class="cs-row">
+            <span>Toplam Ürün:</span>
+            <strong id="kvCartTotalItems">0 Adet</strong>
+          </div>
+          <div class="cs-row cs-total">
+            <span>Ödenecek Tutar:</span>
+            <strong class="cs-amount" id="kvCartTotalAmount">₺0.00</strong>
+          </div>
+
+          <div class="cart-actions-stack">
+            <button class="btn-primary-action" onclick="checkoutKvCartWithWallet()">
+              <span>💰 Cüzdan Bakiyesiyle Satın Al</span>
+            </button>
+            <button class="btn-secondary-action" onclick="clearKvFullCart()" style="margin-top: 8px;">
+              <span>🗑️ Sepeti Temizle</span>
+            </button>
+          </div>
+        </div>
+
+        <div id="kvCartEmptyState" class="cart-empty-state">
+          <div class="empty-icon">🛒</div>
+          <h3 style="color: #fff; margin-bottom: 6px;">Sepetiniz Boş</h3>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">Mağazadan lisansları sepetinize ekleyerek toplu sipariş verebilirsiniz.</p>
+          <button class="btn-primary-action" onclick="switchTab('storeTab')">
+            <span>Mağazayı Keşfet</span>
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <!-- TAB 3: BAKİYE YÜKLE (WALLET) -->
+    <main id="walletTab" class="tab-view">
+      <div class="view-header">
+        <h2>Cüzdan & Bakiye</h2>
+        <p>Bakiye yükleyin, 7/24 anında indirimli alışveriş yapın</p>
+      </div>
+
+      <!-- HERO WALLET CARD -->
+      <div class="wallet-hero-card">
+        <div class="wallet-card-glow"></div>
+        <div class="wallet-hero-top">
+          <span class="wallet-label">MEVCUT BAKİYENİZ</span>
+          <span class="wallet-status-badge">● Aktif Cüzdan</span>
+        </div>
+        <div class="wallet-hero-amount dynamic-balance">₺0.00</div>
+        <div class="wallet-hero-footer">
+          <span id="walletUserId">ID: Yükleniyor...</span>
+          <span class="instant-tag">⚡ Otomatik 3D Secure</span>
+        </div>
+      </div>
+
+      <!-- TOPUP PRESETS -->
+      <div class="glass-card">
+        <div class="card-header-row">
+          <div class="card-header-icon">💳</div>
+          <div>
+            <h3>Shopier ile Bakiye Yükle</h3>
+            <span class="card-subtext">3D Secure ile 7/24 anında cüzdana yansır</span>
+          </div>
+        </div>
+
+        <div class="topup-presets">
+          <button class="topup-btn" onclick="selectTopupPreset(25, this)">₺25</button>
+          <button class="topup-btn selected" onclick="selectTopupPreset(50, this)">₺50</button>
+          <button class="topup-btn" onclick="selectTopupPreset(100, this)">₺100</button>
+          <button class="topup-btn" onclick="selectTopupPreset(250, this)">₺250</button>
+          <button class="topup-btn" onclick="selectTopupPreset(500, this)">₺500</button>
+          <button class="topup-btn" onclick="selectTopupPreset(1000, this)">₺1000</button>
+        </div>
+
+        <div class="custom-amount-group">
+          <label>Veya Özel Tutar Girin (₺)</label>
+          <div class="input-with-currency">
+            <span class="currency-symbol">₺</span>
+            <input type="number" id="customTopupInput" placeholder="50" min="5" max="50000" value="50" oninput="handleCustomAmount(this.value)" />
+          </div>
+        </div>
+
+        <button id="btnProceedTopup" class="btn-primary-action" onclick="proceedShopierTopup()">
+          <span>⚡ Shopier ile Güvenli Yükle</span>
+        </button>
+
+        <div class="topup-info-bullets">
+          <span class="info-bullet">✔ Kredi kartı ve banka kartı ile 3D Secure güvenli ödeme</span>
+          <span class="info-bullet">✔ Yüklenen bakiye ödeme sonrasında saniyeler içinde cüzdanınıza geçer</span>
+          <span class="info-bullet">✔ Komisyonsuz ve 7/24 kesintisiz yükleme</span>
+        </div>
+      </div>
+    </main>
+
+    <!-- TAB 4: SİPARİŞLERİM & KODLARIM -->
+    <main id="ordersTab" class="tab-view">
+      <div class="view-header">
+        <h2>Siparişlerim & Lisanslarım</h2>
+        <p>Satın aldığınız lisans anahtarları ve teslimat geçmişi</p>
+      </div>
+
+      <div class="glass-card orders-history-card">
+        <div class="card-header-row" style="display: flex; justify-content: space-between; align-items: center;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div class="card-header-icon">📦</div>
+            <div>
+              <h3>Satın Alınan Lisanslar</h3>
+              <span class="card-subtext">Sipariş ID, ürün, tutar ve teslimat durumu</span>
+            </div>
+          </div>
+          <button type="button" onclick="manualRefreshKvData()" style="background: rgba(0, 240, 255, 0.15); border: 1px solid var(--primary-cyan); color: #fff; border-radius: 8px; padding: 6px 12px; font-size: 0.76rem; font-weight: 700; cursor: pointer; white-space: nowrap;">
+            🔄 Yenile
+          </button>
+        </div>
+
+        <div style="background: rgba(0, 240, 255, 0.08); border: 1px solid rgba(0, 240, 255, 0.25); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 0.78rem; color: var(--text-muted); line-height: 1.45; margin: 10px 0;">
+          ⚡ <strong>Anında Teslimat:</strong> Satın alım tamamlandığında lisans kodunuz saniyeler içinde otomatik olarak bu ekrana düşer. Yenilemek için <strong>'🔄 Yenile'</strong> butonuna dokunabilirsiniz.
+        </div>
+
+        <div id="ordersList" class="orders-list" aria-live="polite">
+          <!-- Dynamically populated orders -->
+        </div>
+      </div>
+
+      <div class="glass-card" style="margin-top: 14px;">
+        <div class="card-header-row">
+          <div class="card-header-icon">🛡️</div>
+          <div>
+            <h3>Garanti & Telafi Güvencesi</h3>
+            <span class="card-subtext">7/24 kesintisiz müşteri desteği</span>
+          </div>
+        </div>
+        <p class="card-subtext" style="font-size: 0.84rem; line-height: 1.6; margin-top: 8px;">
+          Froxy üzerinden alınan tüm lisans, hesap ve e-pinler süreleri boyunca telafi ve değişim garantimiz altındadır. Kodunuzla ilgili herhangi bir sorunuzda canlı desteğimize yazabilirsiniz.
+        </p>
+        <button class="btn-primary-action" onclick="notifySupport()" style="margin-top: 14px;">
+          <span>💬 Canlı Desteğe Bağlan</span>
+        </button>
+      </div>
+    </main>
+
+    <!-- TAB 5: REFERANS (REFERRALS) -->
+    <main id="referralTab" class="tab-view">
+      <div class="view-header">
+        <h2>Davet Et & Kazan</h2>
+        <p>Arkadaşlarını davet et, harcamalarından %10 nakit kazan!</p>
+      </div>
+
+      <div class="affiliate-hero-card">
+        <div class="affiliate-stats-grid">
+          <div class="stat-box">
+            <span class="stat-num" id="refTotalCount">0</span>
+            <span class="stat-label">Davet Edilen</span>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-box">
+            <span class="stat-num text-gold" id="refTotalEarnings">₺0.00</span>
+            <span class="stat-label">Toplam Kazanç</span>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-box">
+            <span class="stat-num text-green">%10</span>
+            <span class="stat-label">Komisyon Oranı</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="glass-card">
+        <div class="card-header-row">
+          <div class="card-header-icon">🎁</div>
+          <div>
+            <h3>Size Özel Davet Bağlantısı</h3>
+            <span class="card-subtext">Arkadaşlarınla paylaş, kazancın cüzdanına eklensin</span>
+          </div>
+        </div>
+
+        <div class="ref-link-group">
+          <input type="text" id="refLinkInput" readonly value="https://t.me/FroxySatisBot?start=ref_8797763469" />
+          <button class="btn-copy-ref" onclick="copyRefLink()">KOPYALA</button>
+        </div>
+
+        <button class="btn-primary-action btn-share-tg" onclick="shareOnTelegram()">
+          <span>🚀 Telegram'da Arkadaşlarına Gönder</span>
+        </button>
+
+        <div class="steps-list">
+          <div class="step-item">
+            <span class="step-badge">1</span>
+            <div>
+              <strong>Bağlantını Paylaş</strong>
+              <p>Özel referans linkini Telegram gruplarında veya arkadaşlarına gönder.</p>
+            </div>
+          </div>
+          <div class="step-item">
+            <span class="step-badge">2</span>
+            <div>
+              <strong>Arkadaşın Alışveriş Yapsın</strong>
+              <p>Bağlantınla bota katılan her kullanıcının yaptığı harcamaları takip et.</p>
+            </div>
+          </div>
+          <div class="step-item">
+            <span class="step-badge">3</span>
+            <div>
+              <strong>%10 Anında Kazan</strong>
+              <p>Her başarılı yüklemede %10 nakit bakiye cüzdanına otomatik yansısın.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- FLOATING DOCK BOTTOM NAVIGATION -->
+    <nav class="bottom-dock">
+      <div class="dock-container">
+        
+        <button class="dock-item active" data-tab="storeTab" onclick="switchTab('storeTab')">
+          <div class="dock-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+          </div>
+          <span class="dock-label">Mağaza</span>
+          <span class="dock-dot"></span>
+        </button>
+
+        <button class="dock-item" data-tab="cartTab" onclick="switchTab('cartTab')">
+          <div class="dock-icon" style="position: relative;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+            <span class="dock-badge-pill" id="dockKvCartBadge">0</span>
+          </div>
+          <span class="dock-label">Sepet</span>
+          <span class="dock-dot"></span>
+        </button>
+
+        <button class="dock-item" data-tab="walletTab" onclick="switchTab('walletTab')">
+          <div class="dock-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
+          </div>
+          <span class="dock-label">Bakiye</span>
+          <span class="dock-dot"></span>
+        </button>
+
+        <button class="dock-item" data-tab="ordersTab" onclick="switchTab('ordersTab')">
+          <div class="dock-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+          </div>
+          <span class="dock-label">Siparişler</span>
+          <span class="dock-dot"></span>
+        </button>
+
+        <button class="dock-item" data-tab="referralTab" onclick="switchTab('referralTab')">
+          <div class="dock-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          </div>
+          <span class="dock-label">Kazan</span>
+          <span class="dock-dot"></span>
+        </button>
+
+      </div>
+    </nav>
+
+    <!-- PRODUCT DETAIL MODAL (BOTTOM SHEET) -->
+    <div id="productDetailModal" class="modal-backdrop">
+      <div class="modal-sheet">
+        <button class="modal-close-btn" onclick="closeProductModal()">✕</button>
+        <div class="modal-drag-bar"></div>
+        
+        <div class="modal-hero-img-wrapper">
+          <img id="modalProductImg" src="" alt="Ürün Görseli" onerror="this.src='assets/froxy_banner_new_1781380687628.png'" />
+          <span id="modalBadge" class="modal-badge-pill">POPÜLER</span>
+        </div>
+
+        <div class="modal-body-content">
+          <h2 id="modalProductTitle">Ürün Adı</h2>
+          <div class="modal-price-row">
+            <span class="modal-price-label">Fiyat:</span>
+            <span id="modalProductPrice" class="modal-price-val">₺0.00</span>
+          </div>
+
+          <p id="modalProductDesc" class="modal-desc">Ürün açıklaması burada yer alır.</p>
+
+          <div class="modal-features-list">
+            <div class="modal-feat-item">⚡ <strong id="modalDeliveryInfo">7/24 Anında Otomatik Teslimat</strong></div>
+            <div class="modal-feat-item">🛡️ <strong id="modalEligibilityInfo">Orijinal Lisans & Garanti Güvencesi</strong></div>
+            <div class="modal-feat-item">💳 <strong>3D Secure Kredi Kartı veya Cüzdan ile Ödeme</strong></div>
+          </div>
+
+          <div class="modal-actions-stack">
+            <!-- 1-CLICK DIRECT SHOPIER BUTTON -->
+            <button class="btn-modal-shopier" id="btnModalDirectShopier" onclick="buyViaShopier()">
+              <span>⚡ Kartla Direkt Satın Al (Shopier)</span>
+            </button>
+            
+            <div class="modal-actions-dual">
+              <!-- ADD TO CART -->
+              <button class="btn-modal-cart" onclick="addModalProductToKvCart()">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                <span>+ Sepete Ekle</span>
+              </button>
+              
+              <!-- BUY WITH WALLET -->
+              <button class="btn-modal-wallet" onclick="buyWithWallet()">
+                <span>💰 Cüzdanla Al</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DYNAMIC PAYMENT REDIRECT & LIVE WAITING MODAL (FROXY) -->
+    <div id="topupRedirectModal" class="modal-backdrop">
+      <div class="modal-sheet" style="max-height: 85vh; text-align: center;">
+        <button class="modal-close-btn" onclick="closeTopupRedirectModal()">✕</button>
+        <div class="modal-drag-bar"></div>
+        
+        <div class="kv-redirect-radar-container">
+          <div class="kv-redirect-radar-ring"></div>
+          <div class="kv-redirect-radar-ring-delayed"></div>
+          <div class="kv-redirect-radar-icon">💳</div>
+        </div>
+
+        <div class="kv-redirect-badge-live">
+          <span class="kv-live-indicator-dot"></span>
+          <span id="redirectModalBadge">3D SECURE GÜVENLİ ÖDEME</span>
+        </div>
+
+        <h2 id="redirectModalTitle" style="font-family: var(--font-heading); font-size: 1.25rem; font-weight: 800; color: #FFFFFF;">Ödemeniz Bekleniyor...</h2>
+        <p id="redirectModalDesc" style="color: var(--text-muted); font-size: 0.84rem; line-height: 1.5; margin: 6px 0 14px;">Shopier güvenli ödeme sayfası açıldı. İşleminizi tamamladığınızda lisans kodunuz anında bu ekrana ve <strong>Siparişlerim</strong> sekmesine aktarılacaktır.</p>
+
+        <div class="kv-redirect-steps-list">
+          <div class="kv-redirect-step-card">
+            <div class="kv-step-num-bubble">1</div>
+            <div class="kv-step-info-text">
+              <strong>Ödemeyi Tamamlayın</strong>
+              Kart veya bakiye bilgilerinizle 3D Secure onayını verin.
+            </div>
+          </div>
+          <div class="kv-redirect-step-card">
+            <div class="kv-step-num-bubble">2</div>
+            <div class="kv-step-info-text">
+              <strong>Otomatik Lisans Teslimatı</strong>
+              Ödeme onaylandığı an bu ekran kapanır ve siparişiniz teslim edilir.
+            </div>
+          </div>
+        </div>
+
+        <div class="kv-redirect-waiting-bar">
+          <span class="kv-live-indicator-dot"></span>
+          <span>Canlı Takip Aktif — Saniyeler içinde algılanır</span>
+        </div>
+        
+        <a id="topupRedirectBtn" href="#" target="_blank" class="btn-primary-action" style="display: flex; align-items: center; justify-content: center; text-decoration: none; margin-bottom: 8px;">
+          <span>🚀 Ödeme Sayfasına Git / Tekrar Aç</span>
+        </a>
+
+        <button class="btn-kv-check-payment" onclick="manualCheckPayment()">
+          <span>🔄 Ödemeyi Kontrol Et</span>
+        </button>
+
+        <button class="btn-secondary-action" onclick="closeTopupRedirectModal()" style="width: 100%; height: 42px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); color: #fff; border-radius: var(--radius-sm); font-weight: 700; cursor: pointer; margin-top: 8px;">
+          <span>✕ Arka Planda Bekle / Kapat</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- PURCHASE SUCCESS MODAL -->
+    <div id="purchaseSuccessModal" class="modal-backdrop">
+      <div class="modal-sheet" style="max-height: 80vh; text-align: center;">
+        <button class="modal-close-btn" onclick="closePurchaseSuccessModal()">✕</button>
+        <div class="modal-drag-bar"></div>
+        <div style="font-size: 3.2rem; margin: 10px 0 6px; filter: drop-shadow(0 0 16px rgba(0, 240, 255, 0.7));">🎉</div>
+        <h2 id="successModalTitle" style="font-family: var(--font-heading); font-size: 1.25rem; font-weight: 800; color: #FFFFFF;">Siparişiniz Başarıyla Alındı!</h2>
+        <p id="successModalDesc" style="color: var(--text-muted); font-size: 0.84rem; line-height: 1.5; margin: 6px 0 14px;">Ödemeniz onaylandı. Lisans anahtarınız ve teslimat bilgileriniz Siparişlerim alanına işlendi.</p>
+        
+        <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid var(--border-cyan); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 6px; text-align: left;">
+          <div style="display: flex; justify-content: space-between; font-size: 0.82rem; color: var(--text-muted);">
+            <span>Ürün / Sipariş:</span>
+            <strong id="successModalProduct" style="color: #FFFFFF;">Dijital Ürün</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 0.82rem; color: var(--text-muted);">
+            <span>Tutar:</span>
+            <strong id="successModalAmount" style="color: var(--primary-cyan); font-size: 1rem;">₺0.00</strong>
+          </div>
+        </div>
+
+        <button class="btn-primary-action" onclick="goToOrdersFromSuccess()" style="margin-bottom: 8px;">
+          <span>📦 Siparişlerime Git</span>
+        </button>
+        <button class="btn-secondary-action" onclick="closePurchaseSuccessModal()" style="width: 100%; height: 42px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); color: #fff; border-radius: var(--radius-sm); font-weight: 700; cursor: pointer;">
+          <span>🛍️ Alışverişe Devam Et</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- DAILY SPIN MODAL -->
+    <div id="spinModal" class="modal-backdrop">
+      <div class="modal-sheet" style="max-height: 85vh; text-align: center;">
+        <button class="modal-close-btn" onclick="closeSpinModal()" type="button">✕</button>
+        <div class="modal-drag-bar"></div>
+        <div style="font-size: 2.2rem; margin: 4px 0 2px;">🎡</div>
+        <h2 style="font-family: var(--font-heading); font-size: 1.2rem; font-weight: 800; color: #FFFFFF;">Froxy Günlük Şans Çarkı</h2>
+        <p style="color: var(--text-muted); font-size: 0.78rem; line-height: 1.4; margin: 4px 0 12px;">Her gün 1 kez çevirerek anında <strong>₺5.00'ye varan bakiye</strong> veya <strong>%15 VIP indirim</strong> kazanın!</p>
+        
+        <div style="position: relative; width: 260px; height: 260px; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center;">
+          <div style="position: absolute; top: -8px; left: 50%; transform: translateX(-50%); z-index: 10; font-size: 1.4rem; color: #FFB800; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.8));">▼</div>
+          <canvas id="wheelCanvas" width="260" height="260" style="border-radius: 50%; border: 3px solid rgba(0, 240, 255, 0.4); box-shadow: 0 0 20px rgba(0, 240, 255, 0.2);"></canvas>
+          <button id="spinBtn" type="button" onclick="startSpinWheel()" style="position: absolute; width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, #00F0FF, #0070F3); color: #000; font-weight: 900; font-size: 0.82rem; border: 3px solid #fff; cursor: pointer; box-shadow: 0 0 16px rgba(0,240,255,0.8); z-index: 5;">ÇEVİR</button>
+        </div>
+
+        <div id="spinResultBox" style="display:none; background: rgba(0, 240, 255, 0.1); border: 1px dashed var(--primary-cyan); border-radius: var(--radius-sm); padding: 10px; margin-bottom: 12px;">
+          <div id="spinResultIcon" style="font-size: 1.6rem; margin-bottom: 2px;">🎉</div>
+          <h4 id="spinResultTitle" style="color: #fff; font-size: 0.95rem; margin-bottom: 4px;">Tebrikler!</h4>
+          <p id="spinResultDesc" style="color: var(--text-muted); font-size: 0.8rem; margin: 0;">₺2.00 bakiye cüzdanınıza eklendi.</p>
+        </div>
+
+        <button class="btn-secondary-action" onclick="closeSpinModal()" type="button" style="width: 100%; height: 40px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); color: #fff; border-radius: var(--radius-sm); font-weight: 700; cursor: pointer;">
+          <span>Kapat</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toastNotification" class="toast-popup"></div>
+
+  </div>
+
+  <!-- Main JavaScript Logic -->
+  <script src="app.js?v=11.0"></script>
+</body>
+</html>

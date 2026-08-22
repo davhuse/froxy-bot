@@ -1,0 +1,766 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - img "KeyVadi Logo" [ref=e6]
+        - generic "Sistem Aktif" [ref=e7]
+      - generic [ref=e8]:
+        - generic [ref=e9]:
+          - text: KEYVADI
+          - generic [ref=e10]: APP
+        - generic [ref=e11]: Kataloğu inceliyorsun
+    - generic [ref=e12]:
+      - button "0" [ref=e13] [cursor=pointer]
+      - button "💳 ₺0.00 +" [ref=e19] [cursor=pointer]:
+        - generic [ref=e20]: 💳
+        - generic [ref=e21]: ₺0.00
+        - generic [ref=e22]: +
+  - main [ref=e23]:
+    - generic [ref=e25]:
+      - generic [ref=e26] [cursor=pointer]:
+        - generic [ref=e27]: ⭐
+        - generic [ref=e28]:
+          - generic [ref=e29]: Vitrin Lisanslar
+          - generic [ref=e30]: En çok tercih edilenler
+        - generic [ref=e31]: POPÜLER
+      - generic [ref=e32] [cursor=pointer]:
+        - generic [ref=e33]: 🤖
+        - generic [ref=e34]:
+          - generic [ref=e35]: Yapay Zeka
+          - generic [ref=e36]: ChatGPT, Canva, Gemini
+        - generic [ref=e37]: "%70 İNDİRİM"
+      - generic [ref=e38] [cursor=pointer]:
+        - generic [ref=e39]: 🎮
+        - generic [ref=e40]:
+          - generic [ref=e41]: Oyun & Pin
+          - generic [ref=e42]: FC26, Steam, Zula
+        - generic [ref=e43]: ANINDA
+      - generic [ref=e44] [cursor=pointer]:
+        - generic [ref=e45]: 🎬
+        - generic [ref=e46]:
+          - generic [ref=e47]: Sinema & Dizi
+          - generic [ref=e48]: Netflix 4K, Spotify, YT
+        - generic [ref=e49]: 4K ULTRA
+      - generic [ref=e50] [cursor=pointer]:
+        - generic [ref=e51]: 💻
+        - generic [ref=e52]:
+          - generic [ref=e53]: Yazılım & Key
+          - generic [ref=e54]: Windows 11, Office 365
+        - generic [ref=e55]: ORİJİNAL
+      - generic [ref=e56] [cursor=pointer]:
+        - generic [ref=e57]: 🎟️
+        - generic [ref=e58]:
+          - generic [ref=e59]: Kupon & İndirim
+          - generic [ref=e60]: Trendyol, Shell Yakıt
+        - generic [ref=e61]: FIRSAT
+    - textbox "ChatGPT, Canva, Steam veya kupon ara..." [ref=e67]
+    - generic [ref=e69]:
+      - button "⌂ Tüm Ürünler" [ref=e70] [cursor=pointer]:
+        - generic [ref=e71]: ⌂
+        - generic [ref=e72]: Tüm Ürünler
+      - button "★ Vitrin Seçimleri" [ref=e73] [cursor=pointer]:
+        - generic [ref=e74]: ★
+        - generic [ref=e75]: Vitrin Seçimleri
+      - button "AI Yapay Zekâ" [ref=e76] [cursor=pointer]:
+        - generic [ref=e77]: AI
+        - generic [ref=e78]: Yapay Zekâ
+      - button "✦ Tasarım & Çalışma" [ref=e79] [cursor=pointer]:
+        - generic [ref=e80]: ✦
+        - generic [ref=e81]: Tasarım & Çalışma
+      - button "▶ Eğlence" [ref=e82] [cursor=pointer]:
+        - generic [ref=e83]: ▶
+        - generic [ref=e84]: Eğlence
+      - button "◆ Oyun" [ref=e85] [cursor=pointer]:
+        - generic [ref=e86]: ◆
+        - generic [ref=e87]: Oyun
+      - button "✓ Güvenlik" [ref=e88] [cursor=pointer]:
+        - generic [ref=e89]: ✓
+        - generic [ref=e90]: Güvenlik
+      - button "% Fırsatlar" [ref=e91] [cursor=pointer]:
+        - generic [ref=e92]: "%"
+        - generic [ref=e93]: Fırsatlar
+    - generic [ref=e94]:
+      - generic [ref=e95]:
+        - heading "Tüm Ürünler" [level=2] [ref=e98]
+        - generic [ref=e99]: 61 Ürün
+      - generic [ref=e100]:
+        - generic [ref=e101] [cursor=pointer]:
+          - generic [ref=e102]:
+            - img "Xbox Game Pass Ultimate (1 Ay Ortak Hesap)" [ref=e103]
+            - generic [ref=e104]: VİTRİN
+          - generic [ref=e105]:
+            - generic [ref=e106]: Xbox Game Pass Ultimate (1 Ay Ortak Hesap)
+            - generic [ref=e107]: 49,90 TL
+            - generic [ref=e109]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e110]:
+              - button "🛒 + Sepet" [ref=e111]
+              - button "İncele" [ref=e113]
+        - generic [ref=e116] [cursor=pointer]:
+          - generic [ref=e117]:
+            - img "CapCut Pro (1 Aylık Ortak Hesap)" [ref=e118]
+            - generic [ref=e119]: VİTRİN
+          - generic [ref=e120]:
+            - generic [ref=e121]: CapCut Pro (1 Aylık Ortak Hesap)
+            - generic [ref=e122]: 49,90 TL
+            - generic [ref=e124]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e125]:
+              - button "🛒 + Sepet" [ref=e126]
+              - button "İncele" [ref=e128]
+        - generic [ref=e131] [cursor=pointer]:
+          - generic [ref=e132]:
+            - img "CapCut Pro (1 Aylık Kişisel)" [ref=e133]
+            - generic [ref=e134]: VİTRİN
+          - generic [ref=e135]:
+            - generic [ref=e136]: CapCut Pro (1 Aylık Kişisel)
+            - generic [ref=e137]: 199,99 TL
+            - generic [ref=e139]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e140]:
+              - button "🛒 + Sepet" [ref=e141]
+              - button "İncele" [ref=e143]
+        - generic [ref=e146] [cursor=pointer]:
+          - generic [ref=e147]:
+            - img "Kaspersky Premium 1 Yıl / 1 Cihaz" [ref=e148]
+            - generic [ref=e149]: GÜVENLİK
+          - generic [ref=e150]:
+            - generic [ref=e151]: Kaspersky Premium 1 Yıl / 1 Cihaz
+            - generic [ref=e152]: 244,99 TL
+            - generic [ref=e154]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e155]:
+              - button "🛒 + Sepet" [ref=e156]
+              - button "İncele" [ref=e158]
+        - generic [ref=e161] [cursor=pointer]:
+          - generic [ref=e162]:
+            - img "YouTube Premium 1 Ay - Kendi Hesabına Davet" [ref=e163]
+            - generic [ref=e164]: VİTRİN
+          - generic [ref=e165]:
+            - generic [ref=e166]: YouTube Premium 1 Ay - Kendi Hesabına Davet
+            - generic [ref=e167]: 30,00 TL
+            - generic [ref=e169]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e170]:
+              - button "🛒 + Sepet" [ref=e171]
+              - button "İncele" [ref=e173]
+        - generic [ref=e176] [cursor=pointer]:
+          - generic [ref=e177]:
+            - img "ChatGPT Plus 30 Gün - Ortak Hesap" [ref=e178]
+            - generic [ref=e179]: VİTRİN
+          - generic [ref=e180]:
+            - generic [ref=e181]: ChatGPT Plus 30 Gün - Ortak Hesap
+            - generic [ref=e182]: 69,90 TL
+            - generic [ref=e184]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e185]:
+              - button "🛒 + Sepet" [ref=e186]
+              - button "İncele" [ref=e188]
+        - generic [ref=e191] [cursor=pointer]:
+          - generic [ref=e192]:
+            - img "Discord Nitro Server Boost (1 Aylık 14X Takviye Paket)" [ref=e193]
+            - generic [ref=e194]: OYUN
+          - generic [ref=e195]:
+            - generic [ref=e196]: Discord Nitro Server Boost (1 Aylık 14X Takviye Paket)
+            - generic [ref=e197]: 224,99 TL
+            - generic [ref=e199]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e200]:
+              - button "🛒 + Sepet" [ref=e201]
+              - button "İncele" [ref=e203]
+        - generic [ref=e206] [cursor=pointer]:
+          - generic [ref=e207]:
+            - img "Gemini Advanced Pro 3 Ay - Davet Bağlantısı" [ref=e208]
+            - generic [ref=e209]: VİTRİN
+          - generic [ref=e210]:
+            - generic [ref=e211]: Gemini Advanced Pro 3 Ay - Davet Bağlantısı
+            - generic [ref=e212]: 59,90 TL
+            - generic [ref=e214]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e215]:
+              - button "🛒 + Sepet" [ref=e216]
+              - button "İncele" [ref=e218]
+        - generic [ref=e221] [cursor=pointer]:
+          - generic [ref=e222]:
+            - img "FC 26 Hesabı - Bilgileri Değiştirilebilir" [ref=e223]
+            - generic [ref=e224]: VİTRİN
+          - generic [ref=e225]:
+            - generic [ref=e226]: FC 26 Hesabı - Bilgileri Değiştirilebilir
+            - generic [ref=e227]: 299,99 TL
+            - generic [ref=e229]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e230]:
+              - button "🛒 + Sepet" [ref=e231]
+              - button "İncele" [ref=e233]
+        - generic [ref=e236] [cursor=pointer]:
+          - generic [ref=e237]:
+            - img "Zula Random Hesap" [ref=e238]
+            - generic [ref=e239]: VİTRİN
+          - generic [ref=e240]:
+            - generic [ref=e241]: Zula Random Hesap
+            - generic [ref=e242]: 5,00 TL
+            - generic [ref=e244]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e245]:
+              - button "🛒 + Sepet" [ref=e246]
+              - button "İncele" [ref=e248]
+        - generic [ref=e251] [cursor=pointer]:
+          - generic [ref=e252]:
+            - img "Netflix 4K UHD Ortak Profil" [ref=e253]
+            - generic [ref=e254]: VİTRİN
+          - generic [ref=e255]:
+            - generic [ref=e256]: Netflix 4K UHD Ortak Profil
+            - generic [ref=e257]: 39,99 TL
+            - generic [ref=e259]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e260]:
+              - button "🛒 + Sepet" [ref=e261]
+              - button "İncele" [ref=e263]
+        - generic [ref=e266] [cursor=pointer]:
+          - generic [ref=e267]:
+            - img "Steam 200 Dolar Random Key" [ref=e268]
+            - generic [ref=e269]: VİTRİN
+          - generic [ref=e270]:
+            - generic [ref=e271]: Steam 200 Dolar Random Key
+            - generic [ref=e272]: 30,00 TL
+            - generic [ref=e274]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e275]:
+              - button "🛒 + Sepet" [ref=e276]
+              - button "İncele" [ref=e278]
+        - generic [ref=e281] [cursor=pointer]:
+          - generic [ref=e282]:
+            - img "Canva Pro Öğretmen (1 Yıllık)" [ref=e283]
+            - generic [ref=e284]: VİTRİN
+          - generic [ref=e285]:
+            - generic [ref=e286]: Canva Pro Öğretmen (1 Yıllık)
+            - generic [ref=e287]: 79,90 TL
+            - generic [ref=e289]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e290]:
+              - button "🛒 + Sepet" [ref=e291]
+              - button "İncele" [ref=e293]
+        - generic [ref=e296] [cursor=pointer]:
+          - generic [ref=e297]:
+            - img "Prime Video (1 Aylık) - Ortak Profil" [ref=e298]
+            - generic [ref=e299]: EĞLENCE
+          - generic [ref=e300]:
+            - generic [ref=e301]: Prime Video (1 Aylık) - Ortak Profil
+            - generic [ref=e302]: 9,99 TL
+            - generic [ref=e304]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e305]:
+              - button "🛒 + Sepet" [ref=e306]
+              - button "İncele" [ref=e308]
+        - generic [ref=e311] [cursor=pointer]:
+          - generic [ref=e312]:
+            - img "Prime Video (1 Aylık) - Özel Profil" [ref=e313]
+            - generic [ref=e314]: EĞLENCE
+          - generic [ref=e315]:
+            - generic [ref=e316]: Prime Video (1 Aylık) - Özel Profil
+            - generic [ref=e317]: 29,90 TL
+            - generic [ref=e319]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e320]:
+              - button "🛒 + Sepet" [ref=e321]
+              - button "İncele" [ref=e323]
+        - generic [ref=e326] [cursor=pointer]:
+          - generic [ref=e327]:
+            - img "HBO Max 1 Aylık Profil" [ref=e328]
+            - generic [ref=e329]: EĞLENCE
+          - generic [ref=e330]:
+            - generic [ref=e331]: HBO Max 1 Aylık Profil
+            - generic [ref=e332]: 39,90 TL
+            - generic [ref=e334]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e335]:
+              - button "🛒 + Sepet" [ref=e336]
+              - button "İncele" [ref=e338]
+        - generic [ref=e341] [cursor=pointer]:
+          - generic [ref=e342]:
+            - img "Grammarly Pro (1 Aylık) - Ortak Hesap" [ref=e343]
+            - generic [ref=e344]: TASARIM & ÇALIŞMA
+          - generic [ref=e345]:
+            - generic [ref=e346]: Grammarly Pro (1 Aylık) - Ortak Hesap
+            - generic [ref=e347]: 49,90 TL
+            - generic [ref=e349]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e350]:
+              - button "🛒 + Sepet" [ref=e351]
+              - button "İncele" [ref=e353]
+        - generic [ref=e356] [cursor=pointer]:
+          - generic [ref=e357]:
+            - img "Grammarly Pro (1 Haftalık) - Kendi Hesabınıza" [ref=e358]
+            - generic [ref=e359]: TASARIM & ÇALIŞMA
+          - generic [ref=e360]:
+            - generic [ref=e361]: Grammarly Pro (1 Haftalık) - Kendi Hesabınıza
+            - generic [ref=e362]: 79,90 TL
+            - generic [ref=e364]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e365]:
+              - button "🛒 + Sepet" [ref=e366]
+              - button "İncele" [ref=e368]
+        - generic [ref=e371] [cursor=pointer]:
+          - generic [ref=e372]:
+            - img "Crunchyroll Ortak Hesap (1 Aylık)" [ref=e373]
+            - generic [ref=e374]: EĞLENCE
+          - generic [ref=e375]:
+            - generic [ref=e376]: Crunchyroll Ortak Hesap (1 Aylık)
+            - generic [ref=e377]: 39,90 TL
+            - generic [ref=e379]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e380]:
+              - button "🛒 + Sepet" [ref=e381]
+              - button "İncele" [ref=e383]
+        - generic [ref=e386] [cursor=pointer]:
+          - generic [ref=e387]:
+            - img "Crunchyroll Özel Profil (1 Aylık)" [ref=e388]
+            - generic [ref=e389]: EĞLENCE
+          - generic [ref=e390]:
+            - generic [ref=e391]: Crunchyroll Özel Profil (1 Aylık)
+            - generic [ref=e392]: 59,90 TL
+            - generic [ref=e394]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e395]:
+              - button "🛒 + Sepet" [ref=e396]
+              - button "İncele" [ref=e398]
+        - generic [ref=e401] [cursor=pointer]:
+          - generic [ref=e402]:
+            - img "Magnific AI Ortak (1 Aylık Business Hesap)" [ref=e403]
+            - generic [ref=e404]: YAPAY ZEKÂ
+          - generic [ref=e405]:
+            - generic [ref=e406]: Magnific AI Ortak (1 Aylık Business Hesap)
+            - generic [ref=e407]: 49,90 TL
+            - generic [ref=e409]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e410]:
+              - button "🛒 + Sepet" [ref=e411]
+              - button "İncele" [ref=e413]
+        - generic [ref=e416] [cursor=pointer]:
+          - generic [ref=e417]:
+            - img "Scribd (1 Aylık) - Ortak Hesap" [ref=e418]
+            - generic [ref=e419]: EĞLENCE
+          - generic [ref=e420]:
+            - generic [ref=e421]: Scribd (1 Aylık) - Ortak Hesap
+            - generic [ref=e422]: 29,90 TL
+            - generic [ref=e424]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e425]:
+              - button "🛒 + Sepet" [ref=e426]
+              - button "İncele" [ref=e428]
+        - generic [ref=e431] [cursor=pointer]:
+          - generic [ref=e432]:
+            - img "Scribd (1 Aylık) - Kişisel Hesap" [ref=e433]
+            - generic [ref=e434]: EĞLENCE
+          - generic [ref=e435]:
+            - generic [ref=e436]: Scribd (1 Aylık) - Kişisel Hesap
+            - generic [ref=e437]: 59,90 TL
+            - generic [ref=e439]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e440]:
+              - button "🛒 + Sepet" [ref=e441]
+              - button "İncele" [ref=e443]
+        - generic [ref=e446] [cursor=pointer]:
+          - generic [ref=e447]:
+            - img "DeepL AI (1 Aylık) - Ortak Hesap" [ref=e448]
+            - generic [ref=e449]: YAPAY ZEKÂ
+          - generic [ref=e450]:
+            - generic [ref=e451]: DeepL AI (1 Aylık) - Ortak Hesap
+            - generic [ref=e452]: 29,90 TL
+            - generic [ref=e454]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e455]:
+              - button "🛒 + Sepet" [ref=e456]
+              - button "İncele" [ref=e458]
+        - generic [ref=e461] [cursor=pointer]:
+          - generic [ref=e462]:
+            - img "DeepL AI (1 Aylık) - Kişisel Hesap" [ref=e463]
+            - generic [ref=e464]: YAPAY ZEKÂ
+          - generic [ref=e465]:
+            - generic [ref=e466]: DeepL AI (1 Aylık) - Kişisel Hesap
+            - generic [ref=e467]: 59,90 TL
+            - generic [ref=e469]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e470]:
+              - button "🛒 + Sepet" [ref=e471]
+              - button "İncele" [ref=e473]
+        - generic [ref=e476] [cursor=pointer]:
+          - generic [ref=e477]:
+            - img "Perplexity Pro (1 Aylık Hesap)" [ref=e478]
+            - generic [ref=e479]: YAPAY ZEKÂ
+          - generic [ref=e480]:
+            - generic [ref=e481]: Perplexity Pro (1 Aylık Hesap)
+            - generic [ref=e482]: 119,90 TL
+            - generic [ref=e484]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e485]:
+              - button "🛒 + Sepet" [ref=e486]
+              - button "İncele" [ref=e488]
+        - generic [ref=e491] [cursor=pointer]:
+          - generic [ref=e492]:
+            - img "Eski Tarihli Telegram Hesabı (+1 No'lu)" [ref=e493]
+            - generic [ref=e494]: VİTRİN
+          - generic [ref=e495]:
+            - generic [ref=e496]: Eski Tarihli Telegram Hesabı (+1 No'lu)
+            - generic [ref=e497]: 149,90 TL
+            - generic [ref=e499]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e500]:
+              - button "🛒 + Sepet" [ref=e501]
+              - button "İncele" [ref=e503]
+        - generic [ref=e506] [cursor=pointer]:
+          - generic [ref=e507]:
+            - img "XBOX Game Pass Ultimate (3 Aylık Üyelik)" [ref=e508]
+            - generic [ref=e509]: VİTRİN
+          - generic [ref=e510]:
+            - generic [ref=e511]: XBOX Game Pass Ultimate (3 Aylık Üyelik)
+            - generic [ref=e512]: 69,90 TL
+            - generic [ref=e514]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e515]:
+              - button "🛒 + Sepet" [ref=e516]
+              - button "İncele" [ref=e518]
+        - generic [ref=e521] [cursor=pointer]:
+          - generic [ref=e522]:
+            - img "Steam İstediğiniz Oyun (Ortak Hesap)" [ref=e523]
+            - generic [ref=e524]: OYUN
+          - generic [ref=e525]:
+            - generic [ref=e526]: Steam İstediğiniz Oyun (Ortak Hesap)
+            - generic [ref=e527]: 60,00 TL
+            - generic [ref=e529]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e530]:
+              - button "🛒 + Sepet" [ref=e531]
+              - button "İncele" [ref=e533]
+        - generic [ref=e536] [cursor=pointer]:
+          - generic [ref=e537]:
+            - img "Semrush Pro (14 Günlük Hesap)" [ref=e538]
+            - generic [ref=e539]: TASARIM & ÇALIŞMA
+          - generic [ref=e540]:
+            - generic [ref=e541]: Semrush Pro (14 Günlük Hesap)
+            - generic [ref=e542]: 150,00 TL
+            - generic [ref=e544]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e545]:
+              - button "🛒 + Sepet" [ref=e546]
+              - button "İncele" [ref=e548]
+        - generic [ref=e551] [cursor=pointer]:
+          - generic [ref=e552]:
+            - img "Microsoft Office 365 (1 Yıllık Hesap)" [ref=e553]
+            - generic [ref=e554]: TASARIM & ÇALIŞMA
+          - generic [ref=e555]:
+            - generic [ref=e556]: Microsoft Office 365 (1 Yıllık Hesap)
+            - generic [ref=e557]: 70,00 TL
+            - generic [ref=e559]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e560]:
+              - button "🛒 + Sepet" [ref=e561]
+              - button "İncele" [ref=e563]
+        - generic [ref=e566] [cursor=pointer]:
+          - generic [ref=e567]:
+            - img "Windows 10/11 Pro Lisans Anahtarı (Key)" [ref=e568]
+            - generic [ref=e569]: VİTRİN
+          - generic [ref=e570]:
+            - generic [ref=e571]: Windows 10/11 Pro Lisans Anahtarı (Key)
+            - generic [ref=e572]: 70,00 TL
+            - generic [ref=e574]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e575]:
+              - button "🛒 + Sepet" [ref=e576]
+              - button "İncele" [ref=e578]
+        - generic [ref=e581] [cursor=pointer]:
+          - generic [ref=e582]:
+            - img "Shell 75 TL Akaryakıt Puanı" [ref=e583]
+            - generic [ref=e584]: FIRSATLAR
+          - generic [ref=e585]:
+            - generic [ref=e586]: Shell 75 TL Akaryakıt Puanı
+            - generic [ref=e587]: 14,99 TL
+            - generic [ref=e589]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e590]:
+              - button "🛒 + Sepet" [ref=e591]
+              - button "İncele" [ref=e593]
+        - generic [ref=e596] [cursor=pointer]:
+          - generic [ref=e597]:
+            - img "Trendyol Market Kuponu (800₺/300₺ İndirim)" [ref=e598]
+            - generic [ref=e599]: VİTRİN
+          - generic [ref=e600]:
+            - generic [ref=e601]: Trendyol Market Kuponu (800₺/300₺ İndirim)
+            - generic [ref=e602]: 49,99 TL
+            - generic [ref=e604]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e605]:
+              - button "🛒 + Sepet" [ref=e606]
+              - button "İncele" [ref=e608]
+        - generic [ref=e611] [cursor=pointer]:
+          - generic [ref=e612]:
+            - img "Trendyol Yemek Kuponu (700₺/250₺ İndirim)" [ref=e613]
+            - generic [ref=e614]: VİTRİN
+          - generic [ref=e615]:
+            - generic [ref=e616]: Trendyol Yemek Kuponu (700₺/250₺ İndirim)
+            - generic [ref=e617]: 49,99 TL
+            - generic [ref=e619]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e620]:
+              - button "🛒 + Sepet" [ref=e621]
+              - button "İncele" [ref=e623]
+        - generic [ref=e626] [cursor=pointer]:
+          - generic [ref=e627]:
+            - img "Scribd Premium (3 Aylık)" [ref=e628]
+            - generic [ref=e629]: EĞLENCE
+          - generic [ref=e630]:
+            - generic [ref=e631]: Scribd Premium (3 Aylık)
+            - generic [ref=e632]: 99,99 TL
+            - generic [ref=e634]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e635]:
+              - button "🛒 + Sepet" [ref=e636]
+              - button "İncele" [ref=e638]
+        - generic [ref=e641] [cursor=pointer]:
+          - generic [ref=e642]:
+            - img "Duolingo Super - Sınıf Daveti" [ref=e643]
+            - generic [ref=e644]: EĞLENCE
+          - generic [ref=e645]:
+            - generic [ref=e646]: Duolingo Super - Sınıf Daveti
+            - generic [ref=e647]: 49,90 TL
+            - generic [ref=e649]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e650]:
+              - button "🛒 + Sepet" [ref=e651]
+              - button "İncele" [ref=e653]
+        - generic [ref=e656] [cursor=pointer]:
+          - generic [ref=e657]:
+            - img "CapCut Pro (1 Haftalık Hesap)" [ref=e658]
+            - generic [ref=e659]: VİTRİN
+          - generic [ref=e660]:
+            - generic [ref=e661]: CapCut Pro (1 Haftalık Hesap)
+            - generic [ref=e662]: 99,99 TL
+            - generic [ref=e664]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e665]:
+              - button "🛒 + Sepet" [ref=e666]
+              - button "İncele" [ref=e668]
+        - generic [ref=e671] [cursor=pointer]:
+          - generic [ref=e672]:
+            - img "Adobe Creative Cloud (4 Aylık)" [ref=e673]
+            - generic [ref=e674]: TASARIM & ÇALIŞMA
+          - generic [ref=e675]:
+            - generic [ref=e676]: Adobe Creative Cloud (4 Aylık)
+            - generic [ref=e677]: 249,99 TL
+            - generic [ref=e679]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e680]:
+              - button "🛒 + Sepet" [ref=e681]
+              - button "İncele" [ref=e683]
+        - generic [ref=e686] [cursor=pointer]:
+          - generic [ref=e687]:
+            - img "Adobe Creative Cloud (1 Aylık)" [ref=e688]
+            - generic [ref=e689]: TASARIM & ÇALIŞMA
+          - generic [ref=e690]:
+            - generic [ref=e691]: Adobe Creative Cloud (1 Aylık)
+            - generic [ref=e692]: 119,99 TL
+            - generic [ref=e694]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e695]:
+              - button "🛒 + Sepet" [ref=e696]
+              - button "İncele" [ref=e698]
+        - generic [ref=e701] [cursor=pointer]:
+          - generic [ref=e702]:
+            - img "Adobe Creative Cloud (1 Haftalık)" [ref=e703]
+            - generic [ref=e704]: TASARIM & ÇALIŞMA
+          - generic [ref=e705]:
+            - generic [ref=e706]: Adobe Creative Cloud (1 Haftalık)
+            - generic [ref=e707]: 49,99 TL
+            - generic [ref=e709]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e710]:
+              - button "🛒 + Sepet" [ref=e711]
+              - button "İncele" [ref=e713]
+        - generic [ref=e716] [cursor=pointer]:
+          - generic [ref=e717]:
+            - img "Adobe Express (3 Aylık)" [ref=e718]
+            - generic [ref=e719]: TASARIM & ÇALIŞMA
+          - generic [ref=e720]:
+            - generic [ref=e721]: Adobe Express (3 Aylık)
+            - generic [ref=e722]: 99,99 TL
+            - generic [ref=e724]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e725]:
+              - button "🛒 + Sepet" [ref=e726]
+              - button "İncele" [ref=e728]
+        - generic [ref=e731] [cursor=pointer]:
+          - generic [ref=e732]:
+            - img "Canva Pro 1 Yıl - Kendi Hesabına Davet" [ref=e733]
+            - generic [ref=e734]: VİTRİN
+          - generic [ref=e735]:
+            - generic [ref=e736]: Canva Pro 1 Yıl - Kendi Hesabına Davet
+            - generic [ref=e737]: 49,90 TL
+            - generic [ref=e739]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e740]:
+              - button "🛒 + Sepet" [ref=e741]
+              - button "İncele" [ref=e743]
+        - generic [ref=e746] [cursor=pointer]:
+          - generic [ref=e747]:
+            - img "Gamma Pro (1 Aylık Hesap)" [ref=e748]
+            - generic [ref=e749]: TASARIM & ÇALIŞMA
+          - generic [ref=e750]:
+            - generic [ref=e751]: Gamma Pro (1 Aylık Hesap)
+            - generic [ref=e752]: 299,99 TL
+            - generic [ref=e754]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e755]:
+              - button "🛒 + Sepet" [ref=e756]
+              - button "İncele" [ref=e758]
+        - generic [ref=e761] [cursor=pointer]:
+          - generic [ref=e762]:
+            - img "Gamma Ultra (1 Aylık Hesap)" [ref=e763]
+            - generic [ref=e764]: TASARIM & ÇALIŞMA
+          - generic [ref=e765]:
+            - generic [ref=e766]: Gamma Ultra (1 Aylık Hesap)
+            - generic [ref=e767]: 449,99 TL
+            - generic [ref=e769]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e770]:
+              - button "🛒 + Sepet" [ref=e771]
+              - button "İncele" [ref=e773]
+        - generic [ref=e776] [cursor=pointer]:
+          - generic [ref=e777]:
+            - img "Super Grok (12 Aylık Hesap)" [ref=e778]
+            - generic [ref=e779]: YAPAY ZEKÂ
+          - generic [ref=e780]:
+            - generic [ref=e781]: Super Grok (12 Aylık Hesap)
+            - generic [ref=e782]: 2.299,99 TL
+            - generic [ref=e784]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e785]:
+              - button "🛒 + Sepet" [ref=e786]
+              - button "İncele" [ref=e788]
+        - generic [ref=e791] [cursor=pointer]:
+          - generic [ref=e792]:
+            - img "Super Grok (6 Aylık Hesap)" [ref=e793]
+            - generic [ref=e794]: YAPAY ZEKÂ
+          - generic [ref=e795]:
+            - generic [ref=e796]: Super Grok (6 Aylık Hesap)
+            - generic [ref=e797]: 1.499,99 TL
+            - generic [ref=e799]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e800]:
+              - button "🛒 + Sepet" [ref=e801]
+              - button "İncele" [ref=e803]
+        - generic [ref=e806] [cursor=pointer]:
+          - generic [ref=e807]:
+            - img "Super Grok (3 Aylık Hesap)" [ref=e808]
+            - generic [ref=e809]: YAPAY ZEKÂ
+          - generic [ref=e810]:
+            - generic [ref=e811]: Super Grok (3 Aylık Hesap)
+            - generic [ref=e812]: 949,99 TL
+            - generic [ref=e814]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e815]:
+              - button "🛒 + Sepet" [ref=e816]
+              - button "İncele" [ref=e818]
+        - generic [ref=e821] [cursor=pointer]:
+          - generic [ref=e822]:
+            - img "Super Grok (1 Aylık Hesap)" [ref=e823]
+            - generic [ref=e824]: YAPAY ZEKÂ
+          - generic [ref=e825]:
+            - generic [ref=e826]: Super Grok (1 Aylık Hesap)
+            - generic [ref=e827]: 449,99 TL
+            - generic [ref=e829]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e830]:
+              - button "🛒 + Sepet" [ref=e831]
+              - button "İncele" [ref=e833]
+        - generic [ref=e836] [cursor=pointer]:
+          - generic [ref=e837]:
+            - img "Gemini Ultra (2.5k Kredili Hesap)" [ref=e838]
+            - generic [ref=e839]: VİTRİN
+          - generic [ref=e840]:
+            - generic [ref=e841]: Gemini Ultra (2.5k Kredili Hesap)
+            - generic [ref=e842]: 599,99 TL
+            - generic [ref=e844]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e845]:
+              - button "🛒 + Sepet" [ref=e846]
+              - button "İncele" [ref=e848]
+        - generic [ref=e851] [cursor=pointer]:
+          - generic [ref=e852]:
+            - img "Gemini Ultra (Davet Linki)" [ref=e853]
+            - generic [ref=e854]: VİTRİN
+          - generic [ref=e855]:
+            - generic [ref=e856]: Gemini Ultra (Davet Linki)
+            - generic [ref=e857]: 399,90 TL
+            - generic [ref=e859]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e860]:
+              - button "🛒 + Sepet" [ref=e861]
+              - button "İncele" [ref=e863]
+        - generic [ref=e866] [cursor=pointer]:
+          - generic [ref=e867]:
+            - img "Gemini Pro (Davet Linki)" [ref=e868]
+            - generic [ref=e869]: VİTRİN
+          - generic [ref=e870]:
+            - generic [ref=e871]: Gemini Pro (Davet Linki)
+            - generic [ref=e872]: 69,99 TL
+            - generic [ref=e874]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e875]:
+              - button "🛒 + Sepet" [ref=e876]
+              - button "İncele" [ref=e878]
+        - generic [ref=e881] [cursor=pointer]:
+          - generic [ref=e882]:
+            - img "Gemini Pro (1 Yıllık Hesap)" [ref=e883]
+            - generic [ref=e884]: VİTRİN
+          - generic [ref=e885]:
+            - generic [ref=e886]: Gemini Pro (1 Yıllık Hesap)
+            - generic [ref=e887]: 299,99 TL
+            - generic [ref=e889]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e890]:
+              - button "🛒 + Sepet" [ref=e891]
+              - button "İncele" [ref=e893]
+        - generic [ref=e896] [cursor=pointer]:
+          - generic [ref=e897]:
+            - img "ChatGPT Plus 30 Gün - Kişisel" [ref=e898]
+            - generic [ref=e899]: VİTRİN
+          - generic [ref=e900]:
+            - generic [ref=e901]: ChatGPT Plus 30 Gün - Kişisel
+            - generic [ref=e902]: 499,90 TL
+            - generic [ref=e904]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e905]:
+              - button "🛒 + Sepet" [ref=e906]
+              - button "İncele" [ref=e908]
+        - generic [ref=e911] [cursor=pointer]:
+          - generic [ref=e912]:
+            - img "Crunchyroll Premium (3 Aylık)" [ref=e913]
+            - generic [ref=e914]: EĞLENCE
+          - generic [ref=e915]:
+            - generic [ref=e916]: Crunchyroll Premium (3 Aylık)
+            - generic [ref=e917]: 99,90 TL
+            - generic [ref=e919]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e920]:
+              - button "🛒 + Sepet" [ref=e921]
+              - button "İncele" [ref=e923]
+        - generic [ref=e926] [cursor=pointer]:
+          - generic [ref=e927]:
+            - img "Exxen Reklamsız (3 Aylık)" [ref=e928]
+            - generic [ref=e929]: EĞLENCE
+          - generic [ref=e930]:
+            - generic [ref=e931]: Exxen Reklamsız (3 Aylık)
+            - generic [ref=e932]: 34,99 TL
+            - generic [ref=e934]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e935]:
+              - button "🛒 + Sepet" [ref=e936]
+              - button "İncele" [ref=e938]
+        - generic [ref=e941] [cursor=pointer]:
+          - generic [ref=e942]:
+            - img "Netflix 4K Ultra HD (Kişisel Profil)" [ref=e943]
+            - generic [ref=e944]: VİTRİN
+          - generic [ref=e945]:
+            - generic [ref=e946]: Netflix 4K Ultra HD (Kişisel Profil)
+            - generic [ref=e947]: 119,90 TL
+            - generic [ref=e949]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e950]:
+              - button "🛒 + Sepet" [ref=e951]
+              - button "İncele" [ref=e953]
+        - generic [ref=e956] [cursor=pointer]:
+          - generic [ref=e957]:
+            - img "Disney+ UHD Reklamsız (1 Aylık)" [ref=e958]
+            - generic [ref=e959]: VİTRİN
+          - generic [ref=e960]:
+            - generic [ref=e961]: Disney+ UHD Reklamsız (1 Aylık)
+            - generic [ref=e962]: 99,90 TL
+            - generic [ref=e964]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e965]:
+              - button "🛒 + Sepet" [ref=e966]
+              - button "İncele" [ref=e968]
+        - generic [ref=e971] [cursor=pointer]:
+          - generic [ref=e972]:
+            - img "Gemini Pro 18 Ay - Davet Bağlantısı" [ref=e973]
+            - generic [ref=e974]: VİTRİN
+          - generic [ref=e975]:
+            - generic [ref=e976]: Gemini Pro 18 Ay - Davet Bağlantısı
+            - generic [ref=e977]: 99,90 TL
+            - generic [ref=e979]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e980]:
+              - button "🛒 + Sepet" [ref=e981]
+              - button "İncele" [ref=e983]
+        - generic [ref=e986] [cursor=pointer]:
+          - generic [ref=e987]:
+            - img "Spotify Premium (4 Aylık Kod)" [ref=e988]
+            - generic [ref=e989]: VİTRİN
+          - generic [ref=e990]:
+            - generic [ref=e991]: Spotify Premium (4 Aylık Kod)
+            - generic [ref=e992]: 34,99 TL
+            - generic [ref=e994]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e995]:
+              - button "🛒 + Sepet" [ref=e996]
+              - button "İncele" [ref=e998]
+        - generic [ref=e1001] [cursor=pointer]:
+          - generic [ref=e1002]:
+            - img "YouTube Premium (3 Aylık Kod)" [ref=e1003]
+            - generic [ref=e1004]: VİTRİN
+          - generic [ref=e1005]:
+            - generic [ref=e1006]: YouTube Premium (3 Aylık Kod)
+            - generic [ref=e1007]: 19,90 TL
+            - generic [ref=e1009]: Teslimat ve uygunluk ödeme öncesi doğrulanır
+            - generic [ref=e1010]:
+              - button "🛒 + Sepet" [ref=e1011]
+              - button "İncele" [ref=e1013]
+  - navigation:
+    - generic [ref=e1016]:
+      - button "Mağaza" [ref=e1017] [cursor=pointer]
+      - button "0 Sepet" [ref=e1024] [cursor=pointer]:
+        - generic [ref=e1025]: "0"
+        - generic [ref=e1031]: Sepet
+      - button "Bakiye" [ref=e1032] [cursor=pointer]
+      - button "Referans" [ref=e1037] [cursor=pointer]
+      - button "Profil" [ref=e1045] [cursor=pointer]

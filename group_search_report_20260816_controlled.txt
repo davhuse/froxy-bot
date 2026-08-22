@@ -1,0 +1,17 @@
+KONTROLLÜ YENİ SATIŞ GRUBU TARAMASI
+Bu rapor yalnızca okuma amaçlıdır; katılım, mesaj ve hedef listesi değişikliği yapılmadı.
+
+{
+  "mode": "blocked_before_search",
+  "blocked_reason": "Telegram bot oturumları diyalog ve native grup aramasını çalıştıramaz",
+  "telegram_account": {
+    "id": 8845484139,
+    "username": "FroxyDestekBOT",
+    "bot": true
+  },
+  "no_join_or_send": true,
+  "next_step": "Kullanıcı hesabına ait yetkili Telethon session ile tekrar çalıştırılmalı"
+}
+
+ÖNE ÇIKAN ADAYLAR
+- Sıkı filtrelerden geçen aday yok.

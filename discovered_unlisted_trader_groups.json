@@ -1,0 +1,30 @@
+[
+  {
+    "username": "kuponceksatisi",
+    "title": "KUPON ÇEK KOD SATIŞI",
+    "matched_queries": [
+      "Tod Süper Lig",
+      "Turna 600",
+      "Tod Sezonluk",
+      "Turna bilet",
+      "sosyal medya takipçi"
+    ],
+    "sample_messages": [
+      "★ Biletinial websitesinde satılan tüm konser, festival ve tiyatro biletleri adınıza %50 indirim oranı ile alınır. Örneği...",
+      "●Kazandrio Cips Şeridi ➜ 6₺ (Minimum Alım 10 Adet) ●100 adet daha daha gri kapak ➜ 200₺ (1 tanesi 2 TL olmuş oluyor) ●Ub...",
+      "İspark 4saatlik ➜90₺ Trenyol yemk (her hesapta her restoranda bi kere geçerli )900e 400 indirim kodu: ➜90₺ Kahve dünyası..."
+    ]
+  },
+  {
+    "username": "darktradehouse",
+    "title": "Dark House | Ticaret - Sohbet",
+    "matched_queries": [
+      "hesap alım satım",
+      "sosyal medya takipçi"
+    ],
+    "sample_messages": [
+      "Arkadaşlar 3260 Max kg olan bi pes hesabım var hopi ye davet kodumla 2 kişi üye edene vercem güvenen gelsin güvence vard...",
+      "Sosyal medya işlemleri İnstagram 1k Kalıcı yabancı Takipçi : 150₺ 1k Beğeni 40₺ 10K İzlenme 40₺ Tiktok 1K Takipçi : 150₺..."
+    ]
+  }
+]
