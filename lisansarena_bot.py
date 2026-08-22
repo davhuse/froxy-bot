@@ -171,6 +171,8 @@ async def claim_command_event(event, command: str) -> bool:
     event_id = getattr(getattr(event, "message", None), "id", None)
     if event_id is None or event.sender_id is None:
         return False
+    if not firestore_helper.remote_credentials_configured():
+        return True
     claimed = await claim_support_event(
         "LisansArena", event.sender_id, event_id, f"command_{command}"
     )

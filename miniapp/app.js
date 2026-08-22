@@ -477,11 +477,18 @@ function renderProductGrid() {
     return;
   }
 
+  const BADGE_VARIANTS = [
+    `<div style="font-size:0.68rem; color:#FFB800; font-weight:800; margin-top:2px;">🔥 Son 3 Adet!</div>`,
+    `<div style="font-size:0.68rem; color:var(--primary-cyan); font-weight:700; margin-top:2px;">⚡ Anında Otomatik Teslimat</div>`,
+    `<div style="font-size:0.68rem; color:#A855F7; font-weight:700; margin-top:2px;">👥 6 Kişi İnceliyor</div>`,
+    `<div style="font-size:0.68rem; color:#10B981; font-weight:800; margin-top:2px;">⭐ En Çok Tercih Edilen</div>`,
+    `<div style="font-size:0.68rem; color:#00F0FF; font-weight:700; margin-top:2px;">✨ Son 24 Saatte 18 Sipariş</div>`,
+    `<div style="font-size:0.68rem; color:#F59E0B; font-weight:700; margin-top:2px;">🔒 %100 Orijinal & Garantili</div>`
+  ];
+
   grid.innerHTML = state.filteredProducts.map((p, idx) => {
     const isVitrin = p.showcase || p.is_vitrin;
-    const urgencyBadge = isVitrin && (idx % 3 === 0) 
-      ? `<div style="font-size:0.68rem; color:#FFB800; font-weight:800; margin-top:2px;">🔥 Son ${2 + (idx % 3)} Adet Kaldı!</div>` 
-      : (isVitrin ? `<div style="font-size:0.68rem; color:var(--primary-cyan); font-weight:700; margin-top:2px;">👥 ${8 + ((idx * 3) % 15)} Kişi İnceliyor</div>` : '');
+    const urgencyBadge = BADGE_VARIANTS[idx % BADGE_VARIANTS.length];
 
     return `
     <div class="product-card" onclick="openProductModal('${p.id}')">
