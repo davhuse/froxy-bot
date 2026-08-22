@@ -1135,6 +1135,37 @@ async def guncelle_handler(event):
     else:
         await event.respond("❌ Ürün listesi güncellenemedi (Shopier sayfasından veri çekilemedi).")
 
+@bot.on(events.NewMessage(pattern=r"(?i)^/toplumesaj(?:\s+(.+))?$"))
+async def broadcast_handler(event):
+    config = load_config() or {}
+    admin_chat_id = config.get("admin_id", ADMIN_ID)
+    if event.sender_id != admin_chat_id:
+        return
+        
+    message_text = (event.pattern_match.group(1) or "").strip()
+    if not message_text:
+        await event.respond("⚠️ Kullanım: `/toplumesaj Duyuru mesajınız buraya...`")
+        return
+        
+    await event.respond("⏳ **Toplu mesaj gönderimi başlatılıyor.**\n\nKullanıcı sayısına göre bu işlem vakit alabilir. İşlem bitene kadar lütfen yeni bir toplu mesaj başlatmayın.")
+    
+    doc = await async_get_document("keyvadi_users_data")
+    users = doc.get("users", {}) if doc else {}
+    user_ids = list(users.keys())
+    
+    success_count = 0
+    fail_count = 0
+    
+    for uid in user_ids:
+        try:
+            await bot.send_message(int(uid), message_text, parse_mode='md')
+            success_count += 1
+        except Exception:
+            fail_count += 1
+        await asyncio.sleep(0.5)
+        
+    await event.respond(f"✅ **Toplu Mesaj Tamamlandı!**\n\nBaşarıyla Gönderilen: {success_count}\nBaşarısız (Botu silen/engelleyenler): {fail_count}")
+
 # Category handler
 @bot.on(events.CallbackQuery(pattern=r'cat_(\w+)'))
 async def category_handler(event):

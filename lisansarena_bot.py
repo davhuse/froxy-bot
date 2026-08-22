@@ -733,6 +733,33 @@ async def language_callback(event):
     await safe_edit(event, msg, buttons=mini_app_markup("Mağazayı Aç"))
 
 
+@bot.on(events.NewMessage(pattern=r"(?i)^/toplumesaj(?:\s+(.+))?$"))
+async def broadcast_handler(event):
+    if event.sender_id != ADMIN_ID:
+        return
+    message_text = (event.pattern_match.group(1) or "").strip()
+    if not message_text:
+        await event.respond("⚠️ Kullanım: `/toplumesaj Duyuru mesajınız buraya...`")
+        return
+        
+    await event.respond("⏳ **Toplu mesaj gönderimi başlatılıyor.**\n\nKullanıcı sayısına göre bu işlem vakit alabilir. İşlem bitene kadar lütfen yeni bir toplu mesaj başlatmayın.")
+    
+    users = load_la_users()
+    user_ids = list(users.keys())
+    
+    success_count = 0
+    fail_count = 0
+    
+    for uid in user_ids:
+        try:
+            await bot.send_message(int(uid), message_text, parse_mode='md')
+            success_count += 1
+        except Exception:
+            fail_count += 1
+        await asyncio.sleep(0.5)
+        
+    await event.respond(f"✅ **Toplu Mesaj Tamamlandı!**\n\nBaşarıyla Gönderilen: {success_count}\nBaşarısız (Botu silen/engelleyenler): {fail_count}")
+
 # ==================== INCOMING MESSAGES & PRODUCT MATCHING ====================
 
 @bot.on(events.NewMessage(incoming=True))
