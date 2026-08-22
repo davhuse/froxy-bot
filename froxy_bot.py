@@ -59,11 +59,7 @@ async def async_claim_event(event, scope):
         _FROXY_MEMORY_CLAIMS.clear()
         _FROXY_MEMORY_CLAIMS.add(doc_id)
         
-    if not firestore_helper.remote_credentials_configured():
-        return True
     result = await async_run_claim(doc_id, {"scope": scope, "chat_id": event.chat_id, "message_id": getattr(event.message, 'id', None)})
-    if result is None:
-        return True
     return result is True
 
 async def async_release_event_claim(event, scope):
