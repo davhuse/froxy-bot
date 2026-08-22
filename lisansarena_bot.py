@@ -53,7 +53,19 @@ DATA_LOCK = threading.RLock()
 
 API_ID = int(os.environ.get("TELEGRAM_API_ID", "0") or 0)
 API_HASH = os.environ.get("TELEGRAM_API_HASH", "").strip()
-BOT_TOKEN = os.environ.get("LISANSARENA_BOT_TOKEN", "").strip()
+def _load_config() -> dict[str, Any]:
+    try:
+        return json.loads(Path("bot_config.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+CONFIG = _load_config()
+BOT_TOKEN = (
+    os.environ.get("LISANSARENA_BOT_TOKEN", "").strip()
+    or str(CONFIG.get("lisansarena_bot_token", "")).strip()
+    or "8272543860:AAGESmDOiIXFoK7FYCh0UfP3IplBcvMhTEA"
+)
 
 # Canonical Mini App URL configuration
 _configured_mini_app_url = os.environ.get("LISANSARENA_MINI_APP_URL", "").strip()
@@ -73,15 +85,6 @@ if _configured_mini_app_url:
         _configured_mini_app_url = urlunsplit((_parts.scheme, _parts.netloc, "/la/app/", "", ""))
 MINI_APP_URL = (_configured_mini_app_url or _canonical_mini_app_url).rstrip("/") + "/"
 
-
-def _load_config() -> dict[str, Any]:
-    try:
-        return json.loads(Path("bot_config.json").read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return {}
-
-
-CONFIG = _load_config()
 ADMIN_ID = int(os.environ.get("TELEGRAM_ADMIN_ID", CONFIG.get("admin_id", 0)) or 0)
 SUPPORT_CHAT_ID = int(CONFIG.get("support_chat_id") or ADMIN_ID or 0)
 PENDING_INPUT: dict[int, str] = {}

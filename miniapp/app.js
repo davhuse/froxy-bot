@@ -1153,28 +1153,76 @@ function drawWheel() {
   }
 }
 
+let spinTimerInterval = null;
+
+function formatCooldown(seconds) {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  if (h > 0) return `${h} sa ${m} dk`;
+  return `${m} dk ${s} sn`;
+}
+
+function updateSpinButtonState() {
+  const spinBtn = document.getElementById('spinBtn');
+  if (!spinBtn) return;
+  const rem = state.user?.spin_cooldown_remaining || 0;
+  if (rem > 0) {
+    spinBtn.disabled = true;
+    spinBtn.style.opacity = '0.7';
+    spinBtn.style.fontSize = '0.65rem';
+    spinBtn.innerHTML = `⏳<br>${formatCooldown(rem)}`;
+  } else {
+    spinBtn.disabled = false;
+    spinBtn.style.opacity = '1';
+    spinBtn.style.fontSize = '0.82rem';
+    spinBtn.innerHTML = 'ÇEVİR';
+  }
+}
+
 window.openSpinModal = function() {
   const modal = document.getElementById('spinModal');
   if (!modal) return;
   modal.classList.add('active');
   const resBox = document.getElementById('spinResultBox');
   if (resBox) resBox.style.display = 'none';
-  const spinBtn = document.getElementById('spinBtn');
-  if (spinBtn) spinBtn.disabled = false;
+  
   drawWheel();
+  updateSpinButtonState();
+
+  if (spinTimerInterval) clearInterval(spinTimerInterval);
+  spinTimerInterval = setInterval(() => {
+    if (state.user?.spin_cooldown_remaining > 0) {
+      state.user.spin_cooldown_remaining--;
+      updateSpinButtonState();
+    } else {
+      if (state.user) state.user.can_spin = true;
+      updateSpinButtonState();
+      clearInterval(spinTimerInterval);
+    }
+  }, 1000);
+
   triggerHaptic('light');
 };
 
 window.closeSpinModal = function() {
   const modal = document.getElementById('spinModal');
   if (modal) modal.classList.remove('active');
+  if (spinTimerInterval) clearInterval(spinTimerInterval);
 };
 
 window.startSpinWheel = async function() {
   if (isSpinning) return;
+  if (state.user?.spin_cooldown_remaining > 0) {
+    showToast(`Bugünkü çark hakkınızı kullandınız. Kalan süre: ${formatCooldown(state.user.spin_cooldown_remaining)}`, "⏳");
+    return;
+  }
   isSpinning = true;
   const spinBtn = document.getElementById('spinBtn');
-  if (spinBtn) spinBtn.disabled = true;
+  if (spinBtn) {
+    spinBtn.disabled = true;
+    spinBtn.textContent = '...';
+  }
 
   try {
     const res = await fetch(api('/api/user/spin'), {
@@ -1184,9 +1232,12 @@ window.startSpinWheel = async function() {
     const data = await res.json();
 
     if (!data.success) {
+      if (data.next_spin_in) {
+        state.user.spin_cooldown_remaining = data.next_spin_in;
+        updateSpinButtonState();
+      }
       showToast(data.error || "Bugün zaten çark çevirdiniz!", "⏳");
       isSpinning = false;
-      if (spinBtn) spinBtn.disabled = false;
       return;
     }
 
@@ -1216,6 +1267,13 @@ window.startSpinWheel = async function() {
         isSpinning = false;
         triggerHaptic('success');
 
+        // Set 24h cooldown in local state
+        if (state.user) {
+          state.user.spin_cooldown_remaining = 86400;
+          state.user.can_spin = false;
+        }
+        updateSpinButtonState();
+
         // Update balance in UI
         if (data.new_balance !== undefined) {
           state.user.balance = data.new_balance;
@@ -1238,7 +1296,7 @@ window.startSpinWheel = async function() {
     requestAnimationFrame(animate);
   } catch (err) {
     isSpinning = false;
-    if (spinBtn) spinBtn.disabled = false;
+    updateSpinButtonState();
     showToast("Çark çevrilemedi, lütfen tekrar deneyin.", "⚠️");
   }
 };

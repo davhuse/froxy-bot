@@ -210,6 +210,14 @@ def get_or_update_user_profile(user_id):
         last_name = data.get("last_name", "")
 
     user = get_or_create_user(user_id, username=username, first_name=first_name, last_name=last_name)
+    
+    now = int(time.time())
+    last_spin = int(user.get("last_spin_at", 0))
+    cooldown = 86400
+    elapsed = now - last_spin
+    remaining = max(0, cooldown - elapsed) if last_spin > 0 else 0
+    user["can_spin"] = remaining == 0
+    user["spin_cooldown_remaining"] = remaining
 
     return jsonify({
         "success": True,
