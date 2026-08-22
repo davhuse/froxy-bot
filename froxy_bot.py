@@ -838,6 +838,19 @@ TEXTS = {
 }
 
 # Main Menu Helper — Streamlined Mini App First Experience
+async def show_lang_selection(event, is_callback=False):
+    text = (
+        "🇹🇷 **Lütfen dil seçin:**\n"
+        "🇬🇧 **Please select your language:**"
+    )
+    buttons = [
+        [Button.inline("🇹🇷 Türkçe", b"lang_tr"), Button.inline("🇬🇧 English", b"lang_en")]
+    ]
+    if is_callback:
+        await safe_event_edit(event, text, buttons=buttons)
+    else:
+        await event.respond(text, buttons=buttons)
+
 async def show_main_menu(event, user_id, is_callback=False):
     welcome = (
         "🎮 **KEYVADI PRO — Dijital E-Pin & Oyun Mağazası** ⚡\n"
