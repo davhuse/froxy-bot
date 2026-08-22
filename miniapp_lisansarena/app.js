@@ -153,6 +153,19 @@
       if (data.success && data.products) {
         allProducts = data.products;
         renderProducts();
+
+        // Deep-link product modal auto-open
+        try {
+          const urlParams = new URLSearchParams(window.location.search);
+          const targetParam = urlParams.get('product') || tg?.initDataUnsafe?.start_param;
+          if (targetParam) {
+            const cleanId = String(targetParam).replace(/^p_/, '').trim().toLowerCase();
+            const matched = allProducts.find(p => String(p.id).toLowerCase() === cleanId);
+            if (matched) {
+              setTimeout(() => openProductModal(matched), 250);
+            }
+          }
+        } catch (err) {}
       }
     } catch (e) {
       console.error('Products fetch error:', e);
@@ -365,6 +378,20 @@
 
         codeBox.append(codeText, copyBtn);
         card.append(codeBox);
+      } else {
+        const manualBox = document.createElement('div');
+        manualBox.className = 'manual-delivery-box';
+        manualBox.innerHTML = `
+          <div class="mdb-header">
+            <span>💬</span>
+            <strong>Manuel Teslimat / Temsilci Bekleniyor</strong>
+          </div>
+          <p class="mdb-desc">Bu ürün temsilci teslimatı kapsamındadır. Lütfen aşağıdaki butona dokunarak destek temsilcimize sipariş kodunuzu (<strong>#${number}</strong>) iletiniz; temsilcimiz hesabınızı/lisansınızı anında teslim edecektir.</p>
+          <a href="https://t.me/LisansArenaOnline" target="_blank" class="btn-support-contact">
+            <span>🚀 @LisansArenaOnline ile İletişime Geç</span>
+          </a>
+        `;
+        card.append(manualBox);
       }
 
       if (dedicatedList) dedicatedList.append(card.cloneNode(true));

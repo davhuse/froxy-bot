@@ -2911,12 +2911,16 @@ async def customer_has_claimed_product(client_name, sender_id, products):
     return False
 
 def keyvadi_product_reply(product, source="ad_account_dm", arm=""):
-    """Send one concise purchase action without exposing a long raw URL."""
+    """Send concise purchase and Telegram Mini App actions."""
+    pid = product.get("id", "")
+    bot_url = f"https://t.me/KeyVadiSatisBot/app?startapp=p_{pid}"
     target = purchase_url(product, "keyvadi", source, arm)
     return (
         f"📌 **{product['title']}**\n"
-        f"💰 {product.get('price') or 'Fiyat ürün sayfasında'}\n"
-        f"🛒 [Hemen Satın Al]({target})"
+        f"💰 Fiyat: {product.get('price') or 'Ürün sayfasında'}\n"
+        f"⚡ 7/24 Anında Teslimat · 3D Secure Güvencesi\n\n"
+        f"🛍️ [Telegram'da Mağazayı Aç]({bot_url})\n"
+        f"🛒 [Direkt Ödeme Sayfası]({target})"
     )
 
 
@@ -2933,11 +2937,15 @@ def froxy_product_reply(product, source="ad_account_dm", arm=""):
 
 def lisansarena_product_reply(product, source="ad_account_dm", arm=""):
     """Use LisansArena's own catalog identity and purchase CTA."""
+    pid = product.get("id", "")
+    bot_url = f"https://t.me/LisansArenaOnline/app?startapp=p_{pid}"
     target = purchase_url(product, "lisansarena", source, arm)
     return (
         f"📦 **{product['title']}**\n"
         f"💳 Fiyat: {product.get('price') or 'Ürün sayfasında'}\n"
-        f"🛍️ [Ürünü İncele ve Satın Al]({target})"
+        f"⚡ 7/24 Anında Otomatik Teslimat · Güvenli 3D Ödeme\n\n"
+        f"🛍️ [Telegram'da Mağazayı Aç]({bot_url})\n"
+        f"🛒 [Direkt Ödeme Sayfası]({target})"
     )
 
 

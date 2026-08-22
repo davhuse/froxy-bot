@@ -85,19 +85,23 @@ def save_licenses_stock(data: dict[str, list[str]]) -> None:
                     pass
 
 
-def allocate_license(product_title_or_id: str) -> dict[str, Any]:
+def allocate_license(product_title_or_id: str, brand: str = "keyvadi") -> dict[str, Any]:
     """
     Attempt to automatically allocate a license key from stock for the given product.
-    Returns a dict with allocation details.
+    Returns a dict with allocation details and support routing if manual.
     """
     cat = resolve_category(product_title_or_id)
+    b = str(brand or "").lower().strip()
+    support_handle = "@LisansArenaOnline" if "lisans" in b else "@KeyVadiDestek"
+    
     if not cat:
         return {
             "allocated": False,
             "category": None,
             "license_key": None,
             "status": "pending_delivery",
-            "delivery_note": "Manuel teslimat / Hazırlanıyor",
+            "delivery_note": f"Manuel teslimat / Temsilci ({support_handle}) iletecektir",
+            "support_handle": support_handle,
         }
 
     with STOCK_LOCK:
@@ -113,6 +117,7 @@ def allocate_license(product_title_or_id: str) -> dict[str, Any]:
                 "license_key": license_key,
                 "status": "delivered",
                 "delivery_note": "⚡ 7/24 Anında Otomatik Teslim Edildi",
+                "support_handle": support_handle,
             }
 
     return {
@@ -120,7 +125,8 @@ def allocate_license(product_title_or_id: str) -> dict[str, Any]:
         "category": cat,
         "license_key": None,
         "status": "pending_delivery",
-        "delivery_note": "Stok hazırlanıyor / Canlı destek iletecektir",
+        "delivery_note": f"Stok hazırlanıyor / Temsilci ({support_handle}) iletecektir",
+        "support_handle": support_handle,
     }
 
 

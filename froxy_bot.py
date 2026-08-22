@@ -1440,8 +1440,11 @@ async def message_handler(event):
                     f"📌 **{matched_product['title']}**\n"
                     f"💰 **{t['price']}:** {price}"
                 )
+                pid = matched_product.get('id', '')
+                bot_app_url = f"https://t.me/KeyVadiSatisBot/app?startapp=p_{pid}"
+                direct_url = purchase_url(matched_product, "keyvadi", "support_bot_dm", arm)
                 buttons = [
-                    [Button.url("🛒 Hemen Satın Al", purchase_url(matched_product, "keyvadi", "support_bot_dm", arm))],
+                    [Button.url("🛍️ Mağazada Aç", bot_app_url), Button.url("💳 Direkt Al", direct_url)],
                     [Button.inline(t["support_btn"], b"menu_support")],
                 ]
             else:
@@ -1452,7 +1455,13 @@ async def message_handler(event):
                     if lang == "en":
                         price = user_lang_helper.convert_price_to_usd(price)
                     product_msg += f"{i+1}. **{p['title']}** — {price}\n"
-                    buttons.append([Button.url(f"🛒 {p['title'][:35]}", purchase_url(p, "keyvadi", "support_bot_dm", arm))])
+                    p_id = p.get('id', '')
+                    p_app_url = f"https://t.me/KeyVadiSatisBot/app?startapp=p_{p_id}"
+                    p_direct_url = purchase_url(p, "keyvadi", "support_bot_dm", arm)
+                    buttons.append([
+                        Button.url(f"🛍️ {p['title'][:20]}", p_app_url),
+                        Button.url("💳 Direkt Al", p_direct_url)
+                    ])
                 buttons.append([Button.inline(t["support_btn"], b"menu_support")])
                 
             try:

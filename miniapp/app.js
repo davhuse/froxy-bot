@@ -307,6 +307,20 @@ function renderOrders() {
 
       codeBox.append(codeText, copyBtn);
       item.append(codeBox);
+    } else {
+      const manualBox = document.createElement('div');
+      manualBox.className = 'manual-delivery-box';
+      manualBox.innerHTML = `
+        <div class="mdb-header">
+          <span>💬</span>
+          <strong>Manuel Teslimat / Temsilci Bekleniyor</strong>
+        </div>
+        <p class="mdb-desc">Bu ürün temsilci teslimatı kapsamındadır. Lütfen aşağıdaki butona dokunarak destek ekibimize sipariş numaranızı (<strong>#${number}</strong>) iletiniz; temsilcimiz hesabınızı/lisansınızı anında teslim edecektir.</p>
+        <a href="https://t.me/KeyVadiDestek" target="_blank" class="btn-support-contact">
+          <span>🚀 @KeyVadiDestek ile İletişime Geç</span>
+        </a>
+      `;
+      item.append(manualBox);
     }
 
     container.append(item);
