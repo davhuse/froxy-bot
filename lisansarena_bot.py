@@ -32,7 +32,6 @@ from support_flow import (
     claim_first_greeting,
     claim_support_event,
     forward_customer_message,
-    release_product_claim,
     release_support_event,
     respond_with_floodwait,
     save_ticket_record,
@@ -243,46 +242,16 @@ def serialize_user_events(handler):
     return serialized
 
 
-_LA_MEMORY_CLAIMS = set()
-
-async def claim_product_reply(user_id: int, product: dict[str, Any]) -> bool:
-    """Keep one automatic product card per product and private chat."""
-    product_id = str(product.get("id") or product.get("url") or product.get("title") or "product")
-    safe_id = re.sub(r"[^a-zA-Z0-9_-]+", "_", product_id)[:100]
-    doc_id = f"support_product_once_lisansarena_{int(user_id)}_{safe_id}"
-    
-    if doc_id in _LA_MEMORY_CLAIMS:
-        return False
-    _LA_MEMORY_CLAIMS.add(doc_id)
-    if len(_LA_MEMORY_CLAIMS) > 10000:
-        _LA_MEMORY_CLAIMS.clear()
-        _LA_MEMORY_CLAIMS.add(doc_id)
-        
-    try:
-        claimed = await asyncio.to_thread(
-            firestore_helper.claim_remote_document,
-            doc_id,
-            {"brand": "lisansarena", "user_id": int(user_id), "product_id": product_id},
-            True,
-        )
-        if claimed is False:
-            return False
-    except Exception:
-        pass
-    return True
-
-
 async def send_product_card(event, matched_products: list[dict[str, Any]]) -> bool:
     event_id = getattr(event.message, "id", None)
     if event_id is None or not await claim_support_event("LisansArena", event.sender_id, event_id, "product_card"):
         record_event("duplicate_suppressed", "LisansArena", source="telegram_private", reason="product_event_already_claimed")
         return False
-    claimed_products = []
-    for product in matched_products[:3]:
-        if await claim_product_reply(event.sender_id, product):
-            claimed_products.append(product)
-    if not claimed_products:
-        return False
+    # The event-level claim above suppresses duplicate workers.  Do not keep a
+    # permanent per-user/per-product claim here: it prevented a customer from
+    # ever receiving the current price and Mini App link for the same product
+    # in a later DM.
+    claimed_products = matched_products[:3]
     for product in claimed_products:
         product["_cta_id"] = os.urandom(8).hex()
     lines = [
@@ -308,11 +277,6 @@ async def send_product_card(event, matched_products: list[dict[str, Any]]) -> bo
         await respond_with_floodwait(event, "\n".join(lines), buttons=buttons)
     except Exception:
         await release_support_event("LisansArena", event.sender_id, event_id, "product_card")
-        for product in claimed_products:
-            await release_product_claim(
-                "lisansarena", event.sender_id,
-                str(product.get("id") or product.get("url") or product.get("title") or "product"),
-            )
         raise
     first = claimed_products[0]
     safe_conversation = conversation_key("LisansArena", event.sender_id)

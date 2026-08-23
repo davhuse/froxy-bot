@@ -75,6 +75,11 @@ class LisansArenaBotGuardTests(unittest.TestCase):
         self.assertIn("load_la_products()", SOURCE)
         self.assertIn("len(candidate) > 3500", SOURCE)
 
+    def test_product_price_cards_are_not_permanently_suppressed(self):
+        self.assertIn("The event-level claim above suppresses duplicate workers.", SOURCE)
+        self.assertNotIn("support_product_once_lisansarena_", SOURCE)
+        self.assertIn("claimed_products = matched_products[:3]", SOURCE)
+
 
 if __name__ == "__main__":
     unittest.main()
