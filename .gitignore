@@ -52,6 +52,7 @@ blacklist_legacy_backup_*.txt
 /generate_session.py
 /session_key_output.txt
 /account_group_blocks.json
+/group_target_registry.json
 /ad_worker.disabled
 /create_missing_now.py
 /test_froxy_shopier_token.py

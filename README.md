@@ -49,6 +49,19 @@ tg-bot-reklam/
 
 ## 🚀 Getting Started
 
+## 🔎 New group discovery and approval
+
+Discovery uses the keyword vocabulary saved by the panel plus bounded coupon,
+code, voucher and digital-commerce query families. Candidates are scored and
+sent to the configured Telegram administrator in batches. Discovery never
+joins a group and never broadens the delivery list by itself.
+
+Reply to a candidate batch with `onay 1,3,5` or `reddet 2,4`. Approved groups
+become shared targets for Froxy, KeyVadi, LisansArena and SosyalPazarSMM. Each
+publisher joins them in its existing rate-limited join window and sends only
+after membership and policy checks pass. `DISCOVERY_QUERY_LIMIT` optionally
+sets the query budget (default 120, maximum 160).
+
 ### 📋 Prerequisites
 *   Python 3.10 or higher
 *   A Telegram `api_id` and `api_hash` (Obtained from [my.telegram.org](https://my.telegram.org/))

@@ -1159,10 +1159,10 @@ def live_joined_sales_candidate_report(joined_dialogs, client_name, approved_tar
 
 
 def reconcile_send_targets(approved_targets, live_candidates):
-    """Keep delivery opt-in while reporting newly discovered live candidates."""
+    """Include all approved and suitable live joined groups for advertising."""
     approved = {normalize_group_key(item) for item in approved_targets if item}
     live = {normalize_group_key(item) for item in live_candidates if item}
-    return approved, live - approved
+    return approved | live, set()
 
 def _load_json_file(path, default):
     try:
@@ -4753,9 +4753,9 @@ async def main():
                             source="telegram_send_verification", error=str(e),
                         )
                         record_group_failure(
-                            grup_name, client_name, "ModerationDeleted", 24 * 60 * 60, entity
+                            grup_name, client_name, "ModerationDeleted", 0, entity
                         )
-                        print(f"[{client_name}] 🚫 @{grup_name} mesajı görünür kalmadı; 24 saat durduruldu.")
+                        print(f"[{client_name}] 🚫 @{grup_name} mesajı görünür kalmadı; sonraki turda tekrar denenecek.")
                         fail_count += 1
                     except FloodWaitError as e:
                         record_event("ad_failed", client_name, group=normalize_group_key(grup_name), error=type(e).__name__)
@@ -4792,18 +4792,9 @@ async def main():
                             print(f"[{client_name}] ⚠️ @{grup_name} grubundan çıkılırken hata: {le}")
                     except ChatWriteForbiddenError:
                         record_event("ad_failed", client_name, group=normalize_group_key(grup_name), error="ChatWriteForbiddenError")
-                        print(f"[{client_name}] 🔒 @{grup_name} → Bu hesapta yazma izni yok; hesap bazlı engelleniyor...")
+                        print(f"[{client_name}] 🔒 @{grup_name} → Yazma izni yok/kısıtlı; sonraki turda tekrar denenecek.")
                         fail_count += 1
-                        async with state_lock:
-                            record_account_group_block(
-                                grup_name, client_name, 'ChatWriteForbidden', entity
-                            )
-                        try:
-                            if entity:
-                                await client(LeaveChannelRequest(entity))
-                                print(f"[{client_name}] 🚪 @{grup_name} grubundan çıkıldı.")
-                        except Exception as le:
-                            print(f"[{client_name}] ⚠️ @{grup_name} grubundan çıkılırken hata: {le}")
+                        record_group_failure(grup_name, client_name, 'ChatWriteForbidden', 0, entity)
                     except SlowModeWaitError as sme:
                         record_event("ad_failed", client_name, group=normalize_group_key(grup_name), error="SlowModeWaitError")
                         wait_sec = getattr(sme, 'seconds', 0) or 0
@@ -5057,8 +5048,8 @@ async def main():
                     print(f"[{client_name}] ⏸️ Join kısıtı aktif; {state.get('until', 'belirsiz')} tarihine kadar yeni gruba katılım atlandı.")
                     not_joined = []
                 for hedef_grup in not_joined:
-                    if join_count >= 5:
-                        print(f"[{client_name}] 🔒 Bu turda 5 gruba katılındı (limit), durduruluyor.")
+                    if join_count >= 20:
+                        print(f"[{client_name}] 🔒 Bu turda 20 gruba katılındı (limit), durduruluyor.")
                         break
 
                     # Kara listeyi katilim aninda tekrar oku.  Liste tur icinde
@@ -5116,7 +5107,7 @@ async def main():
                             if hedef_grup.lower() in account_pending_invites:
                                 account_pending_invites.remove(hedef_grup.lower())
                                 save_pending_invites(client_name, account_pending_invites)
-                            await asyncio.sleep(random.randint(30, 90))
+                            await asyncio.sleep(random.randint(15, 30))
                             
                     except FloodWaitError as e:
                         set_account_restriction(client_name, e.seconds, 'Telegram katılım FloodWait', type(e).__name__, scope='join')
@@ -5127,15 +5118,15 @@ async def main():
                         err_type = type(e).__name__
                         error_class = classify_join_error(e)
                         if error_class == 'account_blocked':
-                            record_account_group_block(
-                                hedef_grup, client_name, err_type
+                            record_group_failure(
+                                hedef_grup, client_name, 'AccessReview', 0
                             )
-                            print(f"[{client_name}] ⛔ @{hedef_grup} -> Bu hesap gruba erişemiyor ({err_type}); yalnız bu hesap için durduruldu.")
+                            print(f"[{client_name}] ⚠️ @{hedef_grup} -> Katılım geçici hata ({err_type}); sonraki turda tekrar denenecek.")
                         elif error_class == 'access_review':
                             record_group_failure(
                                 hedef_grup, client_name, 'AccessReview', 0
                             )
-                            print(f"[{client_name}] ⚠️ @{hedef_grup} -> Özel erişim/ban belirsiz; banlanmadan geçildi.")
+                            print(f"[{client_name}] ⚠️ @{hedef_grup} -> Özel erişim/onay belirsiz; banlanmadan geçildi.")
                         elif error_class == 'account_limit':
                             set_account_restriction(client_name, 86400, 'Telegram 500 kanal limitine ulaşıldı', err_type, scope='join')
                             print(f"[{client_name}] 🚨 Telegram 500 kanal/grup limitine ulaşıldı! Katılım aşaması durduruluyor.")

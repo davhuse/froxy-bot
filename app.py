@@ -28,6 +28,7 @@ from sales_conversion import catalog_refresh_status, cta_experiment_status, pars
 from blast_scheduler import load_blast_snapshot
 from shopier_orders import ingest_shopier_order, reconcile_configured_orders
 from group_policy import load_policies, moderation_snapshot
+from target_registry import TargetRegistry
 from lisansarena_store import la as lisansarena_store_blueprint, start_store_worker
 
 base_dir = os.path.abspath(os.path.dirname(__file__))
@@ -801,6 +802,19 @@ def system_checkup():
         item.get('state') == 'refresh_failed'
         for item in shopier_health.values()
     )
+    try:
+        target_data = TargetRegistry().load()
+        target_rows = list((target_data.get('candidates') or {}).values())
+        target_registry_health = {
+            'reachable': True,
+            'total': len(target_rows),
+            'pending': sum(1 for row in target_rows if row.get('status') == 'pending'),
+            'approved': sum(1 for row in target_rows if row.get('status') == 'approved'),
+            'rejected': sum(1 for row in target_rows if row.get('status') == 'rejected'),
+            'updated_at': target_data.get('updated_at'),
+        }
+    except Exception as exc:
+        target_registry_health = {'reachable': False, 'status': type(exc).__name__}
     overall = (
         'healthy'
         if all(process_health.values())
@@ -819,6 +833,7 @@ def system_checkup():
         'lisansarena_traffic_enabled': store_health.get('reachable') is True,
         'shopier_catalogs': shopier_health,
         'shopier_sync_healthy': shopier_sync_healthy,
+        'target_registry': target_registry_health,
         'keyvadi_mini_app': {
             'url': os.environ.get(
                 'KEYVADI_MINI_APP_URL',
@@ -868,7 +883,12 @@ def group_status():
 
     permanent = flatten(load_json_file('account_group_blocks.json', {}))
     failures = flatten(load_json_file('group_failures.json', {}))
-    review_reasons = {'ChannelPrivateReview', 'UsernameInvalidReview', 'AccessReview'}
+    review_reasons = {
+        'ChannelPrivateReview', 'UsernameInvalidReview', 'AccessReview',
+        'ChatWriteForbidden', 'GroupDefaultWriteForbidden',
+        'AccountWriteRestricted', 'AccountWriteRestrictedNoExpiry',
+        'LegacyChatWriteForbiddenReview',
+    }
     review = [row for row in failures if row.get('reason') in review_reasons]
     temporary = [row for row in failures if row.get('reason') not in review_reasons]
     account_status = load_json_file('ad_account_status.json', {})
@@ -882,6 +902,14 @@ def group_status():
         for account, state in account_status.items()
         if isinstance(state, dict) and isinstance(state.get('candidate_groups'), list)
     }
+    try:
+        registry_data = TargetRegistry().load()
+        registry_candidates = sorted(
+            (registry_data.get('candidates') or {}).values(),
+            key=lambda row: (-int(row.get('score') or 0), row.get('username') or ''),
+        )
+    except Exception:
+        registry_candidates = []
     return jsonify({
         'global_blacklist': global_blacklist,
         'permanent': permanent,
@@ -891,6 +919,7 @@ def group_status():
         'delivery_states': moderation_snapshot(),
         'account_targets': account_targets,
         'candidate_groups': candidate_groups,
+        'discovery_candidates': registry_candidates,
         'blast_checkpoint': load_blast_snapshot(
             os.path.join(base_dir, 'blast_checkpoint_v3.json')
         ),
