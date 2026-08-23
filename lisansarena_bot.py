@@ -169,20 +169,51 @@ def load_la_products() -> list[dict[str, Any]]:
 
 # ==================== IDEMPOTENCY & LOCKS ====================
 
+_LA_SEEN_UPDATES = {}
+_LA_SEEN_LOCK = asyncio.Lock()
+
+
+async def claim_event_locally_and_remotely(event, action_name: str) -> bool:
+    """Ensure update is processed strictly once per message/callback update."""
+    sender_id = getattr(event, "sender_id", None)
+    event_id = getattr(event, "message_id", None) or getattr(getattr(event, "message", None), "id", None)
+    if sender_id is None or event_id is None:
+        return True
+
+    key = (int(sender_id), int(event_id), str(action_name))
+    now = time.time()
+
+    async with _LA_SEEN_LOCK:
+        if len(_LA_SEEN_UPDATES) > 5000:
+            cutoff = now - 300
+            expired = [k for k, t in _LA_SEEN_UPDATES.items() if t < cutoff]
+            for k in expired:
+                _LA_SEEN_UPDATES.pop(k, None)
+
+        if key in _LA_SEEN_UPDATES:
+            logger.info(f"🚫 [LisansArena] Duplicate suppressed for user {sender_id}, event {event_id}, action {action_name}")
+            return False
+        _LA_SEEN_UPDATES[key] = now
+
+    try:
+        doc_id = f"support_reply_lisansarena_{int(sender_id)}_{int(event_id)}_{action_name}"
+        claimed = await asyncio.to_thread(
+            firestore_helper.claim_remote_document,
+            doc_id,
+            {"brand": "LisansArena", "user_id": int(sender_id), "event_id": int(event_id), "action": action_name},
+            True,
+        )
+        if claimed is False:
+            return False
+    except Exception:
+        pass
+
+    return True
+
+
 async def claim_command_event(event, command: str) -> bool:
     """Suppress a duplicate Telegram command update across all processes."""
-    event_id = getattr(getattr(event, "message", None), "id", None)
-    if event_id is None or event.sender_id is None:
-        return False
-    claimed = await claim_support_event(
-        "LisansArena", event.sender_id, event_id, f"command_{command}"
-    )
-    if not claimed:
-        record_event(
-            "duplicate_suppressed", "LisansArena", source="telegram_private",
-            reason=f"command_{command}_already_claimed",
-        )
-    return claimed
+    return await claim_event_locally_and_remotely(event, f"cmd_{command}")
 
 
 def once_per_command(command: str):
@@ -191,15 +222,7 @@ def once_per_command(command: str):
         async def wrapped(event, *args, **kwargs):
             if not await claim_command_event(event, command):
                 return
-            try:
-                return await handler(event, *args, **kwargs)
-            except Exception:
-                await release_support_event(
-                    "LisansArena", event.sender_id,
-                    getattr(getattr(event, "message", None), "id", 0),
-                    f"command_{command}",
-                )
-                raise
+            return await handler(event, *args, **kwargs)
         return wrapped
     return decorator
 
@@ -718,6 +741,8 @@ async def help_handler(event):
 async def menu_callback(event):
     await event.answer()
     name = event.pattern_match.group(1).decode()
+    if not await claim_event_locally_and_remotely(event, f"cb_menu_{name}"):
+        return
     if name == "products":
         await show_products(event, edit=True)
     elif name == "balance":
@@ -731,13 +756,18 @@ async def menu_callback(event):
 @bot.on(events.CallbackQuery(pattern=rb"^ticket_(support|request|refund)$"))
 async def ticket_callback(event):
     await event.answer()
-    await begin_ticket(event, event.pattern_match.group(1).decode())
+    action = event.pattern_match.group(1).decode()
+    if not await claim_event_locally_and_remotely(event, f"cb_ticket_{action}"):
+        return
+    await begin_ticket(event, action)
 
 
 @bot.on(events.CallbackQuery(pattern=rb"^lang_(tr|en)$"))
 async def language_callback(event):
     await event.answer()
     language = event.pattern_match.group(1).decode()
+    if not await claim_event_locally_and_remotely(event, f"cb_lang_{language}"):
+        return
     msg = "Dil tercihiniz Türkçe olarak ayarlandı." if language == "tr" else "Language preference saved as English."
     await safe_edit(event, msg, buttons=mini_app_markup("Mağazayı Aç"))
 
@@ -841,7 +871,8 @@ async def admin_la_kullanici_handler(event):
     )
     await event.respond(resp)
 
-@bot.on(events.NewMessage(pattern=r"(?i)^/siparisler$"))
+@bot.on(events.NewMessage(pattern=r"(?i)^/admin_siparisler$"))
+@once_per_command("admin_siparisler")
 async def admin_la_siparisler_handler(event):
     if event.sender_id != ADMIN_ID:
         return
@@ -932,6 +963,9 @@ async def private_message_handler(event):
     if getattr(event, "out", False) or not event.is_private or (event.raw_text or "").startswith("/"):
         return
 
+    if not await claim_event_locally_and_remotely(event, "private_msg"):
+        return
+
     # Admin reply forwarding
     if event.sender_id == ADMIN_ID and event.is_reply:
         original = await event.get_reply_message()
@@ -968,13 +1002,19 @@ async def private_message_handler(event):
     except Exception as exc:
         logger.warning("Ticket kaydı oluşturulamadı: %s", exc)
 
+    # 1. Process pending ticket input FIRST if user previously clicked talep/destek/iade
+    pending = PENDING_INPUT.pop(event.sender_id, None)
+    if pending:
+        await save_ticket_from_message(event, pending)
+        return
+
     incoming_event_id = getattr(event.message, "id", None)
     dm_intent = record_dm_event(
         "LisansArena", event.sender_id, event.raw_text or "",
         message_id=incoming_event_id,
     )
 
-    # Product matching on sales questions
+    # 2. Product matching on sales questions
     if event.raw_text and dm_intent == INTENT_SALES_LEAD:
         matched_products = match_sales_products(
             event.raw_text, load_sales_catalog("lisansarena"), limit=3
@@ -982,12 +1022,6 @@ async def private_message_handler(event):
         if matched_products:
             await send_product_card(event, matched_products)
             return
-
-    # Process pending ticket input if any
-    pending = PENDING_INPUT.pop(event.sender_id, None)
-    if pending:
-        await save_ticket_from_message(event, pending)
-        return
 
     # Forward customer question to Support Chat / Admin
     forwarded = await forward_customer_message(

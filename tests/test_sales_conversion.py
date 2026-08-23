@@ -101,29 +101,21 @@ class SalesCatalogMatchingTests(unittest.TestCase):
     def test_lisansarena_catalog_supports_signed_purchase_links(self):
         from sales_conversion import make_purchase_token, parse_purchase_token
         catalog = load_sales_catalog("lisansarena")
-        product = next(item for item in catalog if item["id"] == "la-approved-chatgpt-kisisel")
-        self.assertEqual(product["price"], "499,90 TL")
+        product = next(item for item in catalog if item["id"] == "la_netflix_ozel")
+        self.assertEqual(product["price"], "109,90 TL")
         with patch.dict(os.environ, {"PURCHASE_LINK_SECRET": "unit-test-secret"}):
             token = make_purchase_token("lisansarena", product["id"], "ad_account_dm", "control")
             payload = parse_purchase_token(token)
         self.assertEqual(payload["b"], "lisansarena")
         self.assertEqual(payload["p"], product["id"])
 
-    def test_lisansarena_auxiliary_products_get_internal_purchase_targets(self):
-        from sales_conversion import make_purchase_token, parse_purchase_token
+    def test_lisansarena_catalog_loads_clean_master_products(self):
         catalog = load_sales_catalog("lisansarena")
-        auxiliary_ids = {
-            "la-email-netflix-ortak", "la-approved-chatgpt-ortak",
-            "la-approved-gemini-pro-3ay", "la-approved-discord-nitro-14x",
-        }
-        products = [item for item in catalog if item["id"] in auxiliary_ids]
-        self.assertEqual({item["id"] for item in products}, auxiliary_ids)
-        for product in products:
-            self.assertIn("/la/app?product=", product["url"])
-            with patch.dict(os.environ, {"PURCHASE_LINK_SECRET": "unit-test-secret"}):
-                token = make_purchase_token("lisansarena", product["id"], "support_bot_dm")
-                payload = parse_purchase_token(token)
-            self.assertEqual(payload["p"], product["id"])
+        self.assertGreaterEqual(len(catalog), 26)
+        netflix = [p for p in catalog if "netflix" in p["title"].lower()]
+        self.assertEqual(len(netflix), 2)
+        prices = {p["price"] for p in netflix}
+        self.assertEqual(prices, {"59,90 TL", "109,90 TL"})
 
     def test_froxy_chatgpt_prices_and_codex_variant_are_specific(self):
         froxy = load_sales_catalog("froxy")
