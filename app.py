@@ -1031,7 +1031,7 @@ def admin_get_all_users():
     except Exception as e:
         result["keyvadi_error"] = str(e)
     try:
-        from miniapp_lisansarena.server import load_la_users
+        from miniapp_lisansarena.blueprint import load_users as load_la_users
         result["lisansarena"] = load_la_users()
     except Exception as e:
         result["lisansarena_error"] = str(e)
@@ -1056,7 +1056,7 @@ def admin_get_single_user(user_id):
     except Exception:
         pass
     try:
-        from miniapp_lisansarena.server import load_la_users
+        from miniapp_lisansarena.blueprint import load_users as load_la_users
         la = load_la_users()
         if uid in la:
             found["lisansarena"] = la[uid]
@@ -1096,7 +1096,7 @@ def admin_get_all_orders():
     except Exception:
         pass
     try:
-        from miniapp_lisansarena.server import load_la_users
+        from miniapp_lisansarena.blueprint import load_users as load_la_users
         extract_orders(load_la_users(), "LisansArena")
     except Exception:
         pass
