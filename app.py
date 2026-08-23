@@ -1021,6 +1021,94 @@ def procurement_update_api(request_id):
         return jsonify({'error': str(exc)}), 400
 
 
+@app.route('/api/admin/users', methods=['GET'])
+def admin_get_all_users():
+    """Return all users, balances, and orders across KeyVadi, LisansArena, and Froxy."""
+    result = {"keyvadi": {}, "lisansarena": {}, "froxy": {}}
+    try:
+        from miniapp.server import load_users as load_kv_users
+        result["keyvadi"] = load_kv_users()
+    except Exception as e:
+        result["keyvadi_error"] = str(e)
+    try:
+        from miniapp_lisansarena.server import load_la_users
+        result["lisansarena"] = load_la_users()
+    except Exception as e:
+        result["lisansarena_error"] = str(e)
+    try:
+        from miniapp_froxy.server import load_users as load_fx_users
+        result["froxy"] = load_fx_users()
+    except Exception as e:
+        result["froxy_error"] = str(e)
+    return jsonify(result)
+
+
+@app.route('/api/admin/user/<user_id>', methods=['GET'])
+def admin_get_single_user(user_id):
+    """Find a specific user across all stores."""
+    uid = str(user_id).strip()
+    found = {}
+    try:
+        from miniapp.server import load_users as load_kv_users
+        kv = load_kv_users()
+        if uid in kv:
+            found["keyvadi"] = kv[uid]
+    except Exception:
+        pass
+    try:
+        from miniapp_lisansarena.server import load_la_users
+        la = load_la_users()
+        if uid in la:
+            found["lisansarena"] = la[uid]
+    except Exception:
+        pass
+    try:
+        from miniapp_froxy.server import load_users as load_fx_users
+        fx = load_fx_users()
+        if uid in fx:
+            found["froxy"] = fx[uid]
+    except Exception:
+        pass
+    return jsonify({"user_id": uid, "stores": found, "found": bool(found)})
+
+
+@app.route('/api/admin/orders', methods=['GET'])
+def admin_get_all_orders():
+    """Return all balance and product orders sorted by date."""
+    orders = []
+    def extract_orders(users_dict, brand):
+        for uid, udata in (users_dict or {}).items():
+            if not isinstance(udata, dict):
+                continue
+            u_name = f"{udata.get('first_name', '')} {udata.get('last_name', '')}".strip() or udata.get('username') or f"User #{uid}"
+            for ord_item in udata.get("orders", []):
+                if isinstance(ord_item, dict):
+                    orders.append({
+                        "brand": brand,
+                        "user_id": uid,
+                        "customer_name": u_name,
+                        "username": udata.get("username", ""),
+                        **ord_item
+                    })
+    try:
+        from miniapp.server import load_users as load_kv_users
+        extract_orders(load_kv_users(), "KeyVadi")
+    except Exception:
+        pass
+    try:
+        from miniapp_lisansarena.server import load_la_users
+        extract_orders(load_la_users(), "LisansArena")
+    except Exception:
+        pass
+    try:
+        from miniapp_froxy.server import load_users as load_fx_users
+        extract_orders(load_fx_users(), "Froxy")
+    except Exception:
+        pass
+    orders.sort(key=lambda o: str(o.get("created_at") or o.get("date") or 0), reverse=True)
+    return jsonify({"total_orders": len(orders), "orders": orders[:100]})
+
+
 @app.route('/go/<token>', methods=['GET'])
 def purchase_redirect(token):
     """Record an anonymous purchase click and redirect only to a known product."""

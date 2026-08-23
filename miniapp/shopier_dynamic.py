@@ -215,8 +215,40 @@ def check_and_sync_shopier_orders(users_data_path: Path):
                                                 "status": "completed",
                                                 "created_at": int(time.time())
                                             })
-                                        with open(users_data_path, "w", encoding="utf-8") as f:
-                                            json.dump(users, f, ensure_ascii=False, indent=2)
+                                            try:
+                                                from .server import save_users
+                                                save_users(users)
+                                            except Exception:
+                                                try:
+                                                    from server import save_users
+                                                    save_users(users)
+                                                except Exception:
+                                                    with open(users_data_path, "w", encoding="utf-8") as f:
+                                                        json.dump(users, f, ensure_ascii=False, indent=2)
+                                            
+                                            # Admin notification for Top-up
+                                            try:
+                                                admin_id = os.environ.get("TELEGRAM_ADMIN_ID", "5424756555")
+                                                bot_token = os.environ.get("KEYVADI_BOT_TOKEN") or os.environ.get("KEYVADI_SUPPORT_BOT_TOKEN") or ""
+                                                if admin_id and bot_token:
+                                                    u_info = users[uid]
+                                                    u_disp = f"{u_info.get('first_name', '')} {u_info.get('last_name', '')}".strip() or u_info.get('username') or f"User #{uid}"
+                                                    msg = (
+                                                        f"💳 **[KeyVadi Mini App] Yeni Bakiye Yüklendi!**\n\n"
+                                                        f"👤 **Müşteri:** {u_disp}\n"
+                                                        f"🆔 **Kullanıcı ID:** `{uid}`\n"
+                                                        f"💰 **Yüklenen Tutar:** `₺{amt:.2f}`\n"
+                                                        f"💵 **Yeni Bakiye:** `₺{users[uid]['balance']:.2f}`\n"
+                                                        f"🧾 **Shopier Sipariş ID:** `{order_id}`\n\n"
+                                                        f"*(Bakiye otomatik olarak hesaba tanımlandı.)*"
+                                                    )
+                                                    requests.post(
+                                                        f"https://api.telegram.org/bot{bot_token}/sendMessage",
+                                                        json={"chat_id": int(admin_id), "text": msg, "parse_mode": "Markdown"},
+                                                        timeout=5
+                                                    )
+                                            except Exception as notif_err:
+                                                print(f"[KeyVadi Topup Notif Error] {notif_err}")
                                 except Exception as ue:
                                     print(f"[KeyVadi User Save Error] {ue}")
 

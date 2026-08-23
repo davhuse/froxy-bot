@@ -1172,6 +1172,158 @@ async def broadcast_handler(event):
         
     await event.respond(f"✅ **Toplu Mesaj Tamamlandı!**\n\nBaşarıyla Gönderilen: {success_count}\nBaşarısız (Botu silen/engelleyenler): {fail_count}")
 
+@bot.on(events.NewMessage(pattern=r"(?i)^/kullanici(?:\s+(.+))?$"))
+async def admin_kullanici_handler(event):
+    config = load_config() or {}
+    admin_chat_id = config.get("admin_id", ADMIN_ID)
+    if event.sender_id != admin_chat_id:
+        return
+    query = (event.pattern_match.group(1) or "").strip()
+    if not query:
+        await event.respond("⚠️ Kullanım: `/kullanici <Telegram_ID veya Kullanıcı_Adı>`\nÖrn: `/kullanici 5755476041`")
+        return
+
+    doc = await async_get_document("keyvadi_users_data")
+    users = doc.get("users", {}) if doc else {}
+    
+    matched_uid = None
+    target_user = None
+    
+    clean_q = query.lstrip("@").lower()
+    if query in users:
+        matched_uid = query
+        target_user = users[query]
+    else:
+        for uid, udata in users.items():
+            if str(uid) == clean_q or (udata.get("username") or "").lower() == clean_q:
+                matched_uid = uid
+                target_user = udata
+                break
+                
+    if not target_user:
+        await event.respond(f"❌ `{query}` kimliğine sahip kullanıcı KeyVadi veritabanında bulunamadı.")
+        return
+        
+    full_name = f"{target_user.get('first_name', '')} {target_user.get('last_name', '')}".strip() or "Müşteri"
+    uname = f"@{target_user.get('username')}" if target_user.get("username") else "Yok"
+    bal = target_user.get("balance", 0.0)
+    orders = target_user.get("orders", [])
+    
+    order_lines = []
+    for i, o in enumerate(orders[-10:], 1):
+        o_title = o.get("title") or "Ürün"
+        o_price = o.get("price") or o.get("amount") or o.get("subtotal") or 0.0
+        o_type = o.get("type") or "ürün_satın_alma"
+        o_status = o.get("status") or "tamamlandı"
+        o_code = o.get("license_key") or o.get("order_id") or ""
+        order_lines.append(f"{i}. **{o_title}** — `₺{float(o_price):.2f}`\n   ↳ Tip: `{o_type}` | Durum: `{o_status}` | Kod/ID: `{o_code}`")
+        
+    orders_text = "\n".join(order_lines) if order_lines else "Henüz sipariş kaydı yok."
+    
+    resp = (
+        f"👤 **KULLANICI DETAYI (KeyVadi)**\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n"
+        f"🆔 **ID:** `{matched_uid}`\n"
+        f"👤 **İsim:** {full_name}\n"
+        f"💬 **Kullanıcı Adı:** {uname}\n"
+        f"💰 **Mevcut Bakiye:** `₺{float(bal):.2f}`\n"
+        f"👥 **Referans:** {target_user.get('referrals_count', 0)} kişi (Davet eden: `{target_user.get('referred_by') or 'Yok'}`)\n\n"
+        f"📦 **Son Sipariş / İşlem Geçmişi ({len(orders)} işlem):**\n"
+        f"{orders_text}"
+    )
+    await event.respond(resp)
+
+@bot.on(events.NewMessage(pattern=r"(?i)^/siparisler$"))
+async def admin_siparisler_handler(event):
+    config = load_config() or {}
+    admin_chat_id = config.get("admin_id", ADMIN_ID)
+    if event.sender_id != admin_chat_id:
+        return
+
+    doc = await async_get_document("keyvadi_users_data")
+    users = doc.get("users", {}) if doc else {}
+    
+    all_orders = []
+    for uid, udata in users.items():
+        if isinstance(udata, dict):
+            u_name = f"{udata.get('first_name', '')} {udata.get('last_name', '')}".strip() or udata.get('username') or f"#{uid}"
+            for ord_item in udata.get("orders", []):
+                if isinstance(ord_item, dict):
+                    all_orders.append({
+                        "user_id": uid,
+                        "customer": u_name,
+                        **ord_item
+                    })
+                    
+    all_orders.sort(key=lambda o: str(o.get("created_at") or o.get("date") or 0), reverse=True)
+    
+    if not all_orders:
+        await event.respond("📦 Henüz sistemde kayıtlı bir sipariş bulunmuyor.")
+        return
+        
+    lines = ["📦 **SON KEYVADI SİPARİŞLERİ (Son 10 İşlem)**\n━━━━━━━━━━━━━━━━━━━━"]
+    for i, o in enumerate(all_orders[:10], 1):
+        title = o.get("title") or "Ürün"
+        price = o.get("price") or o.get("amount") or o.get("subtotal") or 0.0
+        cust = o.get("customer")
+        uid = o.get("user_id")
+        code = o.get("license_key") or o.get("order_id") or ""
+        lines.append(f"{i}. **{title}** (`₺{float(price):.2f}`)\n   👤 Müşteri: {cust} (`{uid}`)\n   🔑 Kod/ID: `{code}`")
+        
+    await event.respond("\n\n".join(lines))
+
+@bot.on(events.NewMessage(pattern=r"(?i)^/bakiye_ekle\s+(\d+)\s+([\d\.,]+)$"))
+async def admin_bakiye_ekle_handler(event):
+    config = load_config() or {}
+    admin_chat_id = config.get("admin_id", ADMIN_ID)
+    if event.sender_id != admin_chat_id:
+        return
+        
+    target_uid = str(event.pattern_match.group(1)).strip()
+    amount_str = event.pattern_match.group(2).replace(",", ".").strip()
+    try:
+        amount = float(amount_str)
+    except ValueError:
+        await event.respond("❌ Geçersiz tutar formatı.")
+        return
+        
+    doc = await async_get_document("keyvadi_users_data")
+    users = doc.get("users", {}) if doc else {}
+    
+    if target_uid not in users:
+        users[target_uid] = {
+            "id": int(target_uid),
+            "username": "",
+            "first_name": "Müşteri",
+            "last_name": "",
+            "balance": 0.0,
+            "orders": []
+        }
+        
+    old_bal = users[target_uid].get("balance", 0.0)
+    new_bal = round(old_bal + amount, 2)
+    users[target_uid]["balance"] = new_bal
+    users[target_uid].setdefault("orders", []).append({
+        "type": "admin_credit",
+        "order_id": f"ADM-{int(time.time())}",
+        "title": f"Yönetici Bakiye Yüklemesi (+₺{amount:.2f})",
+        "amount": amount,
+        "status": "completed",
+        "created_at": int(time.time())
+    })
+    
+    await async_set_document("keyvadi_users_data", {"users": users})
+    await event.respond(f"✅ **Bakiye Başarıyla Eklendi!**\n\n👤 Kullanıcı ID: `{target_uid}`\n💰 Eklenen: `₺{amount:.2f}`\n💵 Yeni Bakiye: `₺{new_bal:.2f}`")
+    
+    try:
+        await bot.send_message(
+            int(target_uid),
+            f"🎉 **Hesabınıza Bakiye Yüklendi!**\n\n💰 Yüklenen Tutar: `₺{amount:.2f}`\n💵 Güncel Bakiyeniz: `₺{new_bal:.2f}`\n\nMağazadan dilediğiniz ürünü hemen satın alabilirsiniz!",
+            buttons=mini_app_markup("Mağazayı Aç")
+        )
+    except Exception:
+        pass
+
 # Category handler
 @bot.on(events.CallbackQuery(pattern=r'cat_(\w+)'))
 async def category_handler(event):

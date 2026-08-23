@@ -73,6 +73,34 @@ def save_users(data):
 def _telegram_bot_token():
     return os.environ.get("LISANSARENA_BOT_TOKEN", "").strip()
 
+def notify_admin_of_purchase(user_id, telegram_user, order_info):
+    """Send immediate Telegram notification to admin when customer buys with balance."""
+    try:
+        token = _telegram_bot_token()
+        admin_id = os.environ.get("TELEGRAM_ADMIN_ID", "5424756555")
+        if not token or not admin_id:
+            return
+        import urllib.request
+        u_name = f"{telegram_user.get('first_name', '')} {telegram_user.get('last_name', '')}".strip()
+        uname = f"@{telegram_user.get('username')}" if telegram_user.get('username') else "Yok"
+        title = order_info.get("title", "Ürün")
+        price = order_info.get("price") or order_info.get("subtotal") or 0.0
+        license_key = order_info.get("license_key") or "Manuel Teslimat Bekliyor"
+        msg = (
+            f"🛒 **[LisansArena Mini App] Bakiye ile Yeni Satış!**\n\n"
+            f"👤 **Müşteri:** {u_name} ({uname})\n"
+            f"🆔 **Kullanıcı ID:** `{user_id}`\n"
+            f"📦 **Ürün:** {title}\n"
+            f"💰 **Tutar:** `₺{float(price):.2f}` (Cüzdan Bakiyesi ile Ödendi)\n"
+            f"🔑 **Lisans Kodu:** `{license_key}`\n\n"
+            f"*(Müşteri siparişi Mini App üzerinden verdi.)*"
+        )
+        payload = json.dumps({"chat_id": int(admin_id), "text": msg, "parse_mode": "Markdown"}).encode("utf-8")
+        req = urllib.request.Request(f"https://api.telegram.org/bot{token}/sendMessage", data=payload, headers={"Content-Type": "application/json"})
+        urllib.request.urlopen(req, timeout=5)
+    except Exception as e:
+        print(f"[LisansArena Notify Admin Error] {e}")
+
 
 def verify_telegram_init_data(raw_init_data):
     if not raw_init_data or not _telegram_bot_token():
@@ -328,6 +356,7 @@ def purchase_product():
         user.setdefault("orders", []).append(order)
         users[uid] = user
         save_users(users)
+        notify_admin_of_purchase(user_id, telegram_user, order)
 
     return jsonify({
         "success": True,
@@ -394,6 +423,8 @@ def purchase_cart():
         user.setdefault("orders", []).extend(valid_orders)
         users[uid] = user
         save_users(users)
+        for ord_it in valid_orders:
+            notify_admin_of_purchase(user_id, telegram_user, ord_it)
 
     return jsonify({
         "success": True,
