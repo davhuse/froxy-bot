@@ -803,7 +803,7 @@ ACTIVE_ACCOUNT_IDENTITIES = {
     'froxy_ai': {
         'stable_name': 'FroxyOnline',
         'phone': '905015291021',
-        'user_id': 6196006704,
+        'user_id': 8797763469,
         'slot': 1,
     },
     'keyvadidestek': {
@@ -5121,9 +5121,9 @@ async def main():
                             print(f"[{client_name}] ⛔ @{hedef_grup} -> Bu hesap gruba erişemiyor ({err_type}); yalnız bu hesap için durduruldu.")
                         elif error_class == 'access_review':
                             record_group_failure(
-                                hedef_grup, client_name, 'AccessReview', 24 * 60 * 60
+                                hedef_grup, client_name, 'AccessReview', 0
                             )
-                            print(f"[{client_name}] ⚠️ @{hedef_grup} -> Özel erişim/ban belirsiz; 24 saatlik hesap bazlı incelemeye alındı.")
+                            print(f"[{client_name}] ⚠️ @{hedef_grup} -> Özel erişim/ban belirsiz; banlanmadan geçildi.")
                         elif error_class == 'account_limit':
                             set_account_restriction(client_name, 86400, 'Telegram 500 kanal limitine ulaşıldı', err_type, scope='join')
                             print(f"[{client_name}] 🚨 Telegram 500 kanal/grup limitine ulaşıldı! Katılım aşaması durduruluyor.")
