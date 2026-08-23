@@ -102,7 +102,7 @@ def notify_admin_of_purchase(user_id, telegram_user, order_info):
     """Send immediate Telegram notification to admin when customer buys with balance."""
     try:
         token = _telegram_bot_token()
-        admin_id = os.environ.get("TELEGRAM_ADMIN_ID", "8797763469")
+        admin_id = os.environ.get("TELEGRAM_ADMIN_ID", "6196006704")
         if not token or not admin_id:
             return
         import urllib.request
@@ -340,7 +340,7 @@ def simulate_payment():
     if os.environ.get("KEYVADI_ALLOW_SIMULATE_PAYMENT", "0") != "1" or runtime_env not in {"development", "test", "local"}:
         return jsonify({"success": False, "error": "Test ödeme endpointi kapalı"}), 404
     data = request.get_json() or {}
-    user_id = str(data.get("user_id", 8797763469))
+    user_id = str(data.get("user_id", 6196006704))
     amount = float(data.get("amount", 100.0))
 
     users = load_users()

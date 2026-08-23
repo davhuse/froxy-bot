@@ -297,7 +297,7 @@ def simulate_payment():
     if os.environ.get("FROXY_ALLOW_SIMULATE_PAYMENT", "0") != "1" or runtime_env not in {"development", "test", "local"}:
         return jsonify({"success": False, "error": "Test ödeme endpointi kapalı"}), 404
     data = request.get_json() or {}
-    user_id = str(data.get("user_id", 8797763469))
+    user_id = str(data.get("user_id", 6196006704))
     amount = float(data.get("amount", 100.0))
 
     users = load_users()

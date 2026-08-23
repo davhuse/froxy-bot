@@ -803,7 +803,7 @@ ACTIVE_ACCOUNT_IDENTITIES = {
     'froxy_ai': {
         'stable_name': 'FroxyOnline',
         'phone': '905015291021',
-        'user_id': 8797763469,
+        'user_id': 6196006704,
         'slot': 1,
     },
     'keyvadidestek': {
