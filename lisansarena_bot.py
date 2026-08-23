@@ -197,8 +197,12 @@ async def claim_event_locally_and_remotely(event, action_name: str) -> bool:
 
     try:
         doc_id = f"support_reply_lisansarena_{int(sender_id)}_{int(event_id)}_{action_name}"
+        # claim_document also uses the shared local SQLite claim store when
+        # Firestore is temporarily unavailable.  The old remote-only call
+        # returned ``None`` without credentials, allowing two local workers
+        # to answer the same command.
         claimed = await asyncio.to_thread(
-            firestore_helper.claim_remote_document,
+            firestore_helper.claim_document,
             doc_id,
             {"brand": "LisansArena", "user_id": int(sender_id), "event_id": int(event_id), "action": action_name},
             True,
@@ -355,6 +359,41 @@ def mini_app_markup(label="Mağazayı Aç"):
     ])])
 
 
+def _product_price_text(product: dict[str, Any]) -> str:
+    """Return the price in either current Mini App catalog format."""
+    price = product.get("price")
+    if price not in (None, ""):
+        return str(price)
+    cents = product.get("price_cents")
+    if cents not in (None, ""):
+        try:
+            return f"{int(cents) / 100:,.2f} TL".replace(",", "X").replace(".", ",").replace("X", ".")
+        except (TypeError, ValueError):
+            pass
+    return "Fiyat mağazada güncelleniyor"
+
+
+def current_product_catalog_messages() -> list[str]:
+    """Build a complete, Telegram-safe catalog from the Mini App source."""
+    products = [product for product in load_la_products() if isinstance(product, dict)]
+    if not products:
+        return ["📋 **Güncel Ürün ve Fiyat Listesi**\n\nÜrün listesi şu anda güncelleniyor. Mağazadan tekrar kontrol edebilirsiniz."]
+
+    lines = [f"{index}. **{product.get('title') or product.get('name') or 'Ürün'}** — `{_product_price_text(product)}`" for index, product in enumerate(products, 1)]
+    header = f"📋 **GÜNCEL ÜRÜN VE FİYAT LİSTESİ** ({len(lines)} ürün)"
+    messages: list[str] = []
+    chunk = header
+    for line in lines:
+        candidate = f"{chunk}\n{line}"
+        if len(candidate) > 3500 and chunk != header:
+            messages.append(chunk)
+            chunk = f"📋 **Fiyat Listesi (devamı)**\n{line}"
+        else:
+            chunk = candidate
+    messages.append(chunk)
+    return messages
+
+
 def inline_menu():
     return [
         [Button.inline("🛍️ Ürünler", b"menu_products"), Button.inline("💳 Bakiye", b"menu_balance")],
@@ -393,6 +432,14 @@ async def show_main_menu(event, *, edit=False):
         except ButtonTypeInvalidError:
             await event.respond(
                 f"{welcome}\n\nMağazayı sohbet ekranının altındaki Menü düğmesinden açabilirsiniz."
+            )
+        # The product list is deliberately loaded at reply time, so this
+        # always mirrors the Mini App's current products and prices.
+        catalog_messages = current_product_catalog_messages()
+        for index, catalog_text in enumerate(catalog_messages):
+            await event.respond(
+                catalog_text,
+                buttons=buttons if index == len(catalog_messages) - 1 else None,
             )
 
 
@@ -781,6 +828,7 @@ async def language_callback(event):
 
 
 @bot.on(events.NewMessage(pattern=r"(?i)^/toplumesaj(?:\s+(.+))?$"))
+@once_per_command("toplumesaj")
 async def broadcast_handler(event):
     if event.sender_id != ADMIN_ID:
         return
@@ -808,6 +856,7 @@ async def broadcast_handler(event):
     await event.respond(f"✅ **Toplu Mesaj Tamamlandı!**\n\nBaşarıyla Gönderilen: {success_count}\nBaşarısız (Botu silen/engelleyenler): {fail_count}")
 
 @bot.on(events.NewMessage(pattern=r"(?i)^/(?:id|myid|kimim)$"))
+@once_per_command("myid")
 async def la_my_id_handler(event):
     sender = await event.get_sender()
     uname = f"@{sender.username}" if getattr(sender, "username", None) else "Belirtilmemiş"
@@ -823,6 +872,7 @@ async def la_my_id_handler(event):
     )
 
 @bot.on(events.NewMessage(pattern=r"(?i)^/kullanici(?:\s+(.+))?$"))
+@once_per_command("kullanici")
 async def admin_la_kullanici_handler(event):
     if event.sender_id != ADMIN_ID:
         return
@@ -916,6 +966,7 @@ async def admin_la_siparisler_handler(event):
     await event.respond("\n\n".join(lines))
 
 @bot.on(events.NewMessage(pattern=r"(?i)^/bakiye_ekle\s+(\d+)\s+([\d\.,]+)$"))
+@once_per_command("bakiye_ekle")
 async def admin_la_bakiye_ekle_handler(event):
     if event.sender_id != ADMIN_ID:
         return

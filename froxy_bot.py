@@ -7,6 +7,7 @@ import ssl
 import html
 import asyncio
 import time
+from functools import wraps
 from telethon import TelegramClient, events, Button
 from telethon.errors import MessageNotModifiedError
 from telethon.sessions import StringSession
@@ -74,7 +75,19 @@ async def async_release_event_claim(event, scope):
 
 async def async_run_claim(doc_id, fields):
     loop = asyncio.get_event_loop()
-    return await loop.run_in_executor(None, firestore_helper.claim_remote_document, doc_id, fields)
+    return await loop.run_in_executor(None, firestore_helper.claim_document, doc_id, fields)
+
+
+def once_per_command(command):
+    """Ensure a command update is handled once even with duplicate workers."""
+    def decorator(handler):
+        @wraps(handler)
+        async def wrapped(event, *args, **kwargs):
+            if not await async_claim_event(event, f"keyvadi_cmd_{command}"):
+                return
+            return await handler(event, *args, **kwargs)
+        return wrapped
+    return decorator
 
 
 _KEYVADI_PROD_CLAIMS = set()
@@ -1054,6 +1067,7 @@ async def start_handler(event):
         await show_main_menu(event, user_id)
 
 @bot.on(events.NewMessage(pattern=r'/lang|/dil'))
+@once_per_command("lang")
 async def lang_cmd_handler(event):
     user_id = event.sender_id
     user_states[user_id] = None
@@ -1061,11 +1075,13 @@ async def lang_cmd_handler(event):
 
 
 @bot.on(events.NewMessage(pattern=r'(?i)^/magaza$'))
+@once_per_command("magaza")
 async def store_cmd_handler(event):
     await event.respond("KeyVadi mağazası", buttons=mini_app_markup())
 
 
 @bot.on(events.NewMessage(pattern=r'(?i)^/urunler$'))
+@once_per_command("urunler")
 async def products_cmd_handler(event):
     await event.respond("Ürün kataloğunu açmak için aşağıdaki düğmeye dokunun.", buttons=mini_app_markup("Ürünleri Aç"))
 
@@ -1135,6 +1151,7 @@ async def main_menu_handler(event):
 
 # Admin update handler
 @bot.on(events.NewMessage(pattern='/guncelle'))
+@once_per_command("guncelle")
 async def guncelle_handler(event):
     config = load_config() or {}
     admin_chat_id = config.get("admin_id", ADMIN_ID)
@@ -1161,6 +1178,7 @@ async def guncelle_handler(event):
         await event.respond("❌ Ürün listesi güncellenemedi (Shopier sayfasından veri çekilemedi).")
 
 @bot.on(events.NewMessage(pattern=r"(?i)^/toplumesaj(?:\s+(.+))?$"))
+@once_per_command("toplumesaj")
 async def broadcast_handler(event):
     config = load_config() or {}
     admin_chat_id = config.get("admin_id", ADMIN_ID)
@@ -1192,6 +1210,7 @@ async def broadcast_handler(event):
     await event.respond(f"✅ **Toplu Mesaj Tamamlandı!**\n\nBaşarıyla Gönderilen: {success_count}\nBaşarısız (Botu silen/engelleyenler): {fail_count}")
 
 @bot.on(events.NewMessage(pattern=r"(?i)^/(?:id|myid|kimim)$"))
+@once_per_command("myid")
 async def my_id_handler(event):
     sender = await event.get_sender()
     uname = f"@{sender.username}" if getattr(sender, "username", None) else "Belirtilmemiş"
@@ -1207,6 +1226,7 @@ async def my_id_handler(event):
     )
 
 @bot.on(events.NewMessage(pattern=r"(?i)^/kullanici(?:\s+(.+))?$"))
+@once_per_command("kullanici")
 async def admin_kullanici_handler(event):
     config = load_config() or {}
     admin_chat_id = config.get("admin_id", ADMIN_ID)
@@ -1268,6 +1288,7 @@ async def admin_kullanici_handler(event):
     await event.respond(resp)
 
 @bot.on(events.NewMessage(pattern=r"(?i)^/siparisler$"))
+@once_per_command("siparisler")
 async def admin_siparisler_handler(event):
     config = load_config() or {}
     admin_chat_id = config.get("admin_id", ADMIN_ID)
@@ -1307,6 +1328,7 @@ async def admin_siparisler_handler(event):
     await event.respond("\n\n".join(lines))
 
 @bot.on(events.NewMessage(pattern=r"(?i)^/bakiye_ekle\s+(\d+)\s+([\d\.,]+)$"))
+@once_per_command("bakiye_ekle")
 async def admin_bakiye_ekle_handler(event):
     config = load_config() or {}
     admin_chat_id = config.get("admin_id", ADMIN_ID)

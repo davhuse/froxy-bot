@@ -4,6 +4,7 @@ import logging
 import re
 import asyncio
 import time
+from functools import wraps
 import urllib.request
 from telethon import TelegramClient, events, Button
 from telethon.errors import MessageNotModifiedError
@@ -65,13 +66,25 @@ async def async_claim_event(event, scope):
     loop = asyncio.get_event_loop()
     try:
         result = await loop.run_in_executor(
-            None, firestore_helper.claim_remote_document, doc_id, fields
+            None, firestore_helper.claim_document, doc_id, fields
         )
         if result is False:
             return False
     except Exception:
         pass
     return True
+
+
+def once_per_command(command):
+    """Ensure a command update produces one reply across all workers."""
+    def decorator(handler):
+        @wraps(handler)
+        async def wrapped(event, *args, **kwargs):
+            if not await async_claim_event(event, f"froxy_cmd_{command}"):
+                return
+            return await handler(event, *args, **kwargs)
+        return wrapped
+    return decorator
 
 
 _FROXY_PROD_CLAIMS = set()
@@ -509,6 +522,7 @@ async def start_handler(event):
         await show_main_menu(event, user_id)
 
 @bot.on(events.NewMessage(pattern=r'/lang|/dil'))
+@once_per_command("lang")
 async def lang_cmd_handler(event):
     user_id = event.sender_id
     user_states[user_id] = None

@@ -1,4 +1,5 @@
 import ast
+import json
 from pathlib import Path
 import unittest
 
@@ -25,6 +26,10 @@ class LisansArenaBotGuardTests(unittest.TestCase):
             "draws_handler": "cekilis",
             "settings_handler": "ayarlar_dil",
             "help_handler": "yardim",
+            "broadcast_handler": "toplumesaj",
+            "la_my_id_handler": "myid",
+            "admin_la_kullanici_handler": "kullanici",
+            "admin_la_bakiye_ekle_handler": "bakiye_ekle",
         }
         functions = {
             node.name: node
@@ -59,7 +64,17 @@ class LisansArenaBotGuardTests(unittest.TestCase):
         self.assertIn('load_la_users', SOURCE)
         self.assertIn('save_la_users', SOURCE)
 
+    def test_welcome_catalog_uses_every_mini_app_product_and_price(self):
+        products = json.loads(
+            Path("miniapp_lisansarena/products_db.json").read_text(encoding="utf-8")
+        )
+        self.assertTrue(products)
+        self.assertTrue(all(product.get("title") for product in products))
+        self.assertTrue(all(product.get("price") or product.get("price_cents") is not None for product in products))
+        self.assertIn("current_product_catalog_messages()", SOURCE)
+        self.assertIn("load_la_products()", SOURCE)
+        self.assertIn("len(candidate) > 3500", SOURCE)
+
 
 if __name__ == "__main__":
     unittest.main()
-
