@@ -2948,15 +2948,14 @@ def froxy_product_reply(product, source="ad_account_dm", arm=""):
 
 
 def lisansarena_product_reply(product, source="ad_account_dm", arm=""):
-    """Use LisansArena's own catalog identity and direct Telegram bot CTA."""
-    pid = product.get("id", "")
-    bot_url = f"https://t.me/LisansArenaOnline/app?startapp=p_{pid}" if pid else "https://t.me/LisansArenaOnline/app"
-    
+    """Clean LisansArena product info, price, and instructions to buy from @LisansArenaBot."""
+    price = product.get("price") or "Ürün sayfasında"
     reply = (
         f"📦 **{product['title']}**\n"
-        f"💳 Fiyat: {product.get('price') or 'Ürün sayfasında'}\n"
-        f"⚡ 7/24 Anında Otomatik Teslimat · Güvenli 3D Ödeme\n\n"
-        f"🛍️ [Telegram'da Mağazayı Aç ve Satın Al]({bot_url})"
+        f"💳 Fiyat: **{price}**\n"
+        f"⚡ 7/24 Anında Otomatik Teslimat · 3D Güvenli Ödeme\n\n"
+        f"🤖 Sipariş vermek ve anında satın almak için botumuzdan işlem yapabilirsiniz:\n"
+        f"👉 @LisansArenaBot"
     )
     return reply
 
@@ -3220,12 +3219,23 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                     else lisansarena_product_reply(matched_products[0])
                 )
                 matched_desc = matched_products[0]['title']
+            elif is_lisansarena:
+                lines = ["🔍 **LisansArena Güncel Seçenekler ve Fiyatlar:**\n"]
+                for p in matched_products[:3]:
+                    lines.append(f"• **{p['title']}** — **{p.get('price', '')}**")
+                lines.append(
+                    "\n🤖 **Nasıl Satın Alınır?**\n"
+                    "Sipariş vermek ve anında teslimatla satın almak için botumuza giriş yapabilirsiniz:\n"
+                    "👉 @LisansArenaBot"
+                )
+                reply_text = "\n".join(lines)
+                matched_desc = ", ".join(p['title'] for p in matched_products)
             else:
                 lines = ["🔍 **Uygun seçenekler:**"]
                 for p in matched_products[:3]:
                     p = apply_froxy_price_overrides(p) if is_froxy else p
                     target = listing_url(p) if is_froxy else purchase_url(p, brand_name, "ad_account_dm")
-                    button_text = "Ürünü İncele ve Satın Al" if is_lisansarena else "Hemen Satın Al"
+                    button_text = "Hemen Satın Al"
                     lines.append(f"• **{p['title']}** — {p['price']}\n  [{button_text}]({target})")
                 reply_text = "\n".join(lines)
                 matched_desc = ", ".join(p['title'] for p in matched_products)
@@ -3260,14 +3270,12 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                 print(f"⏭️ [{client_name}] Önceki ürün kartı bulundu; takip mesajı panele bırakıldı.")
                 return
             reply_text = (
-                "Merhaba 👋 LisansArena mağazamıza hoş geldiniz!\n\n"
-                "Tüm güncel ürünlerimizi, lisanslarımızı ve fiyatlarımızı Telegram mağazamızdan "
-                "inceleyebilir ve anında satın alabilirsiniz:\n\n"
-                "🛍️ [Telegram Mağazasını Aç](https://t.me/LisansArenaOnline/app)\n"
-                "🤖 Bot: @LisansArenaOnline\n\n"
-                "Belirli bir ürün arıyorsanız adını yazabilirsiniz (Örn: Netflix, Spotify, ChatGPT, Canva)."
+                "Merhaba 👋 LisansArena dijital lisans ve ürün mağazamıza hoş geldiniz!\n\n"
+                "Tüm güncel lisans, hesap ve üyelik fiyatlarımızı botumuz üzerinden inceleyebilir ve 7/24 anında satın alabilirsiniz:\n\n"
+                "🤖 Sipariş ve Satın Alma Botu: @LisansArenaBot\n\n"
+                "Aradığınız ürünün adını yazarsanız güncel fiyatını hemen iletebilirim (Örn: Netflix, Spotify, Canva, Windows, CapCut)."
             )
-            matched_desc = "LisansArena mağaza yönlendirmesi"
+            matched_desc = "LisansArena bot yönlendirmesi"
         else:
             if not has_explicit_sales_intent(event.raw_text):
                 print(f"[{client_name}] DM satış niyeti içermiyor, AI yanıtı atlandı.")
