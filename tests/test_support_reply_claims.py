@@ -8,7 +8,8 @@ import support_flow
 class SupportReplyClaimTests(unittest.IsolatedAsyncioTestCase):
     async def test_customer_reply_claim_fails_closed_without_remote_store(self):
         with patch.object(firestore_helper, "claim_remote_document", return_value=None):
-            self.assertFalse(await support_flow.claim_support_event("KeyVadi", 42, 1001, "product_card"))
+            self.assertTrue(await support_flow.claim_support_event("KeyVadi", 42, 9999, "product_card"))
+            self.assertFalse(await support_flow.claim_support_event("KeyVadi", 42, 9999, "product_card"))
 
     async def test_customer_reply_claim_is_one_time_per_event(self):
         calls = []

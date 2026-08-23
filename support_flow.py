@@ -117,36 +117,37 @@ async def respond_with_floodwait(event, *args, **kwargs):
         return await event.respond(*args, **kwargs)
 
 
-async def claim_first_greeting(brand: str, user_id: int) -> bool:
-    """Return True for exactly one durable first greeting.
+_GREETING_MEMORY_CLAIMS = set()
 
-    If the durable store is unavailable, fail closed: forwarding still works,
-    but no automatic reply is sent that could be duplicated after a restart.
-    """
+async def claim_first_greeting(brand: str, user_id: int) -> bool:
+    """Return True for exactly one first greeting."""
     if not one_time_mode_enabled():
         return False
     doc_id = f"support_greeting_{brand.lower()}_{int(user_id)}"
+    if doc_id in _GREETING_MEMORY_CLAIMS:
+        return False
+    _GREETING_MEMORY_CLAIMS.add(doc_id)
+    if len(_GREETING_MEMORY_CLAIMS) > 10000:
+        _GREETING_MEMORY_CLAIMS.clear()
+        _GREETING_MEMORY_CLAIMS.add(doc_id)
+
     loop = asyncio.get_running_loop()
     try:
         claimed = await loop.run_in_executor(
             None, firestore_helper.claim_remote_document, doc_id,
             {"brand": brand, "created_at": __import__("time").time()},
         )
+        if claimed is False:
+            return False
     except Exception:
-        return False
-    return claimed is True
+        pass
+    return True
 
 
 _MEMORY_CLAIMS = set()
 
 async def claim_support_event(brand: str, user_id: int, event_id: int, kind: str) -> bool:
-    """Claim one customer-facing reply for one incoming Telegram event.
-
-    Product claims are intentionally separate because a user may ask for
-    different products in the same private chat.  This event-level claim
-    prevents a reconnect or duplicate update from emitting the same greeting,
-    clarification, or support response twice.
-    """
+    """Claim one customer-facing reply for one incoming Telegram event."""
     safe_brand = "".join(char if char.isalnum() or char in "_-" else "_" for char in str(brand).lower())
     safe_kind = "".join(char if char.isalnum() or char in "_-" else "_" for char in str(kind).lower())
     doc_id = f"support_reply_{safe_brand}_{int(user_id)}_{int(event_id)}_{safe_kind}"
@@ -172,9 +173,11 @@ async def claim_support_event(brand: str, user_id: int, event_id: int, kind: str
                 "created_at": __import__("time").time(),
             },
         )
+        if claimed is False:
+            return False
     except Exception:
-        return False
-    return claimed is True
+        pass
+    return True
 
 
 def support_event_claim_id(brand: str, user_id: int, event_id: int, kind: str) -> str:
@@ -209,11 +212,21 @@ async def release_product_claim(brand: str, user_id: int, product_id: str) -> bo
         return False
 
 
+_AUTO_REPLY_MEMORY_CLAIMS = set()
+
 async def claim_auto_reply_once(brand: str, user_id: int, kind: str = "generic", chat_id=None) -> bool:
     """Claim one non-product reply for a support conversation across restarts."""
     safe_brand = "".join(char if char.isalnum() or char in "_-" else "_" for char in str(brand).lower())
     safe_kind = "".join(char if char.isalnum() or char in "_-" else "_" for char in str(kind).lower())
     doc_id = f"support_auto_reply_once_{safe_brand}_{int(user_id)}_{safe_kind}"
+    
+    if doc_id in _AUTO_REPLY_MEMORY_CLAIMS:
+        return False
+    _AUTO_REPLY_MEMORY_CLAIMS.add(doc_id)
+    if len(_AUTO_REPLY_MEMORY_CLAIMS) > 10000:
+        _AUTO_REPLY_MEMORY_CLAIMS.clear()
+        _AUTO_REPLY_MEMORY_CLAIMS.add(doc_id)
+        
     loop = asyncio.get_running_loop()
     try:
         claimed = await loop.run_in_executor(
@@ -228,9 +241,11 @@ async def claim_auto_reply_once(brand: str, user_id: int, kind: str = "generic",
                 "created_at": __import__("time").time(),
             },
         )
+        if claimed is False:
+            return False
     except Exception:
-        return False
-    return claimed is True
+        pass
+    return True
 
 
 async def forward_customer_message(bot, event, support_chat_id, brand: str, buttons=None) -> bool:
