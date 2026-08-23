@@ -1172,6 +1172,21 @@ async def broadcast_handler(event):
         
     await event.respond(f"✅ **Toplu Mesaj Tamamlandı!**\n\nBaşarıyla Gönderilen: {success_count}\nBaşarısız (Botu silen/engelleyenler): {fail_count}")
 
+@bot.on(events.NewMessage(pattern=r"(?i)^/(?:id|myid|kimim)$"))
+async def my_id_handler(event):
+    sender = await event.get_sender()
+    uname = f"@{sender.username}" if getattr(sender, "username", None) else "Belirtilmemiş"
+    first = getattr(sender, "first_name", "") or ""
+    last = getattr(sender, "last_name", "") or ""
+    full_name = f"{first} {last}".strip() or "Kullanıcı"
+    await event.respond(
+        f"🆔 **Sizin Telegram Bilgileriniz:**\n\n"
+        f"👤 **İsim:** {full_name}\n"
+        f"💬 **Kullanıcı Adı:** {uname}\n"
+        f"🔢 **Telegram ID:** `{event.sender_id}`\n\n"
+        f"*(Admin olmak için bu ID numarasını sisteme tanımlatabilirsiniz.)*"
+    )
+
 @bot.on(events.NewMessage(pattern=r"(?i)^/kullanici(?:\s+(.+))?$"))
 async def admin_kullanici_handler(event):
     config = load_config() or {}
