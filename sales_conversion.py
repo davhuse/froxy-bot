@@ -21,9 +21,7 @@ CATALOG_FILES = {
     "froxy": ROOT / "froxy_shopier_links.json",
     "lisansarena": ROOT / "miniapp_lisansarena" / "products_db.json",
 }
-AUXILIARY_CATALOG_FILES = {
-    "lisansarena": ROOT / "lisansarena_catalog_additions.json",
-}
+AUXILIARY_CATALOG_FILES = {}
 SHOPIER_HOSTS = {"shopier.com", "www.shopier.com"}
 PUBLIC_BASE_URL = (
     os.environ.get("PUBLIC_BASE_URL")

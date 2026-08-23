@@ -3251,8 +3251,6 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
             print(f"⏭️ [{client_name}] Ürün sonrası takip mesajı yalnızca panele aktarıldı.")
             return
         elif is_lisansarena and has_explicit_sales_intent(event.raw_text):
-            # A restart may have cleared the in-memory sales context. Durable
-            # product claims still identify an existing sales conversation.
             if await customer_has_claimed_product(client_name, sender_id, products):
                 record_event(
                     "human_handoff", client_name, source="telegram_private",
@@ -3262,18 +3260,36 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                 print(f"⏭️ [{client_name}] Önceki ürün kartı bulundu; takip mesajı panele bırakıldı.")
                 return
             reply_text = (
-                "Aradığınız ürünü doğru bulabilmem için ürün adını ve varsa süre, "
-                "kişisel/ortak tercihinizi yazar mısınız?"
+                "Merhaba 👋 LisansArena mağazamıza hoş geldiniz!\n\n"
+                "Tüm güncel ürünlerimizi, lisanslarımızı ve fiyatlarımızı Telegram mağazamızdan "
+                "inceleyebilir ve anında satın alabilirsiniz:\n\n"
+                "🛍️ [Telegram Mağazasını Aç](https://t.me/LisansArenaOnline/app)\n"
+                "🤖 Bot: @LisansArenaOnline\n\n"
+                "Belirli bir ürün arıyorsanız adını yazabilirsiniz (Örn: Netflix, Spotify, ChatGPT, Canva)."
             )
-            matched_desc = "LisansArena destek yönlendirmesi"
+            matched_desc = "LisansArena mağaza yönlendirmesi"
         else:
             if not has_explicit_sales_intent(event.raw_text):
                 print(f"[{client_name}] DM satış niyeti içermiyor, AI yanıtı atlandı.")
                 return
-            reply_text = (
-                "Aradığınız ürünü doğru bulabilmem için ürün adını ve varsa "
-                "kişisel/ortak ya da süre tercihinizi yazar mısınız?"
-            )
+            if is_keyvadi:
+                reply_text = (
+                    "Merhaba 👋 KeyVadi dijital lisans mağazamıza hoş geldiniz!\n\n"
+                    "Tüm güncel ürün ve fiyatlarımızı incelemek için:\n"
+                    "🛍️ [KeyVadi Mağazasını Aç](https://t.me/KeyVadiSatisBot)\n\n"
+                    "Aradığınız ürünün adını yazabilirsiniz (Örn: Canva, Office, Windows, YouTube)."
+                )
+            elif is_froxy:
+                reply_text = (
+                    "Merhaba 👋 Froxy AI paneline hoş geldiniz!\n\n"
+                    "Tüm paket ve modelleri incelemek için: @FroxyDestekBOT\n"
+                    "Aradığınız ürün veya model adını yazabilirsiniz."
+                )
+            else:
+                reply_text = (
+                    "Aradığınız ürünü doğru bulabilmem için ürün adını ve varsa "
+                    "kişisel/ortak ya da süre tercihinizi yazar mısınız?"
+                )
             matched_desc = "İnsan desteği gerekli"
             record_event(
                 "human_handoff", client_name, source="telegram_private",
