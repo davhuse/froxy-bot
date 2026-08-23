@@ -27,8 +27,6 @@ from sales_conversion import (
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO,
-    # app.py already redirects this process' stdout to froxy_destek_log.txt.
-    # A FileHandler here would write every record to the same file twice.
     handlers=[logging.StreamHandler()]
 )
 logger = logging.getLogger("FroxyDestekBot")
@@ -50,17 +48,30 @@ async def safe_event_edit(event, *args, **kwargs):
         logger.debug("Ignored an identical callback edit for user %s.", event.sender_id)
         return None
 
+_DESTEK_MEMORY_CLAIMS = set()
+
 async def async_claim_event(event, scope):
     message_id = getattr(event.message, "id", None)
     if not message_id or event.chat_id is None:
         return True
     doc_id = f"dm_event_{scope}_{event.chat_id}_{message_id}"
+    if doc_id in _DESTEK_MEMORY_CLAIMS:
+        return False
+    _DESTEK_MEMORY_CLAIMS.add(doc_id)
+    if len(_DESTEK_MEMORY_CLAIMS) > 10000:
+        _DESTEK_MEMORY_CLAIMS.clear()
+        _DESTEK_MEMORY_CLAIMS.add(doc_id)
     fields = {"scope": scope, "chat_id": event.chat_id, "message_id": message_id}
     loop = asyncio.get_event_loop()
-    result = await loop.run_in_executor(
-        None, firestore_helper.claim_remote_document, doc_id, fields
-    )
-    return result is True
+    try:
+        result = await loop.run_in_executor(
+            None, firestore_helper.claim_remote_document, doc_id, fields
+        )
+        if result is False:
+            return False
+    except Exception:
+        pass
+    return True
 
 
 async def claim_product_reply(user_id, product):

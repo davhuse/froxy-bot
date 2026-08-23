@@ -59,8 +59,13 @@ async def async_claim_event(event, scope):
         _FROXY_MEMORY_CLAIMS.clear()
         _FROXY_MEMORY_CLAIMS.add(doc_id)
         
-    result = await async_run_claim(doc_id, {"scope": scope, "chat_id": event.chat_id, "message_id": getattr(event.message, 'id', None)})
-    return result is True
+    try:
+        result = await async_run_claim(doc_id, {"scope": scope, "chat_id": event.chat_id, "message_id": getattr(event.message, 'id', None)})
+        if result is False:
+            return False
+    except Exception:
+        pass
+    return True
 
 async def async_release_event_claim(event, scope):
     doc_id = get_event_claim_doc_id(event, scope)
