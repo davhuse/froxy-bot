@@ -74,18 +74,32 @@ async def async_claim_event(event, scope):
     return True
 
 
+_FROXY_PROD_CLAIMS = set()
+
 async def claim_product_reply(user_id, product):
     """Persist a one-product-per-private-chat claim across restarts."""
     product_id = str(product.get("id") or product.get("url") or product.get("title") or "product")
     safe_id = re.sub(r"[^a-zA-Z0-9_-]+", "_", product_id)[:100]
+    doc_id = f"support_product_once_froxy_{int(user_id)}_{safe_id}"
+    if doc_id in _FROXY_PROD_CLAIMS:
+        return False
+    _FROXY_PROD_CLAIMS.add(doc_id)
+    if len(_FROXY_PROD_CLAIMS) > 10000:
+        _FROXY_PROD_CLAIMS.clear()
+        _FROXY_PROD_CLAIMS.add(doc_id)
     loop = asyncio.get_event_loop()
-    result = await loop.run_in_executor(
-        None,
-        firestore_helper.claim_remote_document,
-        f"support_product_once_froxy_{int(user_id)}_{safe_id}",
-        {"brand": "froxy", "user_id": int(user_id), "product_id": product_id},
-    )
-    return result is True
+    try:
+        result = await loop.run_in_executor(
+            None,
+            firestore_helper.claim_remote_document,
+            doc_id,
+            {"brand": "froxy", "user_id": int(user_id), "product_id": product_id},
+        )
+        if result is False:
+            return False
+    except Exception:
+        pass
+    return True
 
 API_ID = int(os.environ.get("TELEGRAM_API_ID", "0") or 0)
 API_HASH = os.environ.get("TELEGRAM_API_HASH", "").strip()

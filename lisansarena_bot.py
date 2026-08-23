@@ -254,13 +254,18 @@ async def claim_product_reply(user_id: int, product: dict[str, Any]) -> bool:
         _LA_MEMORY_CLAIMS.clear()
         _LA_MEMORY_CLAIMS.add(doc_id)
         
-    claimed = await asyncio.to_thread(
-        firestore_helper.claim_remote_document,
-        doc_id,
-        {"brand": "lisansarena", "user_id": int(user_id), "product_id": product_id},
-        True,
-    )
-    return claimed is True
+    try:
+        claimed = await asyncio.to_thread(
+            firestore_helper.claim_remote_document,
+            doc_id,
+            {"brand": "lisansarena", "user_id": int(user_id), "product_id": product_id},
+            True,
+        )
+        if claimed is False:
+            return False
+    except Exception:
+        pass
+    return True
 
 
 async def send_product_card(event, matched_products: list[dict[str, Any]]) -> bool:
@@ -740,7 +745,8 @@ async def help_handler(event):
 @bot.on(events.CallbackQuery(pattern=rb"^menu_(products|balance|orders|profile)$"))
 async def menu_callback(event):
     await event.answer()
-    name = event.pattern_match.group(1).decode()
+    raw = event.pattern_match.group(1)
+    name = raw.decode() if isinstance(raw, bytes) else str(raw)
     if not await claim_event_locally_and_remotely(event, f"cb_menu_{name}"):
         return
     if name == "products":
@@ -756,7 +762,8 @@ async def menu_callback(event):
 @bot.on(events.CallbackQuery(pattern=rb"^ticket_(support|request|refund)$"))
 async def ticket_callback(event):
     await event.answer()
-    action = event.pattern_match.group(1).decode()
+    raw = event.pattern_match.group(1)
+    action = raw.decode() if isinstance(raw, bytes) else str(raw)
     if not await claim_event_locally_and_remotely(event, f"cb_ticket_{action}"):
         return
     await begin_ticket(event, action)
@@ -765,7 +772,8 @@ async def ticket_callback(event):
 @bot.on(events.CallbackQuery(pattern=rb"^lang_(tr|en)$"))
 async def language_callback(event):
     await event.answer()
-    language = event.pattern_match.group(1).decode()
+    raw = event.pattern_match.group(1)
+    language = raw.decode() if isinstance(raw, bytes) else str(raw)
     if not await claim_event_locally_and_remotely(event, f"cb_lang_{language}"):
         return
     msg = "Dil tercihiniz Türkçe olarak ayarlandı." if language == "tr" else "Language preference saved as English."

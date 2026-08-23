@@ -77,15 +77,29 @@ async def async_run_claim(doc_id, fields):
     return await loop.run_in_executor(None, firestore_helper.claim_remote_document, doc_id, fields)
 
 
+_KEYVADI_PROD_CLAIMS = set()
+
 async def claim_product_reply(user_id, product):
     """Persist a one-product-per-private-chat claim across restarts."""
     product_id = str(product.get("id") or product.get("url") or product.get("title") or "product")
     safe_id = re.sub(r"[^a-zA-Z0-9_-]+", "_", product_id)[:100]
-    result = await async_run_claim(
-        f"support_product_once_keyvadi_{int(user_id)}_{safe_id}",
-        {"brand": "keyvadi", "user_id": int(user_id), "product_id": product_id},
-    )
-    return result is True
+    doc_id = f"support_product_once_keyvadi_{int(user_id)}_{safe_id}"
+    if doc_id in _KEYVADI_PROD_CLAIMS:
+        return False
+    _KEYVADI_PROD_CLAIMS.add(doc_id)
+    if len(_KEYVADI_PROD_CLAIMS) > 10000:
+        _KEYVADI_PROD_CLAIMS.clear()
+        _KEYVADI_PROD_CLAIMS.add(doc_id)
+    try:
+        result = await async_run_claim(
+            doc_id,
+            {"brand": "keyvadi", "user_id": int(user_id), "product_id": product_id},
+        )
+        if result is False:
+            return False
+    except Exception:
+        pass
+    return True
 
 PRODUCT_REPLY_COOLDOWN_SECONDS = 15 * 60
 PRODUCT_REPLY_COOLDOWNS = {}
