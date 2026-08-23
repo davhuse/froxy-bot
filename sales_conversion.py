@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parent
 CATALOG_FILES = {
     "keyvadi": ROOT / "keyvadi_shopier_links.json",
     "froxy": ROOT / "froxy_shopier_links.json",
-    "lisansarena": ROOT / "lisansarena_shopier_links.json",
+    "lisansarena": ROOT / "miniapp_lisansarena" / "products_db.json",
 }
 AUXILIARY_CATALOG_FILES = {
     "lisansarena": ROOT / "lisansarena_catalog_additions.json",

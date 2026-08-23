@@ -441,6 +441,9 @@ MANUALLY_EXCLUDED_AD_GROUPS = {
     "sultanbeyliikinciel0",
     "reklamonliene",
     "referansreklamyardimlasma",
+    "kocaticaretforumofficial",
+    "ticaretforumofficial",
+    "kocaticaret",
     # Kullanicinin 26 Temmuz 2026'da kesilmesini istedigi gruplar
     "ilanticaret",
     "referansreklam1",
@@ -2915,24 +2918,30 @@ def keyvadi_product_reply(product, source="ad_account_dm", arm=""):
     pid = product.get("id", "")
     bot_url = f"https://t.me/KeyVadiSatisBot/app?startapp=p_{pid}"
     target = purchase_url(product, "keyvadi", source, arm)
-    return (
+    
+    reply = (
         f"📌 **{product['title']}**\n"
         f"💰 Fiyat: {product.get('price') or 'Ürün sayfasında'}\n"
         f"⚡ 7/24 Anında Teslimat · 3D Secure Güvencesi\n\n"
-        f"🛍️ [Telegram'da Mağazayı Aç]({bot_url})\n"
-        f"🛒 [Direkt Ödeme Sayfası]({target})"
+        f"🛍️ [Telegram'da Mağazayı Aç]({bot_url})"
     )
+    if target:
+        reply += f"\n🛒 [Direkt Ödeme Sayfası]({target})"
+    return reply
 
 
 def froxy_product_reply(product, source="ad_account_dm", arm=""):
     """Return the exact Froxy Shopier product listing."""
     product = apply_froxy_price_overrides(product)
     target = listing_url(product)
-    return (
+    
+    reply = (
         f"📌 **{product['title']}**\n"
-        f"💰 Fiyat: {product.get('price', 'Ürün sayfasında')}\n"
-        f"🛒 [Hemen Satın Al]({target})"
+        f"💰 Fiyat: {product.get('price', 'Ürün sayfasında')}"
     )
+    if target:
+        reply += f"\n🛒 [Hemen Satın Al]({target})"
+    return reply
 
 
 def lisansarena_product_reply(product, source="ad_account_dm", arm=""):
@@ -2940,13 +2949,16 @@ def lisansarena_product_reply(product, source="ad_account_dm", arm=""):
     pid = product.get("id", "")
     bot_url = f"https://t.me/LisansArenaOnline/app?startapp=p_{pid}"
     target = purchase_url(product, "lisansarena", source, arm)
-    return (
+    
+    reply = (
         f"📦 **{product['title']}**\n"
         f"💳 Fiyat: {product.get('price') or 'Ürün sayfasında'}\n"
         f"⚡ 7/24 Anında Otomatik Teslimat · Güvenli 3D Ödeme\n\n"
-        f"🛍️ [Telegram'da Mağazayı Aç]({bot_url})\n"
-        f"🛒 [Direkt Ödeme Sayfası]({target})"
+        f"🛍️ [Telegram'da Mağazayı Aç]({bot_url})"
     )
+    if target:
+        reply += f"\n🛒 [Direkt Ödeme Sayfası]({target})"
+    return reply
 
 
 def duplicate_product_reply(product):
