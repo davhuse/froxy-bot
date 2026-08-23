@@ -444,6 +444,9 @@ MANUALLY_EXCLUDED_AD_GROUPS = {
     "kocaticaretforumofficial",
     "ticaretforumofficial",
     "kocaticaret",
+    "kuponceksatis",
+    "kuponceksatisi",
+    "kuponceksatistv",
     # Kullanicinin 26 Temmuz 2026'da kesilmesini istedigi gruplar
     "ilanticaret",
     "referansreklam1",
@@ -4035,12 +4038,10 @@ async def main():
                     render_ad_flag = os.environ.get("BOT_AD_ENABLED", "1").strip().lower()
                     if (
                         not cfg_chk.get("ad_bot_running", True)
-                        and not is_render_runtime
-                    ) or (
-                        is_render_runtime
-                        and render_ad_flag in {"0", "false", "no", "off"}
+                        or os.path.exists("ad_worker.disabled")
+                        or render_ad_flag in {"0", "false", "no", "off"}
                     ):
-                        print(f"🛑 [{client_name}] Panelde Reklam Botu kapatıldı (ad_bot_running=False). Döngü sonlandırılıyor.")
+                        print(f"🛑 [{client_name}] Reklam Botu durduruldu (ad_bot_running=False / ad_worker.disabled). Döngü sonlandırılıyor.")
                         break
                 except Exception:
                     pass
