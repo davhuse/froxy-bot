@@ -1210,7 +1210,7 @@ async def admin_kullanici_handler(event):
         target_user = users[query]
     else:
         for uid, udata in users.items():
-            if str(uid) == clean_q or (udata.get("username") or "").lower() == clean_q:
+            if str(uid) == clean_q or (udata.get("username") or "").lower() == clean_q or (udata.get("email") or "").lower() == clean_q:
                 matched_uid = uid
                 target_user = udata
                 break
