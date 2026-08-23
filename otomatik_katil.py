@@ -2945,19 +2945,16 @@ def froxy_product_reply(product, source="ad_account_dm", arm=""):
 
 
 def lisansarena_product_reply(product, source="ad_account_dm", arm=""):
-    """Use LisansArena's own catalog identity and purchase CTA."""
+    """Use LisansArena's own catalog identity and direct Telegram bot CTA."""
     pid = product.get("id", "")
-    bot_url = f"https://t.me/LisansArenaOnline/app?startapp=p_{pid}"
-    target = purchase_url(product, "lisansarena", source, arm)
+    bot_url = f"https://t.me/LisansArenaOnline/app?startapp=p_{pid}" if pid else "https://t.me/LisansArenaOnline/app"
     
     reply = (
         f"📦 **{product['title']}**\n"
         f"💳 Fiyat: {product.get('price') or 'Ürün sayfasında'}\n"
         f"⚡ 7/24 Anında Otomatik Teslimat · Güvenli 3D Ödeme\n\n"
-        f"🛍️ [Telegram'da Mağazayı Aç]({bot_url})"
+        f"🛍️ [Telegram'da Mağazayı Aç ve Satın Al]({bot_url})"
     )
-    if target:
-        reply += f"\n🛒 [Direkt Ödeme Sayfası]({target})"
     return reply
 
 
@@ -4587,6 +4584,11 @@ async def main():
                     sent_message = None
                     try:
                         # Mesaj rotasyonu: bu grup için farklı mesaj seç
+                        is_keyvadi, is_lisansarena, is_froxy = account_flags(client_name)
+                        brand_default_bot = (
+                            "@LisansArenaBot" if is_lisansarena
+                            else ("@KeyVadiSatisBot" if is_keyvadi else "@FroxyDestekBOT")
+                        )
                         if available_files:
                             chosen_file = chosen_file_override or pick_message_for_group(
                                 grup_name, available_files, msg_history
@@ -4597,11 +4599,9 @@ async def main():
                                 with open(chosen_file, 'r', encoding='utf-8') as fm:
                                     base_msg = fm.read()
                             except:
-                                base_msg = "Merhaba! Detaylar için @FroxyDestekBOT"
+                                base_msg = f"Merhaba! Detaylar için {brand_default_bot}"
                         else:
-                            base_msg = "Merhaba! Detaylar için @FroxyDestekBOT"
-                        
-                        is_keyvadi, is_lisansarena, is_froxy = account_flags(client_name)
+                            base_msg = f"Merhaba! Detaylar için {brand_default_bot}"
 
                         msg = base_msg
                         is_short_group = is_short_ad_group(grup_name, entity)

@@ -335,6 +335,9 @@ def is_allowed_internal_purchase_url(url: str) -> bool:
 
 def purchase_target_url(brand: str, product: dict) -> str:
     """Return the product-specific Shopier or Mini App purchase target."""
+    if str(brand).lower() == "lisansarena":
+        pid = product.get("id", "")
+        return f"https://t.me/LisansArenaOnline/app?startapp=p_{pid}" if pid else "https://t.me/LisansArenaOnline/app"
     return str(product.get("url") or product.get("shopier_url") or "")
 
 
@@ -463,6 +466,9 @@ def parse_purchase_token(token: str) -> dict | None:
 
 
 def purchase_url(product: dict, brand: str, source: str, arm: str = "") -> str:
+    if str(brand).lower() == "lisansarena":
+        pid = product.get("id", "")
+        return f"https://t.me/LisansArenaOnline/app?startapp=p_{pid}" if pid else "https://t.me/LisansArenaOnline/app"
     token = make_purchase_token(
         brand, product.get("id", ""), source, arm, product.get("_cta_id", "")
     )
