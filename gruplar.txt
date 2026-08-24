@@ -8,6 +8,8 @@ letgoilanlari
 kuponhesapsatis
 kuponsatisgrup
 kuponcekkodsatis
+indirim_kodu
+kuponkodsatisgrup
 tahaaslan11
 indirimkodusatis
 alimsatimmerkezii
