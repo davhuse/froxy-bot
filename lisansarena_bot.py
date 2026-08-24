@@ -206,7 +206,7 @@ async def claim_event_locally_and_remotely(event, action_name: str) -> bool:
             {"brand": "LisansArena", "user_id": int(sender_id), "event_id": int(event_id), "action": action_name},
             True,
         )
-        if claimed is False:
+        if not claimed:
             return False
     except Exception:
         pass

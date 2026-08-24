@@ -134,10 +134,10 @@ async def claim_first_greeting(brand: str, user_id: int) -> bool:
     loop = asyncio.get_running_loop()
     try:
         claimed = await loop.run_in_executor(
-            None, firestore_helper.claim_remote_document, doc_id,
+            None, firestore_helper.claim_document, doc_id,
             {"brand": brand, "created_at": __import__("time").time()},
         )
-        if claimed is False:
+        if not claimed:
             return False
     except Exception:
         pass
@@ -163,7 +163,7 @@ async def claim_support_event(brand: str, user_id: int, event_id: int, kind: str
     try:
         claimed = await loop.run_in_executor(
             None,
-            firestore_helper.claim_remote_document,
+            firestore_helper.claim_document,
             doc_id,
             {
                 "brand": brand,
@@ -173,7 +173,7 @@ async def claim_support_event(brand: str, user_id: int, event_id: int, kind: str
                 "created_at": __import__("time").time(),
             },
         )
-        if claimed is False:
+        if not claimed:
             return False
     except Exception:
         pass
@@ -231,7 +231,7 @@ async def claim_auto_reply_once(brand: str, user_id: int, kind: str = "generic",
     try:
         claimed = await loop.run_in_executor(
             None,
-            firestore_helper.claim_remote_document,
+            firestore_helper.claim_document,
             doc_id,
             {
                 "brand": brand,
@@ -241,7 +241,7 @@ async def claim_auto_reply_once(brand: str, user_id: int, kind: str = "generic",
                 "created_at": __import__("time").time(),
             },
         )
-        if claimed is False:
+        if not claimed:
             return False
     except Exception:
         pass

@@ -2296,6 +2296,20 @@ _started_lock = threading.Lock()
 _bg_threads_started = False
 
 def start_background_threads():
+    import os
+    global _watchdog_lock_fd
+    try:
+        if os.name == "nt":
+            import msvcrt
+            _watchdog_lock_fd = open("watchdog.lock", "w")
+            msvcrt.locking(_watchdog_lock_fd.fileno(), msvcrt.LK_NBLCK, 1)
+        else:
+            import fcntl
+            _watchdog_lock_fd = open("watchdog.lock", "w")
+            fcntl.flock(_watchdog_lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except Exception:
+        print("[App] Another worker is running the watchdog.")
+        return
     global _bg_threads_started
     with _started_lock:
         if not _bg_threads_started:
@@ -2363,3 +2377,4 @@ if mounts:
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
+
