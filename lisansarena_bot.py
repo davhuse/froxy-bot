@@ -208,9 +208,9 @@ async def claim_event_locally_and_remotely(event, action_name: str) -> bool:
         )
         if not claimed:
             return False
-    except Exception:
-        pass
-
+    except Exception as e:
+        print(f'Claim error: {e}')
+        return False
     return True
 
 

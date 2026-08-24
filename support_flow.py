@@ -139,8 +139,9 @@ async def claim_first_greeting(brand: str, user_id: int) -> bool:
         )
         if not claimed:
             return False
-    except Exception:
-        pass
+    except Exception as e:
+        print(f'Claim error: {e}')
+        return False
     return True
 
 
@@ -175,8 +176,9 @@ async def claim_support_event(brand: str, user_id: int, event_id: int, kind: str
         )
         if not claimed:
             return False
-    except Exception:
-        pass
+    except Exception as e:
+        print(f'Claim error: {e}')
+        return False
     return True
 
 
@@ -243,8 +245,9 @@ async def claim_auto_reply_once(brand: str, user_id: int, kind: str = "generic",
         )
         if not claimed:
             return False
-    except Exception:
-        pass
+    except Exception as e:
+        print(f'Claim error: {e}')
+        return False
     return True
 
 
