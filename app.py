@@ -17,12 +17,14 @@ try:
     import psutil
 except ImportError:  # Wasmer Edge/WASIX does not provide a psutil wheel.
     psutil = None
-import socket
 import hmac
 import base64
 import hashlib
 import atexit
 import signal
+import uuid
+import socket
+import firestore_helper
 from sales_metrics import record_event, summarize as summarize_sales
 from sales_conversion import catalog_refresh_status, cta_experiment_status, parse_purchase_token, product_by_id, purchase_target_url, refresh_configured_catalogs
 from blast_scheduler import load_blast_snapshot
@@ -468,7 +470,7 @@ def monitor_controlled_smoke(process, expected_account, expected_group):
             json.dump(result, handle, ensure_ascii=False, indent=2)
 
 # WATCHDOG SYSTEM: Keeps both bots running 24/7 unconditionally
-def bot_watchdog():
+def bot_watchdog(lease_owner=None):
     global ad_process, support_process, froxy_process, lisansarena_process
     if not bot_runtime_enabled():
         print("[Watchdog] BOT_RUNTIME_ENABLED=false; Telegram processes will not be started.")
@@ -478,6 +480,16 @@ def bot_watchdog():
     
     while True:
         try:
+            if lease_owner and firestore_helper.acquire_remote_lease(
+                "telegram_bot_cluster_v1", lease_owner, 60
+            ) is not True:
+                print("[Watchdog] Distributed Telegram ownership was lost; stopping local children.")
+                for owned_script in (
+                    "otomatik_katil.py", "froxy_bot.py",
+                    "froxy_destek_bot.py", "lisansarena_bot.py",
+                ):
+                    kill_process_by_script(owned_script)
+                return
             flags = subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
             env = os.environ.copy()
             env["PYTHONIOENCODING"] = "utf-8"
@@ -680,6 +692,27 @@ def bot_watchdog():
             print(f"⚠️ [Watchdog] Genel denetleme hatası: {e}")
             
         time.sleep(15)
+
+
+def bot_watchdog_owner_loop():
+    """Wait for and retain the single cross-deploy owner of all Telegram bots."""
+    owner = "%s:%s:%s" % (
+        os.environ.get("RENDER_INSTANCE_ID") or socket.gethostname(),
+        os.getpid(),
+        uuid.uuid4().hex,
+    )
+    while True:
+        claimed = firestore_helper.acquire_remote_lease(
+            "telegram_bot_cluster_v1", owner, 60
+        )
+        if claimed is True:
+            print("[Watchdog] This instance owns the distributed Telegram bot cluster.")
+            bot_watchdog(owner)
+        elif claimed is None:
+            print("[Watchdog] Durable ownership store unavailable; bots remain stopped (fail closed).")
+        else:
+            print("[Watchdog] Another deployment owns Telegram; waiting without starting bots.")
+        time.sleep(10)
 
 @app.route('/')
 def index():
@@ -2316,7 +2349,7 @@ def start_background_threads():
             _bg_threads_started = True
             if bot_runtime_enabled():
                 print("🚀 [App] Starting background bot watchdog & keep-alive threads...")
-                t = threading.Thread(target=bot_watchdog, daemon=True)
+                t = threading.Thread(target=bot_watchdog_owner_loop, daemon=True)
                 t.start()
             else:
                 print("🌐 [App] Web/static-only mode; Telegram watchdog is disabled.")

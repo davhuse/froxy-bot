@@ -162,8 +162,10 @@ def _value_to_firestore(value):
         return {"doubleValue": value}
     if value is None:
         return {"nullValue": None}
-    # Preserve the legacy storage format for lists/dicts so existing documents
-    # and bot readers do not silently change shape during the security rollout.
+    if isinstance(value, dict):
+        return {"mapValue": {"fields": _fields_to_firestore(value)}}
+    if isinstance(value, (list, tuple)):
+        return {"arrayValue": {"values": [_value_to_firestore(item) for item in value]}}
     return {"stringValue": str(value)}
 
 
@@ -182,6 +184,16 @@ def _value_from_firestore(value):
         return value["booleanValue"]
     if "nullValue" in value:
         return None
+    if "mapValue" in value:
+        return {
+            key: _value_from_firestore(item)
+            for key, item in value.get("mapValue", {}).get("fields", {}).items()
+        }
+    if "arrayValue" in value:
+        return [
+            _value_from_firestore(item)
+            for item in value.get("arrayValue", {}).get("values", [])
+        ]
     return None
 
 
@@ -400,3 +412,23 @@ def release_lease(doc_id, owner_id):
     if str(fields.get("owner_id", "")) != str(owner_id):
         return False
     return delete_document(doc_id, update_time=update_time)
+
+
+def acquire_remote_lease(doc_id, owner_id, ttl_seconds=120):
+    """Acquire a lease only from Firestore; never use ephemeral local state."""
+    if not remote_credentials_configured():
+        return None
+    now = int(time.time())
+    fields, update_time = get_document_with_meta(doc_id, quiet=True)
+    new_fields = {
+        "owner_id": owner_id,
+        "heartbeat_at": now,
+        "expires_at": now + int(ttl_seconds),
+    }
+    if fields is None:
+        return claim_remote_document(doc_id, new_fields, quiet=True)
+    current_owner = str(fields.get("owner_id", ""))
+    expires_at = int(fields.get("expires_at", 0) or 0)
+    if current_owner != str(owner_id) and expires_at > now:
+        return False
+    return compare_and_set_document(doc_id, new_fields, update_time, quiet=True)

@@ -164,7 +164,7 @@ async def claim_support_event(brand: str, user_id: int, event_id: int, kind: str
     try:
         claimed = await loop.run_in_executor(
             None,
-            firestore_helper.claim_document,
+            firestore_helper.claim_remote_document,
             doc_id,
             {
                 "brand": brand,
@@ -174,7 +174,7 @@ async def claim_support_event(brand: str, user_id: int, event_id: int, kind: str
                 "created_at": __import__("time").time(),
             },
         )
-        if not claimed:
+        if claimed is False:
             return False
     except Exception as e:
         print(f'Claim error: {e}')

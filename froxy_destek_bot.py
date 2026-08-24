@@ -68,10 +68,10 @@ async def async_claim_event(event, scope):
         result = await loop.run_in_executor(
             None, firestore_helper.claim_document, doc_id, fields
         )
-        if result is False:
+        if result is not True:
             return False
     except Exception:
-        pass
+        return False
     return True
 
 

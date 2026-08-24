@@ -7,6 +7,15 @@ import firestore_helper
 
 
 class FirestoreFallbackTests(unittest.TestCase):
+    def test_nested_orders_are_encoded_as_real_firestore_maps_and_arrays(self):
+        source = {"users": {"42": {"balance": 10.5, "orders": [{"id": "KV-1"}]}}}
+        encoded = firestore_helper._fields_to_firestore(source)
+        decoded = {
+            key: firestore_helper._value_from_firestore(value)
+            for key, value in encoded.items()
+        }
+        self.assertEqual(decoded, source)
+
     def test_claim_uses_local_atomic_store_when_firestore_is_unavailable(self):
         with tempfile.TemporaryDirectory() as directory, patch.dict(
             os.environ, {"RUNTIME_CLAIM_DB": os.path.join(directory, "claims.db")}

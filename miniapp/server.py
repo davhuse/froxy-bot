@@ -15,6 +15,9 @@ import hmac
 import tempfile
 import time
 import threading
+import ast
+import uuid
+from functools import wraps
 from urllib.parse import parse_qsl
 from pathlib import Path
 
@@ -48,6 +51,35 @@ MAX_INIT_DATA_AGE = int(os.environ.get("KEYVADI_INIT_DATA_MAX_AGE", "86400"))
 
 app = Flask(__name__, static_folder=str(BASE_DIR), static_url_path="")
 
+
+def serialized_purchase(handler):
+    """Serialize balance/order writes across overlapping Render deployments."""
+    @wraps(handler)
+    def wrapped(*args, **kwargs):
+        import firestore_helper
+        owner = f"purchase:{os.getpid()}:{uuid.uuid4().hex}"
+        remote = firestore_helper.remote_credentials_configured()
+        if remote:
+            deadline = time.time() + 10
+            while time.time() < deadline:
+                claimed = firestore_helper.acquire_remote_lease(
+                    "keyvadi_purchase_store_v1", owner, 30
+                )
+                if claimed is True:
+                    break
+                if claimed is None:
+                    return jsonify({"success": False, "error": "Sipariş veritabanına geçici olarak ulaşılamıyor"}), 503
+                time.sleep(0.1)
+            else:
+                return jsonify({"success": False, "error": "Sipariş sistemi yoğun, lütfen tekrar deneyin"}), 409
+        try:
+            with DATA_LOCK:
+                return handler(*args, **kwargs)
+        finally:
+            if remote:
+                firestore_helper.release_lease("keyvadi_purchase_store_v1", owner)
+    return wrapped
+
 # Ensure users database file exists
 if not USER_DATA_PATH.exists():
     with open(USER_DATA_PATH, "w", encoding="utf-8") as f:
@@ -65,7 +97,18 @@ def load_users():
             import firestore_helper
             doc = firestore_helper.get_document("keyvadi_users_data")
             if doc and "users" in doc:
-                return doc["users"]
+                users = doc["users"]
+                if isinstance(users, dict):
+                    return users
+                # One-time compatibility with the old Python repr storage.
+                if isinstance(users, str):
+                    try:
+                        parsed = ast.literal_eval(users)
+                        if isinstance(parsed, dict):
+                            save_users(parsed)
+                            return parsed
+                    except (ValueError, SyntaxError):
+                        pass
         except Exception:
             pass
         if USER_DATA_PATH.exists():
@@ -80,7 +123,8 @@ def save_users(data):
     with DATA_LOCK:
         try:
             import firestore_helper
-            firestore_helper.set_document("keyvadi_users_data", {"users": data})
+            if not firestore_helper.set_document("keyvadi_users_data", {"users": data}):
+                raise RuntimeError("durable user store rejected the update")
         except Exception as exc:
             print(f"[KeyVadi] Firestore save_users error: {exc}")
         try:
@@ -93,6 +137,7 @@ def save_users(data):
         except Exception as e:
             if os.path.exists(tmp_name):
                 os.remove(tmp_name)
+    return True
 
 def _telegram_bot_token():
     return (os.environ.get("KEYVADI_BOT_TOKEN") or
@@ -104,7 +149,7 @@ def notify_admin_of_purchase(user_id, telegram_user, order_info):
         token = _telegram_bot_token()
         admin_id = os.environ.get("TELEGRAM_ADMIN_ID", "6196006704")
         if not token or not admin_id:
-            return
+            return False
         import urllib.request
         u_name = f"{telegram_user.get('first_name', '')} {telegram_user.get('last_name', '')}".strip()
         uname = f"@{telegram_user.get('username')}" if telegram_user.get('username') else "Yok"
@@ -122,9 +167,57 @@ def notify_admin_of_purchase(user_id, telegram_user, order_info):
         )
         payload = json.dumps({"chat_id": int(admin_id), "text": msg, "parse_mode": "Markdown"}).encode("utf-8")
         req = urllib.request.Request(f"https://api.telegram.org/bot{token}/sendMessage", data=payload, headers={"Content-Type": "application/json"})
-        urllib.request.urlopen(req, timeout=5)
+        with urllib.request.urlopen(req, timeout=5) as response:
+            return response.status == 200
     except Exception as e:
         print(f"[KeyVadi Notify Admin Error] {e}")
+        return False
+
+
+def retry_pending_admin_notifications():
+    """Retry committed orders whose admin notification previously failed."""
+    import firestore_helper
+    owner = f"notify:{os.getpid()}:{uuid.uuid4().hex}"
+    remote = firestore_helper.remote_credentials_configured()
+    if remote and firestore_helper.acquire_remote_lease(
+        "keyvadi_purchase_store_v1", owner, 30
+    ) is not True:
+        return
+    try:
+        with DATA_LOCK:
+            users = load_users()
+            changed = False
+            for uid, user in users.items():
+                telegram_user = {
+                    "first_name": user.get("first_name", "Müşteri"),
+                    "last_name": user.get("last_name", ""),
+                    "username": user.get("username", ""),
+                }
+                for order in user.get("orders", []):
+                    # Legacy orders predate the outbox marker and must not be replayed.
+                    if order.get("admin_notified") is not False:
+                        continue
+                    if notify_admin_of_purchase(uid, telegram_user, order):
+                        order["admin_notified"] = True
+                        order["admin_notified_at"] = int(time.time())
+                        changed = True
+            if changed:
+                save_users(users)
+    finally:
+        if remote:
+            firestore_helper.release_lease("keyvadi_purchase_store_v1", owner)
+
+
+def _notification_retry_worker():
+    while True:
+        time.sleep(30)
+        try:
+            retry_pending_admin_notifications()
+        except Exception as exc:
+            print(f"[KeyVadi Notify Retry Error] {type(exc).__name__}")
+
+
+threading.Thread(target=_notification_retry_worker, daemon=True).start()
 
 def verify_telegram_init_data(raw_init_data):
     """Validate Telegram Web App initData and return its user object."""
@@ -358,6 +451,7 @@ def simulate_payment():
     })
 
 @app.route("/api/user/purchase", methods=["POST"])
+@serialized_purchase
 def purchase_product():
     data = request.get_json(silent=True) or {}
     telegram_user = authenticated_user()
@@ -395,7 +489,7 @@ def purchase_product():
         user["balance"] -= price
         alloc = allocate_license(product.get("title", ""), brand="keyvadi")
         order = {
-            "order_id": f"KV-{int(time.time())}",
+            "order_id": f"KV-{uuid.uuid4().hex[:12].upper()}",
             "product_id": product_id,
             "title": product.get("title"),
             "price": price,
@@ -407,12 +501,16 @@ def purchase_product():
             "activation_guide": alloc.get("activation_guide"),
             "needs_email": alloc.get("needs_email", False),
             "idempotency_key": idem or None,
-            "created_at": int(time.time())
+            "created_at": int(time.time()),
+            "admin_notified": False,
         }
         user.setdefault("orders", []).append(order)
         users[uid] = user
         save_users(users)
-        notify_admin_of_purchase(user_id, telegram_user, order)
+        if notify_admin_of_purchase(user_id, telegram_user, order):
+            order["admin_notified"] = True
+            order["admin_notified_at"] = int(time.time())
+            save_users(users)
 
     return jsonify({
         "success": True,
@@ -422,6 +520,7 @@ def purchase_product():
     })
 
 @app.route("/api/user/purchase-cart", methods=["POST"])
+@serialized_purchase
 def purchase_cart():
     data = request.get_json(silent=True) or {}
     telegram_user = authenticated_user()
@@ -459,7 +558,7 @@ def purchase_cart():
             total_cost += subtotal
             alloc = allocate_license(p.get("title", ""), brand="keyvadi")
             valid_orders.append({
-                "order_id": f"KV-{int(time.time())}",
+                "order_id": f"KV-{uuid.uuid4().hex[:12].upper()}",
                 "product_id": pid,
                 "title": p.get("title"),
                 "qty": qty,
@@ -473,7 +572,8 @@ def purchase_cart():
                 "activation_guide": alloc.get("activation_guide"),
                 "needs_email": alloc.get("needs_email", False),
                 "cart_idempotency_key": idempotency_key,
-                "created_at": int(time.time())
+                "created_at": int(time.time()),
+                "admin_notified": False,
             })
 
     if not valid_orders:
@@ -510,7 +610,10 @@ def purchase_cart():
         users[uid] = user
         save_users(users)
         for ord_it in valid_orders:
-            notify_admin_of_purchase(user_id, telegram_user, ord_it)
+            if notify_admin_of_purchase(user_id, telegram_user, ord_it):
+                ord_it["admin_notified"] = True
+                ord_it["admin_notified_at"] = int(time.time())
+        save_users(users)
 
     return jsonify({
         "success": True,

@@ -21,6 +21,7 @@ from customer_intent import INTENT_SALES_LEAD
 from support_flow import claim_auto_reply_once, claim_first_greeting, claim_support_event, forward_customer_message, greeting_for, one_time_mode_enabled, release_product_claim, release_support_event, respond_with_floodwait, save_ticket_record
 from update_keyvadi_links_json import fetch_live_catalog, write_catalog_atomic
 from sales_conversion import (
+    listing_url,
     load_sales_catalog,
     match_sales_products,
     parse_cta_start_parameter,
@@ -62,10 +63,10 @@ async def async_claim_event(event, scope):
         
     try:
         result = await async_run_claim(doc_id, {"scope": scope, "chat_id": event.chat_id, "message_id": getattr(event.message, 'id', None)})
-        if result is False:
+        if result is not True:
             return False
     except Exception:
-        pass
+        return False
     return True
 
 async def async_release_event_claim(event, scope):
@@ -108,10 +109,10 @@ async def claim_product_reply(user_id, product):
             doc_id,
             {"brand": "keyvadi", "user_id": int(user_id), "product_id": product_id},
         )
-        if result is False:
+        if result is not True:
             return False
     except Exception:
-        pass
+        return False
     return True
 
 PRODUCT_REPLY_COOLDOWN_SECONDS = 15 * 60
@@ -1776,7 +1777,7 @@ async def message_handler(event):
                 )
                 pid = matched_product.get('id', '')
                 bot_app_url = f"https://t.me/KeyVadiSatisBot/app?startapp=p_{pid}"
-                direct_url = purchase_url(matched_product, "keyvadi", "support_bot_dm", arm)
+                direct_url = listing_url(matched_product)
                 buttons = [
                     [Button.url("🛍️ Mağazada Aç", bot_app_url), Button.url("💳 Direkt Al", direct_url)],
                     [Button.inline(t["support_btn"], b"menu_support")],
@@ -1791,7 +1792,7 @@ async def message_handler(event):
                     product_msg += f"{i+1}. **{p['title']}** — {price}\n"
                     p_id = p.get('id', '')
                     p_app_url = f"https://t.me/KeyVadiSatisBot/app?startapp=p_{p_id}"
-                    p_direct_url = purchase_url(p, "keyvadi", "support_bot_dm", arm)
+                    p_direct_url = listing_url(p)
                     buttons.append([
                         Button.url(f"🛍️ {p['title'][:20]}", p_app_url),
                         Button.url("💳 Direkt Al", p_direct_url)

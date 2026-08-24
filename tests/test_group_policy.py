@@ -8,6 +8,21 @@ import group_policy
 
 
 class GroupPolicyTests(unittest.TestCase):
+    def test_moderation_hold_progresses_from_one_to_six_to_twenty_four_hours(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = str(Path(directory) / "moderation.json")
+            with patch.object(group_policy, "MODERATION_FILE", path):
+                durations = []
+                for _ in range(3):
+                    group_policy.record_moderation_hold("warned", "FroxyOnline", "deleted")
+                    states = group_policy._load(path)
+                    state = next(iter(states.values()))["FroxyOnline"]
+                    from datetime import datetime, timezone
+                    hold = datetime.fromisoformat(state["hold_until"])
+                    updated = datetime.fromisoformat(state["updated_at"])
+                    durations.append(round((hold - updated).total_seconds() / 3600))
+                self.assertEqual(durations, [1, 6, 24])
+
     def test_numeric_id_has_priority_over_username(self):
         entity = SimpleNamespace(id=3065608337, username="renamed_group", default_banned_rights=None)
         key, policy = group_policy.resolve_group_policy("unrelated", entity)

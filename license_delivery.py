@@ -12,6 +12,7 @@ import os
 import re
 import tempfile
 import threading
+import time
 from pathlib import Path
 from typing import Any
 
@@ -138,29 +139,69 @@ def allocate_license(product_title_or_id: str, brand: str = "keyvadi") -> dict[s
             "needs_email": False,
         }
 
-    with STOCK_LOCK:
-        stocks = load_licenses_stock()
-        brand_cat = f"{brand_slug}_{cat}"
-        pool_key = brand_cat if (brand_cat in stocks and len(stocks[brand_cat]) > 0) else cat
-        keys = stocks.get(pool_key, [])
-        if keys:
-            license_key = str(keys.pop(0)).strip()
-            stocks[pool_key] = keys
-            save_licenses_stock(stocks)
-            delivery_note = "⚡ 7/24 Anında Otomatik Teslim Edildi"
-            if activation_guide:
-                delivery_note += f"\n📌 {activation_guide}"
-            return {
-                "allocated": True,
-                "category": cat,
-                "license_key": license_key,
-                "status": "delivered",
-                "delivery_note": delivery_note,
-                "support_handle": support_handle,
-                "redeem_url": redeem_url,
-                "activation_guide": activation_guide,
-                "needs_email": needs_email,
-            }
+    license_key = None
+    pool_key = None
+    try:
+        import firestore_helper
+        if firestore_helper.remote_credentials_configured():
+            # A CAS loop makes one stock key consumable by only one Render process.
+            for _attempt in range(5):
+                stocks, update_time = firestore_helper.get_document_with_meta(
+                    "license_stock_v1", quiet=True
+                )
+                if stocks is None:
+                    seeded = load_licenses_stock()
+                    claimed = firestore_helper.claim_remote_document(
+                        "license_stock_v1", seeded, quiet=True
+                    )
+                    if claimed is not True:
+                        time.sleep(0.05)
+                    continue
+                brand_cat = f"{brand_slug}_{cat}"
+                pool_key = brand_cat if stocks.get(brand_cat) else cat
+                keys = list(stocks.get(pool_key, []) or [])
+                if not keys:
+                    break
+                candidate = str(keys.pop(0)).strip()
+                updated = dict(stocks)
+                updated[pool_key] = keys
+                if firestore_helper.compare_and_set_document(
+                    "license_stock_v1", updated, update_time, quiet=True
+                ) is True:
+                    license_key = candidate
+                    save_licenses_stock(updated)
+                    break
+        else:
+            with STOCK_LOCK:
+                stocks = load_licenses_stock()
+                brand_cat = f"{brand_slug}_{cat}"
+                pool_key = brand_cat if stocks.get(brand_cat) else cat
+                keys = stocks.get(pool_key, [])
+                if keys:
+                    license_key = str(keys.pop(0)).strip()
+                    stocks[pool_key] = keys
+                    save_licenses_stock(stocks)
+    except Exception:
+        # In production, never fall back to ephemeral stock after a durable-store
+        # failure; that could deliver the same key twice after a redeploy.
+        license_key = None
+
+    if license_key:
+        delivery_note = "⚡ 7/24 Anında Otomatik Teslim Edildi"
+        if activation_guide:
+            delivery_note += f"\n📌 {activation_guide}"
+        return {
+            "allocated": True,
+            "category": cat,
+            "pool_key": pool_key,
+            "license_key": license_key,
+            "status": "delivered",
+            "delivery_note": delivery_note,
+            "support_handle": support_handle,
+            "redeem_url": redeem_url,
+            "activation_guide": activation_guide,
+            "needs_email": needs_email,
+        }
 
     if needs_email:
         delivery_note = f"Lütfen {support_handle} hesabına sipariş kodunuzla birlikte E-posta (Mail) adresinizi iletiniz; üyeliğiniz hemen tanımlanacaktır."

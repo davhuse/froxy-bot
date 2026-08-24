@@ -51,8 +51,9 @@ class GroupStateTests(unittest.TestCase):
     def test_keyvadi_specific_group_approvals_do_not_enable_other_accounts(self):
         self.assertEqual(
             publisher.ACCOUNT_APPROVED_TARGET_OVERRIDES["KeyVadiOnline"],
-            {"ceksat", "kuponceking"},
+            {"kuponceking"},
         )
+        self.assertIn(("KeyVadiOnline", "ceksat"), publisher.SEEDED_ACCOUNT_GROUP_BLOCKS)
 
     def test_pending_join_requests_are_account_specific(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -375,14 +375,18 @@ def record_delivery_state(group_name, account, status, *, entity=None, message_i
     _atomic_json(MODERATION_FILE, data)
 
 
-def record_moderation_hold(group_name, account, reason, *, entity=None, hours=24) -> None:
+def record_moderation_hold(group_name, account, reason, *, entity=None, hours=None) -> None:
     data = _load(MODERATION_FILE)
     key = policy_key(group_name, entity)
     now = datetime.now(timezone.utc)
+    previous = data.setdefault(key, {}).get(account, {})
+    attempts = int(previous.get("moderation_attempt_count", 0) or 0) + 1
+    hold_hours = hours if hours is not None else (1 if attempts == 1 else 6 if attempts == 2 else 24)
     data.setdefault(key, {})[account] = {
         "status": "moderation_deleted",
         "reason": reason,
-        "hold_until": (now + timedelta(hours=hours)).isoformat(),
+        "hold_until": (now + timedelta(hours=hold_hours)).isoformat(),
+        "moderation_attempt_count": attempts,
         "updated_at": now.isoformat(),
     }
     _atomic_json(MODERATION_FILE, data)

@@ -262,7 +262,7 @@ async def send_product_card(event, matched_products: list[dict[str, Any]]) -> bo
         price_txt = product.get("price") or "Fiyat için mağaza"
         lines.append(f"• **{product['title']}** — `{price_txt}`")
         pid = product.get("id", "")
-        bot_app_url = f"https://t.me/LisansArenaOnline/app?startapp=p_{pid}"
+        bot_app_url = f"https://t.me/LisansArenaBot/app?startapp=p_{pid}"
         direct_url = purchase_url(product, "lisansarena", "support_bot_dm")
         buttons.append([
             Button.url("🛍️ Mağazada Aç", bot_app_url),

@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import AsyncMock, patch
 
 import otomatik_katil as publisher
+from sales_conversion import load_sales_catalog
 
 
 class AdAccountDmTests(unittest.IsolatedAsyncioTestCase):
@@ -78,6 +79,26 @@ class AdAccountDmTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("499,90 TL", reply)
         self.assertIn("https://www.shopier.com/froxyai/49489691", reply)
         self.assertNotIn("/go/", reply)
+
+    def test_keyvadi_product_reply_uses_direct_shopier_listing(self):
+        product = load_sales_catalog("keyvadi")[0]
+        reply = publisher.keyvadi_product_reply(product)
+        self.assertIn(product["url"], reply)
+        self.assertIn("shopier.com", reply)
+        self.assertNotIn("froxy-bot-live", reply)
+        self.assertNotIn("/go/", reply)
+
+    def test_every_lisansarena_product_has_price_and_product_specific_miniapp_link(self):
+        products = load_sales_catalog("lisansarena")
+        self.assertEqual(len(products), 55)
+        for product in products:
+            reply = publisher.lisansarena_product_reply(product)
+            self.assertIn(str(product["price"]), reply)
+            self.assertIn(
+                f"https://t.me/LisansArenaBot/app?startapp=p_{product['id']}",
+                reply,
+            )
+            self.assertNotIn("shopier.com", reply)
 
 
 if __name__ == "__main__":

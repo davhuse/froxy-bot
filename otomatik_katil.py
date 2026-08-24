@@ -49,7 +49,7 @@ from sales_conversion import (
     purchase_url,
 )
 from telethon import TelegramClient, events
-from telethon.tl.functions.channels import JoinChannelRequest, LeaveChannelRequest
+from telethon.tl.functions.channels import JoinChannelRequest, LeaveChannelRequest, GetParticipantRequest
 from telethon.tl.functions.contacts import ResolveUsernameRequest, SearchRequest
 from telethon.errors import (
     FloodWaitError, SessionPasswordNeededError, UsernameNotOccupiedError, 
@@ -57,6 +57,15 @@ from telethon.errors import (
     SlowModeWaitError, UserBannedInChannelError, PeerFloodError,
     UserRestrictedError
 )
+from target_registry import TargetRegistry, generate_discovery_queries
+
+
+TARGET_REGISTRY = TargetRegistry()
+
+
+def seed_discovery_candidates(*_args, **_kwargs):
+    """Compatibility hook retained for controlled discovery tests/importers."""
+    return []
 
 
 class ModerationDeletedError(RuntimeError):
@@ -139,7 +148,10 @@ async def verify_ad_after_window(client, entity, message_id, client_name, group_
         return {"success": True, "message_id": message_id}
     except ModerationDeletedError as exc:
         record_moderation_hold(group_name, client_name, str(exc), entity=entity)
-        record_group_failure(group_name, client_name, "ModerationDeleted", 24 * 60 * 60, entity)
+        record_group_failure(
+            group_name, client_name, "ModerationDeleted",
+            moderation_retry_seconds(group_name, client_name, entity), entity,
+        )
         record_event(
             "moderation_deleted", client_name,
             group=normalize_group_key(group_name), source="telegram_visibility_check",
@@ -257,7 +269,7 @@ gruplar = [
 # groups were confirmed as joined and usable by KeyVadi, but must not be
 # implicitly enabled for the other advertising accounts.
 ACCOUNT_APPROVED_TARGET_OVERRIDES = {
-    "KeyVadiOnline": {"ceksat", "kuponceking"},
+    "KeyVadiOnline": {"kuponceking"},
 }
 
 
@@ -322,6 +334,8 @@ GROUPS_TO_LEAVE = {
     "gurcistanticaret",
 }
 
+ACCOUNT_GROUPS_TO_LEAVE = {"KeyVadiOnline": {"ceksat"}}
+
 def normalize_group_key(grup_name):
     g_lower = str(grup_name or '').lower().replace('@', '').strip()
     g_lower = g_lower.rstrip('/')
@@ -334,6 +348,7 @@ def get_all_protected_groups():
     for key, value in PROTECTED_GROUP_ALIASES.items():
         protected.add(normalize_group_key(key))
         protected.add(normalize_group_key(value))
+    protected.update(TARGET_REGISTRY.approved_groups())
     return protected
 
 def is_group_protected(grup_name):
@@ -732,6 +747,7 @@ ACCOUNT_GROUP_BLOCKS_FILE = 'account_group_blocks.json'
 # leaving KeyVadi/LisansArena free to be evaluated independently.
 SEEDED_ACCOUNT_GROUP_BLOCKS = {
     ('FroxyOnline', 'ceksatkupon'): 'UserBannedInChannel',
+    ('KeyVadiOnline', 'ceksat'): 'UserBannedInChannel',
 }
 SEND_LOCK_FILE = 'send_locks.json'
 GROUP_COOLDOWN_HOURS = 1  # Varsayılan: 1 saat ortak cooldown. Config'den ezilebilir.
@@ -1115,6 +1131,27 @@ def joined_sales_target_status(group_name, entity, client_name):
     return True, 'sendable'
 
 
+async def inspect_write_forbidden(client, entity):
+    """Classify account-specific timed restrictions without blacklisting a group."""
+    try:
+        result = await client(GetParticipantRequest(entity, "me"))
+        rights = getattr(getattr(result, "participant", None), "banned_rights", None)
+        if rights and getattr(rights, "send_messages", False):
+            until = getattr(rights, "until_date", None)
+            retry_after = 300
+            if until:
+                if until.tzinfo is None:
+                    until = until.replace(tzinfo=timezone.utc)
+                retry_after = max(1, int((until - datetime.now(timezone.utc)).total_seconds()))
+            return {
+                "scope": "account", "reason": "AccountWriteRestricted",
+                "retry_after": retry_after, "until": until,
+            }
+    except Exception:
+        pass
+    return {"scope": "group", "reason": "ChatWriteForbidden", "retry_after": 300, "until": None}
+
+
 def live_joined_sales_targets(joined_dialogs, client_name):
     """Discover eligible, writable sales groups from the account's dialogs."""
     targets = set()
@@ -1162,10 +1199,10 @@ def live_joined_sales_candidate_report(joined_dialogs, client_name, approved_tar
 
 
 def reconcile_send_targets(approved_targets, live_candidates):
-    """Include all approved and suitable live joined groups for advertising."""
+    """Keep discovery read-only until a candidate is explicitly approved."""
     approved = {normalize_group_key(item) for item in approved_targets if item}
     live = {normalize_group_key(item) for item in live_candidates if item}
-    return approved | live, set()
+    return approved, live - approved
 
 def _load_json_file(path, default):
     try:
@@ -1364,6 +1401,15 @@ def record_group_failure(grup_name, client_name, reason, retry_after=300, entity
         'updated_at': now.isoformat()
     }
     _save_json_file(GROUP_FAILURES_FILE, failures)
+
+
+def moderation_retry_seconds(grup_name, client_name, entity=None):
+    failures = _load_json_file(GROUP_FAILURES_FILE, {})
+    attempts = 0
+    for key in group_state_keys(grup_name, entity):
+        state = failures.get(key, {}).get(client_name, {})
+        attempts = max(attempts, int(state.get('attempt_count', 0) or 0))
+    return (1 if attempts == 0 else 6 if attempts == 1 else 24) * 60 * 60
 
 def record_account_group_block(grup_name, client_name, reason, entity=None):
     """Persist a Telegram-confirmed permanent block for one account only."""
@@ -1893,7 +1939,9 @@ async def auto_scrape_groups(client, client_name, joined_usernames=None):
     
     # Günde 1 kez çalıştığı için TÜM keyword'leri tara (karıştırarak)
     DAILY_GROUP_LIMIT = 50  # Günlük maksimum yeni grup sayısı
-    selected_keywords = keywords_list.copy()
+    selected_keywords = generate_discovery_queries(
+        keywords_list, limit=int(os.environ.get("DISCOVERY_QUERY_LIMIT", "50") or 50)
+    )
     random.shuffle(selected_keywords)
     print(f"🔎 [{client_name}] Günlük tarama: {len(selected_keywords)} anahtar kelime, max {DAILY_GROUP_LIMIT} yeni grup hedefi")
     
@@ -1999,6 +2047,14 @@ async def auto_scrape_groups(client, client_name, joined_usernames=None):
                     pass
                     
                 # === TÜM FİLTRELERİ GEÇTİ — KALİTELİ GRUP ===
+                TARGET_REGISTRY.register_candidate({
+                    "username": chat.username,
+                    "title": chat.title or "",
+                    "members": member_count or 0,
+                    "score": 60,
+                    "sources": ["telegram_search"],
+                    "discovered_by": client_name,
+                })
                 try:
                     save_to_list(chat.username, "scraped_groups.txt")
                     scraped_history_lower.add(username)
@@ -2917,19 +2973,16 @@ async def customer_has_claimed_product(client_name, sender_id, products):
     return False
 
 def keyvadi_product_reply(product, source="ad_account_dm", arm=""):
-    """Send concise purchase and Telegram Mini App actions."""
-    pid = product.get("id", "")
-    bot_url = f"https://t.me/KeyVadiSatisBot/app?startapp=p_{pid}"
-    target = purchase_url(product, "keyvadi", source, arm)
+    """Send the official Shopier listing without a first-party redirect."""
+    target = listing_url(product)
     
     reply = (
         f"📌 **{product['title']}**\n"
         f"💰 Fiyat: {product.get('price') or 'Ürün sayfasında'}\n"
-        f"⚡ 7/24 Anında Teslimat · 3D Secure Güvencesi\n\n"
-        f"🛍️ [Telegram'da Mağazayı Aç]({bot_url})"
+        f"⚡ 7/24 Anında Teslimat · 3D Secure Güvencesi"
     )
     if target:
-        reply += f"\n🛒 [Direkt Ödeme Sayfası]({target})"
+        reply += f"\n🛒 [Shopier Ürününü Aç]({target})"
     return reply
 
 
@@ -2948,14 +3001,14 @@ def froxy_product_reply(product, source="ad_account_dm", arm=""):
 
 
 def lisansarena_product_reply(product, source="ad_account_dm", arm=""):
-    """Clean LisansArena product info, price, and instructions to buy from @LisansArenaBot."""
+    """Clean product info with a product-specific Telegram Mini App action."""
     price = product.get("price") or "Ürün sayfasında"
+    target = purchase_url(product, "lisansarena", source, arm)
     reply = (
         f"📦 **{product['title']}**\n"
         f"💳 Fiyat: **{price}**\n"
         f"⚡ 7/24 Anında Otomatik Teslimat · 3D Güvenli Ödeme\n\n"
-        f"🤖 Sipariş vermek ve anında satın almak için botumuzdan işlem yapabilirsiniz:\n"
-        f"👉 @LisansArenaBot"
+        f"🛍️ [Ürünü Mini App'te Aç]({target})"
     )
     return reply
 
@@ -3051,7 +3104,10 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
             hold_reason="Güvenlik botu uyarısı sonrası linksiz smoke zorunlu.",
         )
         record_moderation_hold(group_name, client_name, reason, entity=entity)
-        record_group_failure(group_name, client_name, "ModerationDeleted", 24 * 60 * 60, entity)
+        record_group_failure(
+            group_name, client_name, "ModerationDeleted",
+            moderation_retry_seconds(group_name, client_name, entity), entity,
+        )
         record_event(
             "moderation_deleted", client_name,
             group=normalize_group_key(group_name), source="telegram_security_bot",
@@ -3222,19 +3278,18 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
             elif is_lisansarena:
                 lines = ["🔍 **LisansArena Güncel Seçenekler ve Fiyatlar:**\n"]
                 for p in matched_products[:3]:
-                    lines.append(f"• **{p['title']}** — **{p.get('price', '')}**")
-                lines.append(
-                    "\n🤖 **Nasıl Satın Alınır?**\n"
-                    "Sipariş vermek ve anında teslimatla satın almak için botumuza giriş yapabilirsiniz:\n"
-                    "👉 @LisansArenaBot"
-                )
+                    target = purchase_url(p, "lisansarena", "ad_account_dm")
+                    lines.append(
+                        f"• **{p['title']}** — **{p.get('price', '')}**\n"
+                        f"  [Mini App'te Aç]({target})"
+                    )
                 reply_text = "\n".join(lines)
                 matched_desc = ", ".join(p['title'] for p in matched_products)
             else:
                 lines = ["🔍 **Uygun seçenekler:**"]
                 for p in matched_products[:3]:
                     p = apply_froxy_price_overrides(p) if is_froxy else p
-                    target = listing_url(p) if is_froxy else purchase_url(p, brand_name, "ad_account_dm")
+                    target = listing_url(p)
                     button_text = "Hemen Satın Al"
                     lines.append(f"• **{p['title']}** — {p['price']}\n  [{button_text}]({target})")
                 reply_text = "\n".join(lines)
@@ -4201,12 +4256,18 @@ async def main():
                 cancelled_join_requests_handled.add(cancelled_group)
 
             # Ayrilmasi istenen gruplardan cik (calisma basina bir kez).
-            for leave_group in GROUPS_TO_LEAVE - groups_left_handled:
-                groups_left_handled.add(leave_group)
+            requested_leaves = set(GROUPS_TO_LEAVE)
+            requested_leaves.update(ACCOUNT_GROUPS_TO_LEAVE.get(client_name, set()))
+            for leave_group in requested_leaves:
+                leave_key = (client_name, normalize_group_key(leave_group))
+                if leave_key in groups_left_handled:
+                    continue
+                groups_left_handled.add(leave_key)
                 entity = joined_dialogs.get(normalize_group_key(leave_group))
                 if not entity:
                     continue
-                if is_group_protected(leave_group):
+                if (leave_group not in ACCOUNT_GROUPS_TO_LEAVE.get(client_name, set())
+                        and is_group_protected(leave_group)):
                     print(f"[{client_name}] ⚠️ @{leave_group} korumalı listede, çıkış yapılmadı.")
                     continue
                 try:
@@ -4962,7 +5023,7 @@ async def main():
                         blast_coordinator.next_target, client_name
                     )
                     if upcoming:
-                        delay = random.randint(20, 45)
+                        delay = random.randint(20, 30)
                         print(f"[{client_name}] ⏳ Sonraki grup için {delay} saniye bekleniyor...")
                         await asyncio.sleep(delay)
                 
