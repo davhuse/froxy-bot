@@ -704,7 +704,8 @@
         body: JSON.stringify({
           init_data: telegramInitData,
           user_id: tgUser.id,
-          items: cart
+          items: cart,
+          idempotency_key: `la_cart_${tgUser.id}_${Date.now()}`
         })
       });
       const data = await res.json();
@@ -765,7 +766,8 @@
         body: JSON.stringify({
           init_data: telegramInitData,
           user_id: tgUser.id,
-          product_id: selectedModalProduct.id
+          product_id: selectedModalProduct.id,
+          idempotency_key: `la_wallet_${selectedModalProduct.id}_${tgUser.id}_${Date.now()}`
         })
       });
       const data = await res.json();

@@ -14,6 +14,10 @@ import time
 import tempfile
 import threading
 import requests
+import re
+import uuid
+import ast
+from functools import wraps
 from pathlib import Path
 from urllib.parse import parse_qsl
 from flask import Blueprint, jsonify, request, send_from_directory
@@ -39,6 +43,34 @@ MAX_INIT_DATA_AGE = int(os.environ.get("LISANSARENA_INIT_DATA_MAX_AGE", "86400")
 
 la_bp = Blueprint("lisansarena_miniapp", __name__, static_folder=str(BASE_DIR), static_url_path="")
 
+
+def serialized_wallet_purchase(handler):
+    @wraps(handler)
+    def wrapped(*args, **kwargs):
+        import firestore_helper
+        owner = f"la-purchase:{os.getpid()}:{uuid.uuid4().hex}"
+        remote = firestore_helper.remote_credentials_configured()
+        if remote:
+            deadline = time.time() + 10
+            while time.time() < deadline:
+                claimed = firestore_helper.acquire_remote_lease(
+                    "lisansarena_legacy_purchase_store_v1", owner, 30
+                )
+                if claimed is True:
+                    break
+                if claimed is None:
+                    return jsonify({"success": False, "error": "Sipariş veritabanına ulaşılamıyor"}), 503
+                time.sleep(0.1)
+            else:
+                return jsonify({"success": False, "error": "Sipariş sistemi yoğun"}), 409
+        try:
+            with DATA_LOCK:
+                return handler(*args, **kwargs)
+        finally:
+            if remote:
+                firestore_helper.release_lease("lisansarena_legacy_purchase_store_v1", owner)
+    return wrapped
+
 if not USER_DATA_PATH.exists():
     with open(USER_DATA_PATH, "w", encoding="utf-8") as f:
         json.dump({}, f)
@@ -46,11 +78,45 @@ if not USER_DATA_PATH.exists():
 def load_products():
     if PRODUCTS_DB_PATH.exists():
         with open(PRODUCTS_DB_PATH, "r", encoding="utf-8") as f:
-            return json.load(f)
+            products = json.load(f)
+        for product in products:
+            product["price_num"] = product_price_number(product)
+        return products
     return []
+
+
+def product_price_number(product):
+    """Read either numeric price_num or Turkish display prices such as 2.414,99 TL."""
+    raw_num = product.get("price_num")
+    if raw_num not in (None, ""):
+        try:
+            value = float(raw_num)
+            return round(value, 2) if value > 0 else None
+        except (TypeError, ValueError):
+            pass
+    raw = str(product.get("price") or "")
+    cleaned = re.sub(r"[^0-9,.-]", "", raw).replace(".", "").replace(",", ".")
+    try:
+        value = float(cleaned)
+        return round(value, 2) if value > 0 else None
+    except (TypeError, ValueError):
+        return None
 
 def load_users():
     with DATA_LOCK:
+        try:
+            import firestore_helper
+            doc = firestore_helper.get_document("lisansarena_legacy_users_data")
+            users = (doc or {}).get("users")
+            if isinstance(users, dict):
+                return users
+            if isinstance(users, str):
+                parsed = ast.literal_eval(users)
+                if isinstance(parsed, dict):
+                    save_users(parsed)
+                    return parsed
+        except Exception:
+            pass
         if USER_DATA_PATH.exists():
             with open(USER_DATA_PATH, "r", encoding="utf-8") as f:
                 return json.load(f)
@@ -58,6 +124,11 @@ def load_users():
 
 def save_users(data):
     with DATA_LOCK:
+        try:
+            import firestore_helper
+            firestore_helper.set_document("lisansarena_legacy_users_data", {"users": data})
+        except Exception as exc:
+            print(f"[LisansArena] Durable user save error: {type(exc).__name__}")
         fd, tmp_name = tempfile.mkstemp(prefix="la_users_", suffix=".json", dir=str(BASE_DIR))
         try:
             with os.fdopen(fd, "w", encoding="utf-8") as f:
@@ -314,6 +385,7 @@ def manual_sweep_clean():
 start_background_shopier_cleaner(USER_DATA_PATH)
 
 @la_bp.route("/api/user/purchase", methods=["POST"])
+@serialized_wallet_purchase
 def purchase_product():
     data = request.get_json(silent=True) or {}
     telegram_user = authenticated_user()
@@ -334,13 +406,21 @@ def purchase_product():
         users = load_users()
         uid = str(user_id)
         user = users.get(uid) or get_or_create_user(int(user_id))
-        price = float(product.get("price_num", 0.0))
+        price = product_price_number(product)
+        if price is None:
+            return jsonify({"success": False, "error": "Ürün fiyatı doğrulanamadı; satın alma durduruldu"}), 409
+        idem = str(data.get("idempotency_key") or "").strip()[:160]
+        if not idem:
+            return jsonify({"success": False, "error": "Güvenli sipariş anahtarı eksik"}), 400
+        for existing in user.get("orders", []):
+            if existing.get("idempotency_key") == idem:
+                return jsonify({"success": True, "duplicate": True, "new_balance": user["balance"], "order": existing})
         if user["balance"] < price:
             return jsonify({"success": False, "error": "Yetersiz bakiye"}), 400
         user["balance"] -= price
         alloc = allocate_license(product.get("title", ""), brand="lisansarena")
         order = {
-            "order_id": f"LA-{int(time.time())}",
+            "order_id": f"LA-{uuid.uuid4().hex[:12].upper()}",
             "product_id": product_id,
             "title": product.get("title"),
             "price": price,
@@ -351,6 +431,7 @@ def purchase_product():
             "redeem_url": alloc.get("redeem_url"),
             "activation_guide": alloc.get("activation_guide"),
             "needs_email": alloc.get("needs_email", False),
+            "idempotency_key": idem,
             "created_at": int(time.time())
         }
         user.setdefault("orders", []).append(order)
@@ -366,6 +447,7 @@ def purchase_product():
     })
 
 @la_bp.route("/api/user/purchase-cart", methods=["POST"])
+@serialized_wallet_purchase
 def purchase_cart():
     data = request.get_json(silent=True) or {}
     telegram_user = authenticated_user()
@@ -373,9 +455,12 @@ def purchase_cart():
         return auth_error()
     user_id = telegram_user["id"]
     items = data.get("items", [])
+    idempotency_key = str(data.get("idempotency_key") or "").strip()[:160]
 
     if not user_id or not items:
         return jsonify({"success": False, "error": "Sepet boş veya kullanıcı geçersiz"}), 400
+    if not idempotency_key:
+        return jsonify({"success": False, "error": "Güvenli sepet anahtarı eksik"}), 400
 
     products = {str(p.get("id")): p for p in load_products()}
     total_cost = 0.0
@@ -386,24 +471,23 @@ def purchase_cart():
         qty = int(it.get("qty", 1))
         if pid in products:
             p = products[pid]
-            p_price = float(p.get("price_num", 0.0))
+            p_price = product_price_number(p)
+            if p_price is None:
+                return jsonify({"success": False, "error": f"{p.get('title')}: fiyat doğrulanamadı"}), 409
             subtotal = p_price * qty
             total_cost += subtotal
-            alloc = allocate_license(p.get("title", ""), brand="lisansarena")
             valid_orders.append({
-                "order_id": f"LA-{int(time.time())}",
+                "order_id": f"LA-{uuid.uuid4().hex[:12].upper()}",
                 "product_id": pid,
                 "title": p.get("title"),
                 "qty": qty,
                 "price": p_price,
                 "subtotal": subtotal,
-                "status": alloc.get("status", "pending_delivery"),
-                "license_key": alloc.get("license_key"),
-                "delivery_note": alloc.get("delivery_note", "7/24 Teslimat"),
-                "support_handle": alloc.get("support_handle", "@LisansArenaOnline"),
-                "redeem_url": alloc.get("redeem_url"),
-                "activation_guide": alloc.get("activation_guide"),
-                "needs_email": alloc.get("needs_email", False),
+                "status": "pending_allocation",
+                "license_key": None,
+                "delivery_note": "Teslimat hazırlanıyor",
+                "support_handle": "@LisansArenaOnline",
+                "cart_idempotency_key": idempotency_key,
                 "created_at": int(time.time())
             })
 
@@ -416,10 +500,27 @@ def purchase_cart():
         users = load_users()
         uid = str(user_id)
         user = users.get(uid) or get_or_create_user(int(user_id))
+        duplicates = [
+            order for order in user.get("orders", [])
+            if order.get("cart_idempotency_key") == idempotency_key
+        ]
+        if duplicates:
+            return jsonify({"success": True, "duplicate": True, "new_balance": user["balance"], "orders": duplicates})
         if user["balance"] < total_cost:
             return jsonify({"success": False, "error": f"Yetersiz bakiye! Gerekli: ₺{total_cost:.2f}, Mevcut: ₺{user['balance']:.2f}"}), 400
         
         user["balance"] = round(user["balance"] - total_cost, 2)
+        for order in valid_orders:
+            alloc = allocate_license(order.get("title", ""), brand="lisansarena")
+            order.update({
+                "status": alloc.get("status", "pending_delivery"),
+                "license_key": alloc.get("license_key"),
+                "delivery_note": alloc.get("delivery_note", "7/24 Teslimat"),
+                "support_handle": alloc.get("support_handle", "@LisansArenaOnline"),
+                "redeem_url": alloc.get("redeem_url"),
+                "activation_guide": alloc.get("activation_guide"),
+                "needs_email": alloc.get("needs_email", False),
+            })
         user.setdefault("orders", []).extend(valid_orders)
         users[uid] = user
         save_users(users)
