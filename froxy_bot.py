@@ -1563,38 +1563,34 @@ async def message_handler(event):
             
         prod_name = unclaimed_order.get("product_name", "").lower()
         
-        # Check license category
-        cat = None
-        if "canva" in prod_name:
-            cat = "canva"
-        elif "adobe" in prod_name:
-            cat = "adobe"
-        elif "windows" in prod_name:
-            cat = "windows"
-        elif "office" in prod_name:
-            cat = "office"
-        elif "netflix" in prod_name:
-            cat = "netflix"
-        elif "youtube" in prod_name or "yt " in prod_name:
-            cat = "youtube"
-            
-        license_key = None
-        if cat:
-            try:
-                with open("licenses.json", "r", encoding="utf-8") as f:
-                    stocks = json.load(f)
-                keys = stocks.get(cat, [])
-                if keys:
-                    license_key = keys.pop(0)
-                    stocks[cat] = keys
-                    with open("licenses.json", "w", encoding="utf-8") as f:
-                        json.dump(stocks, f, indent=2, ensure_ascii=False)
-            except Exception as e:
-                print(f"Error reading/updating licenses.json: {e}")
-                
-        # Mark order as claimed
+        # Use global license delivery system
+        alloc = allocate_license(prod_name, brand="keyvadi")
+        license_key = alloc.get("license_key")
+        
+        # Mark order as claimed in local shopier email doc
         orders[unclaimed_idx]["claimed"] = True
         await async_set_document(doc_id, orders_doc)
+
+        # Save order to keyvadi_users_data so it shows in /siparisler
+        user_orders_doc = await async_get_document("keyvadi_users_data")
+        u_data = user_orders_doc.get("users", {}) if user_orders_doc else {}
+        str_uid = str(user_id)
+        if str_uid not in u_data:
+            u_data[str_uid] = {
+                "id": user_id, "username": getattr(event.sender, "username", ""),
+                "first_name": getattr(event.sender, "first_name", "Musteri"),
+                "balance": 0.0, "orders": []
+            }
+        u_data[str_uid].setdefault("orders", []).append({
+            "order_id": unclaimed_order.get("order_id"),
+            "product_name": unclaimed_order.get("product_name"),
+            "title": unclaimed_order.get("product_name"),
+            "price": unclaimed_order.get("amount"),
+            "status": alloc.get("status", "delivered" if license_key else "pending_delivery"),
+            "license_key": license_key,
+            "created_at": unclaimed_order.get("timestamp")
+        })
+        await async_set_document("keyvadi_users_data", {"users": u_data})
         
         if license_key:
             await event.respond(
