@@ -62,5 +62,7 @@ bedavainternetkod
 indirimcek
 kuponindirimlisatis
 kuponceking
+kuponinternet
+kuponsatimalim
 kuponkodceksatis
 kuponcekkodsatis

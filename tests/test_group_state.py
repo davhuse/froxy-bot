@@ -53,6 +53,8 @@ class GroupStateTests(unittest.TestCase):
             publisher.ACCOUNT_APPROVED_TARGET_OVERRIDES["KeyVadiOnline"],
             {"kuponceking"},
         )
+        self.assertIn("kuponinternet", {item.lower() for item in publisher.gruplar})
+        self.assertIn("kuponsatimalim", {item.lower() for item in publisher.gruplar})
         self.assertIn(("KeyVadiOnline", "ceksat"), publisher.SEEDED_ACCOUNT_GROUP_BLOCKS)
 
     def test_pending_join_requests_are_account_specific(self):
