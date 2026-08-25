@@ -123,7 +123,7 @@ RAW_CATALOG = [
     {
         "id": "la_netflix_ozel",
         "title": "Netflix 4K UHD (Özel Kişisel Profil)",
-        "price": "109,90 TL",
+        "price": "84,90 TL",
         "category": "cinema",
         "is_vitrin": True,
         "showcase": True,

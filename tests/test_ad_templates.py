@@ -46,7 +46,7 @@ class AdTemplateTests(unittest.TestCase):
             "lisansarena_1.txt", "lisansarena_2.txt", "lisansarena_3.txt"
         ])
         required_keywords = (
-            "59.90", "109.90", "19.90", "39.90", "69.90",
+            "59.90", "84.90", "19.90", "39.90", "69.90",
             "179.90", "89.90", "49.90", "99.90", "149.90", "29.90"
         )
         for path in paths:

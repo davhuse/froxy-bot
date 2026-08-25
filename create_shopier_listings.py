@@ -52,7 +52,7 @@ products = [
     # EGLENCE & MUZIK
     {"name": "YouTube Premium (3 Aylık Kod)", "price": 19.90, "category": "Entertainment", "desc": "YouTube Premium 3 Aylık Aktivasyon Kodu. Reklamsız video izleme ve YouTube Music Premium dahildir."},
     {"name": "Spotify Premium (4 Aylık Kod)", "price": 34.99, "category": "Entertainment", "desc": "Spotify Premium 4 Aylık Aktivasyon Kodu. Kendi kişisel hesabınıza tanımlanır. Reklamsız ve yüksek kaliteli müzik keyfi. UYARI: Daha önce Premium üyeliği aktif edilmemiş (yeni/bireysel) hesaplarda geçerlidir."},
-    {"name": "Netflix 4K Ultra HD (Kişisel Profil)", "price": 119.90, "category": "Entertainment", "desc": "Kişisel Netflix 4K Ultra HD Profili."},
+    {"name": "Netflix 4K Ultra HD (Kişisel Profil)", "price": 79.90, "category": "Entertainment", "desc": "Kişisel Netflix 4K Ultra HD Profili."},
     {"name": "Exxen Reklamsız (3 Aylık)", "price": 34.99, "category": "Entertainment", "desc": "Exxen Reklamsız 3 Aylık Üyelik. Giriş bilgileri sipariş sonrasında teslim edilir."},
     {"name": "Crunchyroll Premium (3 Aylık)", "price": 99.00, "category": "Entertainment", "desc": "Crunchyroll Premium 3 Aylık Üyelik."},
 

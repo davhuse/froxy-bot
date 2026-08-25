@@ -92,6 +92,15 @@ FROXY_PRICE_OVERRIDES = {
     "49489721": "599,90 TL",  # ChatGPT Plus + Codex (1 Aylık)
 }
 
+# Customer-facing campaign prices must not drift when a stale Shopier cache is
+# refreshed.  The live listing is still the checkout source; these overrides
+# keep bots, automatic replies and Mini App deep-link cards consistent.
+BRAND_PRICE_OVERRIDES = {
+    ("keyvadi", "47669117"): "79,90 TL",
+    ("lisansarena", "la_netflix_ozel"): "84,90 TL",
+    ("lisansarena", "49002144"): "84,90 TL",
+}
+
 STOP_WORDS = {
     "var", "mi", "mu", "ve", "de", "da", "icin", "misiniz", "olur", "yok",
     "acaba", "urun", "hesap", "kodu", "kupon", "hocam", "kanka", "bir",
@@ -142,7 +151,7 @@ def _normalize_product(item: dict, brand: str = "") -> dict | None:
     lower_title = title.lower()
     if any(k in lower_title for k in ("bakiye", "cüzdan", "cuzdan", "yükleme", "yukleme")):
         return None
-    price = item.get("price")
+    price = BRAND_PRICE_OVERRIDES.get((str(brand).lower(), product_id), item.get("price"))
     if not price and isinstance(item.get("priceData"), dict):
         price = item["priceData"].get("price")
     normalized = dict(item)

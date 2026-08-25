@@ -102,7 +102,7 @@ class SalesCatalogMatchingTests(unittest.TestCase):
         from sales_conversion import make_purchase_token, parse_purchase_token
         catalog = load_sales_catalog("lisansarena")
         product = next(item for item in catalog if item["id"] == "la_netflix_ozel")
-        self.assertEqual(product["price"], "109,90 TL")
+        self.assertEqual(product["price"], "84,90 TL")
         with patch.dict(os.environ, {"PURCHASE_LINK_SECRET": "unit-test-secret"}):
             token = make_purchase_token("lisansarena", product["id"], "ad_account_dm", "control")
             payload = parse_purchase_token(token)
@@ -115,7 +115,11 @@ class SalesCatalogMatchingTests(unittest.TestCase):
         netflix = [p for p in catalog if "netflix" in p["title"].lower()]
         self.assertEqual(len(netflix), 2)
         prices = {p["price"] for p in netflix}
-        self.assertEqual(prices, {"59,90 TL", "109,90 TL"})
+        self.assertEqual(prices, {"59,90 TL", "84,90 TL"})
+
+    def test_keyvadi_netflix_campaign_price_overrides_stale_shopier_cache(self):
+        product = next(item for item in self.keyvadi if item["id"] == "47669117")
+        self.assertEqual(product["price"], "79,90 TL")
 
     def test_froxy_chatgpt_prices_and_codex_variant_are_specific(self):
         froxy = load_sales_catalog("froxy")

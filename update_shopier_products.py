@@ -14,7 +14,7 @@ PRODUCTS_TO_UPDATE = [
     },
     {
         "name": "Netflix 4K Ultra HD Kişisel Profil",
-        "price": 79.99,
+        "price": 79.90,
         "desc": "Netflix 4K Ultra HD Kişisel Özel Profil (30 Günlük). Otomatik teslimat.",
         "slug": "netflix_4k"
     },

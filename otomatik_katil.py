@@ -589,7 +589,7 @@ def strict_group_safe_copy(group_key, is_keyvadi, is_lisansarena, is_froxy):
             "YouTube Premium 1 ay 30 TL | Steam oyun ürünleri mevcut",
         ]
         if not is_satcek:
-            lines.insert(4, "Netflix 4K kişisel profil 119,90 TL")
+            lines.insert(4, "Netflix 4K kişisel profil 79,90 TL")
         lines.append("Teslimat türü, stok ve güncel fiyat bilgisi için özel mesaj.")
         return "\n".join(lines)
     if is_lisansarena:
@@ -603,7 +603,7 @@ def strict_group_safe_copy(group_key, is_keyvadi, is_lisansarena, is_froxy):
             "Xbox Game Pass 3 ay 89,90 TL | Steam oyun 63 TL",
         ]
         if not is_satcek:
-            lines.insert(5, "Netflix 4K kişisel 94,49 TL | Prime Video 29,90 TL")
+            lines.insert(5, "Netflix 4K kişisel 84,90 TL | Prime Video 29,90 TL")
         lines.append("Güncel fiyat ve teslimat bilgisi için özel mesaj.")
         return "\n".join(lines)
     return "\n".join([
@@ -1199,10 +1199,16 @@ def live_joined_sales_candidate_report(joined_dialogs, client_name, approved_tar
 
 
 def reconcile_send_targets(approved_targets, live_candidates):
-    """Keep discovery read-only until a candidate is explicitly approved."""
+    """Self-heal the blast pool with live, eligible groups the account joined.
+
+    ``live_candidates`` have already passed the sales-topic, member-count,
+    channel-type and write-permission checks.  Including them here replaces
+    groups that disappear or ban one account instead of letting every blast
+    shrink by one or two targets forever.
+    """
     approved = {normalize_group_key(item) for item in approved_targets if item}
     live = {normalize_group_key(item) for item in live_candidates if item}
-    return approved, live - approved
+    return approved | live, live - approved
 
 def _load_json_file(path, default):
     try:
@@ -4291,9 +4297,9 @@ async def main():
                 blacklist_keys.update(
                     group_state_keys(engelli, joined_dialogs.get(engelli)))
 
-            # Delivery remains opt-in: live dialog discovery only produces an
-            # account-specific candidate list. It never broadens the blast set
-            # until the group is added to the approved target list.
+            # Approved targets remain the base pool. Eligible sales groups
+            # already joined by this account replenish losses automatically,
+            # preventing the sendable count from eroding on every blast.
             approved_targets = {
                 g for g in protected_groups
                 if not is_excluded_ad_target(g, joined_dialogs.get(normalize_group_key(g)))
@@ -4302,13 +4308,13 @@ async def main():
                 ACCOUNT_APPROVED_TARGET_OVERRIDES.get(client_name, set())
             )
             dynamic_targets = live_joined_sales_targets(joined_dialogs, client_name)
-            hedef_set, approval_candidates = reconcile_send_targets(
+            hedef_set, auto_replenished_targets = reconcile_send_targets(
                 approved_targets, dynamic_targets
             )
 
             print(
-                f"[{client_name}] Hedef uzlaştırma: {len(hedef_set)} onaylı gönderim + "
-                f"{len(approval_candidates)} onay bekleyen canlı aday"
+                f"[{client_name}] Hedef uzlaştırma: {len(approved_targets)} onaylı + "
+                f"{len(auto_replenished_targets)} canlı yedek = {len(hedef_set)} toplam"
             )
             
             # Önbellekte olan + kara listede olmayan hedef gruplar
@@ -4321,7 +4327,7 @@ async def main():
                 'sendable': [], 'cooldown': [], 'policy_smoke': [],
                 'moderation_hold': [], 'write_forbidden': [],
                 'not_joined': [], 'pending_invite': [], 'unsuitable': [], 'invalid_invite': [],
-                'approval_candidates': [],
+                'auto_replenished': [],
             }
             def set_group_state(group_name, state_name):
                 normalized = normalize_group_key(group_name)
@@ -4353,8 +4359,8 @@ async def main():
                         else 'unsuitable'
                     )
                     set_group_state(dialog_name, state_name)
-            for candidate in approval_candidates:
-                set_group_state(candidate, 'approval_candidates')
+            for candidate in auto_replenished_targets:
+                set_group_state(candidate, 'auto_replenished')
             candidate_report = live_joined_sales_candidate_report(
                 joined_dialogs, client_name, approved_targets
             )
@@ -4487,6 +4493,23 @@ async def main():
             
             print(f"[{client_name}] 📊 Hedef: {len(hedef_set)} | Gönderilecek: {len(blast_targets)} | Kara liste: {debug_blacklisted} | Küçük grup çıkar: {small_groups_skipped} | Üye değil: {debug_not_cached}")
 
+            minimum_sendable_groups = 30
+            if os.path.exists("bot_config.json"):
+                try:
+                    with open("bot_config.json", "r", encoding="utf-8") as f_cfg:
+                        minimum_sendable_groups = max(
+                            1, int(json.load(f_cfg).get("minimum_sendable_groups", 30))
+                        )
+                except (OSError, ValueError, TypeError, json.JSONDecodeError):
+                    minimum_sendable_groups = 30
+            target_floor_shortfall = max(0, minimum_sendable_groups - len(blast_targets))
+            if target_floor_shortfall:
+                print(
+                    f"[{client_name}] 🧩 Gönderilebilir havuz {minimum_sendable_groups} grup "
+                    f"tabanının {target_floor_shortfall} altında; blast sonrası onaylı "
+                    "gruplara katılım ile havuz otomatik tamamlanacak."
+                )
+
             update_ad_account_status(
                 client_name,
                 phase='sending' if blast_targets else 'idle',
@@ -4497,6 +4520,8 @@ async def main():
                 sendable_groups=len(blast_targets),
                 blacklisted_groups=debug_blacklisted,
                 not_joined_groups=debug_not_cached,
+                minimum_sendable_groups=minimum_sendable_groups,
+                target_floor_shortfall=target_floor_shortfall,
                 group_states={
                     name: sorted(set(groups))
                     for name, groups in group_states.items()

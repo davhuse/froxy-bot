@@ -119,7 +119,7 @@ class GroupStateTests(unittest.TestCase):
                     {"yenikuponpazari"},
                 )
 
-    def test_candidate_report_is_detailed_but_does_not_auto_approve(self):
+    def test_candidate_report_is_detailed_and_live_target_replenishes_pool(self):
         with tempfile.TemporaryDirectory() as directory:
             blocks = str(Path(directory) / "blocks.json")
             with patch.object(publisher, "ACCOUNT_GROUP_BLOCKS_FILE", blocks):
@@ -133,13 +133,13 @@ class GroupStateTests(unittest.TestCase):
                 send_targets, _ = publisher.reconcile_send_targets(
                     {"mevcutgrup"}, {rows[0]["username"]}
                 )
-                self.assertEqual(send_targets, {"mevcutgrup"})
+                self.assertEqual(send_targets, {"mevcutgrup", "yenikuponpazari"})
 
-    def test_live_candidate_never_expands_send_targets_without_approval(self):
+    def test_live_candidate_expands_send_targets_as_self_healing_reserve(self):
         send_targets, candidates = publisher.reconcile_send_targets(
             {"mevcutgrup"}, {"mevcutgrup", "yenikuponpazari"}
         )
-        self.assertEqual(send_targets, {"mevcutgrup"})
+        self.assertEqual(send_targets, {"mevcutgrup", "yenikuponpazari"})
         self.assertEqual(candidates, {"yenikuponpazari"})
 
     def test_in_progress_blast_resumes_without_global_one_hour_wait(self):

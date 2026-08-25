@@ -2,5 +2,6 @@
   "admin_id": 0,
   "ad_sleep_min": 3600,
   "ad_sleep_max": 3600,
+  "minimum_sendable_groups": 30,
   "note": "Tokens and Telegram sessions belong in Render environment variables, never in this file."
 }

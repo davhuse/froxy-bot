@@ -27,8 +27,8 @@ products = [
     {
         "id": "la_netflix_ozel",
         "title": "Netflix 4K UHD (Özel Profil)",
-        "price": "109,90 TL",
-        "price_num": 109.90,
+        "price": "84,90 TL",
+        "price_num": 84.90,
         "category": "cinema",
         "image": "assets/products/la_ai_netflix_4k.jpg",
         "badge": "💎 Arena VIP",
