@@ -179,11 +179,13 @@ ad_process = None
 support_process = None
 froxy_process = None
 lisansarena_process = None
+smm_process = None
 
 LOG_FILE = "bot_log.txt"
 SUPPORT_LOG_FILE = "froxy_bot_log.txt"
 FROXY_LOG_FILE = "froxy_destek_log.txt"
 LISANSARENA_LOG_FILE = "lisansarena_bot_log.txt"
+SMM_LOG_FILE = "smm_bot_log.txt"
 MESSAGE_FILE = "message.txt"
 CONFIG_FILE = "bot_config.json"
 AD_STOP_FILE = "ad_worker.disabled"
@@ -256,6 +258,17 @@ def ad_runtime_enabled():
         except (FileNotFoundError, OSError):
             return False
     return True
+
+
+def smm_runtime_enabled():
+    """Run SMM only when explicitly enabled and its Telegram session exists."""
+    if not bot_runtime_enabled():
+        return False
+    enabled = os.environ.get("SMM_RUNTIME_ENABLED", "0").strip().lower()
+    return (
+        enabled in {"1", "true", "yes", "on"}
+        and bool(os.environ.get("SMM_STRING_SESSION", "").strip())
+    )
 
 def update_config_state(key, value):
     if not os.path.exists(CONFIG_FILE):
@@ -471,7 +484,7 @@ def monitor_controlled_smoke(process, expected_account, expected_group):
 
 # WATCHDOG SYSTEM: Keeps both bots running 24/7 unconditionally
 def bot_watchdog(lease_owner=None):
-    global ad_process, support_process, froxy_process, lisansarena_process
+    global ad_process, support_process, froxy_process, lisansarena_process, smm_process
     if not bot_runtime_enabled():
         print("[Watchdog] BOT_RUNTIME_ENABLED=false; Telegram processes will not be started.")
         return
@@ -486,7 +499,7 @@ def bot_watchdog(lease_owner=None):
                 print("[Watchdog] Distributed Telegram ownership was lost; stopping local children.")
                 for owned_script in (
                     "otomatik_katil.py", "froxy_bot.py",
-                    "froxy_destek_bot.py", "lisansarena_bot.py",
+                    "froxy_destek_bot.py", "lisansarena_bot.py", "smm_worker.py",
                 ):
                     kill_process_by_script(owned_script)
                 return
@@ -688,6 +701,38 @@ def bot_watchdog(lease_owner=None):
                     except: pass
                     lisansarena_process = None
 
+            # 5. Check SosyalPazar SMM publisher. It runs as a worker-only
+            # child, so the main web service remains the sole owner of PORT.
+            smm_proc_os = get_process_by_script('smm_worker.py')
+            if smm_runtime_enabled():
+                if smm_proc_os is None:
+                    print("📣 [Watchdog] SosyalPazar SMM yayıncısı başlatılıyor...")
+                    file_out = open(SMM_LOG_FILE, 'a', encoding="utf-8", buffering=1)
+                    smm_process = subprocess.Popen(
+                        [sys.executable, '-u', 'smm_worker.py'],
+                        stdout=file_out,
+                        stderr=subprocess.STDOUT,
+                        cwd=base_dir,
+                        creationflags=flags,
+                        env=env,
+                    )
+                    try:
+                        with open("smm_worker.py.pid", "w") as handle:
+                            handle.write(str(smm_process.pid))
+                    except OSError:
+                        pass
+                    time.sleep(1)
+                else:
+                    smm_process = smm_proc_os
+            elif smm_proc_os is not None:
+                print("📣 [Watchdog] SosyalPazar SMM yayıncısı durduruluyor...")
+                kill_process_by_script('smm_worker.py')
+                try:
+                    os.remove("smm_worker.py.pid")
+                except OSError:
+                    pass
+                smm_process = None
+
         except Exception as e:
             print(f"⚠️ [Watchdog] Genel denetleme hatası: {e}")
             
@@ -800,6 +845,8 @@ def status():
         'support_processes': len(get_processes_by_script('froxy_bot.py')),
         'froxy_support_processes': len(get_processes_by_script('froxy_destek_bot.py')),
         'lisansarena_processes': len(get_processes_by_script('lisansarena_bot.py')),
+        'smm_processes': len(get_processes_by_script('smm_worker.py')),
+        'smm_runtime_enabled': smm_runtime_enabled(),
         'ad_accounts': public_ad_accounts,
         'blast_queue': public_queue,
     })
@@ -824,6 +871,8 @@ def system_checkup():
         'lisansarena_support': len(get_processes_by_script('lisansarena_bot.py')),
         'blast_worker': len(get_processes_by_script('otomatik_katil.py')),
     }
+    if smm_runtime_enabled():
+        expected_processes['smm_publisher'] = len(get_processes_by_script('smm_worker.py'))
     from lisansarena_store import store_health as inspect_lisansarena_store
     store_health = inspect_lisansarena_store()
 
@@ -1652,6 +1701,25 @@ def get_lisansarena_logs():
     except Exception as e:
         return jsonify({"logs": [f"Log okuma hatası: {str(e)}"]})
 
+
+@app.route('/api/smm/status', methods=['GET'])
+def smm_status():
+    """Expose worker health without starting a second SMM web server."""
+    log_lines = []
+    try:
+        if os.path.exists(SMM_LOG_FILE):
+            with open(SMM_LOG_FILE, 'r', encoding='utf-8', errors='replace') as handle:
+                log_lines = [line.strip() for line in handle.readlines() if line.strip()][-30:]
+    except OSError:
+        log_lines = []
+    return jsonify({
+        'runtime_enabled': smm_runtime_enabled(),
+        'configured': bool(os.environ.get('SMM_STRING_SESSION', '').strip()),
+        'processes': len(get_processes_by_script('smm_worker.py')),
+        'running': get_process_by_script('smm_worker.py') is not None,
+        'recent_logs': log_lines,
+    })
+
 @app.route('/api/lisansarena/config', methods=['GET'])
 def get_lisansarena_config():
     if not os.path.exists(CONFIG_FILE):
@@ -2303,7 +2371,7 @@ def shutdown_child_processes():
     _shutdown_started = True
     for script_name in (
         'otomatik_katil.py', 'froxy_bot.py',
-        'froxy_destek_bot.py', 'lisansarena_bot.py',
+        'froxy_destek_bot.py', 'lisansarena_bot.py', 'smm_worker.py',
     ):
         kill_process_by_script(script_name)
 
