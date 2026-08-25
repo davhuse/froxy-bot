@@ -1,0 +1,432 @@
+{
+  "lisansarena": {
+    "la_ig_1000": {
+      "image": "assets/products/premium_v2_la_ig_1000.jpg",
+      "family": "instagram",
+      "title": "Instagram",
+      "package": "Takipçi paketi"
+    },
+    "48973858": {
+      "image": "assets/products/premium_v2_48973858.jpg",
+      "family": "canva",
+      "title": "Canva Pro",
+      "package": "1 yıllık yetki"
+    },
+    "la_netflix_ozel": {
+      "image": "assets/products/premium_v2_la_netflix_ozel.jpg",
+      "family": "netflix",
+      "title": "Netflix",
+      "package": "4K · özel profil"
+    },
+    "la_youtube_3m": {
+      "image": "assets/products/premium_v2_la_youtube_3m.jpg",
+      "family": "youtube",
+      "title": "YouTube Premium",
+      "package": "3 aylık lisans"
+    },
+    "la_spotify_3m": {
+      "image": "assets/products/premium_v2_la_spotify_3m.jpg",
+      "family": "spotify",
+      "title": "Spotify Premium",
+      "package": "3 aylık"
+    },
+    "la_exxen_3m": {
+      "image": "assets/products/premium_v2_la_exxen_3m.jpg",
+      "family": "exxen",
+      "title": "Exxen",
+      "package": "Reklamsız · 3 aylık"
+    },
+    "48945492": {
+      "image": "assets/products/premium_v2_48945492.jpg",
+      "family": "gemini",
+      "title": "Gemini",
+      "package": "Pro · 12 aylık"
+    },
+    "48945487": {
+      "image": "assets/products/premium_v2_48945487.jpg",
+      "family": "gemini",
+      "title": "Gemini",
+      "package": "Ultra · 12 aylık"
+    },
+    "la_capcut_kisisel": {
+      "image": "assets/products/premium_v2_la_capcut_kisisel.jpg",
+      "family": "capcut",
+      "title": "CapCut Pro",
+      "package": "1 aylık · kişisel lisans"
+    },
+    "la_steam_200": {
+      "image": "assets/products/premium_v2_la_steam_200.jpg",
+      "family": "steam",
+      "title": "Steam",
+      "package": "Random Key"
+    },
+    "49099022": {
+      "image": "assets/products/premium_v2_49099022.jpg",
+      "family": "zula",
+      "title": "Zula",
+      "package": "Random hesap"
+    },
+    "49078922": {
+      "image": "assets/products/premium_v2_49078922.jpg",
+      "family": "canva",
+      "title": "Canva Pro",
+      "package": "Öğretmen lisansı"
+    },
+    "la_canva_ogrenci": {
+      "image": "assets/products/premium_v2_la_canva_ogrenci.jpg",
+      "family": "canva",
+      "title": "Canva Pro",
+      "package": "Öğrenci lisansı"
+    },
+    "48945675": {
+      "image": "assets/products/premium_v2_48945675.jpg",
+      "family": "shell",
+      "title": "Shell",
+      "package": "Akaryakıt puanı"
+    },
+    "48945493": {
+      "image": "assets/products/premium_v2_48945493.jpg",
+      "family": "gemini",
+      "title": "Gemini",
+      "package": "Pro · 12 aylık"
+    },
+    "48945489": {
+      "image": "assets/products/premium_v2_48945489.jpg",
+      "family": "gemini",
+      "title": "Gemini",
+      "package": "Ultra · kredi hesabı"
+    },
+    "48945482": {
+      "image": "assets/products/premium_v2_48945482.jpg",
+      "family": "grok",
+      "title": "Grok",
+      "package": "12 aylık"
+    },
+    "48945481": {
+      "image": "assets/products/premium_v2_48945481.jpg",
+      "family": "grok",
+      "title": "Grok",
+      "package": "6 aylık"
+    },
+    "48945480": {
+      "image": "assets/products/premium_v2_48945480.jpg",
+      "family": "grok",
+      "title": "Grok",
+      "package": "3 aylık"
+    },
+    "48945476": {
+      "image": "assets/products/premium_v2_48945476.jpg",
+      "family": "grok",
+      "title": "Grok",
+      "package": "1 aylık"
+    },
+    "48901878": {
+      "image": "assets/products/premium_v2_48901878.jpg",
+      "family": "telegram",
+      "title": "Telegram",
+      "package": "Eski tarihli hesap"
+    },
+    "48901869": {
+      "image": "assets/products/premium_v2_48901869.jpg",
+      "family": "magnific",
+      "title": "Magnific AI",
+      "package": "Business · ortak"
+    },
+    "48901859": {
+      "image": "assets/products/premium_v2_48901859.jpg",
+      "family": "adobe",
+      "title": "Adobe Creative Cloud",
+      "package": "1 aylık · ortak"
+    },
+    "48901858": {
+      "image": "assets/products/premium_v2_48901858.jpg",
+      "family": "adobe",
+      "title": "Adobe Creative Cloud",
+      "package": "1 aylık · bireysel"
+    },
+    "la_netflix_ortak": {
+      "image": "assets/products/premium_v2_la_netflix_ortak.jpg",
+      "family": "netflix",
+      "title": "Netflix",
+      "package": "4K · ortak profil"
+    },
+    "la_prime_ozel": {
+      "image": "assets/products/premium_v2_la_prime_ozel.jpg",
+      "family": "prime",
+      "title": "Prime Video",
+      "package": "4K · özel profil"
+    },
+    "la_spotify_4m": {
+      "image": "assets/products/premium_v2_la_spotify_4m.jpg",
+      "family": "spotify",
+      "title": "Spotify Premium",
+      "package": "4 aylık"
+    },
+    "la_steam_45": {
+      "image": "assets/products/premium_v2_la_steam_45.jpg",
+      "family": "steam",
+      "title": "Steam",
+      "package": "Random Key"
+    },
+    "la_roblox_5offsale": {
+      "image": "assets/products/premium_v2_la_roblox_5offsale.jpg",
+      "family": "roblox",
+      "title": "Roblox",
+      "package": "Offsale hesap paketi"
+    },
+    "la_capcut_ortak": {
+      "image": "assets/products/premium_v2_la_capcut_ortak.jpg",
+      "family": "capcut",
+      "title": "CapCut Pro",
+      "package": "1 aylık · ortak hesap"
+    },
+    "la_envato_kisisel": {
+      "image": "assets/products/premium_v2_la_envato_kisisel.jpg",
+      "family": "envato",
+      "title": "Envato Elements",
+      "package": "1 aylık kişisel"
+    },
+    "la_freepik_kisisel": {
+      "image": "assets/products/premium_v2_la_freepik_kisisel.jpg",
+      "family": "freepik",
+      "title": "Freepik Premium",
+      "package": "1 aylık kişisel"
+    },
+    "la_adobe_cc_1m": {
+      "image": "assets/products/premium_v2_la_adobe_cc_1m.jpg",
+      "family": "adobe",
+      "title": "Adobe Creative Cloud",
+      "package": "1 aylık · bireysel"
+    },
+    "la_windows_pro": {
+      "image": "assets/products/premium_v2_la_windows_pro.jpg",
+      "family": "windows",
+      "title": "Windows Pro",
+      "package": "Windows 10/11 · dijital lisans"
+    },
+    "la_gmail_garantili": {
+      "image": "assets/products/premium_v2_la_gmail_garantili.jpg",
+      "family": "gmail",
+      "title": "Gmail",
+      "package": "Hazır hesap"
+    }
+  },
+  "keyvadi": {
+    "49362864": {
+      "image": "assets/products/premium_v2_49362864.jpg",
+      "family": "youtube",
+      "title": "YouTube Premium",
+      "package": "1 aylık davet"
+    },
+    "47669105": {
+      "image": "assets/products/premium_v2_47669105.jpg",
+      "family": "youtube",
+      "title": "YouTube Premium",
+      "package": "3 aylık lisans"
+    },
+    "49078921": {
+      "image": "assets/products/premium_v2_49078921.jpg",
+      "family": "canva",
+      "title": "Canva Pro",
+      "package": "Öğretmen lisansı"
+    },
+    "47669321": {
+      "image": "assets/products/premium_v2_47669321.jpg",
+      "family": "canva",
+      "title": "Canva Pro",
+      "package": "1 yıllık yetki"
+    },
+    "49099014": {
+      "image": "assets/products/premium_v2_49099014.jpg",
+      "family": "netflix",
+      "title": "Netflix",
+      "package": "4K · ortak profil"
+    },
+    "47669117": {
+      "image": "assets/products/premium_v2_47669117.jpg",
+      "family": "netflix",
+      "title": "Netflix",
+      "package": "4K · özel profil"
+    },
+    "49362708": {
+      "image": "assets/products/premium_v2_49362708.jpg",
+      "family": "gemini",
+      "title": "Gemini",
+      "package": "Advanced Pro · 3 aylık"
+    },
+    "47669222": {
+      "image": "assets/products/premium_v2_47669222.jpg",
+      "family": "gemini",
+      "title": "Gemini",
+      "package": "Ultra · kredi hesabı"
+    },
+    "47669192": {
+      "image": "assets/products/premium_v2_47669192.jpg",
+      "family": "gemini",
+      "title": "Gemini",
+      "package": "Ultra · davet"
+    },
+    "47669164": {
+      "image": "assets/products/premium_v2_47669164.jpg",
+      "family": "gemini",
+      "title": "Gemini",
+      "package": "Pro · davet"
+    },
+    "47669159": {
+      "image": "assets/products/premium_v2_47669159.jpg",
+      "family": "gemini",
+      "title": "Gemini",
+      "package": "Pro · 12 aylık"
+    },
+    "49682367": {
+      "image": "assets/products/premium_v2_49682367.jpg",
+      "family": "gemini",
+      "title": "Gemini",
+      "package": "Pro · 18 aylık"
+    },
+    "47669109": {
+      "image": "assets/products/premium_v2_47669109.jpg",
+      "family": "spotify",
+      "title": "Spotify Premium",
+      "package": "4 aylık"
+    },
+    "49099013": {
+      "image": "assets/products/premium_v2_49099013.jpg",
+      "family": "steam",
+      "title": "Steam",
+      "package": "Random Key"
+    },
+    "49467632": {
+      "image": "assets/products/premium_v2_49467632.jpg",
+      "family": "capcut",
+      "title": "CapCut Pro",
+      "package": "1 aylık · ortak hesap"
+    },
+    "49467620": {
+      "image": "assets/products/premium_v2_49467620.jpg",
+      "family": "capcut",
+      "title": "CapCut Pro",
+      "package": "1 aylık · kişisel lisans"
+    },
+    "47669369": {
+      "image": "assets/products/premium_v2_47669369.jpg",
+      "family": "capcut",
+      "title": "CapCut Pro",
+      "package": "1 aylık · hesap"
+    },
+    "48114785": {
+      "image": "assets/products/premium_v2_48114785.jpg",
+      "family": "windows",
+      "title": "Windows Pro",
+      "package": "Windows 10/11 · dijital lisans"
+    },
+    "47669125": {
+      "image": "assets/products/premium_v2_47669125.jpg",
+      "family": "exxen",
+      "title": "Exxen",
+      "package": "Reklamsız · 3 aylık"
+    },
+    "49099015": {
+      "image": "assets/products/premium_v2_49099015.jpg",
+      "family": "zula",
+      "title": "Zula",
+      "package": "Random hesap"
+    },
+    "49002145": {
+      "image": "assets/products/premium_v2_49002145.jpg",
+      "family": "prime",
+      "title": "Prime Video",
+      "package": "1 aylık · ortak profil"
+    },
+    "49002144": {
+      "image": "assets/products/premium_v2_49002144.jpg",
+      "family": "prime",
+      "title": "Prime Video",
+      "package": "1 aylık · özel profil"
+    },
+    "48943133": {
+      "image": "assets/products/premium_v2_48943133.jpg",
+      "family": "telegram",
+      "title": "Telegram",
+      "package": "Eski tarihli hesap"
+    },
+    "48114795": {
+      "image": "assets/products/premium_v2_48114795.jpg",
+      "family": "semrush",
+      "title": "Semrush",
+      "package": "Pro · 14 günlük"
+    },
+    "47669496": {
+      "image": "assets/products/premium_v2_47669496.jpg",
+      "family": "shell",
+      "title": "Shell",
+      "package": "Akaryakıt puanı"
+    },
+    "47669486": {
+      "image": "assets/products/premium_v2_47669486.jpg",
+      "family": "trendyol_market",
+      "title": "Trendyol Market",
+      "package": "Kupon"
+    },
+    "47669482": {
+      "image": "assets/products/premium_v2_47669482.jpg",
+      "family": "trendyol_yemek",
+      "title": "Trendyol Yemek",
+      "package": "Kupon"
+    },
+    "47669362": {
+      "image": "assets/products/premium_v2_47669362.jpg",
+      "family": "adobe",
+      "title": "Adobe Creative Cloud",
+      "package": "4 aylık · ortak"
+    },
+    "47669356": {
+      "image": "assets/products/premium_v2_47669356.jpg",
+      "family": "adobe",
+      "title": "Adobe Creative Cloud",
+      "package": "1 aylık · ortak"
+    },
+    "47669341": {
+      "image": "assets/products/premium_v2_47669341.jpg",
+      "family": "adobe",
+      "title": "Adobe Creative Cloud",
+      "package": "1 aylık · ortak"
+    },
+    "47669328": {
+      "image": "assets/products/premium_v2_47669328.jpg",
+      "family": "adobe",
+      "title": "Adobe Express",
+      "package": "3 aylık"
+    },
+    "47669305": {
+      "image": "assets/products/premium_v2_47669305.jpg",
+      "family": "grok",
+      "title": "Grok",
+      "package": "12 aylık"
+    },
+    "47669295": {
+      "image": "assets/products/premium_v2_47669295.jpg",
+      "family": "grok",
+      "title": "Grok",
+      "package": "6 aylık"
+    },
+    "47669271": {
+      "image": "assets/products/premium_v2_47669271.jpg",
+      "family": "grok",
+      "title": "Grok",
+      "package": "3 aylık"
+    },
+    "47669248": {
+      "image": "assets/products/premium_v2_47669248.jpg",
+      "family": "grok",
+      "title": "Grok",
+      "package": "1 aylık"
+    },
+    "49682386": {
+      "image": "assets/products/premium_v2_49682386.jpg",
+      "family": "disney",
+      "title": "Disney+",
+      "package": "UHD · reklamsız · 1 aylık"
+    }
+  }
+}

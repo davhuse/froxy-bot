@@ -26,7 +26,7 @@ SHOPIER_HOSTS = {"shopier.com", "www.shopier.com"}
 PUBLIC_BASE_URL = (
     os.environ.get("PUBLIC_BASE_URL")
     or os.environ.get("RENDER_EXTERNAL_URL")
-    or "https://froxy-bot-live.onrender.com"
+    or "https://froxy-bot-live-r5se.onrender.com"
 ).rstrip("/")
 CATALOG_REFRESH_STATUS: dict[str, dict] = {}
 

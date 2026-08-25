@@ -146,7 +146,7 @@ BOT_USER_ID = None
 FROXY_SHOPIER_URL = "https://www.shopier.com/froxyai"
 FROXY_MINI_APP_URL = (
     os.environ.get("FROXY_MINI_APP_URL")
-    or f"{(os.environ.get('RENDER_EXTERNAL_URL') or 'https://froxy-bot-live.onrender.com').rstrip('/')}/froxy/"
+    or f"{(os.environ.get('RENDER_EXTERNAL_URL') or 'https://froxy-bot-live-r5se.onrender.com').rstrip('/')}/froxy/"
 ).strip().rstrip("/") + "/"
 
 BOT_COMMANDS = [

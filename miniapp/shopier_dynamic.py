@@ -23,7 +23,7 @@ ACTIVE_TOPUPS_FILE = BASE_DIR / "active_topups.json"
 KEYVADI_TOKEN = (os.environ.get("SHOPIER_KEYVADI_ACCESS_TOKEN") or os.environ.get("SHOPIER_BEARER_TOKEN") or "").strip()
 KEYVADI_TOPUP_MEDIA_URL = os.environ.get(
     "KEYVADI_TOPUP_MEDIA_URL",
-    "https://froxy-bot-live.onrender.com/keyvadi/assets/keyvadi_logo.png",
+    "https://froxy-bot-live-r5se.onrender.com/keyvadi/assets/keyvadi_logo.png",
 ).strip()
 
 _cleaner_started = False

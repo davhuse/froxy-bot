@@ -22,7 +22,7 @@ ACTIVE_TOPUPS_FILE = BASE_DIR / "active_topups.json"
 LISANSARENA_TOKEN = (os.environ.get("SHOPIER_LISANSARENA_ACCESS_TOKEN") or os.environ.get("LISANSARENA_SHOPIER_BEARER_TOKEN") or "").strip()
 LISANSARENA_TOPUP_MEDIA_URL = os.environ.get(
     "LISANSARENA_TOPUP_MEDIA_URL",
-    "https://froxy-bot-live.onrender.com/la/app/assets/lisansarena_logo.png",
+    "https://froxy-bot-live-r5se.onrender.com/la/app/assets/lisansarena_logo.png",
 ).strip()
 
 _cleaner_started = False
