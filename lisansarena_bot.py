@@ -68,7 +68,16 @@ BOT_TOKEN = (
 
 # Canonical Mini App URL configuration
 _configured_mini_app_url = os.environ.get("LISANSARENA_MINI_APP_URL", "").strip()
-_canonical_mini_app_url = "https://froxy-bot-live.onrender.com/la/app/"
+_render_external_url = os.environ.get("RENDER_EXTERNAL_URL", "").strip().rstrip("/")
+_canonical_mini_app_url = (
+    f"{_render_external_url}/la/app/"
+    if _render_external_url
+    else "https://froxy-bot-live.onrender.com/la/app/"
+)
+if _render_external_url:
+    # Render migration: the platform-provided public URL is authoritative.
+    # This also neutralizes a stale URL copied from the previous service.
+    _configured_mini_app_url = _canonical_mini_app_url
 if _configured_mini_app_url:
     from urllib.parse import urlsplit, urlunsplit
 
@@ -78,7 +87,7 @@ if _configured_mini_app_url:
         "froxy-bot-wjzr.onrender.com",
         "froxy-bot-qy0a.onrender.com",
     }
-    if _old_storefront or _parts.netloc != "froxy-bot-live.onrender.com":
+    if _old_storefront or _parts.netloc != urlsplit(_canonical_mini_app_url).netloc:
         _configured_mini_app_url = _canonical_mini_app_url
     elif _path == "/la/app":
         _configured_mini_app_url = urlunsplit((_parts.scheme, _parts.netloc, "/la/app/", "", ""))

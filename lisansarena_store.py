@@ -1061,7 +1061,7 @@ class LisansArenaStore:
                 "type": "image",
                 "url": os.environ.get(
                     "LISANSARENA_TOPUP_MEDIA_URL",
-                    "https://froxy-bot-live.onrender.com/la/app/assets/lisansarena_logo.png",
+                    f"{(os.environ.get('RENDER_EXTERNAL_URL') or 'https://froxy-bot-live.onrender.com').rstrip('/')}/la/app/assets/lisansarena_logo.png",
                 ).strip(),
                 "placement": 1,
             }],

@@ -52,6 +52,7 @@ class LisansArenaBotGuardTests(unittest.TestCase):
     def test_profile_configuration_is_opt_in_and_menu_is_canonical(self):
         self.assertIn('LISANSARENA_CONFIGURE_PROFILE', SOURCE)
         self.assertIn('https://froxy-bot-live.onrender.com/la/app/', SOURCE)
+        self.assertIn('RENDER_EXTERNAL_URL', SOURCE)
         self.assertIn('MINI_APP_URL = (_configured_mini_app_url or _canonical_mini_app_url)', SOURCE)
 
     def test_generic_private_handler_does_not_answer_commands(self):

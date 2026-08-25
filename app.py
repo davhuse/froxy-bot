@@ -870,7 +870,7 @@ def system_checkup():
         'keyvadi_mini_app': {
             'url': os.environ.get(
                 'KEYVADI_MINI_APP_URL',
-                'https://froxy-bot-live.onrender.com/keyvadi/',
+                f"{(os.environ.get('RENDER_EXTERNAL_URL') or 'https://froxy-bot-live.onrender.com').rstrip('/')}/keyvadi/",
             ),
             'mounted': True,
         },

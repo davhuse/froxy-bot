@@ -225,9 +225,13 @@ ADMIN_ID = int(os.environ.get("TELEGRAM_ADMIN_ID", config.get("admin_id", 0)) or
 BOT_USER_ID = None
 PROFILE_CONFIGURED = False
 SHOPIER_LINKS = config.get("shopier_links", {})
+_PUBLIC_BASE_URL = (
+    os.environ.get("RENDER_EXTERNAL_URL")
+    or "https://froxy-bot-live.onrender.com"
+).strip().rstrip("/")
 KEYVADI_MINI_APP_URL = os.environ.get(
     "KEYVADI_MINI_APP_URL",
-    "https://froxy-bot-live.onrender.com/keyvadi/",
+    f"{_PUBLIC_BASE_URL}/keyvadi/",
 ).strip().rstrip("/") + "/"
 
 if not BOT_TOKEN or BOT_TOKEN == "YOUR_TELEGRAM_BOT_TOKEN":
