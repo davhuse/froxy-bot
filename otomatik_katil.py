@@ -133,7 +133,13 @@ async def verify_ad_after_window(client, entity, message_id, client_name, group_
             template=template_name, arm=experiment_arm,
             cta_mode=cta_mode, product=hero_product,
         )
-        set_cooldown(group_name, client_name, entity)
+        # Cooldown is stamped as soon as Telegram accepts and immediately
+        # exposes the message.  The ten-minute check must not move that stamp
+        # forward; otherwise the tail of a long blast is still cooling down
+        # when the next hourly cycle starts and the pool shrinks every turn.
+        set_cooldown(
+            group_name, client_name, entity, preserve_existing=True
+        )
         update_stats(sent=1)
         clear_group_failure(group_name, client_name, entity)
         update_ad_account_status(
@@ -211,6 +217,11 @@ async def send_and_verify_ad(client, entity, message, client_name, group_name, o
     record_delivery_state(
         group_name, client_name, "visible", entity=entity, message_id=message_id
     )
+    # Start the one-hour safety interval from Telegram acceptance, not from
+    # the asynchronous ten-minute visibility verification.  A later deletion
+    # still creates a moderation hold, while this timestamp prevents both a
+    # duplicate retry and a drifting cooldown window.
+    set_cooldown(group_name, client_name, entity)
     if options.get("controlled_smoke"):
         await verify_ad_after_window(
             client, entity, message_id, client_name, group_name,
@@ -1210,6 +1221,17 @@ def reconcile_send_targets(approved_targets, live_candidates):
     live = {normalize_group_key(item) for item in live_candidates if item}
     return approved | live, live - approved
 
+
+def should_defer_blast_for_floor(sendable_count, minimum_sendable_groups,
+                                 controlled_smoke=False):
+    """Keep normal blasts from starting below the configured target floor."""
+    if controlled_smoke:
+        return False
+    try:
+        return int(sendable_count) < max(1, int(minimum_sendable_groups))
+    except (TypeError, ValueError):
+        return False
+
 def _load_json_file(path, default):
     try:
         if os.path.exists(path):
@@ -1628,7 +1650,7 @@ def is_on_cooldown(grup_name, client_name, entity=None):
 
     return False
 
-def set_cooldown(grup_name, client_name, entity=None):
+def set_cooldown(grup_name, client_name, entity=None, preserve_existing=False):
     """Gruba bu hesap tarafından mesaj gönderildi olarak işaretle"""
     from datetime import datetime
     cooldowns = load_cooldowns()
@@ -1637,6 +1659,9 @@ def set_cooldown(grup_name, client_name, entity=None):
     # Eski tip veri varsa veya boşsa temizle
     if key not in cooldowns or isinstance(cooldowns[key], str):
         cooldowns[key] = {}
+
+    if preserve_existing and cooldowns[key].get(client_name):
+        return
 
     cooldowns[key][client_name] = datetime.now().isoformat()
     save_cooldowns(cooldowns)
@@ -4503,16 +4528,27 @@ async def main():
                 except (OSError, ValueError, TypeError, json.JSONDecodeError):
                     minimum_sendable_groups = 30
             target_floor_shortfall = max(0, minimum_sendable_groups - len(blast_targets))
+            floor_snapshot = await asyncio.to_thread(blast_coordinator.snapshot)
+            floor_record = (floor_snapshot.get('accounts') or {}).get(client_name, {})
+            resuming_existing_cycle = bool(
+                floor_record.get('run_id') and floor_record.get('targets')
+            )
+            defer_for_floor = (not resuming_existing_cycle) and should_defer_blast_for_floor(
+                len(blast_targets), minimum_sendable_groups, CONTROLLED_SMOKE_MODE
+            )
             if target_floor_shortfall:
                 print(
                     f"[{client_name}] 🧩 Gönderilebilir havuz {minimum_sendable_groups} grup "
-                    f"tabanının {target_floor_shortfall} altında; blast sonrası onaylı "
-                    "gruplara katılım ile havuz otomatik tamamlanacak."
+                    f"tabanının {target_floor_shortfall} altında; kısa blast başlatılmayacak. "
+                    "Önce onaylı gruplara katılım ve cooldown açılması beklenecek."
                 )
 
             update_ad_account_status(
                 client_name,
-                phase='sending' if blast_targets else 'idle',
+                phase=(
+                    'replenishing' if defer_for_floor
+                    else 'sending' if blast_targets else 'idle'
+                ),
                 remaining_seconds=0,
                 remaining_minutes=0,
                 next_blast_at=utc_after_seconds_iso(0),
@@ -4536,8 +4572,14 @@ async def main():
             sent_count = 0
             fail_count = 0
 
-            if not blast_targets:
-                print(f"[{client_name}] ⚠️ Önbellekte mesaj atılacak grup yok. Yeni gruplara katılma aşamasına geçiliyor...")
+            if defer_for_floor or not blast_targets:
+                if defer_for_floor:
+                    print(
+                        f"[{client_name}] ⏸️ {len(blast_targets)}/{minimum_sendable_groups} "
+                        "grup hazır; eksik havuzla blast yerine tamamlama aşamasına geçiliyor."
+                    )
+                else:
+                    print(f"[{client_name}] ⚠️ Önbellekte mesaj atılacak grup yok. Yeni gruplara katılma aşamasına geçiliyor...")
             else:
                 print(f"\n[{client_name}] 🚀 BLAST MODE: {len(blast_targets)} gruba mesaj gönderiliyor!")
                 
@@ -5129,13 +5171,24 @@ async def main():
                     stop_event.set()
                     return
 
-            if not blast_targets:
+            if defer_for_floor or not blast_targets:
                 # A full scan with no currently sendable target is also a
                 # completed cycle; this prevents a tight restart loop.
                 await asyncio.to_thread(
-                    blast_coordinator.release_empty_cycle, client_name, 3600
+                    blast_coordinator.release_empty_cycle,
+                    client_name,
+                    300 if defer_for_floor else 3600,
                 )
-                save_last_blast_time(client_name)
+                if defer_for_floor:
+                    update_ad_account_status(
+                        client_name,
+                        phase='replenishing',
+                        remaining_seconds=300,
+                        remaining_minutes=5,
+                        next_blast_at=utc_after_seconds_iso(300),
+                    )
+                else:
+                    save_last_blast_time(client_name)
 
             # ═══════════════════════════════════════════════════
             # YENİ GRUPLARA KATILMA AŞAMASI (blast sonrası)

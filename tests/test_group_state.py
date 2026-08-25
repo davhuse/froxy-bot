@@ -142,6 +142,27 @@ class GroupStateTests(unittest.TestCase):
         self.assertEqual(send_targets, {"mevcutgrup", "yenikuponpazari"})
         self.assertEqual(candidates, {"yenikuponpazari"})
 
+    def test_normal_blast_is_deferred_below_floor(self):
+        self.assertTrue(publisher.should_defer_blast_for_floor(27, 30))
+        self.assertFalse(publisher.should_defer_blast_for_floor(30, 30))
+        self.assertFalse(
+            publisher.should_defer_blast_for_floor(1, 30, controlled_smoke=True)
+        )
+
+    def test_visibility_verification_does_not_move_existing_cooldown(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = str(Path(directory) / "cooldowns.json")
+            with patch.object(publisher, "COOLDOWN_FILE", path):
+                publisher.set_cooldown("kuponceksatis", "KeyVadiOnline")
+                with open(path, encoding="utf-8") as handle:
+                    first = json.load(handle)
+                publisher.set_cooldown(
+                    "kuponceksatis", "KeyVadiOnline", preserve_existing=True
+                )
+                with open(path, encoding="utf-8") as handle:
+                    second = json.load(handle)
+                self.assertEqual(first, second)
+
     def test_in_progress_blast_resumes_without_global_one_hour_wait(self):
         with tempfile.TemporaryDirectory() as directory:
             path = str(Path(directory) / "cooldowns.json")
@@ -224,6 +245,35 @@ class GroupStateTests(unittest.TestCase):
                 "indirim363", seconds=0, experiment_arm="policy_smoke"
             ))
             set_cooldown.assert_not_called()
+
+    def test_telegram_acceptance_starts_cooldown_before_background_check(self):
+        class Sent:
+            id = 77
+            raw_text = "KeyVadi test"
+            media = None
+
+        class Client:
+            async def send_message(self, entity, message, **kwargs):
+                return Sent()
+
+            async def get_messages(self, entity, ids):
+                return Sent()
+
+        def close_background(coro):
+            coro.close()
+            return SimpleNamespace()
+
+        with patch.object(publisher, "set_cooldown") as set_cooldown, \
+                patch.object(publisher, "record_delivery_state"), \
+                patch.object(publisher.asyncio, "sleep", new=AsyncMock()), \
+                patch.object(
+                    publisher.asyncio, "create_task", side_effect=close_background
+                ):
+            asyncio.run(publisher.send_and_verify_ad(
+                Client(), self._entity(), "test", "KeyVadiOnline",
+                "kuponceksatis", {},
+            ))
+            set_cooldown.assert_called_once()
 
     def test_transport_layer_always_disables_link_preview(self):
         class Sent:
