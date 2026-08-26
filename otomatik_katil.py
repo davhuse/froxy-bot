@@ -328,6 +328,24 @@ PROTECTED_GROUP_ALIASES = {}
 # because Telegram invite hashes are case-insensitive in the local queue.
 CANCELLED_JOIN_REQUESTS = set()
 
+# Joining groups is more sensitive than sending a message: Telegram can issue
+# a join-specific FloodWait after only a handful of successful joins.  Keep
+# the pacing conservative and configurable so all three accounts do not
+# collectively hammer the same join window.
+def _safe_join_setting(name, default, minimum=1):
+    try:
+        return max(minimum, int(os.environ.get(name, str(default))))
+    except (TypeError, ValueError):
+        return default
+
+
+JOIN_DELAY_MIN_SECONDS = _safe_join_setting("JOIN_DELAY_MIN_SECONDS", 60, minimum=15)
+JOIN_DELAY_MAX_SECONDS = max(
+    JOIN_DELAY_MIN_SECONDS,
+    _safe_join_setting("JOIN_DELAY_MAX_SECONDS", 120, minimum=JOIN_DELAY_MIN_SECONDS),
+)
+MAX_JOINS_PER_CYCLE = _safe_join_setting("MAX_JOINS_PER_CYCLE", 8, minimum=1)
+
 # Uyeliginden cikilacak gruplar.  Ban yedigimiz bir grupta uye kalmaya devam
 # etmek, yoneticiler hesabi tekrar fark ettiginde ikinci bir bana yol aciyor.
 # Calisma basina bir kez islenir.
@@ -5387,8 +5405,11 @@ async def main():
                     print(f"[{client_name}] ⏸️ Join kısıtı aktif; {state.get('until', 'belirsiz')} tarihine kadar yeni gruba katılım atlandı.")
                     not_joined = []
                 for hedef_grup in not_joined:
-                    if join_count >= 20:
-                        print(f"[{client_name}] 🔒 Bu turda 20 gruba katılındı (limit), durduruluyor.")
+                    if join_count >= MAX_JOINS_PER_CYCLE:
+                        print(
+                            f"[{client_name}] 🔒 Bu turda {MAX_JOINS_PER_CYCLE} gruba katılındı "
+                            "(güvenli limit), durduruluyor."
+                        )
                         break
 
                     # Kara listeyi katilim aninda tekrar oku.  Liste tur icinde
@@ -5446,7 +5467,12 @@ async def main():
                             if hedef_grup.lower() in account_pending_invites:
                                 account_pending_invites.remove(hedef_grup.lower())
                                 save_pending_invites(client_name, account_pending_invites)
-                            await asyncio.sleep(random.randint(15, 30))
+                            await asyncio.sleep(
+                                random.randint(
+                                    JOIN_DELAY_MIN_SECONDS,
+                                    JOIN_DELAY_MAX_SECONDS,
+                                )
+                            )
                             
                     except FloodWaitError as e:
                         set_account_restriction(client_name, e.seconds, 'Telegram katılım FloodWait', type(e).__name__, scope='join')
