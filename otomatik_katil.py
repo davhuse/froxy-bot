@@ -4305,8 +4305,16 @@ async def main():
                         or os.environ.get("RENDER_EXTERNAL_URL")
                     )
                     render_ad_flag = os.environ.get("BOT_AD_ENABLED", "1").strip().lower()
+                    # Render's environment flag is the production source of
+                    # truth.  The checked-in panel config may legitimately be
+                    # stale (for example after a local stop), and must not
+                    # make the watchdog restart/kill loop churn forever.
+                    config_stop_requested = (
+                        not is_render_runtime
+                        and not cfg_chk.get("ad_bot_running", True)
+                    )
                     if (
-                        not cfg_chk.get("ad_bot_running", True)
+                        config_stop_requested
                         or os.path.exists("ad_worker.disabled")
                         or render_ad_flag in {"0", "false", "no", "off"}
                     ):
