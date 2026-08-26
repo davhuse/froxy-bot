@@ -883,12 +883,12 @@ ACTIVE_ACCOUNT_IDENTITIES = {
         'user_id': 6196006704,
         'slot': 2,
     },
-    'lisansarenaonline': {
+    'lisansarenadestek': {
         'stable_name': 'LisansArenaOnline',
-        # Verilen telefon mevcut Telegram oturumuyla uyusmadi. Dogrulanmis,
-        # degismez Telegram ID + kullanici adi birlikte kullaniliyor.
+        # The replacement account is locked by its immutable Telegram ID and
+        # public username.  Keep the phone out of source control.
         'phone': None,
-        'user_id': 8879941384,
+        'user_id': 8960726264,
         'slot': 3,
     },
 }
@@ -1758,7 +1758,7 @@ def is_on_cooldown(grup_name, client_name, entity=None):
     legacy_mapping = {
         'FroxyOnline': ['Hesap #1', 'froxy_ai', 'c4hex'],
         'KeyVadiOnline': ['Hesap #2', 'keyvadionline', 'userrrrrrrrrra'],
-        'LisansArenaOnline': ['Hesap #3', 'lisansarenaonline'],
+        'LisansArenaOnline': ['Hesap #3', 'lisansarenaonline', 'lisansarenadestek'],
     }
     my_aliases = set([client_name, client_name.lower()])
     if client_name in legacy_mapping:
@@ -1844,6 +1844,7 @@ def get_account_aliases(client_name):
         aliases.add('keyvadidestek')
     elif cname == 'LisansArenaOnline':
         aliases.add('lisansarenaonline')
+        aliases.add('lisansarenadestek')
     return aliases
 
 def mark_blast_started(client_name):

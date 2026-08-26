@@ -65,6 +65,13 @@ class GroupStateTests(unittest.TestCase):
         self.assertIn("kuponsatimalim", {item.lower() for item in publisher.gruplar})
         self.assertIn(("KeyVadiOnline", "ceksat"), publisher.SEEDED_ACCOUNT_GROUP_BLOCKS)
 
+    def test_replacement_lisansarena_account_is_locked_to_slot_three(self):
+        identity = publisher.ACTIVE_ACCOUNT_IDENTITIES["lisansarenadestek"]
+        self.assertEqual(identity["stable_name"], "LisansArenaOnline")
+        self.assertEqual(identity["user_id"], 8960726264)
+        self.assertEqual(identity["slot"], 3)
+        self.assertNotIn("lisansarenaonline", publisher.ACTIVE_ACCOUNT_IDENTITIES)
+
     def test_automatic_group_leaves_are_opt_in(self):
         with patch.dict(os.environ, {}, clear=False):
             os.environ.pop("ALLOW_AUTOMATIC_LEAVES", None)
