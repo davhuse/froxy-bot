@@ -1,5 +1,6 @@
 import asyncio
 from datetime import datetime, timezone
+import inspect
 import json
 import os
 import tempfile
@@ -79,6 +80,13 @@ class GroupStateTests(unittest.TestCase):
             os.environ["ALLOW_AUTOMATIC_LEAVES"] = "1"
             self.assertTrue(publisher.automatic_leaves_enabled())
             os.environ.pop("ALLOW_AUTOMATIC_LEAVES", None)
+
+    def test_send_ban_never_leaves_the_group(self):
+        source = inspect.getsource(publisher.main)
+        banned_handler = source.split(
+            "except UserBannedInChannelError:", 1
+        )[1].split("except ChatWriteForbiddenError:", 1)[0]
+        self.assertNotIn("LeaveChannelRequest", banned_handler)
 
     def test_pending_join_requests_are_account_specific(self):
         with tempfile.TemporaryDirectory() as directory:

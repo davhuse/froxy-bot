@@ -5124,18 +5124,15 @@ async def main():
                         fail_count += 1
                     except UserBannedInChannelError:
                         record_event("ad_failed", client_name, group=normalize_group_key(grup_name), error="UserBannedInChannelError")
-                        print(f"[{client_name}] ❌ @{grup_name} → Bu hesap banlı; hesap bazlı engelleniyor...")
+                        print(
+                            f"[{client_name}] ❌ @{grup_name} → Bu hesap gönderimde banlı; "
+                            "hesap bazlı engelleniyor, gruptan çıkış yapılmıyor..."
+                        )
                         fail_count += 1
                         async with state_lock:
                             record_account_group_block(
                                 grup_name, client_name, 'UserBannedInChannel', entity
                             )
-                        try:
-                            if entity:
-                                await client(LeaveChannelRequest(entity))
-                                print(f"[{client_name}] 🚪 @{grup_name} grubundan çıkıldı.")
-                        except Exception as le:
-                            print(f"[{client_name}] ⚠️ @{grup_name} grubundan çıkılırken hata: {le}")
                     except ChatWriteForbiddenError:
                         record_event("ad_failed", client_name, group=normalize_group_key(grup_name), error="ChatWriteForbiddenError")
                         print(f"[{client_name}] 🔒 @{grup_name} → Yazma izni yok/kısıtlı; sonraki turda tekrar denenecek.")

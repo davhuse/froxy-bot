@@ -1,5 +1,9 @@
 const nativeFetch = window.fetch.bind(window);
-let panelAdminToken = sessionStorage.getItem('panelAdminToken') || '';
+// Keep the admin token across tab/browser restarts. sessionStorage made the
+// emergency stop button ask for the key again whenever the panel was reopened.
+let panelAdminToken = localStorage.getItem('panelAdminToken')
+    || sessionStorage.getItem('panelAdminToken')
+    || '';
 
 async function adminFetch(input, init = {}) {
     if (!panelAdminToken) throw new Error('Yönetim anahtarı gerekli');
@@ -8,6 +12,7 @@ async function adminFetch(input, init = {}) {
     const response = await nativeFetch(input, { ...init, headers });
     if (response.status === 401 || response.status === 503) {
         panelAdminToken = '';
+        localStorage.removeItem('panelAdminToken');
         sessionStorage.removeItem('panelAdminToken');
         throw new Error('Yönetim anahtarı geçersiz veya sunucuda yapılandırılmamış');
     }
@@ -23,6 +28,7 @@ function savePanelAdminToken(event) {
         return;
     }
     panelAdminToken = value;
+    localStorage.setItem('panelAdminToken', value);
     sessionStorage.setItem('panelAdminToken', value);
     input.value = '';
     loadGroupStatus();
