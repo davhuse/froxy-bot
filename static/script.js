@@ -477,20 +477,32 @@ function updateStatusUI(status) {
 
 async function startBot() {
     UI.btnStart.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Başlatılıyor...';
-    const res = await adminFetch('/api/start', { method: 'POST' });
-    const data = await res.json();
-    UI.btnStart.innerHTML = '<i class="fa-solid fa-play"></i> Başlat';
-    if(data.success) checkStatus();
-    else alert("Hata: " + data.message);
+    try {
+        const res = await adminFetch('/api/start', { method: 'POST' });
+        const data = await res.json();
+        if(data.success) checkStatus();
+        else alert("Hata: " + (data.message || data.error || 'Başlatılamadı'));
+    } catch (e) {
+        alert("Başlatma başarısız: " + e.message);
+        checkStatus();
+    } finally {
+        UI.btnStart.innerHTML = '<i class="fa-solid fa-play"></i> Başlat';
+    }
 }
 
 async function stopBot() {
     UI.btnStop.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Durduruluyor...';
-    const res = await adminFetch('/api/stop', { method: 'POST' });
-    const data = await res.json();
-    UI.btnStop.innerHTML = '<i class="fa-solid fa-stop"></i> Durdur';
-    if(data.success) checkStatus();
-    else alert("Hata: " + data.message);
+    try {
+        const res = await adminFetch('/api/stop', { method: 'POST' });
+        const data = await res.json();
+        if(data.success) checkStatus();
+        else alert("Hata: " + (data.message || data.error || 'Durdurulamadı'));
+    } catch (e) {
+        alert("Durdurma başarısız: " + e.message);
+        checkStatus();
+    } finally {
+        UI.btnStop.innerHTML = '<i class="fa-solid fa-stop"></i> Durdur';
+    }
 }
 
 async function loadMessage() {

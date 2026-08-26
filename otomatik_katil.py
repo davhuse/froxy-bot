@@ -347,6 +347,18 @@ GROUPS_TO_LEAVE = {
 
 ACCOUNT_GROUPS_TO_LEAVE = {"KeyVadiOnline": {"ceksat"}}
 
+def automatic_leaves_enabled():
+    """Return whether an operator explicitly enabled Telegram leave actions.
+
+    Leaving a channel is an irreversible account-side action and must never be
+    part of the normal blast preparation path.  Keep the legacy lists for
+    audited maintenance, but require an explicit runtime opt-in before using
+    them.
+    """
+    return os.environ.get("ALLOW_AUTOMATIC_LEAVES", "0").strip().lower() in {
+        "1", "true", "yes", "on"
+    }
+
 def normalize_group_key(grup_name):
     g_lower = str(grup_name or '').lower().replace('@', '').strip()
     g_lower = g_lower.rstrip('/')
@@ -4433,27 +4445,30 @@ async def main():
                 await cancel_pending_join_request(client, client_name, joined_dialogs, cancelled_group)
                 cancelled_join_requests_handled.add(cancelled_group)
 
-            # Ayrilmasi istenen gruplardan cik (calisma basina bir kez).
-            requested_leaves = set(GROUPS_TO_LEAVE)
-            requested_leaves.update(ACCOUNT_GROUPS_TO_LEAVE.get(client_name, set()))
-            for leave_group in requested_leaves:
-                leave_key = (client_name, normalize_group_key(leave_group))
-                if leave_key in groups_left_handled:
-                    continue
-                groups_left_handled.add(leave_key)
-                entity = joined_dialogs.get(normalize_group_key(leave_group))
-                if not entity:
-                    continue
-                if (leave_group not in ACCOUNT_GROUPS_TO_LEAVE.get(client_name, set())
-                        and is_group_protected(leave_group)):
-                    print(f"[{client_name}] ⚠️ @{leave_group} korumalı listede, çıkış yapılmadı.")
-                    continue
-                try:
-                    await client(LeaveChannelRequest(entity))
-                    joined_dialogs.pop(normalize_group_key(leave_group), None)
-                    print(f"[{client_name}] 🚪 @{leave_group} grubundan çıkıldı (ayrılma listesi).")
-                except Exception as le:
-                    print(f"[{client_name}] ⚠️ @{leave_group} grubundan çıkılamadı: {type(le).__name__}")
+            # Channel exits are destructive.  Legacy leave lists are retained
+            # only for explicitly approved maintenance and are disabled during
+            # normal ad runs to prevent accidental mass exits.
+            if automatic_leaves_enabled():
+                requested_leaves = set(GROUPS_TO_LEAVE)
+                requested_leaves.update(ACCOUNT_GROUPS_TO_LEAVE.get(client_name, set()))
+                for leave_group in requested_leaves:
+                    leave_key = (client_name, normalize_group_key(leave_group))
+                    if leave_key in groups_left_handled:
+                        continue
+                    groups_left_handled.add(leave_key)
+                    entity = joined_dialogs.get(normalize_group_key(leave_group))
+                    if not entity:
+                        continue
+                    if (leave_group not in ACCOUNT_GROUPS_TO_LEAVE.get(client_name, set())
+                            and is_group_protected(leave_group)):
+                        print(f"[{client_name}] ⚠️ @{leave_group} korumalı listede, çıkış yapılmadı.")
+                        continue
+                    try:
+                        await client(LeaveChannelRequest(entity))
+                        joined_dialogs.pop(normalize_group_key(leave_group), None)
+                        print(f"[{client_name}] 🚪 @{leave_group} grubundan çıkıldı (ayrılma listesi).")
+                    except Exception as le:
+                        print(f"[{client_name}] ⚠️ @{leave_group} grubundan çıkılamadı: {type(le).__name__}")
 
 
             blacklist = get_list(BLACKLIST_FILE)

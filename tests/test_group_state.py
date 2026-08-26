@@ -65,6 +65,14 @@ class GroupStateTests(unittest.TestCase):
         self.assertIn("kuponsatimalim", {item.lower() for item in publisher.gruplar})
         self.assertIn(("KeyVadiOnline", "ceksat"), publisher.SEEDED_ACCOUNT_GROUP_BLOCKS)
 
+    def test_automatic_group_leaves_are_opt_in(self):
+        with patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("ALLOW_AUTOMATIC_LEAVES", None)
+            self.assertFalse(publisher.automatic_leaves_enabled())
+            os.environ["ALLOW_AUTOMATIC_LEAVES"] = "1"
+            self.assertTrue(publisher.automatic_leaves_enabled())
+            os.environ.pop("ALLOW_AUTOMATIC_LEAVES", None)
+
     def test_pending_join_requests_are_account_specific(self):
         with tempfile.TemporaryDirectory() as directory:
             target = os.path.join(directory, "pending.json")
