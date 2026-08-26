@@ -865,6 +865,32 @@ def system_checkup():
             'status': type(exc).__name__,
         }
 
+    runtime_cfg = {}
+    try:
+        with open(CONFIG_FILE, 'r', encoding='utf-8') as handle:
+            runtime_cfg = json.load(handle)
+    except (OSError, ValueError, TypeError):
+        runtime_cfg = {}
+
+    # A deliberately disabled worker is healthy-but-inactive, not broken. The
+    # old checkup treated every zero process count as an outage, so a planned
+    # emergency pause made the whole dashboard look failed.
+    processes_enabled = {
+        'keyvadi_support': bool(
+            runtime_cfg.get('support_bot_running')
+            and os.environ.get('KEYVADI_SUPPORT_BOT_TOKEN', '').strip()
+        ),
+        'froxy_support': bool(
+            runtime_cfg.get('froxy_bot_running')
+            and os.environ.get('FROXY_SUPPORT_BOT_TOKEN', '').strip()
+        ),
+        'lisansarena_support': bool(
+            runtime_cfg.get('lisansarena_bot_running')
+            and os.environ.get('LISANSARENA_BOT_TOKEN', '').strip()
+        ),
+        'blast_worker': ad_runtime_enabled(),
+        'smm_publisher': smm_runtime_enabled(),
+    }
     expected_processes = {
         'keyvadi_support': len(get_processes_by_script('froxy_bot.py')),
         'froxy_support': len(get_processes_by_script('froxy_destek_bot.py')),
@@ -877,13 +903,19 @@ def system_checkup():
     store_health = inspect_lisansarena_store()
 
     process_health = {
-        name: count == 1 for name, count in expected_processes.items()
+        name: (count == 1 if processes_enabled.get(name, True) else True)
+        for name, count in expected_processes.items()
     }
     shopier_health = catalog_refresh_status()
     shopier_sync_healthy = not any(
         item.get('state') == 'refresh_failed'
+        and int(item.get('cached_product_count') or 0) <= 0
         for item in shopier_health.values()
     )
+    shopier_sync_warnings = [
+        brand for brand, item in shopier_health.items()
+        if item.get('state') == 'refresh_failed'
+    ]
     try:
         target_data = TargetRegistry().load()
         target_rows = list((target_data.get('candidates') or {}).values())
@@ -909,12 +941,14 @@ def system_checkup():
         'status': overall,
         'build': os.environ.get('RENDER_GIT_COMMIT', 'unknown')[:12],
         'processes': expected_processes,
+        'processes_enabled': processes_enabled,
         'processes_healthy': process_health,
         'durable_claims': claim_service,
         'lisansarena_store': store_health,
         'lisansarena_traffic_enabled': store_health.get('reachable') is True,
         'shopier_catalogs': shopier_health,
         'shopier_sync_healthy': shopier_sync_healthy,
+        'shopier_sync_warnings': shopier_sync_warnings,
         'target_registry': target_registry_health,
         'keyvadi_mini_app': {
             'url': os.environ.get(
