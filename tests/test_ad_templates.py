@@ -56,6 +56,21 @@ class AdTemplateTests(unittest.TestCase):
             for kw in required_keywords:
                 self.assertIn(kw, text, (path.name, kw))
 
+    def test_keyvadi_templates_are_long_distinct_catalog_variants(self):
+        paths = sorted((ROOT / "messages").glob("keyvadi_[1-6].txt"))
+        self.assertEqual(len(paths), 6)
+        bodies = []
+        for path in paths:
+            text = path.read_text(encoding="utf-8")
+            self.assertGreater(len(text), 1100, path.name)
+            self.assertEqual(text.count("@KeyVadiSatisBot"), 1, path.name)
+            self.assertIn("Netflix", text, path.name)
+            self.assertIn("79,90", text, path.name)
+            self.assertIn("ChatGPT", text, path.name)
+            self.assertIn("Canva", text, path.name)
+            bodies.append(text)
+        self.assertEqual(len(set(bodies)), 6)
+
 
 if __name__ == "__main__":
     unittest.main()

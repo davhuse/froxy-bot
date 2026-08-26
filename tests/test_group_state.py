@@ -8,7 +8,11 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
-from telethon.errors import ChannelPrivateError, UsernameInvalidError
+from telethon.errors import (
+    ChannelPrivateError,
+    UserBannedInChannelError,
+    UsernameInvalidError,
+)
 
 import otomatik_katil as publisher
 
@@ -47,6 +51,10 @@ class GroupStateTests(unittest.TestCase):
         )
         expired = type("InviteHashExpiredError", (Exception,), {})()
         self.assertEqual(publisher.classify_join_error(expired), "invalid_invite")
+        self.assertEqual(
+            publisher.classify_join_error(UserBannedInChannelError(request=None)),
+            "account_blocked",
+        )
 
     def test_keyvadi_specific_group_approvals_do_not_enable_other_accounts(self):
         self.assertEqual(
@@ -86,6 +94,77 @@ class GroupStateTests(unittest.TestCase):
                 self.assertFalse(
                     publisher.is_account_group_blocked("ceksatkupon", "KeyVadiOnline")
                 )
+
+    def test_confirmed_join_ban_is_immediately_account_specific(self):
+        with tempfile.TemporaryDirectory() as directory:
+            failures = str(Path(directory) / "failures.json")
+            blocks = str(Path(directory) / "blocks.json")
+            with patch.object(publisher, "GROUP_FAILURES_FILE", failures), patch.object(
+                publisher, "ACCOUNT_GROUP_BLOCKS_FILE", blocks
+            ):
+                publisher.record_confirmed_join_block(
+                    "samplegroup", "KeyVadiOnline", "UserBannedInChannelError"
+                )
+                self.assertTrue(publisher.is_account_group_blocked(
+                    "samplegroup", "KeyVadiOnline"
+                ))
+                self.assertFalse(publisher.is_account_group_blocked(
+                    "samplegroup", "FroxyOnline"
+                ))
+
+    def test_channel_private_reviews_back_off_then_quarantine_one_account(self):
+        with tempfile.TemporaryDirectory() as directory:
+            failures = str(Path(directory) / "failures.json")
+            blocks = str(Path(directory) / "blocks.json")
+            with patch.object(publisher, "GROUP_FAILURES_FILE", failures), patch.object(
+                publisher, "ACCOUNT_GROUP_BLOCKS_FILE", blocks
+            ):
+                first = publisher.record_join_access_review(
+                    "privategroup", "KeyVadiOnline", "ChannelPrivateError"
+                )
+                second = publisher.record_join_access_review(
+                    "privategroup", "KeyVadiOnline", "ChannelPrivateError"
+                )
+                third = publisher.record_join_access_review(
+                    "privategroup", "KeyVadiOnline", "ChannelPrivateError"
+                )
+
+                self.assertEqual(first["retry_after"], 24 * 60 * 60)
+                self.assertEqual(second["retry_after"], 3 * 24 * 60 * 60)
+                self.assertEqual(third["status"], "quarantined")
+                self.assertFalse(publisher.is_account_group_blocked(
+                    "privategroup", "KeyVadiOnline"
+                ))
+                self.assertFalse(publisher.is_account_group_blocked(
+                    "privategroup", "LisansArenaOnline"
+                ))
+                self.assertTrue(publisher.is_group_retry_blocked(
+                    "privategroup", "KeyVadiOnline"
+                ))
+
+    def test_audited_join_quarantines_are_account_specific_and_expiring(self):
+        with tempfile.TemporaryDirectory() as directory:
+            failures = str(Path(directory) / "failures.json")
+            with patch.object(publisher, "GROUP_FAILURES_FILE", failures):
+                changed = publisher.ensure_seeded_account_join_quarantines(
+                    datetime(2026, 8, 26, tzinfo=timezone.utc)
+                )
+                self.assertTrue(changed)
+                self.assertTrue(publisher.is_group_retry_blocked(
+                    "indirimruzgari1", "KeyVadiOnline"
+                ))
+                self.assertFalse(publisher.is_group_retry_blocked(
+                    "indirimruzgari1", "FroxyOnline"
+                ))
+                for account in (
+                    "FroxyOnline", "KeyVadiOnline", "LisansArenaOnline"
+                ):
+                    self.assertTrue(publisher.is_group_retry_blocked(
+                        "ticaretgrubuuu", account
+                    ))
+                self.assertFalse(publisher.is_group_retry_blocked(
+                    "mukyemek", "KeyVadiOnline"
+                ))
 
     def test_slow_mode_is_only_a_temporary_retry(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -299,6 +378,8 @@ class GroupStateTests(unittest.TestCase):
                 return None
             with patch.object(publisher.asyncio, "sleep", return_value=None), patch.object(
                 publisher.asyncio, "create_task", side_effect=discard_task
+            ), patch.object(publisher, "set_cooldown"), patch.object(
+                publisher, "record_delivery_state"
             ):
                 await publisher.send_and_verify_ad(
                     client, self._entity(), Sent.raw_text, "FroxyOnline",
@@ -326,6 +407,8 @@ class GroupStateTests(unittest.TestCase):
             verifier = AsyncMock(return_value={"success": True, "message_id": 88})
             with patch.object(publisher.asyncio, "sleep", return_value=None), patch.object(
                 publisher, "verify_ad_after_window", verifier
+            ), patch.object(publisher, "set_cooldown"), patch.object(
+                publisher, "record_delivery_state"
             ):
                 sent = await publisher.send_and_verify_ad(
                     Client(), self._entity(), Sent.raw_text, "KeyVadiOnline",

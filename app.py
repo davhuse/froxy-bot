@@ -967,6 +967,7 @@ def group_status():
     failures = flatten(load_json_file('group_failures.json', {}))
     review_reasons = {
         'ChannelPrivateReview', 'UsernameInvalidReview', 'AccessReview',
+        'RepeatedChannelPrivate',
         'ChatWriteForbidden', 'GroupDefaultWriteForbidden',
         'AccountWriteRestricted', 'AccountWriteRestrictedNoExpiry',
         'LegacyChatWriteForbiddenReview',

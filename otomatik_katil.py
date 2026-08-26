@@ -760,6 +760,32 @@ SEEDED_ACCOUNT_GROUP_BLOCKS = {
     ('FroxyOnline', 'ceksatkupon'): 'UserBannedInChannel',
     ('KeyVadiOnline', 'ceksat'): 'UserBannedInChannel',
 }
+# Live cross-account audit on 2026-08-26 showed repeated ChannelPrivate results
+# for these account/target pairs while several of the same groups remained
+# sendable from another account. Keep them out of the active join loop for 30
+# days without creating a global blacklist. At expiry each pair gets one
+# controlled recheck and can recover automatically.
+SEEDED_ACCOUNT_JOIN_QUARANTINE_UNTIL = '2026-09-25T10:00:00+00:00'
+SEEDED_ACCOUNT_JOIN_QUARANTINES = {
+    'FroxyOnline': {
+        'ceksat', 'indirim_kodu', 'kuponindirimpazari',
+        'kuponindirimsatis', 'kuponinternet', 'kuponkodmerkez',
+        'kuponkodualsat', 'satcek', 'ticaretgrubuuu',
+        'yemeksepetikuponu',
+    },
+    'KeyVadiOnline': {
+        'ceksatistakasgrup', 'indirim_kodu', 'indirimruzgari1',
+        'kodpazari', 'kuponinternet', 'kuponkodalimsatim',
+        'kuponkodmerkez', 'kuponkodualsat', 'letgoilanlari',
+        'ticaretcanavari', 'ticaretgrubuuu', 'yemeksepetikuponu',
+    },
+    'LisansArenaOnline': {
+        'ceksat', 'ceksatistakasgrup', 'indirim_kodu', 'kodpazari',
+        'kuponindirimpazari', 'kuponindirimsatis', 'kuponinternet',
+        'kuponkodalimsatim', 'kuponkodualsat', 'satcek',
+        'ticaretgrubuuu',
+    },
+}
 SEND_LOCK_FILE = 'send_locks.json'
 GROUP_COOLDOWN_HOURS = 1  # Varsayılan: 1 saat ortak cooldown. Config'den ezilebilir.
 # Ayni gruba iki FARKLI hesabin gonderimi arasinda birakilacak en az sure.
@@ -1471,6 +1497,54 @@ def ensure_seeded_account_group_blocks():
         if not is_account_group_blocked(group, account):
             record_account_group_block(group, account, reason)
 
+
+def ensure_seeded_account_join_quarantines(now=None):
+    """Persist audited account-specific join exclusions until their expiry."""
+    now = now or datetime.now(timezone.utc)
+    quarantine_until = _parse_utc_datetime(
+        SEEDED_ACCOUNT_JOIN_QUARANTINE_UNTIL
+    )
+    if quarantine_until is None or quarantine_until <= now:
+        return False
+
+    failures = _load_json_file(GROUP_FAILURES_FILE, {})
+    changed = False
+    for account, groups in SEEDED_ACCOUNT_JOIN_QUARANTINES.items():
+        canonical_account = get_canonical_account_name(account)
+        for group in groups:
+            key = cooldown_key(group)
+            account_states = failures.setdefault(key, {})
+            existing = account_states.get(canonical_account, {})
+            existing_retry = _parse_utc_datetime(
+                existing.get('retry_at') if isinstance(existing, dict) else None
+            )
+            if existing_retry is not None and existing_retry >= quarantine_until:
+                continue
+            timestamp = now.isoformat()
+            try:
+                existing_attempts = int(existing.get('attempt_count', 0) or 0)
+            except (AttributeError, TypeError, ValueError):
+                existing_attempts = 0
+            account_states[canonical_account] = {
+                'reason': 'RepeatedChannelPrivate',
+                'status': 'temporary',
+                'retry_at': quarantine_until.isoformat(),
+                'first_error_at': (
+                    existing.get('first_error_at', timestamp)
+                    if isinstance(existing, dict) else timestamp
+                ),
+                'last_error_at': timestamp,
+                'attempt_count': max(
+                    JOIN_ACCESS_REVIEW_PROMOTE_ATTEMPTS,
+                    existing_attempts,
+                ),
+                'updated_at': timestamp,
+            }
+            changed = True
+    if changed:
+        _save_json_file(GROUP_FAILURES_FILE, failures)
+    return changed
+
 def is_group_retry_blocked(grup_name, client_name, entity=None):
     from datetime import datetime, timezone
     failures = _load_json_file(GROUP_FAILURES_FILE, {})
@@ -1517,6 +1591,77 @@ def clear_group_failure(grup_name, client_name, entity=None):
             changed = True
     if changed:
         _save_json_file(GROUP_FAILURES_FILE, failures)
+
+
+JOIN_ACCESS_REVIEW_RETRY_SECONDS = (24 * 60 * 60, 3 * 24 * 60 * 60)
+JOIN_ACCESS_REVIEW_PROMOTE_ATTEMPTS = 3
+JOIN_ACCESS_QUARANTINE_SECONDS = 30 * 24 * 60 * 60
+
+
+def group_failure_attempt_count(grup_name, client_name, entity=None):
+    """Return the largest persisted attempt count for this account/target."""
+    failures = _load_json_file(GROUP_FAILURES_FILE, {})
+    attempts = 0
+    for key in group_state_keys(grup_name, entity):
+        state = failures.get(key, {}).get(client_name, {})
+        if not isinstance(state, dict):
+            continue
+        try:
+            attempts = max(attempts, int(state.get('attempt_count', 0) or 0))
+        except (TypeError, ValueError):
+            continue
+    return attempts
+
+
+def record_join_access_review(grup_name, client_name, error_type, entity=None):
+    """Back off ambiguous ChannelPrivate results, then quarantine per account.
+
+    ChannelPrivate can mean either private access or an account-specific ban.
+    It must not blacklist the group globally, but retrying it every five minutes
+    creates a permanent join loop. Two spaced reviews are allowed; the third
+    repeated result quarantines only this Telegram account for 30 days.
+    """
+    previous_attempts = group_failure_attempt_count(
+        grup_name, client_name, entity
+    )
+    attempt = previous_attempts + 1
+    if attempt >= JOIN_ACCESS_REVIEW_PROMOTE_ATTEMPTS:
+        record_group_failure(
+            grup_name,
+            client_name,
+            'RepeatedChannelPrivate',
+            JOIN_ACCESS_QUARANTINE_SECONDS,
+            entity,
+        )
+        return {
+            'status': 'quarantined',
+            'attempt': attempt,
+            'retry_after': JOIN_ACCESS_QUARANTINE_SECONDS,
+        }
+
+    retry_after = JOIN_ACCESS_REVIEW_RETRY_SECONDS[
+        min(previous_attempts, len(JOIN_ACCESS_REVIEW_RETRY_SECONDS) - 1)
+    ]
+    record_group_failure(
+        grup_name,
+        client_name,
+        'ChannelPrivateReview',
+        retry_after,
+        entity,
+    )
+    return {
+        'status': 'temporary',
+        'attempt': attempt,
+        'retry_after': retry_after,
+    }
+
+
+def record_confirmed_join_block(grup_name, client_name, error_type, entity=None):
+    """Persist a Telegram-confirmed ban for one account, never globally."""
+    record_account_group_block(
+        grup_name, client_name, error_type or 'UserBannedInChannel', entity
+    )
+    clear_group_failure(grup_name, client_name, entity)
 
 def blacklist_group(grup_name, reason, client_name):
     """Persist a confirmed group-level blacklist with an auditable reason."""
@@ -3634,6 +3779,8 @@ async def main():
     from runtime_lease import RuntimeLease
 
     ensure_seeded_account_group_blocks()
+    if ensure_seeded_account_join_quarantines():
+        print("🧭 Hesap bazlı katılım karantinaları canlı denetime göre yüklendi.")
     if not api_id or not api_hash:
         for account_name in BEKLENEN_HESAPLAR:
             update_ad_account_status(
@@ -4352,7 +4499,7 @@ async def main():
                 'sendable': [], 'cooldown': [], 'policy_smoke': [],
                 'moderation_hold': [], 'write_forbidden': [],
                 'not_joined': [], 'pending_invite': [], 'unsuitable': [], 'invalid_invite': [],
-                'auto_replenished': [],
+                'join_quarantine': [], 'auto_replenished': [],
             }
             def set_group_state(group_name, state_name):
                 normalized = normalize_group_key(group_name)
@@ -4430,7 +4577,11 @@ async def main():
                         ).casefold()
                         set_group_state(
                             username_lower,
-                            'invalid_invite' if 'invite' in failure_reason else 'moderation_hold',
+                            'invalid_invite' if 'invite' in failure_reason
+                            else 'join_quarantine' if any(
+                                marker in failure_reason
+                                for marker in ('channelprivate', 'accessreview')
+                            ) else 'moderation_hold',
                         )
                         continue
                     if visibility_check_pending(username_lower, entity=entity):
@@ -5282,15 +5433,31 @@ async def main():
                         err_type = type(e).__name__
                         error_class = classify_join_error(e)
                         if error_class == 'account_blocked':
-                            record_group_failure(
-                                hedef_grup, client_name, 'AccessReview', 0
+                            record_confirmed_join_block(
+                                hedef_grup, client_name, err_type, entity
                             )
-                            print(f"[{client_name}] ⚠️ @{hedef_grup} -> Katılım geçici hata ({err_type}); sonraki turda tekrar denenecek.")
+                            print(
+                                f"[{client_name}] ⛔ @{hedef_grup} -> {err_type}; "
+                                "yalnız bu hesap için kalıcı olarak atlandı."
+                            )
                         elif error_class == 'access_review':
-                            record_group_failure(
-                                hedef_grup, client_name, 'AccessReview', 0
+                            review = record_join_access_review(
+                                hedef_grup, client_name, err_type, entity
                             )
-                            print(f"[{client_name}] ⚠️ @{hedef_grup} -> Özel erişim/onay belirsiz; banlanmadan geçildi.")
+                            if review['status'] == 'quarantined':
+                                print(
+                                    f"[{client_name}] ⛔ @{hedef_grup} -> "
+                                    f"{review['attempt']} kez özel/kapalı erişim sonucu; "
+                                    "yalnız bu hesap için 30 gün karantinaya alındı."
+                                )
+                            else:
+                                retry_hours = review['retry_after'] // 3600
+                                print(
+                                    f"[{client_name}] ⚠️ @{hedef_grup} -> Özel erişim/onay "
+                                    f"belirsiz ({review['attempt']}/"
+                                    f"{JOIN_ACCESS_REVIEW_PROMOTE_ATTEMPTS}); "
+                                    f"{retry_hours} saat sonra yeniden kontrol edilecek."
+                                )
                         elif error_class == 'account_limit':
                             set_account_restriction(client_name, 86400, 'Telegram 500 kanal limitine ulaşıldı', err_type, scope='join')
                             print(f"[{client_name}] 🚨 Telegram 500 kanal/grup limitine ulaşıldı! Katılım aşaması durduruluyor.")
@@ -5335,8 +5502,21 @@ async def main():
             hour = tr_time.hour
             
             grup_sayisi = len(blast_targets) if blast_targets else 0
-            # Gece (02:00 - 07:59) saat başı (3600 sn), diğer saatlerde 30 dakikada bir (1800 sn)
-            if 2 <= hour <= 7:
+            if defer_for_floor:
+                bekleme = 300
+                print(
+                    f"\n[{client_name}] 🧩 Havuz tamamlama turu bitti: "
+                    f"{grup_sayisi}/{minimum_sendable_groups} grup hazır. "
+                    "Blast yapılmadı; 5 dakika sonra havuz yeniden kontrol edilecek."
+                )
+            elif not blast_targets:
+                bekleme = 3600
+                print(
+                    f"\n[{client_name}] ⏸️ Gönderilebilir grup bulunamadı; "
+                    "blast yapılmadı ve havuz 60 dakika sonra yeniden kontrol edilecek."
+                )
+            # Gece (02:00 - 07:59) saat başı (3600 sn), diğer saatlerde config aralığı.
+            elif 2 <= hour <= 7:
                 bekleme = 3600
                 print(f"\n[{client_name}] 🌙 Gece modu aktif (TR {tr_time.strftime('%H:%M')}) → Sonraki blast 1 saat sonra")
             else:
