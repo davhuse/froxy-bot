@@ -84,8 +84,8 @@ if _configured_mini_app_url:
     _parts = urlsplit(_configured_mini_app_url)
     _path = _parts.path.rstrip("/")
     _old_storefront = _path.endswith("/lisansarena") or _parts.netloc in {
-        "froxy-bot-live-r5se.onrender.com",
-        "froxy-bot-live-r5se.onrender.com",
+        "froxy-bot-wjzr.onrender.com",
+        "froxy-bot-qy0a.onrender.com",
     }
     if _old_storefront or _parts.netloc != urlsplit(_canonical_mini_app_url).netloc:
         _configured_mini_app_url = _canonical_mini_app_url
