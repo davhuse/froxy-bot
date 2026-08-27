@@ -3696,6 +3696,12 @@ def mark_dead_ad_session(client_name, exc):
 BEKLENEN_HESAPLAR = {'FroxyOnline', 'KeyVadiOnline', 'LisansArenaOnline'}
 
 
+def disabled_ad_accounts():
+    """Return advertising accounts held out of joins/blasts by configuration."""
+    raw = os.environ.get("DISABLED_AD_ACCOUNTS", "")
+    return {item.strip() for item in raw.split(",") if item.strip()}
+
+
 _last_eksik_alert_time = 0
 
 async def uyar_eksik_hesap(ayakta, active_clients):
@@ -5812,7 +5818,25 @@ async def main():
 
     # Workers ve arka plan görevlerini başlat
     tasks = []
+    disabled_accounts = disabled_ad_accounts()
     for client, name, j_dialogs in active_clients:
+        if name in disabled_accounts:
+            update_ad_account_status(
+                name,
+                process_running=True,
+                telegram_connected=True,
+                telegram_authorized=True,
+                phase='disabled_by_config',
+                last_error='Advertising joins/blasts disabled by configuration',
+            )
+            print(
+                f"🛑 [{name}] Reklam katılımı ve blast yapılandırma ile kapalı; "
+                "oturum bağlı tutuluyor, Telegram işlemi yapılmayacak."
+            )
+            # Keep the session connection healthy for later manual review, but
+            # do not register DM/group handlers or a worker for this account.
+            tasks.append(connection_watchdog(client, name))
+            continue
         register_admin_handler(client, name, j_dialogs)
         # Froxy and KeyVadi customers also write directly to the advertising
         # user accounts. Those accounts must own that private-chat sales flow.
