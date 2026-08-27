@@ -3699,7 +3699,7 @@ BEKLENEN_HESAPLAR = {'FroxyOnline', 'KeyVadiOnline', 'LisansArenaOnline'}
 def disabled_ad_accounts():
     """Return advertising accounts held out of joins/blasts by configuration."""
     raw = os.environ.get("DISABLED_AD_ACCOUNTS", "")
-    return {item.strip() for item in raw.split(",") if item.strip()}
+    return {item.strip().casefold() for item in raw.split(",") if item.strip()}
 
 
 _last_eksik_alert_time = 0
@@ -5819,8 +5819,12 @@ async def main():
     # Workers ve arka plan görevlerini başlat
     tasks = []
     disabled_accounts = disabled_ad_accounts()
+    print(
+        "ℹ️ [Config] Reklam dışı hesaplar: "
+        + (", ".join(sorted(disabled_accounts)) if disabled_accounts else "yok")
+    )
     for client, name, j_dialogs in active_clients:
-        if name in disabled_accounts:
+        if name.casefold() in disabled_accounts:
             update_ad_account_status(
                 name,
                 process_running=True,
