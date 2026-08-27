@@ -6,17 +6,9 @@ let panelAdminToken = localStorage.getItem('panelAdminToken')
     || '';
 
 async function adminFetch(input, init = {}) {
-    if (!panelAdminToken) throw new Error('Yönetim anahtarı gerekli');
     const headers = new Headers(init.headers || {});
-    headers.set('X-Admin-Token', panelAdminToken);
-    const response = await nativeFetch(input, { ...init, headers });
-    if (response.status === 401 || response.status === 503) {
-        panelAdminToken = '';
-        localStorage.removeItem('panelAdminToken');
-        sessionStorage.removeItem('panelAdminToken');
-        throw new Error('Yönetim anahtarı geçersiz veya sunucuda yapılandırılmamış');
-    }
-    return response;
+    if (panelAdminToken) headers.set('X-Admin-Token', panelAdminToken);
+    return await nativeFetch(input, { ...init, headers });
 }
 
 function savePanelAdminToken(event) {
