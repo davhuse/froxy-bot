@@ -5650,7 +5650,8 @@ async def main():
         else "blast_checkpoint_v3.json",
         remote=False if CONTROLLED_SMOKE_MODE else None,
     )
-    active_account_names = {name for _, name, _ in active_clients}
+    disabled_accounts_for_queue = disabled_ad_accounts()
+    active_account_names = {name for _, name, _ in active_clients if name.casefold() not in disabled_accounts_for_queue}
     queue_account_names = (
         {CONTROLLED_SMOKE_ACCOUNT} if CONTROLLED_SMOKE_MODE
         else active_account_names
