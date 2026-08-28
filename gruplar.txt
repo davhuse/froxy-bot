@@ -58,3 +58,6 @@ bedavainternetkod
 indirimcek
 kuponinternet
 kodkuponcek
+kuponceking
+letgoilanlari
+yucekuponsatis

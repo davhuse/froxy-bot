@@ -789,6 +789,7 @@ ACCOUNT_GROUP_BLOCKS_FILE = 'account_group_blocks.json'
 # leaving KeyVadi/LisansArena free to be evaluated independently.
 SEEDED_ACCOUNT_GROUP_BLOCKS = {
     ('FroxyOnline', 'ceksatkupon'): 'UserBannedInChannel',
+    ('FroxyOnline', 'kuponceking'): 'ChatWriteForbidden',
     ('KeyVadiOnline', 'ceksat'): 'UserBannedInChannel',
 }
 # Live cross-account audit on 2026-08-26 showed repeated ChannelPrivate results
