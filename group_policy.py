@@ -110,6 +110,20 @@ SEEDED_POLICIES = {
         "hold_reason": "Bağlantısız sade metin ve kontrollü smoke zorunlu.",
         "smoke_required": True,
     },
+    # @kodkuponcek - İlan mesajı 30 satırı geçmeyecek
+    "alias:kodkuponcek": {
+        "aliases": ["kodkuponcek"],
+        "allow_urls": True,
+        "allow_deep_links": True,
+        "allow_mentions": True,
+        "allow_media": True,
+        "allow_emojis": True,
+        "max_lines": 30,
+        "forbidden_products": [],
+        "account_hold": [],
+        "hold_reason": "",
+        "smoke_required": False,
+    },
 }
 
 

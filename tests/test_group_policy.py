@@ -179,6 +179,26 @@ class GroupPolicyTests(unittest.TestCase):
         self.assertTrue(group_policy.warning_targets_brand(text, "keyvadi"))
         self.assertFalse(group_policy.warning_targets_brand(text, "froxy"))
 
+    def test_kodkuponcek_policy_enforces_30_max_lines(self):
+        entity = SimpleNamespace(id=999888777, username="kodkuponcek", default_banned_rights=None)
+        _, policy = group_policy.resolve_group_policy("kodkuponcek", entity)
+        self.assertEqual(policy["max_lines"], 30)
+        self.assertTrue(policy["allow_urls"])
+        self.assertTrue(policy["allow_mentions"])
+
+        # Test with a 45-line message
+        long_lines = [f"Line {i}: Product item info" for i in range(1, 45)]
+        long_message = "\n".join(long_lines) + "\nSipariş ve güncel fiyat: @KeyVadiSatisBot"
+        text, options = group_policy.make_policy_compliant(long_message, policy, "keyvadi")
+
+        lines = text.splitlines()
+        self.assertLessEqual(len(lines), 30)
+        self.assertEqual(len(lines), 30)
+        self.assertTrue(lines[-1].endswith("@KeyVadiSatisBot"))
+        self.assertEqual(options["cta_mode"], "plain_mention")
+
 
 if __name__ == "__main__":
     unittest.main()
+
+
