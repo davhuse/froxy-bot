@@ -593,6 +593,7 @@ STRICT_MARKET_GROUPS = {
     "kupongrupta": 25,
     "satcek": 18,
     "kuponceking": 18,
+    "kodkuponcek": 25,
 }
 
 STRICT_GROUP_FORBIDDEN = {
