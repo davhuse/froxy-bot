@@ -512,7 +512,7 @@ def bot_watchdog(lease_owner=None):
                     elif bot_runtime_enabled():
                         ad_enabled = False
                     support_enabled = cfg.get("support_bot_running", False)
-                    token = os.environ.get("KEYVADI_SUPPORT_BOT_TOKEN", "").strip()
+                    token = (os.environ.get("KEYVADI_SUPPORT_BOT_TOKEN") or cfg.get("keyvadi_bot_token") or cfg.get("support_bot_token") or "").strip()
                     if token and token != "YOUR_TELEGRAM_BOT_TOKEN":
                         has_token = True
                 except Exception as ex:
@@ -649,7 +649,7 @@ def bot_watchdog(lease_owner=None):
             has_lisansarena_token = False
             if cfg:
                 lisansarena_enabled = cfg.get("lisansarena_bot_running", False)
-                lisansarena_token = os.environ.get("LISANSARENA_BOT_TOKEN", "").strip()
+                lisansarena_token = (os.environ.get("LISANSARENA_BOT_TOKEN") or cfg.get("lisansarena_bot_token") or "").strip()
                 if lisansarena_token and lisansarena_token != "YOUR_TELEGRAM_BOT_TOKEN":
                     has_lisansarena_token = True
 
@@ -864,7 +864,7 @@ def system_checkup():
     processes_enabled = {
         'keyvadi_support': bool(
             runtime_cfg.get('support_bot_running')
-            and os.environ.get('KEYVADI_SUPPORT_BOT_TOKEN', '').strip()
+            and (os.environ.get('KEYVADI_SUPPORT_BOT_TOKEN') or runtime_cfg.get('keyvadi_bot_token', '') or runtime_cfg.get('support_bot_token', '')).strip()
         ),
         'froxy_support': bool(
             runtime_cfg.get('froxy_bot_running')
@@ -872,7 +872,7 @@ def system_checkup():
         ),
         'lisansarena_support': bool(
             runtime_cfg.get('lisansarena_bot_running')
-            and os.environ.get('LISANSARENA_BOT_TOKEN', '').strip()
+            and (os.environ.get('LISANSARENA_BOT_TOKEN') or runtime_cfg.get('lisansarena_bot_token', '')).strip()
         ),
         'blast_worker': ad_runtime_enabled(),
         'smm_publisher': smm_runtime_enabled(),
@@ -1473,7 +1473,7 @@ def support_start():
     try:
         with open(CONFIG_FILE, "r", encoding="utf-8") as f:
             cfg = json.load(f)
-        token = os.environ.get("KEYVADI_SUPPORT_BOT_TOKEN", "").strip()
+        token = (os.environ.get("KEYVADI_SUPPORT_BOT_TOKEN") or cfg.get("keyvadi_bot_token") or cfg.get("support_bot_token") or "").strip()
         if not token or token == "YOUR_TELEGRAM_BOT_TOKEN":
             return jsonify({"success": False, "message": "Lütfen önce geçerli bir Telegram Bot Token kaydedin!"})
     except Exception as e:
@@ -1665,7 +1665,7 @@ def lisansarena_start():
         except:
             pass
             
-    token = os.environ.get("LISANSARENA_BOT_TOKEN", "").strip()
+    token = (os.environ.get("LISANSARENA_BOT_TOKEN") or cfg.get("lisansarena_bot_token") or "").strip()
     if not token or token == "YOUR_TELEGRAM_BOT_TOKEN":
         return jsonify({"success": False, "message": "Lütfen önce geçerli bir LisansArena Bot Token kaydedin!"})
         
