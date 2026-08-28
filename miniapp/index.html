@@ -269,7 +269,7 @@
 
         <div class="topup-presets">
           <button class="topup-btn" onclick="selectTopupPreset(25, this)">₺25</button>
-          <button class="topup-btn selected" onclick="selectTopupPreset(50, this)">₺50</button>
+          <button class="topup-btn" onclick="selectTopupPreset(50, this)">₺50</button>
           <button class="topup-btn" onclick="selectTopupPreset(100, this)">₺100</button>
           <button class="topup-btn" onclick="selectTopupPreset(250, this)">₺250</button>
           <button class="topup-btn" onclick="selectTopupPreset(500, this)">₺500</button>
@@ -280,7 +280,7 @@
           <label>Veya Özel Tutar Girin (₺)</label>
           <div class="input-with-currency">
             <span class="currency-symbol">₺</span>
-            <input type="number" id="customTopupInput" placeholder="50" min="5" max="50000" value="50" oninput="handleCustomAmount(this.value)" />
+            <input type="number" id="customTopupInput" placeholder="0" min="5" max="50000" value="0" oninput="handleCustomAmount(this.value)" />
           </div>
         </div>
 

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>Froxy — Dijital Lisans & E-Pin Mağazası</title>
+  <title>KeyVadi — Dijital Lisans & E-Pin Mağazası</title>
   
   <!-- Modern Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -32,11 +32,11 @@
     <header class="app-header">
       <div class="header-left">
         <div class="brand-avatar">
-          <img src="assets/froxy_logo.png" alt="Froxy Logo" class="brand-logo-img" onerror="this.src='assets/froxy_banner_new_1781380687628.png'">
+          <img src="assets/keyvadi_logo.png" alt="KeyVadi Logo" class="brand-logo-img" onerror="this.src='assets/keyvadi_banner_new_1781380687628.png'">
           <span class="online-indicator" title="Sistem Aktif"></span>
         </div>
         <div class="brand-info">
-          <div class="brand-name">FROXY<span class="brand-badge">PRO</span></div>
+          <div class="brand-name">KEYVADI<span class="brand-badge">PRO</span></div>
           <div class="user-greeting" id="headerUserName">Yükleniyor...</div>
         </div>
       </div>
@@ -269,7 +269,7 @@
 
         <div class="topup-presets">
           <button class="topup-btn" onclick="selectTopupPreset(25, this)">₺25</button>
-          <button class="topup-btn selected" onclick="selectTopupPreset(50, this)">₺50</button>
+          <button class="topup-btn" onclick="selectTopupPreset(50, this)">₺50</button>
           <button class="topup-btn" onclick="selectTopupPreset(100, this)">₺100</button>
           <button class="topup-btn" onclick="selectTopupPreset(250, this)">₺250</button>
           <button class="topup-btn" onclick="selectTopupPreset(500, this)">₺500</button>
@@ -280,7 +280,7 @@
           <label>Veya Özel Tutar Girin (₺)</label>
           <div class="input-with-currency">
             <span class="currency-symbol">₺</span>
-            <input type="number" id="customTopupInput" placeholder="50" min="5" max="50000" value="50" oninput="handleCustomAmount(this.value)" />
+            <input type="number" id="customTopupInput" placeholder="0" min="5" max="50000" value="0" oninput="handleCustomAmount(this.value)" />
           </div>
         </div>
 
@@ -335,7 +335,7 @@
           </div>
         </div>
         <p class="card-subtext" style="font-size: 0.84rem; line-height: 1.6; margin-top: 8px;">
-          Froxy üzerinden alınan tüm lisans, hesap ve e-pinler süreleri boyunca telafi ve değişim garantimiz altındadır. Kodunuzla ilgili herhangi bir sorunuzda canlı desteğimize yazabilirsiniz.
+          KeyVadi üzerinden alınan tüm lisans, hesap ve e-pinler süreleri boyunca telafi ve değişim garantimiz altındadır. Kodunuzla ilgili herhangi bir sorunuzda canlı desteğimize yazabilirsiniz.
         </p>
         <button class="btn-primary-action" onclick="notifySupport()" style="margin-top: 14px;">
           <span>💬 Canlı Desteğe Bağlan</span>
@@ -379,7 +379,7 @@
         </div>
 
         <div class="ref-link-group">
-          <input type="text" id="refLinkInput" readonly value="https://t.me/FroxySatisBot?start=ref_6196006704" />
+          <input type="text" id="refLinkInput" readonly value="https://t.me/KeyVadiSatisBot?start=ref_6196006704" />
           <button class="btn-copy-ref" onclick="copyRefLink()">KOPYALA</button>
         </div>
 
@@ -468,7 +468,7 @@
         <div class="modal-drag-bar"></div>
         
         <div class="modal-hero-img-wrapper">
-          <img id="modalProductImg" src="" alt="Ürün Görseli" onerror="this.src='assets/froxy_banner_new_1781380687628.png'" />
+          <img id="modalProductImg" src="" alt="Ürün Görseli" onerror="this.src='assets/keyvadi_banner_new_1781380687628.png'" />
           <span id="modalBadge" class="modal-badge-pill">POPÜLER</span>
         </div>
 
@@ -510,7 +510,7 @@
       </div>
     </div>
 
-    <!-- DYNAMIC PAYMENT REDIRECT & LIVE WAITING MODAL (FROXY) -->
+    <!-- DYNAMIC PAYMENT REDIRECT & LIVE WAITING MODAL (KEYVADI) -->
     <div id="topupRedirectModal" class="modal-backdrop">
       <div class="modal-sheet" style="max-height: 85vh; text-align: center;">
         <button class="modal-close-btn" onclick="closeTopupRedirectModal()">✕</button>
@@ -601,7 +601,7 @@
         <button class="modal-close-btn" onclick="closeSpinModal()" type="button">✕</button>
         <div class="modal-drag-bar"></div>
         <div style="font-size: 2.2rem; margin: 4px 0 2px;">🎡</div>
-        <h2 style="font-family: var(--font-heading); font-size: 1.2rem; font-weight: 800; color: #FFFFFF;">Froxy Günlük Şans Çarkı</h2>
+        <h2 style="font-family: var(--font-heading); font-size: 1.2rem; font-weight: 800; color: #FFFFFF;">KeyVadi Günlük Şans Çarkı</h2>
         <p style="color: var(--text-muted); font-size: 0.78rem; line-height: 1.4; margin: 4px 0 12px;">Her gün 1 kez çevirerek anında <strong>₺5.00'ye varan bakiye</strong> veya <strong>%15 VIP indirim</strong> kazanın!</p>
         
         <div style="position: relative; width: 260px; height: 260px; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center;">

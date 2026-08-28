@@ -507,11 +507,11 @@ function renderProductGrid() {
         ${urgencyBadge}
         <div class="card-delivery">${p.delivery_label || '⚡ 7/24 Anında Otomatik Teslimat'}</div>
         <div class="card-actions" onclick="event.stopPropagation()">
-          <button class="btn-buy" onclick="addKvProductToCart('${p.id}')" title="Sepete Ekle">
-            <span>🛒 + Sepet</span>
+          <button class="btn-buy" onclick="openProductModal('${p.id}')" title="Hemen Satın Al">
+            <span>⚡ Satın Al</span>
           </button>
-          <button class="btn-detail" onclick="openProductModal('${p.id}')" title="İncele & Satın Al">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          <button class="btn-detail" onclick="addKvProductToCart('${p.id}')" title="Sepete Ekle">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
           </button>
         </div>
       </div>
@@ -716,85 +716,19 @@ window.closeProductModal = function() {
 };
 
 // DIRECT SHOPIER 1-CLICK CHECKOUT
-window.buyViaShopier = async function(productId) {
+window.buyViaShopier = function(productId) {
   const product = state.selectedProduct || state.products.find(p => String(p.id) === String(productId));
   if (!product) return;
 
   triggerHaptic('medium');
 
-  if (!tgUser || !telegramInitData) {
-    const targetUrl = product.url || 'https://www.shopier.com/keyvadi';
-    if (tg?.openLink) tg.openLink(targetUrl);
-    else window.open(targetUrl, '_blank');
-    return;
-  }
+  const targetUrl = product.url || `https://www.shopier.com/keyvadi/${product.id}`;
+  showToast(`"${product.title}" için Shopier ödeme sayfası açılıyor...`, '💳');
 
-  const amount = Number(product.price_num || 0);
-  if (amount < 5) {
-    showToast('Geçersiz ürün tutarı.', '⚠️');
-    return;
-  }
-
-  const btn = document.getElementById('btnModalDirectShopier');
-  const oldText = btn ? btn.innerHTML : '';
-  if (btn) {
-    btn.innerHTML = '<span>⏳ Ödeme Sayfası Açılıyor...</span>';
-    btn.disabled = true;
-  }
-
-  showToast(`"${product.title}" için 3D Secure sayfası hazırlanıyor...`, '⚡');
-
-  try {
-    const res = await fetch(api('/api/balance/create-dynamic-topup'), {
-      method: 'POST',
-      headers: authHeaders(),
-      body: JSON.stringify({
-        amount: amount,
-        user_id: tgUser.id,
-        user_name: `${tgUser.first_name || ''} ${tgUser.last_name || ''}`.trim() || 'KeyVadi Müşteri',
-        username: tgUser.username || '',
-        idempotency_key: `kv-buy-direct-${tgUser.id}-${product.id}-${Date.now()}`
-      })
-    });
-    const data = await res.json();
-    if (data.success && data.payment_url) {
-      window.currentActiveTopupPid = data.product_id;
-      startKvRealtimePaymentWatcher();
-
-      const topupRedirectModal = document.getElementById('topupRedirectModal');
-      const topupRedirectBtn = document.getElementById('topupRedirectBtn');
-      const badgeEl = document.getElementById('redirectModalBadge');
-      const titleEl = document.getElementById('redirectModalTitle');
-      const descEl = document.getElementById('redirectModalDesc');
-
-      if (badgeEl) badgeEl.textContent = '⚡ KARTLA DİREKT SATIN ALMA';
-      if (titleEl) titleEl.textContent = `${product.title} Ödemesi Bekleniyor...`;
-      if (descEl) descEl.innerHTML = `<strong>${product.title}</strong> için güvenli 3D ödeme sayfası açıldı. Ödeme tamamlandığında lisans kodunuz anında bu ekrana ve <strong>Siparişlerim</strong> sekmesine aktarılacaktır.`;
-      if (topupRedirectBtn) topupRedirectBtn.href = data.payment_url;
-
-      closeProductModal();
-      if (topupRedirectModal) topupRedirectModal.classList.add('active');
-
-      showToast('Shopier ödeme sayfası açılıyor...', '💳');
-      if (tg?.openLink) {
-        tg.openLink(data.payment_url);
-      } else {
-        window.open(data.payment_url, '_blank');
-      }
-    } else {
-      const fallbackUrl = product.url || 'https://www.shopier.com/keyvadi';
-      if (tg?.openLink) tg.openLink(fallbackUrl);
-      else window.open(fallbackUrl, '_blank');
-    }
-  } catch (e) {
-    const fallbackUrl = product.url || 'https://www.shopier.com/keyvadi';
-    if (tg?.openLink) tg.openLink(fallbackUrl);
-    else window.open(fallbackUrl, '_blank');
-  } finally {
-    if (btn) {
-      btn.innerHTML = oldText;
-      btn.disabled = false;
-    }
+  if (tg?.openLink) {
+    tg.openLink(targetUrl);
+  } else {
+    window.open(targetUrl, '_blank');
   }
 };
 

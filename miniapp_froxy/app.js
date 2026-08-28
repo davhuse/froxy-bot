@@ -1,7 +1,7 @@
-// Froxy Ultra-Premium Mini App Controller (v11.0 - Next-Gen Glassmorphism & Direct Shopier Engine)
+// KeyVadi Ultra-Premium Mini App Controller (v11.0 - Next-Gen Glassmorphism & Direct Shopier Engine)
 
 const tg = window.Telegram?.WebApp || null;
-const API_BASE = window.location.pathname.startsWith('/froxy') ? '/froxy' : '';
+const API_BASE = window.location.pathname.startsWith('/keyvadi') ? '/keyvadi' : '';
 const api = path => `${API_BASE}${path}`;
 
 // Initialize Telegram WebApp SDK
@@ -46,7 +46,7 @@ let state = {
 
 // Load cart from localStorage
 try {
-  const savedCart = localStorage.getItem('froxy_cart');
+  const savedCart = localStorage.getItem('keyvadi_cart');
   if (savedCart) {
     state.cart = JSON.parse(savedCart);
   }
@@ -204,7 +204,7 @@ function startBackgroundBalanceSync() {
   });
 }
 
-// Active Realtime Polling when user clicks Shopier payment in Froxy
+// Active Realtime Polling when user clicks Shopier payment in KeyVadi
 let kvActivePollingInterval = null;
 window.startKvRealtimePaymentWatcher = function() {
   if (kvActivePollingInterval) clearInterval(kvActivePollingInterval);
@@ -237,7 +237,7 @@ function renderUserInfo() {
   }
   const nameEl = document.getElementById('headerUserName');
   if (nameEl) {
-    nameEl.textContent = `${tgUser.first_name || 'Froxy'} ${tgUser.last_name || ''}`.trim() || 'Froxy Üyesi';
+    nameEl.textContent = `${tgUser.first_name || 'KeyVadi'} ${tgUser.last_name || ''}`.trim() || 'KeyVadi Üyesi';
   }
   const wallUid = document.getElementById('walletUserId');
   if (wallUid) {
@@ -245,7 +245,7 @@ function renderUserInfo() {
   }
   const refInput = document.getElementById('refLinkInput');
   if (refInput) {
-    refInput.value = `https://t.me/FroxySatisBot?start=ref_${tgUser.id}`;
+    refInput.value = `https://t.me/KeyVadiSatisBot?start=ref_${tgUser.id}`;
   }
   const refCountEl = document.getElementById('refTotalCount');
   if (refCountEl) refCountEl.textContent = state.referralsCount;
@@ -358,8 +358,8 @@ function renderOrders() {
             : `Bu ürün temsilci teslimatı kapsamındadır. Lütfen aşağıdaki butona dokunarak destek ekibimize sipariş numaranızı (<strong>#${number}</strong>) iletiniz; temsilcimiz hesabınızı/lisansınızı anında teslim edecektir.`
           }
         </p>
-        <a href="https://t.me/FroxyDestek" target="_blank" class="btn-support-contact" style="${isEmail ? 'background: linear-gradient(135deg, #00F0FF, #0070F3); color:#000;' : ''}">
-          <span>🚀 @FroxyDestek ile İletişime Geç</span>
+        <a href="https://t.me/KeyVadiDestek" target="_blank" class="btn-support-contact" style="${isEmail ? 'background: linear-gradient(135deg, #00F0FF, #0070F3); color:#000;' : ''}">
+          <span>🚀 @KeyVadiDestek ile İletişime Geç</span>
         </a>
       `;
       item.append(manualBox);
@@ -493,7 +493,7 @@ function renderProductGrid() {
     return `
     <div class="product-card" onclick="openProductModal('${p.id}')">
       <div class="card-img-wrapper">
-        <img class="card-img" src="${p.image}?v=11.0" alt="${p.title}" loading="lazy" onerror="this.src='assets/froxy_banner_new_1781380687628.png'"/>
+        <img class="card-img" src="${p.image}?v=11.0" alt="${p.title}" loading="lazy" onerror="this.src='assets/keyvadi_banner_new_1781380687628.png'"/>
         <span class="card-badge-tag">${isVitrin ? '⭐ VİTRİN' : (p.badge || '⚡ ANINDA')}</span>
       </div>
       <div class="card-content">
@@ -507,11 +507,11 @@ function renderProductGrid() {
         ${urgencyBadge}
         <div class="card-delivery">${p.delivery_label || '⚡ 7/24 Anında Otomatik Teslimat'}</div>
         <div class="card-actions" onclick="event.stopPropagation()">
-          <button class="btn-buy" onclick="addKvProductToCart('${p.id}')" title="Sepete Ekle">
-            <span>🛒 + Sepet</span>
+          <button class="btn-buy" onclick="openProductModal('${p.id}')" title="Hemen Satın Al">
+            <span>⚡ Satın Al</span>
           </button>
-          <button class="btn-detail" onclick="openProductModal('${p.id}')" title="İncele & Satın Al">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          <button class="btn-detail" onclick="addKvProductToCart('${p.id}')" title="Sepete Ekle">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
           </button>
         </div>
       </div>
@@ -519,10 +519,10 @@ function renderProductGrid() {
   `;}).join('');
 }
 
-// ==================== FROXY CART (SEPET) SYSTEM ====================
+// ==================== KEYVADI CART (SEPET) SYSTEM ====================
 function saveKvCart() {
   try {
-    localStorage.setItem('froxy_cart', JSON.stringify(state.cart));
+    localStorage.setItem('keyvadi_cart', JSON.stringify(state.cart));
   } catch (e) {}
   updateCartUI();
 }
@@ -588,7 +588,7 @@ window.removeKvCartItem = function(productId) {
 
 window.clearKvFullCart = function() {
   state.cart = [];
-  localStorage.removeItem('froxy_cart_idempotency');
+  localStorage.removeItem('keyvadi_cart_idempotency');
   saveKvCart();
   renderKvCartItems();
   showToast("Sepetiniz temizlendi.", "🗑️");
@@ -623,7 +623,7 @@ function renderKvCartItems() {
     const row = document.createElement('div');
     row.className = 'cart-item-row';
     row.innerHTML = `
-      <img class="cart-item-img" src="${it.image}?v=11.0" alt="${it.title}" onerror="this.src='assets/froxy_banner_new_1781380687628.png'">
+      <img class="cart-item-img" src="${it.image}?v=11.0" alt="${it.title}" onerror="this.src='assets/keyvadi_banner_new_1781380687628.png'">
       <div class="cart-item-info">
         <div class="cart-item-title">${it.title}</div>
         <div class="cart-item-price">₺${(it.price_num * it.qty).toFixed(2)}</div>
@@ -646,7 +646,7 @@ function renderKvCartItems() {
 window.checkoutKvCartWithWallet = async function() {
   if (state.cart.length === 0) return;
   if (!tgUser || !telegramInitData) {
-    showToast('Satın alma için mağazayı @FroxySatisBot içinden açın.', '⚠️');
+    showToast('Satın alma için mağazayı @KeyVadiSatisBot içinden açın.', '⚠️');
     return;
   }
   const totalCost = state.cart.reduce((sum, it) => sum + (it.price_num * it.qty), 0);
@@ -678,7 +678,7 @@ window.checkoutKvCartWithWallet = async function() {
       state.walletBalance = data.new_balance;
       updateBalanceUI();
       window.clearKvFullCart();
-      localStorage.removeItem('froxy_cart_idempotency');
+      localStorage.removeItem('keyvadi_cart_idempotency');
       await registerAndSyncUserProfile();
       showPurchaseSuccessModal('Sepet Alışverişi', totalCost);
     } else {
@@ -716,85 +716,19 @@ window.closeProductModal = function() {
 };
 
 // DIRECT SHOPIER 1-CLICK CHECKOUT
-window.buyViaShopier = async function(productId) {
+window.buyViaShopier = function(productId) {
   const product = state.selectedProduct || state.products.find(p => String(p.id) === String(productId));
   if (!product) return;
 
   triggerHaptic('medium');
 
-  if (!tgUser || !telegramInitData) {
-    const targetUrl = product.url || 'https://www.shopier.com/froxy';
-    if (tg?.openLink) tg.openLink(targetUrl);
-    else window.open(targetUrl, '_blank');
-    return;
-  }
+  const targetUrl = product.url || `https://www.shopier.com/keyvadi/${product.id}`;
+  showToast(`"${product.title}" için Shopier ödeme sayfası açılıyor...`, '💳');
 
-  const amount = Number(product.price_num || 0);
-  if (amount < 5) {
-    showToast('Geçersiz ürün tutarı.', '⚠️');
-    return;
-  }
-
-  const btn = document.getElementById('btnModalDirectShopier');
-  const oldText = btn ? btn.innerHTML : '';
-  if (btn) {
-    btn.innerHTML = '<span>⏳ Ödeme Sayfası Açılıyor...</span>';
-    btn.disabled = true;
-  }
-
-  showToast(`"${product.title}" için 3D Secure sayfası hazırlanıyor...`, '⚡');
-
-  try {
-    const res = await fetch(api('/api/balance/create-dynamic-topup'), {
-      method: 'POST',
-      headers: authHeaders(),
-      body: JSON.stringify({
-        amount: amount,
-        user_id: tgUser.id,
-        user_name: `${tgUser.first_name || ''} ${tgUser.last_name || ''}`.trim() || 'Froxy Müşteri',
-        username: tgUser.username || '',
-        idempotency_key: `kv-buy-direct-${tgUser.id}-${product.id}-${Date.now()}`
-      })
-    });
-    const data = await res.json();
-    if (data.success && data.payment_url) {
-      window.currentActiveTopupPid = data.product_id;
-      startKvRealtimePaymentWatcher();
-
-      const topupRedirectModal = document.getElementById('topupRedirectModal');
-      const topupRedirectBtn = document.getElementById('topupRedirectBtn');
-      const badgeEl = document.getElementById('redirectModalBadge');
-      const titleEl = document.getElementById('redirectModalTitle');
-      const descEl = document.getElementById('redirectModalDesc');
-
-      if (badgeEl) badgeEl.textContent = '⚡ KARTLA DİREKT SATIN ALMA';
-      if (titleEl) titleEl.textContent = `${product.title} Ödemesi Bekleniyor...`;
-      if (descEl) descEl.innerHTML = `<strong>${product.title}</strong> için güvenli 3D ödeme sayfası açıldı. Ödeme tamamlandığında lisans kodunuz anında bu ekrana ve <strong>Siparişlerim</strong> sekmesine aktarılacaktır.`;
-      if (topupRedirectBtn) topupRedirectBtn.href = data.payment_url;
-
-      closeProductModal();
-      if (topupRedirectModal) topupRedirectModal.classList.add('active');
-
-      showToast('Shopier ödeme sayfası açılıyor...', '💳');
-      if (tg?.openLink) {
-        tg.openLink(data.payment_url);
-      } else {
-        window.open(data.payment_url, '_blank');
-      }
-    } else {
-      const fallbackUrl = product.url || 'https://www.shopier.com/froxy';
-      if (tg?.openLink) tg.openLink(fallbackUrl);
-      else window.open(fallbackUrl, '_blank');
-    }
-  } catch (e) {
-    const fallbackUrl = product.url || 'https://www.shopier.com/froxy';
-    if (tg?.openLink) tg.openLink(fallbackUrl);
-    else window.open(fallbackUrl, '_blank');
-  } finally {
-    if (btn) {
-      btn.innerHTML = oldText;
-      btn.disabled = false;
-    }
+  if (tg?.openLink) {
+    tg.openLink(targetUrl);
+  } else {
+    window.open(targetUrl, '_blank');
   }
 };
 
@@ -812,7 +746,7 @@ window.buyWithWallet = async function() {
   const product = state.selectedProduct;
   if (!product) return;
   if (!tgUser || !telegramInitData) {
-    showToast('Satın alma için mağazayı @FroxySatisBot içinden açın.', '⚠️');
+    showToast('Satın alma için mağazayı @KeyVadiSatisBot içinden açın.', '⚠️');
     return;
   }
 
@@ -898,10 +832,10 @@ window.setCategory = function(category, element) {
 };
 
 function getCartIdempotencyKey() {
-  let value = localStorage.getItem('froxy_cart_idempotency');
+  let value = localStorage.getItem('keyvadi_cart_idempotency');
   if (!value) {
     value = globalThis.crypto?.randomUUID?.() || `kv-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-    localStorage.setItem('froxy_cart_idempotency', value);
+    localStorage.setItem('keyvadi_cart_idempotency', value);
   }
   return value;
 }
@@ -930,13 +864,13 @@ window.handleCustomAmount = function(val) {
 // DYNAMIC SHOPIER TOPUP
 window.proceedShopierTopup = async function() {
   if (!tgUser || !telegramInitData) {
-    showToast('Bakiye yüklemek için mağazayı @FroxySatisBot içinden açın.', '⚠️');
+    showToast('Bakiye yüklemek için mağazayı @KeyVadiSatisBot içinden açın.', '⚠️');
     return;
   }
   triggerHaptic('medium');
   const amountInput = document.getElementById('customTopupInput');
   const amount = parseFloat(amountInput?.value) || state.selectedTopupAmount;
-  const topupKeyName = `froxy_topup_${tgUser.id}_${amount}`;
+  const topupKeyName = `keyvadi_topup_${tgUser.id}_${amount}`;
   let topupIdempotency = localStorage.getItem(topupKeyName);
   if (!topupIdempotency) {
     topupIdempotency = globalThis.crypto?.randomUUID?.() || `kv-topup-${tgUser.id}-${amount}-${Date.now()}`;
@@ -964,7 +898,7 @@ window.proceedShopierTopup = async function() {
       body: JSON.stringify({
         amount: amount,
         user_id: tgUser.id,
-        user_name: `${tgUser.first_name || ''} ${tgUser.last_name || ''}`.trim() || 'Froxy Müşteri',
+        user_name: `${tgUser.first_name || ''} ${tgUser.last_name || ''}`.trim() || 'KeyVadi Müşteri',
         username: tgUser.username || "",
         idempotency_key: topupIdempotency
       })
@@ -1028,8 +962,8 @@ window.shareOnTelegram = function() {
     return;
   }
   triggerHaptic('medium');
-  const refLink = document.getElementById('refLinkInput')?.value || `https://t.me/FroxySatisBot?start=ref_${tgUser.id}`;
-  const shareText = `🔥 Froxy ile ChatGPT Plus, Netflix, Canva Pro, FC26 ve tüm lisanslar %70 indirimli!\n\nHemen mağazayı açmak için tıkla:`;
+  const refLink = document.getElementById('refLinkInput')?.value || `https://t.me/KeyVadiSatisBot?start=ref_${tgUser.id}`;
+  const shareText = `🔥 KeyVadi ile ChatGPT Plus, Netflix, Canva Pro, FC26 ve tüm lisanslar %70 indirimli!\n\nHemen mağazayı açmak için tıkla:`;
   const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent(shareText)}`;
 
   if (tg?.openTelegramLink) {
@@ -1042,7 +976,7 @@ window.shareOnTelegram = function() {
 // Support Contact
 window.notifySupport = function() {
   triggerHaptic('medium');
-  const supportUrl = 'https://t.me/FroxyDestek';
+  const supportUrl = 'https://t.me/KeyVadiDestek';
   if (tg?.openTelegramLink) {
     tg.openTelegramLink(supportUrl);
   } else {
