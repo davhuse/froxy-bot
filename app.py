@@ -2199,6 +2199,160 @@ def clear_tickets():
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
 
+# ==================== BROADCAST / RE-TARGETING API ====================
+
+def _get_bot_subscribers(bot_type="keyvadi"):
+    """Fetch all unique subscriber user IDs from local databases and Firestore."""
+    subscriber_ids = set()
+    
+    if bot_type in ("keyvadi", "all"):
+        # 1. Local miniapp users
+        kv_users_path = Path("miniapp/users_data.json")
+        if kv_users_path.exists():
+            try:
+                data = json.loads(kv_users_path.read_text(encoding="utf-8"))
+                for uid in data.keys():
+                    if str(uid).isdigit():
+                        subscriber_ids.add(int(uid))
+            except Exception:
+                pass
+        # 2. Firestore KeyVadi users
+        try:
+            import firestore_helper
+            doc = firestore_helper.get_document("keyvadi_users_data")
+            if doc and "users" in doc and isinstance(doc["users"], dict):
+                for uid in doc["users"].keys():
+                    if str(uid).isdigit():
+                        subscriber_ids.add(int(uid))
+        except Exception:
+            pass
+
+    if bot_type in ("lisansarena", "all"):
+        # 1. Local LisansArena users
+        la_users_path = Path("miniapp_lisansarena/users_data.json")
+        if la_users_path.exists():
+            try:
+                data = json.loads(la_users_path.read_text(encoding="utf-8"))
+                for uid in data.keys():
+                    if str(uid).isdigit():
+                        subscriber_ids.add(int(uid))
+            except Exception:
+                pass
+        # 2. Firestore LisansArena users
+        try:
+            import firestore_helper
+            doc = firestore_helper.get_document("lisansarena_users_data")
+            if doc and "users" in doc and isinstance(doc["users"], dict):
+                for uid in doc["users"].keys():
+                    if str(uid).isdigit():
+                        subscriber_ids.add(int(uid))
+        except Exception:
+            pass
+
+    return sorted(list(subscriber_ids))
+
+
+@app.route('/api/broadcast/stats', methods=['GET'])
+def api_broadcast_stats():
+    kv_subs = _get_bot_subscribers("keyvadi")
+    la_subs = _get_bot_subscribers("lisansarena")
+    return jsonify({
+        "success": True,
+        "keyvadi_count": len(kv_subs),
+        "lisansarena_count": len(la_subs),
+        "total_unique": len(set(kv_subs + la_subs))
+    })
+
+
+@app.route('/api/broadcast/send', methods=['POST'])
+def api_broadcast_send():
+    data = request.get_json(silent=True) or {}
+    bot_type = data.get("bot_type", "keyvadi").strip().lower()
+    message = (data.get("message") or "").strip()
+    button_text = (data.get("button_text") or "").strip()
+    button_url = (data.get("button_url") or "").strip()
+    image_url = (data.get("image_url") or "").strip()
+    
+    if not message:
+        return jsonify({"success": False, "message": "Duyuru mesajı boş olamaz!"}), 400
+
+    cfg = {}
+    if os.path.exists(CONFIG_FILE):
+        try:
+            with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+                cfg = json.load(f)
+        except Exception:
+            pass
+
+    token = ""
+    if bot_type == "lisansarena":
+        token = os.environ.get("LISANSARENA_SUPPORT_BOT_TOKEN") or cfg.get("lisansarena_bot_token", "")
+    else:
+        token = os.environ.get("KEYVADI_SUPPORT_BOT_TOKEN") or cfg.get("keyvadi_bot_token", "")
+        
+    if not token or token == "YOUR_TELEGRAM_BOT_TOKEN":
+        return jsonify({"success": False, "message": f"{bot_type.capitalize()} bot tokeni yapılandırılmamış!"}), 400
+
+    subscribers = _get_bot_subscribers(bot_type)
+    if not subscribers:
+        return jsonify({"success": False, "message": "Bu botta henüz kayıtlı abone/kullanıcı bulunamadı!"}), 400
+
+    import urllib.request
+    
+    success_count = 0
+    fail_count = 0
+    
+    reply_markup = None
+    if button_text and button_url:
+        reply_markup = {
+            "inline_keyboard": [[{"text": button_text, "url": button_url}]]
+        }
+
+    for uid in subscribers:
+        try:
+            if image_url:
+                api_url = f"https://api.telegram.org/bot{token}/sendPhoto"
+                payload = {
+                    "chat_id": uid,
+                    "photo": image_url,
+                    "caption": message,
+                    "parse_mode": "Markdown"
+                }
+            else:
+                api_url = f"https://api.telegram.org/bot{token}/sendMessage"
+                payload = {
+                    "chat_id": uid,
+                    "text": message,
+                    "parse_mode": "Markdown"
+                }
+                
+            if reply_markup:
+                payload["reply_markup"] = reply_markup
+
+            req = urllib.request.Request(
+                api_url,
+                data=json.dumps(payload).encode("utf-8"),
+                headers={"Content-Type": "application/json"}
+            )
+            with urllib.request.urlopen(req, timeout=8) as r:
+                res = json.loads(r.read().decode("utf-8"))
+                if res.get("ok"):
+                    success_count += 1
+                else:
+                    fail_count += 1
+        except Exception:
+            fail_count += 1
+        time.sleep(0.1)
+
+    return jsonify({
+        "success": True,
+        "total": len(subscribers),
+        "sent": success_count,
+        "failed": fail_count,
+        "message": f"Duyuru tamamlandı! Başarıyla İletilen: {success_count}, Başarısız (Botu silen/engelleyenler): {fail_count}"
+    })
+
+
 @app.route('/api/shopier/callback', methods=['POST'])
 def shopier_callback():
     try:

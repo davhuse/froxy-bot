@@ -40,6 +40,9 @@
                 <button class="tab-btn" id="tabBtnTickets" onclick="switchTab('tickets')">
                     <i class="fa-solid fa-envelope"></i> Destek Talepleri
                 </button>
+                <button class="tab-btn" id="tabBtnBroadcast" onclick="switchTab('broadcast')">
+                    <i class="fa-solid fa-paper-plane" style="color: #60a5fa;"></i> Toplu Duyuru
+                </button>
             </div>
         </header>
 
@@ -496,6 +499,91 @@
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+                </div>
+        <!-- TAB 7: TOPLU DUYURU / RE-TARGETING -->
+        <div id="tab-broadcast" class="tab-content">
+            <div class="controls-panel glass-panel">
+                <div class="bot-info-header">
+                    <h2><i class="fa-solid fa-paper-plane" style="color: #60a5fa;"></i> Toplu Kampanya & Duyuru Gönderimi</h2>
+                    <p style="color: rgba(255,255,255,0.7); margin-top: 5px;">
+                        Botunuza daha önce /start vermiş, mesaj atmış veya mağazanızı açmış tüm kayıtlı kullanıcılara özelden tek tıkla anlık kampanya duyurusu gönderin.
+                    </p>
+                </div>
+            </div>
+
+            <!-- STATS BAR -->
+            <div class="stats-bar" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; width: 100%; margin-top: 15px;">
+                <div class="stat-card glass-panel" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 18px; text-align: center;">
+                    <span class="stat-title" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">KeyVadi Bot Aboneleri</span>
+                    <span class="stat-value" id="statBroadcastKvSubs" style="font-size: 1.8rem; font-weight: 700; color: #60a5fa;">Yükleniyor...</span>
+                </div>
+                <div class="stat-card glass-panel" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 18px; text-align: center;">
+                    <span class="stat-title" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">LisansArena Bot Aboneleri</span>
+                    <span class="stat-value" id="statBroadcastLaSubs" style="font-size: 1.8rem; font-weight: 700; color: #a78bfa;">Yükleniyor...</span>
+                </div>
+                <div class="stat-card glass-panel" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 18px; text-align: center;">
+                    <span class="stat-title" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">Toplam Tekil Müşteri</span>
+                    <span class="stat-value" id="statBroadcastTotalSubs" style="font-size: 1.8rem; font-weight: 700; color: var(--success);">Yükleniyor...</span>
+                </div>
+            </div>
+
+            <div class="main-content" style="grid-template-columns: 1fr; width: 100%; margin-top: 20px;">
+                <div class="glass-panel" style="width: 100%; padding: 25px;">
+                    <h3 style="margin-top: 0; margin-bottom: 18px; font-size: 1.15rem; display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-bullhorn" style="color: #60a5fa;"></i> Yeni Kampanya / Duyuru Oluştur
+                    </h3>
+
+                    <div style="display: flex; flex-direction: column; gap: 15px;">
+                        <div>
+                            <label style="display: block; font-size: 0.9rem; font-weight: 600; margin-bottom: 6px; color: var(--text-secondary);">
+                                🤖 Hedef Bot (Hangi botun abonelerine gönderilsin?):
+                            </label>
+                            <select id="broadcastBotSelect" style="width: 100%; max-width: 400px; padding: 10px 14px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; color: white; font-size: 0.95rem;">
+                                <option value="keyvadi">KeyVadi Satış Botu (@KeyVadiSatisBot)</option>
+                                <option value="lisansarena">LisansArena Botu (@LisansArenaBot)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label style="display: block; font-size: 0.9rem; font-weight: 600; margin-bottom: 6px; color: var(--text-secondary);">
+                                ✍️ Duyuru Metni (Markdown desteklidir):
+                            </label>
+                            <textarea id="broadcastMessageText" rows="6" placeholder="Örn: 🔥 GÜNÜN ŞOK FIRSATI: Bugün tüm Canva Pro ve Netflix lisanslarında %20 indirim! Fırsatı kaçırmamak için aşağıdaki butona tıkla." style="width: 100%; padding: 12px 14px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; color: white; font-size: 0.95rem; line-height: 1.5; resize: vertical;"></textarea>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px;">
+                            <div>
+                                <label style="display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 5px; color: var(--text-secondary);">
+                                    🔘 Buton Başlığı (İsteğe Bağlı):
+                                </label>
+                                <input type="text" id="broadcastBtnText" placeholder="Örn: 🛍️ Mağazayı Aç & İndirimi Kap" style="width: 100%; padding: 10px 14px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; color: white; font-size: 0.9rem;" />
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 5px; color: var(--text-secondary);">
+                                    🔗 Buton Linki / WebApp URL (İsteğe Bağlı):
+                                </label>
+                                <input type="text" id="broadcastBtnUrl" placeholder="Örn: https://t.me/KeyVadiSatisBot/app" style="width: 100%; padding: 10px 14px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; color: white; font-size: 0.9rem;" />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label style="display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 5px; color: var(--text-secondary);">
+                                🖼️ Banner / Görsel URL (İsteğe Bağlı):
+                            </label>
+                            <input type="text" id="broadcastImageUrl" placeholder="Örn: https://.../kampanya.jpg (Boş bırakılırsa sadece metin gider)" style="width: 100%; padding: 10px 14px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; color: white; font-size: 0.9rem;" />
+                        </div>
+
+                        <div style="margin-top: 10px; display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                            <button id="btnSendBroadcast" class="btn primary" onclick="sendBroadcast()" style="padding: 12px 24px; font-size: 1rem; font-weight: 600;">
+                                <i class="fa-solid fa-paper-plane"></i> Duyuruyu Tüm Kullanıcılara Gönder
+                            </button>
+                            <span id="broadcastStatusText" style="font-size: 0.9rem; color: var(--text-secondary);"></span>
+                        </div>
+
+                        <div id="broadcastResultCard" style="display: none; margin-top: 15px; padding: 15px; border-radius: 8px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border);">
+                            <span id="broadcastResultMsg" style="font-weight: 600; color: white;"></span>
+                        </div>
                     </div>
                 </div>
             </div>

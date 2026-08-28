@@ -104,6 +104,8 @@ function switchTab(tabName) {
         loadScraperConfig();
     } else if (tabName === 'tickets') {
         loadTickets();
+    } else if (tabName === 'broadcast') {
+        loadBroadcastStats();
     }
 }
 
@@ -1472,3 +1474,99 @@ async function tgVerifyPassword(e) {
         btn.innerHTML = `<i class="fa-solid fa-unlock-keyhole"></i> Şifreyi Doğrula`;
     }
 }
+
+// ==================== BROADCAST / RE-TARGETING LOGIC ====================
+
+async function loadBroadcastStats() {
+    try {
+        const res = await fetch('/api/broadcast/stats');
+        const data = await res.json();
+        if (data.success) {
+            const kvEl = document.getElementById('statBroadcastKvSubs');
+            const laEl = document.getElementById('statBroadcastLaSubs');
+            const totalEl = document.getElementById('statBroadcastTotalSubs');
+            if (kvEl) kvEl.textContent = data.keyvadi_count;
+            if (laEl) laEl.textContent = data.lisansarena_count;
+            if (totalEl) totalEl.textContent = data.total_unique;
+        }
+    } catch (e) {
+        console.error("Broadcast stats error:", e);
+    }
+}
+
+async function sendBroadcast() {
+    const botType = document.getElementById('broadcastBotSelect')?.value || 'keyvadi';
+    const message = document.getElementById('broadcastMessageText')?.value?.trim();
+    const buttonText = document.getElementById('broadcastBtnText')?.value?.trim();
+    const buttonUrl = document.getElementById('broadcastBtnUrl')?.value?.trim();
+    const imageUrl = document.getElementById('broadcastImageUrl')?.value?.trim();
+
+    if (!message) {
+        alert("Lütfen gönderilecek duyuru mesajını yazın!");
+        return;
+    }
+
+    if (buttonText && !buttonUrl) {
+        alert("Buton başlığı girdiyseniz lütfen Buton Linkini (URL) de girin!");
+        return;
+    }
+
+    if (!confirm(`Bu duyuruyu "${botType.toUpperCase()}" botunun tüm kayıtlı abonelerine göndermek istediğinize emin misiniz?`)) {
+        return;
+    }
+
+    const btn = document.getElementById('btnSendBroadcast');
+    const statusText = document.getElementById('broadcastStatusText');
+    const resultCard = document.getElementById('broadcastResultCard');
+    const resultMsg = document.getElementById('broadcastResultMsg');
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Gönderiliyor... Lütfen bekleyin`;
+    }
+    if (statusText) statusText.textContent = "Mesajlar kullanıcılara tek tek iletiliyor...";
+    if (resultCard) resultCard.style.display = 'none';
+
+    try {
+        const res = await fetch('/api/broadcast/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                bot_type: botType,
+                message: message,
+                button_text: buttonText,
+                button_url: buttonUrl,
+                image_url: imageUrl
+            })
+        });
+        const data = await res.json();
+
+        if (resultCard && resultMsg) {
+            resultCard.style.display = 'block';
+            if (data.success) {
+                resultCard.style.borderLeft = '4px solid var(--success)';
+                resultMsg.innerHTML = `✅ <strong>${data.message}</strong> (Toplam Abone: ${data.total}, İletilen: ${data.sent}, Hata: ${data.failed})`;
+            } else {
+                resultCard.style.borderLeft = '4px solid var(--danger)';
+                resultMsg.innerHTML = `⚠️ <strong>Hata:</strong> ${data.message || 'Duyuru gönderilemedi'}`;
+            }
+        }
+        if (data.success) {
+            document.getElementById('broadcastMessageText').value = '';
+            loadBroadcastStats();
+        }
+    } catch (err) {
+        if (resultCard && resultMsg) {
+            resultCard.style.display = 'block';
+            resultCard.style.borderLeft = '4px solid var(--danger)';
+            resultMsg.innerHTML = `⚠️ <strong>Bağlantı Hatası:</strong> ${err.message}`;
+        }
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Duyuruyu Tüm Kullanıcılara Gönder`;
+        }
+        if (statusText) statusText.textContent = "";
+    }
+}
+
