@@ -2207,45 +2207,49 @@ def _get_bot_subscribers(bot_type="keyvadi"):
     
     if bot_type in ("keyvadi", "all"):
         # 1. Local miniapp users
-        kv_users_path = Path("miniapp/users_data.json")
-        if kv_users_path.exists():
-            try:
+        try:
+            kv_users_path = Path("miniapp/users_data.json")
+            if kv_users_path.exists():
                 data = json.loads(kv_users_path.read_text(encoding="utf-8"))
                 for uid in data.keys():
                     if str(uid).isdigit():
                         subscriber_ids.add(int(uid))
-            except Exception:
-                pass
+        except Exception:
+            pass
         # 2. Firestore KeyVadi users
         try:
             import firestore_helper
             doc = firestore_helper.get_document("keyvadi_users_data")
-            if doc and "users" in doc and isinstance(doc["users"], dict):
-                for uid in doc["users"].keys():
-                    if str(uid).isdigit():
-                        subscriber_ids.add(int(uid))
+            if doc and isinstance(doc, dict):
+                users_dict = doc.get("users", {})
+                if isinstance(users_dict, dict):
+                    for uid in users_dict.keys():
+                        if str(uid).isdigit():
+                            subscriber_ids.add(int(uid))
         except Exception:
             pass
 
     if bot_type in ("lisansarena", "all"):
         # 1. Local LisansArena users
-        la_users_path = Path("miniapp_lisansarena/users_data.json")
-        if la_users_path.exists():
-            try:
+        try:
+            la_users_path = Path("miniapp_lisansarena/users_data.json")
+            if la_users_path.exists():
                 data = json.loads(la_users_path.read_text(encoding="utf-8"))
                 for uid in data.keys():
                     if str(uid).isdigit():
                         subscriber_ids.add(int(uid))
-            except Exception:
-                pass
+        except Exception:
+            pass
         # 2. Firestore LisansArena users
         try:
             import firestore_helper
             doc = firestore_helper.get_document("lisansarena_users_data")
-            if doc and "users" in doc and isinstance(doc["users"], dict):
-                for uid in doc["users"].keys():
-                    if str(uid).isdigit():
-                        subscriber_ids.add(int(uid))
+            if doc and isinstance(doc, dict):
+                users_dict = doc.get("users", {})
+                if isinstance(users_dict, dict):
+                    for uid in users_dict.keys():
+                        if str(uid).isdigit():
+                            subscriber_ids.add(int(uid))
         except Exception:
             pass
 
@@ -2254,14 +2258,23 @@ def _get_bot_subscribers(bot_type="keyvadi"):
 
 @app.route('/api/broadcast/stats', methods=['GET'])
 def api_broadcast_stats():
-    kv_subs = _get_bot_subscribers("keyvadi")
-    la_subs = _get_bot_subscribers("lisansarena")
-    return jsonify({
-        "success": True,
-        "keyvadi_count": len(kv_subs),
-        "lisansarena_count": len(la_subs),
-        "total_unique": len(set(kv_subs + la_subs))
-    })
+    try:
+        kv_subs = _get_bot_subscribers("keyvadi")
+        la_subs = _get_bot_subscribers("lisansarena")
+        return jsonify({
+            "success": True,
+            "keyvadi_count": len(kv_subs),
+            "lisansarena_count": len(la_subs),
+            "total_unique": len(set(kv_subs + la_subs))
+        })
+    except Exception as exc:
+        return jsonify({
+            "success": True,
+            "keyvadi_count": 0,
+            "lisansarena_count": 0,
+            "total_unique": 0,
+            "warning": str(exc)
+        })
 
 
 @app.route('/api/broadcast/send', methods=['POST'])
