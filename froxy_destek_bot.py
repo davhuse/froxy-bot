@@ -140,7 +140,7 @@ if not config:
     logger.error("bot_config.json could not be loaded. Exiting.")
     exit(1)
 
-BOT_TOKEN = os.environ.get("FROXY_SUPPORT_BOT_TOKEN", "").strip()
+BOT_TOKEN = (os.environ.get("FROXY_SUPPORT_BOT_TOKEN") or config.get("support_bot_token") or "").strip()
 ADMIN_ID = int(os.environ.get("FROXY_ADMIN_ID", config.get("froxy_admin_id", config.get("admin_id", 0))) or 0)
 BOT_USER_ID = None
 FROXY_SHOPIER_URL = "https://www.shopier.com/froxyai"

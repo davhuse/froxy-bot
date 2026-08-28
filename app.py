@@ -604,7 +604,7 @@ def bot_watchdog(lease_owner=None):
                     with open(CONFIG_FILE, "r", encoding="utf-8") as f:
                         cfg = json.load(f)
                     froxy_enabled = FROXY_ENABLED and cfg.get("froxy_bot_running", False)
-                    froxy_token = os.environ.get("FROXY_SUPPORT_BOT_TOKEN", "").strip()
+                    froxy_token = (os.environ.get("FROXY_SUPPORT_BOT_TOKEN") or cfg.get("support_bot_token") or "").strip()
                     if froxy_token and froxy_token != "YOUR_TELEGRAM_BOT_TOKEN":
                         has_froxy_token = True
                 except Exception:
@@ -868,7 +868,7 @@ def system_checkup():
         ),
         'froxy_support': bool(
             runtime_cfg.get('froxy_bot_running')
-            and os.environ.get('FROXY_SUPPORT_BOT_TOKEN', '').strip()
+            and (os.environ.get('FROXY_SUPPORT_BOT_TOKEN') or runtime_cfg.get('support_bot_token', '')).strip()
         ),
         'lisansarena_support': bool(
             runtime_cfg.get('lisansarena_bot_running')
@@ -1551,7 +1551,7 @@ def froxy_start():
     try:
         with open(CONFIG_FILE, "r", encoding="utf-8") as f:
             cfg = json.load(f)
-        token = os.environ.get("FROXY_SUPPORT_BOT_TOKEN", "").strip()
+        token = (os.environ.get("FROXY_SUPPORT_BOT_TOKEN") or cfg.get("support_bot_token") or "").strip()
         if not token or token == "YOUR_TELEGRAM_BOT_TOKEN":
             return jsonify({"success": False, "message": "Lütfen önce geçerli bir Froxy Bot Token kaydedin!"})
     except Exception as e:
