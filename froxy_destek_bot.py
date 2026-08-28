@@ -144,10 +144,6 @@ BOT_TOKEN = (os.environ.get("FROXY_SUPPORT_BOT_TOKEN") or config.get("support_bo
 ADMIN_ID = int(os.environ.get("FROXY_ADMIN_ID", config.get("froxy_admin_id", config.get("admin_id", 0))) or 0)
 BOT_USER_ID = None
 FROXY_SHOPIER_URL = "https://www.shopier.com/froxyai"
-FROXY_MINI_APP_URL = (
-    os.environ.get("FROXY_MINI_APP_URL")
-    or f"{(os.environ.get('RENDER_EXTERNAL_URL') or 'https://froxy-bot-live-r5se.onrender.com').rstrip('/')}/froxy/"
-).strip().rstrip("/") + "/"
 
 BOT_COMMANDS = [
     ("start", "Froxy Shopier mağazasını aç"),
@@ -463,7 +459,6 @@ async def show_main_menu(event, user_id, is_callback=False):
     )
     
     buttons = [
-        [Button.url("🛒 Froxy Mini App Mağaza", FROXY_MINI_APP_URL)],
         [Button.url(t["web_btn"], FROXY_SHOPIER_URL)],
         [Button.inline(t["support_btn"], b"menu_support")],
         [Button.inline(t["lang_btn"], b"menu_lang")],
