@@ -1,10 +1,8 @@
 kuponindirimsatis
 satcek
-kuponsat
 ceksat
 ticaretcanavari
 alsatticarettz
-letgoilanlari
 kuponhesapsatis
 kuponsatisgrup
 kuponcekkodsatis
@@ -14,7 +12,6 @@ tahaaslan11
 indirimkodusatis
 alimsatimmerkezii
 kuponsatislari0
-yucekuponsatis
 kupongrupta
 kuponkodindirimilanlar
 Kuponcekm
@@ -46,7 +43,6 @@ kuponindirimkodalisveris
 alisverisforumuguncel
 kuponindirimcek
 uygunkod
-kodpazari
 YemekSepetiKuponu
 kodalimsatim
 kuponalsatgurup
@@ -60,10 +56,5 @@ cek_kupon_kod_ilan
 Minakuponkodsatis
 bedavainternetkod
 indirimcek
-kuponindirimlisatis
-kuponceking
 kuponinternet
-kuponsatimalim
-kuponkodceksatis
-kuponcekkodsatis
 kodkuponcek
