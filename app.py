@@ -535,7 +535,7 @@ def bot_watchdog(lease_owner=None):
                     elif bot_runtime_enabled():
                         ad_enabled = False
                     support_enabled = cfg.get("support_bot_running", False)
-                    token = (os.environ.get("KEYVADI_SUPPORT_BOT_TOKEN") or cfg.get("keyvadi_bot_token") or cfg.get("support_bot_token") or "").strip()
+                    token = (os.environ.get("KEYVADI_SUPPORT_BOT_TOKEN") or os.environ.get("KEYVADI_BOT_TOKEN") or cfg.get("keyvadi_bot_token") or "").strip()
                     if token and token != "YOUR_TELEGRAM_BOT_TOKEN":
                         has_token = True
                 except Exception as ex:

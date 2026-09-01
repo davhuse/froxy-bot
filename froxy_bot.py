@@ -217,7 +217,6 @@ if not config:
 BOT_TOKEN = (
     os.environ.get("KEYVADI_SUPPORT_BOT_TOKEN") or
     os.environ.get("KEYVADI_BOT_TOKEN") or
-    config.get("support_bot_token") or
     config.get("keyvadi_bot_token") or
     ""
 ).strip()
