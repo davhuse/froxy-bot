@@ -1,20 +1,110 @@
 [
-  {"id":"49489768","title":"Perplexity Pro (1 Aylık Ortak)","price":"69,99 TL","url":"https://www.shopier.com/froxyai/49489768"},
-  {"id":"49489754","title":"ChatGPT Go (3 Aylık İndirim Kodu)","price":"49,99 TL","url":"https://www.shopier.com/froxyai/49489754"},
-  {"id":"49489749","title":"Gemini Ultra (1 Aylık 2500 Kredili)","price":"399,00 TL","url":"https://www.shopier.com/froxyai/49489749"},
-  {"id":"49489734","title":"Gemini Ultra (1 Aylık Kredisiz)","price":"299,00 TL","url":"https://www.shopier.com/froxyai/49489734"},
-  {"id":"49489726","title":"Codex SMS Doğrulama Kodu","price":"29,00 TL","url":"https://www.shopier.com/froxyai/49489726"},
-  {"id":"49489721","title":"ChatGPT Plus + Codex (1 Aylık)","price":"599,90 TL","url":"https://www.shopier.com/froxyai/49489721"},
-  {"id":"49489705","title":"ChatGPT Plus (1 Aylık Ortak)","price":"39,99 TL","url":"https://www.shopier.com/froxyai/49489705"},
-  {"id":"49489691","title":"ChatGPT Plus 30 Gün - Kişisel","price":"499,90 TL","url":"https://www.shopier.com/froxyai/49489691"},
-  {"id":"49489681","title":"Gemini Pro + Antigravity (18 Aylık)","price":"249,99 TL","url":"https://www.shopier.com/froxyai/49489681"},
-  {"id":"49489671","title":"Gemini Pro + Antigravity (12 Aylık)","price":"169,99 TL","url":"https://www.shopier.com/froxyai/49489671"},
-  {"id":"49489662","title":"Gemini Pro (18 Aylık Davet)","price":"99,99 TL","url":"https://www.shopier.com/froxyai/49489662"},
-  {"id":"49489651","title":"Gemini Pro (12 Aylık Davet)","price":"59,99 TL","url":"https://www.shopier.com/froxyai/49489651"},
-  {"id":"47408150","title":"Kurumsal Paket","price":"1.499,99 TL","url":"https://www.shopier.com/froxyai/47408150"},
-  {"id":"47408149","title":"İşletme Paketi","price":"799,99 TL","url":"https://www.shopier.com/froxyai/47408149"},
-  {"id":"47408145","title":"Geliştirici Paketi","price":"599,99 TL","url":"https://www.shopier.com/froxyai/47408145"},
-  {"id":"47408141","title":"Profesyonel Paket","price":"449,99 TL","url":"https://www.shopier.com/froxyai/47408141"},
-  {"id":"47408138","title":"Popüler Paket","price":"249,99 TL","url":"https://www.shopier.com/froxyai/47408138"},
-  {"id":"47408136","title":"Başlangıç Paketi","price":"129,99 TL","url":"https://www.shopier.com/froxyai/47408136"}
+  {
+    "id": "49489768",
+    "title": "Perplexity Pro (1 Aylık Ortak)",
+    "price": "69,99 TL",
+    "url": "https://www.shopier.com/froxyai/49489768"
+  },
+  {
+    "id": "49489754",
+    "title": "ChatGPT Go (3 Aylık İndirim Kodu)",
+    "price": "49,99 TL",
+    "url": "https://www.shopier.com/froxyai/49489754"
+  },
+  {
+    "id": "49489749",
+    "title": "Gemini Ultra (1 Aylık 2500 Kredili)",
+    "price": "399,00 TL",
+    "url": "https://www.shopier.com/froxyai/49489749"
+  },
+  {
+    "id": "49489734",
+    "title": "Gemini Ultra (1 Aylık Kredisiz)",
+    "price": "299,00 TL",
+    "url": "https://www.shopier.com/froxyai/49489734"
+  },
+  {
+    "id": "49489726",
+    "title": "Codex SMS Doğrulama Kodu",
+    "price": "29,00 TL",
+    "url": "https://www.shopier.com/froxyai/49489726"
+  },
+  {
+    "id": "49489721",
+    "title": "ChatGPT Plus + Codex (1 Aylık)",
+    "price": "599,99 TL",
+    "url": "https://www.shopier.com/froxyai/49489721"
+  },
+  {
+    "id": "49489705",
+    "title": "ChatGPT Plus (1 Aylık Ortak)",
+    "price": "39,99 TL",
+    "url": "https://www.shopier.com/froxyai/49489705"
+  },
+  {
+    "id": "49489691",
+    "title": "ChatGPT Plus (1 Aylık Kişisel)",
+    "price": "499,99 TL",
+    "url": "https://www.shopier.com/froxyai/49489691"
+  },
+  {
+    "id": "49489681",
+    "title": "Gemini Pro + Antigravity (18 Aylık)",
+    "price": "249,99 TL",
+    "url": "https://www.shopier.com/froxyai/49489681"
+  },
+  {
+    "id": "49489671",
+    "title": "Gemini Pro + Antigravity (12 Aylık)",
+    "price": "169,99 TL",
+    "url": "https://www.shopier.com/froxyai/49489671"
+  },
+  {
+    "id": "49489662",
+    "title": "Gemini Pro (18 Aylık Davet)",
+    "price": "99,99 TL",
+    "url": "https://www.shopier.com/froxyai/49489662"
+  },
+  {
+    "id": "49489651",
+    "title": "Gemini Pro (12 Aylık Davet)",
+    "price": "59,99 TL",
+    "url": "https://www.shopier.com/froxyai/49489651"
+  },
+  {
+    "id": "47408150",
+    "title": "Kurumsal Paket",
+    "price": "1.499,99 TL",
+    "url": "https://www.shopier.com/froxyai/47408150"
+  },
+  {
+    "id": "47408149",
+    "title": "İşletme Paketi",
+    "price": "799,99 TL",
+    "url": "https://www.shopier.com/froxyai/47408149"
+  },
+  {
+    "id": "47408145",
+    "title": "Geliştirici Paketi",
+    "price": "599,99 TL",
+    "url": "https://www.shopier.com/froxyai/47408145"
+  },
+  {
+    "id": "47408141",
+    "title": "Profesyonel Paket",
+    "price": "449,99 TL",
+    "url": "https://www.shopier.com/froxyai/47408141"
+  },
+  {
+    "id": "47408138",
+    "title": "Popüler Paket!",
+    "price": "249,99 TL",
+    "url": "https://www.shopier.com/froxyai/47408138"
+  },
+  {
+    "id": "47408136",
+    "title": "Başlangıç Paketi!",
+    "price": "129,99 TL",
+    "url": "https://www.shopier.com/froxyai/47408136"
+  }
 ]

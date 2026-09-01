@@ -1018,8 +1018,74 @@ function setupEventListeners() {
   }
 }
 
-// ==================== FLASH DEALS COUNTDOWN ====================
+// ==================== FLASH DEALS COUNTDOWN & ROTATION ====================
+const FLASH_DEALS_POOL = [
+  {
+    id: "50460458",
+    title: "CapCut Pro 1 Aylık (Kişisel Hesap)",
+    oldPrice: "₺299.90",
+    newPrice: "₺149.90",
+    save: "%50 İNDİRİM"
+  },
+  {
+    id: "50460461",
+    title: "Steam İstediğiniz Oyun (Ortak Hesap)",
+    oldPrice: "₺99.90",
+    newPrice: "₺30.00",
+    save: "%70 İNDİRİM"
+  },
+  {
+    id: "50460466",
+    title: "Steam 200$ Değerinde VIP Random Key",
+    oldPrice: "₺59.90",
+    newPrice: "₺24.90",
+    save: "%58 İNDİRİM"
+  },
+  {
+    id: "50460191",
+    title: "Minecraft Java & Bedrock + Xbox Ultimate (1 Ay)",
+    oldPrice: "₺99.90",
+    newPrice: "₺49.90",
+    save: "%50 İNDİRİM"
+  },
+  {
+    id: "50460265",
+    title: "Minecraft Java & Bedrock + Xbox Ultimate (3 Ay)",
+    oldPrice: "₺249.90",
+    newPrice: "₺119.90",
+    save: "%52 İNDİRİM"
+  }
+];
+
+function renderRandomFlashDeal() {
+  try {
+    const deal = FLASH_DEALS_POOL[Math.floor(Math.random() * FLASH_DEALS_POOL.length)];
+    const titleEl = document.querySelector('.fdb-title');
+    const oldEl = document.querySelector('.fdb-old');
+    const newEl = document.querySelector('.fdb-new');
+    const saveEl = document.querySelector('.fdb-save');
+    const btnEl = document.querySelector('.fdb-action-btn');
+    const banner = document.querySelector('.flash-deal-banner');
+    if (titleEl) titleEl.textContent = deal.title;
+    if (oldEl) oldEl.textContent = deal.oldPrice;
+    if (newEl) newEl.textContent = deal.newPrice;
+    if (saveEl) saveEl.textContent = deal.save;
+    if (btnEl) {
+      btnEl.onclick = (e) => {
+        e.stopPropagation();
+        openProductModal(deal.id);
+      };
+    }
+    if (banner) {
+      banner.onclick = () => openProductModal(deal.id);
+    }
+  } catch (e) {
+    console.error('Error rendering flash deal:', e);
+  }
+}
+
 function startFlashDealsTimer() {
+  renderRandomFlashDeal();
   const timerEl = document.getElementById('flashTimer');
   if (!timerEl) return;
   function update() {

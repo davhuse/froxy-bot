@@ -358,6 +358,12 @@
             <div class="stat-item">
               <span class="stat-num" id="totalOrdersCount">0</span>
               <span class="stat-label">Toplam Sipariş</span>
+          <div class="wallet-balance-amount dynamic-balance">₺0.00</div>
+
+          <div class="wallet-quick-stats">
+            <div class="stat-item">
+              <span class="stat-num" id="totalOrdersCount">0</span>
+              <span class="stat-label">Toplam Sipariş</span>
             </div>
             <div class="stat-item">
               <span class="stat-num" id="totalCreditsCount">0</span>
@@ -366,87 +372,6 @@
             <div class="stat-item">
               <span class="stat-num" id="dailyQuotaCount">3+1</span>
               <span class="stat-label">Günlük Ücretsiz</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Top-up Section -->
-        <div class="wallet-section-box">
-          <div class="section-title-row">
-            <h3>⚡ Bakiye Yükle (Shopier 3D Secure)</h3>
-            <span class="instant-badge">Anında Tanımlanır</span>
-          </div>
-          <p class="section-desc">Kredi veya banka kartınızla komisyonsuz, güvenli bakiye yükleyin.</p>
-
-          <div class="topup-amount-chips">
-            <button class="topup-chip" onclick="selectTopupAmount(50, this)">₺50</button>
-            <button class="topup-chip active" onclick="selectTopupAmount(100, this)">₺100</button>
-            <button class="topup-chip" onclick="selectTopupAmount(250, this)">₺250</button>
-            <button class="topup-chip" onclick="selectTopupAmount(500, this)">₺500</button>
-            <button class="topup-chip" onclick="selectTopupAmount(1000, this)">₺1.000</button>
-          </div>
-
-          <div class="custom-amount-row">
-            <span class="curr-symbol">₺</span>
-            <input type="number" id="customTopupInput" class="custom-amount-input" placeholder="Farklı bir tutar girin..." oninput="handleCustomAmountInput(this.value)">
-          </div>
-
-          <button id="dynamicPayBtn" class="pay-now-btn" onclick="initiateDynamicTopup()">
-            <span>⚡ Kartla Güvenli Yükle (Shopier 3D)</span>
-          </button>
-        </div>
-
-        <!-- FAST / Havale / EFT Box -->
-        <div class="wallet-section-box">
-          <div class="section-title-row">
-            <h3>🏦 FAST / Havale / EFT ile Yükle</h3>
-          </div>
-          <p class="section-desc">Banka hesabımıza ödeme yaptıktan sonra dekontunuzu destek botumuza iletiniz.</p>
-          <div class="bank-card">
-            <div class="bank-row">
-              <span class="bank-label">Banka:</span>
-              <span class="bank-val">Enpara / QNB Finansbank</span>
-            </div>
-            <div class="bank-row">
-              <span class="bank-label">Alıcı:</span>
-              <span class="bank-val">Habip Çelik</span>
-            </div>
-            <div class="bank-row iban-row">
-              <span class="bank-label">IBAN:</span>
-              <span class="bank-val mono-font" id="ibanText">TR48 0011 1000 0000 0127 7564 36</span>
-              <button class="copy-btn" onclick="copyIBAN()">Kopyala</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- My Orders & Delivered Licenses -->
-        <div class="wallet-section-box">
-          <div class="section-title-row">
-            <h3>📦 Siparişlerim & Lisans Kasası</h3>
-          </div>
-          <div id="ordersList" class="orders-list">
-            <!-- Populated dynamically -->
-          </div>
-          <div id="ordersEmpty" class="orders-empty">
-            <span>📭</span>
-            <p>Henüz bir siparişiniz bulunmamaktadır.</p>
-          </div>
-        </div>
-
-        <!-- Support CTA -->
-        <div class="support-card-banner">
-          <div class="support-text">
-            <h4>Yardıma mı ihtiyacınız var?</h4>
-            <p>7/24 Canlı Destek Botumuz anında yardımcı olmaya hazır.</p>
-          </div>
-          <button class="support-btn" onclick="openSupportBot()">💬 Destek Botu</button>
-        </div>
-      </section>
-
-    </main>
-
-    <!-- FLOATING MAC/IOS STYLE CAPSULE DOCK -->
-    <nav class="bottom-dock">
       <button class="dock-item active" data-view="view-chat" onclick="switchView('view-chat')">
         <div class="dock-icon">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
