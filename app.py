@@ -504,7 +504,7 @@ def bot_watchdog(lease_owner=None):
         try:
             if lease_owner and firestore_helper.acquire_remote_lease(
                 "telegram_bot_cluster_v1", lease_owner, 60
-            ) is not True:
+            ) is False:
                 print("[Watchdog] Distributed Telegram ownership was lost; stopping local children.")
                 for owned_script in (
                     "otomatik_katil.py", "froxy_bot.py",
@@ -624,7 +624,7 @@ def bot_watchdog(lease_owner=None):
                 try:
                     with open(CONFIG_FILE, "r", encoding="utf-8") as f:
                         cfg = json.load(f)
-                    froxy_enabled = FROXY_ENABLED and cfg.get("froxy_bot_running", False)
+                    froxy_enabled = FROXY_ENABLED and cfg.get("froxy_bot_running", True)
                     froxy_token = (os.environ.get("FROXY_SUPPORT_BOT_TOKEN") or cfg.get("support_bot_token") or "").strip()
                     if froxy_token and froxy_token != "YOUR_TELEGRAM_BOT_TOKEN":
                         has_froxy_token = True
@@ -669,7 +669,7 @@ def bot_watchdog(lease_owner=None):
             lisansarena_enabled = False
             has_lisansarena_token = False
             if cfg:
-                lisansarena_enabled = cfg.get("lisansarena_bot_running", False)
+                lisansarena_enabled = cfg.get("lisansarena_bot_running", True)
                 lisansarena_token = (os.environ.get("LISANSARENA_BOT_TOKEN") or cfg.get("lisansarena_bot_token") or "").strip()
                 if lisansarena_token and lisansarena_token != "YOUR_TELEGRAM_BOT_TOKEN":
                     has_lisansarena_token = True
