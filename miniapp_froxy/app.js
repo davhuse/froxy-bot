@@ -106,9 +106,10 @@ function formatTL(num) {
 document.addEventListener('DOMContentLoaded', async () => {
   renderUserInfo();
   drawWheel();
-  if (tgUser && hasUserAuth) await registerAndSyncUserProfile();
-  if (tgUser && hasUserAuth) await loadModels();
-  await loadStoreProducts();
+  // The picker must not wait for Telegram profile synchronization.
+  const startupTasks = [loadModels(), loadStoreProducts()];
+  if (tgUser && hasUserAuth) startupTasks.push(registerAndSyncUserProfile());
+  await Promise.allSettled(startupTasks);
   if (tgUser && hasUserAuth) startBackgroundBalanceSync();
 
   // URL deep link routing
@@ -222,21 +223,30 @@ async function loadModels() {
     const countEl = document.getElementById('verifiedModelCount');
     if (countEl) countEl.textContent = `${Number(data.active_model_count || state.models.length).toLocaleString('tr-TR')} aktif model`;
     if (menu) {
-      menu.innerHTML = state.models.map((model, index) => `
-        <button type="button" class="model-opt ${index === 0 ? 'active' : ''}" data-model-id="${escapeHtml(model.id)}">
+      const renderRows = (query = '') => {
+        const needle = query.trim().toLocaleLowerCase('tr-TR');
+        const filtered = state.models.filter(model => !needle || [model.name, model.provider_label, model.provider].join(' ').toLocaleLowerCase('tr-TR').includes(needle));
+        const rows = filtered.map((model, index) => `
+        <button type="button" class="model-opt ${model.id === state.selectedModel.id || (!state.selectedModel.id && index === 0) ? 'active' : ''}" data-model-id="${escapeHtml(model.id)}">
           <span class="opt-icon">${model.icon || (model.is_froxy ? '⚡' : '🤖')}</span>
           <span class="opt-body">
             <span class="opt-title">${escapeHtml(model.name)} ${model.is_froxy ? '<span class="opt-badge">FROXY</span>' : ''}</span>
             <span class="opt-desc">${escapeHtml(model.provider_label || model.provider)} · ${model.is_froxy ? 'Günlük ücretsiz kota' : `~${Number(model.estimated_1k_credits || 0).toLocaleString('tr-TR')} kredi`}</span>
           </span>
         </button>
-      `).join('');
-      menu.querySelectorAll('[data-model-id]').forEach(button => {
+        `).join('');
+        const list = menu.querySelector('.model-option-list');
+        if (list) list.innerHTML = rows || '<div class="model-empty">Aramana uygun model bulunamadı.</div>';
+        menu.querySelectorAll('[data-model-id]').forEach(button => {
         button.addEventListener('click', () => {
           const model = state.models.find(row => row.id === button.dataset.modelId);
           if (model) selectModel(model.id, model.name, model.icon || (model.is_froxy ? '⚡' : '🤖'));
         });
       });
+      };
+      menu.innerHTML = `<div class="model-menu-head"><b>Model seç</b><span>${state.models.length} aktif</span></div><input id="modelSearchInput" class="model-search-input" type="search" autocomplete="off" placeholder="Model veya sağlayıcı ara"><div class="model-option-list"></div>`;
+      menu.querySelector('#modelSearchInput')?.addEventListener('input', event => renderRows(event.target.value));
+      renderRows();
     }
     const first = state.models.find(model => model.id === state.selectedModel.id) || state.models[0];
     if (first) selectModel(first.id, first.name, first.icon || (first.is_froxy ? '⚡' : '🤖'));
@@ -274,7 +284,11 @@ function switchView(viewId) {
 function toggleModelDropdown() {
   triggerHaptic('light');
   const menu = document.getElementById('modelDropdownMenu');
-  if (menu) menu.classList.toggle('show');
+  if (menu) {
+    const open = menu.classList.toggle('show');
+    document.getElementById('modelSelectorButton')?.setAttribute('aria-expanded', String(open));
+    if (open) setTimeout(() => menu.querySelector('#modelSearchInput')?.focus(), 0);
+  }
 }
 
 function selectModel(id, name, icon, desc) {
@@ -291,6 +305,7 @@ function selectModel(id, name, icon, desc) {
 
   const menu = document.getElementById('modelDropdownMenu');
   if (menu) menu.classList.remove('show');
+  document.getElementById('modelSelectorButton')?.setAttribute('aria-expanded', 'false');
 
   showToast(`${name} modeline geçildi!`, icon);
 }

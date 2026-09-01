@@ -79,7 +79,7 @@
       <section id="view-chat" class="app-view active">
         <!-- Chat Model Selector Bar -->
         <div class="model-picker-bar">
-          <div class="model-selector" onclick="toggleModelDropdown()">
+          <button class="model-selector" id="modelSelectorButton" type="button" onclick="toggleModelDropdown()" aria-expanded="false" aria-controls="modelDropdownMenu">
             <div class="current-model-info">
               <span class="model-logo-icon" id="selectedModelIcon">🤖</span>
               <div class="model-name-box">
@@ -88,7 +88,7 @@
               </div>
             </div>
             <svg class="dropdown-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
-          </div>
+          </button>
 
           <!-- Model Options Dropdown -->
           <div class="model-dropdown-menu" id="modelDropdownMenu" aria-live="polite">

@@ -323,13 +323,16 @@ body {
 }
 
 .model-selector {
+  width: 100%;
+  border: 1px solid var(--border-glass);
+  color: var(--text-primary);
+  text-align: left;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 10px 14px;
   background: var(--bg-card);
   backdrop-filter: blur(16px);
-  border: 1px solid var(--border-glass);
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: all 0.2s ease;
@@ -379,16 +382,17 @@ body {
   top: calc(100% + 6px);
   left: 0;
   right: 0;
-  z-index: 50;
+  z-index: 600;
   background: rgba(10, 15, 30, 0.96);
   backdrop-filter: blur(24px);
   border: 1px solid var(--border-cyan);
   border-radius: var(--radius-lg);
-  padding: 8px;
+  padding: 12px;
   display: none;
   flex-direction: column;
   gap: 6px;
-  box-shadow: 0 16px 40px rgba(0,0,0,0.6);
+  box-shadow: 0 20px 56px rgba(0,0,0,0.72);
+  max-height: min(66vh, 560px);
 }
 
 .model-dropdown-menu.show {
@@ -399,7 +403,12 @@ body {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  padding: 10px 12px;
+  width: 100%;
+  border: 0;
+  text-align: left;
+  background: transparent;
+  padding: 13px 12px;
+  min-height: 62px;
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: background 0.15s ease;
@@ -408,6 +417,13 @@ body {
 .model-opt:hover, .model-opt.active {
   background: rgba(0, 240, 255, 0.08);
 }
+
+.model-menu-head { display:flex; justify-content:space-between; align-items:center; padding:2px 4px 10px; color:#fff; font-size:14px; }
+.model-menu-head span { color:var(--text-secondary); font-size:11px; }
+.model-search-input { width:100%; border:1px solid var(--border-glass); border-radius:12px; background:rgba(255,255,255,.06); color:#fff; padding:12px; outline:none; font:inherit; margin-bottom:8px; }
+.model-search-input:focus { border-color:var(--accent-cyan); }
+.model-option-list { overflow-y:auto; overscroll-behavior:contain; min-height:80px; padding-right:2px; }
+.model-empty { padding:22px 8px; text-align:center; color:var(--text-secondary); }
 
 .opt-icon {
   font-size: 18px;
@@ -1824,4 +1840,16 @@ body {
 .toast-popup.show {
   transform: translateX(-50%) translateY(0);
   opacity: 1;
+}
+
+/* Telegram phones need a quiet, touch-first layout. */
+@media (max-width: 430px) {
+  .top-header { padding: 10px 12px; }
+  .telemetry-bar { display: none; }
+  .app-view { padding: 12px; }
+  .brand-status { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .balance-chip { padding: 6px 8px; gap: 4px; }
+  .wheel-icon-btn { width: 34px; height: 34px; }
+  .quick-prompts-grid { grid-template-columns: 1fr 1fr; }
+  .model-dropdown-menu { position: fixed; top: auto; bottom: calc(var(--dock-height) + 18px); left: 12px; right: 12px; max-height: 66vh; border-radius: 20px; }
 }

@@ -259,10 +259,10 @@ def legacy_user_profile(user_id: int):
 
 @app.route("/api/models", methods=["GET"])
 def get_models():
-    telegram_user, error = _require_user()
-    if error:
-        return error
-    if not _rate_limit("models", str(telegram_user["id"]), 20):
+    # Model metadata has no user data or credentials. Let the picker load
+    # while Telegram finishes injecting initData; AI requests stay HMAC-only.
+    visitor = request.headers.get("X-Forwarded-For", request.remote_addr or "anonymous").split(",")[0].strip()
+    if not _rate_limit("models", visitor, 30):
         return jsonify({"success": False, "error": "Çok fazla model yenileme isteği"}), 429
     try:
         catalog = gateway.public_catalog()
