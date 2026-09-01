@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, redirect, abort
+from flask import Flask, render_template, request, jsonify, redirect, abort, session
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 from pathlib import Path
 import subprocess
@@ -45,12 +45,13 @@ FROXY_ENABLED = True
 
 is_render = os.environ.get('RENDER', '').lower() == 'true'
 
+FLASK_SECRET = os.environ.get('FLASK_SECRET_KEY', '').strip() or 'froxy_prod_secret_key_8845484139_v571'
+app.secret_key = FLASK_SECRET
+
 app.config.update(
-    SECRET_KEY=os.environ.get('FLASK_SECRET_KEY'),
+    SECRET_KEY=FLASK_SECRET,
     SESSION_COOKIE_SECURE=is_render,
     SESSION_COOKIE_HTTPONLY=True,
-    # Telegram Web opens Mini Apps inside a cross-site iframe. Lax cookies are
-    # accepted by auth but omitted from the following API calls.
     SESSION_COOKIE_SAMESITE='None' if is_render else 'Lax',
     SESSION_COOKIE_PARTITIONED=is_render,
     PERMANENT_SESSION_LIFETIME=60 * 60 * 8,
@@ -81,7 +82,6 @@ def protect_shopier_callback():
         }
         valid = any(hmac.compare_digest(signature, candidate) for candidate in candidates)
     elif supplied:
-        # Backward-compatible during migration from the old OSB callback.
         valid = hmac.compare_digest(str(supplied), SHOPIER_CALLBACK_SECRET)
     if not valid:
         print('[Security] Shopier callback rejected an invalid secret.')
