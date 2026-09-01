@@ -21,10 +21,12 @@ class AdTemplateTests(unittest.TestCase):
             self.assertNotIn("1100", text, path.name)
             self.assertNotIn("ücretsiz kredi", text.lower(), path.name)
 
-    def test_froxy_support_public_flow_is_shopier_only(self):
+    def test_froxy_support_public_flow_opens_mini_app(self):
         source = (ROOT / "froxy_destek_bot.py").read_text(encoding="utf-8")
         self.assertIn('FROXY_SHOPIER_URL = "https://www.shopier.com/froxyai"', source)
-        self.assertIn('"text": "🛒 Shopier Mağazası"', source)
+        self.assertIn("FROXY_MINI_APP_URL", source)
+        self.assertIn('"text": "🚀 Froxy AI"', source)
+        self.assertIn("KeyboardButtonWebView", source)
         self.assertNotIn("froxyai.com", source.lower())
         self.assertNotIn("1.100", source)
         self.assertNotIn("1100+", source)

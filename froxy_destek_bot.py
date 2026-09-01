@@ -7,6 +7,7 @@ import time
 from functools import wraps
 import urllib.request
 from telethon import TelegramClient, events, Button
+from telethon.tl import types
 from telethon.errors import MessageNotModifiedError
 from telethon.sessions import StringSession
 import user_lang_helper
@@ -144,13 +145,20 @@ BOT_TOKEN = (os.environ.get("FROXY_SUPPORT_BOT_TOKEN") or config.get("support_bo
 ADMIN_ID = int(os.environ.get("FROXY_ADMIN_ID", config.get("froxy_admin_id", config.get("admin_id", 0))) or 0)
 BOT_USER_ID = None
 FROXY_SHOPIER_URL = "https://www.shopier.com/froxyai"
+FROXY_MINI_APP_URL = (os.environ.get("FROXY_MINI_APP_URL") or "https://froxy-bot-live.onrender.com/froxy/").strip()
 
 BOT_COMMANDS = [
-    ("start", "Froxy Shopier mağazasını aç"),
-    ("magaza", "Shopier mağazasını aç"),
+    ("start", "Froxy AI uygulamasını aç"),
+    ("app", "Froxy AI uygulamasını aç"),
+    ("magaza", "Froxy mağazasını aç"),
     ("destek", "Destek talebi oluştur"),
     ("dil", "Dil seçimini değiştir"),
 ]
+
+
+def froxy_app_button(label="🚀 Froxy AI Uygulamasını Aç"):
+    """A genuine Telegram Web App button, not an ordinary browser URL."""
+    return types.KeyboardButtonWebView(text=label, url=FROXY_MINI_APP_URL)
 
 
 def _bot_api_call(method, payload):
@@ -168,7 +176,7 @@ def _bot_api_call(method, payload):
 
 
 def configure_bot_profile():
-    """Keep Froxy's public Telegram identity Shopier-only."""
+    """Configure Froxy as a Telegram Mini App entry point."""
     calls = (
         ("setMyCommands", {
             "commands": [
@@ -179,16 +187,16 @@ def configure_bot_profile():
         ("setChatMenuButton", {
             "menu_button": {
                 "type": "web_app",
-                "text": "🛒 Shopier Mağazası",
-                "web_app": {"url": FROXY_SHOPIER_URL},
+                "text": "🚀 Froxy AI",
+                "web_app": {"url": FROXY_MINI_APP_URL},
             }
         }),
         ("setMyName", {"name": "Froxy"}),
         ("setMyDescription", {
-            "description": "Dijital ürünler ve üyelikler için Froxy Shopier mağazası. Ürün adını yazın; ilgili Shopier ilanı gelsin."
+            "description": "Froxy AI uygulaması: sohbet, görsel üretimi, AI kredileri, mağaza ve destek."
         }),
         ("setMyShortDescription", {
-            "short_description": "Dijital ürünler · Shopier mağazası · Destek"
+            "short_description": "AI sohbet · Görsel · Mağaza · Destek"
         }),
     )
     for method, payload in calls:
@@ -268,14 +276,14 @@ bot = TelegramClient("froxy_destek_bot_session", API_ID, API_HASH)
 TEXTS = {
     "tr": {
         "welcome": (
-            "🛒 **Froxy Shopier Mağazasına Hoş Geldiniz!**\n\n"
-            "Dijital ürünleri güvenli ödeme ile Shopier üzerinden inceleyebilirsiniz.\n"
-            "Aradığınız ürünün adını yazarsanız ilgili tekil Shopier ilanını da gönderebilirim."
+            "⚡ **Froxy AI'a hoş geldiniz!**\n\n"
+            "Sohbet, görsel üretimi, AI kredileri, mağaza ve sipariş takibi tek uygulamada.\n"
+            "Aşağıdaki **Froxy AI'ı Aç** düğmesine dokunarak başlayın."
         ),
         "packages_btn": "👑 Üyelik Paketleri (Kredi)",
         "ai_tools_btn": "🤖 Yapay Zeka Paketleri (AI Tools)",
         "support_btn": "📞 Canlı Destek & İletişim",
-        "web_btn": "🛒 Shopier Mağazasını Aç",
+        "web_btn": "🚀 Froxy AI'ı Aç",
         "lang_btn": "🌐 Dil Seçimi / Language",
         "main_menu": "↩️ Ana Menü",
         "pkg_btn_list": [
@@ -353,14 +361,14 @@ TEXTS = {
     },
     "en": {
         "welcome": (
-            "🛒 **Welcome to the Froxy Shopier Store!**\n\n"
-            "Browse digital products and memberships with secure checkout on Shopier.\n"
-            "You can also type a product name to receive its individual Shopier listing."
+            "⚡ **Welcome to Froxy AI!**\n\n"
+            "Chat, image generation, AI credits, store and order tracking are in one app.\n"
+            "Tap **Open Froxy AI** below to begin."
         ),
         "packages_btn": "👑 Membership Packages (Credits)",
         "ai_tools_btn": "🤖 AI Tools & Packages",
         "support_btn": "📞 Live Support & Contact",
-        "web_btn": "🛒 Open Shopier Store",
+        "web_btn": "🚀 Open Froxy AI",
         "lang_btn": "🌐 Language / Dil",
         "main_menu": "↩️ Main Menu",
         "pkg_btn_list": [
@@ -436,6 +444,7 @@ TEXTS = {
 async def show_lang_selection(event, is_callback=False):
     text = "Lütfen dilinizi seçin / Please choose your language:"
     buttons = [
+        [froxy_app_button()],
         [Button.inline("🇹🇷 Türkçe", b"lang_tr"), Button.inline("🇺🇸 English", b"lang_en")]
     ]
     if is_callback:
@@ -459,7 +468,8 @@ async def show_main_menu(event, user_id, is_callback=False):
     )
     
     buttons = [
-        [Button.url(t["web_btn"], FROXY_SHOPIER_URL)],
+        [froxy_app_button(t["web_btn"])],
+        [Button.url("🛒 Shopier Ürün Sayfası", FROXY_SHOPIER_URL)],
         [Button.inline(t["support_btn"], b"menu_support")],
         [Button.inline(t["lang_btn"], b"menu_lang")],
     ]
@@ -476,11 +486,12 @@ async def verify_payment_callback(event):
     except:
         pass
     text = (
-        "🛒 **Froxy Shopier Mağazası**\n\n"
-        "Ödeme ve sipariş takibi Shopier üzerinden yürütülür. Mağazayı aşağıdaki düğmeden açabilirsiniz."
+        "⚡ **Froxy AI Uygulaması**\n\n"
+        "Sohbet, görsel, kredi ve siparişler için uygulamayı açın."
     )
     buttons = [
-        [Button.url("🛒 Shopier Mağazasını Aç", FROXY_SHOPIER_URL)],
+        [froxy_app_button()],
+        [Button.url("🛒 Shopier Ürün Sayfası", FROXY_SHOPIER_URL)],
         [Button.inline("↩️ Vazgeç ve Geri Dön", b"menu_main")]
     ]
     await safe_event_edit(event, text, buttons=buttons)
@@ -533,8 +544,17 @@ async def store_cmd_handler(event):
     if not await async_claim_event(event, "froxy_support"):
         return
     await event.respond(
-        "🛒 Froxy Shopier mağazasını aşağıdaki düğmeden açabilirsiniz.",
-        buttons=[[Button.url("🛒 Shopier Mağazasını Aç", FROXY_SHOPIER_URL)]],
+        "⚡ Froxy AI uygulamasını aşağıdaki düğmeden açabilirsiniz.",
+        buttons=[[froxy_app_button()], [Button.url("🛒 Shopier Ürün Sayfası", FROXY_SHOPIER_URL)]],
+    )
+
+
+@bot.on(events.NewMessage(pattern=r'/app'))
+@once_per_command("app")
+async def app_cmd_handler(event):
+    await event.respond(
+        "⚡ **Froxy AI**\n\nSohbet, görsel üretimi, mağaza ve siparişlerini tek uygulamada yönet.",
+        buttons=[[froxy_app_button()]],
     )
 
 
@@ -580,9 +600,10 @@ async def packages_menu_handler(event):
         pass
     await safe_event_edit(
         event,
-        "🛒 Ürünleri ve güncel fiyatları Froxy Shopier mağazasında inceleyebilirsiniz.",
+        "⚡ AI kredileri, ürünler ve güncel fiyatlar için Froxy AI uygulamasını açın. Shopier ürün sayfası alternatif olarak aşağıdadır.",
         buttons=[
-            [Button.url("🛒 Shopier Mağazasını Aç", FROXY_SHOPIER_URL)],
+            [froxy_app_button()],
+            [Button.url("🛒 Shopier Ürün Sayfası", FROXY_SHOPIER_URL)],
             [Button.inline("↩️ Ana Menü", b"menu_main")],
         ],
     )
@@ -612,9 +633,10 @@ async def ai_tools_menu_handler(event):
 async def menu_referral_handler(event):
     await safe_event_edit(
         event,
-        "🛒 Froxy satışları Shopier mağazası üzerinden yürütülür.",
+        "⚡ Froxy AI kredileri ve siparişleri uygulama üzerinden yönetilir. Shopier ürün sayfası alternatif olarak aşağıdadır.",
         buttons=[
-            [Button.url("🛒 Shopier Mağazasını Aç", FROXY_SHOPIER_URL)],
+            [froxy_app_button()],
+            [Button.url("🛒 Shopier Ürün Sayfası", FROXY_SHOPIER_URL)],
             [Button.inline("↩️ Ana Menü", b"menu_main")],
         ],
     )
@@ -673,6 +695,7 @@ async def pkg_select_handler(event):
     )
     
     buttons = [
+        [froxy_app_button("🚀 Froxy AI'da Aç")],
         [Button.url(t["buy_shopier"], shopier_url)] if shopier_url else [Button.inline("💬 Destek üzerinden sipariş", b"menu_support")],
         [Button.inline(t["back_to_pkgs"], b"menu_packages")]
     ]
@@ -779,7 +802,7 @@ async def message_handler(event):
         lang = user_lang_helper.get_user_lang(user_id) or "tr"
         t = TEXTS[lang]
         lines = ["🔎 **Uygun Froxy ürünleri:**", ""]
-        buttons = []
+        buttons = [[froxy_app_button("🚀 Froxy AI Uygulamasını Aç")]]
         for product in matched_products:
             price = product.get("price") or "Fiyat ürün sayfasında"
             lines.append(f"• **{product['title']}** — {price}")
