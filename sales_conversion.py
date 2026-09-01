@@ -96,8 +96,7 @@ BRAND_PHRASES = (
     "ideogram", "quillbot", "discord", "hbo", "prime video", "prime", "perplexity",
     "magnific", "zula", "fc 26", "fc26", "codex", "antigravity", "disney", "minecraft",
     "cape", "pelerin", "roblox", "instagram", "takipci", "gmail", "claude",
-    "baslangic", "populer", "profesyonel", "gelistirici", "isletme", "kurumsal",
-    "random key", "key", "hesap", "lisans", "oyun", "kupon"
+    "baslangic", "populer", "profesyonel", "gelistirici", "isletme", "kurumsal"
 )
 
 VARIANT_TERMS = {
@@ -388,6 +387,8 @@ def match_sales_products(message: str, products: list[dict], limit: int = 3) -> 
     query_tokens = set(query.split())
     useful_query = query_tokens - STOP_WORDS
     brands = _brand_phrases_in(query)
+    if not brands:
+        return []
     variant_tokens = query_tokens & VARIANT_TERMS
     scored = []
     

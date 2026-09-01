@@ -3113,12 +3113,26 @@ async def reserve_product_dm_replies(client_name, sender_id, products, now=None)
     reserved_keys = []
     for product in products:
         reply_key = product_dm_reply_key(client_name, sender_id, product)
-        last_sent = USER_DM_PRODUCT_REPLY_TIME.get(reply_key, 0)
-        if now - last_sent < 60:
+        if reply_key in USER_DM_PRODUCT_REPLY_TIME:
             continue
+        doc_id = f"ad_dm_product_{reply_key[0]}_{reply_key[1]}_{reply_key[2]}"
+        # The create-only Firestore claim is the cross-process reservation.
+        claimed = await async_claim_document(doc_id, {
+            "account": client_name,
+            "sender_id": int(sender_id),
+            "product_id": str(product.get("id") or product.get("url") or product.get("title") or "product"),
+            "reserved_at": float(now),
+            "rule": "one_product_once_per_private_chat",
+        })
+        if claimed is not True:
+            if claimed is None:
+                print(f"⚠️ [{client_name}] Ürün yanıt kilidi kullanılamıyor; güvenlik için kart atlanıyor.")
+            USER_DM_PRODUCT_REPLY_TIME[reply_key] = now
+            continue
+        # Keep a local marker for fast duplicate suppression in this process.
         USER_DM_PRODUCT_REPLY_TIME[reply_key] = now
         available.append(product)
-        reserved_keys.append((reply_key, f"ad_dm_product_{reply_key[0]}_{reply_key[1]}_{reply_key[2]}"))
+        reserved_keys.append((reply_key, doc_id))
     return available, reserved_keys
 
 
@@ -3395,6 +3409,9 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
             "trendyol", "yemek", "market", "disney", "exxen", "hbo", "nitro", "discord",
             "fc", "fifa", "zula", "hesap", "fiyat", "link", "almak", "satın", "kod", "ücret", "bot", "store", "var mi", "ne kadar"
         ))
+        if not has_keyword and not sales_context and is_obviously_non_sales_dm(event.raw_text):
+            print(f"[{client_name}] DM satış dışı görünüyor, otomatik yanıt atlandı.")
+            return
 
         # LisansArena odeme/IBAN sorularini Shopier'e cevirmeden destek ekibine
         # aktar. Tekrarlanan mesajlarda hem musteriye hem admin'e dalga halinde
