@@ -2546,43 +2546,13 @@ def tg_verify_password():
             "deploy_required": True,
         })
     except Exception as e:
-        return jsonify({"success": False, "message": f"Şifre doğrulama hatası: {str(e)}"})
-
-
-_shutdown_started = False
-
-
-def shutdown_child_processes():
-    global _shutdown_started
-    if _shutdown_started:
-        return
-    _shutdown_started = True
-    for script_name in (
-        'otomatik_katil.py', 'froxy_bot.py',
-        'froxy_destek_bot.py', 'lisansarena_bot.py', 'smm_worker.py',
-    ):
-        kill_process_by_script(script_name)
-
-
-def _handle_shutdown_signal(signum, _frame):
-    print(f"[App] shutdown signal {signum}; stopping Telegram children.")
-    shutdown_child_processes()
-    raise SystemExit(0)
-
-
-atexit.register(shutdown_child_processes)
-if threading.current_thread() is threading.main_thread():
-    try:
-        import signal as _signal
-        _signal.signal(_signal.SIGTERM, _handle_shutdown_signal)
-        _signal.signal(_signal.SIGINT, _handle_shutdown_signal)
-    except Exception:
-        pass
+        return str(e), 500
 
 
 # Start background threads at module load (works under Gunicorn and direct python app.py)
 _started_lock = threading.Lock()
 _bg_threads_started = False
+
 
 def start_background_threads():
     import os
@@ -2625,7 +2595,7 @@ def start_background_threads():
 start_background_threads()
 start_store_worker()
 
-# KeyVadi & LisansArena Mini Apps mounted under the web service
+# Mini Apps mounted under the web service
 mounts = {}
 
 class _MountedRootMiddleware:
@@ -2638,6 +2608,7 @@ class _MountedRootMiddleware:
             environ = dict(environ)
             environ['PATH_INFO'] = '/'
         return self.wsgi_app(environ, start_response)
+
 try:
     from miniapp.server import app as keyvadi_miniapp
     mounts['/keyvadi'] = _MountedRootMiddleware(keyvadi_miniapp)
@@ -2652,6 +2623,14 @@ try:
     print('[App] LisansArena CyberVault Mini App mounted at /la/app and /lisansarena')
 except Exception as exc:
     print(f'[App] LisansArena Mini App mount unavailable: {exc}')
+
+try:
+    from miniapp_froxy.server import app as froxy_miniapp
+    mounts['/froxy'] = _MountedRootMiddleware(froxy_miniapp)
+    mounts['/froxy/app'] = _MountedRootMiddleware(froxy_miniapp)
+    print('[App] Froxy Neural AI Studio Mini App mounted at /froxy and /froxy/app')
+except Exception as exc:
+    print(f'[App] Froxy Mini App mount unavailable: {exc}')
 
 if mounts:
     app.wsgi_app = DispatcherMiddleware(app.wsgi_app, mounts)
