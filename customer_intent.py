@@ -44,13 +44,15 @@ _PAYMENT = (
     "bakiye yukle", "para yatir", "shopier", "siparis notu",
 )
 _SALES = (
-    "fiyat", "ne kadar", "almak", "alabilir", "satin", "stok", "mevcut",
-    "kisisel", "ortak", "premium", "plus", "pro", "uyelik", "lisans",
-    "kod", "profil", "paket", "aylik", "yillik", "garanti", "teslimat",
+    "fiyat", "fiyatlar", "ne kadar", "almak", "alabilir", "satin", "stok", "mevcut",
+    "kisisel", "ortak", "premium", "plus", "pro", "uyelik", "lisans", "key",
+    "kod", "profil", "paket", "aylik", "yillik", "garanti", "teslimat", "link",
+    "site", "katalog", "oyun", "random key", "vip key", "hesap", "hesabi",
     "chatgpt", "chat gpt", "gpt", "gemini", "netflix", "youtube", "spotify",
-    "canva", "capcut", "duolingo", "windows", "office", "adobe", "discord",
-    "envato", "freepik", "exxen", "hbo", "prime", "perplexity", "vpn",
-    "kaspersky", "trendyol", "steam", "xbox", "lisansarena", "froxy",
+    "canva", "capcut", "duolingo", "windows", "office", "adobe", "discord", "nitro",
+    "envato", "freepik", "exxen", "hbo", "prime", "perplexity", "vpn", "fc 26", "fc26", "fifa",
+    "kaspersky", "trendyol", "steam", "xbox", "gamepass", "game pass", "minecraft",
+    "mc", "mine craft", "zula", "lisansarena", "froxy", "keyvadi", "var mi", "nasil alirim"
 )
 
 

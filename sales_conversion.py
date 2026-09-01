@@ -31,6 +31,25 @@ PUBLIC_BASE_URL = (
 CATALOG_REFRESH_STATUS: dict[str, dict] = {}
 
 TEXT_ALIASES = {
+    "mc": "minecraft",
+    "minecraft": "minecraft",
+    "mine craft": "minecraft",
+    "mc pre": "minecraft",
+    "mc premium": "minecraft",
+    "minecraft pre": "minecraft",
+    "gamepass": "xbox",
+    "game pass": "xbox",
+    "x box": "xbox",
+    "fifa": "fc 26",
+    "fifa26": "fc 26",
+    "fc26": "fc 26",
+    "fc 26": "fc 26",
+    "dc": "discord",
+    "nitro": "discord",
+    "discord nitro": "discord",
+    "yt": "youtube",
+    "yt premium": "youtube",
+    "you tube": "youtube",
     "netfilix": "netflix",
     "netfli": "netflix",
     "chat gpt": "chatgpt",
@@ -43,12 +62,9 @@ TEXT_ALIASES = {
     "personel": "kisisel",
     "30 gunluk": "30 gun",
     "1 aylik": "1 ay",
+    "3 aylik": "3 ay",
     "blu tv": "blutv",
     "blue tv": "blutv",
-    "you tube": "youtube",
-    "yt premium": "youtube premium",
-    "yt": "youtube",
-    "gamepass": "game pass",
     "win10": "windows 10",
     "win11": "windows 11",
     "office365": "office 365",
@@ -59,9 +75,15 @@ TEXT_ALIASES = {
     "marketu": "trendyol market",
     "market": "trendyol market",
     "yemek kuponu": "trendyol yemek",
+    "yemek": "trendyol yemek",
     "tg hesap": "telegram hesap",
     "telegram account": "telegram hesap",
-    "x box": "xbox",
+    "random key": "steam random key",
+    "vip key": "steam random key",
+    "steam key": "steam random key",
+    "steam oyun": "steam oyun",
+    "cap cut": "capcut",
+    "capcut pro": "capcut",
 }
 
 BRAND_PHRASES = (
@@ -72,9 +94,10 @@ BRAND_PHRASES = (
     "midjourney", "tradingview", "nordvpn", "vpn", "kaspersky", "envato",
     "freepik", "autocad", "figma", "elementor", "grammarly", "deepl",
     "ideogram", "quillbot", "discord", "hbo", "prime video", "prime", "perplexity",
-    "magnific", "zula", "fc26", "codex", "antigravity", "disney", "minecraft",
+    "magnific", "zula", "fc 26", "fc26", "codex", "antigravity", "disney", "minecraft",
     "cape", "pelerin", "roblox", "instagram", "takipci", "gmail", "claude",
     "baslangic", "populer", "profesyonel", "gelistirici", "isletme", "kurumsal",
+    "random key", "key", "hesap", "lisans", "oyun", "kupon"
 )
 
 VARIANT_TERMS = {
@@ -358,40 +381,60 @@ def has_sales_query(message: str) -> bool:
 
 
 def match_sales_products(message: str, products: list[dict], limit: int = 3) -> list[dict]:
-    """Return one specific match or at most three variants for a generic query."""
+    """Return one specific match or at most three variants for a query."""
     query = normalize_sales_text(message)
     if not query:
         return []
     query_tokens = set(query.split())
+    useful_query = query_tokens - STOP_WORDS
     brands = _brand_phrases_in(query)
-    if not brands:
-        return []
     variant_tokens = query_tokens & VARIANT_TERMS
     scored = []
+    
     for product in products:
         title = normalize_sales_text(product.get("title", ""))
         title_tokens = set(title.split())
-        matching_brands = [brand for brand in brands if brand in title]
-        if not matching_brands:
-            continue
-        useful_query = query_tokens - STOP_WORDS
+        matching_brands = [brand for brand in brands if brand in title] if brands else []
         overlap = useful_query & title_tokens
-        score = 100 * len(matching_brands) + 12 * len(overlap)
+        
+        # Candidate qualification: matches a brand OR has at least 1 significant title token
+        if brands and not matching_brands and len(overlap) < 2:
+            continue
+        elif not brands and not overlap:
+            continue
+            
+        score = 100 * len(matching_brands) + 20 * len(overlap)
         if title and title in query:
-            score += 100
+            score += 150
         for token in variant_tokens:
-            score += 35 if token in title_tokens else -30
+            score += 40 if token in title_tokens else -25
         if "yemek" in query_tokens and "yemek" not in title_tokens:
             score -= 100
         if "market" in query_tokens and "market" not in title_tokens:
             score -= 100
         if "kisisel" in query_tokens and "ortak" in title_tokens:
-            score -= 100
+            score -= 120
         if "kisisel" in query_tokens and "kisisel" in title_tokens:
-            score += 120
+            score += 140
         if "ortak" in query_tokens and "kisisel" in title_tokens:
-            score -= 100
+            score -= 120
         if "ortak" in query_tokens and "ortak" in title_tokens:
+            score += 140
+        if "1 ay" in query or "1 aylik" in query:
+            if "1 ay" in title or "1 aylik" in title:
+                score += 80
+            elif "3 ay" in title or "12 ay" in title:
+                score -= 60
+        if "3 ay" in query or "3 aylik" in query:
+            if "3 ay" in title or "3 aylik" in title:
+                score += 80
+            elif "1 ay" in title or "12 ay" in title:
+                score -= 60
+        if "minecraft" in query_tokens and "minecraft" in title_tokens:
+            score += 150
+        if "steam" in query_tokens and "steam" in title_tokens:
+            score += 120
+        if "capcut" in query_tokens and "capcut" in title_tokens:
             score += 120
         if "codex" in query_tokens and "chatgpt" in query_tokens:
             if "codex" in title_tokens and "chatgpt" in title_tokens:
@@ -399,6 +442,7 @@ def match_sales_products(message: str, products: list[dict], limit: int = 3) -> 
             elif "sms" in title_tokens:
                 score -= 160
         scored.append((score, product))
+        
     scored.sort(key=lambda pair: (-pair[0], _price_number(pair[1].get("price")), pair[1]["title"]))
     if not scored:
         return []
@@ -406,8 +450,6 @@ def match_sales_products(message: str, products: list[dict], limit: int = 3) -> 
         return [scored[0][1]]
     if "chatgpt" in query_tokens and "codex" in query_tokens and scored:
         return [scored[0][1]]
-    # A query containing duration/variant detail is specific when the best
-    # candidate clearly beats the next one. Generic brand queries show choices.
     if variant_tokens and (len(scored) == 1 or scored[0][0] - scored[1][0] >= 25):
         return [scored[0][1]]
     return [product for _score, product in scored[: max(1, min(limit, 3))]]

@@ -3103,38 +3103,22 @@ def product_dm_reply_key(client_name, sender_id, product):
 
 
 async def reserve_product_dm_replies(client_name, sender_id, products, now=None):
-    """Reserve products never sent in this private chat.
-
-    Product claims are permanent per account/customer/product. Different
-    products remain independent, so Windows and Office can be answered in
-    sequence without re-sending the same product card.
+    """Reserve products with a 60-second anti-spam cooldown per product.
+    
+    Ensures rapid duplicate messages do not spam identical cards, but allows
+    the customer to receive product links whenever they ask or ask again.
     """
     now = time.time() if now is None else now
     available = []
     reserved_keys = []
     for product in products:
         reply_key = product_dm_reply_key(client_name, sender_id, product)
-        if reply_key in USER_DM_PRODUCT_REPLY_TIME:
+        last_sent = USER_DM_PRODUCT_REPLY_TIME.get(reply_key, 0)
+        if now - last_sent < 60:
             continue
-        doc_id = f"ad_dm_product_{reply_key[0]}_{reply_key[1]}_{reply_key[2]}"
-        # The create-only Firestore claim is the cross-process reservation.  A
-        # read followed by a write is racy when two ad-account workers overlap.
-        claimed = await async_claim_document(doc_id, {
-            "account": client_name,
-            "sender_id": int(sender_id),
-            "product_id": str(product.get("id") or product.get("url") or product.get("title") or "product"),
-            "reserved_at": float(now),
-            "rule": "one_product_once_per_private_chat",
-        })
-        if claimed is not True:
-            if claimed is None:
-                print(f"⚠️ [{client_name}] Ürün yanıt kilidi kullanılamıyor; güvenlik için kart atlanıyor.")
-            USER_DM_PRODUCT_REPLY_TIME[reply_key] = now
-            continue
-        # Keep a local marker for fast duplicate suppression in this process.
         USER_DM_PRODUCT_REPLY_TIME[reply_key] = now
         available.append(product)
-        reserved_keys.append((reply_key, doc_id))
+        reserved_keys.append((reply_key, f"ad_dm_product_{reply_key[0]}_{reply_key[1]}_{reply_key[2]}"))
     return available, reserved_keys
 
 
@@ -3404,10 +3388,13 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         msg_text = (event.raw_text or "").strip().lower()
         if not msg_text:
             return
-        has_keyword = any(kw in msg_text for kw in ("adobe", "youtube", "canva", "netflix", "spotify", "gpt", "chatgpt", "gemini", "claude", "windows", "office", "duolingo", "capcut", "express", "lisans", "premium", "shopier"))
-        if not has_keyword and not sales_context and is_obviously_non_sales_dm(event.raw_text):
-            print(f"[{client_name}] DM satış dışı görünüyor, otomatik yanıt atlandı.")
-            return
+        has_keyword = any(kw in msg_text for kw in (
+            "adobe", "youtube", "canva", "netflix", "spotify", "gpt", "chatgpt", "gemini",
+            "claude", "windows", "office", "duolingo", "capcut", "express", "lisans",
+            "premium", "shopier", "minecraft", "mc", "steam", "key", "gamepass", "xbox",
+            "trendyol", "yemek", "market", "disney", "exxen", "hbo", "nitro", "discord",
+            "fc", "fifa", "zula", "hesap", "fiyat", "link", "almak", "satın", "kod", "ücret", "bot", "store", "var mi", "ne kadar"
+        ))
 
         # LisansArena odeme/IBAN sorularini Shopier'e cevirmeden destek ekibine
         # aktar. Tekrarlanan mesajlarda hem musteriye hem admin'e dalga halinde
