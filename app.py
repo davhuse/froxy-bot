@@ -752,16 +752,18 @@ def bot_watchdog_owner_loop():
         uuid.uuid4().hex,
     )
     while True:
-        claimed = firestore_helper.acquire_remote_lease(
-            "telegram_bot_cluster_v1", owner, 60
-        )
-        if claimed is True:
-            print("[Watchdog] This instance owns the distributed Telegram bot cluster.")
+        try:
+            claimed = firestore_helper.acquire_remote_lease(
+                "telegram_bot_cluster_v1", owner, 60
+            )
+            if claimed is True or claimed is None:
+                print("[Watchdog] This instance owns the Telegram bot cluster.")
+                bot_watchdog(owner)
+            else:
+                print("[Watchdog] Another deployment owns Telegram; waiting without starting bots.")
+        except Exception as e:
+            print(f"[Watchdog] Lease check error: {e}; running local watchdog fallback.")
             bot_watchdog(owner)
-        elif claimed is None:
-            print("[Watchdog] Durable ownership store unavailable; bots remain stopped (fail closed).")
-        else:
-            print("[Watchdog] Another deployment owns Telegram; waiting without starting bots.")
         time.sleep(10)
 
 @app.route('/')

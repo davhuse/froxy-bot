@@ -7,9 +7,16 @@ let panelAdminToken = localStorage.getItem('panelAdminToken')
 
 async function adminFetch(input, init = {}) {
     const headers = new Headers(init.headers || {});
-    if (panelAdminToken) headers.set('X-Admin-Token', panelAdminToken);
+    if (panelAdminToken && !headers.has('X-Admin-Token')) headers.set('X-Admin-Token', panelAdminToken);
     return await nativeFetch(input, { ...init, headers });
 }
+
+// Automatically attach X-Admin-Token to all fetch calls in the web panel
+window.fetch = async function(input, init = {}) {
+    const headers = new Headers(init.headers || {});
+    if (panelAdminToken && !headers.has('X-Admin-Token')) headers.set('X-Admin-Token', panelAdminToken);
+    return await nativeFetch(input, { ...init, headers });
+};
 
 function savePanelAdminToken(event) {
     if (event) event.preventDefault();
