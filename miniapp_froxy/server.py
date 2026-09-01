@@ -446,7 +446,16 @@ def _create_topup(telegram_user: dict, *, amount: float, kind: str, product: dic
     user_id = int(telegram_user["id"])
     if kind == "credits" and not product:
         raise ValueError("Kredi paketi bulunamadı")
-    result = create_dynamic_shopier_listing(amount=amount, user_id=user_id, user_name=str(telegram_user.get("first_name") or "Froxy Müşteri"), username=str(telegram_user.get("username") or ""), idempotency_key=idempotency_key, purpose="credits" if kind == "credits" else "wallet", purpose_title=(product or {}).get("title", ""))
+    existing = store.get_pending_topup_by_idempotency(user_id, idempotency_key)
+    if existing:
+        return {
+            "success": True,
+            "duplicate": True,
+            "product_id": existing["product_id"],
+            "payment_url": existing.get("payment_url"),
+            "is_live_shopier": True,
+        }
+    result = create_dynamic_shopier_listing(amount=amount, user_id=user_id, user_name=str(telegram_user.get("first_name") or "Froxy Müşteri"), username=str(telegram_user.get("username") or ""), idempotency_key=idempotency_key, purpose="credits" if kind == "credits" else "wallet", purpose_title=(product or {}).get("title", ""), persist_local=False)
     if result.get("success"):
         store.save_topup({"product_id": str(result["product_id"]), "user_id": user_id, "amount_kurus": int(round(amount * 100)), "kind": kind, "ai_credits": _credit_amount_for_product(product) if product else 0, "credit_product_id": str((product or {}).get("id") or ""), "payment_url": result.get("payment_url"), "status": "pending", "idempotency_key": idempotency_key, "created_at": int(time.time())})
     return result
@@ -457,6 +466,8 @@ def create_dynamic_topup():
     telegram_user, error = _require_user()
     if error:
         return error
+    if not _shopier_token():
+        return jsonify({"success": False, "error": "Shopier ödeme altyapısı henüz yapılandırılmadı"}), 503
     data = request.get_json(silent=True) or {}
     try:
         amount = round(float(data.get("amount", 50)), 2)
@@ -474,6 +485,8 @@ def create_credit_checkout():
     telegram_user, error = _require_user()
     if error:
         return error
+    if not _shopier_token():
+        return jsonify({"success": False, "error": "Shopier ödeme altyapısı henüz yapılandırılmadı"}), 503
     data = request.get_json(silent=True) or {}
     product_id = str(data.get("product_id") or "")
     product = next((row for row in load_products() if str(row.get("id")) == product_id and row.get("category") == "credits"), None)

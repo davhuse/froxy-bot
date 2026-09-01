@@ -570,6 +570,21 @@ class FroxyStore:
             row.pop("_memory_version", None)
         return row
 
+    def get_pending_topup_by_idempotency(self, user_id: int, idempotency_key: str) -> dict[str, Any] | None:
+        """Look up a pending checkout from Firestore, never local JSON."""
+        user, _ = self._read(self._user_doc_id(user_id))
+        if not user:
+            return None
+        for product_id in reversed(list(user.get("topup_ids", []))[-40:]):
+            row = self.get_topup(str(product_id))
+            if (
+                row
+                and row.get("status") == "pending"
+                and str(row.get("idempotency_key") or "") == str(idempotency_key)
+            ):
+                return row
+        return None
+
     def update_topup(self, product_id: str, updates: dict[str, Any]) -> dict[str, Any]:
         doc_id = f"froxy_topup_v1_{_safe_id(product_id)}"
 

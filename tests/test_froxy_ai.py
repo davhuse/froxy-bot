@@ -111,6 +111,15 @@ class FroxyStoreTests(unittest.TestCase):
         self.assertTrue(second["duplicate"])
         self.assertEqual(5000, self.store.get_user(101)["wallet_kurus"])
 
+    def test_pending_topup_idempotency_survives_store_restart(self):
+        self.store.get_or_create_user({"id": 101, "first_name": "Test"})
+        self.store.save_topup({
+            "product_id": "shopier-1", "user_id": 101, "payment_url": "https://example.test/pay",
+            "idempotency_key": "checkout-1", "status": "pending",
+        })
+        found = self.store.get_pending_topup_by_idempotency(101, "checkout-1")
+        self.assertEqual("shopier-1", found["product_id"])
+
 
 class FroxyApiTests(unittest.TestCase):
     def setUp(self):

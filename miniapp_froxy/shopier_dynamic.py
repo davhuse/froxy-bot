@@ -85,6 +85,7 @@ def create_dynamic_shopier_listing(
     idempotency_key: str = "",
     purpose: str = "wallet",
     purpose_title: str = "",
+    persist_local: bool = True,
 ) -> dict:
     """Shopier REST API v1 ile Froxy iÃ§in anlÄ±k ilan aÃ§ar."""
     if not FROXY_TOKEN:
@@ -148,17 +149,18 @@ def create_dynamic_shopier_listing(
             pid = str(data.get("id"))
             pay_url = f"https://www.shopier.com/froxy/{pid}"
 
-            topups = load_active_topups()
-            topups[pid] = {
-                "user_id": user_id,
-                "amount": clean_amount,
-                "created_at": time.time(),
-                "payment_url": pay_url,
-                "status": "pending",
-                "idempotency_key": idempotency_key,
-                "purpose": "credits" if is_credit else "wallet",
-            }
-            save_active_topups(topups)
+            if persist_local:
+                topups = load_active_topups()
+                topups[pid] = {
+                    "user_id": user_id,
+                    "amount": clean_amount,
+                    "created_at": time.time(),
+                    "payment_url": pay_url,
+                    "status": "pending",
+                    "idempotency_key": idempotency_key,
+                    "purpose": "credits" if is_credit else "wallet",
+                }
+                save_active_topups(topups)
 
             return {
                 "success": True,
