@@ -293,7 +293,12 @@ class FroxyGateway:
         return {
             "models": public,
             "count": len(public),
+            # This is the only number appropriate for the Mini App: every
+            # listed model is both healthy and selectable at this moment.
+            "active_model_count": len(public),
             "active_provider_count": sum(1 for row in self._provider_status.values() if row.get("healthy")),
+            # Kept for operational monitoring; this includes provider catalog
+            # entries intentionally hidden when their price is not reliable.
             "verified_total": sum(int(row.get("models", 0) or 0) for row in self._provider_status.values() if row.get("healthy")),
             "refreshed_at": int(self._refreshed_at),
         }

@@ -220,7 +220,7 @@ async function loadModels() {
     if (!response.ok || !data.success) throw new Error(data.error || 'Model kataloğu alınamadı');
     state.models = Array.isArray(data.models) ? data.models : [];
     const countEl = document.getElementById('verifiedModelCount');
-    if (countEl) countEl.textContent = `${Number(data.verified_total || state.models.length).toLocaleString('tr-TR')} aktif model`;
+    if (countEl) countEl.textContent = `${Number(data.active_model_count || state.models.length).toLocaleString('tr-TR')} aktif model`;
     if (menu) {
       menu.innerHTML = state.models.map((model, index) => `
         <button type="button" class="model-opt ${index === 0 ? 'active' : ''}" data-model-id="${escapeHtml(model.id)}">
