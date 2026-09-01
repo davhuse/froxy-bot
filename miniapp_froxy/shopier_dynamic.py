@@ -77,7 +77,15 @@ def cleanup_user_previous_topups(user_id: int):
     for pid in pids_to_del:
         cancel_and_delete_topup(pid)
 
-def create_dynamic_shopier_listing(amount: float, user_id: int, user_name: str = "", username: str = "", idempotency_key: str = "") -> dict:
+def create_dynamic_shopier_listing(
+    amount: float,
+    user_id: int,
+    user_name: str = "",
+    username: str = "",
+    idempotency_key: str = "",
+    purpose: str = "wallet",
+    purpose_title: str = "",
+) -> dict:
     """Shopier REST API v1 ile Froxy iÃ§in anlÄ±k ilan aÃ§ar."""
     if not FROXY_TOKEN:
         return {"success": False, "error": "Shopier eriÅŸim anahtarÄ± yapÄ±landÄ±rÄ±lmamÄ±ÅŸ"}
@@ -108,10 +116,20 @@ def create_dynamic_shopier_listing(amount: float, user_id: int, user_name: str =
     display_name = user_name or (f"@{username}" if username else f"MÃ¼ÅŸteri #{user_id}")
     clean_amount = round(float(amount), 2)
     
+    is_credit = str(purpose).lower() == "credits"
+    listing_title = (
+        f"{purpose_title or 'Froxy AI Kredi Paketi'} - {display_name}"
+        if is_credit
+        else f"Froxy Mağaza Cüzdanı ({clean_amount:.2f} TL) - {display_name}"
+    )
     payload = {
-        "title": f"Froxy CÃ¼zdan Bakiye YÃ¼kleme ({clean_amount:.2f} TL) - {display_name}",
+        "title": listing_title,
         "type": "digital",
-        "description": f"Froxy Ã¶zel bakiye yÃ¼kleme | MÃ¼ÅŸteri: {display_name}",
+        "description": (
+            f"Froxy AI kullanım kredisi | Müşteri: {display_name}"
+            if is_credit
+            else f"Froxy mağaza cüzdanı yükleme | Müşteri: {display_name}"
+        ),
         "stockQuantity": 1,
         "shippingPayer": "sellerPays",
         "priceData": {
@@ -137,7 +155,8 @@ def create_dynamic_shopier_listing(amount: float, user_id: int, user_name: str =
                 "created_at": time.time(),
                 "payment_url": pay_url,
                 "status": "pending",
-                "idempotency_key": idempotency_key
+                "idempotency_key": idempotency_key,
+                "purpose": "credits" if is_credit else "wallet",
             }
             save_active_topups(topups)
 

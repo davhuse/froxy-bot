@@ -118,8 +118,15 @@ def allocate_license(product_title_or_id: str, brand: str = "keyvadi") -> dict[s
     """
     cat = resolve_category(product_title_or_id)
     b = str(brand or "").lower().strip()
-    brand_slug = "lisansarena" if "lisans" in b else "keyvadi"
-    support_handle = "@LisansArenaOnline" if brand_slug == "lisansarena" else "@KeyVadiDestek"
+    if "froxy" in b:
+        brand_slug = "froxy"
+        support_handle = "@FroxyDestekBOT"
+    elif "lisans" in b:
+        brand_slug = "lisansarena"
+        support_handle = "@LisansArenaOnline"
+    else:
+        brand_slug = "keyvadi"
+        support_handle = "@KeyVadiDestek"
     
     guide_info = PRODUCT_GUIDES.get(cat, {}) if cat else {}
     redeem_url = guide_info.get("redeem_url")

@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Froxy AI | Yapay Zeka Asistanı & Lisans Hub</title>
+  <link rel="icon" href="assets/froxy_chat_logo_1783808162276.png">
   
   <!-- Telegram WebApp SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -12,10 +13,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
-  
-  <!-- Highlight.js for Code Blocks -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
   
   <!-- Main Stylesheet -->
   <link rel="stylesheet" href="style.css">
@@ -38,7 +35,7 @@
           </div>
           <div class="brand-text">
             <span class="brand-name">FROXY<span class="brand-ai">.AI</span></span>
-            <span class="brand-status" id="headerModelStatus">⚡ GPT-4o Omni Aktif</span>
+            <span class="brand-status" id="headerModelStatus">⚡ Modeller doğrulanıyor</span>
           </div>
         </div>
       </div>
@@ -46,9 +43,13 @@
       <div class="header-right">
         <!-- Live Token/Credit Chip -->
         <div class="balance-chip" onclick="switchView('view-wallet')">
-          <span class="balance-icon">🪙</span>
+          <span class="balance-icon">💳</span>
           <span class="balance-val dynamic-balance">₺0.00</span>
           <span class="balance-plus">+</span>
+        </div>
+        <div class="balance-chip" onclick="switchView('view-store')" title="AI Kredisi">
+          <span class="balance-icon">🪙</span>
+          <span class="balance-val dynamic-ai-credits">0</span>
         </div>
 
         <!-- Wheel Bonus Trigger -->
@@ -62,11 +63,10 @@
     <!-- LIVE TELEMETRY TICKER -->
     <div class="telemetry-bar">
       <div class="telemetry-track">
-        <span class="telemetry-item"><span class="dot live"></span> GPT-4o: <b>12ms Latency</b></span>
-        <span class="telemetry-item"><span class="dot live"></span> Claude 3.5 Sonnet: <b>Aktif</b></span>
-        <span class="telemetry-item"><span class="dot live"></span> Gemini 1.5 Pro: <b>Aktif</b></span>
-        <span class="telemetry-item"><span class="dot live"></span> DeepSeek R1: <b>Hazır</b></span>
-        <span class="telemetry-item"><span class="dot live"></span> Shopier 3D Secure: <b>7/24 Anında Teslimat</b></span>
+        <span class="telemetry-item"><span class="dot live"></span> Doğrulanmış katalog: <b id="verifiedModelCount">Yükleniyor</b></span>
+        <span class="telemetry-item"><span class="dot live"></span> Froxy ücretsiz hak: <b id="freeQuotaTicker">3 mesaj + 1 görsel</b></span>
+        <span class="telemetry-item"><span class="dot live"></span> Shopier: <b>3D Secure</b></span>
+        <span class="telemetry-item"><span class="dot live"></span> Manuel teslimat: <b>1–3 iş günü</b></span>
       </div>
     </div>
 
@@ -84,44 +84,17 @@
               <span class="model-logo-icon" id="selectedModelIcon">🤖</span>
               <div class="model-name-box">
                 <span class="model-label">Seçili AI Modeli</span>
-                <span class="model-title" id="selectedModelTitle">Froxy GPT-4o Omni</span>
+                <span class="model-title" id="selectedModelTitle">Froxy Hızlı</span>
               </div>
             </div>
             <svg class="dropdown-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
           </div>
 
           <!-- Model Options Dropdown -->
-          <div class="model-dropdown-menu" id="modelDropdownMenu">
-            <div class="model-opt active" onclick="selectModel('gpt-4o', 'Froxy GPT-4o Omni', '🤖', 'OpenAI Flagship - Kod, Analiz & Görsel')">
-              <span class="opt-icon">🤖</span>
-              <div class="opt-body">
-                <div class="opt-title">Froxy GPT-4o Omni <span class="opt-badge">ÖNERİLEN</span></div>
-                <div class="opt-desc">En popüler çok modlu model. Kod, analiz ve hızlı yanıt.</div>
-              </div>
-            </div>
-
-            <div class="model-opt" onclick="selectModel('claude-35', 'Claude 3.5 Sonnet', '🧠', 'Anthropic - İleri Düzey Akıl Yürütme & Kodlama')">
-              <span class="opt-icon">🧠</span>
-              <div class="opt-body">
-                <div class="opt-title">Claude 3.5 Sonnet <span class="opt-badge elite">ELİTE</span></div>
-                <div class="opt-desc">Yüksek mantık, derin kod analizi ve doğal Türkçe akıcılık.</div>
-              </div>
-            </div>
-
-            <div class="model-opt" onclick="selectModel('gemini-15', 'Gemini 1.5 Pro Ultra', '💎', 'Google DeepMind - 2M Token Dev Bağlam')">
-              <span class="opt-icon">💎</span>
-              <div class="opt-body">
-                <div class="opt-title">Gemini 1.5 Pro Ultra <span class="opt-badge fast">2M TOKEN</span></div>
-                <div class="opt-desc">Geniş doküman okuma, video ve veri analizi.</div>
-              </div>
-            </div>
-
-            <div class="model-opt" onclick="selectModel('deepseek-r1', 'DeepSeek R1 Reasoner', '⚡', 'DeepSeek - Matematik & Düşünce Zinciri')">
-              <span class="opt-icon">⚡</span>
-              <div class="opt-body">
-                <div class="opt-title">DeepSeek R1 Reasoner <span class="opt-badge">REASONING</span></div>
-                <div class="opt-desc">Düşünce adımlarıyla karmaşık problem çözme.</div>
-              </div>
+          <div class="model-dropdown-menu" id="modelDropdownMenu" aria-live="polite">
+            <div class="model-opt active">
+              <span class="opt-icon">⏳</span>
+              <div class="opt-body"><div class="opt-title">Çalışan modeller doğrulanıyor…</div></div>
             </div>
           </div>
         </div>
@@ -176,9 +149,9 @@
         <!-- Chat Input Dock -->
         <div class="chat-input-container">
           <div class="chat-feature-toggles">
-            <button class="feature-toggle-btn active" id="toggleWebSearch" onclick="toggleChatFeature('web')" title="Web Araması">
+            <button class="feature-toggle-btn" id="toggleWebSearch" onclick="toggleChatFeature('web')" title="Yakında">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
-              <span>Canlı Web</span>
+                <span>Web (yakında)</span>
             </button>
             <button class="feature-toggle-btn active" id="toggleReasoning" onclick="toggleChatFeature('reasoning')" title="Derin Düşünce">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2v4"/><path d="m4.93 4.93 2.83 2.83"/><path d="M2 12h4"/><path d="m4.93 19.07 2.83-2.83"/><path d="M12 22v-4"/><path d="m19.07 19.07-2.83-2.83"/><path d="M22 12h-4"/><path d="m19.07 4.93-2.83 2.83"/></svg>
@@ -289,10 +262,10 @@
       <!-- ========================================== -->
       <section id="view-store" class="app-view">
         <div class="view-header-card store-hero-card">
-          <div class="store-hero-badge">⚡ 7/24 OTOMATİK TESLİMAT & SHOPIER 3D GÜVENCESİ</div>
+          <div class="store-hero-badge">⚡ SHOPIER 3D & ŞEFFAF TESLİMAT SÜRECİ</div>
           <h2 class="store-hero-title">Froxy Lisans & Kredi Mağazası</h2>
           <p class="store-hero-desc">
-            En uygun fiyatlarla orijinal ChatGPT Plus, Gemini Ultra, Perplexity Pro ve Froxy AI Kredi Paketleri.
+            AI erişim ürünleri, Froxy kullanım kredileri ve stok durumuna göre açık teslimat bilgileri.
           </p>
 
           <div class="store-filter-tabs">
@@ -378,7 +351,7 @@
             <span class="wallet-id-badge" id="walletUserId">ID: 8845484139</span>
             <span class="wallet-tier-badge">⚡ FROXY PRO ÜYE</span>
           </div>
-          <div class="wallet-balance-title">Mevcut Bakiyeniz</div>
+          <div class="wallet-balance-title">Mağaza Bakiyeniz</div>
           <div class="wallet-balance-amount dynamic-balance">₺0.00</div>
 
           <div class="wallet-quick-stats">
@@ -387,12 +360,12 @@
               <span class="stat-label">Toplam Sipariş</span>
             </div>
             <div class="stat-item">
-              <span class="stat-num" id="totalCreditsCount">1.000</span>
-              <span class="stat-label">Aktif Kredi</span>
+              <span class="stat-num" id="totalCreditsCount">0</span>
+              <span class="stat-label">AI Kredisi</span>
             </div>
             <div class="stat-item">
-              <span class="stat-num">7/24</span>
-              <span class="stat-label">Anında Teslim</span>
+              <span class="stat-num" id="dailyQuotaCount">3+1</span>
+              <span class="stat-label">Günlük Ücretsiz</span>
             </div>
           </div>
         </div>

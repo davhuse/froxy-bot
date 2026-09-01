@@ -1,4 +1,5 @@
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -40,6 +41,7 @@ class SupportFlowTicketTests(unittest.TestCase):
             self.assertEqual(tickets[-1]["user_id"], 5)
 
     def test_dm_logs_api_includes_tickets_fallback(self):
+        os.environ["PANEL_ADMIN_TOKEN"] = "test-support-panel-token"
         from app import app
         with tempfile.TemporaryDirectory() as directory:
             tickets_file = Path(directory) / "tickets.json"
@@ -56,7 +58,10 @@ class SupportFlowTicketTests(unittest.TestCase):
             client = app.test_client()
             with patch("os.path.exists", side_effect=lambda p: str(p) == "tickets.json" or str(p) == str(tickets_file)), \
                  patch("builtins.open", patch_open(tickets_file, tickets_data)):
-                response = client.get("/api/dm-logs")
+                response = client.get(
+                    "/api/dm-logs",
+                    headers={"X-Admin-Token": "test-support-panel-token"},
+                )
                 self.assertEqual(response.status_code, 200)
                 data = response.get_json()
                 self.assertIn("logs", data)

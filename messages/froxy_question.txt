@@ -1,6 +1,6 @@
 Birden fazla yapay zeka aracına para vermek yerine, hepsini tek panelden denemek ister misiniz?
 
-Froxy AI'da güncel GPT, Claude Sonnet 3.5, Gemini 1.5 Flash, DeepSeek V2 ve 1.100+ model aynı kredi sistemiyle çalışır.
+Froxy AI'da yalnız o anda doğrulanan çalışan modeller, tek bir şeffaf kredi sistemiyle sunulur.
 
 Neler yapabilirsiniz?
 ✅ Kod yazdırma, hata analizi ve proje desteği
@@ -21,5 +21,5 @@ Neler yapabilirsiniz?
 *(Not: Tüm Gemini ürünlerinde maksimum 1 ay garanti mevcuttur.)
 **(Not: ChatGPT ürünlerinde garanti bulunmamaktadır.)
 
-🚀 7/24 Anında Otomatik Teslimat
-👉 Önce 100 ücretsiz krediyle dene: @FroxyDestekBOT
+💳 Güvenli Shopier ödemesi • Lisans uygunsa otomatik, stok yoksa 1–3 iş gününde manuel teslimat
+👉 Her gün 3 ücretsiz Froxy mesajı ve 1 düşük çözünürlüklü görselle dene: @FroxyDestekBOT

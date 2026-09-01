@@ -72,5 +72,9 @@ miniapp/credited_orders.json
 miniapp/active_topups.json
 miniapp_lisansarena/users_data.json
 miniapp_lisansarena/active_topups.json
+miniapp_froxy/users_data.json
+miniapp_froxy/active_topups.json
+miniapp_froxy/pending_topups.json
+miniapp_froxy/credited_orders.json
 
 miniapp_lisansarena/pending_topups.json

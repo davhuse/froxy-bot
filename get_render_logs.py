@@ -1,9 +1,10 @@
 import json
+import os
 import urllib.request
 
 req = urllib.request.Request(
     'https://api.render.com/v1/services/srv-da34gve7bikc7395idu0/logs?limit=80',
-    headers={'Authorization': 'Bearer rnd_clV0XeKhgZSRU5gPF8lTrQkBJCps', 'Accept': 'application/json'}
+    headers={'Authorization': f"Bearer {os.environ['RENDER_API_KEY']}", 'Accept': 'application/json'}
 )
 try:
     with urllib.request.urlopen(req) as r:

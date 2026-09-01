@@ -1,9 +1,10 @@
 import urllib.request
 import json
+import os
 import time
 
 headers = {
-    'Authorization': 'Bearer rnd_clV0XeKhgZSRU5gPF8lTrQkBJCps',
+    'Authorization': f"Bearer {os.environ['RENDER_API_KEY']}",
     'Accept': 'application/json'
 }
 

@@ -91,7 +91,26 @@ def protect_shopier_callback():
 
 @app.before_request
 def protect_privileged_panel_api():
-    # Admin protection removed as per user request
+    exact_paths = {
+        '/api/group-status', '/api/config', '/api/account-restrictions',
+        '/api/start', '/api/stop', '/api/ad-smoke/start', '/api/ad-smoke/status',
+        '/api/supplier-opportunities', '/api/sales/group-candidates',
+        '/api/logs', '/api/full_logs', '/api/dm-logs',
+        '/api/message', '/api/message2', '/api/message3',
+        '/api/tickets', '/api/tickets/clear',
+    }
+    protected_prefixes = (
+        '/api/procurement', '/api/support/', '/api/froxy/',
+        '/api/lisansarena/', '/api/broadcast/', '/api/telegram/',
+        '/api/templates', '/api/blacklist', '/api/scraper/', '/api/autodm/',
+        '/api/admin/',
+    )
+    if request.path not in exact_paths and not request.path.startswith(protected_prefixes):
+        return None
+    expected = os.environ.get('PANEL_ADMIN_TOKEN', '').strip()
+    supplied = request.headers.get('X-Admin-Token', '').strip()
+    if not expected or not supplied or not hmac.compare_digest(expected, supplied):
+        return jsonify({'error': 'Unauthorized'}), 401
     return None
 
 
