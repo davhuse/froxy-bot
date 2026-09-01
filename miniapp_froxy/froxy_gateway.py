@@ -145,6 +145,15 @@ class FroxyGateway:
         prompt = _float(pricing.get("prompt", pricing.get("input", raw.get("input_cost_per_token"))), -1.0)
         completion = _float(pricing.get("completion", pricing.get("output", raw.get("output_cost_per_token"))), -1.0)
         image = _float(pricing.get("image", raw.get("image_cost")), -1.0)
+        # Together's /models endpoint reports token prices per million tokens,
+        # while the OpenAI-compatible providers expose dollars per token. Keep
+        # one canonical internal unit so the public credit estimates and the
+        # reservation/settlement path cannot overcharge Together models by 1e6.
+        if provider.slug == "together":
+            prompt /= 1_000_000
+            completion /= 1_000_000
+            if image >= 0:
+                image /= 1_000_000
         known_pricing = prompt >= 0 and completion >= 0
         is_free = (
             model_id.endswith(":free")

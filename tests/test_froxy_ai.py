@@ -15,7 +15,7 @@ os.environ["FROXY_ALLOW_DEV_AUTH"] = "1"
 os.environ["FROXY_BOT_TOKEN"] = "test-froxy-token"
 
 from miniapp_froxy import server  # noqa: E402
-from miniapp_froxy.froxy_gateway import GatewayError  # noqa: E402
+from miniapp_froxy.froxy_gateway import FroxyGateway, GatewayError, Provider  # noqa: E402
 from miniapp_froxy.froxy_store import (  # noqa: E402
     FroxyStore,
     InsufficientBalance,
@@ -186,6 +186,24 @@ class FroxyApiTests(unittest.TestCase):
         self.assertEqual("manual_pending", first.get_json()["order"]["status"])
         self.assertTrue(second.get_json()["duplicate"])
         self.assertEqual(100000 - 49990, server.store.get_user(202)["wallet_kurus"])
+
+    def test_together_catalog_prices_are_normalized_from_per_million_units(self):
+        provider = Provider("together", "Together", "https://example.test", ("TOGETHER_API_KEY",))
+        model = FroxyGateway._normalize_model(provider, {
+            "id": "test-model",
+            "pricing": {"input": 0.2, "output": 0.3},
+        })
+        self.assertAlmostEqual(0.2 / 1_000_000, model["prompt_usd_per_token"])
+        self.assertAlmostEqual(0.3 / 1_000_000, model["completion_usd_per_token"])
+
+    def test_shopier_products_keep_real_title_and_delivery_terms(self):
+        products = server.load_products()
+        self.assertEqual(18, len(products))
+        for product in products:
+            self.assertIn(product["title"], product["description"])
+            if product["category"] != "credits":
+                self.assertIn("1–3 iş günü", product["description"])
+                self.assertNotIn("anında teslimat", product["description"].lower())
 
 
 if __name__ == "__main__":

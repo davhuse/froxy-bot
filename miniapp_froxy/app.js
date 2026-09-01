@@ -451,7 +451,7 @@ function appendChatMessage(role, content) {
   if (role === 'assistant') {
     msgRow.innerHTML = `
       <div class="msg-avatar">
-        <img src="assets/froxy_chat_logo_1783808162276.png" alt="Froxy" onerror="this.src='https://cdn-icons-png.flaticon.com/512/4712/4712038.png'">
+        <img src="assets/froxy_logo.png" alt="Froxy AI">
       </div>
       <div class="msg-bubble">${formatMarkdown(content)}</div>
     `;
@@ -685,7 +685,7 @@ function renderStoreProducts() {
         </div>
 
         <div class="product-media-box" onclick="openProductModal('${p.id}')">
-          <img src="${p.image || 'assets/froxy_chat_logo_1783808162276.png'}" alt="${p.title}" onerror="this.src='assets/froxy_chat_logo_1783808162276.png'">
+          <img src="${p.image || 'assets/froxy_logo.png'}" alt="${p.title}" onerror="this.src='assets/froxy_logo.png'">
         </div>
 
         <div class="product-title" onclick="openProductModal('${p.id}')">${p.title}</div>

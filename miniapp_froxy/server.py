@@ -163,7 +163,7 @@ def load_products() -> list[dict]:
                 "model_tag": "Gerçek kullanıma göre",
                 "delivery_type": "ai_credit",
                 "delivery_label": "⚡ Ödeme sonrası anında AI kredisi",
-                "description": f"{credits:,} AI kredisi. Kullanım maliyeti seçilen model ve gerçek token tüketimine göre hesaplanır.".replace(",", "."),
+                "description": f"{product.get('title', 'Froxy AI kredi paketi')} — ödeme onayından sonra hesabınıza {credits:,} AI kredisi yüklenir. Kullanım, seçilen model ve gerçek token tüketimine göre hesaplanır.".replace(",", "."),
             })
         else:
             if "sınırsız" in str(product.get("badge", "")).lower():
@@ -173,6 +173,7 @@ def load_products() -> list[dict]:
                 "delivery_label": "Stoktan otomatik veya 1–3 iş günü manuel",
                 "manual_delivery_sla": "1–3 iş günü",
                 "support_handle": SUPPORT_HANDLE,
+                "description": f"{product.get('title', 'Froxy AI ürünü')} — Shopier 3D Secure ödeme. Stok varsa otomatik, stok yoksa @FroxyDestekBOT üzerinden 1–3 iş günü içinde teslim edilir.",
             })
         result.append(product)
     return result
