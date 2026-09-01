@@ -18,8 +18,8 @@ import urllib.parse
 import urllib.request
 
 
-PROJECT_ID = os.environ.get("FIREBASE_PROJECT_ID", "bot-2-63772").strip()
-API_KEY = os.environ.get("FIREBASE_API_KEY", "").strip()
+PROJECT_ID = os.environ.get("FIREBASE_PROJECT_ID", "bot-2-63772").strip() or "bot-2-63772"
+API_KEY = os.environ.get("FIREBASE_API_KEY", "AIzaSyCZz54GBF4nCgP84DsTSwwMyPq70Lb_Mjo").strip() or "AIzaSyCZz54GBF4nCgP84DsTSwwMyPq70Lb_Mjo"
 BASE_URL = (
     f"https://firestore.googleapis.com/v1/projects/{PROJECT_ID}/"
     "databases/(default)/documents/reklam"
