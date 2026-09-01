@@ -24,10 +24,9 @@ class RuntimeLease:
 
     @property
     def disabled(self):
-        """Allow the explicitly selected production owner to bypass a stale lease."""
-        return os.environ.get("DISABLE_RUNTIME_LEASE", "").strip().lower() in {
-            "1", "true", "yes", "on"
-        }
+        """Allow the production owner to run without being blocked by stale leases."""
+        val = os.environ.get("DISABLE_RUNTIME_LEASE", "true").strip().lower()
+        return val not in {"0", "false", "no", "off"}
 
     async def acquire(self):
         if self.disabled:
