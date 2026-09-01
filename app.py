@@ -809,7 +809,7 @@ def status():
         if account.get('telegram_authorized') is True
     )
     overall_status = (
-        'running' if process_running and authorized_count == len(expected_accounts)
+        'running' if process_running and authorized_count > 0
         else 'degraded' if process_running
         else 'stopped'
     )
@@ -2600,7 +2600,7 @@ def start_background_threads():
             _bg_threads_started = True
             if bot_runtime_enabled():
                 print("🚀 [App] Starting background bot watchdog & keep-alive threads...")
-                t = threading.Thread(target=bot_watchdog_owner_loop, daemon=True)
+                t = threading.Thread(target=bot_watchdog, daemon=True)
                 t.start()
             else:
                 print("🌐 [App] Web/static-only mode; Telegram watchdog is disabled.")

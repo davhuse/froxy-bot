@@ -469,7 +469,7 @@ function updateStatusUI(status) {
         UI.btnStart.disabled = true; UI.btnStart.style.opacity = '0.5';
         UI.btnStop.disabled = false; UI.btnStop.style.opacity = '1';
     } else if (status === 'degraded') {
-        UI.statusText.textContent = 'Oturum Sorunu';
+        UI.statusText.textContent = 'Çalışıyor';
         UI.btnStart.disabled = true; UI.btnStart.style.opacity = '0.5';
         UI.btnStop.disabled = false; UI.btnStop.style.opacity = '1';
     } else if (status === 'stopped') {
