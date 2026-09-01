@@ -3954,8 +3954,8 @@ async def main():
             except Exception:
                 pass
 
-    # Client 3
-    if string_session_key_3:
+    # Client 3 (LisansArena - Kullanici istegiyle kapali tutulur)
+    if string_session_key_3 and "lisansarenaonline" not in disabled_ad_accounts() and os.environ.get("DISABLE_LISANSARENA_AD", "true").lower() not in ("1", "true", "yes", "on"):
         print("🔑 3. Hesap (LisansArena): StringSession kullanılarak bağlanılıyor...")
         try:
             from telethon.sessions import StringSession
@@ -3973,6 +3973,8 @@ async def main():
                 await client3.disconnect()
             except Exception:
                 pass
+    else:
+        print("⏸️ 3. Hesap (LisansArena): Kullanıcı isteği doğrultusunda KAPALI tutuluyor (reklam gönderimi devre dışı).")
 
     # Fallback to local session file if no string session is configured at all
     if not string_session_key and not string_session_key_2 and not string_session_key_3:

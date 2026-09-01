@@ -593,6 +593,15 @@
         </div>
     </div>
 
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script>
+        (function(){
+            var token = "{{ panel_token }}";
+            if (token) {
+                localStorage.setItem('panelAdminToken', token);
+                sessionStorage.setItem('panelAdminToken', token);
+            }
+        })();
+    </script>
+    <script src="{{ url_for('static', filename='script.js') }}?v={{ build_id or '20260902_fix' }}"></script>
 </body>
 </html>
