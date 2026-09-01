@@ -1,4 +1,4 @@
-// FROXY NEURAL AI STUDIO — ULTRA-PREMIUM SPA CONTROLLER (v12.0)
+// FROXY AI SUPERAPP & NEURAL WORKSPACE CONTROLLER (v13.0)
 
 const tg = window.Telegram?.WebApp || null;
 const isFroxyApp = window.location.pathname.startsWith('/froxy/app') || window.location.pathname.startsWith('/froxy');
@@ -10,8 +10,8 @@ if (tg) {
   try {
     tg.ready();
     tg.expand();
-    if (tg.setHeaderColor) tg.setHeaderColor('#06080F');
-    if (tg.setBackgroundColor) tg.setBackgroundColor('#06080F');
+    if (tg.setHeaderColor) tg.setHeaderColor('#070A14');
+    if (tg.setBackgroundColor) tg.setBackgroundColor('#05070E');
     if (tg.enableClosingConfirmation) tg.enableClosingConfirmation();
   } catch (e) {
     console.log('TG SDK Init:', e);
@@ -32,26 +32,33 @@ function authHeaders() {
 
 // Global App State
 let state = {
+  currentView: 'view-chat',
+  selectedModel: { id: 'gpt-4o', name: 'Froxy GPT-4o Omni', icon: '🤖' },
+  chatMessages: [],
+  isGeneratingChat: false,
+  webSearchEnabled: true,
+  reasoningEnabled: true,
+  
+  // Image Studio State
+  imagePrompt: '',
+  selectedStyle: 'photoreal',
+  selectedRatio: '1:1',
+  isGeneratingImage: false,
+  lastGeneratedImageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1000&q=80',
+
+  // Store & Products State
   products: [],
   filteredProducts: [],
   selectedCategory: 'all',
   searchQuery: '',
-  walletBalance: 0.00,
   selectedProduct: null,
-  selectedTopupAmount: 100,
-  orders: [],
-  cart: [],
-  canSpin: true,
-  spinCooldownRemaining: 0
-};
 
-// Load cart from localStorage
-try {
-  const savedCart = localStorage.getItem('froxy_cart');
-  if (savedCart) {
-    state.cart = JSON.parse(savedCart);
-  }
-} catch (e) {}
+  // Wallet & Profile State
+  walletBalance: 0.00,
+  orders: [],
+  selectedTopupAmount: 100,
+  canSpin: true
+};
 
 // Haptic feedback helper
 function triggerHaptic(type = 'light') {
@@ -87,13 +94,21 @@ function formatTL(num) {
 // DOM Ready Init
 document.addEventListener('DOMContentLoaded', async () => {
   renderUserInfo();
-  updateCartBadge();
   drawWheel();
   if (tgUser && telegramInitData) await registerAndSyncUserProfile();
-  await loadProducts();
+  await loadStoreProducts();
   if (tgUser && telegramInitData) startBackgroundBalanceSync();
 
+  // URL deep link routing
   const urlParams = new URLSearchParams(window.location.search);
+  const routeParam = urlParams.get('tab') || urlParams.get('view') || tg?.initDataUnsafe?.start_param;
+  if (routeParam) {
+    if (routeParam === 'store' || routeParam === 'magaza') switchView('view-store');
+    else if (routeParam === 'image' || routeParam === 'gorsel') switchView('view-image');
+    else if (routeParam === 'wallet' || routeParam === 'cuzdan') switchView('view-wallet');
+    else if (routeParam === 'agents' || routeParam === 'ajanlar') switchView('view-agents');
+  }
+
   if (urlParams.get('payment') === 'success' || urlParams.get('order') === 'success') {
     showPurchaseSuccessModal("Shopier Ödemeniz Onaylandı", "Yapay zeka lisansınız veya bakiye yüklemeniz hesabınıza tanımlandı.");
     try { window.history.replaceState({}, document.title, window.location.pathname); } catch (e) {}
@@ -101,19 +116,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 function renderUserInfo() {
-  const nameEl = document.getElementById('headerUserName');
   const walletIdEl = document.getElementById('walletUserId');
-  const walletIdText = document.getElementById('walletUserIdText');
-
   if (tgUser) {
-    const fullName = `${tgUser.first_name || ''} ${tgUser.last_name || ''}`.trim() || tgUser.username || 'Müşteri';
-    if (nameEl) nameEl.textContent = `👋 Merhaba, ${fullName}`;
     if (walletIdEl) walletIdEl.textContent = `ID: ${tgUser.id}`;
-    if (walletIdText) walletIdText.textContent = tgUser.id;
   } else {
-    if (nameEl) nameEl.textContent = '🌐 Misafir Kullanıcı';
     if (walletIdEl) walletIdEl.textContent = 'ID: 8845484139';
-    if (walletIdText) walletIdText.textContent = '8845484139';
   }
 }
 
@@ -131,11 +138,8 @@ async function registerAndSyncUserProfile() {
         state.walletBalance = parseFloat(data.user.balance) || 0;
         state.orders = Array.isArray(data.user.orders) ? data.user.orders : [];
         state.canSpin = data.user.can_spin ?? true;
-        state.spinCooldownRemaining = data.user.spin_cooldown_remaining || 0;
         updateBalanceUI();
-        renderUserInfo();
         renderOrders();
-        updateSpinUI();
       }
     }
   } catch (e) {
@@ -148,6 +152,8 @@ function updateBalanceUI() {
   balanceEls.forEach(el => {
     el.textContent = formatTL(state.walletBalance);
   });
+  const totalOrdersEl = document.getElementById('totalOrdersCount');
+  if (totalOrdersEl) totalOrdersEl.textContent = state.orders.length || 0;
 }
 
 function startBackgroundBalanceSync() {
@@ -177,68 +183,336 @@ function startBackgroundBalanceSync() {
   }, 12000);
 }
 
-// Load Products from API
-async function loadProducts() {
+// VIEW SWITCHING (Navigation Dock)
+function switchView(viewId) {
+  triggerHaptic('light');
+  state.currentView = viewId;
+
+  // Toggle View Containers
+  const views = document.querySelectorAll('.app-view');
+  views.forEach(v => {
+    v.classList.remove('active');
+    if (v.id === viewId) v.classList.add('active');
+  });
+
+  // Toggle Dock Buttons
+  const dockItems = document.querySelectorAll('.dock-item');
+  dockItems.forEach(d => {
+    if (d.getAttribute('data-view') === viewId) d.classList.add('active');
+    else d.classList.remove('active');
+  });
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// -------------------------------------------------------------
+// VIEW 1: CHAT & PLAYGROUND ENGINE
+// -------------------------------------------------------------
+function toggleModelDropdown() {
+  triggerHaptic('light');
+  const menu = document.getElementById('modelDropdownMenu');
+  if (menu) menu.classList.toggle('show');
+}
+
+function selectModel(id, name, icon, desc) {
+  triggerHaptic('medium');
+  state.selectedModel = { id, name, icon };
+  
+  const iconEl = document.getElementById('selectedModelIcon');
+  const titleEl = document.getElementById('selectedModelTitle');
+  const statusEl = document.getElementById('headerModelStatus');
+
+  if (iconEl) iconEl.textContent = icon;
+  if (titleEl) titleEl.textContent = name;
+  if (statusEl) statusEl.textContent = `⚡ ${name} Aktif`;
+
+  const menu = document.getElementById('modelDropdownMenu');
+  if (menu) menu.classList.remove('show');
+
+  showToast(`${name} modeline geçildi!`, icon);
+}
+
+function toggleChatFeature(feat) {
+  triggerHaptic('light');
+  if (feat === 'web') {
+    state.webSearchEnabled = !state.webSearchEnabled;
+    const btn = document.getElementById('toggleWebSearch');
+    if (btn) btn.classList.toggle('active', state.webSearchEnabled);
+    showToast(state.webSearchEnabled ? 'Canlı Web Araması Açıldı' : 'Web Araması Kapatıldı', '🌐');
+  } else if (feat === 'reasoning') {
+    state.reasoningEnabled = !state.reasoningEnabled;
+    const btn = document.getElementById('toggleReasoning');
+    if (btn) btn.classList.toggle('active', state.reasoningEnabled);
+    showToast(state.reasoningEnabled ? 'Derin Düşünce (Reasoning) Açıldı' : 'Derin Düşünce Kapatıldı', '🧠');
+  }
+}
+
+function clearChatMessages() {
+  triggerHaptic('medium');
+  state.chatMessages = [];
+  const list = document.getElementById('messagesList');
+  if (list) list.innerHTML = '';
+  showToast('Sohbet temizlendi!', '🗑️');
+}
+
+function injectPrompt(promptText) {
+  triggerHaptic('light');
+  const textarea = document.getElementById('chatInputText');
+  if (textarea) {
+    textarea.value = promptText;
+    autoResizeTextarea(textarea);
+    textarea.focus();
+  }
+}
+
+function autoResizeTextarea(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function handleTextareaKeydown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    handleSendMessage();
+  }
+}
+
+async function handleSendMessage() {
+  const textarea = document.getElementById('chatInputText');
+  if (!textarea) return;
+  const userText = textarea.value.trim();
+  if (!userText || state.isGeneratingChat) return;
+
+  textarea.value = '';
+  autoResizeTextarea(textarea);
+  triggerHaptic('medium');
+
+  // Hide welcome card once conversation starts
+  const welcomeCard = document.querySelector('.assistant-welcome-card');
+  if (welcomeCard) welcomeCard.style.display = 'none';
+
+  // Append User Message
+  appendChatMessage('user', userText);
+
+  // Show Typing Indicator
+  state.isGeneratingChat = true;
+  const typingEl = document.getElementById('typingIndicator');
+  if (typingEl) typingEl.style.display = 'flex';
+  scrollToChatBottom();
+
+  // Generate Simulated / API Stream Response
+  setTimeout(() => {
+    if (typingEl) typingEl.style.display = 'none';
+    state.isGeneratingChat = false;
+    const botResponse = generateBotResponse(userText, state.selectedModel.id);
+    appendChatMessage('assistant', botResponse);
+    triggerHaptic('light');
+    scrollToChatBottom();
+  }, 1200);
+}
+
+function appendChatMessage(role, content) {
+  const list = document.getElementById('messagesList');
+  if (!list) return;
+
+  const msgRow = document.createElement('div');
+  msgRow.className = `msg-row ${role}`;
+
+  if (role === 'assistant') {
+    msgRow.innerHTML = `
+      <div class="msg-avatar">
+        <img src="assets/froxy_chat_logo_1783808162276.png" alt="Froxy" onerror="this.src='https://cdn-icons-png.flaticon.com/512/4712/4712038.png'">
+      </div>
+      <div class="msg-bubble">${formatMarkdown(content)}</div>
+    `;
+  } else {
+    msgRow.innerHTML = `
+      <div class="msg-bubble">${escapeHtml(content)}</div>
+    `;
+  }
+
+  list.appendChild(msgRow);
+}
+
+function scrollToChatBottom() {
+  const scrollContainer = document.getElementById('chatMessagesScroll');
+  if (scrollContainer) {
+    scrollContainer.scrollTop = scrollContainer.scrollHeight;
+  }
+}
+
+function formatMarkdown(text) {
+  // Simple markdown converter with code blocks
+  let html = escapeHtml(text);
+  
+  // Format code blocks ```...```
+  html = html.replace(/```([a-zA-Z]*)
+([\s\S]*?)```/g, (match, lang, code) => {
+    return `<pre><code class="language-${lang}">${code.trim()}</code></pre>`;
+  });
+
+  // Bold **text**
+  html = html.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+
+  // Newlines
+  html = html.replace(/\n/g, '<br>');
+
+  return html;
+}
+
+function escapeHtml(text) {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function generateBotResponse(prompt, modelId) {
+  const p = prompt.toLowerCase();
+
+  if (p.includes('satış') || p.includes('reklam') || p.includes('instagram')) {
+    return `🔥 **Froxy AI // Yüksek Dönüşümlü Satış ve Reklam Stratejisi**\n\n1. **Kanca (0-3 sn):** *"Her ay onlarca yapay zeka aboneliğine yüzlerce dolar ödemekten sıkılmadınız mı?"*\n2. **Değer Önerisi:** Froxy AI ile tüm GPT-4o, Claude 3.5 ve Gemini modellerini tek panelden kullandığın kadar krediyle yönet!\n3. **Çağrı (CTA):** *Hemen aşağıdaki Mağaza sekmesinden 1-tıkla lisansını al, anında teslim edilsin.*\n\n💡 *İpucu: Reels videolarında metni ekranda büyük puntolarla vurgulamak izlenme süresini %40 artırır.*`;
+  }
+
+  if (p.includes('kod') || p.includes('python') || p.includes('bot')) {
+    return `💻 **Python Telegram Botu Hızlı Başlangıç Kodu:**\n\n\`\`\`python\nimport telebot\n\nBOT_TOKEN = "BURAYA_TOKEN_GIRIN"\nbot = telebot.TeleBot(BOT_TOKEN)\n\n@bot.message_handler(commands=['start'])\ndef send_welcome(message):\n    bot.reply_to(message, "⚡ Froxy AI Botuna Hoş Geldiniz! Nasıl yardımcı olabilirim?")\n\nprint("Bot aktif...")\nbot.infinity_polling()\n\`\`\`\n\n🚀 Bu kodu çalıştırmak için terminalinizde \`pip install pyTelegramBotAPI\` komutunu kullanabilirsiniz.`;
+  }
+
+  return `🤖 **Froxy AI (${state.selectedModel.name}):**\n\nSorunuzu başarıyla analiz ettim! **${prompt}** konusu hakkında size en doğru ve güncel bilgileri sağlamak için buradayım.\n\nİşlemi bir adım öteye taşımak için:\n• İlgili metin veya görsel üretimi yapabiliriz.\n• Mağazamızdan **ChatGPT Plus** veya **Gemini Ultra** lisansı temin ederek sınırsız hızın keyfini çıkarabilirsiniz!`;
+}
+
+// -------------------------------------------------------------
+// VIEW 2: IMAGE STUDIO ENGINE
+// -------------------------------------------------------------
+function setImageStyle(styleKey, btn) {
+  triggerHaptic('light');
+  state.selectedStyle = styleKey;
+  const chips = document.querySelectorAll('.style-chip');
+  chips.forEach(c => c.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+}
+
+function setImageRatio(ratioKey, btn) {
+  triggerHaptic('light');
+  state.selectedRatio = ratioKey;
+  const chips = document.querySelectorAll('.ratio-chips-row .ratio-chip');
+  chips.forEach(c => c.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+}
+
+function enhanceImagePrompt() {
+  triggerHaptic('medium');
+  const input = document.getElementById('imagePromptInput');
+  if (!input) return;
+  const current = input.value.trim() || 'Fütüristik yapay zeka robotu';
+  input.value = `${current}, ultra-detailed 8K resolution, cinematic lighting, octane render, unreal engine 5, masterpiece, highly intricate`;
+  showToast('Prompt sihirli şekilde iyileştirildi!', '✨');
+}
+
+async function generateAiImage() {
+  const promptInput = document.getElementById('imagePromptInput');
+  const prompt = promptInput ? promptInput.value.trim() : '';
+
+  if (!prompt) {
+    showToast('Lütfen üretmek istediğiniz görseli tarif edin!', '⚠️');
+    return;
+  }
+
+  triggerHaptic('heavy');
+  state.isGeneratingImage = true;
+
+  const loader = document.getElementById('imageLoaderOverlay');
+  const statusTag = document.getElementById('imageStatusTag');
+  const imgEl = document.getElementById('generatedImageEl');
+  const genBtn = document.getElementById('generateImageBtn');
+
+  if (loader) loader.style.display = 'flex';
+  if (statusTag) statusTag.textContent = 'Üretiliyor...';
+  if (genBtn) genBtn.disabled = true;
+
+  // Pollinations AI Fast Image Generator URL
+  const encodedPrompt = encodeURIComponent(`${prompt}, ${state.selectedStyle} style, 8k high quality`);
+  let width = 1024, height = 1024;
+  if (state.selectedRatio === '9:16') { width = 768; height = 1344; }
+  else if (state.selectedRatio === '16:9') { width = 1344; height = 768; }
+  else if (state.selectedRatio === '4:5') { width = 800; height = 1000; }
+
+  const targetUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=${width}&height=${height}&nologo=true&seed=${Math.floor(Math.random() * 100000)}`;
+
+  const tempImg = new Image();
+  tempImg.onload = () => {
+    state.lastGeneratedImageUrl = targetUrl;
+    if (imgEl) imgEl.src = targetUrl;
+    if (loader) loader.style.display = 'none';
+    if (statusTag) statusTag.textContent = 'Tamamlandı';
+    if (genBtn) genBtn.disabled = false;
+    state.isGeneratingImage = false;
+    showToast('Görseliniz başarıyla üretildi!', '🎨');
+  };
+  tempImg.onerror = () => {
+    if (loader) loader.style.display = 'none';
+    if (statusTag) statusTag.textContent = 'Hata';
+    if (genBtn) genBtn.disabled = false;
+    state.isGeneratingImage = false;
+    showToast('Görsel oluşturulurken bağlantı hatası oluştu', '❌');
+  };
+  tempImg.src = targetUrl;
+}
+
+function downloadGeneratedImage() {
+  triggerHaptic('light');
+  if (state.lastGeneratedImageUrl) {
+    const a = document.createElement('a');
+    a.href = state.lastGeneratedImageUrl;
+    a.target = '_blank';
+    a.download = `froxy-ai-${Date.now()}.jpg`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    showToast('İndirme başlatıldı!', '📥');
+  }
+}
+
+function openFullscreenImage() {
+  triggerHaptic('light');
+  if (state.lastGeneratedImageUrl) {
+    window.open(state.lastGeneratedImageUrl, '_blank');
+  }
+}
+
+// -------------------------------------------------------------
+// VIEW 3: STORE & LICENSES ENGINE
+// -------------------------------------------------------------
+async function loadStoreProducts() {
   try {
     const res = await fetch(api('/api/products'));
     const data = await res.json();
     if (data.success && data.products) {
       state.products = data.products;
-      filterAndRenderProducts();
-
-      // Deep-link handling
-      try {
-        const urlParams = new URLSearchParams(window.location.search);
-        const targetParam = urlParams.get('product') || tg?.initDataUnsafe?.start_param;
-        if (targetParam) {
-          if (targetParam === 'orders') switchTab('ordersTab');
-          else if (targetParam === 'wallet') switchTab('walletTab');
-          else {
-            const cleanId = String(targetParam).replace(/^p_/, '').trim();
-            const matched = state.products.find(p => String(p.id) === cleanId);
-            if (matched) setTimeout(() => openProductModal(matched.id), 250);
-          }
-        }
-      } catch (e) {}
+      renderStoreProducts();
     }
   } catch (e) {
     console.log('Error loading products:', e);
   }
 }
 
-// Category & Filter
-function setCategory(cat, btn) {
-  state.selectedCategory = cat;
+function filterStoreCategory(cat, btn) {
   triggerHaptic('light');
+  state.selectedCategory = cat;
 
-  const chips = document.querySelectorAll('.cat-chip');
-  chips.forEach(c => c.classList.remove('active'));
+  const tabs = document.querySelectorAll('.store-tab-btn');
+  tabs.forEach(t => t.classList.remove('active'));
   if (btn) btn.classList.add('active');
-  else {
-    const activeChip = document.querySelector(`.cat-chip[data-cat="${cat}"]`);
-    if (activeChip) activeChip.classList.add('active');
-  }
 
-  filterAndRenderProducts();
+  renderStoreProducts();
 }
 
-function handleSearch(val) {
+function handleStoreSearch(val) {
   state.searchQuery = val.trim().toLowerCase();
-  const clearBtn = document.getElementById('clearSearchBtn');
-  if (clearBtn) clearBtn.style.display = state.searchQuery ? 'block' : 'none';
-  filterAndRenderProducts();
+  renderStoreProducts();
 }
 
-function clearSearch() {
-  const input = document.getElementById('searchInput');
-  if (input) input.value = '';
-  state.searchQuery = '';
-  const clearBtn = document.getElementById('clearSearchBtn');
-  if (clearBtn) clearBtn.style.display = 'none';
-  setCategory('all', null);
-}
-
-function filterAndRenderProducts() {
+function renderStoreProducts() {
   let list = state.products;
 
   if (state.selectedCategory !== 'all') {
@@ -249,81 +523,56 @@ function filterAndRenderProducts() {
     list = list.filter(p =>
       (p.title || '').toLowerCase().includes(state.searchQuery) ||
       (p.description || '').toLowerCase().includes(state.searchQuery) ||
-      (p.model_tag || '').toLowerCase().includes(state.searchQuery) ||
-      (p.category_label || '').toLowerCase().includes(state.searchQuery)
+      (p.model_tag || '').toLowerCase().includes(state.searchQuery)
     );
   }
 
-  state.filteredProducts = list;
+  const grid = document.getElementById('storeProductsGrid');
+  if (!grid) return;
 
-  const grid = document.getElementById('productsGrid');
-  const emptyState = document.getElementById('emptyState');
-  const countBadge = document.getElementById('productCountBadge');
-
-  if (countBadge) countBadge.textContent = `${list.length} Model`;
-
-  if (!list.length) {
-    if (grid) grid.innerHTML = '';
-    if (emptyState) emptyState.style.display = 'block';
-    return;
-  }
-
-  if (emptyState) emptyState.style.display = 'none';
-
-  if (grid) {
-    grid.innerHTML = list.map(p => `
-      <div class="ai-product-card" data-id="${p.id}">
-        <div class="card-top-tags">
-          <span class="card-badge-pill">${p.badge || '🔥 POPÜLER'}</span>
-          <span class="card-model-tag">${p.model_tag || 'AI MODEL'}</span>
+  grid.innerHTML = list.map(p => `
+    <div class="product-matrix-card">
+      <div>
+        <div class="card-tag-row">
+          <span class="tag-badge">${p.badge || '🔥 POPÜLER'}</span>
+          <span class="tag-model">${p.model_tag || 'AI MODEL'}</span>
         </div>
 
-        <div class="card-media-wrap" onclick="openProductModal('${p.id}')">
-          <img src="${p.image || 'assets/froxy_chat_logo_1783808162276.png'}" alt="${p.title}" class="card-img" onerror="this.src='assets/froxy_chat_logo_1783808162276.png'" />
+        <div class="product-media-box" onclick="openProductModal('${p.id}')">
+          <img src="${p.image || 'assets/froxy_chat_logo_1783808162276.png'}" alt="${p.title}" onerror="this.src='assets/froxy_chat_logo_1783808162276.png'">
         </div>
 
-        <div class="card-body">
-          <div class="card-title" onclick="openProductModal('${p.id}')">${p.title}</div>
-          <div class="card-desc">${p.description || 'En son teknoloji yapay zeka lisansı.'}</div>
-
-          <div class="card-price-row">
-            <span class="price-label">FİYAT</span>
-            <span class="card-price">${p.price || formatTL(p.price_num)}</span>
-          </div>
-
-          <div class="card-actions-grid">
-            <button class="buy-direct-btn" onclick="directBuyProduct('${p.id}')">
-              <span>⚡ 1-Tıkla Satın Al</span>
-            </button>
-            <button class="detail-btn" onclick="openProductModal('${p.id}')" title="İncele">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-            </button>
-          </div>
-        </div>
+        <div class="product-title" onclick="openProductModal('${p.id}')">${p.title}</div>
+        <div class="product-desc">${p.description || 'Yapay zeka lisansı.'}</div>
       </div>
-    `).join('');
-  }
+
+      <div>
+        <div class="product-price-box">
+          <span class="price-label-text">FİYAT</span>
+          <span class="price-amount">${p.price || formatTL(p.price_num)}</span>
+        </div>
+
+        <button class="buy-action-btn" onclick="directBuyProduct('${p.id}')">
+          <span>⚡ 1-Tıkla Satın Al</span>
+        </button>
+      </div>
+    </div>
+  `).join('');
 }
 
-// Direct Buy / Shopier 3D Secure
 function directBuyProduct(productId) {
   triggerHaptic('medium');
   const p = state.products.find(item => String(item.id) === String(productId));
   if (!p) return;
 
   if (p.url) {
-    if (tg?.openLink) {
-      tg.openLink(p.url);
-    } else {
-      window.open(p.url, '_blank');
-    }
+    if (tg?.openLink) tg.openLink(p.url);
+    else window.open(p.url, '_blank');
   } else {
-    addToCart(productId);
-    openCartDrawer();
+    openProductModal(productId);
   }
 }
 
-// Product Detail Modal
 function openProductModal(productId) {
   triggerHaptic('light');
   const p = state.products.find(item => String(item.id) === String(productId));
@@ -336,12 +585,12 @@ function openProductModal(productId) {
   if (content) {
     content.innerHTML = `
       <div style="text-align: center; margin-bottom: 16px;">
-        <span class="card-badge-pill" style="display:inline-block; margin-bottom:8px;">${p.category_label || 'YAPAY ZEKA LİSANSI'}</span>
-        <h3 style="font-family: var(--font-heading); font-size: 19px; font-weight: 800; color: #FFF; margin-bottom: 6px;">${p.title}</h3>
-        <span class="card-model-tag" style="font-size:11px;">⚡ Model: ${p.model_tag || 'GPT-4o & Canvas'}</span>
+        <span class="tag-badge" style="display:inline-block; margin-bottom:8px;">${p.category_label || 'YAPAY ZEKA LİSANSI'}</span>
+        <h3 style="font-family: var(--font-heading); font-size: 19px; font-weight: 900; color: #FFF; margin-bottom: 4px;">${p.title}</h3>
+        <span class="tag-model" style="font-size:11px;">⚡ Model: ${p.model_tag || 'GPT-4o & Canvas'}</span>
       </div>
 
-      <div style="background: var(--bg-surface); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); padding: 14px; margin-bottom: 16px;">
+      <div style="background: rgba(0,0,0,0.4); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); padding: 14px; margin-bottom: 16px;">
         <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 12px;">
           ${p.description}
         </div>
@@ -350,21 +599,21 @@ function openProductModal(productId) {
             ⚡ <b>7/24 Anında Teslimat</b>
           </div>
           <div style="background: rgba(16,185,129,0.08); border: 1px solid var(--border-emerald); border-radius: var(--radius-sm); padding: 8px; color:#FFF;">
-            🔒 <b>3D Secure Korumalı</b>
+            🔒 <b>Shopier 3D Secure</b>
           </div>
         </div>
       </div>
 
-      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 16px; padding: 12px 16px; background: var(--bg-primary); border-radius: var(--radius-lg); border: 1px solid var(--border-cyan);">
-        <span style="color: var(--text-secondary); font-weight: 700;">Toplam Fiyat:</span>
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 16px; padding: 12px 16px; background: var(--bg-card); border-radius: var(--radius-lg); border: 1px solid var(--border-cyan);">
+        <span style="color: var(--text-secondary); font-weight: 700;">Toplam Tutar:</span>
         <span style="font-family: var(--font-mono); font-size: 22px; font-weight: 900; color: var(--accent-cyan);">${p.price || formatTL(p.price_num)}</span>
       </div>
 
       <div style="display:flex; flex-direction:column; gap: 10px;">
-        <button class="buy-direct-btn" style="padding:14px; font-size:14px;" onclick="directBuyProduct('${p.id}')">
+        <button class="buy-action-btn" style="padding:14px; font-size:14px;" onclick="directBuyProduct('${p.id}')">
           <span>⚡ Kredi / Banka Kartıyla Satın Al (Shopier 3D)</span>
         </button>
-        <button style="padding:12px; border-radius:var(--radius-lg); background:var(--bg-surface-elevated); border:1px solid var(--border-glass); color:#FFF; font-weight:700; cursor:pointer;" onclick="buyWithWalletBalance('${p.id}')">
+        <button style="padding:12px; border-radius:var(--radius-md); background:var(--bg-card-elevated); border:1px solid var(--border-glass); color:#FFF; font-weight:700; cursor:pointer;" onclick="buyWithWalletBalance('${p.id}')">
           <span>💳 Bakiyemle Satın Al (Mevcut: ${formatTL(state.walletBalance)})</span>
         </button>
       </div>
@@ -379,7 +628,6 @@ function closeProductModal() {
   if (modal) modal.style.display = 'none';
 }
 
-// Buy with Wallet Balance
 async function buyWithWalletBalance(productId) {
   const p = state.products.find(item => String(item.id) === String(productId));
   if (!p) return;
@@ -390,7 +638,7 @@ async function buyWithWalletBalance(productId) {
     showToast(`Yetersiz bakiye! Gerekli: ${formatTL(priceNum)}, Bakiyeniz: ${formatTL(state.walletBalance)}`, '⚠️');
     setTimeout(() => {
       closeProductModal();
-      switchTab('walletTab');
+      switchView('view-wallet');
     }, 1200);
     return;
   }
@@ -420,125 +668,27 @@ async function buyWithWalletBalance(productId) {
   }
 }
 
-// Cart Drawer
-function openCartDrawer() {
-  triggerHaptic('light');
-  renderCartDrawer();
-  const modal = document.getElementById('cartDrawer');
-  if (modal) modal.style.display = 'flex';
-}
-
-function closeCartDrawer() {
-  const modal = document.getElementById('cartDrawer');
-  if (modal) modal.style.display = 'none';
-}
-
-function addToCart(productId) {
-  const p = state.products.find(item => String(item.id) === String(productId));
-  if (!p) return;
-
-  const existing = state.cart.find(item => String(item.id) === String(productId));
-  if (existing) {
-    existing.qty += 1;
-  } else {
-    state.cart.push({
-      id: p.id,
-      title: p.title,
-      price: p.price,
-      price_num: p.price_num || parseFloat(p.price) || 0,
-      image: p.image,
-      qty: 1
-    });
-  }
-  saveCart();
-  updateCartBadge();
-  showToast(`${p.title} sepete eklendi!`, '🛒');
-}
-
-function updateCartQty(productId, delta) {
-  const item = state.cart.find(i => String(i.id) === String(productId));
-  if (!item) return;
-
-  item.qty += delta;
-  if (item.qty <= 0) {
-    state.cart = state.cart.filter(i => String(i.id) !== String(productId));
-  }
-  saveCart();
-  updateCartBadge();
-  renderCartDrawer();
-}
-
-function clearCart() {
-  state.cart = [];
-  saveCart();
-  updateCartBadge();
-  renderCartDrawer();
-}
-
-function saveCart() {
-  try {
-    localStorage.setItem('froxy_cart', JSON.stringify(state.cart));
-  } catch (e) {}
-}
-
-function updateCartBadge() {
-  const count = state.cart.reduce((sum, i) => sum + i.qty, 0);
-  const badge = document.getElementById('headerCartCount');
-  const drawerCount = document.getElementById('cartItemCount');
-  if (badge) badge.textContent = count;
-  if (drawerCount) drawerCount.textContent = count;
-}
-
-function renderCartDrawer() {
-  const listEl = document.getElementById('cartItemsList');
-  const totalEl = document.getElementById('cartTotalAmount');
-
-  let total = 0;
-  if (!state.cart.length) {
-    if (listEl) listEl.innerHTML = '<div style="text-align:center; padding:24px 0; color:var(--text-muted); font-size:13px;">Sepetiniz henüz boş.</div>';
-    if (totalEl) totalEl.textContent = formatTL(0);
-    return;
-  }
-
-  if (listEl) {
-    listEl.innerHTML = state.cart.map(item => {
-      const subtotal = item.price_num * item.qty;
-      total += subtotal;
-      return `
-        <div class="cart-item-row">
-          <div class="cart-item-info">
-            <span class="cart-item-name">${item.title}</span>
-            <span class="cart-item-price">${formatTL(item.price_num)} × ${item.qty} = ${formatTL(subtotal)}</span>
-          </div>
-          <div class="cart-item-controls">
-            <button class="qty-btn" onclick="updateCartQty('${item.id}', -1)">−</button>
-            <span class="qty-val">${item.qty}</span>
-            <button class="qty-btn" onclick="updateCartQty('${item.id}', 1)">+</button>
-          </div>
-        </div>
-      `;
-    }).join('');
-  }
-
-  if (totalEl) totalEl.textContent = formatTL(total);
-}
-
-function checkoutCart() {
-  if (!state.cart.length) return;
+// -------------------------------------------------------------
+// VIEW 4: AGENTS ENGINE
+// -------------------------------------------------------------
+function launchAgent(agentKey) {
   triggerHaptic('medium');
-  if (state.cart.length === 1 && state.cart[0].id) {
-    const singleProduct = state.products.find(p => String(p.id) === String(state.cart[0].id));
-    if (singleProduct?.url) {
-      closeCartDrawer();
-      if (tg?.openLink) tg.openLink(singleProduct.url);
-      else window.open(singleProduct.url, '_blank');
-      return;
-    }
+  switchView('view-chat');
+
+  if (agentKey === 'copywriter') {
+    injectPrompt('Sen uzman bir E-Ticaret ve Viral Reklam metin yazarı olarak çalış. Instagram ve TikTok için yüksek dönüşümlü 3 adet satış kancası ve metin hazırla.');
+  } else if (agentKey === 'coder') {
+    injectPrompt('Sen kıdemli bir Full-Stack yazılımcısın. Bana modern, temiz ve optimize edilmiş bir Python/Node.js scripti yaz.');
+  } else if (agentKey === 'seo') {
+    injectPrompt('Sen kıdemli bir SEO uzmanısın. E-ticaret sitemiz için Google 1. sıra hedefli anahtar kelime haritası ve içerik stratejisi oluştur.');
+  } else if (agentKey === 'finance') {
+    injectPrompt('Sen bir Finansal Pazar ve Kripto analistisin. Güncel trendleri ve risk yönetimi prensiplerini detaylıca özetle.');
   }
-  showToast('Shopier ödeme sayfasına yönlendiriliyorsunuz...', '⚡');
 }
 
-// Topup selection
+// -------------------------------------------------------------
+// VIEW 5: WALLET & DYNAMIC TOPUP ENGINE
+// -------------------------------------------------------------
 function selectTopupAmount(amt, btn) {
   state.selectedTopupAmount = amt;
   triggerHaptic('light');
@@ -569,7 +719,7 @@ async function initiateDynamicTopup() {
     return;
   }
 
-  showToast('Ödeme linki oluşturuluyor...', '⚡');
+  showToast('Shopier ödeme sayfası açılıyor...', '⚡');
   const btn = document.getElementById('dynamicPayBtn');
   if (btn) btn.disabled = true;
 
@@ -602,7 +752,6 @@ function copyIBAN() {
   showToast('IBAN panoya kopyalandı!', '📋');
 }
 
-// Orders Render
 function renderOrders() {
   const listEl = document.getElementById('ordersList');
   const emptyEl = document.getElementById('ordersEmpty');
@@ -617,15 +766,15 @@ function renderOrders() {
 
   if (listEl) {
     listEl.innerHTML = state.orders.map(o => `
-      <div class="order-card">
-        <div class="order-top">
-          <span class="order-id">#${o.order_id || o.id || 'FX-1001'}</span>
-          <span class="order-date">${o.created_at || 'Bugün'}</span>
+      <div class="order-box">
+        <div class="order-head">
+          <span>#${o.order_id || o.id || 'FX-1001'}</span>
+          <span>${o.created_at || 'Bugün'}</span>
         </div>
-        <div class="order-title">${o.product_title || o.title || 'Froxy AI Lisansı'}</div>
-        <div class="order-credential-box">
+        <div style="color:#FFF; font-weight:800; font-size:13.5px;">${o.product_title || o.title || 'Froxy AI Lisansı'}</div>
+        <div class="order-code-row">
           <span>${o.license_key || o.credential || 'Hesap Bilgisi Hazırlanıyor...'}</span>
-          <button class="order-copy-btn" onclick="copyText('${o.license_key || o.credential || ''}')">Kopyala</button>
+          <button class="copy-btn" onclick="copyText('${o.license_key || o.credential || ''}')">Kopyala</button>
         </div>
       </div>
     `).join('');
@@ -638,60 +787,24 @@ function copyText(txt) {
   showToast('Bilgiler kopyalandı!', '📋');
 }
 
-// FAQ Toggle
-function toggleFaq(el) {
+function openSupportBot() {
   triggerHaptic('light');
-  el.classList.toggle('active');
+  if (tg?.openTelegramLink) {
+    tg.openTelegramLink('https://t.me/FroxyDestekBOT');
+  } else {
+    window.open('https://t.me/FroxyDestekBOT', '_blank');
+  }
 }
 
-// Tab Switching
-function switchTab(tabId) {
-  triggerHaptic('light');
-
-  const tabs = document.querySelectorAll('.tab-view');
-  tabs.forEach(t => t.classList.remove('active'));
-
-  const activeTab = document.getElementById(tabId);
-  if (activeTab) activeTab.classList.add('active');
-
-  const navItems = document.querySelectorAll('.nav-item');
-  navItems.forEach(n => {
-    if (n.getAttribute('data-tab') === tabId) n.classList.add('active');
-    else n.classList.remove('active');
-  });
-
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-// Success Modal
-function showPurchaseSuccessModal(title, msg) {
-  triggerHaptic('success');
-  const titleEl = document.querySelector('.success-title');
-  const descEl = document.getElementById('successModalMessage');
-  if (titleEl && title) titleEl.textContent = title;
-  if (descEl && msg) descEl.textContent = msg;
-
-  const modal = document.getElementById('purchaseSuccessModal');
-  if (modal) modal.style.display = 'flex';
-}
-
-function closeSuccessModal() {
-  const modal = document.getElementById('purchaseSuccessModal');
-  if (modal) modal.style.display = 'none';
-}
-
-function goToOrders() {
-  closeSuccessModal();
-  switchTab('ordersTab');
-}
-
-// AI Wheel of Fortune
+// -------------------------------------------------------------
+// LUCKY WHEEL OF FORTUNE
+// -------------------------------------------------------------
 const wheelPrizes = [
-  { label: '₺5 Bakiye', value: 5, color: '#0A0E1A', textColor: '#00F0FF' },
+  { label: '₺5 Bakiye', value: 5, color: '#070A14', textColor: '#00F0FF' },
   { label: '₺10 Bakiye', value: 10, color: '#10B981', textColor: '#000000' },
-  { label: 'Tekrar Dene', value: 0, color: '#0A0E1A', textColor: '#94A3B8' },
+  { label: 'Tekrar Dene', value: 0, color: '#070A14', textColor: '#94A3B8' },
   { label: '₺25 Bakiye', value: 25, color: '#8B5CF6', textColor: '#FFFFFF' },
-  { label: '%20 İndirim', value: 'coupon', color: '#0A0E1A', textColor: '#F59E0B' },
+  { label: '%20 İndirim', value: 'coupon', color: '#070A14', textColor: '#F59E0B' },
   { label: '₺50 Bakiye', value: 50, color: '#00F0FF', textColor: '#000000' }
 ];
 
@@ -737,7 +850,6 @@ function drawWheel() {
 function openSpinModal() {
   triggerHaptic('light');
   drawWheel();
-  updateSpinUI();
   const modal = document.getElementById('spinModal');
   if (modal) modal.style.display = 'flex';
 }
@@ -745,25 +857,6 @@ function openSpinModal() {
 function closeSpinModal() {
   const modal = document.getElementById('spinModal');
   if (modal) modal.style.display = 'none';
-}
-
-function updateSpinUI() {
-  const btn = document.getElementById('spinActionBtn');
-  const msg = document.getElementById('spinCooldownMsg');
-  if (!btn) return;
-
-  if (state.canSpin) {
-    btn.disabled = false;
-    btn.style.opacity = '1';
-    if (msg) msg.style.display = 'none';
-  } else {
-    btn.disabled = true;
-    btn.style.opacity = '0.5';
-    if (msg) {
-      msg.style.display = 'block';
-      msg.textContent = '⏳ Günlük çevirme hakkınızı kullandınız. 24 saat sonra tekrar deneyin!';
-    }
-  }
 }
 
 function spinWheel() {
@@ -776,7 +869,6 @@ function spinWheel() {
 
   const totalRounds = 5 + Math.floor(Math.random() * 3);
   const sliceAngle = (2 * Math.PI) / wheelPrizes.length;
-  // target pointer at top (-PI/2)
   const targetAngle = totalRounds * 2 * Math.PI + (wheelPrizes.length - winIndex - 0.5) * sliceAngle - Math.PI / 2;
 
   const startTime = performance.now();
@@ -795,7 +887,6 @@ function spinWheel() {
     } else {
       isSpinning = false;
       state.canSpin = false;
-      updateSpinUI();
 
       if (prize.value > 0) {
         state.walletBalance += prize.value;
@@ -810,4 +901,28 @@ function spinWheel() {
   }
 
   requestAnimationFrame(animate);
+}
+
+// -------------------------------------------------------------
+// SUCCESS MODAL ENGINE
+// -------------------------------------------------------------
+function showPurchaseSuccessModal(title, msg) {
+  triggerHaptic('success');
+  const titleEl = document.querySelector('.success-title');
+  const descEl = document.getElementById('successModalMessage');
+  if (titleEl && title) titleEl.textContent = title;
+  if (descEl && msg) descEl.textContent = msg;
+
+  const modal = document.getElementById('purchaseSuccessModal');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeSuccessModal() {
+  const modal = document.getElementById('purchaseSuccessModal');
+  if (modal) modal.style.display = 'none';
+}
+
+function goToWallet() {
+  closeSuccessModal();
+  switchView('view-wallet');
 }
