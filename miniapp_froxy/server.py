@@ -176,7 +176,7 @@ def load_products() -> list[dict]:
                 "ai_credits": credits,
                 "badge": f"🪙 {formatted_credits} AI Kredi",
                 "model_tag": "Gerçek kullanıma göre",
-                "image": "assets/froxy_logo.png",
+                "image": raw.get("image") or "assets/froxy_logo.png",
                 "delivery_type": "ai_credit",
                 "delivery_label": "⚡ Ödeme sonrası anında AI kredisi",
                 "description": f"{product.get('title', 'Froxy AI kredi paketi')} — ödeme onayından sonra hesabınıza {formatted_credits} AI kredisi yüklenir. Kullanım, seçilen model ve gerçek token tüketimine göre hesaplanır.",
@@ -189,11 +189,11 @@ def load_products() -> list[dict]:
                 "perplexity": ("PERPLEXITY", "assets/provider_perplexity.svg"),
                 "other": ("FROXY ÜRÜNÜ", "assets/froxy_logo.png"),
             }
-            badge, image = category_labels[product["store_category"]]
+            badge, fallback_image = category_labels.get(product["store_category"], category_labels["other"])
             product.update({
                 "badge": badge,
                 "model_tag": "Shopier ürünü",
-                "image": image,
+                "image": raw.get("image") or fallback_image,
                 "delivery_type": "stock_or_manual",
                 "delivery_label": "Stoktan otomatik veya 1–3 iş günü manuel",
                 "manual_delivery_sla": "1–3 iş günü",
