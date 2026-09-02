@@ -34,15 +34,13 @@ code = code.replace(old_texts_tr, new_texts_tr)
 
 # Replace welcome message
 old_welcome = '''            "🤖 **Froxy AI Destek Paneline Hoş Geldiniz!**\\n\\n"
-            "ChatGPT, Claude, Gemini ve 1100+ AI modelini tek panelden kullanmanızı sağlayan "
-            "kredi paketlerimiz en uygun fiyatlarla burada!\\n\\n"
-            "🌐 **Web Sitemiz:** froxyai.com\\n\\n"
+            "Telegram içinden sohbet, görsel üretimi ve Shopier ürünlerine ulaşabilirsiniz.\\n"
+            "Yalnızca o anda çalışan ve doğrulanan modeller uygulamada gösterilir.\\n\\n"
             "Lütfen yapmak istediğiniz işlemi seçin 👇"'''
 
 new_welcome = '''            "⚡ **Froxy AI Mağaza & Destek Paneline Hoş Geldiniz!**\\n\\n"
             "Birden fazla yapay zeka aracına para vermek yerine, hepsini tek panelden kullanabilirsiniz!\\n"
-            "GPT, Claude Sonnet 5, Gemini 3.5 Flash, DeepSeek V4 ve 1.100+ model aynı altyapıda.\\n\\n"
-            "🌐 **Web Sitemiz:** https://froxyai.com\\n\\n"
+            "Model sayısı sağlayıcıların sağlık durumuna göre güncellenir; uygulamada yalnızca aktif modeller gösterilir.\\n\\n"
             "Lütfen incelemek veya satın almak istediğiniz ürünü seçin 👇"'''
 
 code = code.replace(old_welcome, new_welcome)

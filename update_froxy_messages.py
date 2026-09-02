@@ -6,7 +6,7 @@ sys.stdout.reconfigure(encoding='utf-8')
 
 master_froxy_text = """Birden fazla yapay zeka aracına para vermek yerine, hepsini tek panelden denemek ister misiniz?
 
-Froxy AI'da güncel GPT, Claude Sonnet 5, Gemini 3.5 Flash, DeepSeek V4 ve 1.100+ model aynı kredi sistemiyle çalışır.
+Froxy AI, yalnızca o anda çalışan ve doğrulanmış modelleri gösterir. Model sayısı sağlayıcıların sağlık durumuna göre güncellenir.
 
 Neler yapabilirsiniz?
 ✓ Kod yazdırma, hata analizi ve proje desteği
@@ -27,8 +27,9 @@ Neler yapabilirsiniz?
 *(Not: Tüm Gemini ürünlerinde maksimum 1 ay garanti mevcuttur.)
 **(Not: ChatGPT ürünlerinde garanti bulunmamaktadır.)
 
-⚡ 7/24 Anında Otomatik Teslimat
-Önce 100 ücretsiz krediyle dene: @FroxyDestekBOT"""
+💳 Ödeme onayından sonra AI kredileri hesabınıza yüklenir.
+Stok yoksa ürünler 1–3 iş günü içinde manuel teslim edilir.
+Uygulamayı aç: @FroxyDestekBOT"""
 
 froxy_files = sorted(glob.glob("messages/froxy_*.txt"))
 

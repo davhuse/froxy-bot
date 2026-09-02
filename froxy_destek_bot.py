@@ -146,11 +146,20 @@ ADMIN_ID = int(os.environ.get("FROXY_ADMIN_ID", config.get("froxy_admin_id", con
 BOT_USER_ID = None
 FROXY_SHOPIER_URL = "https://www.shopier.com/froxyai"
 _render_external_url = os.environ.get("RENDER_EXTERNAL_URL", "").strip().rstrip("/")
+_configured_mini_app_url = os.environ.get("FROXY_MINI_APP_URL", "").strip().rstrip("/")
+# Older deployments carried one of these retired hostnames in their env.  A
+# service's Render URL is authoritative, so never keep advertising a retired
+# copy when Render provides the current external URL.
+if _configured_mini_app_url and any(
+    retired in _configured_mini_app_url.lower()
+    for retired in ("froxy-bot-live.onrender.com", "froxy-bot-live-r5se.onrender.com", "froxy-bot-wjzr.onrender.com")
+):
+    _configured_mini_app_url = ""
 FROXY_MINI_APP_URL = (
-    os.environ.get("FROXY_MINI_APP_URL")
-    or (f"{_render_external_url}/froxy/" if _render_external_url else "")
-    or "https://froxy-bot-live-nvnp.onrender.com/froxy/"
-).strip()
+    (f"{_render_external_url}/froxy" if _render_external_url else "")
+    or _configured_mini_app_url
+    or "https://froxy-bot-live-nvnp.onrender.com/froxy"
+).rstrip("/") + "/"
 
 BOT_COMMANDS = [
     ("start", "Froxy AI uygulamasını aç"),
@@ -232,6 +241,8 @@ DEFAULT_FROXY_SHOPIER_LINKS = {
 }
 FROXY_PRODUCTS = []
 
+_MODEL_SUMMARY_CACHE = {"expires_at": 0.0, "count": None, "providers": None}
+
 
 def load_froxy_products():
     global FROXY_PRODUCTS
@@ -247,6 +258,104 @@ def load_froxy_products():
         logger.warning("Froxy Shopier catalog could not be refreshed: %s", exc)
         FROXY_PRODUCTS = [dict(product) for product in DEFAULT_FROXY_PRODUCTS]
     return FROXY_PRODUCTS
+
+
+def live_model_summary():
+    """Return a truthful, short model status for customer-facing messages.
+
+    The Mini App is the source of truth.  We deliberately never claim a fixed
+    model total: disabled providers and failed health checks must be reflected
+    in the message users see.
+    """
+    now = time.time()
+    if _MODEL_SUMMARY_CACHE["expires_at"] > now:
+        return _MODEL_SUMMARY_CACHE["count"], _MODEL_SUMMARY_CACHE["providers"]
+
+    api_url = FROXY_MINI_APP_URL.rstrip("/") + "/api/models"
+    try:
+        request = urllib.request.Request(api_url, headers={"Accept": "application/json"})
+        with urllib.request.urlopen(request, timeout=3) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+        models = payload.get("models") if isinstance(payload, dict) else []
+        models = models if isinstance(models, list) else []
+        count = payload.get("active_model_count") or payload.get("verified_total") or len(models)
+        providers = payload.get("active_provider_count")
+        if providers is None:
+            providers = len({str(item.get("provider") or "").strip() for item in models if isinstance(item, dict)})
+        count = max(0, int(count or 0))
+        providers = max(0, int(providers or 0))
+    except Exception as exc:
+        logger.debug("Live model summary unavailable: %s", exc)
+        count, providers = None, None
+    _MODEL_SUMMARY_CACHE.update({"expires_at": now + 60, "count": count, "providers": providers})
+    return count, providers
+
+
+def model_count_label(lang="tr"):
+    count, providers = live_model_summary()
+    if count is None:
+        return "kontrol ediliyor" if lang == "tr" else "checking now"
+    if count == 0:
+        return (
+            "şu an doğrulanmış aktif model yok"
+            if lang == "tr"
+            else "no verified active models right now"
+        )
+    if lang == "tr":
+        provider_text = f", {providers} sağlayıcı" if providers else ""
+        return f"{count} doğrulanmış aktif model{provider_text}"
+    provider_text = f", {providers} providers" if providers else ""
+    return f"{count} verified active models{provider_text}"
+
+
+def shopier_product_label(lang="tr"):
+    count = len(FROXY_PRODUCTS or load_froxy_products())
+    return f"{count} güncel ürün" if lang == "tr" else f"{count} current products"
+
+
+def shopier_product_count():
+    return len(FROXY_PRODUCTS or load_froxy_products())
+
+
+def shopier_product_button(product):
+    title = str(product.get("title") or "Shopier ürünü").strip()
+    price = str(product.get("price") or "").strip()
+    label = f"🛍️ {title}"
+    if price:
+        label += f" · {price}"
+    return label[:60]
+
+
+def shopier_delivery_label(product, lang="tr"):
+    delivery_type = str(product.get("delivery_type") or "stock_or_manual").lower()
+    if delivery_type == "ai_credit":
+        return "Ödeme onayından sonra AI kredisi hesabınıza tanımlanır." if lang == "tr" else "AI credits are added after payment confirmation."
+    if delivery_type == "instant":
+        return "Stok uygunsa otomatik teslimat." if lang == "tr" else "Automatic delivery when stock is available."
+    return (
+        "Stok uygunsa otomatik; stok yoksa 1–3 iş günü manuel teslimat."
+        if lang == "tr"
+        else "Automatic when in stock; otherwise manual delivery in 1–3 business days."
+    )
+
+
+def shopier_menu(lang="tr"):
+    """Build the Telegram store screen from the live Froxy catalog."""
+    t = TEXTS[lang]
+    products = list(FROXY_PRODUCTS or load_froxy_products())
+    buttons = []
+    for product in products:
+        product_id = str(product.get("id") or "").strip()
+        if not product_id:
+            continue
+        buttons.append([Button.inline(shopier_product_button(product), f"prod_{product_id}".encode())])
+    buttons.extend([
+        [froxy_app_button("🚀 Froxy AI Uygulamasını Aç" if lang == "tr" else "🚀 Open Froxy AI")],
+        [Button.url("↗️ Shopier" if lang == "tr" else "↗️ Shopier", FROXY_SHOPIER_URL)],
+        [Button.inline(t["main_menu"], b"menu_main")],
+    ])
+    title = t["pkg_menu_title"].format(product_count=shopier_product_count())
+    return title, buttons
 
 if not BOT_TOKEN or BOT_TOKEN == "YOUR_TELEGRAM_BOT_TOKEN":
     logger.error("FROXY_SUPPORT_BOT_TOKEN is not configured. Exiting.")
@@ -281,167 +390,71 @@ bot = TelegramClient("froxy_destek_bot_session", API_ID, API_HASH)
 TEXTS = {
     "tr": {
         "welcome": (
-            "⚡ **Froxy AI'a hoş geldiniz!**\n\n"
-            "Sohbet, görsel üretimi, AI kredileri, mağaza ve sipariş takibi tek uygulamada.\n"
-            "Aşağıdaki **Froxy AI'ı Aç** düğmesine dokunarak başlayın."
+            "⚡ **Froxy AI**\n\n"
+            "Telegram içinde sohbet, görsel üretimi ve güvenli Shopier mağazası.\n"
+            "🧠 **Model durumu:** {model_count}\n"
+            "🛍️ **Mağaza:** {product_count}\n\n"
+            "Uygulamayı açın; yalnızca o anda çalışan ve doğrulanan modeller gösterilir."
         ),
-        "packages_btn": "👑 Üyelik Paketleri (Kredi)",
-        "ai_tools_btn": "🤖 Yapay Zeka Paketleri (AI Tools)",
-        "support_btn": "📞 Canlı Destek & İletişim",
+        "packages_btn": "🛍️ Shopier Mağazasını Gör",
+        "ai_tools_btn": "🤖 Aktif Modelleri Gör",
+        "support_btn": "💬 Froxy Desteğe Yaz",
         "web_btn": "🚀 Froxy AI'ı Aç",
         "lang_btn": "🌐 Dil Seçimi / Language",
         "main_menu": "↩️ Ana Menü",
-        "pkg_btn_list": [
-            ("🚀 Başlangıç (5K Kredi) — ₺129.99", "pkg_baslangic"),
-            ("⭐ Popüler (15K Kredi) — ₺249.99", "pkg_populer"),
-            ("💼 Profesyonel (50K Kredi) — ₺449.99", "pkg_profesyonel")
-        ],
-        "ai_btn_list": [
-            ("🤖 Gemini Pro 12 Ay Davet (₺59.99)", "pkg_gemini_12m"),
-            ("🤖 Gemini Pro 18 Ay Davet (₺99.99)", "pkg_gemini_18m"),
-            ("🚀 Gemini Pro + Antigravity 12 Ay (₺169.99)", "pkg_gemini_anti_12m"),
-            ("🚀 Gemini Pro + Antigravity 18 Ay (₺249.99)", "pkg_gemini_anti_18m"),
-            ("💬 ChatGPT Plus Kişisel (₺499.90)", "pkg_chatgpt_kisisel"),
-            ("💬 ChatGPT Plus Ortak (₺39.99)", "pkg_chatgpt_ortak"),
-            ("💻 ChatGPT Plus + Codex (₺599.90)", "pkg_chatgpt_codex"),
-            ("📱 Codex SMS Doğrulama Kodu (₺29.99)", "pkg_codex_sms"),
-            ("💎 Gemini Ultra Kredisiz (₺299.99)", "pkg_gemini_ultra_kredisiz"),
-            ("💎 Gemini Ultra 2500 Kredili (₺399.99)", "pkg_gemini_ultra_25k"),
-            ("⚡ ChatGPT Go 3 Aylık Kod (₺49.99)", "pkg_chatgpt_go"),
-            ("🔍 Perplexity Pro 1 Aylık Ortak (₺69.99)", "pkg_perplexity_ortak")
-        ],
-        "pkg_menu_title": "🛒 **Froxy Shopier Ürünleri**\n\n"
-                          "Ürün ayrıntıları ve güncel ödeme seçeneği Shopier ilanında gösterilir.\n\n"
+        "pkg_btn_list": [],
+        "ai_btn_list": [],
+        "pkg_menu_title": "🛍️ **Froxy Shopier Mağazası**\n\n"
+                          "{product_count} güncel ürün ve fiyatı aşağıda görebilirsiniz.\n"
+                          "AI kredi paketleri ödeme onayından sonra tanımlanır; diğer ürünlerde stok yoksa teslimat 1–3 iş günüdür.\n\n"
                           "İncelemek istediğiniz ürünü seçin:",
         "back_to_pkgs": "↩️ Paketlere Dön",
         "buy_shopier": "💳 Shopier ile Güvenli Satın Al",
         "buy_web": "🛒 Shopier'den Satın Al",
-        "product_header": "🌟 **{title}**\n\n💰 **Fiyat:** {price}\n\n📝 **Detaylar:**\n{desc}\n\nGüvenli ödeme için aşağıdaki Shopier düğmesini kullanın.",
-        "support_title": "📞 **Froxy AI Destek Talebi**",
-        "support_desc": "Ürün, Shopier ödemesi veya destek talebinizi detaylıca yazıp bu sohbete gönderin.\n\nMesajınız doğrudan Froxy ekibine iletilecektir. En kısa sürede yanıt alacaksınız.",
+        "product_header": "🛍️ **{title}**\n\n💰 **Fiyat:** {price}\n🚚 **Teslimat:** {delivery}\n\n{desc}\n\nÖdeme ve güncel ürün bilgisi için Shopier bağlantısını kullanın.",
+        "support_title": "💬 **Froxy AI Desteği**",
+        "support_desc": "Ürün, ödeme, kredi veya uygulama sorununu tek mesajda yazın.\n\nSipariş numaranız varsa ekleyin; destek ekibi buradan dönüş yapar.",
         "cancel": "↩️ Vazgeç ve İptal Et",
         "support_success": "✅ Mesajınız Froxy AI ekibine iletildi. En kısa sürede yanıt alacaksınız.",
         "support_fail": "⚠️ Mesajınız iletilemedi. Lütfen daha sonra tekrar deneyiniz.",
-        "support_inactive": "⚠️ Üzgünüz, şu anda destek sistemi aktif değil. Lütfen daha sonra deneyin.",
+        "support_inactive": "⚠️ Destek yapılandırması şu anda kullanılamıyor. Lütfen uygulamadaki destek bağlantısından yazın.",
         "reply_prefix": "📨 **Froxy AI Destek Ekibinden Cevap:**\n\n",
         "choose_lang": "Lütfen dilinizi seçin / Please choose your language:",
-        "products": {
-            "baslangic": {
-                "title": "Başlangıç Paketi",
-                "price": "₺129.99",
-                "credits": "5.000",
-                "desc": (
-                    "• **Kredi:** 5.000 kredi\n"
-                    "• **Modeller:** Tüm AI modellere erişim (ChatGPT, Claude, Gemini, DeepSeek, Llama)\n"
-                    "• **Günlük Limit:** 200 istek/gün\n"
-                    "• **Destek:** Topluluk desteği\n"
-                    "• **Garanti:** Anında kredi tanımlama, Shopier güvenli ödeme"
-                ),
-            },
-            "populer": {
-                "title": "Popüler Paket ⭐",
-                "price": "₺249.99",
-                "credits": "15.000",
-                "desc": (
-                    "• **Kredi:** 15.000 kredi\n"
-                    "• **Modeller:** Tüm AI modellere erişim\n"
-                    "• **Günlük Limit:** 500 istek/gün\n"
-                    "• **Ekstra:** Görsel üretim dahil\n"
-                    "• **Garanti:** Anında kredi tanımlama, Shopier güvenli ödeme"
-                ),
-            },
-            "profesyonel": {
-                "title": "Profesyonel Paket",
-                "price": "₺449.99",
-                "credits": "50.000",
-                "desc": (
-                    "• **Kredi:** 50.000 kredi\n"
-                    "• **Modeller:** Tüm AI modellere erişim\n"
-                    "• **Günlük Limit:** 1.500 istek/gün\n"
-                    "• **Ekstra:** Öncelikli destek\n"
-                    "• **Garanti:** Anında kredi tanımlama, Shopier güvenli ödeme"
-                ),
-            }
-        }
+        "products": {},
     },
     "en": {
         "welcome": (
-            "⚡ **Welcome to Froxy AI!**\n\n"
-            "Chat, image generation, AI credits, store and order tracking are in one app.\n"
-            "Tap **Open Froxy AI** below to begin."
+            "⚡ **Froxy AI**\n\n"
+            "Chat, image generation and the secure Shopier store in Telegram.\n"
+            "🧠 **Model status:** {model_count}\n"
+            "🛍️ **Store:** {product_count}\n\n"
+            "Open the app; only models that are currently healthy and verified are shown."
         ),
-        "packages_btn": "👑 Membership Packages (Credits)",
-        "ai_tools_btn": "🤖 AI Tools & Packages",
-        "support_btn": "📞 Live Support & Contact",
+        "packages_btn": "🛍️ View Shopier Store",
+        "ai_tools_btn": "🤖 View Active Models",
+        "support_btn": "💬 Contact Froxy Support",
         "web_btn": "🚀 Open Froxy AI",
         "lang_btn": "🌐 Language / Dil",
         "main_menu": "↩️ Main Menu",
-        "pkg_btn_list": [
-            ("🚀 Starter — 5K Credits ($3.99)", "pkg_baslangic"),
-            ("⭐ Popular — 15K Credits ($7.99)", "pkg_populer"),
-            ("💼 Professional — 50K Credits ($13.99)", "pkg_profesyonel")
-        ],
-        "ai_btn_list": [
-            ("🤖 Gemini Pro 12M Invite ($2.00)", "pkg_gemini_12m"),
-            ("🤖 Gemini Pro 18M Invite ($3.00)", "pkg_gemini_18m"),
-            ("💬 ChatGPT Plus Personal (₺499.90)", "pkg_chatgpt_kisisel"),
-            ("💬 ChatGPT Plus Shared ($1.50)", "pkg_chatgpt_ortak"),
-            ("💻 ChatGPT Plus + Codex (₺599.90)", "pkg_chatgpt_codex"),
-            ("🔍 Perplexity Pro 1M Shared ($2.50)", "pkg_perplexity_ortak")
-        ],
-        "pkg_menu_title": "🛒 **Froxy Shopier Products**\n\n"
-                          "Product details and the current checkout option are shown on Shopier.\n\n"
-                          "Select the product you want to view:",
+        "pkg_btn_list": [],
+        "ai_btn_list": [],
+        "pkg_menu_title": "🛍️ **Froxy Shopier Store**\n\n"
+                          "{product_count} current products and prices are listed below.\n"
+                          "AI credit packages are added after payment confirmation; other products are delivered within 1–3 business days when out of stock.\n\n"
+                          "Select a product:",
         "back_to_pkgs": "↩️ Back to Packages",
         "buy_shopier": "💳 Secure Purchase with Shopier",
         "buy_web": "🛒 Purchase on Shopier",
-        "product_header": "🌟 **{title}**\n\n💰 **Price:** {price}\n\n📝 **Details:**\n{desc}\n\nUse the Shopier button below for secure checkout.",
-        "support_title": "📞 **Froxy AI Support Request**",
-        "support_desc": "Describe the product, Shopier payment, or support request and send it to this chat.\n\nYour message will be forwarded directly to the Froxy team.",
+        "product_header": "🛍️ **{title}**\n\n💰 **Price:** {price}\n🚚 **Delivery:** {delivery}\n\n{desc}\n\nUse the Shopier link for the current product information and payment.",
+        "support_title": "💬 **Froxy AI Support**",
+        "support_desc": "Send one message describing your product, payment, credit or app issue.\n\nInclude your order number when available; the support team will reply here.",
         "cancel": "↩️ Cancel & Go Back",
         "support_success": "✅ Your message has been forwarded to the Froxy AI team. You will receive a response as soon as possible.",
         "support_fail": "⚠️ Your message could not be delivered. Please try again later.",
-        "support_inactive": "⚠️ Sorry, the support system is currently offline. Please try again later.",
+        "support_inactive": "⚠️ Support is not configured right now. Please use the support link inside the app.",
         "reply_prefix": "📨 **Reply from Froxy AI Support Team:**\n\n",
         "choose_lang": "Please choose your language / Lütfen dilinizi seçin:",
-        "products": {
-            "baslangic": {
-                "title": "Starter Package",
-                "price": "$3.99",
-                "credits": "5,000",
-                "desc": (
-                    "• **Credits:** 5,000 credits\n"
-                    "• **Models:** Access to all AI models (ChatGPT, Claude, Gemini, DeepSeek, Llama)\n"
-                    "• **Daily Limit:** 200 requests/day\n"
-                    "• **Support:** Community support\n"
-                    "• **Guarantee:** Instant credit assignment, Shopier secure payment"
-                ),
-            },
-            "populer": {
-                "title": "Popular Package ⭐",
-                "price": "$7.99",
-                "credits": "15,000",
-                "desc": (
-                    "• **Credits:** 15,000 credits\n"
-                    "• **Models:** Access to all AI models\n"
-                    "• **Daily Limit:** 500 requests/day\n"
-                    "• **Extra:** Image generation included\n"
-                    "• **Guarantee:** Instant credit assignment, Shopier secure payment"
-                ),
-            },
-            "profesyonel": {
-                "title": "Professional Package",
-                "price": "$13.99",
-                "credits": "50,000",
-                "desc": (
-                    "• **Credits:** 50,000 credits\n"
-                    "• **Models:** Access to all AI models\n"
-                    "• **Daily Limit:** 1,500 requests/day\n"
-                    "• **Extra:** Priority support\n"
-                    "• **Guarantee:** Instant credit assignment, Shopier secure payment"
-                ),
-            }
-        }
+        "products": {},
     }
 }
 
@@ -466,10 +479,14 @@ async def show_main_menu(event, user_id, is_callback=False):
     is_online = presence.get("is_online", False)
     status_emoji = "🟢 **Destek Çevrimiçi / Support Online**" if is_online else "🔴 **Destek Çevrimdışı / Support Offline**"
     
+    welcome_body = t["welcome"].format(
+        model_count=model_count_label(lang),
+        product_count=shopier_product_label(lang),
+    )
     welcome_text = (
         f"{status_emoji}\n"
         f"━━━━━━━━━━━━━━━━━━━\n\n"
-        f"{t['welcome']}"
+        f"{welcome_body}"
     )
     
     buttons = [
@@ -603,15 +620,9 @@ async def packages_menu_handler(event):
         await event.answer()
     except:
         pass
-    await safe_event_edit(
-        event,
-        "⚡ AI kredileri, ürünler ve güncel fiyatlar için Froxy AI uygulamasını açın. Shopier ürün sayfası alternatif olarak aşağıdadır.",
-        buttons=[
-            [froxy_app_button()],
-            [Button.url("🛒 Shopier Ürün Sayfası", FROXY_SHOPIER_URL)],
-            [Button.inline("↩️ Ana Menü", b"menu_main")],
-        ],
-    )
+    lang = user_lang_helper.get_user_lang(event.sender_id) or "tr"
+    text, buttons = shopier_menu(lang)
+    await safe_event_edit(event, text, buttons=buttons)
 
 @bot.on(events.CallbackQuery(data=b'menu_ai_tools'))
 async def ai_tools_menu_handler(event):
@@ -619,20 +630,49 @@ async def ai_tools_menu_handler(event):
         await event.answer()
     except:
         pass
-    user_id = event.sender_id
-    lang = user_lang_helper.get_user_lang(user_id) or "tr"
-    t = TEXTS[lang]
-
-    buttons = []
-    for label, pkg_key in t.get("ai_btn_list", []):
-        buttons.append([Button.inline(label, pkg_key.encode())])
-    buttons.append([Button.inline(t["main_menu"], b"menu_main")])
-
-    title_text = "🤖 **Yapay Zeka Paketleri (AI Tools)**\n\nSatın almak istediğiniz yapay zeka aracını seçin:" if lang == "tr" else "🤖 **AI Tools & Packages**\n\nSelect the AI tool you wish to purchase:"
+    lang = user_lang_helper.get_user_lang(event.sender_id) or "tr"
+    text, buttons = shopier_menu(lang)
     try:
-        await safe_event_edit(event, title_text, buttons=buttons)
+        await safe_event_edit(event, text, buttons=buttons)
     except Exception:
         pass
+
+
+@bot.on(events.CallbackQuery(pattern=r"prod_(\d+)"))
+async def shopier_product_handler(event):
+    """Show a catalog product using the same source as the Mini App."""
+    try:
+        await event.answer()
+    except Exception:
+        pass
+    lang = user_lang_helper.get_user_lang(event.sender_id) or "tr"
+    product_id = event.data.decode("utf-8").split("_", 1)[1]
+    product = next(
+        (item for item in (FROXY_PRODUCTS or load_froxy_products()) if str(item.get("id")) == product_id),
+        None,
+    )
+    if not product:
+        await safe_event_edit(
+            event,
+            "Bu ürün artık katalogda bulunmuyor. Güncel listeyi yeniden açın." if lang == "tr" else "This product is no longer in the catalog. Open the current list again.",
+            buttons=[[Button.inline("↩️ Mağazaya Dön" if lang == "tr" else "↩️ Back to Store", b"menu_packages")]],
+        )
+        return
+    t = TEXTS[lang]
+    description = str(product.get("description") or "Shopier ürün sayfasında güncel açıklama ve ödeme bilgisi gösterilir.")
+    text = t["product_header"].format(
+        title=product.get("title") or "Shopier ürünü",
+        price=product.get("price") or "Shopier sayfasında",
+        delivery=shopier_delivery_label(product, lang),
+        desc=description,
+    )
+    product_url = str(product.get("url") or FROXY_SHOPIER_URL)
+    buttons = [
+        [froxy_app_button("🚀 Froxy AI'da Aç" if lang == "tr" else "🚀 Open in Froxy AI")],
+        [Button.url("💳 Shopier'de İncele / Satın Al" if lang == "tr" else "💳 View / Buy on Shopier", product_url)],
+        [Button.inline("↩️ Mağazaya Dön" if lang == "tr" else "↩️ Back to Store", b"menu_packages")],
+    ]
+    await safe_event_edit(event, text, buttons=buttons)
 
 @bot.on(events.CallbackQuery(data=b'menu_referral'))
 async def menu_referral_handler(event):
@@ -696,6 +736,7 @@ async def pkg_select_handler(event):
         title=p_data['title'],
         price=p_data['price'],
         credits=p_data['credits'],
+        delivery=shopier_delivery_label(selected_product or {}, lang),
         desc=p_data['desc']
     )
     
