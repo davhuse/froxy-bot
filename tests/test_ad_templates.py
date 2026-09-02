@@ -10,7 +10,10 @@ ROOT = Path(__file__).resolve().parents[1]
 
 class AdTemplateTests(unittest.TestCase):
     def test_froxy_templates_have_one_bot_handle_and_no_sender_tag(self):
-        for path in sorted((ROOT / "messages").glob("froxy_*.txt")):
+        paths = sorted((ROOT / "messages").glob("froxy_*.txt"))
+        self.assertEqual(len(paths), 6)
+        bodies = []
+        for path in paths:
             text = path.read_text(encoding="utf-8")
             self.assertEqual(text.count("@FroxyDestekBOT"), 1, path.name)
             self.assertNotIn("@FroxyOnline", text, path.name)
@@ -20,6 +23,11 @@ class AdTemplateTests(unittest.TestCase):
             self.assertNotIn("1.100", text, path.name)
             self.assertNotIn("1100", text, path.name)
             self.assertNotIn("ücretsiz kredi", text.lower(), path.name)
+            self.assertNotIn("anında teslimat", text.lower(), path.name)
+            self.assertNotIn("sınırsız", text.lower(), path.name)
+            self.assertLess(len(text), 700, path.name)
+            bodies.append(text)
+        self.assertEqual(len(set(bodies)), 6)
 
     def test_froxy_support_public_flow_opens_mini_app(self):
         source = (ROOT / "froxy_destek_bot.py").read_text(encoding="utf-8")

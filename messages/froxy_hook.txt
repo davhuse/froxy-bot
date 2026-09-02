@@ -1,25 +1,10 @@
-Birden fazla yapay zeka aracına para vermek yerine, hepsini tek panelden denemek ister misiniz?
+🤖 FROXY AI — Telegram içinde çoklu yapay zekâ
 
-Froxy AI'da yalnız o anda doğrulanan çalışan modeller, tek bir şeffaf kredi sistemiyle sunulur.
+Tek uygulamadan sohbet modeli seçin, görsel üretin ve kullanımınızı AI kredisiyle yönetin.
 
-Neler yapabilirsiniz?
-✅ Kod yazdırma, hata analizi ve proje desteği
-✅ Makale, özet, çeviri ve araştırma
-✅ PDF, görsel ve dosya analizi
-✅ Reklam/sosyal medya metni ve görsel üretimi
-✅ Hazır AI ajanlarıyla daha hızlı iş akışları
+🎁 Her gün: 3 ücretsiz sohbet + 1 ücretsiz görsel
+🧠 Yalnız aktif ve doğrulanmış modeller
+💳 AI kredisi ile mağaza bakiyesi birbirinden ayrı
+🛍️ Güncel ürünler ve fiyatlar Froxy Shopier kataloğunda
 
-📌 GÜNCEL ÜRÜN VE FİYAT LİSTESİ:
-🔹 Gemini Pro (12 Ay Davet: 59.99₺ | 18 Ay Davet: 99.99₺)*
-🔹 Gemini Pro + Antigravity (12 Ay: 169.99₺ | 18 Ay: 249.99₺)*
-🔹 ChatGPT Plus (Kişisel: 499.90₺ | Ortak: 39.99₺ | + Codex: 599.90₺)**
-🔹 Codex SMS Doğrulama Kodu: 29.99₺
-🔹 Gemini Ultra (1 Ay Kredisiz: 299.99₺ | 2.5K Kredili: 399.99₺)*
-🔹 ChatGPT Go (3 Aylık İndirim Kodu): 49.99₺
-🔹 Perplexity Pro (Ortak: 69.99₺ | Özel Profil: 79.99₺)
-
-*(Not: Tüm Gemini ürünlerinde maksimum 1 ay garanti mevcuttur.)
-**(Not: ChatGPT ürünlerinde garanti bulunmamaktadır.)
-
-💳 Güvenli Shopier ödemesi • Lisans uygunsa otomatik, stok yoksa 1–3 iş gününde manuel teslimat
-👉 Her gün 3 ücretsiz Froxy mesajı ve 1 düşük çözünürlüklü görselle dene: @FroxyDestekBOT
+Uygulamayı açmak ve güncel kataloğu görmek için: @FroxyDestekBOT
