@@ -145,7 +145,12 @@ BOT_TOKEN = (os.environ.get("FROXY_SUPPORT_BOT_TOKEN") or config.get("support_bo
 ADMIN_ID = int(os.environ.get("FROXY_ADMIN_ID", config.get("froxy_admin_id", config.get("admin_id", 0))) or 0)
 BOT_USER_ID = None
 FROXY_SHOPIER_URL = "https://www.shopier.com/froxyai"
-FROXY_MINI_APP_URL = (os.environ.get("FROXY_MINI_APP_URL") or "https://froxy-bot-live.onrender.com/froxy/").strip()
+_render_external_url = os.environ.get("RENDER_EXTERNAL_URL", "").strip().rstrip("/")
+FROXY_MINI_APP_URL = (
+    os.environ.get("FROXY_MINI_APP_URL")
+    or (f"{_render_external_url}/froxy/" if _render_external_url else "")
+    or "https://froxy-bot-live-nvnp.onrender.com/froxy/"
+).strip()
 
 BOT_COMMANDS = [
     ("start", "Froxy AI uygulamasını aç"),
