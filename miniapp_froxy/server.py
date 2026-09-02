@@ -132,7 +132,7 @@ def _rate_limit(scope: str, identity: str, limit: int, window: int = 60) -> bool
 
 
 def _json_sse(event: str, payload: dict) -> str:
-    return f"event: {event}\ndata: {json.dumps(payload, ensure_ascii=False)}\n\n"
+    return f"event: {event}\ndata: {json.dumps(payload)}\n\n"
 
 
 def _credit_try_value() -> float:
