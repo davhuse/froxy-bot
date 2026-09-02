@@ -479,7 +479,7 @@ def get_image_job(job_id: str):
 
 
 def _shopier_token() -> str:
-    return (os.environ.get("SHOPIER_FROXY_ACCESS_TOKEN") or os.environ.get("SHOPIER_BEARER_TOKEN") or "").strip()
+    return os.environ.get("SHOPIER_FROXY_ACCESS_TOKEN", "").strip()
 
 
 def _create_topup(telegram_user: dict, *, amount: float, kind: str, product: dict | None, idempotency_key: str) -> dict:
