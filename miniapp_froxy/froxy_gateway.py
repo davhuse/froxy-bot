@@ -243,6 +243,16 @@ class FroxyGateway:
                 all_models.extend(models)
                 statuses[status["provider"]] = status
 
+        if not all_models:
+            visible = self._default_fallback_models()
+            models_by_id = {m["id"]: m for m in visible}
+            with self._lock:
+                self._catalog = visible
+                self._models = models_by_id
+                self._provider_status = statuses
+                self._refreshed_at = time.time()
+            return list(visible)
+
         unique: dict[str, dict[str, Any]] = {}
         for model in all_models:
             unique[model["id"]] = model
@@ -261,6 +271,119 @@ class FroxyGateway:
             self._provider_status = statuses
             self._refreshed_at = time.time()
         return list(visible)
+
+    @staticmethod
+    def _default_fallback_models() -> list[dict[str, Any]]:
+        return [
+            {
+                "id": "froxy-fast",
+                "provider_model_id": "froxy-fast",
+                "name": "Froxy Hızlı",
+                "provider": "froxy",
+                "provider_label": "Froxy Modelleri",
+                "provider_logo": PROVIDER_LOGOS.get("froxy", ""),
+                "capabilities": ["chat"],
+                "context_length": 128000,
+                "modality": "text->text",
+                "supports_vision": False,
+                "is_free": True,
+                "known_pricing": True,
+                "prompt_usd_per_token": 0.0,
+                "completion_usd_per_token": 0.0,
+                "is_froxy": True,
+                "description": "Günlük ücretsiz kota ile kullanılabilen ultra hızlı Froxy modeli.",
+            },
+            {
+                "id": "froxy-smart",
+                "provider_model_id": "froxy-smart",
+                "name": "Froxy Akıllı",
+                "provider": "froxy",
+                "provider_label": "Froxy Modelleri",
+                "provider_logo": PROVIDER_LOGOS.get("froxy", ""),
+                "capabilities": ["chat", "vision"],
+                "context_length": 128000,
+                "modality": "text+image->text",
+                "supports_vision": True,
+                "is_free": True,
+                "known_pricing": True,
+                "prompt_usd_per_token": 0.0,
+                "completion_usd_per_token": 0.0,
+                "is_froxy": True,
+                "description": "Gelişmiş akıl yürütme ve analiz yeteneğine sahip ücretsiz akıllı model.",
+            },
+            {
+                "id": "openai/gpt-4o",
+                "provider_model_id": "gpt-4o",
+                "name": "GPT-4o (Omni)",
+                "provider": "openai",
+                "provider_label": "OpenAI",
+                "provider_logo": PROVIDER_LOGOS.get("openai", ""),
+                "capabilities": ["chat", "vision"],
+                "context_length": 128000,
+                "modality": "text+image->text",
+                "supports_vision": True,
+                "is_free": False,
+                "known_pricing": True,
+                "prompt_usd_per_token": 2.5e-06,
+                "completion_usd_per_token": 1e-05,
+                "estimated_1k_credits": 125,
+                "is_froxy": False,
+            },
+            {
+                "id": "anthropic/claude-3-5-sonnet",
+                "provider_model_id": "claude-3-5-sonnet-20241022",
+                "name": "Claude 3.5 Sonnet",
+                "provider": "anthropic",
+                "provider_label": "Anthropic",
+                "provider_logo": PROVIDER_LOGOS.get("anthropic", ""),
+                "capabilities": ["chat", "vision"],
+                "context_length": 200000,
+                "modality": "text+image->text",
+                "supports_vision": True,
+                "is_free": False,
+                "known_pricing": True,
+                "prompt_usd_per_token": 3e-06,
+                "completion_usd_per_token": 1.5e-05,
+                "estimated_1k_credits": 150,
+                "is_froxy": False,
+            },
+            {
+                "id": "google/gemini-1.5-pro",
+                "provider_model_id": "gemini-1.5-pro",
+                "name": "Google Gemini 1.5 Pro",
+                "provider": "google",
+                "provider_label": "Google",
+                "provider_logo": PROVIDER_LOGOS.get("google", ""),
+                "capabilities": ["chat", "vision"],
+                "context_length": 1000000,
+                "modality": "text+image->text",
+                "supports_vision": True,
+                "is_free": False,
+                "known_pricing": True,
+                "prompt_usd_per_token": 1.25e-06,
+                "completion_usd_per_token": 5e-06,
+                "estimated_1k_credits": 90,
+                "is_froxy": False,
+            },
+            {
+                "id": "meta/llama-3.3-70b",
+                "provider_model_id": "llama-3.3-70b-instruct",
+                "name": "Meta Llama 3.3 70B",
+                "provider": "meta",
+                "provider_label": "Meta AI",
+                "provider_logo": PROVIDER_LOGOS.get("meta", ""),
+                "capabilities": ["chat"],
+                "context_length": 128000,
+                "modality": "text->text",
+                "supports_vision": False,
+                "is_free": False,
+                "known_pricing": True,
+                "prompt_usd_per_token": 5.9e-07,
+                "completion_usd_per_token": 7.9e-07,
+                "estimated_1k_credits": 45,
+                "is_froxy": False,
+            }
+        ]
 
     def _build_aliases(self, models: list[dict[str, Any]]) -> list[dict[str, Any]]:
         preferred_fragments = [
@@ -493,7 +616,7 @@ class FroxyGateway:
             ("together-image", "Together Image", "together", os.environ.get("FROXY_TOGETHER_IMAGE_MODEL", "stabilityai/stable-diffusion-xl-base-1.0"), bool(_first_key("TOGETHER_API_KEY", "TOGETHER_API_KEYS"))),
             ("cloudflare-image", "Cloudflare FLUX", "cloudflare", os.environ.get("FROXY_CLOUDFLARE_IMAGE_MODEL", "@cf/black-forest-labs/flux-1-schnell"), bool(account and _first_key("CLOUDFLARE_API_TOKEN"))),
             ("runware-image", "Runware FLUX", "runware", os.environ.get("FROXY_RUNWARE_IMAGE_MODEL", "bfl:5@1"), bool(_first_key("RUNWARE_API_KEY", "RUNWARE_API_KEYS"))),
-            ("pollinations-image", "Pollinations FLUX", "pollinations", os.environ.get("FROXY_POLLINATIONS_MODEL", "flux"), bool(_first_key("POLLINATIONS_API_KEY", "POLLINATIONS_KEY"))),
+            ("pollinations-image", "Pollinations FLUX", "pollinations", os.environ.get("FROXY_POLLINATIONS_MODEL", "flux"), True),
         ]
         return [{
             "id": public_id,
