@@ -107,14 +107,17 @@ def create_dynamic_shopier_listing(
     # Ã–nceki aÃ§Ä±k kalanlarÄ± temizle
     cleanup_user_previous_topups(user_id)
 
-    token = FROXY_TOKEN
+    token = (os.environ.get("SHOPIER_FROXY_ACCESS_TOKEN") or "").strip()
+    if not token:
+        return {"success": False, "error": "Shopier erişim anahtarı yapılandırılmamış"}
+
     headers = {
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
     }
 
-    display_name = user_name or (f"@{username}" if username else f"MÃ¼ÅŸteri #{user_id}")
+    display_name = user_name or (f"@{username}" if username else f"Müşteri #{user_id}")
     clean_amount = round(float(amount), 2)
     
     is_credit = str(purpose).lower() == "credits"
@@ -147,7 +150,7 @@ def create_dynamic_shopier_listing(
         if res.status_code in [200, 201]:
             data = res.json()
             pid = str(data.get("id"))
-            pay_url = f"https://www.shopier.com/froxy/{pid}"
+            pay_url = data.get("url") or f"https://www.shopier.com/{pid}"
 
             if persist_local:
                 topups = load_active_topups()

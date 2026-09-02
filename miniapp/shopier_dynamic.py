@@ -128,7 +128,7 @@ def create_dynamic_shopier_listing(amount: float, user_id: int, user_name: str =
         if res.status_code in [200, 201]:
             data = res.json()
             pid = str(data.get("id"))
-            pay_url = f"https://www.shopier.com/keyvadi/{pid}"
+            pay_url = data.get("url") or f"https://www.shopier.com/{pid}"
 
             topups = load_active_topups()
             topups[pid] = {
