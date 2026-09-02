@@ -20,12 +20,7 @@ BASE_DIR = Path(__file__).resolve().parent
 ACTIVE_TOPUPS_FILE = BASE_DIR / "active_topups.json"
 
 # Froxy Shopier Bearer Token
-FROXY_TOKEN = (
-    os.environ.get("SHOPIER_FROXY_ACCESS_TOKEN")
-    or os.environ.get("SHOPIER_KEYVADI_ACCESS_TOKEN")
-    or os.environ.get("SHOPIER_BEARER_TOKEN")
-    or ""
-).strip()
+FROXY_TOKEN = os.environ.get("SHOPIER_FROXY_ACCESS_TOKEN", "").strip()
 FROXY_TOPUP_MEDIA_URL = os.environ.get(
     "FROXY_TOPUP_MEDIA_URL",
     "https://raw.githubusercontent.com/davhuse/froxy-bot/main/miniapp_froxy/assets/froxy_logo.png",
