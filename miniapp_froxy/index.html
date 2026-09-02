@@ -52,10 +52,9 @@
           <span class="balance-val dynamic-ai-credits">0</span>
         </div>
 
-        <!-- Wheel Bonus Trigger -->
-        <button class="wheel-icon-btn" onclick="openSpinModal()" title="Günlük Şans Çarkı">
-          <span>🎰</span>
-          <span class="spin-ready-badge">1</span>
+        <button class="daily-quota-pill" type="button" onclick="switchView('view-wallet')" title="Günlük ücretsiz haklar">
+          <span class="daily-quota-pill-label">Günlük</span>
+          <b id="headerDailyQuota">3 sohbet · 1 görsel</b>
         </button>
       </div>
     </header>
@@ -189,12 +188,20 @@
             <span class="header-icon-badge">🎨</span>
             <div>
               <h2>Froxy Vision & Görsel Stüdyosu</h2>
-              <p>Metinden 8K ultra-gerçekçi yapay zeka görselleri oluşturun.</p>
+              <p>Aktif sağlayıcılardan model seçerek yapay zekâ görselleri oluşturun.</p>
             </div>
           </div>
         </div>
 
         <div class="studio-card">
+          <label class="studio-label" for="imageModelSelect">Görsel Modeli</label>
+          <div class="image-model-picker">
+            <img id="imageModelLogo" src="assets/froxy_logo.png" alt="Görsel modeli">
+            <select id="imageModelSelect" class="studio-select" onchange="selectImageModel(this.value)">
+              <option value="">Aktif görsel modelleri yükleniyor…</option>
+            </select>
+          </div>
+
           <label class="studio-label">Görsel İstemi (Prompt)</label>
           <div class="prompt-input-wrap">
             <textarea id="imagePromptInput" class="studio-textarea" placeholder="Örn: Fütüristik siberpunk şehirde neon ışıklar altında yürüyen yapay zeka robotu, 8k render, unreal engine 5..." rows="3"></textarea>
@@ -225,7 +232,7 @@
           <!-- Generate Action Button -->
           <button id="generateImageBtn" class="generate-art-btn" onclick="generateAiImage()">
             <span class="btn-icon">⚡</span>
-            <span class="btn-text">Görseli Üret (20 Kredi)</span>
+            <span class="btn-text" id="imageGenerateCost">Görseli Üret</span>
           </button>
         </div>
 
@@ -237,10 +244,10 @@
           </div>
 
           <div id="imageResultContainer" class="image-result-box">
-            <img id="generatedImageEl" src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1000&q=80" alt="Generated Art" class="result-img">
+            <img id="generatedImageEl" src="assets/froxy_logo.png" alt="Froxy AI tarafından üretilen görsel" class="result-img result-placeholder">
             <div id="imageLoaderOverlay" class="image-loader-overlay" style="display:none;">
               <div class="cyber-spinner"></div>
-              <p>Nöral Fırçalar Çalışıyor... (Yaklaşık 3-5 sn)</p>
+              <p id="imageProgressText">Görsel işi hazırlanıyor…</p>
             </div>
           </div>
 
@@ -269,11 +276,12 @@
           </p>
 
           <div class="store-filter-tabs">
-            <button class="store-tab-btn active" onclick="filterStoreCategory('all', this)">Tümü (18)</button>
-            <button class="store-tab-btn" onclick="filterStoreCategory('chatgpt', this)">🤖 ChatGPT & Codex</button>
-            <button class="store-tab-btn" onclick="filterStoreCategory('gemini', this)">💎 Gemini Ultra</button>
-            <button class="store-tab-btn" onclick="filterStoreCategory('research', this)">🔍 Perplexity Pro</button>
-            <button class="store-tab-btn" onclick="filterStoreCategory('credits', this)">🪙 Token Paketleri</button>
+            <button class="store-tab-btn active" data-category="all" onclick="filterStoreCategory('all', this)">Tümü <span class="tab-count" id="storeCountAll">0</span></button>
+            <button class="store-tab-btn" data-category="chatgpt" onclick="filterStoreCategory('chatgpt', this)">ChatGPT & Codex <span class="tab-count" id="storeCountChatgpt">0</span></button>
+            <button class="store-tab-btn" data-category="gemini" onclick="filterStoreCategory('gemini', this)">Gemini <span class="tab-count" id="storeCountGemini">0</span></button>
+            <button class="store-tab-btn" data-category="perplexity" onclick="filterStoreCategory('perplexity', this)">Perplexity <span class="tab-count" id="storeCountPerplexity">0</span></button>
+            <button class="store-tab-btn" data-category="credits" onclick="filterStoreCategory('credits', this)">AI Kredi <span class="tab-count" id="storeCountCredits">0</span></button>
+            <button class="store-tab-btn" data-category="other" onclick="filterStoreCategory('other', this)">Diğer <span class="tab-count" id="storeCountOther">0</span></button>
           </div>
         </div>
 
@@ -345,33 +353,85 @@
       <!-- VIEW 5: 💳 CÜZDAN, BAKİYE & SİPARİŞLERİM -->
       <!-- ========================================== -->
       <section id="view-wallet" class="app-view">
-        <!-- Balance Overview Card -->
         <div class="wallet-hero-card">
           <div class="wallet-top-row">
-            <span class="wallet-id-badge" id="walletUserId">ID: 8845484139</span>
-            <span class="wallet-tier-badge">⚡ FROXY PRO ÜYE</span>
+            <span class="wallet-id-badge" id="walletUserId">Telegram doğrulanıyor…</span>
+            <span class="wallet-tier-badge">FROXY AI</span>
           </div>
-          <div class="wallet-balance-title">Mağaza Bakiyeniz</div>
+          <div class="wallet-balance-title">TL Mağaza Bakiyesi</div>
           <div class="wallet-balance-amount dynamic-balance">₺0.00</div>
-
-          <div class="wallet-quick-stats">
-            <div class="stat-item">
-              <span class="stat-num" id="totalOrdersCount">0</span>
-              <span class="stat-label">Toplam Sipariş</span>
-          <div class="wallet-balance-amount dynamic-balance">₺0.00</div>
-
           <div class="wallet-quick-stats">
             <div class="stat-item">
               <span class="stat-num" id="totalOrdersCount">0</span>
               <span class="stat-label">Toplam Sipariş</span>
             </div>
             <div class="stat-item">
-              <span class="stat-num" id="totalCreditsCount">0</span>
+              <span class="stat-num dynamic-ai-credits" id="totalCreditsCount">0</span>
               <span class="stat-label">AI Kredisi</span>
             </div>
             <div class="stat-item">
               <span class="stat-num" id="dailyQuotaCount">3+1</span>
               <span class="stat-label">Günlük Ücretsiz</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="wallet-section-box daily-rights-card">
+          <div class="section-title-row">
+            <h3>Günlük ücretsiz kullanım</h3>
+            <span class="instant-badge" id="quotaResetAt">İstanbul saatine göre yenilenir</span>
+          </div>
+          <div class="daily-rights-grid">
+            <div><b id="freeTextRemaining">3</b><span>Sohbet hakkı</span></div>
+            <div><b id="freeImageRemaining">1</b><span>Görsel hakkı</span></div>
+          </div>
+        </div>
+
+        <div class="wallet-section-box">
+          <div class="section-title-row">
+            <h3>TL bakiye yükle</h3>
+            <span class="instant-badge">Shopier güvenli ödeme</span>
+          </div>
+          <p class="section-desc">Bu bakiye mağazadaki lisans ve dijital ürün alımlarında kullanılır. AI kredisi ayrı tutulur.</p>
+          <div class="topup-amount-chips">
+            <button class="topup-chip" onclick="selectTopupAmount(50, this)">₺50</button>
+            <button class="topup-chip active" onclick="selectTopupAmount(100, this)">₺100</button>
+            <button class="topup-chip" onclick="selectTopupAmount(250, this)">₺250</button>
+            <button class="topup-chip" onclick="selectTopupAmount(500, this)">₺500</button>
+            <button class="topup-chip" onclick="selectTopupAmount(1000, this)">₺1.000</button>
+          </div>
+          <div class="custom-amount-row">
+            <span class="curr-symbol">₺</span>
+            <input type="number" min="10" step="1" id="customTopupInput" class="custom-amount-input" placeholder="Özel tutar" oninput="handleCustomAmountInput(this.value)">
+          </div>
+          <button id="dynamicPayBtn" class="pay-now-btn" onclick="initiateDynamicTopup()">Shopier ile güvenli bakiye yükle</button>
+        </div>
+
+        <div class="wallet-section-box">
+          <div class="section-title-row"><h3>FAST / Havale / EFT</h3></div>
+          <p class="section-desc">Ödeme sonrasında dekontu @FroxyDestekBOT üzerinden iletin.</p>
+          <div class="bank-card">
+            <div class="bank-row"><span class="bank-label">Banka</span><span class="bank-val">Enpara / QNB</span></div>
+            <div class="bank-row"><span class="bank-label">Alıcı</span><span class="bank-val">Habip Çelik</span></div>
+            <div class="bank-row iban-row"><span class="bank-label">IBAN</span><span class="bank-val mono-font" id="ibanText">TR48 0011 1000 0000 0127 7564 36</span><button class="copy-btn" onclick="copyIBAN()">Kopyala</button></div>
+          </div>
+        </div>
+
+        <div class="wallet-section-box">
+          <div class="section-title-row"><h3>Siparişlerim ve lisanslarım</h3></div>
+          <div id="ordersList" class="orders-list"></div>
+          <div id="ordersEmpty" class="orders-empty"><span>📭</span><p>Henüz siparişiniz bulunmuyor.</p></div>
+        </div>
+
+        <div class="support-card-banner">
+          <div class="support-text"><h4>Yardıma mı ihtiyacınız var?</h4><p>Sipariş ve ödeme desteği için @FroxyDestekBOT.</p></div>
+          <button class="support-btn" onclick="openSupportBot()">Destek</button>
+        </div>
+      </section>
+
+    </main>
+
+    <nav class="bottom-dock">
       <button class="dock-item active" data-view="view-chat" onclick="switchView('view-chat')">
         <div class="dock-icon">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
@@ -415,27 +475,6 @@
     <div class="modal-card">
       <button class="modal-close-btn" onclick="closeProductModal()">✕</button>
       <div id="productModalContent" class="modal-content"></div>
-    </div>
-  </div>
-
-  <!-- LUCKY SPIN MODAL -->
-  <div id="spinModal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeSpinModal()">
-    <div class="modal-card spin-card">
-      <button class="modal-close-btn" onclick="closeSpinModal()">✕</button>
-      <div class="spin-header">
-        <h3>🎰 Froxy Nöral Şans Çarkı</h3>
-        <p>Her 24 saatte bir ücretsiz çevirin, bakiye veya indirim kazanın!</p>
-      </div>
-
-      <div class="wheel-canvas-container">
-        <div class="wheel-pointer">▼</div>
-        <canvas id="wheelCanvas" width="280" height="280"></canvas>
-      </div>
-
-      <button id="spinActionBtn" class="spin-btn" onclick="spinWheel()">
-        <span>⚡ Çarkı Çevir</span>
-      </button>
-      <p id="spinCooldownMsg" class="spin-cooldown" style="display:none;"></p>
     </div>
   </div>
 

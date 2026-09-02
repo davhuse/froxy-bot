@@ -20,6 +20,40 @@ class GatewayError(RuntimeError):
     pass
 
 
+PROVIDER_LOGOS = {
+    "froxy": "assets/froxy_logo.png",
+    "openai": "assets/provider_openai.svg",
+    "anthropic": "assets/provider_anthropic.svg",
+    "google": "assets/provider_google.svg",
+    "gemini": "assets/provider_google.svg",
+    "meta": "assets/provider_meta.svg",
+    "groq": "assets/provider_groq.svg",
+    "nvidia": "assets/provider_nvidia.svg",
+    "together": "assets/provider_together.svg",
+    "cerebras": "assets/provider_cerebras.svg",
+    "sambanova": "assets/provider_sambanova.svg",
+    "openrouter": "assets/provider_openrouter.svg",
+    "cloudflare": "assets/provider_cloudflare.svg",
+    "huggingface": "assets/provider_huggingface.svg",
+    "aimlapi": "assets/provider_aimlapi.svg",
+    "runware": "assets/provider_runware.svg",
+    "pollinations": "assets/provider_pollinations.svg",
+}
+
+
+def _model_brand(provider_slug: str, model_id: str, name: str) -> str:
+    value = f"{model_id} {name}".lower()
+    if "anthropic" in value or "claude" in value:
+        return "anthropic"
+    if "openai" in value or "gpt-" in value or "o1-" in value or "o3-" in value:
+        return "openai"
+    if "google" in value or "gemini" in value or "gemma" in value:
+        return "google"
+    if "meta-llama" in value or "llama" in value:
+        return "meta"
+    return provider_slug if provider_slug in PROVIDER_LOGOS else ""
+
+
 def _first_key(*names: str) -> str:
     for name in names:
         raw = os.environ.get(name, "").strip()
@@ -163,6 +197,7 @@ class FroxyGateway:
         modality = str(architecture.get("modality") or raw.get("modality") or "text->text")
         public_id = f"{provider.slug}/{model_id}"
         name = str(raw.get("name") or raw.get("display_name") or model_id)
+        brand = _model_brand(provider.slug, model_id, name)
         context = int(_float(raw.get("context_length", raw.get("context_window", 0)), 0))
         return {
             "id": public_id,
@@ -170,6 +205,8 @@ class FroxyGateway:
             "name": name,
             "provider": provider.slug,
             "provider_label": provider.label,
+            "provider_logo": PROVIDER_LOGOS.get(brand, ""),
+            "capabilities": ["chat", *( ["vision"] if "image" in modality.lower() else [])],
             "context_length": context,
             "modality": modality,
             "supports_vision": "image" in modality.lower(),
@@ -266,6 +303,8 @@ class FroxyGateway:
                 "icon": icon,
                 "provider": "froxy",
                 "provider_label": "Froxy Modelleri",
+                "provider_logo": PROVIDER_LOGOS["froxy"],
+                "capabilities": ["chat", *( ["vision"] if target.get("supports_vision") else [])],
                 "provider_model_id": target["provider_model_id"],
                 "target_public_id": target["id"],
                 "fallback_targets": fallbacks,
@@ -287,7 +326,14 @@ class FroxyGateway:
     def provider_status(self) -> dict[str, dict[str, Any]]:
         self.refresh_catalog()
         with self._lock:
-            return json.loads(json.dumps(self._provider_status))
+            statuses = json.loads(json.dumps(self._provider_status))
+        image_providers = {row["provider"] for row in self.image_models() if row.get("active")}
+        for slug, status in statuses.items():
+            status["capabilities"] = ["chat", *( ["image"] if slug in image_providers else [])]
+            status["provider_logo"] = PROVIDER_LOGOS.get(slug, "")
+        for slug in image_providers - set(statuses):
+            statuses[slug] = {"provider": slug, "healthy": True, "configured": True, "models": 0, "capabilities": ["image"], "provider_logo": PROVIDER_LOGOS.get(slug, "")}
+        return statuses
 
     def public_catalog(self) -> dict[str, Any]:
         rows = self.refresh_catalog()
@@ -438,14 +484,47 @@ class FroxyGateway:
         usd_try, multiplier, credit_try = self._pricing_config()
         return max(1, int(math.ceil((usd * usd_try * multiplier) / credit_try)))
 
-    def generate_image(self, prompt: str, width: int = 512, height: int = 512) -> dict[str, Any]:
-        attempts = [
-            self._image_openai,
-            self._image_together,
-            self._image_cloudflare,
-            self._image_runware,
-            self._image_pollinations,
+    def image_models(self) -> list[dict[str, Any]]:
+        cost = self.image_credit_cost()
+        account = os.environ.get("CLOUDFLARE_ACCOUNT_ID", "").strip()
+        definitions = [
+            ("openai-image", "OpenAI Image", "openai", os.environ.get("FROXY_OPENAI_IMAGE_MODEL", "gpt-image-1"), bool(_first_key("OPENAI_IMAGE_KEY", "OPENAI_API_KEY"))),
+            ("together-image", "Together Image", "together", os.environ.get("FROXY_TOGETHER_IMAGE_MODEL", "stabilityai/stable-diffusion-xl-base-1.0"), bool(_first_key("TOGETHER_API_KEY", "TOGETHER_API_KEYS"))),
+            ("cloudflare-image", "Cloudflare FLUX", "cloudflare", os.environ.get("FROXY_CLOUDFLARE_IMAGE_MODEL", "@cf/black-forest-labs/flux-1-schnell"), bool(account and _first_key("CLOUDFLARE_API_TOKEN"))),
+            ("runware-image", "Runware FLUX", "runware", os.environ.get("FROXY_RUNWARE_IMAGE_MODEL", "bfl:5@1"), bool(_first_key("RUNWARE_API_KEY", "RUNWARE_API_KEYS"))),
+            ("pollinations-image", "Pollinations FLUX", "pollinations", os.environ.get("FROXY_POLLINATIONS_MODEL", "flux"), bool(_first_key("POLLINATIONS_API_KEY", "POLLINATIONS_KEY"))),
         ]
+        return [{
+            "id": public_id,
+            "name": name,
+            "provider": provider,
+            "provider_label": name.split(" Image", 1)[0],
+            "provider_logo": PROVIDER_LOGOS.get(provider, ""),
+            "provider_model": model,
+            "capabilities": ["text-to-image"],
+            "estimated_credits": cost,
+            "active": active,
+        } for public_id, name, provider, model, active in definitions]
+
+    def get_image_model(self, public_id: str) -> dict[str, Any]:
+        model = next((row for row in self.image_models() if row["id"] == str(public_id) and row.get("active")), None)
+        if not model:
+            raise GatewayError("Görsel modeli aktif değil")
+        return model
+
+    def generate_image(self, prompt: str, width: int = 512, height: int = 512, model_id: str | None = None) -> dict[str, Any]:
+        operations = {
+            "openai": self._image_openai,
+            "together": self._image_together,
+            "cloudflare": self._image_cloudflare,
+            "runware": self._image_runware,
+            "pollinations": self._image_pollinations,
+        }
+        active_models = [row for row in self.image_models() if row.get("active")]
+        if model_id:
+            selected = self.get_image_model(model_id)
+            active_models.sort(key=lambda row: 0 if row["id"] == selected["id"] else 1)
+        attempts = [operations[row["provider"]] for row in active_models]
         errors = []
         for operation in attempts:
             try:

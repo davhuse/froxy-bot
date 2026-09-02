@@ -60,6 +60,18 @@ class FakeGateway:
     def image_credit_cost(self):
         return 40
 
+    def image_models(self):
+        return [{
+            "id": "fake-image", "name": "Fake Image", "provider": "fake",
+            "provider_logo": "assets/provider_openai.svg", "capabilities": ["text-to-image"],
+            "estimated_credits": 40, "active": True,
+        }]
+
+    def get_image_model(self, model_id):
+        if model_id != "fake-image":
+            raise GatewayError("Görsel modeli aktif değil")
+        return self.image_models()[0]
+
     def provider_status(self):
         return {"fake": {"healthy": True}}
 
@@ -148,6 +160,20 @@ class FroxyApiTests(unittest.TestCase):
         self.assertEqual(0, user["ai_credits"])
         self.assertEqual(3, user["free_text_remaining"])
         self.assertEqual(1, user["free_image_remaining"])
+        self.assertIn("quota_reset_at", user)
+
+    def test_image_model_contract_contains_local_logo_and_capabilities(self):
+        response = self.client.get("/api/image-models")
+        self.assertEqual(200, response.status_code)
+        model = response.get_json()["models"][0]
+        self.assertEqual("fake-image", model["id"])
+        self.assertTrue(model["active"])
+        self.assertTrue(model["provider_logo"].startswith("assets/"))
+        self.assertIn("text-to-image", model["capabilities"])
+
+    def test_removed_wheel_endpoint_returns_gone(self):
+        response = self.client.post("/api/user/spin", headers=self.headers, json={})
+        self.assertEqual(410, response.status_code)
 
     def test_paid_chat_stream_settles_actual_credits(self):
         server.store.get_or_create_user({"id": 202, "first_name": "Test"})
@@ -195,10 +221,14 @@ class FroxyApiTests(unittest.TestCase):
         })
         self.assertAlmostEqual(0.2 / 1_000_000, model["prompt_usd_per_token"])
         self.assertAlmostEqual(0.3 / 1_000_000, model["completion_usd_per_token"])
+        self.assertTrue(model["provider_logo"].endswith("provider_together.svg"))
+        self.assertIn("chat", model["capabilities"])
 
     def test_shopier_products_keep_real_title_and_delivery_terms(self):
         products = server.load_products()
         self.assertEqual(18, len(products))
+        self.assertEqual(6, sum(1 for product in products if product["store_category"] == "credits"))
+        self.assertEqual(6, sum(1 for product in products if product["store_category"] == "gemini"))
         for product in products:
             self.assertIn(product["title"], product["description"])
             if product["category"] != "credits":

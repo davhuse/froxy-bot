@@ -39,7 +39,7 @@ function authHeaders() {
 // Global App State
 let state = {
   currentView: 'view-chat',
-  selectedModel: { id: 'froxy-fast', name: 'Froxy Hızlı', icon: '⚡' },
+  selectedModel: { id: 'froxy-fast', name: 'Froxy Hızlı', providerLogo: 'assets/froxy_logo.png' },
   models: [],
   chatId: (window.crypto?.randomUUID?.() || `chat-${Date.now()}`),
   chatMessages: [],
@@ -51,8 +51,10 @@ let state = {
   imagePrompt: '',
   selectedStyle: 'photoreal',
   selectedRatio: '1:1',
+  imageModels: [],
+  selectedImageModel: null,
   isGeneratingImage: false,
-  lastGeneratedImageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1000&q=80',
+  lastGeneratedImageUrl: '',
 
   // Store & Products State
   products: [],
@@ -66,9 +68,9 @@ let state = {
   aiCredits: 0,
   freeTextRemaining: 3,
   freeImageRemaining: 1,
+  quotaResetAt: '',
   orders: [],
-  selectedTopupAmount: 100,
-  canSpin: true
+  selectedTopupAmount: 100
 };
 
 // Haptic feedback helper
@@ -105,9 +107,8 @@ function formatTL(num) {
 // DOM Ready Init
 document.addEventListener('DOMContentLoaded', async () => {
   renderUserInfo();
-  drawWheel();
   // The picker must not wait for Telegram profile synchronization.
-  const startupTasks = [loadModels(), loadStoreProducts()];
+  const startupTasks = [loadModels(), loadImageModels(), loadStoreProducts()];
   if (tgUser && hasUserAuth) startupTasks.push(registerAndSyncUserProfile());
   await Promise.allSettled(startupTasks);
   if (tgUser && hasUserAuth) startBackgroundBalanceSync();
@@ -133,7 +134,7 @@ function renderUserInfo() {
   if (tgUser) {
     if (walletIdEl) walletIdEl.textContent = `ID: ${tgUser.id}`;
   } else {
-    if (walletIdEl) walletIdEl.textContent = 'ID: 8845484139';
+    if (walletIdEl) walletIdEl.textContent = 'Telegram Mini App üzerinden giriş yapın';
   }
 }
 
@@ -152,8 +153,8 @@ async function registerAndSyncUserProfile() {
         state.aiCredits = Number(data.user.ai_credits) || 0;
         state.freeTextRemaining = Number(data.user.free_text_remaining) || 0;
         state.freeImageRemaining = Number(data.user.free_image_remaining) || 0;
+        state.quotaResetAt = data.user.quota_reset_at || '';
         state.orders = Array.isArray(data.user.orders) ? data.user.orders : [];
-        state.canSpin = data.user.can_spin ?? true;
         updateBalanceUI();
         renderOrders();
       }
@@ -178,6 +179,17 @@ function updateBalanceUI() {
   const quotaText = `${state.freeTextRemaining} mesaj + ${state.freeImageRemaining} görsel`;
   const quotaEl = document.getElementById('dailyQuotaCount');
   if (quotaEl) quotaEl.textContent = `${state.freeTextRemaining}+${state.freeImageRemaining}`;
+  const headerQuotaEl = document.getElementById('headerDailyQuota');
+  if (headerQuotaEl) headerQuotaEl.textContent = `${state.freeTextRemaining} sohbet · ${state.freeImageRemaining} görsel`;
+  const freeTextEl = document.getElementById('freeTextRemaining');
+  if (freeTextEl) freeTextEl.textContent = state.freeTextRemaining;
+  const freeImageEl = document.getElementById('freeImageRemaining');
+  if (freeImageEl) freeImageEl.textContent = state.freeImageRemaining;
+  const resetEl = document.getElementById('quotaResetAt');
+  if (resetEl && state.quotaResetAt) {
+    const resetDate = new Date(state.quotaResetAt);
+    resetEl.textContent = Number.isNaN(resetDate.getTime()) ? 'İstanbul saatine göre yenilenir' : `${resetDate.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })} yenilenir`;
+  }
   const tickerEl = document.getElementById('freeQuotaTicker');
   if (tickerEl) tickerEl.textContent = quotaText;
 }
@@ -201,6 +213,7 @@ function startBackgroundBalanceSync() {
             state.aiCredits = Number(data.user.ai_credits) || 0;
             state.freeTextRemaining = Number(data.user.free_text_remaining) || 0;
             state.freeImageRemaining = Number(data.user.free_image_remaining) || 0;
+            state.quotaResetAt = data.user.quota_reset_at || '';
             updateBalanceUI();
             if (Array.isArray(data.user.orders)) {
               state.orders = data.user.orders;
@@ -228,7 +241,7 @@ async function loadModels() {
         const filtered = state.models.filter(model => !needle || [model.name, model.provider_label, model.provider].join(' ').toLocaleLowerCase('tr-TR').includes(needle));
         const rows = filtered.map((model, index) => `
         <button type="button" class="model-opt ${model.id === state.selectedModel.id || (!state.selectedModel.id && index === 0) ? 'active' : ''}" data-model-id="${escapeHtml(model.id)}">
-          <span class="opt-icon">${model.icon || (model.is_froxy ? '⚡' : '🤖')}</span>
+          <span class="opt-icon">${renderProviderLogo(model.provider_logo, model.provider_label || model.provider)}</span>
           <span class="opt-body">
             <span class="opt-title">${escapeHtml(model.name)} ${model.is_froxy ? '<span class="opt-badge">FROXY</span>' : ''}</span>
             <span class="opt-desc">${escapeHtml(model.provider_label || model.provider)} · ${model.is_froxy ? 'Günlük ücretsiz kota' : `~${Number(model.estimated_1k_credits || 0).toLocaleString('tr-TR')} kredi`}</span>
@@ -240,7 +253,7 @@ async function loadModels() {
         menu.querySelectorAll('[data-model-id]').forEach(button => {
         button.addEventListener('click', () => {
           const model = state.models.find(row => row.id === button.dataset.modelId);
-          if (model) selectModel(model.id, model.name, model.icon || (model.is_froxy ? '⚡' : '🤖'));
+          if (model) selectModel(model.id, model.name, model.provider_logo, model.provider_label);
         });
       });
       };
@@ -249,7 +262,7 @@ async function loadModels() {
       renderRows();
     }
     const first = state.models.find(model => model.id === state.selectedModel.id) || state.models[0];
-    if (first) selectModel(first.id, first.name, first.icon || (first.is_froxy ? '⚡' : '🤖'));
+    if (first) selectModel(first.id, first.name, first.provider_logo, first.provider_label);
   } catch (error) {
     if (menu) menu.innerHTML = '<div class="model-opt"><span class="opt-body"><span class="opt-title">Model kataloğu kullanılamıyor</span><span class="opt-desc">Biraz sonra tekrar deneyin.</span></span></div>';
     showToast(error.message || 'Model kataloğu alınamadı', '⚠️');
@@ -291,15 +304,15 @@ function toggleModelDropdown() {
   }
 }
 
-function selectModel(id, name, icon, desc) {
+function selectModel(id, name, providerLogo, providerLabel) {
   triggerHaptic('medium');
-  state.selectedModel = { id, name, icon };
+  state.selectedModel = { id, name, providerLogo };
   
   const iconEl = document.getElementById('selectedModelIcon');
   const titleEl = document.getElementById('selectedModelTitle');
   const statusEl = document.getElementById('headerModelStatus');
 
-  if (iconEl) iconEl.textContent = icon;
+  if (iconEl) iconEl.innerHTML = renderProviderLogo(providerLogo, providerLabel || 'AI');
   if (titleEl) titleEl.textContent = name;
   if (statusEl) statusEl.textContent = `⚡ ${name} Aktif`;
 
@@ -307,7 +320,12 @@ function selectModel(id, name, icon, desc) {
   if (menu) menu.classList.remove('show');
   document.getElementById('modelSelectorButton')?.setAttribute('aria-expanded', 'false');
 
-  showToast(`${name} modeline geçildi!`, icon);
+  showToast(`${name} modeline geçildi!`, '✓');
+}
+
+function renderProviderLogo(path, label = 'AI') {
+  if (!path) return '<span class="neutral-ai-logo">AI</span>';
+  return `<img class="provider-logo-img" src="${escapeHtml(path)}" alt="${escapeHtml(label)}" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'neutral-ai-logo',textContent:'AI'}))">`;
 }
 
 function toggleChatFeature(feat) {
@@ -491,29 +509,41 @@ function formatMarkdown(text) {
 }
 
 function escapeHtml(text) {
-  return text
+  return String(text ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
 }
 
-function generateBotResponse(prompt, modelId) {
-  const p = prompt.toLowerCase();
-
-  if (p.includes('satış') || p.includes('reklam') || p.includes('instagram')) {
-    return `🔥 **Froxy AI // Yüksek Dönüşümlü Satış ve Reklam Stratejisi**\n\n1. **Kanca (0-3 sn):** *"Her ay onlarca yapay zeka aboneliğine yüzlerce dolar ödemekten sıkılmadınız mı?"*\n2. **Değer Önerisi:** Froxy AI ile tüm GPT-4o, Claude 3.5 ve Gemini modellerini tek panelden kullandığın kadar krediyle yönet!\n3. **Çağrı (CTA):** *Hemen aşağıdaki Mağaza sekmesinden 1-tıkla lisansını al, anında teslim edilsin.*\n\n💡 *İpucu: Reels videolarında metni ekranda büyük puntolarla vurgulamak izlenme süresini %40 artırır.*`;
-  }
-
-  if (p.includes('kod') || p.includes('python') || p.includes('bot')) {
-    return `💻 **Python Telegram Botu Hızlı Başlangıç Kodu:**\n\n\`\`\`python\nimport telebot\n\nBOT_TOKEN = "BURAYA_TOKEN_GIRIN"\nbot = telebot.TeleBot(BOT_TOKEN)\n\n@bot.message_handler(commands=['start'])\ndef send_welcome(message):\n    bot.reply_to(message, "⚡ Froxy AI Botuna Hoş Geldiniz! Nasıl yardımcı olabilirim?")\n\nprint("Bot aktif...")\nbot.infinity_polling()\n\`\`\`\n\n🚀 Bu kodu çalıştırmak için terminalinizde \`pip install pyTelegramBotAPI\` komutunu kullanabilirsiniz.`;
-  }
-
-  return `🤖 **Froxy AI (${state.selectedModel.name}):**\n\nSorunuzu başarıyla analiz ettim! **${prompt}** konusu hakkında size en doğru ve güncel bilgileri sağlamak için buradayım.\n\nİşlemi bir adım öteye taşımak için:\n• İlgili metin veya görsel üretimi yapabiliriz.\n• Mağazamızdan **ChatGPT Plus** veya **Gemini Ultra** lisansı temin ederek sınırsız hızın keyfini çıkarabilirsiniz!`;
-}
-
 // -------------------------------------------------------------
 // VIEW 2: IMAGE STUDIO ENGINE
 // -------------------------------------------------------------
+async function loadImageModels() {
+  const select = document.getElementById('imageModelSelect');
+  try {
+    const response = await fetch(api('/api/image-models'), { headers: authHeaders() });
+    const data = await response.json();
+    if (!response.ok || !data.success) throw new Error(data.error || 'Görsel modelleri alınamadı');
+    state.imageModels = Array.isArray(data.models) ? data.models.filter(model => model.active) : [];
+    if (!state.imageModels.length) throw new Error('Aktif görsel modeli bulunamadı');
+    if (select) select.innerHTML = state.imageModels.map(model => `<option value="${escapeHtml(model.id)}">${escapeHtml(model.name)} · ~${Number(model.estimated_credits || 0).toLocaleString('tr-TR')} kredi</option>`).join('');
+    selectImageModel(state.imageModels[0].id);
+  } catch (error) {
+    if (select) select.innerHTML = '<option value="">Görsel sağlayıcısı şu anda kullanılamıyor</option>';
+    const button = document.getElementById('generateImageBtn');
+    if (button) button.disabled = true;
+  }
+}
+
+function selectImageModel(modelId) {
+  const model = state.imageModels.find(item => item.id === modelId) || null;
+  state.selectedImageModel = model;
+  const logo = document.getElementById('imageModelLogo');
+  if (logo && model?.provider_logo) logo.src = model.provider_logo;
+  const cost = document.getElementById('imageGenerateCost');
+  if (cost) cost.textContent = model ? `Görseli Üret · ~${Number(model.estimated_credits || 0).toLocaleString('tr-TR')} kredi` : 'Görseli Üret';
+}
+
 function setImageStyle(styleKey, btn) {
   triggerHaptic('light');
   state.selectedStyle = styleKey;
@@ -547,6 +577,10 @@ async function generateAiImage() {
     showToast('Lütfen üretmek istediğiniz görseli tarif edin!', '⚠️');
     return;
   }
+  if (!state.selectedImageModel) {
+    showToast('Aktif bir görsel modeli seçin', '⚠️');
+    return;
+  }
 
   triggerHaptic('heavy');
   state.isGeneratingImage = true;
@@ -566,6 +600,7 @@ async function generateAiImage() {
       headers: authHeaders(),
       body: JSON.stringify({
         request_id: window.crypto?.randomUUID?.() || `img-${Date.now()}`,
+        model: state.selectedImageModel.id,
         prompt: `${prompt}, ${state.selectedStyle} style`,
         style: state.selectedStyle,
         ratio: state.selectedRatio,
@@ -590,7 +625,10 @@ async function generateAiImage() {
     }
     if (!completed?.image_url) throw new Error('Görsel üretimi zaman aşımına uğradı');
     state.lastGeneratedImageUrl = completed.image_url;
-    if (imgEl) imgEl.src = completed.image_url;
+    if (imgEl) {
+      imgEl.src = completed.image_url;
+      imgEl.classList.remove('result-placeholder');
+    }
     if (statusTag) statusTag.textContent = 'Tamamlandı';
     showToast('Görseliniz başarıyla üretildi!', '🎨');
     triggerHaptic('success');
@@ -635,11 +673,25 @@ async function loadStoreProducts() {
     const data = await res.json();
     if (data.success && data.products) {
       state.products = data.products;
+      updateStoreCategoryCounts();
       renderStoreProducts();
     }
   } catch (e) {
     console.log('Error loading products:', e);
   }
+}
+
+function updateStoreCategoryCounts() {
+  const counts = { all: state.products.length, chatgpt: 0, gemini: 0, perplexity: 0, credits: 0, other: 0 };
+  state.products.forEach(product => {
+    const category = product.store_category || 'other';
+    counts[category] = (counts[category] || 0) + 1;
+  });
+  const ids = { all: 'storeCountAll', chatgpt: 'storeCountChatgpt', gemini: 'storeCountGemini', perplexity: 'storeCountPerplexity', credits: 'storeCountCredits', other: 'storeCountOther' };
+  Object.entries(ids).forEach(([key, id]) => {
+    const element = document.getElementById(id);
+    if (element) element.textContent = counts[key] || 0;
+  });
 }
 
 function filterStoreCategory(cat, btn) {
@@ -662,7 +714,7 @@ function renderStoreProducts() {
   let list = state.products;
 
   if (state.selectedCategory !== 'all') {
-    list = list.filter(p => p.category === state.selectedCategory);
+    list = list.filter(p => p.store_category === state.selectedCategory);
   }
 
   if (state.searchQuery) {
@@ -699,7 +751,7 @@ function renderStoreProducts() {
         </div>
 
         <button class="buy-action-btn" onclick="directBuyProduct('${p.id}')">
-          <span>${p.category === 'credits' ? '🪙 AI Kredisi Al' : '💳 Bakiyeyle Satın Al'}</span>
+          <span>${p.store_category === 'credits' ? '🪙 AI Kredisi Al' : '💳 Bakiyeyle Satın Al'}</span>
         </button>
       </div>
     </div>
@@ -710,7 +762,7 @@ async function directBuyProduct(productId) {
   triggerHaptic('medium');
   const p = state.products.find(item => String(item.id) === String(productId));
   if (!p) return;
-  if (p.category === 'credits') {
+  if (p.store_category === 'credits') {
     await buyCreditPackage(productId);
     return;
   }
@@ -754,7 +806,7 @@ function openProductModal(productId) {
       </div>
 
       <div style="display:flex; flex-direction:column; gap: 10px;">
-        ${p.category === 'credits' ? `
+        ${p.store_category === 'credits' ? `
           <button class="buy-action-btn" style="padding:14px; font-size:14px;" onclick="buyCreditPackage('${p.id}')">
             <span>⚡ Shopier ile ${Number(p.ai_credits || 0).toLocaleString('tr-TR')} AI Kredisi Al</span>
           </button>
@@ -818,7 +870,7 @@ async function buyWithWalletBalance(productId) {
 
 async function buyCreditPackage(productId) {
   const p = state.products.find(item => String(item.id) === String(productId));
-  if (!p || p.category !== 'credits') return;
+  if (!p || p.store_category !== 'credits') return;
   triggerHaptic('medium');
   try {
     const response = await fetch(api('/api/credits/create-checkout'), {
@@ -969,113 +1021,6 @@ function openSupportBot() {
   } else {
     window.open('https://t.me/FroxyDestekBOT', '_blank');
   }
-}
-
-// -------------------------------------------------------------
-// LUCKY WHEEL OF FORTUNE
-// -------------------------------------------------------------
-const wheelPrizes = [
-  { label: '₺5 Bakiye', value: 5, color: '#070A14', textColor: '#00F0FF' },
-  { label: '₺10 Bakiye', value: 10, color: '#10B981', textColor: '#000000' },
-  { label: 'Tekrar Dene', value: 0, color: '#070A14', textColor: '#94A3B8' },
-  { label: '₺25 Bakiye', value: 25, color: '#8B5CF6', textColor: '#FFFFFF' },
-  { label: '%20 İndirim', value: 'coupon', color: '#070A14', textColor: '#F59E0B' },
-  { label: '₺50 Bakiye', value: 50, color: '#00F0FF', textColor: '#000000' }
-];
-
-let wheelAngle = 0;
-let isSpinning = false;
-
-function drawWheel() {
-  const canvas = document.getElementById('wheelCanvas');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  const numSlices = wheelPrizes.length;
-  const sliceAngle = (2 * Math.PI) / numSlices;
-  const radius = canvas.width / 2;
-
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  for (let i = 0; i < numSlices; i++) {
-    const start = wheelAngle + i * sliceAngle;
-    const end = start + sliceAngle;
-
-    ctx.beginPath();
-    ctx.moveTo(radius, radius);
-    ctx.arc(radius, radius, radius - 4, start, end);
-    ctx.closePath();
-
-    ctx.fillStyle = wheelPrizes[i].color;
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(0, 240, 255, 0.4)';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    ctx.save();
-    ctx.translate(radius, radius);
-    ctx.rotate(start + sliceAngle / 2);
-    ctx.textAlign = 'right';
-    ctx.fillStyle = wheelPrizes[i].textColor;
-    ctx.font = 'bold 12px Plus Jakarta Sans';
-    ctx.fillText(wheelPrizes[i].label, radius - 24, 4);
-    ctx.restore();
-  }
-}
-
-function openSpinModal() {
-  triggerHaptic('light');
-  drawWheel();
-  const modal = document.getElementById('spinModal');
-  if (modal) modal.style.display = 'flex';
-}
-
-function closeSpinModal() {
-  const modal = document.getElementById('spinModal');
-  if (modal) modal.style.display = 'none';
-}
-
-function spinWheel() {
-  if (isSpinning || !state.canSpin) return;
-  isSpinning = true;
-  triggerHaptic('heavy');
-
-  const winIndex = Math.floor(Math.random() * wheelPrizes.length);
-  const prize = wheelPrizes[winIndex];
-
-  const totalRounds = 5 + Math.floor(Math.random() * 3);
-  const sliceAngle = (2 * Math.PI) / wheelPrizes.length;
-  const targetAngle = totalRounds * 2 * Math.PI + (wheelPrizes.length - winIndex - 0.5) * sliceAngle - Math.PI / 2;
-
-  const startTime = performance.now();
-  const duration = 4000;
-
-  function animate(now) {
-    const elapsed = now - startTime;
-    const progress = Math.min(elapsed / duration, 1);
-    const easeOut = 1 - Math.pow(1 - progress, 3);
-
-    wheelAngle = easeOut * targetAngle;
-    drawWheel();
-
-    if (progress < 1) {
-      requestAnimationFrame(animate);
-    } else {
-      isSpinning = false;
-      state.canSpin = false;
-
-      if (prize.value > 0) {
-        state.walletBalance += prize.value;
-        updateBalanceUI();
-        showPurchaseSuccessModal("Tebrikler! 🎉", `Şans çarkından ${prize.label} kazandınız! Bakiyenize eklendi.`);
-      } else if (prize.value === 'coupon') {
-        showPurchaseSuccessModal("İndirim Kodu Kazandınız! 🎟️", "Tebrikler! %20 indirim kuponunuz: FROXY20");
-      } else {
-        showToast("Şansını yarın tekrar dene!", '🤖');
-      }
-    }
-  }
-
-  requestAnimationFrame(animate);
 }
 
 // -------------------------------------------------------------

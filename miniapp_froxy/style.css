@@ -220,36 +220,27 @@ body {
   color: var(--accent-cyan);
 }
 
-.wheel-icon-btn {
-  position: relative;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
+.daily-quota-pill {
+  min-height: 36px;
+  padding: 5px 10px;
+  border-radius: var(--radius-md);
   background: rgba(124, 58, 237, 0.15);
   border: 1px solid var(--border-violet);
   color: #FFF;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: 9px;
   cursor: pointer;
+  white-space: nowrap;
 }
 
-.spin-ready-badge {
-  position: absolute;
-  top: -3px;
-  right: -3px;
-  background: var(--accent-emerald);
-  color: #000;
-  font-size: 10px;
-  font-weight: 900;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+.daily-quota-pill-label { color: var(--text-muted); font-weight: 700; }
+.daily-quota-pill b { color: var(--accent-cyan); font-size: 9.5px; }
+
+.provider-logo-img { width: 26px; height: 26px; object-fit: contain; border-radius: 7px; }
+.neutral-ai-logo { display: inline-flex; width: 26px; height: 26px; align-items: center; justify-content: center; border: 1px solid var(--border-glass); border-radius: 7px; color: var(--text-secondary); font-size: 9px; font-weight: 900; }
 
 /* TELEMETRY TICKER */
 .telemetry-bar {
@@ -1332,6 +1323,18 @@ body {
   border-top: 1px solid var(--border-glass);
 }
 
+.daily-rights-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.daily-rights-grid > div { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 14px; border: 1px solid var(--border-glass); border-radius: var(--radius-md); background: rgba(0, 240, 255, 0.05); }
+.daily-rights-grid b { font-size: 24px; color: var(--accent-cyan); }
+.daily-rights-grid span { font-size: 11px; color: var(--text-secondary); }
+
+.image-model-picker { display: flex; align-items: center; gap: 10px; padding: 9px 11px; margin-bottom: 14px; border: 1px solid var(--border-glass); border-radius: var(--radius-md); background: var(--bg-input); }
+.image-model-picker img { width: 34px; height: 34px; object-fit: contain; border-radius: 8px; }
+.studio-select { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: #fff; font: 700 12px var(--font-sans); }
+.studio-select option { background: #0b1020; color: #fff; }
+.result-placeholder { object-fit: contain !important; padding: 38px; opacity: .68; }
+.tab-count { display: inline-flex; min-width: 18px; justify-content: center; color: var(--accent-cyan); }
+
 .stat-item {
   display: flex;
   flex-direction: column;
@@ -1707,62 +1710,6 @@ body {
   font-size: 13px;
 }
 
-/* SPIN MODAL */
-.spin-card {
-  text-align: center;
-}
-
-.spin-header h3 {
-  font-family: var(--font-heading);
-  font-size: 18px;
-  font-weight: 900;
-  color: #FFF;
-  margin-bottom: 4px;
-}
-
-.spin-header p {
-  font-size: 12px;
-  color: var(--text-secondary);
-  margin-bottom: 14px;
-}
-
-.wheel-canvas-container {
-  position: relative;
-  width: 280px;
-  height: 280px;
-  margin: 0 auto 16px;
-}
-
-.wheel-pointer {
-  position: absolute;
-  top: -6px;
-  left: 50%;
-  transform: translateX(-50%);
-  color: var(--accent-cyan);
-  font-size: 22px;
-  z-index: 10;
-  filter: drop-shadow(0 2px 6px rgba(0,240,255,0.8));
-}
-
-.spin-btn {
-  width: 100%;
-  padding: 12px;
-  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-brand));
-  border: none;
-  border-radius: var(--radius-md);
-  color: #000;
-  font-family: var(--font-heading);
-  font-size: 14px;
-  font-weight: 900;
-  cursor: pointer;
-}
-
-.spin-cooldown {
-  font-size: 11px;
-  color: var(--accent-amber);
-  margin-top: 8px;
-}
-
 /* SUCCESS MODAL */
 .success-card {
   text-align: center;
@@ -1849,7 +1796,7 @@ body {
   .app-view { padding: 12px; }
   .brand-status { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .balance-chip { padding: 6px 8px; gap: 4px; }
-  .wheel-icon-btn { width: 34px; height: 34px; }
+  .daily-quota-pill { display: none; }
   .quick-prompts-grid { grid-template-columns: 1fr 1fr; }
   .model-dropdown-menu { position: fixed; top: auto; bottom: calc(var(--dock-height) + 18px); left: 12px; right: 12px; max-height: 66vh; border-radius: 20px; }
 }

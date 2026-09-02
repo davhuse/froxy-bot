@@ -12,7 +12,7 @@ import os
 import threading
 import time
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Callable
 from zoneinfo import ZoneInfo
 
@@ -55,6 +55,11 @@ def _utc_ts() -> int:
 def _quota_day(now: float | None = None) -> str:
     stamp = datetime.fromtimestamp(now or time.time(), tz=ISTANBUL)
     return stamp.strftime("%Y-%m-%d")
+
+
+def _quota_reset_at(now: float | None = None) -> str:
+    stamp = datetime.fromtimestamp(now or time.time(), tz=ISTANBUL)
+    return (stamp.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)).isoformat()
 
 
 def _trim_map(data: dict[str, Any], limit: int) -> dict[str, Any]:
@@ -231,6 +236,7 @@ class FroxyStore:
         safe["wallet_balance"] = round(int(safe.get("wallet_kurus", 0)) / 100, 2)
         safe["free_text_remaining"] = max(0, 3 - int(safe.get("free_text_used", 0)))
         safe["free_image_remaining"] = max(0, 1 - int(safe.get("free_image_used", 0)))
+        safe["quota_reset_at"] = _quota_reset_at()
         safe["orders"] = list(reversed(safe.get("orders", [])))
         return safe
 

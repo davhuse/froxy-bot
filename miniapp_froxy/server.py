@@ -11,7 +11,6 @@ import json
 import hashlib
 import hmac
 import os
-import random
 import socket
 import threading
 import time
@@ -147,6 +146,19 @@ def _credit_amount_for_product(product: dict) -> int:
     return max(1, int(round(float(product.get("price_num", 0)) / _credit_try_value())))
 
 
+def _store_category(product: dict) -> str:
+    title = str(product.get("title") or "").lower()
+    if str(product.get("id") or "").startswith("474081"):
+        return "credits"
+    if "chatgpt" in title or "codex" in title:
+        return "chatgpt"
+    if "gemini" in title or "antigravity" in title:
+        return "gemini"
+    if "perplexity" in title:
+        return "perplexity"
+    return "other"
+
+
 def load_products() -> list[dict]:
     if not PRODUCTS_DB_PATH.exists():
         return []
@@ -155,20 +167,33 @@ def load_products() -> list[dict]:
     result = []
     for raw in rows:
         product = dict(raw)
-        if product.get("category") == "credits":
+        product["store_category"] = _store_category(product)
+        if product["store_category"] == "credits":
+            product["category"] = "credits"
             credits = _credit_amount_for_product(product)
+            formatted_credits = f"{credits:,}".replace(",", ".")
             product.update({
                 "ai_credits": credits,
-                "badge": f"🪙 {credits:,} AI Kredi".replace(",", "."),
+                "badge": f"🪙 {formatted_credits} AI Kredi",
                 "model_tag": "Gerçek kullanıma göre",
+                "image": "assets/froxy_logo.png",
                 "delivery_type": "ai_credit",
                 "delivery_label": "⚡ Ödeme sonrası anında AI kredisi",
-                "description": f"{product.get('title', 'Froxy AI kredi paketi')} — ödeme onayından sonra hesabınıza {credits:,} AI kredisi yüklenir. Kullanım, seçilen model ve gerçek token tüketimine göre hesaplanır.".replace(",", "."),
+                "description": f"{product.get('title', 'Froxy AI kredi paketi')} — ödeme onayından sonra hesabınıza {formatted_credits} AI kredisi yüklenir. Kullanım, seçilen model ve gerçek token tüketimine göre hesaplanır.",
             })
         else:
-            if "sınırsız" in str(product.get("badge", "")).lower():
-                product["badge"] = "💎 1 Aylık Erişim"
+            product["category"] = "ai"
+            category_labels = {
+                "chatgpt": ("OPENAI ÜRÜNÜ", "assets/provider_openai.svg"),
+                "gemini": ("GOOGLE GEMINI", "assets/provider_google.svg"),
+                "perplexity": ("PERPLEXITY", "assets/provider_perplexity.svg"),
+                "other": ("FROXY ÜRÜNÜ", "assets/froxy_logo.png"),
+            }
+            badge, image = category_labels[product["store_category"]]
             product.update({
+                "badge": badge,
+                "model_tag": "Shopier ürünü",
+                "image": image,
                 "delivery_type": "stock_or_manual",
                 "delivery_label": "Stoktan otomatik veya 1–3 iş günü manuel",
                 "manual_delivery_sla": "1–3 iş günü",
@@ -230,7 +255,7 @@ def get_products():
     query = request.args.get("q", "").lower().strip()
     products = load_products()
     if category and category != "all":
-        products = [p for p in products if p.get("category") == category]
+        products = [p for p in products if p.get("store_category") == category]
     if query:
         products = [p for p in products if query in p.get("title", "").lower() or query in p.get("description", "").lower()]
     return jsonify({"success": True, "count": len(products), "products": products})
@@ -278,6 +303,15 @@ def provider_status():
     if error:
         return error
     return jsonify({"success": True, "providers": gateway.provider_status()})
+
+
+@app.route("/api/image-models", methods=["GET"])
+def image_models():
+    visitor = request.headers.get("X-Forwarded-For", request.remote_addr or "anonymous").split(",")[0].strip()
+    if not _rate_limit("image-models", visitor, 30):
+        return jsonify({"success": False, "error": "Çok fazla görsel model isteği"}), 429
+    models = [row for row in gateway.image_models() if row.get("active")]
+    return jsonify({"success": True, "count": len(models), "models": models})
 
 
 @app.route("/api/chat", methods=["POST"])
@@ -373,7 +407,7 @@ def _submit_image_job(job: dict) -> None:
     def run():
         try:
             store.update_image_job(job_id, {"status": "running", "started_at": int(time.time())})
-            result = gateway.generate_image(job["prompt"], int(job["width"]), int(job["height"]))
+            result = gateway.generate_image(job["prompt"], int(job["width"]), int(job["height"]), str(job.get("model") or ""))
             if job.get("billing_kind") == "credits":
                 store.settle_credits(int(job["user_id"]), job["request_id"], int(job["reserved_credits"]), {"provider": result.get("provider"), "provider_model": result.get("model")})
             store.update_image_job(job_id, {"status": "completed", "image_url": result["image_url"], "provider": result.get("provider"), "provider_model": result.get("model"), "completed_at": int(time.time())})
@@ -404,6 +438,11 @@ def create_image():
         return jsonify({"success": False, "error": "Görsel açıklaması çok kısa"}), 400
     request_id = str(data.get("request_id") or uuid.uuid4().hex)[:120]
     job_id = str(data.get("job_id") or uuid.uuid4().hex)[:80]
+    model_id = str(data.get("model") or "")[:80]
+    try:
+        image_model = gateway.get_image_model(model_id)
+    except GatewayError as exc:
+        return jsonify({"success": False, "error": str(exc)}), 400
     use_free = data.get("use_free", True) is not False
     billing_kind = "free"
     reserved = 0
@@ -420,7 +459,7 @@ def create_image():
         except InsufficientBalance as exc:
             return jsonify({"success": False, "error": str(exc)}), 402
     width, height = _image_dimensions(str(data.get("ratio") or "1:1"), billing_kind == "free")
-    job = store.create_image_job(user_id, {"job_id": job_id, "request_id": request_id, "prompt": prompt, "style": str(data.get("style") or "auto")[:40], "ratio": str(data.get("ratio") or "1:1")[:10], "width": width, "height": height, "billing_kind": billing_kind, "reserved_credits": reserved})
+    job = store.create_image_job(user_id, {"job_id": job_id, "request_id": request_id, "model": image_model["id"], "prompt": prompt, "style": str(data.get("style") or "auto")[:40], "ratio": str(data.get("ratio") or "1:1")[:10], "width": width, "height": height, "billing_kind": billing_kind, "reserved_credits": reserved})
     _submit_image_job(job)
     return jsonify({"success": True, "job": job}), 202
 
@@ -490,7 +529,7 @@ def create_credit_checkout():
         return jsonify({"success": False, "error": "Shopier ödeme altyapısı henüz yapılandırılmadı"}), 503
     data = request.get_json(silent=True) or {}
     product_id = str(data.get("product_id") or "")
-    product = next((row for row in load_products() if str(row.get("id")) == product_id and row.get("category") == "credits"), None)
+    product = next((row for row in load_products() if str(row.get("id")) == product_id and row.get("store_category") == "credits"), None)
     if not product:
         return jsonify({"success": False, "error": "Kredi paketi bulunamadı"}), 404
     idem = str(data.get("idempotency_key") or uuid.uuid4().hex)[:120]
@@ -652,13 +691,7 @@ def purchase_cart():
 
 @app.route("/api/user/spin", methods=["POST"])
 def spin_daily_wheel():
-    telegram_user, error = _require_user()
-    if error:
-        return error
-    day = time.strftime("%Y-%m-%d", time.gmtime(time.time() + 3 * 3600))
-    amount_kurus = random.choice([50, 100, 100, 150, 200, 300])
-    result = store.credit_balance(int(telegram_user["id"]), wallet_kurus=amount_kurus, idempotency_key=f"spin:{day}", title="Günlük çark ödülü")
-    return jsonify({"success": not result.get("duplicate"), "error": "Bugünkü çark hakkınızı kullandınız" if result.get("duplicate") else None, "segment": random.randint(0, 7), "reward_type": "balance", "reward_text": f"₺{amount_kurus / 100:.2f} mağaza bakiyesi", "reward_amount": amount_kurus / 100, "new_balance": round(int(result["wallet_kurus"]) / 100, 2)}), 429 if result.get("duplicate") else 200
+    return jsonify({"success": False, "error": "Hediye çarkı kaldırıldı; günlük 3 sohbet ve 1 görsel hakkı kullanabilirsiniz"}), 410
 
 
 @app.route("/api/referrals/<int:user_id>", methods=["GET"])

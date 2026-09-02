@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Runware">
+  <rect width="120" height="120" rx="24" fill="#0B1020"/>
+  <circle cx="60" cy="48" r="32" fill="#A855F7"/>
+  <text x="60" y="58" text-anchor="middle" font-family="Arial,sans-serif" font-size="27" font-weight="800" fill="#fff">RW</text>
+  <text x="60" y="99" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" font-weight="700" fill="#fff">Runware</text>
+</svg>
