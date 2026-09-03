@@ -2195,6 +2195,8 @@ def get_scraped_groups():
                 groups = [line.strip() for line in f if line.strip()]
         except Exception as e:
             return jsonify({"error": str(e)})
+    return jsonify(groups)
+
 @app.route('/api/tickets', methods=['GET'])
 def get_tickets():
     tickets = []
