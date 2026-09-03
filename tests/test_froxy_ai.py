@@ -144,6 +144,40 @@ class FroxyStoreTests(unittest.TestCase):
         self.assertEqual([], restarted.list_recoverable_image_jobs())
 
 
+class FroxyGatewayAliasTests(unittest.TestCase):
+    @staticmethod
+    def _model(model_id, provider, *, vision=False, is_free=True):
+        return {
+            "id": f"{provider}/{model_id}",
+            "provider_model_id": model_id,
+            "name": model_id,
+            "provider": provider,
+            "provider_label": provider.title(),
+            "provider_logo": "",
+            "capabilities": ["chat", *(["vision"] if vision else [])],
+            "context_length": 8192,
+            "modality": "text+image->text" if vision else "text->text",
+            "supports_vision": vision,
+            "is_free": is_free,
+        }
+
+    def test_alias_prefers_reliable_provider_and_diversifies_fallbacks(self):
+        gateway = FroxyGateway()
+        models = [
+            self._model("llama-3.1-8b-free", "openrouter"),
+            self._model("llama-3.1-8b-instant", "groq"),
+            self._model("llama-3.3-70b", "cerebras"),
+            self._model("llama-3.3-70b-instruct", "nvidia"),
+            self._model("qwen-fast", "sambanova"),
+        ]
+        aliases = gateway._build_aliases(models)
+        fast = next(row for row in aliases if row["id"] == "froxy-fast")
+        self.assertEqual("groq", fast["target_public_id"].split("/", 1)[0])
+        fallback_providers = [item.split("/", 1)[0] for item in fast["fallback_targets"]]
+        self.assertEqual(len(fallback_providers), len(set(fallback_providers)))
+        self.assertNotEqual("groq", fallback_providers[0])
+
+
 class FroxyApiTests(unittest.TestCase):
     def setUp(self):
         FroxyStore.reset_memory()

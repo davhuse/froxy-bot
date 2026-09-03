@@ -111,7 +111,7 @@ class Provider:
 
 
 class FroxyGateway:
-    REVISION = "2026-09-03.2"
+    REVISION = "2026-09-03.3"
     CATALOG_TTL = 15 * 60
 
     def __init__(self, session: requests.Session | None = None):
@@ -479,15 +479,31 @@ class FroxyGateway:
         preferred_fragments = [
             "llama-3.1-8b", "llama-3.3-70b", "gemma-", "qwen", "gpt-oss", "mistral",
         ]
+        # Catalog availability is not the same thing as usable inference credit.
+        # Prefer the providers we can cheaply verify in production and keep
+        # provider-diverse fallbacks so one depleted account cannot strand a
+        # Froxy alias on four models from that same account.
+        provider_priority = {
+            "groq": 0,
+            "cerebras": 1,
+            "nvidia": 2,
+            "sambanova": 3,
+            "together": 4,
+            "gemini": 5,
+            "aimlapi": 6,
+            "huggingface": 7,
+            "openrouter": 8,
+        }
         free_provider_slugs = {
             item.strip() for item in os.environ.get(
-                "FROXY_FREE_PROVIDERS", "groq,nvidia,cerebras,openrouter"
+                "FROXY_FREE_PROVIDERS",
+                "groq,cerebras,nvidia,sambanova,together,gemini,aimlapi,huggingface,openrouter",
             ).split(",") if item.strip()
         }
         candidates = [m for m in models if m.get("is_free") or m.get("provider") in free_provider_slugs]
         candidates.sort(key=lambda row: (
+            provider_priority.get(row.get("provider", ""), 50),
             0 if any(fragment in row["provider_model_id"].lower() for fragment in preferred_fragments) else 1,
-            0 if row["provider"] == "groq" else 1,
             row["name"].lower(),
         ))
 
@@ -515,7 +531,24 @@ class FroxyGateway:
             fallback_pool = candidates
             if alias_id == "froxy-vision":
                 fallback_pool = [m for m in candidates if m.get("supports_vision")]
-            fallbacks = [m["id"] for m in fallback_pool if m["id"] != target["id"]][:4]
+            fallbacks: list[str] = []
+            used_providers = {target.get("provider")}
+            # First pass: one fallback from each different provider.
+            for fallback in fallback_pool:
+                if fallback["id"] == target["id"] or fallback.get("provider") in used_providers:
+                    continue
+                fallbacks.append(fallback["id"])
+                used_providers.add(fallback.get("provider"))
+                if len(fallbacks) >= 4:
+                    break
+            # Second pass: fill remaining slots with the best unused models.
+            if len(fallbacks) < 4:
+                for fallback in fallback_pool:
+                    if fallback["id"] == target["id"] or fallback["id"] in fallbacks:
+                        continue
+                    fallbacks.append(fallback["id"])
+                    if len(fallbacks) >= 4:
+                        break
             selected.append({
                 "id": alias_id,
                 "name": label,
