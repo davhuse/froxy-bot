@@ -791,6 +791,20 @@ SEEDED_ACCOUNT_GROUP_BLOCKS = {
     ('FroxyOnline', 'ceksatkupon'): 'UserBannedInChannel',
     ('FroxyOnline', 'kuponceking'): 'ChatWriteForbidden',
     ('KeyVadiOnline', 'ceksat'): 'UserBannedInChannel',
+    ('KeyVadiOnline', 'kod_kupon_alsat'): 'UserBannedInChannel',
+    ('KeyVadiOnline', 'kodkuponcek'): 'UserBannedInChannel',
+    ('KeyVadiOnline', 'kuponindirimsatis'): 'UserBannedInChannel',
+    ('KeyVadiOnline', 'kuponsatimalim'): 'UserBannedInChannel',
+    ('KeyVadiOnline', 'guvenliticaret'): 'ChatWriteForbidden',
+    ('KeyVadiOnline', 'kuponindirimpazari'): 'ChatWriteForbidden',
+    ('KeyVadiOnline', 'ticaretguvenilir'): 'ChatWriteForbidden',
+    ('KeyVadiOnline', 'yucekuponsatis'): 'ModerationDeleted',
+    ('KeyVadiOnline', 'dijitalpazarlamatr'): 'BadRequestError',
+    ('KeyVadiOnline', 'herkesibeklerimm'): 'invalid_invite',
+    ('KeyVadiOnline', 'kuponkodceksatis'): 'invalid_invite',
+    ('KeyVadiOnline', 'kuponcekkodsatis'): 'invalid_invite',
+    ('KeyVadiOnline', 'referanslinkpaylasimigrup'): 'UsernameInvalidError',
+    ('KeyVadiOnline', 'sosyalmedyaalimsatimticaret'): 'UsernameInvalidError',
 }
 # Live cross-account audit on 2026-08-26 showed repeated ChannelPrivate results
 # for these account/target pairs while several of the same groups remained
