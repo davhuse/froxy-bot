@@ -16,6 +16,7 @@ os.environ["FROXY_BOT_TOKEN"] = "test-froxy-token"
 
 from miniapp_froxy import server  # noqa: E402
 from miniapp_froxy.froxy_gateway import FroxyGateway, GatewayError, Provider  # noqa: E402
+from miniapp_froxy.web_search import perform_web_search, web_context  # noqa: E402
 from miniapp_froxy.froxy_store import (  # noqa: E402
     FroxyStore,
     InsufficientBalance,
@@ -143,6 +144,15 @@ class FroxyStoreTests(unittest.TestCase):
         restarted.update_image_job(created["job_id"], {"status": "completed"})
         self.assertEqual([], restarted.list_recoverable_image_jobs())
 
+    def test_chat_history_can_be_listed_loaded_and_deleted(self):
+        self.store.append_chat(101, "chat-1", "froxy-fast", "Türkçe soru", "Türkçe yanıt")
+        history = self.store.list_chats(101)
+        self.assertEqual("chat-1", history[0]["chat_id"])
+        self.assertEqual(2, history[0]["message_count"])
+        self.assertEqual("Türkçe yanıt", self.store.get_chat(101, "chat-1")["messages"][-1]["content"])
+        self.assertTrue(self.store.delete_chat(101, "chat-1"))
+        self.assertIsNone(self.store.get_chat(101, "chat-1"))
+
 
 class FroxyGatewayAliasTests(unittest.TestCase):
     @staticmethod
@@ -233,6 +243,33 @@ class FroxyApiTests(unittest.TestCase):
         self.assertIn("Gerçek", body)
         self.assertIn("event: done", body)
         self.assertEqual(70, server.store.get_user(202)["ai_credits"])
+
+    def test_authenticated_chat_history_endpoints(self):
+        server.store.get_or_create_user({"id": 202, "first_name": "Test"})
+        server.store.append_chat(202, "saved-chat", "froxy-fast", "Soru", "Yanıt")
+        listing = self.client.get("/api/chats", headers=self.headers)
+        self.assertEqual("saved-chat", listing.get_json()["chats"][0]["chat_id"])
+        loaded = self.client.get("/api/chats/saved-chat", headers=self.headers)
+        self.assertEqual("Yanıt", loaded.get_json()["chat"]["messages"][-1]["content"])
+        deleted = self.client.delete("/api/chats/saved-chat", headers=self.headers)
+        self.assertTrue(deleted.get_json()["deleted"])
+
+    def test_web_search_is_injected_and_sources_are_streamed(self):
+        search = {
+            "query": "güncel test", "provider": "duckduckgo",
+            "results": [{"title": "Kaynak", "url": "https://example.test/news", "snippet": "Güncel bilgi"}],
+        }
+        with mock.patch.object(server, "perform_web_search", return_value=search):
+            response = self.client.post("/api/chat", headers=self.headers, json={
+                "request_id": "web-chat", "chat_id": "web-chat", "model": "froxy-fast", "web_search": True,
+                "messages": [{"role": "user", "content": "Bugün ne oldu?"}],
+            })
+        body = response.get_data(as_text=True)
+        self.assertEqual(200, response.status_code)
+        self.assertIn('"search_provider": "duckduckgo"', body)
+        self.assertIn("https://example.test/news", body)
+        saved = server.store.list_chats(202)[0]
+        self.assertEqual("web-chat", saved["chat_id"])
 
     def test_failed_chat_refunds_reservation(self):
         server.gateway = FailingGateway()
@@ -336,6 +373,35 @@ class FroxyApiTests(unittest.TestCase):
         self.assertEqual("Bearer bad-key", gateway.session.post.call_args_list[0].kwargs["headers"]["Authorization"])
         self.assertEqual("Bearer good-key", gateway.session.post.call_args_list[1].kwargs["headers"]["Authorization"])
         self.assertTrue(gateway._runtime_health["rotating"]["runtime_healthy"])
+
+    def test_chat_stream_decodes_provider_bytes_as_utf8(self):
+        gateway = FroxyGateway()
+        model = {"id": "utf8/test", "provider": "utf8", "provider_model_id": "test", "is_froxy": False}
+        provider = Provider("utf8", "UTF8", "https://example.test", ("UTF8_TEST_KEY",))
+        response = mock.Mock(status_code=200)
+        response.iter_lines.return_value = [
+            'data: {"choices":[{"delta":{"content":"Türkçe şğü"}}]}'.encode("utf-8"),
+            b"data: [DONE]",
+        ]
+        response.close = mock.Mock()
+        gateway.session.post = mock.Mock(return_value=response)
+        with mock.patch.dict(os.environ, {"UTF8_TEST_KEY": "key"}, clear=False), mock.patch.object(gateway, "providers", return_value=[provider]):
+            events = list(gateway.stream_chat(model, [{"role": "user", "content": "test"}]))
+        self.assertEqual("Türkçe şğü", events[0]["content"])
+
+
+class FroxyWebSearchTests(unittest.TestCase):
+    def test_duckduckgo_results_are_normalized(self):
+        response = mock.Mock()
+        response.content = b'<div class="result results_links"><a class="result__a" href="https://example.test/page">Test &amp; Sonuc</a><a class="result__snippet">Guncel &amp; guvenli</a></div>'
+        response.raise_for_status = mock.Mock()
+        session = mock.Mock()
+        session.get.return_value = response
+        with mock.patch.dict(os.environ, {"TAVILY_API_KEY": "", "BRAVE_SEARCH_KEY": ""}, clear=False):
+            result = perform_web_search("test", session=session)
+        self.assertEqual("duckduckgo", result["provider"])
+        self.assertEqual("Test & Sonuc", result["results"][0]["title"])
+        self.assertIn("<web_research_sources>", web_context(result)["content"])
 
     def test_old_web_image_provider_inventory_is_available_when_configured(self):
         gateway = FroxyGateway()

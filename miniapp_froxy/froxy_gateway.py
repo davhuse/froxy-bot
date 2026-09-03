@@ -720,8 +720,14 @@ class FroxyGateway:
                             continue
                         break
                     usage: dict[str, Any] = {}
-                    for raw_line in response.iter_lines(decode_unicode=True):
-                        line = (raw_line or "").strip()
+                    # Requests may default an SSE response to ISO-8859-1 when
+                    # the provider omits a charset. Decode the wire bytes as
+                    # UTF-8 explicitly so Turkish text is never mojibake.
+                    for raw_line in response.iter_lines(decode_unicode=False):
+                        if isinstance(raw_line, bytes):
+                            line = raw_line.decode("utf-8", errors="replace").strip()
+                        else:
+                            line = str(raw_line or "").strip()
                         if not line or not line.startswith("data:"):
                             continue
                         data = line[5:].strip()

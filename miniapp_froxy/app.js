@@ -43,6 +43,7 @@ let state = {
   models: [],
   chatId: (window.crypto?.randomUUID?.() || `chat-${Date.now()}`),
   chatMessages: [],
+  chatHistory: [],
   isGeneratingChat: false,
   webSearchEnabled: false,
   reasoningEnabled: true,
@@ -111,6 +112,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const startupTasks = [loadModels(), loadImageModels(), loadStoreProducts()];
   if (tgUser && hasUserAuth) startupTasks.push(registerAndSyncUserProfile());
   await Promise.allSettled(startupTasks);
+  if (tgUser && hasUserAuth) await loadChatHistory();
   if (tgUser && hasUserAuth) startBackgroundBalanceSync();
 
   // URL deep link routing
@@ -344,8 +346,10 @@ function renderProviderLogo(path, label = 'AI') {
 function toggleChatFeature(feat) {
   triggerHaptic('light');
   if (feat === 'web') {
-    state.webSearchEnabled = false;
-    showToast('Canlı web araması yakında açılacak', '🌐');
+    state.webSearchEnabled = !state.webSearchEnabled;
+    const btn = document.getElementById('toggleWebSearch');
+    if (btn) btn.classList.toggle('active', state.webSearchEnabled);
+    showToast(state.webSearchEnabled ? 'Canlı web araması açıldı' : 'Canlı web araması kapatıldı', '🌐');
   } else if (feat === 'reasoning') {
     state.reasoningEnabled = !state.reasoningEnabled;
     const btn = document.getElementById('toggleReasoning');
@@ -354,13 +358,103 @@ function toggleChatFeature(feat) {
   }
 }
 
-function clearChatMessages() {
+function startNewChat() {
   triggerHaptic('medium');
   state.chatMessages = [];
   state.chatId = (window.crypto?.randomUUID?.() || `chat-${Date.now()}`);
   const list = document.getElementById('messagesList');
   if (list) list.innerHTML = '';
-  showToast('Sohbet temizlendi!', '🗑️');
+  const welcomeCard = document.querySelector('.assistant-welcome-card');
+  if (welcomeCard) welcomeCard.style.display = '';
+  showToast('Yeni sohbet hazır', '＋');
+}
+
+function clearChatMessages() { startNewChat(); }
+
+function openChatHistory() {
+  const panel = document.getElementById('chatHistoryPanel');
+  if (!panel) return;
+  panel.classList.add('show');
+  panel.setAttribute('aria-hidden', 'false');
+  loadChatHistory();
+}
+
+function closeChatHistory() {
+  const panel = document.getElementById('chatHistoryPanel');
+  if (!panel) return;
+  panel.classList.remove('show');
+  panel.setAttribute('aria-hidden', 'true');
+}
+
+function formatHistoryTime(timestamp) {
+  if (!timestamp) return '';
+  const date = new Date(Number(timestamp) * 1000);
+  return Number.isNaN(date.getTime()) ? '' : date.toLocaleString('tr-TR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+}
+
+async function loadChatHistory() {
+  if (!hasUserAuth) return;
+  const list = document.getElementById('chatHistoryList');
+  try {
+    const response = await fetch(api('/api/chats'), { headers: authHeaders() });
+    const data = await response.json();
+    if (!response.ok || !data.success) throw new Error(data.error || 'Geçmiş alınamadı');
+    state.chatHistory = Array.isArray(data.chats) ? data.chats : [];
+    const count = document.getElementById('chatHistoryCount');
+    if (count) count.textContent = state.chatHistory.length;
+    if (!list) return;
+    if (!state.chatHistory.length) {
+      list.innerHTML = '<p class="history-empty">Henüz kayıtlı sohbet yok.</p>';
+      return;
+    }
+    list.innerHTML = state.chatHistory.map(chat => `
+      <article class="history-row" data-chat-id="${escapeHtml(chat.chat_id)}">
+        <button type="button" class="history-open" data-history-open="${escapeHtml(chat.chat_id)}">
+          <b>${escapeHtml(repairMojibake(chat.title || 'Yeni sohbet'))}</b>
+          <span>${escapeHtml(repairMojibake(chat.preview || ''))}</span>
+          <small>${escapeHtml(formatHistoryTime(chat.updated_at))} · ${Number(chat.message_count || 0)} mesaj</small>
+        </button>
+        <button type="button" class="history-delete" data-history-delete="${escapeHtml(chat.chat_id)}" aria-label="Sohbeti sil">×</button>
+      </article>`).join('');
+    list.querySelectorAll('[data-history-open]').forEach(button => button.addEventListener('click', () => loadChat(button.dataset.historyOpen)));
+    list.querySelectorAll('[data-history-delete]').forEach(button => button.addEventListener('click', () => deleteChat(button.dataset.historyDelete)));
+  } catch (error) {
+    if (list) list.innerHTML = `<p class="history-empty">${escapeHtml(error.message || 'Geçmiş yüklenemedi')}</p>`;
+  }
+}
+
+async function loadChat(chatId) {
+  try {
+    const response = await fetch(api(`/api/chats/${encodeURIComponent(chatId)}`), { headers: authHeaders() });
+    const data = await response.json();
+    if (!response.ok || !data.success) throw new Error(data.error || 'Sohbet açılamadı');
+    const chat = data.chat;
+    state.chatId = chat.chat_id;
+    state.chatMessages = (chat.messages || []).map(row => ({ role: row.role, content: repairMojibake(row.content || '') }));
+    const list = document.getElementById('messagesList');
+    if (list) list.innerHTML = '';
+    state.chatMessages.forEach(row => appendChatMessage(row.role, row.content));
+    const welcomeCard = document.querySelector('.assistant-welcome-card');
+    if (welcomeCard) welcomeCard.style.display = state.chatMessages.length ? 'none' : '';
+    const savedModel = state.models.find(model => model.id === chat.model_id);
+    if (savedModel) selectModel(savedModel.id, savedModel.name, savedModel.provider_logo, savedModel.provider_label);
+    closeChatHistory();
+    scrollToChatBottom();
+  } catch (error) {
+    showToast(error.message || 'Sohbet açılamadı', '⚠️');
+  }
+}
+
+async function deleteChat(chatId) {
+  try {
+    const response = await fetch(api(`/api/chats/${encodeURIComponent(chatId)}`), { method: 'DELETE', headers: authHeaders() });
+    const data = await response.json();
+    if (!response.ok || !data.success) throw new Error(data.error || 'Sohbet silinemedi');
+    if (state.chatId === chatId) startNewChat();
+    await loadChatHistory();
+  } catch (error) {
+    showToast(error.message || 'Sohbet silinemedi', '⚠️');
+  }
 }
 
 function injectPrompt(promptText) {
@@ -436,25 +530,30 @@ async function handleSendMessage() {
     }
     if (!response.body) throw new Error('Akış bağlantısı kurulamadı');
     const reader = response.body.getReader();
-    const decoder = new TextDecoder();
+    const decoder = new TextDecoder('utf-8', { fatal: false });
     let buffer = '';
     while (true) {
       const { value, done } = await reader.read();
       buffer += decoder.decode(value || new Uint8Array(), { stream: !done });
+      buffer = buffer.replace(/\r\n/g, '\n');
       const frames = buffer.split('\n\n');
       buffer = frames.pop() || '';
       for (const frame of frames) {
         const eventLine = frame.split('\n').find(line => line.startsWith('event:'));
-        const dataLine = frame.split('\n').find(line => line.startsWith('data:'));
-        if (!dataLine) continue;
+        const dataLines = frame.split('\n').filter(line => line.startsWith('data:'));
+        if (!dataLines.length) continue;
         const event = eventLine ? eventLine.slice(6).trim() : 'message';
-        const payload = JSON.parse(dataLine.slice(5).trim());
+        const payload = JSON.parse(dataLines.map(line => line.slice(5).trim()).join('\n'));
         if (event === 'delta') {
           if (typingEl) typingEl.style.display = 'none';
           if (!assistantBubble) assistantBubble = appendChatMessage('assistant', '');
-          assistantText += payload.content || '';
+          assistantText += repairMojibake(payload.content || '');
           if (assistantBubble) assistantBubble.innerHTML = formatMarkdown(assistantText);
           scrollToChatBottom();
+        } else if (event === 'done' && Array.isArray(payload.web_sources) && payload.web_sources.length) {
+          if (!assistantBubble) assistantBubble = appendChatMessage('assistant', assistantText);
+          assistantBubble.insertAdjacentHTML('beforeend', renderWebSources(payload.web_sources));
+          assistantText = repairMojibake(payload.stored_content || assistantText);
         } else if (event === 'error') {
           throw new Error(payload.error || 'Model yanıt veremedi');
         }
@@ -463,6 +562,7 @@ async function handleSendMessage() {
     }
     if (!assistantText) throw new Error('Model boş yanıt verdi');
     state.chatMessages.push({ role: 'assistant', content: assistantText });
+    await loadChatHistory();
     triggerHaptic('success');
     await registerAndSyncUserProfile();
   } catch (error) {
@@ -529,7 +629,9 @@ function escapeHtml(text) {
   return String(text ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 // -------------------------------------------------------------
@@ -550,6 +652,36 @@ async function loadImageModels() {
     const button = document.getElementById('generateImageBtn');
     if (button) button.disabled = true;
   }
+}
+
+function repairMojibake(value) {
+  const text = String(value ?? '');
+  if (!/[ÃÄÅÂ]/.test(text)) return text;
+  const replacements = {
+    'Ã‡': 'Ç', 'Ã§': 'ç', 'Ã–': 'Ö', 'Ã¶': 'ö', 'Ãœ': 'Ü', 'Ã¼': 'ü',
+    'Ä°': 'İ', 'Ä±': 'ı', 'Äž': 'Ğ', 'ÄŸ': 'ğ', 'Åž': 'Ş', 'ÅŸ': 'ş',
+    'Â·': '·', 'Â ': ' '
+  };
+  let mapped = text;
+  Object.entries(replacements).forEach(([broken, fixed]) => { mapped = mapped.split(broken).join(fixed); });
+  if (mapped !== text && !/[ÃÄÅ]/.test(mapped)) return mapped;
+  try {
+    const bytes = Uint8Array.from(Array.from(mapped), char => char.charCodeAt(0) & 255);
+    const repaired = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+    return repaired.includes('�') ? mapped : repaired;
+  } catch (_) {
+    return mapped;
+  }
+}
+
+function renderWebSources(sources) {
+  const rows = sources.slice(0, 5).map((source, index) => {
+    let url = '';
+    try { const parsed = new URL(source.url); if (['http:', 'https:'].includes(parsed.protocol)) url = parsed.href; } catch (_) {}
+    if (!url) return '';
+    return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer"><span>${index + 1}</span>${escapeHtml(repairMojibake(source.title || url))}</a>`;
+  }).join('');
+  return rows ? `<div class="chat-sources"><b>Canlı web kaynakları</b>${rows}</div>` : '';
 }
 
 function selectImageModel(modelId) {

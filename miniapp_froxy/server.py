@@ -34,10 +34,12 @@ try:
     from .froxy_gateway import FroxyGateway, GatewayError
     from .froxy_store import FroxyStore, InsufficientBalance, QuotaExceeded, StoreUnavailable
     from .shopier_dynamic import cancel_and_delete_topup, create_dynamic_shopier_listing
+    from .web_search import perform_web_search, web_context
 except (ImportError, ValueError):  # pragma: no cover
     from froxy_gateway import FroxyGateway, GatewayError
     from froxy_store import FroxyStore, InsufficientBalance, QuotaExceeded, StoreUnavailable
     from shopier_dynamic import cancel_and_delete_topup, create_dynamic_shopier_listing
+    from web_search import perform_web_search, web_context
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -299,6 +301,28 @@ def get_models():
     return jsonify({"success": True, **catalog})
 
 
+@app.route("/api/chats", methods=["GET"])
+def chat_history():
+    telegram_user, error = _require_user()
+    if error:
+        return error
+    return jsonify({"success": True, "chats": store.list_chats(int(telegram_user["id"]))})
+
+
+@app.route("/api/chats/<chat_id>", methods=["GET", "DELETE"])
+def chat_history_item(chat_id: str):
+    telegram_user, error = _require_user()
+    if error:
+        return error
+    user_id = int(telegram_user["id"])
+    if request.method == "DELETE":
+        return jsonify({"success": True, "deleted": store.delete_chat(user_id, chat_id[:80])})
+    row = store.get_chat(user_id, chat_id[:80])
+    if not row:
+        return jsonify({"success": False, "error": "Sohbet bulunamadı"}), 404
+    return jsonify({"success": True, "chat": row})
+
+
 @app.route("/api/provider-status", methods=["GET"])
 def provider_status():
     telegram_user, error = _require_user()
@@ -345,6 +369,13 @@ def chat():
         temperature = max(0.0, min(float(data.get("temperature", 0.7)), 1.5))
     except (TypeError, ValueError):
         return jsonify({"success": False, "error": "Üretim ayarları geçersiz"}), 400
+    search = {"query": "", "provider": "none", "results": []}
+    gateway_messages = list(messages)
+    if data.get("web_search") is True:
+        search = perform_web_search(messages[-1]["content"], max_results=5)
+        if not search.get("results"):
+            return jsonify({"success": False, "error": "Web araması şu anda güvenilir kaynak döndüremedi"}), 503
+        gateway_messages = [web_context(search), *messages]
     try:
         model = gateway.get_model(model_id)
         is_free = bool(model.get("is_froxy"))
@@ -352,7 +383,7 @@ def chat():
             store.consume_free_quota(user_id, "text", request_id)
             reservation = 0
         else:
-            reservation = gateway.reservation_for_chat(model, messages, max_tokens)
+            reservation = gateway.reservation_for_chat(model, gateway_messages, max_tokens)
             store.reserve_credits(user_id, request_id, reservation, f"chat:{model_id}")
     except (GatewayError, QuotaExceeded, InsufficientBalance) as exc:
         status = 402 if isinstance(exc, InsufficientBalance) else 429 if isinstance(exc, QuotaExceeded) else 400
@@ -363,8 +394,8 @@ def chat():
         usage: dict = {}
         provider_meta: dict = {}
         try:
-            yield _json_sse("meta", {"request_id": request_id, "chat_id": chat_id, "model": model_id, "reserved_credits": reservation})
-            for event in gateway.stream_chat(model, messages, max_tokens=max_tokens, temperature=temperature):
+            yield _json_sse("meta", {"request_id": request_id, "chat_id": chat_id, "model": model_id, "reserved_credits": reservation, "web_search": bool(search["results"])})
+            for event in gateway.stream_chat(model, gateway_messages, max_tokens=max_tokens, temperature=temperature):
                 if event["type"] == "delta":
                     output_parts.append(event["content"])
                     yield _json_sse("delta", {"content": event["content"]})
@@ -377,11 +408,18 @@ def chat():
             if is_free:
                 billing = {"charged": 0}
             else:
-                input_text = "\n".join(row["content"] for row in messages)
+                input_text = "\n".join(row["content"] for row in gateway_messages)
                 actual = gateway.actual_chat_credits(model, usage, input_text, output)
                 billing = store.settle_credits(user_id, request_id, actual, provider_meta)
-            store.append_chat(user_id, chat_id, model_id, messages[-1]["content"], output)
-            yield _json_sse("done", {"usage": usage, "billing": billing, **provider_meta})
+            stored_output = output
+            if search["results"]:
+                source_lines = "\n".join(
+                    f"[{index}] {row['title']} — {row['url']}"
+                    for index, row in enumerate(search["results"], 1)
+                )
+                stored_output = f"{output}\n\nKaynaklar:\n{source_lines}"
+            store.append_chat(user_id, chat_id, model_id, messages[-1]["content"], stored_output)
+            yield _json_sse("done", {"usage": usage, "billing": billing, "stored_content": stored_output, "web_sources": search["results"], "search_provider": search["provider"], **provider_meta})
         except Exception as exc:
             if is_free:
                 store.restore_free_quota(user_id, "text", request_id)
@@ -390,7 +428,7 @@ def chat():
             message = str(exc) if isinstance(exc, GatewayError) else "Sohbet isteği tamamlanamadı"
             yield _json_sse("error", {"error": message})
 
-    return Response(stream_with_context(generate()), mimetype="text/event-stream", headers={"X-Accel-Buffering": "no", "Cache-Control": "no-cache, no-transform"})
+    return Response(stream_with_context(generate()), content_type="text/event-stream; charset=utf-8", headers={"X-Accel-Buffering": "no", "Cache-Control": "no-cache, no-transform"})
 
 
 def _image_dimensions(ratio: str, free: bool) -> tuple[int, int]:

@@ -233,6 +233,10 @@ class FroxyStore:
         safe.pop("_memory_version", None)
         safe.pop("processed_keys", None)
         safe.pop("reservations", None)
+        # Full transcripts have dedicated authenticated endpoints. Keeping
+        # them out of /me prevents an old account from making every balance
+        # refresh unnecessarily large.
+        safe.pop("chats", None)
         safe["wallet_balance"] = round(int(safe.get("wallet_kurus", 0)) / 100, 2)
         safe["free_text_remaining"] = max(0, 3 - int(safe.get("free_text_used", 0)))
         safe["free_image_remaining"] = max(0, 1 - int(safe.get("free_image_used", 0)))
@@ -503,6 +507,41 @@ class FroxyStore:
             user["updated_at"] = _utc_ts()
 
         self._mutate_doc(self._user_doc_id(user_id), lambda: self._default_user(user_id), mutate)
+
+    def list_chats(self, user_id: int) -> list[dict[str, Any]]:
+        user, _ = self._read(self._user_doc_id(user_id))
+        rows = list((user or {}).get("chats", []))
+        summaries = []
+        for row in reversed(rows):
+            messages = row.get("messages") or []
+            summaries.append({
+                "chat_id": str(row.get("chat_id") or ""),
+                "title": str(row.get("title") or "Yeni sohbet")[:80],
+                "model_id": str(row.get("model_id") or ""),
+                "message_count": len(messages),
+                "created_at": int(row.get("created_at") or 0),
+                "updated_at": int(row.get("updated_at") or row.get("created_at") or 0),
+                "preview": str((messages[-1] if messages else {}).get("content") or "")[:160],
+            })
+        return summaries
+
+    def get_chat(self, user_id: int, chat_id: str) -> dict[str, Any] | None:
+        user, _ = self._read(self._user_doc_id(user_id))
+        target = next((row for row in (user or {}).get("chats", []) if row.get("chat_id") == str(chat_id)), None)
+        return copy.deepcopy(target) if target else None
+
+    def delete_chat(self, user_id: int, chat_id: str) -> bool:
+        cid = str(chat_id)
+
+        def mutate(user: dict[str, Any]) -> bool:
+            rows = list(user.get("chats", []))
+            filtered = [row for row in rows if row.get("chat_id") != cid]
+            user["chats"] = filtered
+            user["updated_at"] = _utc_ts()
+            return len(filtered) != len(rows)
+
+        _, deleted = self._mutate_doc(self._user_doc_id(user_id), lambda: self._default_user(user_id), mutate)
+        return bool(deleted)
 
     def create_image_job(self, user_id: int, job: dict[str, Any]) -> dict[str, Any]:
         job_id = str(job.get("job_id") or uuid.uuid4().hex)

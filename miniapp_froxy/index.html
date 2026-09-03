@@ -15,7 +15,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
   
   <!-- Main Stylesheet -->
-  <link rel="stylesheet" href="style.css?v=20260902_0600">
+  <link rel="stylesheet" href="style.css?v=20260903_2100">
 </head>
 <body>
   <!-- Ambient Glow Beams -->
@@ -76,6 +76,27 @@
       <!-- VIEW 1: 🧠 FROXY AI ASİSTANI (CHAT & PLAYGROUND) -->
       <!-- ========================================== -->
       <section id="view-chat" class="app-view active">
+        <div class="chat-session-bar">
+          <button type="button" class="chat-session-btn" onclick="openChatHistory()" aria-label="Sohbet geçmişini aç">
+            <span>◷</span><b>Geçmiş</b><small id="chatHistoryCount">0</small>
+          </button>
+          <button type="button" class="chat-session-btn primary" onclick="startNewChat()" aria-label="Yeni sohbet başlat">
+            <span>＋</span><b>Yeni sohbet</b>
+          </button>
+        </div>
+
+        <div class="chat-history-panel" id="chatHistoryPanel" aria-hidden="true">
+          <button class="chat-history-backdrop" type="button" onclick="closeChatHistory()" aria-label="Geçmişi kapat"></button>
+          <aside class="chat-history-sheet" role="dialog" aria-modal="true" aria-labelledby="chatHistoryTitle">
+            <div class="chat-history-head">
+              <div><small>FROXY AI</small><h3 id="chatHistoryTitle">Sohbet geçmişi</h3></div>
+              <button type="button" onclick="closeChatHistory()" aria-label="Kapat">×</button>
+            </div>
+            <div id="chatHistoryList" class="chat-history-list"><p class="history-empty">Geçmiş yükleniyor…</p></div>
+            <button type="button" class="history-new-btn" onclick="startNewChat(); closeChatHistory();">＋ Yeni sohbet başlat</button>
+          </aside>
+        </div>
+
         <!-- Chat Model Selector Bar -->
         <div class="model-picker-bar">
           <button class="model-selector" id="modelSelectorButton" type="button" onclick="toggleModelDropdown()" aria-expanded="false" aria-controls="modelDropdownMenu">
@@ -148,9 +169,9 @@
         <!-- Chat Input Dock -->
         <div class="chat-input-container">
           <div class="chat-feature-toggles">
-            <button class="feature-toggle-btn" id="toggleWebSearch" onclick="toggleChatFeature('web')" title="Yakında">
+            <button class="feature-toggle-btn" id="toggleWebSearch" onclick="toggleChatFeature('web')" title="Canlı web araması">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
-                <span>Web (yakında)</span>
+                <span>Canlı Web</span>
             </button>
             <button class="feature-toggle-btn active" id="toggleReasoning" onclick="toggleChatFeature('reasoning')" title="Derin Düşünce">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2v4"/><path d="m4.93 4.93 2.83 2.83"/><path d="M2 12h4"/><path d="m4.93 19.07 2.83-2.83"/><path d="M12 22v-4"/><path d="m19.07 19.07-2.83-2.83"/><path d="M22 12h-4"/><path d="m19.07 4.93-2.83 2.83"/></svg>
@@ -487,6 +508,6 @@
   <div id="toastNotification" class="toast-popup"></div>
 
   <!-- Controller Script -->
-  <script src="app.js?v=20260903_0445"></script>
+  <script src="app.js?v=20260903_2100"></script>
 </body>
 </html>
