@@ -339,12 +339,12 @@ def _safe_join_setting(name, default, minimum=1):
         return default
 
 
-JOIN_DELAY_MIN_SECONDS = _safe_join_setting("JOIN_DELAY_MIN_SECONDS", 60, minimum=15)
+JOIN_DELAY_MIN_SECONDS = _safe_join_setting("JOIN_DELAY_MIN_SECONDS", 20, minimum=15)
 JOIN_DELAY_MAX_SECONDS = max(
     JOIN_DELAY_MIN_SECONDS,
-    _safe_join_setting("JOIN_DELAY_MAX_SECONDS", 120, minimum=JOIN_DELAY_MIN_SECONDS),
+    _safe_join_setting("JOIN_DELAY_MAX_SECONDS", 40, minimum=JOIN_DELAY_MIN_SECONDS),
 )
-MAX_JOINS_PER_CYCLE = _safe_join_setting("MAX_JOINS_PER_CYCLE", 8, minimum=1)
+MAX_JOINS_PER_CYCLE = _safe_join_setting("MAX_JOINS_PER_CYCLE", 25, minimum=1)
 
 # Uyeliginden cikilacak gruplar.  Ban yedigimiz bir grupta uye kalmaya devam
 # etmek, yoneticiler hesabi tekrar fark ettiginde ikinci bir bana yol aciyor.
