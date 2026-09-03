@@ -111,6 +111,7 @@ class Provider:
 
 
 class FroxyGateway:
+    REVISION = "2026-09-03.2"
     CATALOG_TTL = 15 * 60
 
     def __init__(self, session: requests.Session | None = None):

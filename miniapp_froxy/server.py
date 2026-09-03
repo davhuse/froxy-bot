@@ -245,6 +245,7 @@ def froxy_health():
             "status": status,
             "store": store.backend,
             "firestore": firestore,
+            "gateway_revision": getattr(gateway, "REVISION", "test"),
             "configured_providers": sum(1 for provider in gateway.providers() if provider.key),
         }
     ), (200 if status == "ok" else 503)
