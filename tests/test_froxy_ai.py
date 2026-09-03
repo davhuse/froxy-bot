@@ -224,6 +224,50 @@ class FroxyApiTests(unittest.TestCase):
         self.assertTrue(model["provider_logo"].endswith("provider_together.svg"))
         self.assertIn("chat", model["capabilities"])
 
+    def test_catalog_does_not_advertise_unavailable_demo_models(self):
+        gateway = FroxyGateway()
+        with mock.patch.object(gateway, "providers", return_value=[]):
+            catalog = gateway.public_catalog()
+        self.assertEqual([], catalog["models"])
+        self.assertEqual(0, catalog["active_model_count"])
+
+    def test_all_provider_logos_are_local_assets(self):
+        from miniapp_froxy.froxy_gateway import PROVIDER_LOGOS
+
+        self.assertTrue(PROVIDER_LOGOS)
+        for logo in PROVIDER_LOGOS.values():
+            self.assertTrue(logo.startswith("assets/"), logo)
+
+    def test_pollinations_is_inactive_without_server_key(self):
+        gateway = FroxyGateway()
+        with mock.patch.dict(os.environ, {
+            "POLLINATIONS_API_KEY": "",
+            "POLLINATIONS_KEY": "",
+        }, clear=False):
+            model = next(row for row in gateway.image_models() if row["provider"] == "pollinations")
+        self.assertFalse(model["active"])
+
+    def test_openai_image_uses_supported_portrait_size(self):
+        gateway = FroxyGateway()
+        response = mock.Mock(status_code=200)
+        response.json.return_value = {"data": [{"url": "https://example.test/image.png"}]}
+        gateway.session.post = mock.Mock(return_value=response)
+        with mock.patch.dict(os.environ, {"OPENAI_IMAGE_KEY": "test-key"}, clear=False):
+            gateway._image_openai("test", 432, 768)
+        payload = gateway.session.post.call_args.kwargs["json"]
+        self.assertEqual("1024x1536", payload["size"])
+
+    def test_runware_uses_uuid_and_sync_delivery(self):
+        gateway = FroxyGateway()
+        response = mock.Mock(status_code=200)
+        response.json.return_value = {"data": [{"imageURL": "https://example.test/image.jpg"}]}
+        gateway.session.post = mock.Mock(return_value=response)
+        with mock.patch.dict(os.environ, {"RUNWARE_API_KEY": "test-key"}, clear=False):
+            gateway._image_runware("test", 768, 768)
+        payload = gateway.session.post.call_args.kwargs["json"][0]
+        self.assertEqual("sync", payload["deliveryMethod"])
+        self.assertEqual(4, __import__("uuid").UUID(payload["taskUUID"]).version)
+
     def test_shopier_products_keep_real_title_and_delivery_terms(self):
         products = server.load_products()
         self.assertEqual(18, len(products))

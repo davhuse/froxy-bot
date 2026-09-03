@@ -39,7 +39,7 @@ function authHeaders() {
 // Global App State
 let state = {
   currentView: 'view-chat',
-  selectedModel: { id: 'froxy-fast', name: 'Froxy Hızlı', providerLogo: 'assets/froxy_logo.png' },
+  selectedModel: { id: '', name: 'Model bekleniyor', providerLogo: 'assets/froxy_logo.png' },
   models: [],
   chatId: (window.crypto?.randomUUID?.() || `chat-${Date.now()}`),
   chatMessages: [],
@@ -233,6 +233,7 @@ async function loadModels() {
     const data = await response.json();
     if (!response.ok || !data.success) throw new Error(data.error || 'Model kataloğu alınamadı');
     state.models = Array.isArray(data.models) ? data.models : [];
+    if (!state.models.length) throw new Error('Şu anda doğrulanmış aktif sohbet modeli yok');
     const countEl = document.getElementById('verifiedModelCount');
     if (countEl) countEl.textContent = `${Number(data.active_model_count || state.models.length).toLocaleString('tr-TR')} aktif model`;
     if (menu) {
@@ -262,9 +263,21 @@ async function loadModels() {
       renderRows();
     }
     const first = state.models.find(model => model.id === state.selectedModel.id) || state.models[0];
-    if (first) selectModel(first.id, first.name, first.provider_logo, first.provider_label);
+    if (first) {
+      selectModel(first.id, first.name, first.provider_logo, first.provider_label);
+      const sendButton = document.getElementById('sendMsgBtn');
+      if (sendButton) sendButton.disabled = false;
+    }
   } catch (error) {
+    state.models = [];
+    state.selectedModel = { id: '', name: 'Model kullanılamıyor', providerLogo: '' };
     if (menu) menu.innerHTML = '<div class="model-opt"><span class="opt-body"><span class="opt-title">Model kataloğu kullanılamıyor</span><span class="opt-desc">Biraz sonra tekrar deneyin.</span></span></div>';
+    const title = document.getElementById('selectedModelTitle');
+    if (title) title.textContent = 'Model kullanılamıyor';
+    const status = document.getElementById('headerModelStatus');
+    if (status) status.textContent = 'Sağlayıcı bağlantısı bekleniyor';
+    const sendButton = document.getElementById('sendMsgBtn');
+    if (sendButton) sendButton.disabled = true;
     showToast(error.message || 'Model kataloğu alınamadı', '⚠️');
   }
 }
@@ -377,6 +390,10 @@ async function handleSendMessage() {
   if (!textarea) return;
   const userText = textarea.value.trim();
   if (!userText || state.isGeneratingChat) return;
+  if (!state.selectedModel.id) {
+    showToast('Şu anda aktif sohbet modeli yok', '⚠️');
+    return;
+  }
 
   textarea.value = '';
   autoResizeTextarea(textarea);
@@ -539,7 +556,10 @@ function selectImageModel(modelId) {
   const model = state.imageModels.find(item => item.id === modelId) || null;
   state.selectedImageModel = model;
   const logo = document.getElementById('imageModelLogo');
-  if (logo && model?.provider_logo) logo.src = model.provider_logo;
+  if (logo) {
+    logo.src = model?.provider_logo || 'assets/froxy_logo.png';
+    logo.alt = model?.provider_label || model?.provider || 'AI';
+  }
   const cost = document.getElementById('imageGenerateCost');
   if (cost) cost.textContent = model ? `Görseli Üret · ~${Number(model.estimated_credits || 0).toLocaleString('tr-TR')} kredi` : 'Görseli Üret';
 }

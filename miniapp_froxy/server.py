@@ -132,7 +132,7 @@ def _rate_limit(scope: str, identity: str, limit: int, window: int = 60) -> bool
 
 
 def _json_sse(event: str, payload: dict) -> str:
-    return f"event: {event}\ndata: {json.dumps(payload)}\n\n"
+    return f"event: {event}\ndata: {json.dumps(payload, ensure_ascii=False)}\n\n"
 
 
 def _credit_try_value() -> float:
@@ -453,7 +453,7 @@ def create_image():
             raise QuotaExceeded("Ücretli üretim seçildi")
     except QuotaExceeded:
         billing_kind = "credits"
-        reserved = gateway.image_credit_cost()
+        reserved = max(1, int(image_model.get("estimated_credits") or gateway.image_credit_cost()))
         try:
             store.reserve_credits(user_id, request_id, reserved, "image")
         except InsufficientBalance as exc:

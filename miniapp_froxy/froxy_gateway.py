@@ -8,10 +8,11 @@ import math
 import os
 import threading
 import time
+import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from typing import Any, Iterable
-from urllib.parse import quote
+from urllib.parse import quote, urlparse
 
 import requests
 
@@ -22,23 +23,27 @@ class GatewayError(RuntimeError):
 
 PROVIDER_LOGOS = {
     "froxy": "assets/froxy_logo.png",
-    "openai": "https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg",
-    "anthropic": "https://upload.wikimedia.org/wikipedia/commons/f/f0/Claude_AI_logo.svg",
-    "google": "https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg",
-    "gemini": "https://upload.wikimedia.org/wikipedia/commons/8/8a/Google_Gemini_logo.svg",
-    "meta": "https://upload.wikimedia.org/wikipedia/commons/7/7b/Meta_Platforms_Inc._logo.svg",
-    "groq": "https://cdn.iconscout.com/icon/free/png-256/groq-3628267-3029969.png",
-    "nvidia": "https://upload.wikimedia.org/wikipedia/commons/2/21/Nvidia_logo.svg",
-    "together": "https://assets-global.website-files.com/64b18cce1a82fce5ef6b05be/64b18cce1a82fce5ef6b060d_logo.svg",
-    "cerebras": "https://www.cerebras.net/wp-content/uploads/2021/04/Cerebras-Logo-1.svg",
-    "sambanova": "https://sambanova.ai/wp-content/uploads/2021/11/SambaNova_Logo.svg",
-    "openrouter": "https://openrouter.ai/icon.svg",
-    "cloudflare": "https://upload.wikimedia.org/wikipedia/commons/9/94/Cloudflare_Logo.svg",
-    "huggingface": "https://huggingface.co/front/assets/huggingface_logo-noborder.svg",
-
+    "openai": "assets/provider_openai.svg",
+    "anthropic": "assets/provider_anthropic.svg",
+    "google": "assets/provider_google.svg",
+    "gemini": "assets/provider_google.svg",
+    "meta": "assets/provider_meta.svg",
+    "groq": "assets/provider_groq.svg",
+    "nvidia": "assets/provider_nvidia.svg",
+    "together": "assets/provider_together.svg",
+    "cerebras": "assets/provider_cerebras.svg",
+    "sambanova": "assets/provider_sambanova.svg",
+    "openrouter": "assets/provider_openrouter.svg",
+    "cloudflare": "assets/provider_cloudflare.svg",
+    "huggingface": "assets/provider_huggingface.svg",
     "aimlapi": "assets/provider_aimlapi.svg",
     "runware": "assets/provider_runware.svg",
     "pollinations": "assets/provider_pollinations.svg",
+    "mistral": "assets/provider_mistral.svg",
+    "xai": "assets/provider_xai.svg",
+    "deepseek": "assets/provider_deepseek.svg",
+    "stability": "assets/provider_stability.svg",
+    "modal": "assets/provider_modal.svg",
 }
 
 
@@ -111,10 +116,21 @@ class FroxyGateway:
             Provider("together", "Together", "https://api.together.xyz/v1", ("TOGETHER_API_KEY", "TOGETHER_API_KEYS")),
             Provider("cerebras", "Cerebras", "https://api.cerebras.ai/v1", ("CEREBRAS_API_KEY",)),
             Provider("sambanova", "SambaNova", "https://api.sambanova.ai/v1", ("SAMBANOVA_API_KEY",)),
-            Provider("gemini", "Google Gemini", "https://generativelanguage.googleapis.com/v1beta/openai", ("GEMINI_API_KEY", "GEMINI_API_KEYS")),
+            Provider("gemini", "Google Gemini", "https://generativelanguage.googleapis.com/v1beta/openai", ("GEMINI_API_KEY", "GEMINI_API_KEYS", "GOOGLE_API_KEY")),
             Provider("openai", "OpenAI", openai_base, ("OPENAI_CHAT_KEY", "OPENAI_API_KEY")),
             Provider("aimlapi", "AI/ML API", "https://api.aimlapi.com/v1", ("AIMLAPI_KEY",)),
             Provider("huggingface", "Hugging Face", "https://router.huggingface.co/v1", ("HF_TOKEN", "HUGGINGFACE_API_KEY")),
+            Provider("mistral", "Mistral AI", "https://api.mistral.ai/v1", ("MISTRAL_API_KEY",)),
+            Provider("fireworks", "Fireworks AI", "https://api.fireworks.ai/inference/v1", ("FIREWORKS_API_KEY",)),
+            Provider("xai", "xAI", "https://api.x.ai/v1", ("XAI_API_KEY",)),
+            Provider("deepseek", "DeepSeek", "https://api.deepseek.com", ("DEEPSEEK_API_KEY",)),
+            Provider("chutes", "Chutes", "https://llm.chutes.ai/v1", ("CHUTES_API_KEY",)),
+            Provider("evolink", "Evolink", "https://direct.evolink.ai/v1", ("EVOLINK_API_KEY", "EVOLINK_API_KEYS")),
+            Provider("hcnsec", "HCNSEC", "https://api.hcnsec.cn/v1", ("HCNSEC_API_KEY", "HCNSEC_API_KEYS")),
+            Provider("freemodel", "FreeModel", "https://api.freemodel.dev/v1", ("FREEMODEL_API_KEY", "FREEMODEL_API_KEYS")),
+            Provider("shenfeng", "Shenfeng", "https://api.shenfengwl.fun/v1", ("SHENFENG_GEMINI_KEY", "SHENFENG_OPENAI_KEY")),
+            Provider("guicore", "GuiCore", os.environ.get("GUICORE_BASE_URL", "https://api.guicore.com/v1").rstrip("/"), ("GUICORE_CLAUDE_KEY", "GUICORE_GEMINI_KEY")),
+            Provider("pollinations", "Pollinations", "https://gen.pollinations.ai/v1", ("POLLINATIONS_API_KEY", "POLLINATIONS_API_KEYS", "POLLINATIONS_KEY")),
         ]
         account_id = os.environ.get("CLOUDFLARE_ACCOUNT_ID", "").strip()
         if account_id:
@@ -224,28 +240,44 @@ class FroxyGateway:
         model_id = str(model.get("provider_model_id", "")).lower()
         denied = (
             "whisper", "speech", "tts", "guard", "moderation", "embedding",
-            "embed-", "rerank", "audio-preview", "transcribe",
+            "embed-", "rerank", "audio-preview", "transcribe", "orpheus",
         )
-        return not any(fragment in model_id for fragment in denied)
+        if any(fragment in model_id for fragment in denied):
+            return False
+        modality = str(model.get("modality") or "text->text").lower()
+        return "text" in modality.rsplit("->", 1)[-1]
 
     def refresh_catalog(self, force: bool = False) -> list[dict[str, Any]]:
         with self._lock:
             if self._catalog and not force and time.time() - self._refreshed_at < self.CATALOG_TTL:
                 return list(self._catalog)
 
-        configured = [provider for provider in self.providers() if provider.key]
+        providers = self.providers()
+        configured = [provider for provider in providers if provider.key]
         all_models: list[dict[str, Any]] = []
-        statuses: dict[str, dict[str, Any]] = {}
+        statuses: dict[str, dict[str, Any]] = {
+            provider.slug: {
+                "provider": provider.slug,
+                "healthy": False,
+                "configured": bool(provider.key),
+                "models": 0,
+                "status": "not_configured" if not provider.key else "checking",
+            }
+            for provider in providers
+        }
         with ThreadPoolExecutor(max_workers=min(6, max(1, len(configured)))) as pool:
             futures = {pool.submit(self._fetch_provider, provider): provider for provider in configured}
             for future in as_completed(futures):
                 models, status = future.result()
                 all_models.extend(models)
+                status["configured"] = True
                 statuses[status["provider"]] = status
 
         if not all_models:
-            visible = self._default_fallback_models()
-            models_by_id = {m["id"]: m for m in visible}
+            # A static card is not an active model. Hiding unavailable models
+            # prevents users spending quota/credits on an impossible request.
+            visible: list[dict[str, Any]] = []
+            models_by_id: dict[str, dict[str, Any]] = {}
             with self._lock:
                 self._catalog = visible
                 self._models = models_by_id
@@ -410,6 +442,8 @@ class FroxyGateway:
         used: set[str] = set()
         for index, (alias_id, label, icon, configured_target) in enumerate(explicit):
             target = next((m for m in models if m["id"] == configured_target), None)
+            if alias_id == "froxy-vision" and target and not target.get("supports_vision"):
+                target = None
             if target is None:
                 pool = [m for m in candidates if m["id"] not in used]
                 if alias_id == "froxy-vision":
@@ -420,7 +454,10 @@ class FroxyGateway:
             if target is None:
                 continue
             used.add(target["id"])
-            fallbacks = [m["id"] for m in candidates if m["id"] != target["id"]][:4]
+            fallback_pool = candidates
+            if alias_id == "froxy-vision":
+                fallback_pool = [m for m in candidates if m.get("supports_vision")]
+            fallbacks = [m["id"] for m in fallback_pool if m["id"] != target["id"]][:4]
             selected.append({
                 "id": alias_id,
                 "name": label,
@@ -545,16 +582,21 @@ class FroxyGateway:
     ) -> Iterable[dict[str, Any]]:
         last_error = "Model yanıt vermedi"
         for target in self._target_candidates(model):
-            provider = self._provider_for_model(target)
-            payload = {
-                "model": target["provider_model_id"],
-                "messages": messages,
-                "max_tokens": max_tokens,
-                "temperature": temperature,
-                "stream": True,
-                "stream_options": {"include_usage": True},
-            }
             try:
+                provider = self._provider_for_model(target)
+                payload = {
+                    "model": target["provider_model_id"],
+                    "messages": messages,
+                    "max_tokens": max_tokens,
+                    "temperature": temperature,
+                    "stream": True,
+                }
+                provider_model_id = str(target["provider_model_id"]).lower()
+                if provider.slug == "groq" and "qwen" in provider_model_id:
+                    payload["reasoning_effort"] = "none"
+                elif provider.slug == "groq" and "gpt-oss" in provider_model_id:
+                    payload["reasoning_effort"] = "low"
+                    payload["include_reasoning"] = False
                 response = self.session.post(
                     f"{provider.base_url}{provider.chat_path}",
                     headers=self._headers(provider),
@@ -586,6 +628,12 @@ class FroxyGateway:
                         continue
                     delta = choices[0].get("delta") or {}
                     content = delta.get("content")
+                    if isinstance(content, list):
+                        content = "".join(
+                            str(part.get("text") or "")
+                            for part in content
+                            if isinstance(part, dict) and part.get("type") in {"text", "output_text"}
+                        )
                     if isinstance(content, str) and content:
                         emitted = True
                         yield {"type": "delta", "content": content}
@@ -599,6 +647,8 @@ class FroxyGateway:
                     }
                     return
                 last_error = f"{provider.label} boş yanıt verdi"
+            except GatewayError as exc:
+                last_error = str(exc)
             except requests.RequestException:
                 last_error = f"{provider.label} bağlantı hatası"
         raise GatewayError(last_error)
@@ -611,12 +661,34 @@ class FroxyGateway:
     def image_models(self) -> list[dict[str, Any]]:
         cost = self.image_credit_cost()
         account = os.environ.get("CLOUDFLARE_ACCOUNT_ID", "").strip()
+        openai = bool(_first_key("OPENAI_IMAGE_KEY", "OPENAI_IMAGE_KEYS", "OPENAI_API_KEY"))
+        together = bool(_first_key("TOGETHER_API_KEY", "TOGETHER_API_KEYS"))
+        cloudflare = bool(account and _first_key("CLOUDFLARE_API_TOKEN"))
+        runware = bool(_first_key("RUNWARE_API_KEY", "RUNWARE_API_KEYS"))
+        pollinations = bool(_first_key("POLLINATIONS_API_KEY", "POLLINATIONS_API_KEYS", "POLLINATIONS_KEY"))
+        aimlapi = bool(_first_key("AIMLAPI_KEY"))
+        stability = bool(_first_key("STABILITY_API_KEY", "STABILITY_API_KEYS"))
         definitions = [
-            ("openai-image", "OpenAI Image", "openai", os.environ.get("FROXY_OPENAI_IMAGE_MODEL", "gpt-image-1"), bool(_first_key("OPENAI_IMAGE_KEY", "OPENAI_API_KEY"))),
-            ("together-image", "Together Image", "together", os.environ.get("FROXY_TOGETHER_IMAGE_MODEL", "stabilityai/stable-diffusion-xl-base-1.0"), bool(_first_key("TOGETHER_API_KEY", "TOGETHER_API_KEYS"))),
-            ("cloudflare-image", "Cloudflare FLUX", "cloudflare", os.environ.get("FROXY_CLOUDFLARE_IMAGE_MODEL", "@cf/black-forest-labs/flux-1-schnell"), bool(account and _first_key("CLOUDFLARE_API_TOKEN"))),
-            ("runware-image", "Runware FLUX", "runware", os.environ.get("FROXY_RUNWARE_IMAGE_MODEL", "bfl:5@1"), bool(_first_key("RUNWARE_API_KEY", "RUNWARE_API_KEYS"))),
-            ("pollinations-image", "Pollinations FLUX", "pollinations", os.environ.get("FROXY_POLLINATIONS_MODEL", "flux"), True),
+            ("openai-gpt-image", "OpenAI GPT Image", "openai", os.environ.get("FROXY_OPENAI_IMAGE_MODEL", "gpt-image-1"), openai, cost),
+            ("openai-dall-e-3", "OpenAI DALL-E 3", "openai", "dall-e-3", openai, cost),
+            ("together-flux-schnell", "Together FLUX.1 Schnell", "together", "black-forest-labs/FLUX.1-schnell", together, 40),
+            ("together-juggernaut-flux", "Together Juggernaut FLUX", "together", "Rundiffusion/Juggernaut-Lightning-Flux", together, 30),
+            ("together-qwen-image", "Together Qwen Image", "together", "Qwen/Qwen-Image", together, 90),
+            ("together-flux2-dev", "Together FLUX.2 Dev", "together", "black-forest-labs/FLUX.2-dev", together, 220),
+            ("cf-flux-schnell", "Cloudflare FLUX.1 Schnell", "cloudflare", "@cf/black-forest-labs/flux-1-schnell", cloudflare, cost),
+            ("cf-sdxl", "Cloudflare SDXL", "cloudflare", "@cf/stabilityai/stable-diffusion-xl-base-1.0", cloudflare, cost),
+            ("cf-sdxl-lightning", "Cloudflare SDXL Lightning", "cloudflare", "@cf/bytedance/stable-diffusion-xl-lightning", cloudflare, cost),
+            ("cf-dreamshaper-lcm", "Cloudflare DreamShaper 8 LCM", "cloudflare", "@cf/lykon/dreamshaper-8-lcm", cloudflare, cost),
+            ("runware-flux", "Runware FLUX", "runware", "bfl:5@1", runware, cost),
+            ("runware-sdxl", "Runware SDXL", "runware", "runware:101@1", runware, cost),
+            ("pollinations-zimage", "Pollinations Z-Image", "pollinations", "zimage", pollinations, cost),
+            ("pollinations-flux", "Pollinations FLUX", "pollinations", "flux", pollinations, cost),
+            ("pollinations-gptimage", "Pollinations GPT Image", "pollinations", "gptimage", pollinations, cost),
+            ("pollinations-nanobanana", "Pollinations Nano Banana", "pollinations", "nanobanana", pollinations, cost),
+            ("aiml-flux", "AI/ML API FLUX", "aimlapi", "flux-pro", aimlapi, cost),
+            ("aiml-nano", "AI/ML API Nano Banana", "aimlapi", "google/gemini-3.1-flash-image", aimlapi, cost),
+            ("stability-core", "Stability Core", "stability", "core", stability, cost),
+            ("stability-ultra", "Stability Ultra", "stability", "ultra", stability, cost),
         ]
         return [{
             "id": public_id,
@@ -626,9 +698,9 @@ class FroxyGateway:
             "provider_logo": PROVIDER_LOGOS.get(provider, ""),
             "provider_model": model,
             "capabilities": ["text-to-image"],
-            "estimated_credits": cost,
+            "estimated_credits": estimated,
             "active": active,
-        } for public_id, name, provider, model, active in definitions]
+        } for public_id, name, provider, model, active, estimated in definitions]
 
     def get_image_model(self, public_id: str) -> dict[str, Any]:
         model = next((row for row in self.image_models() if row["id"] == str(public_id) and row.get("active")), None)
@@ -643,16 +715,18 @@ class FroxyGateway:
             "cloudflare": self._image_cloudflare,
             "runware": self._image_runware,
             "pollinations": self._image_pollinations,
+            "aimlapi": self._image_aimlapi,
+            "stability": self._image_stability,
         }
         active_models = [row for row in self.image_models() if row.get("active")]
         if model_id:
             selected = self.get_image_model(model_id)
             active_models.sort(key=lambda row: 0 if row["id"] == selected["id"] else 1)
-        attempts = [operations[row["provider"]] for row in active_models]
+        attempts = [(operations[row["provider"]], row) for row in active_models]
         errors = []
-        for operation in attempts:
+        for operation, image_model in attempts:
             try:
-                result = operation(prompt, width, height)
+                result = operation(prompt, width, height, image_model.get("provider_model"))
                 if result:
                     return result
             except GatewayError as exc:
@@ -663,25 +737,31 @@ class FroxyGateway:
                 errors.append(f"{operation.__name__} geçersiz yanıtı: {type(exc).__name__}")
         raise GatewayError(errors[-1] if errors else "Çalışan görsel sağlayıcısı bulunamadı")
 
-    def _image_openai(self, prompt: str, width: int, height: int) -> dict[str, Any] | None:
-        key = _first_key("OPENAI_IMAGE_KEY", "OPENAI_API_KEY")
+    def _image_openai(self, prompt: str, width: int, height: int, model_override: str | None = None) -> dict[str, Any] | None:
+        key = _first_key("OPENAI_IMAGE_KEY", "OPENAI_IMAGE_KEYS", "OPENAI_API_KEY")
         if not key:
             return None
         base = os.environ.get("OPENAI_IMAGE_BASE_URL", "https://api.openai.com/v1").rstrip("/")
-        model = os.environ.get("OPENAI_IMAGE_MODEL", "gpt-image-1-mini")
+        model = model_override or os.environ.get("FROXY_OPENAI_IMAGE_MODEL", "gpt-image-1")
+        if width == height:
+            size = "1024x1024"
+        elif width > height:
+            size = "1792x1024" if model == "dall-e-3" else "1536x1024"
+        else:
+            size = "1024x1792" if model == "dall-e-3" else "1024x1536"
         response = self.session.post(
             f"{base}/images/generations",
             headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-            json={"model": model, "prompt": prompt, "size": f"{width}x{height}", "n": 1},
+            json={"model": model, "prompt": prompt, "size": size, "n": 1},
             timeout=(8, 120),
         )
         return self._decode_image_response(response, "openai", model)
 
-    def _image_together(self, prompt: str, width: int, height: int) -> dict[str, Any] | None:
+    def _image_together(self, prompt: str, width: int, height: int, model_override: str | None = None) -> dict[str, Any] | None:
         key = _first_key("TOGETHER_API_KEY", "TOGETHER_API_KEYS")
         if not key:
             return None
-        model = os.environ.get("FROXY_TOGETHER_IMAGE_MODEL", "stabilityai/stable-diffusion-xl-base-1.0")
+        model = model_override or os.environ.get("FROXY_TOGETHER_IMAGE_MODEL", "black-forest-labs/FLUX.1-schnell")
         response = self.session.post(
             "https://api.together.xyz/v1/images/generations",
             headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
@@ -690,16 +770,21 @@ class FroxyGateway:
         )
         return self._decode_image_response(response, "together", model)
 
-    def _image_cloudflare(self, prompt: str, width: int, height: int) -> dict[str, Any] | None:
+    def _image_cloudflare(self, prompt: str, width: int, height: int, model_override: str | None = None) -> dict[str, Any] | None:
         token = _first_key("CLOUDFLARE_API_TOKEN")
         account = os.environ.get("CLOUDFLARE_ACCOUNT_ID", "").strip()
         if not token or not account:
             return None
-        model = os.environ.get("FROXY_CLOUDFLARE_IMAGE_MODEL", "@cf/black-forest-labs/flux-1-schnell")
+        model = model_override or os.environ.get("FROXY_CLOUDFLARE_IMAGE_MODEL", "@cf/black-forest-labs/flux-1-schnell")
+        body = {"prompt": prompt, "width": width, "height": height}
+        if "flux" in model:
+            body["steps"] = 4
+        else:
+            body["num_steps"] = 4 if "lightning" in model else 20
         response = self.session.post(
             f"https://api.cloudflare.com/client/v4/accounts/{account}/ai/run/{quote(model, safe='@/-')} ".strip(),
             headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
-            json={"prompt": prompt, "width": width, "height": height, "num_steps": 4},
+            json=body,
             timeout=(8, 120),
         )
         if response.status_code >= 400:
@@ -711,19 +796,19 @@ class FroxyGateway:
             payload = response.json()
             image = (payload.get("result") or {}).get("image")
             if image:
-                return {"image_url": f"data:image/png;base64,{image}", "provider": "cloudflare", "model": model}
+                return self._base64_image(image, "cloudflare", model)
         except ValueError:
             pass
         raise GatewayError("Cloudflare görsel yanıtı okunamadı")
 
-    def _image_runware(self, prompt: str, width: int, height: int) -> dict[str, Any] | None:
+    def _image_runware(self, prompt: str, width: int, height: int, model_override: str | None = None) -> dict[str, Any] | None:
         key = _first_key("RUNWARE_API_KEY", "RUNWARE_API_KEYS")
         if not key:
             return None
-        model = os.environ.get("FROXY_RUNWARE_IMAGE_MODEL", "bfl:5@1")
+        model = model_override or os.environ.get("FROXY_RUNWARE_IMAGE_MODEL", "bfl:5@1")
         width = max(512, min(1024, int(round(width / 64.0) * 64)))
         height = max(512, min(1024, int(round(height / 64.0) * 64)))
-        task_id = f"froxy-{int(time.time())}-{threading.get_ident()}"
+        task_id = str(uuid.uuid4())
         response = self.session.post(
             "https://api.runware.ai/v1",
             headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
@@ -737,6 +822,7 @@ class FroxyGateway:
                 "steps": 4,
                 "numberResults": 1,
                 "outputType": "URL",
+                "deliveryMethod": "sync",
             }],
             timeout=(8, 120),
         )
@@ -755,29 +841,94 @@ class FroxyGateway:
             url = first["images"][0]
         if not url:
             raise GatewayError("Runware boş görsel yanıtı verdi")
-        return {"image_url": url, "provider": "runware", "model": model}
+        image_url = str(url)
+        parsed = urlparse(image_url)
+        if parsed.scheme not in {"https", "http"} or not parsed.netloc:
+            raise GatewayError("Runware geçersiz görsel URL'si döndürdü")
+        return {"image_url": image_url, "provider": "runware", "model": model}
 
-    def _image_pollinations(self, prompt: str, width: int, height: int) -> dict[str, Any] | None:
-        key = _first_key("POLLINATIONS_API_KEY", "POLLINATIONS_KEY")
+    def _image_pollinations(self, prompt: str, width: int, height: int, model_override: str | None = None) -> dict[str, Any] | None:
+        key = _first_key("POLLINATIONS_API_KEY", "POLLINATIONS_API_KEYS", "POLLINATIONS_KEY")
         if not key:
             return None
-        model = os.environ.get("FROXY_POLLINATIONS_MODEL", "flux")
-        url = f"https://gen.pollinations.ai/image/{quote(prompt, safe='')}"
-        response = self.session.get(
-            url,
-            params={"model": model, "width": width, "height": height, "nologo": "true", "key": key},
+        model = model_override or os.environ.get("FROXY_POLLINATIONS_MODEL", "zimage")
+        response = self.session.post(
+            "https://gen.pollinations.ai/v1/images/generations",
+            headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+            json={
+                "model": model,
+                "prompt": prompt,
+                "size": f"{width}x{height}",
+                "n": 1,
+                "response_format": "url",
+            },
+            timeout=(8, 120),
+        )
+        return self._decode_image_response(response, "pollinations", model)
+
+    def _image_aimlapi(self, prompt: str, width: int, height: int, model_override: str | None = None) -> dict[str, Any] | None:
+        key = _first_key("AIMLAPI_KEY")
+        if not key:
+            return None
+        model = model_override or "flux-pro"
+        response = self.session.post(
+            "https://api.aimlapi.com/v1/images/generations",
+            headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+            json={"model": model, "prompt": prompt, "n": 1, "size": f"{width}x{height}"},
+            timeout=(8, 120),
+        )
+        return self._decode_image_response(response, "aimlapi", model)
+
+    def _image_stability(self, prompt: str, width: int, height: int, model_override: str | None = None) -> dict[str, Any] | None:
+        key = _first_key("STABILITY_API_KEY", "STABILITY_API_KEYS")
+        if not key:
+            return None
+        model = "ultra" if model_override == "ultra" else "core"
+        response = self.session.post(
+            f"https://api.stability.ai/v2beta/stable-image/generate/{model}",
+            headers={"Authorization": f"Bearer {key}", "Accept": "image/*"},
+            files={
+                "prompt": (None, prompt),
+                "output_format": (None, "jpeg"),
+                "aspect_ratio": (None, "16:9" if width > height else "9:16" if height > width else "1:1"),
+            },
             timeout=(8, 120),
         )
         if response.status_code >= 400:
-            raise GatewayError(f"Pollinations görsel HTTP {response.status_code}")
-        return self._bytes_image(response.content, response.headers.get("Content-Type", "image/jpeg"), "pollinations", model)
+            raise GatewayError(f"Stability görsel HTTP {response.status_code}")
+        return self._bytes_image(response.content, response.headers.get("Content-Type", ""), "stability", model)
 
     @staticmethod
     def _bytes_image(content: bytes, content_type: str, provider: str, model: str) -> dict[str, Any]:
         if not content or len(content) > 700_000:
             raise GatewayError("Görsel çıktısı kalıcı kayıt sınırını aştı")
-        mime = content_type.split(";", 1)[0] if content_type.startswith("image/") else "image/jpeg"
+        mime = content_type.split(";", 1)[0].lower()
+        signatures = {
+            "image/png": content.startswith(b"\x89PNG\r\n\x1a\n"),
+            "image/jpeg": content.startswith(b"\xff\xd8\xff"),
+            "image/webp": content.startswith(b"RIFF") and content[8:12] == b"WEBP",
+        }
+        if mime not in signatures or not signatures[mime]:
+            raise GatewayError(f"{provider} geçerli bir görsel döndürmedi")
         encoded = base64.b64encode(content).decode("ascii")
+        return {"image_url": f"data:{mime};base64,{encoded}", "provider": provider, "model": model}
+
+    @staticmethod
+    def _base64_image(encoded: str, provider: str, model: str) -> dict[str, Any]:
+        if not isinstance(encoded, str) or len(encoded) > 950_000:
+            raise GatewayError("Görsel çıktısı kalıcı kayıt sınırını aştı")
+        try:
+            raw = base64.b64decode(encoded, validate=True)
+        except (ValueError, TypeError) as exc:
+            raise GatewayError(f"{provider} geçersiz base64 görsel döndürdü") from exc
+        if raw.startswith(b"\x89PNG\r\n\x1a\n"):
+            mime = "image/png"
+        elif raw.startswith(b"\xff\xd8\xff"):
+            mime = "image/jpeg"
+        elif raw.startswith(b"RIFF") and raw[8:12] == b"WEBP":
+            mime = "image/webp"
+        else:
+            raise GatewayError(f"{provider} geçerli bir görsel döndürmedi")
         return {"image_url": f"data:{mime};base64,{encoded}", "provider": provider, "model": model}
 
     def _decode_image_response(self, response: requests.Response, provider: str, model: str) -> dict[str, Any]:
@@ -792,10 +943,12 @@ class FroxyGateway:
             raise GatewayError(f"{provider} boş görsel yanıtı verdi")
         first = data[0]
         if first.get("url"):
-            return {"image_url": first["url"], "provider": provider, "model": model}
+            image_url = str(first["url"])
+            parsed = urlparse(image_url)
+            if parsed.scheme not in {"https", "http"} or not parsed.netloc:
+                raise GatewayError(f"{provider} geçersiz görsel URL'si döndürdü")
+            return {"image_url": image_url, "provider": provider, "model": model}
         encoded = first.get("b64_json") or first.get("b64")
         if encoded:
-            if len(encoded) > 950_000:
-                raise GatewayError("Görsel çıktısı kalıcı kayıt sınırını aştı")
-            return {"image_url": f"data:image/png;base64,{encoded}", "provider": provider, "model": model}
+            return self._base64_image(encoded, provider, model)
         raise GatewayError(f"{provider} görsel URL'si döndürmedi")
