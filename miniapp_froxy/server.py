@@ -53,6 +53,7 @@ gateway = FroxyGateway()
 image_executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="froxy-image")
 _image_jobs_lock = threading.Lock()
 _running_image_jobs: set[str] = set()
+_image_recovery_started = False
 _rate_lock = threading.Lock()
 _rate_buckets: dict[str, deque[float]] = defaultdict(deque)
 _topup_worker_started = False
@@ -409,7 +410,8 @@ def _submit_image_job(job: dict) -> None:
             store.update_image_job(job_id, {"status": "running", "started_at": int(time.time())})
             result = gateway.generate_image(job["prompt"], int(job["width"]), int(job["height"]), str(job.get("model") or ""))
             if job.get("billing_kind") == "credits":
-                store.settle_credits(int(job["user_id"]), job["request_id"], int(job["reserved_credits"]), {"provider": result.get("provider"), "provider_model": result.get("model")})
+                actual = min(int(job["reserved_credits"]), max(1, int(result.get("estimated_credits") or job["reserved_credits"])))
+                store.settle_credits(int(job["user_id"]), job["request_id"], actual, {"provider": result.get("provider"), "provider_model": result.get("model")})
             store.update_image_job(job_id, {"status": "completed", "image_url": result["image_url"], "provider": result.get("provider"), "provider_model": result.get("model"), "completed_at": int(time.time())})
         except Exception as exc:
             if job.get("billing_kind") == "credits":
@@ -422,6 +424,24 @@ def _submit_image_job(job: dict) -> None:
                 _running_image_jobs.discard(job_id)
 
     image_executor.submit(run)
+
+
+def _start_image_recovery() -> None:
+    global _image_recovery_started
+    if os.environ.get("APP_ENV", "").lower() == "test" or _image_recovery_started:
+        return
+    _image_recovery_started = True
+
+    def recover():
+        try:
+            for pending_job in store.list_recoverable_image_jobs():
+                _submit_image_job(pending_job)
+        except Exception:
+            # Health endpoints stay available even when Firestore is briefly
+            # unavailable during boot; client polling can also resume a job.
+            return
+
+    threading.Thread(target=recover, daemon=True, name="froxy-image-recovery").start()
 
 
 @app.route("/api/images", methods=["POST"])
@@ -737,6 +757,7 @@ def serve_static(path: str):
 
 
 _start_topup_worker()
+_start_image_recovery()
 
 
 def get_local_ip() -> str:

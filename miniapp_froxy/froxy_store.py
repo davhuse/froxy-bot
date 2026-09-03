@@ -520,6 +520,15 @@ class FroxyStore:
             user["updated_at"] = _utc_ts()
 
         self._mutate_doc(self._user_doc_id(user_id), lambda: self._default_user(user_id), mutate)
+
+        def mutate_index(index: dict[str, Any]) -> None:
+            ids = list(index.get("job_ids", []))
+            if job_id not in ids:
+                ids.append(job_id)
+            index["job_ids"] = ids[-240:]
+            index["updated_at"] = _utc_ts()
+
+        self._mutate_doc("froxy_image_job_index_v1", lambda: {"job_ids": []}, mutate_index)
         return row
 
     def get_image_job(self, user_id: int, job_id: str) -> dict[str, Any] | None:
@@ -538,6 +547,19 @@ class FroxyStore:
 
         row, _ = self._mutate_doc(doc_id, lambda: {"job_id": job_id, "created_at": _utc_ts()}, mutate)
         return row
+
+    def list_recoverable_image_jobs(self, limit: int = 40) -> list[dict[str, Any]]:
+        """Return persisted queued/running jobs so a restarted Render worker can resume."""
+        index, _ = self._read("froxy_image_job_index_v1")
+        ids = list((index or {}).get("job_ids", []))[-max(1, min(int(limit), 80)):]
+        jobs: list[dict[str, Any]] = []
+        for job_id in reversed(ids):
+            row, _ = self._read(f"froxy_job_v1_{_safe_id(job_id)}")
+            if not row or row.get("status") not in {"queued", "running"}:
+                continue
+            row.pop("_memory_version", None)
+            jobs.append(row)
+        return jobs
 
     def save_topup(self, topup: dict[str, Any]) -> dict[str, Any]:
         pid = str(topup["product_id"])

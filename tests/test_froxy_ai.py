@@ -132,6 +132,17 @@ class FroxyStoreTests(unittest.TestCase):
         found = self.store.get_pending_topup_by_idempotency(101, "checkout-1")
         self.assertEqual("shopier-1", found["product_id"])
 
+    def test_queued_image_jobs_are_recoverable_after_store_restart(self):
+        created = self.store.create_image_job(101, {
+            "job_id": "restart-job", "request_id": "restart-request",
+            "prompt": "blue fox", "model": "fake-image",
+        })
+        restarted = FroxyStore("memory")
+        jobs = restarted.list_recoverable_image_jobs()
+        self.assertEqual("restart-job", jobs[0]["job_id"])
+        restarted.update_image_job(created["job_id"], {"status": "completed"})
+        self.assertEqual([], restarted.list_recoverable_image_jobs())
+
 
 class FroxyApiTests(unittest.TestCase):
     def setUp(self):
@@ -267,6 +278,54 @@ class FroxyApiTests(unittest.TestCase):
         payload = gateway.session.post.call_args.kwargs["json"][0]
         self.assertEqual("sync", payload["deliveryMethod"])
         self.assertEqual(4, __import__("uuid").UUID(payload["taskUUID"]).version)
+
+    def test_chat_rotates_key_after_rate_limit_and_records_recovery(self):
+        gateway = FroxyGateway()
+        model = {
+            "id": "rotating/test", "provider": "rotating",
+            "provider_model_id": "test", "is_froxy": False,
+        }
+        provider = Provider("rotating", "Rotating", "https://example.test", ("ROTATING_TEST_KEYS",))
+        limited = mock.Mock(status_code=429)
+        limited.close = mock.Mock()
+        success = mock.Mock(status_code=200)
+        success.iter_lines.return_value = [
+            'data: {"choices":[{"delta":{"content":"tamam"}}]}',
+            "data: [DONE]",
+        ]
+        success.close = mock.Mock()
+        gateway.session.post = mock.Mock(side_effect=[limited, success])
+        with mock.patch.dict(os.environ, {"ROTATING_TEST_KEYS": "bad-key,good-key"}, clear=False), mock.patch.object(gateway, "providers", return_value=[provider]):
+            events = list(gateway.stream_chat(model, [{"role": "user", "content": "test"}]))
+        self.assertEqual("tamam", events[0]["content"])
+        self.assertEqual(2, gateway.session.post.call_count)
+        self.assertEqual("Bearer bad-key", gateway.session.post.call_args_list[0].kwargs["headers"]["Authorization"])
+        self.assertEqual("Bearer good-key", gateway.session.post.call_args_list[1].kwargs["headers"]["Authorization"])
+        self.assertTrue(gateway._runtime_health["rotating"]["runtime_healthy"])
+
+    def test_old_web_image_provider_inventory_is_available_when_configured(self):
+        gateway = FroxyGateway()
+        env = {
+            "GEMINI_API_KEY": "google-key", "EVOLINK_API_KEY": "evolink-key",
+            "IMAGEGPT_API_KEY": "imagegpt-key", "MODAL_IMAGE_ENDPOINT": "https://example.test/modal",
+        }
+        with mock.patch.dict(os.environ, env, clear=False):
+            models = gateway.image_models()
+        by_id = {row["id"]: row for row in models}
+        for model_id in ("gemini-3.1-flash-image", "imagen-4-fast", "evolink-img-gpt-image-2", "imagegpt-free", "modal-sdxl"):
+            self.assertTrue(by_id[model_id]["active"], model_id)
+
+    def test_google_image_adapter_accepts_inline_data(self):
+        gateway = FroxyGateway()
+        encoded = __import__("base64").b64encode(b"\x89PNG\r\n\x1a\n" + b"0" * 32).decode()
+        response = mock.Mock(status_code=200)
+        response.json.return_value = {"candidates": [{"content": {"parts": [{"inlineData": {"mimeType": "image/png", "data": encoded}}]}}]}
+        gateway.session.post = mock.Mock(return_value=response)
+        result = gateway._image_google("blue fox", 768, 432, "gemini-3.1-flash-image", "test-key")
+        self.assertEqual("google", result["provider"])
+        payload = gateway.session.post.call_args.kwargs["json"]
+        self.assertEqual(["Image"], payload["generationConfig"]["responseModalities"])
+        self.assertEqual("16:9", payload["generationConfig"]["responseFormat"]["image"]["aspectRatio"])
 
     def test_shopier_products_keep_real_title_and_delivery_terms(self):
         products = server.load_products()
