@@ -141,7 +141,13 @@ if not config:
     logger.error("bot_config.json could not be loaded. Exiting.")
     exit(1)
 
-BOT_TOKEN = (os.environ.get("FROXY_SUPPORT_BOT_TOKEN") or config.get("support_bot_token") or "").strip()
+BOT_TOKEN = (
+    os.environ.get("FROXY_SUPPORT_BOT_TOKEN")
+    or os.environ.get("FROXY_BOT_TOKEN")
+    or config.get("froxy_bot_token")
+    or config.get("support_bot_token")
+    or ""
+).strip()
 ADMIN_ID = int(os.environ.get("FROXY_ADMIN_ID", config.get("froxy_admin_id", config.get("admin_id", 0))) or 0)
 BOT_USER_ID = None
 FROXY_SHOPIER_URL = "https://www.shopier.com/froxyai"
@@ -359,6 +365,9 @@ def shopier_menu(lang="tr"):
 
 if not BOT_TOKEN or BOT_TOKEN == "YOUR_TELEGRAM_BOT_TOKEN":
     logger.error("FROXY_SUPPORT_BOT_TOKEN is not configured. Exiting.")
+    exit(1)
+if not API_ID or not API_HASH:
+    logger.error("TELEGRAM_API_ID / TELEGRAM_API_HASH is not configured. Exiting.")
     exit(1)
 
 # In-memory user state

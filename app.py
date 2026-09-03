@@ -625,7 +625,13 @@ def bot_watchdog(lease_owner=None):
                     with open(CONFIG_FILE, "r", encoding="utf-8") as f:
                         cfg = json.load(f)
                     froxy_enabled = FROXY_ENABLED and cfg.get("froxy_bot_running", True)
-                    froxy_token = (os.environ.get("FROXY_SUPPORT_BOT_TOKEN") or cfg.get("support_bot_token") or "").strip()
+                    froxy_token = (
+                        os.environ.get("FROXY_SUPPORT_BOT_TOKEN")
+                        or os.environ.get("FROXY_BOT_TOKEN")
+                        or cfg.get("froxy_bot_token")
+                        or cfg.get("support_bot_token")
+                        or ""
+                    ).strip()
                     if froxy_token and froxy_token != "YOUR_TELEGRAM_BOT_TOKEN":
                         has_froxy_token = True
                 except Exception:
