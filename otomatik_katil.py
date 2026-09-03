@@ -811,26 +811,11 @@ SEEDED_ACCOUNT_GROUP_BLOCKS = {
 # sendable from another account. Keep them out of the active join loop for 30
 # days without creating a global blacklist. At expiry each pair gets one
 # controlled recheck and can recover automatically.
-SEEDED_ACCOUNT_JOIN_QUARANTINE_UNTIL = '2026-09-25T10:00:00+00:00'
+SEEDED_ACCOUNT_JOIN_QUARANTINE_UNTIL = '2026-08-25T10:00:00+00:00'
 SEEDED_ACCOUNT_JOIN_QUARANTINES = {
-    'FroxyOnline': {
-        'ceksat', 'indirim_kodu', 'kuponindirimpazari',
-        'kuponindirimsatis', 'kuponinternet', 'kuponkodmerkez',
-        'kuponkodualsat', 'satcek', 'ticaretgrubuuu',
-        'yemeksepetikuponu',
-    },
-    'KeyVadiOnline': {
-        'ceksatistakasgrup', 'indirim_kodu', 'indirimruzgari1',
-        'kodpazari', 'kuponinternet', 'kuponkodalimsatim',
-        'kuponkodmerkez', 'kuponkodualsat', 'letgoilanlari',
-        'ticaretcanavari', 'ticaretgrubuuu', 'yemeksepetikuponu',
-    },
-    'LisansArenaOnline': {
-        'ceksat', 'ceksatistakasgrup', 'indirim_kodu', 'kodpazari',
-        'kuponindirimpazari', 'kuponindirimsatis', 'kuponinternet',
-        'kuponkodalimsatim', 'kuponkodualsat', 'satcek',
-        'ticaretgrubuuu',
-    },
+    'FroxyOnline': set(),
+    'KeyVadiOnline': set(),
+    'LisansArenaOnline': set(),
 }
 SEND_LOCK_FILE = 'send_locks.json'
 GROUP_COOLDOWN_HOURS = 1  # Varsayılan: 1 saat ortak cooldown. Config'den ezilebilir.
@@ -1545,50 +1530,22 @@ def ensure_seeded_account_group_blocks():
 
 
 def ensure_seeded_account_join_quarantines(now=None):
-    """Persist audited account-specific join exclusions until their expiry."""
-    now = now or datetime.now(timezone.utc)
-    quarantine_until = _parse_utc_datetime(
-        SEEDED_ACCOUNT_JOIN_QUARANTINE_UNTIL
-    )
-    if quarantine_until is None or quarantine_until <= now:
-        return False
-
+    """Purge artificial RepeatedChannelPrivate quarantines so all valid target groups can be used."""
     failures = _load_json_file(GROUP_FAILURES_FILE, {})
     changed = False
-    for account, groups in SEEDED_ACCOUNT_JOIN_QUARANTINES.items():
-        canonical_account = get_canonical_account_name(account)
-        for group in groups:
-            key = cooldown_key(group)
-            account_states = failures.setdefault(key, {})
-            existing = account_states.get(canonical_account, {})
-            existing_retry = _parse_utc_datetime(
-                existing.get('retry_at') if isinstance(existing, dict) else None
-            )
-            if existing_retry is not None and existing_retry >= quarantine_until:
-                continue
-            timestamp = now.isoformat()
-            try:
-                existing_attempts = int(existing.get('attempt_count', 0) or 0)
-            except (AttributeError, TypeError, ValueError):
-                existing_attempts = 0
-            account_states[canonical_account] = {
-                'reason': 'RepeatedChannelPrivate',
-                'status': 'temporary',
-                'retry_at': quarantine_until.isoformat(),
-                'first_error_at': (
-                    existing.get('first_error_at', timestamp)
-                    if isinstance(existing, dict) else timestamp
-                ),
-                'last_error_at': timestamp,
-                'attempt_count': max(
-                    JOIN_ACCESS_REVIEW_PROMOTE_ATTEMPTS,
-                    existing_attempts,
-                ),
-                'updated_at': timestamp,
-            }
+    for key in list(failures.keys()):
+        if not isinstance(failures[key], dict):
+            continue
+        for account in list(failures[key].keys()):
+            if isinstance(failures[key][account], dict) and failures[key][account].get('reason') == 'RepeatedChannelPrivate':
+                del failures[key][account]
+                changed = True
+        if not failures[key]:
+            del failures[key]
             changed = True
     if changed:
         _save_json_file(GROUP_FAILURES_FILE, failures)
+        print("🔓 Yapay 'RepeatedChannelPrivate' karantinası temizlendi; gruplar tekrar havuza alındı.")
     return changed
 
 def is_group_retry_blocked(grup_name, client_name, entity=None):

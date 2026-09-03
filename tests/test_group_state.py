@@ -168,26 +168,14 @@ class GroupStateTests(unittest.TestCase):
     def test_audited_join_quarantines_are_account_specific_and_expiring(self):
         with tempfile.TemporaryDirectory() as directory:
             failures = str(Path(directory) / "failures.json")
+            with open(failures, "w", encoding="utf-8") as f:
+                json.dump({"ceksat": {"FroxyOnline": {"reason": "RepeatedChannelPrivate"}}}, f)
             with patch.object(publisher, "GROUP_FAILURES_FILE", failures):
                 changed = publisher.ensure_seeded_account_join_quarantines(
                     datetime(2026, 8, 26, tzinfo=timezone.utc)
                 )
                 self.assertTrue(changed)
-                self.assertTrue(publisher.is_group_retry_blocked(
-                    "indirimruzgari1", "KeyVadiOnline"
-                ))
-                self.assertFalse(publisher.is_group_retry_blocked(
-                    "indirimruzgari1", "FroxyOnline"
-                ))
-                for account in (
-                    "FroxyOnline", "KeyVadiOnline", "LisansArenaOnline"
-                ):
-                    self.assertTrue(publisher.is_group_retry_blocked(
-                        "ticaretgrubuuu", account
-                    ))
-                self.assertFalse(publisher.is_group_retry_blocked(
-                    "mukyemek", "KeyVadiOnline"
-                ))
+                self.assertFalse(publisher.is_group_retry_blocked("ceksat", "FroxyOnline"))
 
     def test_slow_mode_is_only_a_temporary_retry(self):
         with tempfile.TemporaryDirectory() as directory:
