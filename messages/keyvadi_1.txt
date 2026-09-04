@@ -1,23 +1,30 @@
-[ KEYVADİ | GÜNCEL DİJİTAL ÜRÜN KATALOĞU ]
+[ KEYVADİ | GÜNCEL DİJİTAL ÜRÜN & LİSANS LİSTESİ ]
 
-Aradığın dijital üyelik, yapay zekâ aracı, oyun veya lisans tek listede! Ürüne göre kişisel profil, ortak hesap, davet ya da kod teslimatı seçenekleri bulunur.
+Popüler abonelik, yapay zekâ, oyun ve yazılımlar tek adreste:
 
-Günün Fırsatları:
-• Netflix 4K UHD Ortak: 39,99₺ | Özel Profil: 79,90₺
-• YouTube Premium 3 Aylık Kod: 19,90₺ | 1 Ay Davet: 30₺
-• Canva Pro 1 Yıl Davet: 49,90₺ | Öğretmen 1 Yıl: 79,90₺
-• Gemini Advanced 3 Ay: 59,90₺ | Pro 18 Ay Davet: 99,90₺
-• ChatGPT Plus Ortak Hesap: 69,90₺ | Kişisel: 499,90₺
-• Minecraft Premium + Xbox Ultimate (1 Ay Ortak): 49,90₺ | (3 Ay Ortak): 119,90₺
-• Xbox Game Pass 1 Ay: 49,90₺ | 3 Ay: 69,90₺
-• Office 365 1 Yıl: 70₺ | Windows 10/11 Pro: 70₺
+Film, Dizi & Müzik:
+• Netflix 4K UHD Profil: 79,90₺ | Ortak: 39,99₺
+• YouTube Premium 3 Ay Kod: 19,90₺ | 1 Ay Davet: 30₺
+• Spotify Premium (4 Ay): 34,99₺ | Prime Video: 29,90₺
+• Disney+ UHD: 99,90₺ | HBO Max: 39,90₺ | Exxen: 34,99₺
 
-Diğer Popüler Ürünler:
-• Disney+ UHD Reklamsız: 99,90₺ | HBO Max: 39,90₺ | Exxen 3 Ay: 34,99₺
-• Prime Video Ortak: 9,99₺ | Özel: 29,90₺ | Spotify: 34,99₺
-• Perplexity Pro: 119,90₺ | DeepL Pro: 29,90₺ | Grammarly Pro: 49,90₺
-• CapCut Pro Ortak: 49,90₺ | Adobe Creative Cloud 1 Ay: 119,99₺
-• Trendyol Market ve Yemek Kuponları: 49,99₺ | Steam İstediğin Oyun: 60₺
+Yapay Zekâ, Tasarım & Ofis:
+• Canva Pro 1 Yıl (Kendi Mailinize): 49,90₺ | Öğretmen: 79,90₺
+• ChatGPT Plus Ortak: 39,90₺ | Kişisel Hesap: 499,90₺
+• Gemini Pro 18 Ay: 99,90₺ | Gemini Advanced 3 Ay: 59,90₺
+• CapCut Pro: 49,90₺ | Adobe CC 1 Ay: 119,99₺
+• Office 365 (1 Yıl): 70₺ | Windows 10/11 Pro Lisans: 70₺
+• Perplexity Pro: 119,90₺ | DeepL Pro: 29,90₺
 
-Teslimat türü, güncel stok, kullanım koşulları ve hesap uygunluğu sipariş öncesinde ürün detayından kontrol edilir.
-Sipariş ve güncel fiyat: @KeyVadiSatisBot
+Oyun & Kuponlar:
+• Minecraft + Game Pass (1 Ay): 49,90₺ | (3 Ay): 119,90₺
+• Xbox Game Pass 1 Ay: 49,90₺ | 3 Ay: 69,90₺ | Steam: 60₺
+• Trendyol Market ve Yemek Kuponları: 49,99₺
+
+Güven ve Garanti:
+- +100'den fazla başarılı işlem ve referansımız mevcuttur.
+- Kapanma ve sorunlara karşı süre boyunca telafi garantilidir.
+- Shopier ile 3D Secure kart veya havale ile güvenli ödeme.
+
+Sorularınız ve doğrudan sipariş için: @KeyvadiDestek
+7/24 Otomatik Sipariş Botu: @KeyVadiSatisBot

@@ -632,7 +632,8 @@ def strict_group_safe_copy(group_key, is_keyvadi, is_lisansarena, is_froxy):
         ]
         if not is_satcek:
             lines.insert(4, "Netflix 4K kişisel profil 79,90 TL")
-        lines.append("Teslimat türü, stok ve güncel fiyat bilgisi için özel mesaj.")
+        lines.append("+100'den fazla başarılı işlem | Süre boyunca telafi garantisi")
+        lines.append("Shopier güvencesi | Sipariş ve detaylar için: @KeyvadiDestek")
         return "\n".join(lines)
     if is_lisansarena:
         lines = [
@@ -653,7 +654,8 @@ def strict_group_safe_copy(group_key, is_keyvadi, is_lisansarena, is_froxy):
         "ChatGPT Plus kişisel 499,90 TL | ortak 39,99 TL",
         "ChatGPT Plus ve Codex 599,90 TL",
         "Gemini Pro 12 ay 59,99 TL | 18 ay 99,99 TL",
-        "Güncel ürün ve güvenli ödeme Shopier mağazasında.",
+        "+20'den fazla başarılı işlem | Shopier güvencesi",
+        "Destek ve sipariş için: @Froxy_Ai | @FroxyDestekBOT",
     ])
 
 
