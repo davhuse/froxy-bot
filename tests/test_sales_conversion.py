@@ -45,8 +45,8 @@ class SalesCatalogMatchingTests(unittest.TestCase):
         cls.froxy = load_sales_catalog("froxy")
         cls.all_products = cls.keyvadi + cls.froxy
 
-    def test_all_79_active_products_match_their_own_name(self):
-        self.assertEqual(len(self.keyvadi), 61)
+    def test_all_active_products_match_their_own_name(self):
+        self.assertEqual(len(self.keyvadi), 59)
         self.assertEqual(len(self.froxy), 18)
         for catalog in (self.keyvadi, self.froxy):
             for product in catalog:
@@ -67,6 +67,10 @@ class SalesCatalogMatchingTests(unittest.TestCase):
             "ofis": "office",
             "office365": "office",
             "windows keyi": "windows",
+            "s sport plus": "s sport",
+            "yemeksepeti": "yemeksepeti",
+            "turna bilet": "turna",
+            "tiklagelsin": "tıkla gelsin",
         }
         for query, expected in cases.items():
             with self.subTest(query=query):

@@ -625,15 +625,17 @@ def strict_group_safe_copy(group_key, is_keyvadi, is_lisansarena, is_froxy):
             "Canva Pro 1 yıl 49,90 TL",
             "Gemini Pro 3 ay 59,90 TL | 18 ay 99,90 TL",
             "ChatGPT Plus kişisel 499,90 TL | ortak 69,90 TL",
+            "S Sport Plus 1 ay 70 TL | Steam oyun ürünleri",
             "Disney+ UHD reklamsız 1 ay 99,90 TL",
             "Adobe 1 hafta 49,99 TL | 1 ay 119,99 TL",
             "Windows 10/11 Pro 70 TL | Office 365 1 yıl 70 TL",
-            "YouTube Premium 1 ay 30 TL | Steam oyun ürünleri mevcut",
+            "YouTube Premium 1 ay 30 TL",
         ]
         if not is_satcek:
             lines.insert(4, "Netflix 4K kişisel profil 79,90 TL")
+            lines.insert(5, "Yemeksepeti 450/350 kod 60 TL")
         lines.append("+100'den fazla başarılı işlem | Süre boyunca telafi garantisi")
-        lines.append("Shopier güvencesi | Sipariş ve detaylar için: @KeyvadiDestek")
+        lines.append("Kuponlarınız nakit alınır | Sipariş ve detay: @KeyvadiDestek")
         return "\n".join(lines)
     if is_lisansarena:
         lines = [

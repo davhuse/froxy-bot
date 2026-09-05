@@ -84,6 +84,18 @@ TEXT_ALIASES = {
     "steam oyun": "steam oyun",
     "cap cut": "capcut",
     "capcut pro": "capcut",
+    "ssport": "s sport",
+    "s sport plus": "s sport",
+    "ssport plus": "s sport",
+    "yemek sepeti": "yemeksepeti",
+    "yemeksepeti kupon": "yemeksepeti",
+    "turna": "turna",
+    "turna.com": "turna",
+    "ucak bileti": "turna",
+    "bilet kuponu": "turna",
+    "tiklagelsin": "tikla gelsin",
+    "tıkla gelsin": "tikla gelsin",
+    "tikla gelsin kupon": "tikla gelsin",
 }
 
 BRAND_PHRASES = (
@@ -96,6 +108,7 @@ BRAND_PHRASES = (
     "ideogram", "quillbot", "discord", "hbo", "prime video", "prime", "perplexity",
     "magnific", "zula", "fc 26", "fc26", "codex", "antigravity", "disney", "minecraft",
     "cape", "pelerin", "roblox", "instagram", "takipci", "gmail", "claude",
+    "s sport", "yemeksepeti", "turna", "tikla gelsin",
     "baslangic", "populer", "profesyonel", "gelistirici", "isletme", "kurumsal"
 )
 
@@ -119,6 +132,8 @@ FROXY_PRICE_OVERRIDES = {
 # keep bots, automatic replies and Mini App deep-link cards consistent.
 BRAND_PRICE_OVERRIDES = {
     ("keyvadi", "47669117"): "79,90 TL",
+    ("froxy", "49489691"): "499,90 TL",
+    ("froxy", "49489721"): "599,90 TL",
     ("lisansarena", "la_netflix_ozel"): "84,90 TL",
     ("lisansarena", "49002144"): "84,90 TL",
 }

@@ -49,7 +49,13 @@ CARD_MAPPING = [
     ("telegram", "assets/products/card_clean_telegram.jpg"),
     ("crunchyroll", "assets/products/card_clean_crunchyroll.jpg"),
     ("gmail", "assets/products/card_clean_gmail.jpg"),
-    ("instagram", "assets/products/card_clean_instagram.jpg")
+    ("instagram", "assets/products/card_clean_instagram.jpg"),
+    ("s sport", "assets/products/card_clean_ssport.jpg"),
+    ("ssport", "assets/products/card_clean_ssport.jpg"),
+    ("yemeksepeti", "assets/products/card_clean_yemeksepeti.jpg"),
+    ("turna", "assets/products/card_clean_turna.jpg"),
+    ("tikla gelsin", "assets/products/card_clean_tiklagelsin.jpg"),
+    ("tiklagelsin", "assets/products/card_clean_tiklagelsin.jpg")
 ]
 
 def resolve_card(title):

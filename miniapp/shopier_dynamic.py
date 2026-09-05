@@ -267,7 +267,7 @@ def check_and_sync_shopier_orders(users_data_path: Path):
     now = time.time()
     expired_pids = []
     for pid, info in list(topups.items()):
-        if info.get("status") == "pending" and (now - info.get("created_at", now)) > 3600:
+        if info.get("status") == "pending" and (now - info.get("created_at", now)) > 900:
             expired_pids.append(pid)
     
     for pid in expired_pids:
@@ -293,4 +293,4 @@ def start_background_shopier_cleaner(users_data_path: Path):
 
     t = threading.Thread(target=_worker, daemon=True)
     t.start()
-    print("[KeyVadi] Otomatik İlan Temizleme Arka Plan Servisi Başlatıldı (20s döngü, 5dk TTL).")
+    print("[KeyVadi] Otomatik İlan Temizleme Arka Plan Servisi Başlatıldı (20s döngü, 15dk TTL).")
