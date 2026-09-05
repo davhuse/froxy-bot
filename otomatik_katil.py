@@ -10,6 +10,11 @@ import sys
 import shutil
 import time
 import signal
+import logging
+
+# Telethon dahili kanal senkronizasyon (PersistentTimestampOutdatedError) uyarılarını sustur
+logging.getLogger('telethon.client.updates').setLevel(logging.ERROR)
+logging.getLogger('telethon.network.mtprotosender').setLevel(logging.ERROR)
 
 from blast_scheduler import BlastCoordinator, is_recent_message_from_account
 
