@@ -50,6 +50,13 @@ class GroupPolicyTests(unittest.TestCase):
         policy = group_policy.apply_telegram_rights(group_policy.DEFAULT_POLICY, SimpleNamespace(default_banned_rights=rights))
         self.assertFalse(policy["allow_urls"])
         self.assertFalse(policy["allow_deep_links"])
+        self.assertFalse(policy["allow_mentions"])
+
+    def test_strict_anti_link_groups_resolve_no_mentions(self):
+        key, policy = group_policy.resolve_group_policy("kupongrupta")
+        self.assertFalse(policy["allow_urls"])
+        self.assertFalse(policy["allow_deep_links"])
+        self.assertFalse(policy["allow_mentions"])
 
     def test_default_group_uses_visible_keyvadi_mention_without_link(self):
         policy = group_policy.apply_brand_link_safety(group_policy.DEFAULT_POLICY, "keyvadi")

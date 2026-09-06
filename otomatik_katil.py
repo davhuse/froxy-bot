@@ -629,7 +629,7 @@ def strict_group_safe_copy(group_key, is_keyvadi, is_lisansarena, is_froxy):
         lines = [
             "KeyVadi dijital ürünler",
             "Canva Pro 1 yıl 49,90 TL",
-            "Gemini Pro 3 ay 59,90 TL | 18 ay 99,90 TL",
+            "Gemini Pro 3 ay 59,90 TL | 18 ay 149,90 TL",
             "ChatGPT Plus kişisel 499,90 TL | ortak 69,90 TL",
             "S Sport Plus 1 ay 70 TL | Steam oyun ürünleri",
             "Disney+ UHD reklamsız 1 ay 99,90 TL",
@@ -641,7 +641,7 @@ def strict_group_safe_copy(group_key, is_keyvadi, is_lisansarena, is_froxy):
             lines.insert(4, "Netflix 4K kişisel profil 79,90 TL")
             lines.insert(5, "Yemeksepeti 450/350 kod 60 TL")
         lines.append("+100'den fazla başarılı işlem | Süre boyunca telafi garantisi")
-        lines.append("Kuponlarınız nakit alınır | Sipariş ve detay: @KeyvadiDestek")
+        lines.append("Kuponlarınız nakit alınır | Sipariş: KeyVadiSatisBot")
         return "\n".join(lines)
     if is_lisansarena:
         lines = [
@@ -661,9 +661,9 @@ def strict_group_safe_copy(group_key, is_keyvadi, is_lisansarena, is_froxy):
         "Froxy dijital ürün mağazası",
         "ChatGPT Plus kişisel 499,90 TL | ortak 39,99 TL",
         "ChatGPT Plus ve Codex 599,90 TL",
-        "Gemini Pro 12 ay 59,99 TL | 18 ay 99,99 TL",
+        "Gemini Pro 12 ay 59,99 TL | 18 ay 199,90 TL",
         "+20'den fazla başarılı işlem | Shopier güvencesi",
-        "Destek ve sipariş için: @Froxy_Ai | @FroxyDestekBOT",
+        "Destek ve sipariş için: FroxyDestekBOT",
     ])
 
 
@@ -4184,6 +4184,9 @@ async def main():
         async def cache_dialogs():
             nonlocal protected_groups
             protected_groups = get_all_protected_groups()
+            if not await ensure_telegram_connection(client, client_name):
+                print(f"[{client_name}] ⚠️ cache_dialogs: Telegram bağlantısı kurulamadı, mevcut {len(joined_dialogs)} diyalog önbelleği korunuyor.")
+                return
             print(f"🚀 [{client_name}] Diyaloglar önbelleğe alınıyor...")
             try:
                 from datetime import datetime, timezone
@@ -4203,13 +4206,12 @@ async def main():
                     except:
                         verified_groups = {}
 
-                
-                # 'id' değerini koruyarak geri kalan anahtarları temizle
+                # Eski önbelleği silmeden önce geçici sözlükte topla (bağlantı koparsa veri kaybolmasın)
+                fresh_dialogs = {}
                 me_id = joined_dialogs.get("id")
-                joined_dialogs.clear()
                 if me_id is not None:
-                    joined_dialogs["id"] = me_id
-                
+                    fresh_dialogs["id"] = me_id
+
                 async for dialog in client.iter_dialogs():
                     if dialog.is_group or dialog.is_channel:
                         username_lower = dialog.entity.username.lower() if (hasattr(dialog.entity, 'username') and dialog.entity.username) else None
@@ -4224,14 +4226,10 @@ async def main():
                         elif dialog_id_str in protected_groups:
                             is_protected = True
 
-                        # ⚡ WHITELIST MODU DEVRE DIŞI: Kullanıcı katıldığı tüm gruplara göndermek istiyor.
-                        # (Gruptan çıkma ve otomatik kara liste devre dışı bırakıldı)
-                        pass
-
-                        # Save in joined_dialogs under username (if any) and ID string
+                        # Save in fresh_dialogs under username (if any) and ID string
                         if username_lower:
-                            joined_dialogs[username_lower] = dialog.entity
-                        joined_dialogs[dialog_id_str] = dialog.entity
+                            fresh_dialogs[username_lower] = dialog.entity
+                        fresh_dialogs[dialog_id_str] = dialog.entity
                         
                         # Korumalı grupları (sabit hedef listesi) doğrudan önbelleğe ekle ve geç
                         if is_protected:
@@ -4249,7 +4247,7 @@ async def main():
                             })
                             continue
                         
-                        # Otomatik Çıkma/Kara Liste Mantığı Kaldırıldı. Tüm grupları direkt ekle.
+                        # Tüm grupları direkt ekle
                         all_groups_info.append({
                             "username": username_lower or dialog_id_str,
                             "title": title,
@@ -4257,6 +4255,11 @@ async def main():
                             "broadcast": is_broadcast,
                             "days_inactive": 0
                         })
+
+                # Sadece tarama başarıyla tamamlandıysa ve diyalog bulunduysa önbelleği güncelle
+                if len(fresh_dialogs) > (1 if me_id is not None else 0):
+                    joined_dialogs.clear()
+                    joined_dialogs.update(fresh_dialogs)
                             
                 # Grup bilgilerini dosyaya kaydet
                 groups_file = f"cached_groups_{client_name.replace(' ', '_').replace('#', '')}.json"
@@ -5379,16 +5382,25 @@ async def main():
             # ═══════════════════════════════════════════════════
             # YENİ GRUPLARA KATILMA AŞAMASI (blast sonrası)
             # ═══════════════════════════════════════════════════
-            blacklist = get_list(BLACKLIST_FILE)
-            blacklist_lower = set(b.lower() for b in blacklist)
-            not_joined = []
-            for g in hedef_set:
-                g_lower = g.lower()
-                if (g_lower not in joined_dialogs
-                        and g_lower not in blacklist_lower
-                        and not is_account_group_blocked(g, client_name)
-                        and not is_group_retry_blocked(g, client_name)):
-                    not_joined.append(g)
+            if not await ensure_telegram_connection(client, client_name):
+                print(f"[{client_name}] ⚠️ Telegram bağlantısı yok; katılım aşaması atlanıyor.")
+                not_joined = []
+            elif len(joined_dialogs) <= 1:
+                print(f"[{client_name}] ⚠️ Diyalog önbelleği boş ({len(joined_dialogs)}); yanlış katılım isteklerini önlemek için katılım atlanıyor.")
+                not_joined = []
+            else:
+                blacklist = get_list(BLACKLIST_FILE)
+                blacklist_lower = set(b.lower() for b in blacklist)
+                not_joined = []
+                for g in hedef_set:
+                    g_lower = g.lower()
+                    ent = joined_entity_for_target(joined_dialogs, g_lower)
+                    if (ent is None
+                            and g_lower not in joined_dialogs
+                            and g_lower not in blacklist_lower
+                            and not is_account_group_blocked(g, client_name)
+                            and not is_group_retry_blocked(g, client_name)):
+                        not_joined.append(g)
             
             if not_joined:
                 join_count = 0

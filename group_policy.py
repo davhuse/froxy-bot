@@ -141,6 +141,27 @@ SEEDED_POLICIES = {
 }
 
 
+STRICT_NO_MENTION_TARGETS = {
+    "alimsatimmerkezii", "alisverisforumuguncel", "alsatticarettz",
+    "bedavainternetkod", "bedavainternetkodalimsatim", "cek_kupon_kod_ilan",
+    "ceksat", "ceksatistakasgrup", "ceksatkupon", "ceksatkupon2",
+    "herkesibeklerimm", "indirim_kodu", "indirim363", "indirimkana",
+    "indirimkodbul", "indirimkodusatis", "indirimruzgari1",
+    "kodceksatismerkezi", "kodevrenii", "kodkuponmerkezi", "kodmalf",
+    "kuponalsatgurup", "kuponceking", "kuponcekkodsatis", "kuponcekm",
+    "kupongrupta", "kuponhesapsatis", "kuponindirimcek",
+    "kuponindirimkodalisveris", "kuponindirimpazari", "kuponindirimsatis",
+    "kuponinternet", "kuponkodalimsatim", "kuponkodalimsatimm",
+    "kuponkodceksatis", "kuponkodhesapilan", "kuponkodindirimilanlar",
+    "kuponkodsatisgrup", "kuponkodualsat", "kuponsatimalim",
+    "kuponsatisgrup", "kuponsatislari0", "kuponvekodsatisgrubu",
+    "kuponyaticaret", "letgoilanlari", "minakuponkodsatis", "mukyemek",
+    "satcek", "satiskodtakasi", "tahaaslan11", "ticaretcanavari",
+    "ticaretgruptr", "ticaretyapn", "ticaretz", "uygunkod", "wishx_2",
+    "xalimsatiim", "yemeksepetikuponu", "yucekuponsatis", "zeroticaret",
+}
+
+
 def _atomic_json(path: str, value: dict) -> None:
     temporary = f"{path}.tmp"
     with open(temporary, "w", encoding="utf-8") as handle:
@@ -191,17 +212,24 @@ def resolve_group_policy(group_name=None, entity=None) -> tuple[str, dict]:
     policies = load_policies()
     key = policy_key(group_name, entity)
     selected = policies.get(key)
+    aliases = {
+        normalize_group(group_name),
+        normalize_group(getattr(entity, "username", "") if entity is not None else ""),
+    }
     if selected is None:
-        aliases = {
-            normalize_group(group_name),
-            normalize_group(getattr(entity, "username", "") if entity is not None else ""),
-        }
         for candidate_key, candidate in policies.items():
             candidate_aliases = {normalize_group(item) for item in candidate.get("aliases", [])}
             if aliases.intersection(candidate_aliases):
                 selected = candidate
                 break
-    return key, {**deepcopy(DEFAULT_POLICY), **deepcopy(selected or {})}
+    resolved = {**deepcopy(DEFAULT_POLICY), **deepcopy(selected or {})}
+    if aliases.intersection(STRICT_NO_MENTION_TARGETS):
+        resolved.update({
+            "allow_urls": False,
+            "allow_deep_links": False,
+            "allow_mentions": False,
+        })
+    return key, resolved
 
 
 def update_policy(group_name=None, entity=None, **changes) -> dict:
@@ -230,6 +258,7 @@ def apply_telegram_rights(policy: dict, entity=None) -> dict:
         if bool(getattr(rights, "embed_links", False)):
             result["allow_urls"] = False
             result["allow_deep_links"] = False
+            result["allow_mentions"] = False
         if bool(getattr(rights, "send_media", False)):
             result["allow_media"] = False
     return result
