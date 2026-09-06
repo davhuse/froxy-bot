@@ -12,5 +12,4 @@ Güven ve Garanti:
 - +20'den fazla başarılı işlem ve referansımız bulunmaktadır.
 - Ödemeler Shopier üzerinden 3D Secure ile güvenle gerçekleşir.
 
-🤖 Panel ve Sipariş: @FroxyDestekBOT
-💬 Bilgi ve Canlı Destek: @Froxy_Ai
+🤖 Sipariş & Canlı Destek: @FroxyDestekBOT

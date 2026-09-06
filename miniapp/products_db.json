@@ -1,5 +1,22 @@
 [
   {
+    "id": "50602543",
+    "title": "Gemini Pro 18 Ay İndirim Bağlantısı",
+    "price": "149,90 TL",
+    "price_num": 149.9,
+    "category": "ai",
+    "image": "assets/products/card_clean_gemini.jpg",
+    "badge": "⚡ 5 Davet Hakkı",
+    "url": "https://www.shopier.com/50602543",
+    "description": "Google Gemini Pro (Advanced) 18 Aylık resmi indirim ve aktivasyon bağlantısıdır (Davet DEĞİLDİR, kendi Google hesabınızda geçerlidir). 5 kişiye kadar aile/arkadaş daveti iletebilme imkanı, 2 TB Google One bulut depolama alanı ve 1.5 Pro gelişmiş yapay zeka modeline tam erişim içerir. 7/24 anında teslim edilir.",
+    "showcase": true,
+    "is_vitrin": true,
+    "category_label": "YAPAY ZEKA & AI",
+    "delivery_type": "instant",
+    "delivery_label": "Anında Bağlantı Teslimatı",
+    "max_qty": 5
+  },
+  {
     "id": "50594321",
     "title": "Yemeksepeti 200₺'ye 200₺ İndirim Kodu",
     "price": "50,00 TL",

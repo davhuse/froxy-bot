@@ -124,6 +124,20 @@ SEEDED_POLICIES = {
         "hold_reason": "",
         "smoke_required": False,
     },
+    # KOD KUPON MERKEZİ / @kodkuponmerkezi
+    "alias:kodkuponmerkezi": {
+        "aliases": ["kodkuponmerkezi"],
+        "allow_urls": False,
+        "allow_deep_links": False,
+        "allow_mentions": False,
+        "allow_media": False,
+        "allow_emojis": False,
+        "max_lines": None,
+        "forbidden_products": [],
+        "account_hold": [],
+        "hold_reason": "Güvenlik botu uyarısı sonrası linksiz ve mentionsız sade metin zorunlu.",
+        "smoke_required": False,
+    },
 }
 
 
@@ -282,9 +296,22 @@ def _brand_cta(brand: str, *, visible: bool) -> str:
 def _remove_brand_cta_lines(text: str, brand: str) -> str:
     """Remove old CTA lines before adding exactly one policy-approved CTA."""
     terms = {
-        "keyvadi": ("keyvadisatisbot", "sipariş adresi", "siparis adresi", "telegram aramas"),
-        "froxy": ("froxydestekbot", "froxy_destek", "detaylar için", "detaylar icin", "telegram aramas"),
-        "lisansarena": ("lisansarenabot", "sipariş ve destek", "siparis ve destek", "stok, teslimat", "ürünü yaz", "urunu yaz", "telegram aramas"),
+        "keyvadi": (
+            "keyvadisatisbot", "keyvadidestek", "sipariş adresi", "siparis adresi",
+            "telegram aramas", "otomatik sipariş botu", "otomatik siparis botu",
+            "hızlı sipariş botu", "hizli siparis botu", "hızlı alışveriş botu",
+            "hizli alisveris botu", "otomatik satış botu", "otomatik satis botu",
+            "sipariş ve güncel fiyat", "siparis ve guncel fiyat",
+        ),
+        "froxy": (
+            "froxydestekbot", "froxy_destek", "froxy_ai", "froxyai", "telegram aramas",
+            "detay ve destek", "panel & sipariş", "panel & siparis", "güvenli ödeme & panel",
+            "güvenli ödeme & canlı destek", "doğrudan canlı destek", "canlı destek ve sipariş",
+        ),
+        "lisansarena": (
+            "lisansarenabot", "lisansarenadestek", "sipariş ve destek", "siparis ve destek",
+            "stok, teslimat", "ürünü yaz", "urunu yaz", "telegram aramas", "hızlı sipariş",
+        ),
     }.get(brand.casefold(), ())
     return "\n".join(
         line for line in text.splitlines()
@@ -297,9 +324,9 @@ def _remove_forbidden_product_lines(message: str, forbidden: list[str]) -> str:
     kept = []
     for line in message.splitlines():
         folded = unicodedata.normalize("NFKD", line).encode("ascii", "ignore").decode().lower()
-        if not any(term and term in folded for term in folded_forbidden):
+        if not any(item in folded for item in folded_forbidden if item):
             kept.append(line)
-    return "\n".join(kept)
+    return "\n".join(kept).strip()
 
 
 def make_policy_compliant(message: str, policy: dict, brand: str) -> tuple[str, dict]:
@@ -311,14 +338,39 @@ def make_policy_compliant(message: str, policy: dict, brand: str) -> tuple[str, 
     text = re.sub(r"(?i)(?:https?://|tg://|t\.me/)\S+", "", text)
     text = re.sub(r"(?i)\?start=[A-Za-z0-9_-]+", "", text)
     text = re.sub(r"[*_`~]", "", text)
-    if not policy.get("allow_mentions"):
-        text = re.sub(r"(?<!\w)@[A-Za-z0-9_]{4,}", "", text)
-    if not policy.get("allow_emojis"):
-        text = "".join(ch for ch in text if unicodedata.category(ch) not in {"So", "Sk", "Cs"})
-    text = "\n".join(line.rstrip() for line in text.splitlines()).strip()
 
     visible = visible_mention_allowed(policy)
     text = _remove_brand_cta_lines(text, brand)
+
+    if not visible or not policy.get("allow_mentions"):
+        # Remove any @mentions cleanly
+        text = re.sub(r"(?<!\w)@[A-Za-z0-9_]{3,}", "", text)
+        # Clean up lines that end with dangling colons or prompt prefixes
+        clean_lines = []
+        for line in text.splitlines():
+            s = line.strip()
+            if not s or s in {":", "•", "-", "—", "➖"}:
+                continue
+            if re.match(r"^(?:(?:canlı|hızlı|doğrudan)?\s*destek|(?:sorularınız|alım|satış|sipariş|bilgi|iletişim|panel|referanslar)\s*(?:için|ve)?|otomatik\s*mağaza\s*botu|bot):?\s*$", s, re.IGNORECASE):
+                continue
+            if s.endswith(":") and len(s) < 50 and not any(k in s.lower() for k in ["film", "dizi", "spor", "kupon", "paket", "fiyat", "güven"]):
+                continue
+            clean_lines.append(line)
+        text = "\n".join(clean_lines).strip()
+
+    if not policy.get("allow_emojis"):
+        emoji_pattern = re.compile(
+            r'[\U00010000-\U0010ffff]'
+            r'|[\u200d\ufe00-\ufe0f\u20e3]'
+            r'|[\u2600-\u27bf]'
+            r'|[\u2300-\u23ff]'
+            r'|[\u2b50\u2b55\u2934\u2935\u25aa\u25ab\u25b6\u25c0\u25fb-\u25fe]'
+        )
+        text = emoji_pattern.sub('', text)
+        text = re.sub(r'[\ufe00-\ufe0f\u200d\u20e3]', '', text)
+        text = '\n'.join(re.sub(r'[ \t]+', ' ', line).strip() for line in text.splitlines())
+    text = "\n".join(line.rstrip() for line in text.splitlines()).strip()
+
     required_cta = _brand_cta(brand, visible=visible)
     if required_cta and required_cta not in text:
         text = f"{text}\n{required_cta}".strip()

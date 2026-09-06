@@ -38,7 +38,7 @@ function authHeaders() {
 
 // Global App State
 let state = {
-  currentView: 'view-chat',
+  currentView: 'view-store',
   selectedModel: { id: '', name: 'Model bekleniyor', providerLogo: 'assets/froxy_logo.png' },
   models: [],
   chatId: (window.crypto?.randomUUID?.() || `chat-${Date.now()}`),
@@ -119,7 +119,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   const urlParams = new URLSearchParams(window.location.search);
   const routeParam = urlParams.get('tab') || urlParams.get('view') || tg?.initDataUnsafe?.start_param;
   if (routeParam) {
-    if (routeParam === 'store' || routeParam === 'magaza') switchView('view-store');
+    if (routeParam === 'chat' || routeParam === 'asistan') switchView('view-chat');
+    else if (routeParam === 'store' || routeParam === 'magaza') switchView('view-store');
     else if (routeParam === 'image' || routeParam === 'gorsel') switchView('view-image');
     else if (routeParam === 'wallet' || routeParam === 'cuzdan') switchView('view-wallet');
     else if (routeParam === 'agents' || routeParam === 'ajanlar') switchView('view-agents');

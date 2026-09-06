@@ -45,7 +45,7 @@ class KeyVadiMiniAppTests(unittest.TestCase):
         with patch.dict(os.environ, {"KEYVADI_ALLOW_DEV_AUTH": "1", "APP_ENV": "test"}):
             self.client.post("/api/user/123", json={"user_id": 123})
             users = server.load_users()
-            users["123"]["balance"] = 100.0
+            users["123"]["balance"] = 500.0
             server.save_users(users)
             product_id = server.load_products()[0]["id"]
             first = self.client.post("/api/user/purchase", json={

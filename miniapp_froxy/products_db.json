@@ -1,5 +1,22 @@
 [
   {
+    "id": "50602587",
+    "title": "Gemini Pro (18 Aylık İndirim Bağlantısı)",
+    "price": "199,90 TL",
+    "price_num": 199.9,
+    "category": "ai",
+    "category_label": "YAPAY ZEKA LİSANSI",
+    "image": "https://cdn.shopier.app/pictures_large/froxyai_18484dc1114ed293c30e46f8052ab843.jpg",
+    "badge": "⚡ 5 Davet Hakkı",
+    "url": "https://www.shopier.com/froxyai/50602587",
+    "description": "Froxy AI — Gemini Pro 18 Ay kişisel indirim bağlantısı. Davet linki değildir; kendi hesabınıza tanımlanır ve 5 davet hakkı sunar. 2 TB depolama, Gemini 1.5 Pro ve Workspace entegrasyonu dahildir. Resmi Shopier 3D Secure ödeme güvencesiyle anında teslimat.",
+    "showcase": true,
+    "is_vitrin": true,
+    "delivery_type": "instant",
+    "delivery_label": "⚡ Anında Teslimat",
+    "max_qty": 5
+  },
+  {
     "id": "49489768",
     "title": "Perplexity Pro (1 Aylık Ortak)",
     "price": "69,99 TL",

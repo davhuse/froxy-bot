@@ -429,9 +429,9 @@ class FroxyWebSearchTests(unittest.TestCase):
 
     def test_shopier_products_keep_real_title_and_delivery_terms(self):
         products = server.load_products()
-        self.assertEqual(18, len(products))
+        self.assertEqual(19, len(products))
         self.assertEqual(6, sum(1 for product in products if product["store_category"] == "credits"))
-        self.assertEqual(6, sum(1 for product in products if product["store_category"] == "gemini"))
+        self.assertEqual(7, sum(1 for product in products if product["store_category"] == "gemini"))
         for product in products:
             self.assertIn(product["title"], product["description"])
             if product["category"] != "credits":

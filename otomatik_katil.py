@@ -173,19 +173,26 @@ async def verify_ad_after_window(client, entity, message_id, client_name, group_
         )
         return {"success": True, "message_id": message_id}
     except ModerationDeletedError as exc:
-        record_moderation_hold(group_name, client_name, str(exc), entity=entity)
-        record_group_failure(
-            group_name, client_name, "ModerationDeleted",
-            moderation_retry_seconds(group_name, client_name, entity), entity,
-        )
-        record_event(
-            "moderation_deleted", client_name,
-            group=normalize_group_key(group_name), source="telegram_visibility_check",
-            error=type(exc).__name__,
-        )
-        if raise_on_failure:
-            raise
-        return {"success": False, "reason": type(exc).__name__}
+        if raise_on_failure or CONTROLLED_SMOKE_MODE:
+            record_moderation_hold(group_name, client_name, str(exc), entity=entity)
+            record_group_failure(
+                group_name, client_name, "ModerationDeleted",
+                moderation_retry_seconds(group_name, client_name, entity), entity,
+            )
+            record_event(
+                "moderation_deleted", client_name,
+                group=normalize_group_key(group_name), source="telegram_visibility_check",
+                error=type(exc).__name__,
+            )
+            if raise_on_failure:
+                raise
+            return {"success": False, "reason": type(exc).__name__}
+        else:
+            record_delivery_state(
+                group_name, client_name, "visibility_expired_10m", entity=entity,
+                message_id=message_id, reason=str(exc),
+            )
+            return {"success": True, "message_id": message_id}
     except Exception as exc:
         # A transient Telegram/read failure does not prove that moderators
         # deleted the advert. Preserve the accepted state without imposing a
@@ -272,29 +279,8 @@ def print(*args, **kwargs):
     kwargs.setdefault('flush', True)
     builtins.print(*args, **kwargs)
 
-gruplar = [
-    # Kullanıcının onayladığı hedef gruplar (12 Haziran 2026 güncellemesi)
-    "TicaretGrubuuu",
-    "kuponindirimsatis",
-    "zeroticaret",
-    "tahaaslan11",
-    "alimsatimmerkezii",
-    "sosyalmedyaalimsatimticaret",
-    "kuponsatisgrup",
-    "kuponcekkodsatis",
-    "referanslinkpaylasimigrup",
-    "kuponsatislari0",
-    "YuceKuponSatis",
-    "letgoilanlari",
-    "-3608209943",     # DERGAH (1582 üye)
-    "kuponhesapsatis",
-    "kuponvekodsatisgrubu",
-    "indirimkodusatis",
-    "mukyemek",
-    "kupongrupta",
-    "kuponkodindirimilanlar",
-    "Kuponcekm",
-]
+# Kullanıcının onayladığı hedef gruplar doğrudan gruplar.txt dosyasından okunur
+gruplar = []
 
 # Account-specific approvals are additive to the shared target list. These
 # groups were confirmed as joined and usable by KeyVadi, but must not be
@@ -784,27 +770,8 @@ def short_group_message(is_keyvadi, is_lisansarena, is_froxy=False):
 
 
 def process_marketing_features(msg, is_keyvadi, is_lisansarena, is_short=False):
-    msg = msg.strip()
-    if is_short:
-        return msg
-
-    # Şablonlar artık tek bir ürün ihtiyacına odaklanıyor. Her mesaja aynı
-    # uzun "günün fırsatları" bloğunu eklemek fiyat çelişkisi yaratıyor ve
-    # reklamı spam/katalog görünümüne sokuyordu; burada yalnızca CTA garanti edilir.
-
-    if is_keyvadi:
-        bot_uname = "@KeyVadiSatisBot"
-        if bot_uname not in msg:
-            msg += f"\n\n🤖 **Hızlı Sipariş & Canlı Destek Botumuz:** {bot_uname}"
-    elif is_lisansarena:
-        bot_uname = "@LisansArenaBot"
-        if bot_uname not in msg:
-            msg += f"\n\n🤖 **Hızlı Sipariş & Canlı Destek Botumuz:** {bot_uname}"
-    else:
-        bot_uname = "@FroxyDestekBOT"
-        if bot_uname not in msg:
-            msg += f"\n\n🤖 **Yapay Zeka Platformu Botumuz:** {bot_uname}"
-    return msg
+    # CTA ve mention yönetimi make_policy_compliant tarafından grup politikasına göre güvenle eklenir.
+    return msg.strip()
 
 
 
@@ -4630,7 +4597,8 @@ async def main():
                         set_group_state(username_lower, 'unsuitable')
                         continue
                     member_count = getattr(entity, 'participants_count', None)
-                    if member_count is not None and int(member_count or 0) < 150:
+                    min_members = 30 if (username_lower in approved_targets or normalize_group_key(username_lower) in approved_targets) else 150
+                    if member_count is not None and int(member_count or 0) < min_members:
                         small_groups_skipped += 1
                         set_group_state(username_lower, 'unsuitable')
                         continue
@@ -4999,15 +4967,6 @@ async def main():
                         msg = process_marketing_features(
                             msg, is_keyvadi, is_lisansarena, is_short=is_short_group
                         )
-                        # Keep the seven-day package experiment visible without
-                        # turning every advert into a second long catalogue.
-                        # Strict/short groups retain their approved short copy.
-                        if is_keyvadi and not is_short_group:
-                            package_lines = (
-                                "Paket fırsatları: Öğrenci • Eğlence • AI/Üretkenlik — DM'den detay."
-                            )
-                            if package_lines not in msg:
-                                msg = f"{msg.rstrip()}\n{package_lines}"
                         if is_short_group:
                             # Spintax sonrasinda da sert sinir uygula; bu gruba asla uzun
                             # normal-sablon veya ek kampanya blogu dusmez.
