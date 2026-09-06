@@ -97,6 +97,13 @@ class SalesCatalogMatchingTests(unittest.TestCase):
         self.assertEqual(match_sales_products("selam teslimat gecikti", self.all_products), [])
         self.assertFalse(has_sales_query("selam teslimat gecikti"))
 
+    def test_brand_query_never_matches_different_brand(self):
+        matches = match_sales_products("Gemini ultra davet 1 ay mı hocam?", self.keyvadi)
+        self.assertTrue(len(matches) > 0)
+        for m in matches:
+            self.assertIn("gemini", m["title"].lower())
+            self.assertNotIn("youtube", m["title"].lower())
+
     def test_windows_and_office_are_independent_sequential_products(self):
         windows = match_sales_products("windows keyi", self.keyvadi)
         office = match_sales_products("office 365", self.keyvadi)

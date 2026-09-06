@@ -430,7 +430,7 @@ def match_sales_products(message: str, products: list[dict], limit: int = 3) -> 
         overlap = useful_query & title_tokens
         
         # Candidate qualification: matches a brand OR has at least 1 significant title token
-        if brands and not matching_brands and len(overlap) < 2:
+        if brands and not matching_brands:
             continue
         elif not brands and not overlap:
             continue
