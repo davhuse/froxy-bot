@@ -4749,10 +4749,10 @@ async def main():
                 try:
                     with open("bot_config.json", "r", encoding="utf-8") as f_cfg:
                         minimum_sendable_groups = max(
-                            1, int(json.load(f_cfg).get("minimum_sendable_groups", 15))
+                            1, int(json.load(f_cfg).get("minimum_sendable_groups", 30))
                         )
                 except (OSError, ValueError, TypeError, json.JSONDecodeError):
-                    minimum_sendable_groups = 15
+                    minimum_sendable_groups = 30
 
             target_floor_shortfall = max(0, minimum_sendable_groups - len(blast_targets))
             floor_snapshot = await asyncio.to_thread(blast_coordinator.snapshot)
@@ -5112,6 +5112,7 @@ async def main():
                             process_running=True,
                             telegram_connected=True,
                             telegram_authorized=True,
+                            sent_count=sent_count,
                             last_accepted_at=datetime.now(timezone.utc).isoformat(),
                             last_error=None,
                             session_error=None,
