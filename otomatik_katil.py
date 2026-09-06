@@ -3415,7 +3415,7 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
             "premium", "shopier", "minecraft", "mc", "steam", "key", "gamepass", "xbox",
             "trendyol", "yemek", "market", "disney", "exxen", "hbo", "nitro", "discord",
             "fc", "fifa", "zula", "hesap", "fiyat", "link", "almak", "satın", "kod", "ücret", "bot", "store", "var mi", "ne kadar",
-            "s sport", "ssport", "yemeksepeti", "turna", "tikla gelsin", "tiklagelsin",
+            "s sport", "ssport", "yemeksepeti", "turna",
             "coffy", "cofy", "migros", "kupon", "kahve", "3 ay", "1 ay", "aylık", "yıllık", "ortak", "kişisel"
         ))
         if not has_keyword and not sales_context and is_obviously_non_sales_dm(event.raw_text):

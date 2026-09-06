@@ -47,7 +47,7 @@ class SalesCatalogMatchingTests(unittest.TestCase):
         cls.all_products = cls.keyvadi + cls.froxy
 
     def test_all_active_products_match_their_own_name(self):
-        self.assertEqual(len(self.keyvadi), 62)
+        self.assertEqual(len(self.keyvadi), 61)
         self.assertEqual(len(self.froxy), 18)
         for catalog in (self.keyvadi, self.froxy):
             for product in catalog:
@@ -71,7 +71,6 @@ class SalesCatalogMatchingTests(unittest.TestCase):
             "s sport plus": "s sport",
             "yemeksepeti": "yemeksepeti",
             "turna bilet": "turna",
-            "tiklagelsin": "tıkla gelsin",
             "coffy kupon": "coffy",
             "migros bakiye": "migros",
         }

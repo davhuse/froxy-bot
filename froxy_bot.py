@@ -227,7 +227,7 @@ PROFILE_CONFIGURED = False
 SHOPIER_LINKS = config.get("shopier_links", {})
 _PUBLIC_BASE_URL = (
     os.environ.get("RENDER_EXTERNAL_URL")
-    or "https://froxy-bot-live-r5se.onrender.com"
+    or "https://froxy-bot-live-a30j.onrender.com"
 ).strip().rstrip("/")
 KEYVADI_MINI_APP_URL = os.environ.get(
     "KEYVADI_MINI_APP_URL",
@@ -335,7 +335,7 @@ SALES_INTENT_KEYWORDS = {
     "indirim", "premium", "lisans", "hesap", "abonelik", "paket", "üyelik",
     "canva", "adobe", "netflix", "youtube", "spotify", "capcut", "chatgpt",
     "var mı", "mevcut mu", "nasıl alırım", "satın al",
-    "minecraft", "s sport", "ssport", "yemeksepeti", "turna", "tikla gelsin",
+    "minecraft", "s sport", "ssport", "yemeksepeti", "turna",
     "coffy", "cofy", "migros", "kupon", "kod", "bakiye", "market", "kahve",
     "3 ay", "1 ay", "aylık", "yıllık", "ortak", "kişisel",
 }
@@ -924,12 +924,20 @@ async def menu_orders_handler(event):
     user_id = event.sender_id
     
     users = {}
-    users_file = Path("miniapp/users_data.json")
-    if users_file.exists():
-        try:
-            users = json.loads(users_file.read_text(encoding="utf-8"))
-        except Exception:
-            pass
+    try:
+        doc = await async_get_document("keyvadi_users_data")
+        if doc and "users" in doc and isinstance(doc["users"], dict):
+            users = doc["users"]
+    except Exception as exc:
+        print(f"[KeyVadi Bot] Firestore load orders error: {exc}")
+        
+    if not users:
+        users_file = Path("miniapp/users_data.json")
+        if users_file.exists():
+            try:
+                users = json.loads(users_file.read_text(encoding="utf-8"))
+            except Exception:
+                pass
     u = users.get(str(user_id), {})
     orders = u.get("orders", [])
     
@@ -1295,45 +1303,123 @@ async def admin_kullanici_handler(event):
     )
     await event.respond(resp)
 
-@bot.on(events.NewMessage(pattern=r"(?i)^/siparisler$"))
+@bot.on(events.NewMessage(pattern=r"(?i)^/(siparisler|siparislerim|orders)$"))
 @once_per_command("siparisler")
-async def admin_siparisler_handler(event):
+async def siparisler_command_handler(event):
     config = load_config() or {}
     admin_chat_id = config.get("admin_id", ADMIN_ID)
-    if event.sender_id != admin_chat_id:
+    user_id = event.sender_id
+
+    users = {}
+    try:
+        doc = await async_get_document("keyvadi_users_data")
+        if doc and "users" in doc and isinstance(doc["users"], dict):
+            users = doc["users"]
+    except Exception as exc:
+        print(f"[KeyVadi Bot] Firestore load orders error: {exc}")
+
+    if not users:
+        users_file = Path("miniapp/users_data.json")
+        if users_file.exists():
+            try:
+                users = json.loads(users_file.read_text(encoding="utf-8"))
+            except Exception:
+                pass
+
+    if event.sender_id == admin_chat_id:
+        all_orders = []
+        for uid, udata in users.items():
+            if isinstance(udata, dict):
+                u_name = f"{udata.get('first_name', '')} {udata.get('last_name', '')}".strip() or udata.get('username') or f"#{uid}"
+                for ord_item in udata.get("orders", []):
+                    if isinstance(ord_item, dict):
+                        all_orders.append({
+                            "user_id": uid,
+                            "customer": u_name,
+                            **ord_item
+                        })
+                        
+        all_orders.sort(key=lambda o: str(o.get("created_at") or o.get("date") or 0), reverse=True)
+        
+        if not all_orders:
+            await event.respond("📦 Henüz sistemde kayıtlı bir sipariş bulunmuyor.")
+            return
+            
+        lines = ["📦 **SON KEYVADI SİPARİŞLERİ (Admin Görünümü - Son 10 İşlem)**\n━━━━━━━━━━━━━━━━━━━━"]
+        for i, o in enumerate(all_orders[:10], 1):
+            title = o.get("title") or "Ürün"
+            price = o.get("price") or o.get("amount") or o.get("subtotal") or 0.0
+            cust = o.get("customer")
+            uid = o.get("user_id")
+            code = o.get("license_key") or o.get("order_id") or ""
+            lines.append(f"{i}. **{title}** (`₺{float(price):.2f}`)\n   👤 Müşteri: {cust} (`{uid}`)\n   🔑 Kod/ID: `{code}`")
+            
+        await event.respond("\n\n".join(lines))
         return
 
-    doc = await async_get_document("keyvadi_users_data")
-    users = doc.get("users", {}) if doc else {}
-    
-    all_orders = []
-    for uid, udata in users.items():
-        if isinstance(udata, dict):
-            u_name = f"{udata.get('first_name', '')} {udata.get('last_name', '')}".strip() or udata.get('username') or f"#{uid}"
-            for ord_item in udata.get("orders", []):
-                if isinstance(ord_item, dict):
-                    all_orders.append({
-                        "user_id": uid,
-                        "customer": u_name,
-                        **ord_item
-                    })
-                    
-    all_orders.sort(key=lambda o: str(o.get("created_at") or o.get("date") or 0), reverse=True)
-    
-    if not all_orders:
-        await event.respond("📦 Henüz sistemde kayıtlı bir sipariş bulunmuyor.")
+    # Regular Customer View
+    u = users.get(str(user_id), {})
+    orders = u.get("orders", [])
+    if not orders:
+        text = (
+            "📦 **Sipariş Geçmişiniz**\n\n"
+            "Henüz kayıtlı bir siparişiniz bulunmamaktadır.\n\n"
+            "KeyVadi mağazasından 7/24 anında teslimatla güvenle alışveriş yapabilirsiniz!"
+        )
+        buttons = [
+            [Button.url("🛍️ KeyVadi Mağazasını Aç", KEYVADI_MINI_APP_URL)]
+        ]
+        await event.respond(text, buttons=buttons)
         return
-        
-    lines = ["📦 **SON KEYVADI SİPARİŞLERİ (Son 10 İşlem)**\n━━━━━━━━━━━━━━━━━━━━"]
-    for i, o in enumerate(all_orders[:10], 1):
-        title = o.get("title") or "Ürün"
-        price = o.get("price") or o.get("amount") or o.get("subtotal") or 0.0
-        cust = o.get("customer")
-        uid = o.get("user_id")
-        code = o.get("license_key") or o.get("order_id") or ""
-        lines.append(f"{i}. **{title}** (`₺{float(price):.2f}`)\n   👤 Müşteri: {cust} (`{uid}`)\n   🔑 Kod/ID: `{code}`")
-        
-    await event.respond("\n\n".join(lines))
+
+    lines = ["📦 **Son Siparişleriniz:**\n"]
+    for idx, o in enumerate(reversed(orders[-5:]), 1):
+        title = o.get("title") or "Dijital Ürün"
+        status = "✅ Teslim Edildi" if o.get("status") in ("delivered", "completed") or o.get("license_key") else "⏳ Hazırlanıyor"
+        price = o.get("subtotal") or o.get("price") or o.get("amount") or 0
+        lines.append(f"{idx}. **{title}** — `₺{price}` ({status})")
+        if o.get("license_key"):
+            lines.append(f"   🔑 Lisans Kodu: `{o.get('license_key')}`")
+        elif o.get("status") == "pending_delivery":
+            lines.append("   💬 *Manuel teslimat / Destek için @KeyVadiDestek ile iletişime geçin.*")
+        lines.append("")
+
+    buttons = [
+        [Button.url("🛍️ Siparişlerimi Mini App'te Gör", KEYVADI_MINI_APP_URL)]
+    ]
+    await event.respond("\n".join(lines), buttons=buttons)
+
+@bot.on(events.NewMessage(pattern=r"(?i)^/(bakiye|cuzdan|wallet)$"))
+@once_per_command("bakiye")
+async def bakiye_command_handler(event):
+    user_id = event.sender_id
+    users = {}
+    try:
+        doc = await async_get_document("keyvadi_users_data")
+        if doc and "users" in doc and isinstance(doc["users"], dict):
+            users = doc["users"]
+    except Exception as exc:
+        print(f"[KeyVadi Bot] Firestore load balance error: {exc}")
+
+    if not users:
+        users_file = Path("miniapp/users_data.json")
+        if users_file.exists():
+            try:
+                users = json.loads(users_file.read_text(encoding="utf-8"))
+            except Exception:
+                pass
+
+    u = users.get(str(user_id), {})
+    balance = float(u.get("balance", 0.0))
+    text = (
+        f"💰 **KeyVadi Cüzdanınız**\n\n"
+        f"Mevcut Bakiyeniz: `₺{balance:.2f}`\n\n"
+        f"Shopier altyapısı ile anında bakiye yükleyebilir ve mağazadaki tüm ürünleri tek tıkla satın alabilirsiniz."
+    )
+    buttons = [
+        [Button.url("⚡ Cüzdanı Aç & Bakiye Yükle", KEYVADI_MINI_APP_URL)]
+    ]
+    await event.respond(text, buttons=buttons)
 
 @bot.on(events.NewMessage(pattern=r"(?i)^/bakiye_ekle\s+(\d+)\s+([\d\.,]+)$"))
 @once_per_command("bakiye_ekle")

@@ -31,6 +31,13 @@ _lock = threading.Lock()
 
 def load_active_topups():
     with _lock:
+        try:
+            import firestore_helper
+            doc = firestore_helper.get_document("keyvadi_active_topups")
+            if doc and "topups" in doc and isinstance(doc["topups"], dict):
+                return doc["topups"]
+        except Exception:
+            pass
         if ACTIVE_TOPUPS_FILE.exists():
             try:
                 with open(ACTIVE_TOPUPS_FILE, "r", encoding="utf-8") as f:
@@ -41,8 +48,16 @@ def load_active_topups():
 
 def save_active_topups(data):
     with _lock:
-        with open(ACTIVE_TOPUPS_FILE, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
+        try:
+            import firestore_helper
+            firestore_helper.set_document("keyvadi_active_topups", {"topups": data})
+        except Exception as exc:
+            print(f"[KeyVadi] Firestore save_active_topups error: {exc}")
+        try:
+            with open(ACTIVE_TOPUPS_FILE, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+        except Exception:
+            pass
 
 def cancel_and_delete_topup(product_id: str) -> bool:
     """Belirtilen ilanı hem Shopier'dan hem de yerel tablodan anında siler."""
@@ -137,7 +152,9 @@ def create_dynamic_shopier_listing(amount: float, user_id: int, user_name: str =
                 "created_at": time.time(),
                 "payment_url": pay_url,
                 "status": "pending",
-                "idempotency_key": idempotency_key
+                "idempotency_key": idempotency_key,
+                "user_name": user_name,
+                "username": username
             }
             save_active_topups(topups)
 
@@ -194,63 +211,88 @@ def check_and_sync_shopier_orders(users_data_path: Path):
                             amt = float(t_info["amount"])
                             order_id = str(ord_item.get("id") or ord_item.get("orderId") or pid)
 
-                            if users_data_path.exists():
+                            try:
                                 try:
-                                    with open(users_data_path, "r", encoding="utf-8") as f:
-                                        users = json.load(f)
-                                    if uid in users:
-                                        already_credited = any(
-                                            str(row.get("order_id")) == order_id
-                                            and row.get("type") == "bakiye_yukleme"
-                                            for row in users[uid].get("orders", [])
-                                        )
-                                        if not already_credited:
-                                            users[uid]["balance"] = round(users[uid].get("balance", 0.0) + amt, 2)
-                                            users[uid].setdefault("orders", []).append({
-                                                "type": "bakiye_yukleme",
-                                                "order_id": order_id,
-                                                "product_id": pid,
-                                                "title": "KeyVadi bakiye yükleme",
-                                                "amount": amt,
-                                                "status": "completed",
-                                                "created_at": int(time.time())
-                                            })
-                                            try:
-                                                from .server import save_users
-                                                save_users(users)
-                                            except Exception:
-                                                try:
-                                                    from server import save_users
-                                                    save_users(users)
-                                                except Exception:
-                                                    with open(users_data_path, "w", encoding="utf-8") as f:
-                                                        json.dump(users, f, ensure_ascii=False, indent=2)
-                                            
-                                            # Admin notification for Top-up
-                                            try:
-                                                admin_id = os.environ.get("TELEGRAM_ADMIN_ID", "5424756555")
-                                                bot_token = os.environ.get("KEYVADI_BOT_TOKEN") or os.environ.get("KEYVADI_SUPPORT_BOT_TOKEN") or ""
-                                                if admin_id and bot_token:
-                                                    u_info = users[uid]
-                                                    u_disp = f"{u_info.get('first_name', '')} {u_info.get('last_name', '')}".strip() or u_info.get('username') or f"User #{uid}"
-                                                    msg = (
-                                                        f"💳 **[KeyVadi Mini App] Yeni Bakiye Yüklendi!**\n\n"
-                                                        f"👤 **Müşteri:** {u_disp}\n"
-                                                        f"🆔 **Kullanıcı ID:** `{uid}`\n"
-                                                        f"💰 **Yüklenen Tutar:** `₺{amt:.2f}`\n"
-                                                        f"💵 **Yeni Bakiye:** `₺{users[uid]['balance']:.2f}`\n"
-                                                        f"🧾 **Shopier Sipariş ID:** `{order_id}`\n\n"
-                                                        f"*(Bakiye otomatik olarak hesaba tanımlandı.)*"
-                                                    )
-                                                    requests.post(
-                                                        f"https://api.telegram.org/bot{bot_token}/sendMessage",
-                                                        json={"chat_id": int(admin_id), "text": msg, "parse_mode": "Markdown"},
-                                                        timeout=5
-                                                    )
-                                            except Exception as notif_err:
-                                                print(f"[KeyVadi Topup Notif Error] {notif_err}")
-                                except Exception as ue:
-                                    print(f"[KeyVadi User Save Error] {ue}")
+                                    from .server import load_users, save_users
+                                except Exception:
+                                    from server import load_users, save_users
+                            except Exception:
+                                load_users = None
+                                save_users = None
+
+                            try:
+                                users = load_users() if load_users else {}
+                                if not users and users_data_path.exists():
+                                    try:
+                                        with open(users_data_path, "r", encoding="utf-8") as f:
+                                            users = json.load(f)
+                                    except Exception:
+                                        users = {}
+
+                                if uid not in users:
+                                    users[uid] = {
+                                        "id": int(uid) if uid.isdigit() else uid,
+                                        "username": t_info.get("username", ""),
+                                        "first_name": t_info.get("user_name", "Müşteri"),
+                                        "last_name": "",
+                                        "full_name": t_info.get("user_name", "Müşteri"),
+                                        "balance": 0.0,
+                                        "referrals_count": 0,
+                                        "referral_earnings": 0.0,
+                                        "referred_by": None,
+                                        "orders": []
+                                    }
+
+                                already_credited = any(
+                                    str(row.get("order_id")) == order_id
+                                    and row.get("type") == "bakiye_yukleme"
+                                    for row in users[uid].get("orders", [])
+                                )
+                                if not already_credited:
+                                    users[uid]["balance"] = round(float(users[uid].get("balance", 0.0)) + amt, 2)
+                                    users[uid].setdefault("orders", []).append({
+                                        "type": "bakiye_yukleme",
+                                        "order_id": order_id,
+                                        "product_id": pid,
+                                        "title": f"KeyVadi bakiye yükleme (₺{amt:.2f})",
+                                        "amount": amt,
+                                        "subtotal": amt,
+                                        "price": amt,
+                                        "status": "completed",
+                                        "created_at": int(time.time()),
+                                        "date": time.strftime("%d.%m.%Y %H:%M")
+                                    })
+                                    if save_users:
+                                        save_users(users)
+                                    else:
+                                        with open(users_data_path, "w", encoding="utf-8") as f:
+                                            json.dump(users, f, ensure_ascii=False, indent=2)
+                                    
+                                    # Admin notification for Top-up
+                                    try:
+                                        admin_id = os.environ.get("TELEGRAM_ADMIN_ID", "5424756555")
+                                        bot_token = os.environ.get("KEYVADI_BOT_TOKEN") or os.environ.get("KEYVADI_SUPPORT_BOT_TOKEN") or ""
+                                        if admin_id and bot_token:
+                                            u_info = users[uid]
+                                            u_disp = f"{u_info.get('first_name', '')} {u_info.get('last_name', '')}".strip() or u_info.get('username') or f"User #{uid}"
+                                            msg = (
+                                                f"💳 **[KeyVadi Mini App] Yeni Bakiye Yüklendi!**\n\n"
+                                                f"👤 **Müşteri:** {u_disp}\n"
+                                                f"🆔 **Kullanıcı ID:** `{uid}`\n"
+                                                f"💰 **Yüklenen Tutar:** `₺{amt:.2f}`\n"
+                                                f"💵 **Yeni Bakiye:** `₺{users[uid]['balance']:.2f}`\n"
+                                                f"🧾 **Shopier Sipariş ID:** `{order_id}`\n\n"
+                                                f"*(Bakiye otomatik olarak hesaba tanımlandı.)*"
+                                            )
+                                            requests.post(
+                                                f"https://api.telegram.org/bot{bot_token}/sendMessage",
+                                                json={"chat_id": int(admin_id), "text": msg, "parse_mode": "Markdown"},
+                                                timeout=5
+                                            )
+                                    except Exception as notif_err:
+                                        print(f"[KeyVadi Topup Notif Error] {notif_err}")
+                            except Exception as ue:
+                                print(f"[KeyVadi User Save Error] {ue}")
 
                             t_info["status"] = "completed"
                             topups[pid] = t_info

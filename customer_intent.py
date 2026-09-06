@@ -53,7 +53,7 @@ _SALES = (
     "envato", "freepik", "exxen", "hbo", "prime", "perplexity", "vpn", "fc 26", "fc26", "fifa",
     "kaspersky", "trendyol", "steam", "xbox", "gamepass", "game pass", "minecraft",
     "mc", "mine craft", "zula", "lisansarena", "froxy", "keyvadi", "var mi", "nasil alirim",
-    "s sport", "ssport", "yemeksepeti", "turna", "tikla gelsin", "tiklagelsin",
+    "s sport", "ssport", "yemeksepeti", "turna",
     "coffy", "cofy", "migros", "kupon", "kahve", "market", "bakiye", "3 ay", "1 ay"
 )
 

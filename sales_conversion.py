@@ -97,9 +97,6 @@ TEXT_ALIASES = {
     "turna.com": "turna",
     "ucak bileti": "turna",
     "bilet kuponu": "turna",
-    "tiklagelsin": "tikla gelsin",
-    "tıkla gelsin": "tikla gelsin",
-    "tikla gelsin kupon": "tikla gelsin",
     "coffy": "coffy",
     "cofy": "coffy",
     "cofi": "coffy",
@@ -119,7 +116,7 @@ BRAND_PHRASES = (
     "ideogram", "quillbot", "discord", "hbo", "prime video", "prime", "perplexity",
     "magnific", "zula", "fc 26", "fc26", "codex", "antigravity", "disney", "minecraft",
     "cape", "pelerin", "roblox", "instagram", "takipci", "gmail", "claude",
-    "s sport", "yemeksepeti", "turna", "tikla gelsin", "coffy", "cofy", "migros",
+    "s sport", "yemeksepeti", "turna", "coffy", "cofy", "migros",
     "yemeksepeti 200", "yemeksepeti 450",
     "baslangic", "populer", "profesyonel", "gelistirici", "isletme", "kurumsal"
 )
@@ -526,7 +523,7 @@ def _price_number(value: str) -> float:
 
 SPECIFIC_BRANDS_FOR_ROADMAP = {
     "netflix", "minecraft", "chatgpt", "canva", "adobe", "windows", "office",
-    "spotify", "s sport", "turna", "tikla gelsin", "duolingo", "capcut",
+    "spotify", "s sport", "turna", "duolingo", "capcut",
     "kaspersky", "exxen", "prime", "hbo", "disney", "roblox", "steam",
     "fc 26", "fc26", "fifa", "zula", "gemini", "grok", "claude", "perplexity",
     "crunchyroll", "deepl", "grammarly", "nordvpn", "vpn", "envato", "freepik",
@@ -640,11 +637,9 @@ def resolve_smart_roadmap_reply(message: str, brand: str = "keyvadi") -> str | N
             "   👉 [Satın Al](https://www.shopier.com/50576030)\n\n"
             "3️⃣ **Turna 600 TL Uçak Bileti Kuponu** — 70,00 ₺\n"
             "   👉 [Satın Al](https://www.shopier.com/50576031)\n\n"
-            "4️⃣ **Tıkla Gelsin® 400₺'ye 200₺ Yemek Kuponu** — 50,00 ₺\n"
-            "   👉 [Satın Al](https://www.shopier.com/50576032)\n\n"
-            "5️⃣ **Coffy 2 Kahve Alana 1'i Bedava Kodu** — 45,00 ₺\n"
+            "4️⃣ **Coffy 2 Kahve Alana 1'i Bedava Kodu** — 45,00 ₺\n"
             "   👉 [Satın Al](https://www.shopier.com/50594322)\n\n"
-            "6️⃣ **Migros 100 TL Alışveriş Bakiye Kodu** — 50,00 ₺\n"
+            "5️⃣ **Migros 100 TL Alışveriş Bakiye Kodu** — 50,00 ₺\n"
             "   👉 [Satın Al](https://www.shopier.com/50594323)\n\n"
             "⚡ Kodlar sepette anında düşer, 7/24 otomatik teslim edilir!\n"
             "🛍️ Tüm Kuponlar: @KeyVadiSatisBot | Canlı Destek: @KeyvadiDestek"
@@ -658,8 +653,6 @@ def resolve_smart_roadmap_reply(message: str, brand: str = "keyvadi") -> str | N
             "   👉 [Satın Al](https://www.shopier.com/50594321)\n\n"
             "2️⃣ **Yemeksepeti 450₺'ye 350₺ İndirim Kodu** — 60,00 ₺\n"
             "   👉 [Satın Al](https://www.shopier.com/50576030)\n\n"
-            "3️⃣ **Tıkla Gelsin® 400₺'ye 200₺ Kupon Kodu** — 50,00 ₺\n"
-            "   👉 [Satın Al](https://www.shopier.com/50576032)\n\n"
             "⚡ Sepette anında indirim düşer, 7/24 anında teslimattır."
         )
 

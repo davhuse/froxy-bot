@@ -102,23 +102,6 @@
     "max_qty": 5
   },
   {
-    "id": "50576032",
-    "title": "Tıkla Gelsin® 400₺'ye 200₺ Yemek Kupon Kodu",
-    "price": "50,00 TL",
-    "price_num": 50.0,
-    "category": "tools",
-    "image": "assets/products/card_clean_tiklagelsin.jpg",
-    "badge": "🍟 200₺ İndirim",
-    "url": "https://www.shopier.com/50576032",
-    "description": "Tıkla Gelsin® uygulamasında Burger King, Popeyes, Arby's ve diğer markalarda 400 TL üzeri siparişlerde geçerli 200 TL net indirim kuponu. Anında teslim edilir.",
-    "showcase": true,
-    "is_vitrin": true,
-    "category_label": "KUPON & İNDİRİM",
-    "delivery_type": "instant",
-    "delivery_label": "Anında Kod Teslimatı",
-    "max_qty": 5
-  },
-  {
     "id": "50460191",
     "title": "Minecraft Java & Bedrock + Xbox Ultimate (1 Aylık)",
     "price": "49,90 TL",

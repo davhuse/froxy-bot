@@ -970,7 +970,7 @@ def system_checkup():
         'keyvadi_mini_app': {
             'url': os.environ.get(
                 'KEYVADI_MINI_APP_URL',
-                f"{(os.environ.get('RENDER_EXTERNAL_URL') or 'https://froxy-bot-live-r5se.onrender.com').rstrip('/')}/keyvadi/",
+                f"{(os.environ.get('RENDER_EXTERNAL_URL') or 'https://froxy-bot-kgky.onrender.com').rstrip('/')}/keyvadi/",
             ),
             'mounted': True,
         },
@@ -2176,7 +2176,7 @@ def api_groups():
 def keep_alive():
     import urllib.request
     time.sleep(30)  # App'in ayağa kalkmasını bekle
-    render_url = os.environ.get("RENDER_EXTERNAL_URL", "https://froxy-bot-live-r5se.onrender.com")
+    render_url = os.environ.get("RENDER_EXTERNAL_URL", "https://froxy-bot-kgky.onrender.com")
     ping_url = render_url.rstrip('/') + "/api/status"
     print(f"[KeepAlive] Başlatıldı. Her 10dk {ping_url} adresine ping atılacak.")
     while True:

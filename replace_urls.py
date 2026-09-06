@@ -10,9 +10,9 @@ for root, dirs, files in os.walk("."):
                 with open(filepath, "r", encoding="utf-8") as f:
                     content = f.read()
                 
-                new_content = content.replace("froxy-bot-live-r5se.onrender.com", "froxy-bot-live-r5se.onrender.com")
-                new_content = new_content.replace("froxy-bot-live-r5se.onrender.com", "froxy-bot-live-r5se.onrender.com")
-                new_content = new_content.replace("froxy-bot-live-r5se.onrender.com", "froxy-bot-live-r5se.onrender.com")
+                new_content = content.replace("froxy-bot-kgky.onrender.com", "froxy-bot-kgky.onrender.com")
+                new_content = new_content.replace("froxy-bot-kgky.onrender.com", "froxy-bot-kgky.onrender.com")
+                new_content = new_content.replace("froxy-bot-kgky.onrender.com", "froxy-bot-kgky.onrender.com")
                 
                 if new_content != content:
                     with open(filepath, "w", encoding="utf-8") as f:

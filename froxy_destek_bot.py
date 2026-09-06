@@ -158,13 +158,13 @@ _configured_mini_app_url = os.environ.get("FROXY_MINI_APP_URL", "").strip().rstr
 # copy when Render provides the current external URL.
 if _configured_mini_app_url and any(
     retired in _configured_mini_app_url.lower()
-    for retired in ("froxy-bot-live.onrender.com", "froxy-bot-live-r5se.onrender.com", "froxy-bot-wjzr.onrender.com", "froxy-bot-live-nvnp.onrender.com")
+    for retired in ("froxy-bot-live.onrender.com", "froxy-bot-kgky.onrender.com", "froxy-bot-wjzr.onrender.com", "froxy-bot-kgky.onrender.com")
 ):
     _configured_mini_app_url = ""
 FROXY_MINI_APP_URL = (
     (f"{_render_external_url}/froxy" if _render_external_url else "")
     or _configured_mini_app_url
-    or "https://froxy-bot-live-a30j.onrender.com/froxy"
+    or "https://froxy-bot-kgky.onrender.com/froxy"
 ).rstrip("/") + "/"
 
 
