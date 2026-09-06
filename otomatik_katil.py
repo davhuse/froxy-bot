@@ -12,9 +12,23 @@ import time
 import signal
 import logging
 
-# Telethon dahili kanal senkronizasyon (PersistentTimestampOutdatedError) uyarılarını sustur
+# Telethon dahili kanal senkronizasyon ve bilinmeyen paket (TypeNotFoundError) uyarılarını sustur
+class _TelethonNoiseFilter(logging.Filter):
+    def filter(self, record):
+        msg = record.getMessage()
+        if "TypeNotFoundError" in msg or "Unhandled error while processing msgs" in msg:
+            return False
+        if record.exc_info and record.exc_info[0]:
+            if record.exc_info[0].__name__ in ("TypeNotFoundError", "PersistentTimestampOutdatedError"):
+                return False
+        return True
+
+_noise_filter = _TelethonNoiseFilter()
 logging.getLogger('telethon.client.updates').setLevel(logging.ERROR)
+logging.getLogger('telethon.client.updates').addFilter(_noise_filter)
 logging.getLogger('telethon.network.mtprotosender').setLevel(logging.ERROR)
+logging.getLogger('telethon.network.mtprotosender').addFilter(_noise_filter)
+
 
 from blast_scheduler import BlastCoordinator, is_recent_message_from_account
 
@@ -4723,10 +4737,11 @@ async def main():
                 try:
                     with open("bot_config.json", "r", encoding="utf-8") as f_cfg:
                         minimum_sendable_groups = max(
-                            1, int(json.load(f_cfg).get("minimum_sendable_groups", 30))
+                            1, int(json.load(f_cfg).get("minimum_sendable_groups", 15))
                         )
                 except (OSError, ValueError, TypeError, json.JSONDecodeError):
-                    minimum_sendable_groups = 30
+                    minimum_sendable_groups = 15
+
             target_floor_shortfall = max(0, minimum_sendable_groups - len(blast_targets))
             floor_snapshot = await asyncio.to_thread(blast_coordinator.snapshot)
             floor_record = (floor_snapshot.get('accounts') or {}).get(client_name, {})

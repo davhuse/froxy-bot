@@ -11,7 +11,8 @@
     "lisansarena_bot_running": true,
     "send_images": false,
     "group_cooldown_hours": 1,
-    "minimum_sendable_groups": 30,
+    "minimum_sendable_groups": 15,
+
     "spacing_cooldown_minutes": 5,
     "ad_sleep_min": 3600,
     "ad_sleep_max": 3600,
