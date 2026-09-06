@@ -727,8 +727,20 @@ def sanitize_strict_market_message(msg, grup_name, is_keyvadi, is_lisansarena, i
 
 
 def sanitize_global_ad_message(msg):
-    """Telegram grup moderasyonlarÄ±nda sorun Ã§Ä±karan sÃ¼sleri kaldÄ±r."""
-    msg = re.sub(r"(?i)\bAdobe\s+CC\b", "Adobe", msg or "")
+    """Telegram grup moderasyonlarında sorun çıkaran yasaklı kelimeleri ve süsleri temizle."""
+    if not msg:
+        return ""
+    msg = re.sub(r"(?i)\bAdobe\s+CC\b", "Adobe", msg)
+    # Bot ve moderasyon tetikleyen yasaklı kelimeleri güvenli hale getir
+    msg = re.sub(r"(?i)\b1\s*bedava\b", "1 öde", msg)
+    msg = re.sub(r"(?i)\bbedava\b", "avantajlı", msg)
+    msg = re.sub(r"(?i)\bücretsiz\b", "özel indirimli", msg)
+    msg = re.sub(r"(?i)\bucretsiz\b", "özel indirimli", msg)
+    msg = re.sub(r"(?i)\bdağıtıyoruz\b", "sunuyoruz", msg)
+    msg = re.sub(r"(?i)\bdagitiyoruz\b", "sunuyoruz", msg)
+    msg = re.sub(r"(?i)\bdağıt\b", "teslim et", msg)
+    msg = re.sub(r"(?i)\bçekiliş\b", "kampanya", msg)
+    msg = re.sub(r"(?i)\bcekilis\b", "kampanya", msg)
     return "".join(
         ch for ch in msg
         if unicodedata.category(ch) not in {"So", "Sk", "Cs"}
