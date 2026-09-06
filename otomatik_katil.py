@@ -3454,12 +3454,15 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         brand_name = "froxy" if is_froxy else ("keyvadi" if is_keyvadi else "lisansarena")
         roadmap_reply = resolve_smart_roadmap_reply(event.raw_text, brand_name)
 
+        reply_text = None
+        matched_desc = ""
         matched_products = []
         candidate_products = []
         reserved_product_keys = []
         if roadmap_reply:
             reply_text = roadmap_reply
             matched_desc = "Smart Yol Çizelgesi (Roadmap)"
+
         elif products and dm_intent == INTENT_SALES_LEAD:
             candidate_products = match_sales_products(event.raw_text, products, limit=3)
             if candidate_products:
