@@ -48,12 +48,12 @@ class LisansArenaStoreTests(unittest.TestCase):
         with self.store.engine.connect() as conn:
             count = conn.execute(select(func.count()).select_from(store_module.products)).scalar_one()
             published = conn.execute(select(func.count()).select_from(store_module.products).where(store_module.products.c.published.is_(True))).scalar_one()
-        self.assertEqual(count, 50)
-        self.assertEqual(published, 50)
+        self.assertEqual(count, 57)
+        self.assertEqual(published, 57)
 
     def test_storefront_has_a_real_cart_action_and_generated_cover_for_every_product(self):
         catalog = self.store.storefront_catalog()
-        self.assertEqual(len(catalog), 49)
+        self.assertEqual(len(catalog), 56)
         normalized_names = {" ".join(item["name"].casefold().split()) for item in catalog}
         self.assertEqual(len(normalized_names), len(catalog))
         self.assertTrue(all(item["available"] is True for item in catalog))

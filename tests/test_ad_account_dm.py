@@ -90,7 +90,7 @@ class AdAccountDmTests(unittest.IsolatedAsyncioTestCase):
 
     def test_every_lisansarena_product_has_price_and_product_specific_miniapp_link(self):
         products = load_sales_catalog("lisansarena")
-        self.assertEqual(len(products), 55)
+        self.assertEqual(len(products), 62)
         for product in products:
             reply = publisher.lisansarena_product_reply(product)
             self.assertIn(str(product["price"]), reply)

@@ -56,15 +56,14 @@ class AdTemplateTests(unittest.TestCase):
             "lisansarena_1.txt", "lisansarena_2.txt", "lisansarena_3.txt"
         ])
         required_keywords = (
-            "59.90", "84.90", "19.90", "39.90", "69.90",
-            "179.90", "89.90", "49.90", "99.90", "149.90", "29.90"
+            "LisansArena", "Netflix", "Canva", "Windows", "Steam", "Yemeksepeti", "Gemini"
         )
         for path in paths:
             text = path.read_text(encoding="utf-8")
             self.assertEqual(text.count("@LisansArenaBot"), 1, path.name)
             self.assertNotIn("KeyVadi", text, path.name)
             for kw in required_keywords:
-                self.assertIn(kw, text, (path.name, kw))
+                self.assertIn(kw.lower(), text.lower(), (path.name, kw))
 
     def test_keyvadi_templates_are_long_distinct_catalog_variants(self):
         paths = sorted((ROOT / "messages").glob("keyvadi_[1-6].txt"))

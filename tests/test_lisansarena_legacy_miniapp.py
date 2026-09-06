@@ -6,7 +6,7 @@ from miniapp_lisansarena import blueprint
 class LisansArenaLegacyMiniAppTests(unittest.TestCase):
     def test_all_catalog_prices_are_positive_numeric_values(self):
         products = blueprint.load_products()
-        self.assertEqual(len(products), 55)
+        self.assertEqual(len(products), 62)
         self.assertTrue(all(product.get("price_num", 0) > 0 for product in products))
 
     def test_turkish_display_price_is_parsed_without_becoming_free(self):

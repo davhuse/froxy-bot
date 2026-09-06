@@ -345,12 +345,12 @@ def _safe_join_setting(name, default, minimum=1):
         return default
 
 
-JOIN_DELAY_MIN_SECONDS = _safe_join_setting("JOIN_DELAY_MIN_SECONDS", 20, minimum=15)
+JOIN_DELAY_MIN_SECONDS = _safe_join_setting("JOIN_DELAY_MIN_SECONDS", 180, minimum=60)
 JOIN_DELAY_MAX_SECONDS = max(
     JOIN_DELAY_MIN_SECONDS,
-    _safe_join_setting("JOIN_DELAY_MAX_SECONDS", 40, minimum=JOIN_DELAY_MIN_SECONDS),
+    _safe_join_setting("JOIN_DELAY_MAX_SECONDS", 360, minimum=JOIN_DELAY_MIN_SECONDS),
 )
-MAX_JOINS_PER_CYCLE = _safe_join_setting("MAX_JOINS_PER_CYCLE", 25, minimum=1)
+MAX_JOINS_PER_CYCLE = _safe_join_setting("MAX_JOINS_PER_CYCLE", 3, minimum=1)
 
 # Uyeliginden cikilacak gruplar.  Ban yedigimiz bir grupta uye kalmaya devam
 # etmek, yoneticiler hesabi tekrar fark ettiginde ikinci bir bana yol aciyor.
@@ -646,16 +646,19 @@ def strict_group_safe_copy(group_key, is_keyvadi, is_lisansarena, is_froxy):
     if is_lisansarena:
         lines = [
             "LisansArena dijital ürünler",
-            "ChatGPT Plus kişisel 499,90 TL | ortak 69,90 TL",
-            "Gemini Pro 3 ay 59,90 TL | 12 ay 99,99 TL",
-            "Canva Pro 1 yıl 83,99 TL | Adobe 1 hafta 59,90 TL",
-            "Windows 10/11 Pro 70 TL | Office 365 1 yıl 70 TL",
-            "YouTube Premium 3 ay 47,24 TL | Spotify 4 ay 36,74 TL",
-            "Xbox Game Pass 3 ay 89,90 TL | Steam oyun 63 TL",
+            "Gemini Pro 18 ay 165 TL | ChatGPT Plus 520 TL",
+            "Canva Pro 1 yıl 85 TL | Adobe 1 ay 160 TL",
+            "Yemeksepeti 200/200 60 TL | 450/350 70 TL",
+            "S Sport Plus 1 ay 80 TL | Turna 600 TL bilet 80 TL",
+            "Coffy 2 al 1 ode 55 TL | Migros 100 TL bakiye 60 TL",
+            "Windows 10/11 Pro 55 TL | Office 365 1 yıl 75 TL",
+            "YouTube Premium 3 ay 45 TL | Spotify 4 ay 40 TL",
+            "Steam 200$ VIP key 45 TL | Steam oyun 70 TL",
         ]
         if not is_satcek:
-            lines.insert(5, "Netflix 4K kişisel 84,90 TL | Prime Video 29,90 TL")
-        lines.append("Güncel fiyat ve teslimat bilgisi için özel mesaj.")
+            lines.insert(4, "Netflix 4K kişisel 85 TL | Prime Video 35 TL")
+        lines.append("+100'den fazla başarılı işlem | 7/24 otomatik teslimat")
+        lines.append("Sipariş ve detaylar: LisansArenaBot")
         return "\n".join(lines)
     return "\n".join([
         "Froxy dijital ürün mağazası",
@@ -905,12 +908,22 @@ ACTIVE_ACCOUNT_IDENTITIES = {
         'user_id': 6196006704,
         'slot': 2,
     },
+    'lisansarenatr': {
+        'stable_name': 'LisansArenaOnline',
+        'phone': '17207764294',
+        'user_id': 8617011628,
+        'slot': 3,
+    },
+    'lisansarenaonline': {
+        'stable_name': 'LisansArenaOnline',
+        'phone': '17207764294',
+        'user_id': 8617011628,
+        'slot': 3,
+    },
     'lisansarenadestek': {
         'stable_name': 'LisansArenaOnline',
-        # The replacement account is locked by its immutable Telegram ID and
-        # public username.  Keep the phone out of source control.
-        'phone': None,
-        'user_id': 8960726264,
+        'phone': '17207764294',
+        'user_id': 8617011628,
         'slot': 3,
     },
 }
@@ -1839,6 +1852,7 @@ def get_account_aliases(client_name):
     elif cname == 'LisansArenaOnline':
         aliases.add('lisansarenaonline')
         aliases.add('lisansarenadestek')
+        aliases.add('lisansarenatr')
     return aliases
 
 def mark_blast_started(client_name):
