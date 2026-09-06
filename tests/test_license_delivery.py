@@ -21,7 +21,8 @@ class TestLicenseDelivery(unittest.TestCase):
 
     def test_allocate_license_success(self):
         fake_stock = {"canva": ["CANVA-TEST-KEY-12345"]}
-        with patch.object(license_delivery, "load_licenses_stock", return_value=fake_stock), \
+        with patch("firestore_helper.remote_credentials_configured", return_value=False), \
+             patch.object(license_delivery, "load_licenses_stock", return_value=fake_stock), \
              patch.object(license_delivery, "save_licenses_stock") as mock_save:
             res = license_delivery.allocate_license("Canva Pro 1 Yıllık")
             self.assertTrue(res["allocated"])
@@ -31,7 +32,8 @@ class TestLicenseDelivery(unittest.TestCase):
 
     def test_allocate_license_empty_stock(self):
         fake_stock = {"canva": []}
-        with patch.object(license_delivery, "load_licenses_stock", return_value=fake_stock), \
+        with patch("firestore_helper.remote_credentials_configured", return_value=False), \
+             patch.object(license_delivery, "load_licenses_stock", return_value=fake_stock), \
              patch.object(license_delivery, "save_licenses_stock") as mock_save:
             res = license_delivery.allocate_license("Canva Pro 1 Yıllık")
             self.assertFalse(res["allocated"])

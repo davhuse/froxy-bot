@@ -52,6 +52,7 @@ from sales_conversion import (
     load_sales_catalog,
     match_sales_products,
     purchase_url,
+    resolve_smart_roadmap_reply,
 )
 from telethon import TelegramClient, events
 from telethon.tl.functions.channels import JoinChannelRequest, LeaveChannelRequest, GetParticipantRequest
@@ -3387,7 +3388,9 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
             "claude", "windows", "office", "duolingo", "capcut", "express", "lisans",
             "premium", "shopier", "minecraft", "mc", "steam", "key", "gamepass", "xbox",
             "trendyol", "yemek", "market", "disney", "exxen", "hbo", "nitro", "discord",
-            "fc", "fifa", "zula", "hesap", "fiyat", "link", "almak", "satın", "kod", "ücret", "bot", "store", "var mi", "ne kadar"
+            "fc", "fifa", "zula", "hesap", "fiyat", "link", "almak", "satın", "kod", "ücret", "bot", "store", "var mi", "ne kadar",
+            "s sport", "ssport", "yemeksepeti", "turna", "tikla gelsin", "tiklagelsin",
+            "coffy", "cofy", "migros", "kupon", "kahve", "3 ay", "1 ay", "aylık", "yıllık", "ortak", "kişisel"
         ))
         if not has_keyword and not sales_context and is_obviously_non_sales_dm(event.raw_text):
             print(f"[{client_name}] DM satış dışı görünüyor, otomatik yanıt atlandı.")
@@ -3434,10 +3437,16 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         elif is_keyvadi or is_froxy:
             products = load_sales_catalog("froxy" if is_froxy else "keyvadi")
 
+        brand_name = "froxy" if is_froxy else ("keyvadi" if is_keyvadi else "lisansarena")
+        roadmap_reply = resolve_smart_roadmap_reply(event.raw_text, brand_name)
+
         matched_products = []
         candidate_products = []
         reserved_product_keys = []
-        if products and dm_intent == INTENT_SALES_LEAD:
+        if roadmap_reply:
+            reply_text = roadmap_reply
+            matched_desc = "Smart Yol Çizelgesi (Roadmap)"
+        elif products and dm_intent == INTENT_SALES_LEAD:
             candidate_products = match_sales_products(event.raw_text, products, limit=3)
             if candidate_products:
                 matched_products, reserved_product_keys = await reserve_product_dm_replies(
@@ -3449,10 +3458,9 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                         "ürün bağlantısı bu sohbette daha önce gönderilmiş."
                     )
             
-        reply_text = None
-        matched_desc = ""
+        reply_text = reply_text or None
+        matched_desc = matched_desc or ""
         if matched_products:
-            brand_name = "froxy" if is_froxy else ("keyvadi" if is_keyvadi else "lisansarena")
             record_event(
                 "product_matched", client_name, source="telegram_private",
                 product=matched_products[0].get("title", ""),
@@ -3479,12 +3487,17 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                 reply_text = "\n".join(lines)
                 matched_desc = ", ".join(p['title'] for p in matched_products)
             else:
-                lines = ["🔍 **Uygun seçenekler:**"]
-                for p in matched_products[:3]:
+                lines = ["🔍 **Mevcut Seçenekler ve Fiyatlar:**\n"]
+                for i, p in enumerate(matched_products[:3], 1):
                     p = apply_froxy_price_overrides(p) if is_froxy else p
                     target = listing_url(p)
-                    button_text = "Hemen Satın Al"
-                    lines.append(f"• **{p['title']}** — {p['price']}\n  [{button_text}]({target})")
+                    badge_num = ["1️⃣", "2️⃣", "3️⃣"][i - 1]
+                    lines.append(
+                        f"{badge_num} **{p['title']}**\n"
+                        f"   💰 Fiyat: **{p['price']}**\n"
+                        f"   👉 [Hemen Satın Al]({target})\n"
+                    )
+                lines.append("⚡ Anında 7/24 teslim edilir. Süre boyunca telafi garantilidir.")
                 reply_text = "\n".join(lines)
                 matched_desc = ", ".join(p['title'] for p in matched_products)
         elif candidate_products:

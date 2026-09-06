@@ -26,6 +26,7 @@ from sales_conversion import (
     match_sales_products,
     parse_cta_start_parameter,
     purchase_url,
+    resolve_smart_roadmap_reply,
 )
 
 # Async wrappers for firestore_helper to prevent event loop deadlocks/freezes
@@ -334,6 +335,9 @@ SALES_INTENT_KEYWORDS = {
     "indirim", "premium", "lisans", "hesap", "abonelik", "paket", "üyelik",
     "canva", "adobe", "netflix", "youtube", "spotify", "capcut", "chatgpt",
     "var mı", "mevcut mu", "nasıl alırım", "satın al",
+    "minecraft", "s sport", "ssport", "yemeksepeti", "turna", "tikla gelsin",
+    "coffy", "cofy", "migros", "kupon", "kod", "bakiye", "market", "kahve",
+    "3 ay", "1 ay", "aylık", "yıllık", "ortak", "kişisel",
 }
 
 def has_sales_intent(text):
@@ -1731,6 +1735,14 @@ async def message_handler(event):
                 "human_handoff", "KeyVadi", source="telegram_private",
                 reason=dm_intent,
             )
+            return
+        roadmap_reply = resolve_smart_roadmap_reply(event.text, "keyvadi")
+        if roadmap_reply:
+            reply_event_id = getattr(event.message, "id", None)
+            if reply_event_id is not None and not await claim_support_event("KeyVadi", user_id, reply_event_id, "product_card"):
+                record_event("duplicate_suppressed", "KeyVadi", source="telegram_private", reason="product_event_already_claimed")
+                return
+            await respond_with_floodwait(event, roadmap_reply)
             return
         full_catalog = load_sales_catalog("keyvadi")
         matched_products = matched_products or match_sales_products(event.text, full_catalog, limit=3)

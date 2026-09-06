@@ -10,7 +10,13 @@ class PanelSecurityTests(unittest.TestCase):
         os.environ["PANEL_ADMIN_TOKEN"] = "test-panel-token"
         os.environ.pop("SHOPIER_CALLBACK_SECRET", None)
         cls.module = importlib.import_module("app")
-        cls.client = cls.module.app.test_client()
+        cls.module.PANEL_ADMIN_TOKEN = "test-panel-token"
+
+    def setUp(self):
+        os.environ["PANEL_ADMIN_TOKEN"] = "test-panel-token"
+        self.module.PANEL_ADMIN_TOKEN = "test-panel-token"
+        self.client = self.module.app.test_client()
+
 
     def test_health_and_status_are_public(self):
         self.assertEqual(self.client.get("/health").status_code, 200)

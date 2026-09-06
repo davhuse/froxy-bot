@@ -1,6 +1,8 @@
 import asyncio
+import os
 import unittest
 from unittest.mock import patch
+
 
 from runtime_lease import RuntimeLease
 
@@ -16,11 +18,13 @@ class RuntimeLeaseTests(unittest.IsolatedAsyncioTestCase):
             owners[document_id] = owner_id
             return True
 
-        first = RuntimeLease("test-runtime")
-        second = RuntimeLease("test-runtime")
-        with patch("runtime_lease.firestore_helper.acquire_lease", side_effect=acquire):
-            self.assertTrue(await first.acquire())
-            self.assertFalse(await second.acquire())
+        with patch.dict(os.environ, {"DISABLE_RUNTIME_LEASE": "false"}):
+            first = RuntimeLease("test-runtime")
+            second = RuntimeLease("test-runtime")
+            with patch("runtime_lease.firestore_helper.acquire_lease", side_effect=acquire):
+                self.assertTrue(await first.acquire())
+                self.assertFalse(await second.acquire())
+
 
     async def test_heartbeat_stops_runtime_when_renewal_is_lost(self):
         lease = RuntimeLease("test-runtime")

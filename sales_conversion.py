@@ -89,6 +89,10 @@ TEXT_ALIASES = {
     "ssport plus": "s sport",
     "yemek sepeti": "yemeksepeti",
     "yemeksepeti kupon": "yemeksepeti",
+    "yemeksepeti 200": "yemeksepeti 200",
+    "yemeksepeti 450": "yemeksepeti 450",
+    "200 200": "yemeksepeti 200",
+    "450 350": "yemeksepeti 450",
     "turna": "turna",
     "turna.com": "turna",
     "ucak bileti": "turna",
@@ -96,6 +100,13 @@ TEXT_ALIASES = {
     "tiklagelsin": "tikla gelsin",
     "tıkla gelsin": "tikla gelsin",
     "tikla gelsin kupon": "tikla gelsin",
+    "coffy": "coffy",
+    "cofy": "coffy",
+    "cofi": "coffy",
+    "kahve kuponu": "coffy",
+    "migros": "migros",
+    "migros bakiye": "migros",
+    "migros kupon": "migros",
 }
 
 BRAND_PHRASES = (
@@ -108,7 +119,8 @@ BRAND_PHRASES = (
     "ideogram", "quillbot", "discord", "hbo", "prime video", "prime", "perplexity",
     "magnific", "zula", "fc 26", "fc26", "codex", "antigravity", "disney", "minecraft",
     "cape", "pelerin", "roblox", "instagram", "takipci", "gmail", "claude",
-    "s sport", "yemeksepeti", "turna", "tikla gelsin",
+    "s sport", "yemeksepeti", "turna", "tikla gelsin", "coffy", "cofy", "migros",
+    "yemeksepeti 200", "yemeksepeti 450",
     "baslangic", "populer", "profesyonel", "gelistirici", "isletme", "kurumsal"
 )
 
@@ -186,7 +198,14 @@ def _normalize_product(item: dict, brand: str = "") -> dict | None:
     if not product_id or not title or not (is_allowed_shopier_url(url) or is_allowed_internal_purchase_url(url)):
         return None
     lower_title = title.lower()
-    if any(k in lower_title for k in ("bakiye", "cüzdan", "cuzdan", "yükleme", "yukleme")):
+    if (
+        "keyvadi cüzdan" in lower_title
+        or "keyvadi cuzdan" in lower_title
+        or "bakiye yükleme" in lower_title
+        or "bakiye yukleme" in lower_title
+        or "cüzdan bakiye" in lower_title
+        or "cuzdan bakiye" in lower_title
+    ):
         return None
     price = BRAND_PRICE_OVERRIDES.get((str(brand).lower(), product_id), item.get("price"))
     if not price and isinstance(item.get("priceData"), dict):
@@ -462,9 +481,35 @@ def match_sales_products(message: str, products: list[dict], limit: int = 3) -> 
     scored.sort(key=lambda pair: (-pair[0], _price_number(pair[1].get("price")), pair[1]["title"]))
     if not scored:
         return []
-    if ("kisisel" in query_tokens or "ortak" in query_tokens) and scored:
+
+    MULTI_VARIANT_BRANDS = {
+        "netflix", "minecraft", "yemeksepeti", "canva"
+    }
+
+    is_multi_variant_brand = any(b in MULTI_VARIANT_BRANDS for b in brands)
+    is_ultra_specific = len(variant_tokens) >= 3 or (
+        ("kisisel" in query_tokens or "ortak" in query_tokens)
+        and any(d in query for d in ["1 ay", "1 aylik", "3 ay", "3 aylik", "30 gun"])
+        and "plus" in query_tokens
+    )
+
+    if not is_ultra_specific and is_multi_variant_brand:
+        primary = scored[0][1]
+        results = [primary]
+        seen_titles = {primary["title"]}
+        for _score, product in scored[1:]:
+            if product["title"] not in seen_titles:
+                results.append(product)
+                seen_titles.add(product["title"])
+            if len(results) >= max(1, min(limit, 3)):
+                break
+        return results
+
+    if is_ultra_specific and scored:
         return [scored[0][1]]
     if "chatgpt" in query_tokens and "codex" in query_tokens and scored:
+        return [scored[0][1]]
+    if ("kisisel" in query_tokens or "ortak" in query_tokens) and scored:
         return [scored[0][1]]
     if variant_tokens and (len(scored) == 1 or scored[0][0] - scored[1][0] >= 25):
         return [scored[0][1]]
@@ -477,6 +522,197 @@ def _price_number(value: str) -> float:
         return float(cleaned)
     except ValueError:
         return 999999.0
+
+
+SPECIFIC_BRANDS_FOR_ROADMAP = {
+    "netflix", "minecraft", "chatgpt", "canva", "adobe", "windows", "office",
+    "spotify", "s sport", "turna", "tikla gelsin", "duolingo", "capcut",
+    "kaspersky", "exxen", "prime", "hbo", "disney", "roblox", "steam",
+    "fc 26", "fc26", "fifa", "zula", "gemini", "grok", "claude", "perplexity",
+    "crunchyroll", "deepl", "grammarly", "nordvpn", "vpn", "envato", "freepik",
+    "coffy", "cofy", "migros", "yemeksepeti"
+}
+
+
+def resolve_smart_roadmap_reply(message: str, brand: str = "keyvadi") -> str | None:
+    """Return a roadmap/flowchart reply when the user asks categorical, duration, or plan questions."""
+    norm = normalize_sales_text(message)
+    if not norm:
+        return None
+
+    # If the user explicitly asked for a specific product/brand, let product matching handle it
+    if any(re.search(rf"(?<!\w){re.escape(b)}(?!\w)", norm) for b in SPECIFIC_BRANDS_FOR_ROADMAP):
+        return None
+
+    # 1. 3 Aylık / 3 Ay
+    if re.search(r"\b3\s*ay(lik)?\b", norm):
+        return (
+            "🗓️ **3 Aylık Popüler Üyelik ve Lisans Seçeneklerimiz:**\n\n"
+            "1️⃣ **Minecraft Premium + Xbox Game Pass (3 Aylık)** — 119,90 ₺\n"
+            "   👉 [Hemen Satın Al](https://www.shopier.com/50454347)\n\n"
+            "2️⃣ **Gemini Advanced AI (3 Aylık Lisans)** — 59,90 ₺\n"
+            "   👉 [Hemen Satın Al](https://www.shopier.com/50060935)\n\n"
+            "3️⃣ **Duolingo Plus / Super (3 Aylık)** — 49,90 ₺\n"
+            "   👉 [Hemen Satın Al](https://www.shopier.com/47669112)\n\n"
+            "📌 Farklı bir 3 aylık servis (Örn: Spotify, VPN, Canva) mi arıyorsunuz? Servis adını yazmanız yeterlidir!\n"
+            "🛍️ Tüm Ürünler: @KeyVadiSatisBot | Canlı Destek: @KeyvadiDestek"
+        )
+
+    # 2. 1 Aylık / Aylık
+    if re.search(r"\b(1\s*ay(lik)?|aylik)\b", norm):
+        return (
+            "🗓️ **1 Aylık En Çok Tercih Edilen Üyelikler:**\n\n"
+            "1️⃣ **Netflix 4K UHD Ortak Profil** — 39,99 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/49099014)\n\n"
+            "2️⃣ **S Sport Plus Canlı Maç & Spor** — 70,00 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/50576029)\n\n"
+            "3️⃣ **ChatGPT Plus 4o (1 Aylık)** — 39,90 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/47669110)\n\n"
+            "4️⃣ **Spotify Premium (1 Aylık)** — 29,90 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/47669111)\n\n"
+            "5️⃣ **Minecraft Premium + Game Pass (1 Ay)** — 49,90 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/50460191)\n\n"
+            "📌 Hangi platform için aylık üyelik arıyorsunuz? Servis adını yazabilirsiniz.\n"
+            "🛍️ Tüm Ürünler: @KeyVadiSatisBot | Canlı Destek: @KeyvadiDestek"
+        )
+
+    # 3. Yıllık / 12 Aylık
+    if re.search(r"\b(yillik|1\s*yillik|12\s*ay(lik)?)\b", norm):
+        return (
+            "🗓️ **1 Yıllık Orijinal Lisans ve Üyelik Seçeneklerimiz:**\n\n"
+            "1️⃣ **Canva Pro (1 Yıllık Orijinal Lisans)** — 39,90 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/47669113)\n\n"
+            "2️⃣ **Office 365 Pro Plus (1 Yıl / Ömür Boyu)** — 49,90 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/47669116)\n\n"
+            "3️⃣ **Windows 10 / 11 Pro Orijinal Lisans** — 49,90 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/47669115)\n\n"
+            "4️⃣ **CapCut Pro PC (1 Yıllık)** — 99,90 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/47669118)\n\n"
+            "5️⃣ **Kaspersky Total Security Lisans** — 89,90 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/47669123)\n\n"
+            "📌 Aradığınız farklı bir program veya lisans var mı?\n"
+            "🛍️ Tüm Ürünler: @KeyVadiSatisBot | Canlı Destek: @KeyvadiDestek"
+        )
+
+    # 4. Ortak Profil / Ortak Hesap
+    if re.search(r"\b(ortak|ortak profil|ortak hesap)\b", norm):
+        return (
+            "👥 **Ekonomik Ortak Profil Seçeneklerimiz:**\n\n"
+            "1️⃣ **Netflix 4K UHD Ortak Profil** — 39,99 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/49099014)\n\n"
+            "2️⃣ **ChatGPT Plus Ortak Hesap** — 39,90 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/47669110)\n\n"
+            "3️⃣ **Minecraft Premium Ortak Hesap** — 49,90 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/50460191)\n\n"
+            "4️⃣ **CapCut Pro Ortak Hesap** — 39,90 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/47669118)\n\n"
+            "5️⃣ **Exxen Reklamsız Ortak** — 39,90 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/47669119)\n\n"
+            "📌 Hangi servis için ortak profil istiyorsunuz? Servis adını yazarak direkt satın alma linkini alabilirsiniz.\n"
+            "🛍️ Tüm Ürünler: @KeyVadiSatisBot | Canlı Destek: @KeyvadiDestek"
+        )
+
+    # 5. Kişisel Profil / Kişisel Hesap
+    if re.search(r"\b(kisisel|ozel|kendi hesabim)\b", norm):
+        return (
+            "👤 **Kişisel & Özel Profil Lisans Seçeneklerimiz:**\n\n"
+            "1️⃣ **Netflix 4K UHD Kişisel Profil (Özel Pinli)** — 79,90 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/47669117)\n\n"
+            "2️⃣ **Canva Pro Kişisel Mailinize Davet** — 39,90 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/47669113)\n\n"
+            "3️⃣ **Office 365 Kişisel Lisans** — 49,90 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/47669116)\n\n"
+            "4️⃣ **Spotify Premium Aile Daveti (Kendi Hesabınız)** — 29,90 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/47669111)\n\n"
+            "5️⃣ **YouTube Premium Aile Daveti** — 39,90 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/47669114)\n\n"
+            "📌 Hangi servis için kişisel hesap arıyorsunuz?\n"
+            "🛍️ Tüm Ürünler: @KeyVadiSatisBot | Canlı Destek: @KeyvadiDestek"
+        )
+
+    # 6. Kuponlar / İndirim Kodları
+    if re.search(r"\b(kupon|indirim kodu|kuponlar|kodlar)\b", norm):
+        return (
+            "🎟️ **Güncel İndirim Kuponu & Kod Fırsatlarımız:**\n\n"
+            "1️⃣ **Yemeksepeti 200₺'ye 200₺ İndirim Kodu** — 50,00 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/50594321)\n\n"
+            "2️⃣ **Yemeksepeti 450₺'ye 350₺ İndirim Kodu** — 60,00 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/50576030)\n\n"
+            "3️⃣ **Turna 600 TL Uçak Bileti Kuponu** — 70,00 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/50576031)\n\n"
+            "4️⃣ **Tıkla Gelsin® 400₺'ye 200₺ Yemek Kuponu** — 50,00 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/50576032)\n\n"
+            "5️⃣ **Coffy 2 Kahve Alana 1'i Bedava Kodu** — 45,00 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/50594322)\n\n"
+            "6️⃣ **Migros 100 TL Alışveriş Bakiye Kodu** — 50,00 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/50594323)\n\n"
+            "⚡ Kodlar sepette anında düşer, 7/24 otomatik teslim edilir!\n"
+            "🛍️ Tüm Kuponlar: @KeyVadiSatisBot | Canlı Destek: @KeyvadiDestek"
+        )
+
+    # 7. Yemek
+    if re.search(r"\b(yemek|yemek kuponu|restoran)\b", norm):
+        return (
+            "🍔 **Yemek & Restoran İndirim Kuponları:**\n\n"
+            "1️⃣ **Yemeksepeti 200₺'ye 200₺ İndirim Kodu** — 50,00 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/50594321)\n\n"
+            "2️⃣ **Yemeksepeti 450₺'ye 350₺ İndirim Kodu** — 60,00 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/50576030)\n\n"
+            "3️⃣ **Tıkla Gelsin® 400₺'ye 200₺ Kupon Kodu** — 50,00 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/50576032)\n\n"
+            "⚡ Sepette anında indirim düşer, 7/24 anında teslimattır."
+        )
+
+    # 8. Market
+    if re.search(r"\b(market|market kuponu|market bakiyesi)\b", norm):
+        return (
+            "🛒 **Süpermarket & Alışveriş Kuponları:**\n\n"
+            "1️⃣ **Migros 100 TL Alışveriş Bakiye Kodu** — 50,00 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/50594323)\n\n"
+            "2️⃣ **Trendyol Market İndirim Kuponu** — 49,90 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/47669125)\n\n"
+            "⚡ Kasada veya uygulamada anında 100 TL indirim sağlar!"
+        )
+
+    # 9. Oyun
+    if re.search(r"\b(oyun|oyunlar|game)\b", norm):
+        return (
+            "🎮 **Popüler Oyun & Lisans Seçeneklerimiz:**\n\n"
+            "1️⃣ **Minecraft + Game Pass (1 Aylık)** — 49,90 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/50460191)\n\n"
+            "2️⃣ **Minecraft + Game Pass (3 Aylık)** — 119,90 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/50454347)\n\n"
+            "3️⃣ **Steam VIP Random Key** — 19,90 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/47669121)\n\n"
+            "4️⃣ **EA FC 26 / FIFA Hesabı** — 89,90 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/49099017)\n\n"
+            "5️⃣ **Roblox Offsale Kostümlü Hesap** — 49,90 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/47669124)\n\n"
+            "📌 Aradığınız özel bir oyun varsa adını yazabilirsiniz!"
+        )
+
+    # 10. Fiyat Listesi / Katalog
+    if re.search(r"\b(fiyat listesi|fiyatlar|katalog|menu|liste|urunler)\b", norm):
+        return (
+            "📋 **KeyVadi Popüler Ürün ve Fiyat Rehberi:**\n\n"
+            "🎬 **Dizi, Film & Canlı Spor:**\n"
+            "• Netflix 4K Ortak: 39,99 ₺ | Kişisel: 79,90 ₺\n"
+            "• S Sport Plus (1 Ay): 70,00 ₺ | Exxen: 39,90 ₺ | Prime: 29,90 ₺\n\n"
+            "🤖 **Yapay Zekâ (AI):**\n"
+            "• ChatGPT Plus 4o: 39,90 ₺ | Gemini Adv (3 Ay): 59,90 ₺\n"
+            "• Perplexity Pro: 49,90 ₺ | Claude Pro: 49,90 ₺\n\n"
+            "💻 **Tasarım & Yazılım & Lisans:**\n"
+            "• Canva Pro (1 Yıl): 39,90 ₺ | CapCut Pro: 39,90 ₺\n"
+            "• Windows 10/11 Pro: 49,90 ₺ | Office 365: 49,90 ₺\n\n"
+            "🎟️ **Yemek, Market & Kupon:**\n"
+            "• Yemeksepeti 200/200: 50,00 ₺ | 450/350: 60,00 ₺\n"
+            "• Migros 100 TL Bakiye: 50,00 ₺ | Coffy: 45,00 ₺\n"
+            "• Turna 600 TL Uçak Bilet: 70,00 ₺ | Tıkla Gelsin: 50,00 ₺\n\n"
+            "🛍️ **Tüm 60+ Ürün:** @KeyVadiSatisBot\n"
+            "💬 **Canlı Destek:** @KeyvadiDestek"
+        )
+
+    return None
 
 
 def product_by_id(brand: str, product_id: str) -> dict | None:

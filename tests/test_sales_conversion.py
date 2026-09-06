@@ -21,6 +21,7 @@ from sales_conversion import (
     parse_purchase_token,
     listing_url,
     purchase_target_url,
+    resolve_smart_roadmap_reply,
 )
 
 
@@ -46,7 +47,7 @@ class SalesCatalogMatchingTests(unittest.TestCase):
         cls.all_products = cls.keyvadi + cls.froxy
 
     def test_all_active_products_match_their_own_name(self):
-        self.assertEqual(len(self.keyvadi), 59)
+        self.assertEqual(len(self.keyvadi), 62)
         self.assertEqual(len(self.froxy), 18)
         for catalog in (self.keyvadi, self.froxy):
             for product in catalog:
@@ -71,6 +72,8 @@ class SalesCatalogMatchingTests(unittest.TestCase):
             "yemeksepeti": "yemeksepeti",
             "turna bilet": "turna",
             "tiklagelsin": "tıkla gelsin",
+            "coffy kupon": "coffy",
+            "migros bakiye": "migros",
         }
         for query, expected in cases.items():
             with self.subTest(query=query):
@@ -101,6 +104,30 @@ class SalesCatalogMatchingTests(unittest.TestCase):
         self.assertEqual(len(windows), 1)
         self.assertEqual(len(office), 1)
         self.assertNotEqual(windows[0]["id"], office[0]["id"])
+
+    def test_multi_variant_products_return_both_options(self):
+        netflix_matches = match_sales_products("netflix ortak", self.keyvadi)
+        self.assertEqual(len(netflix_matches), 2)
+        self.assertIn("ortak", netflix_matches[0]["title"].lower())
+        self.assertIn("kişisel", netflix_matches[1]["title"].lower())
+
+        minecraft_matches = match_sales_products("minecraft", self.keyvadi)
+        self.assertEqual(len(minecraft_matches), 2)
+
+        yemeksepeti_matches = match_sales_products("yemeksepeti", self.keyvadi)
+        self.assertEqual(len(yemeksepeti_matches), 2)
+
+    def test_smart_roadmap_replies(self):
+        self.assertIsNotNone(resolve_smart_roadmap_reply("3 aylık"))
+        self.assertIn("Minecraft Premium", resolve_smart_roadmap_reply("3 aylık"))
+        self.assertIsNotNone(resolve_smart_roadmap_reply("ortak"))
+        self.assertIn("Netflix 4K", resolve_smart_roadmap_reply("ortak"))
+        self.assertIsNotNone(resolve_smart_roadmap_reply("kupon"))
+        self.assertIn("Yemeksepeti", resolve_smart_roadmap_reply("kupon"))
+        self.assertIsNotNone(resolve_smart_roadmap_reply("fiyat listesi"))
+        # Specific brand queries should NOT trigger generic roadmaps
+        self.assertIsNone(resolve_smart_roadmap_reply("netflix"))
+        self.assertIsNone(resolve_smart_roadmap_reply("minecraft"))
 
     def test_lisansarena_catalog_supports_signed_purchase_links(self):
         from sales_conversion import make_purchase_token, parse_purchase_token
