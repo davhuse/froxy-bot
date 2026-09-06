@@ -52,10 +52,15 @@ CARD_MAPPING = [
     ("instagram", "assets/products/card_clean_instagram.jpg"),
     ("s sport", "assets/products/card_clean_ssport.jpg"),
     ("ssport", "assets/products/card_clean_ssport.jpg"),
+    ("yemeksepeti 200", "assets/products/card_clean_yemeksepeti_200.jpg"),
+    ("200/200", "assets/products/card_clean_yemeksepeti_200.jpg"),
     ("yemeksepeti", "assets/products/card_clean_yemeksepeti.jpg"),
     ("turna", "assets/products/card_clean_turna.jpg"),
     ("tikla gelsin", "assets/products/card_clean_tiklagelsin.jpg"),
-    ("tiklagelsin", "assets/products/card_clean_tiklagelsin.jpg")
+    ("tiklagelsin", "assets/products/card_clean_tiklagelsin.jpg"),
+    ("coffy", "assets/products/card_clean_coffy.jpg"),
+    ("cofy", "assets/products/card_clean_coffy.jpg"),
+    ("migros", "assets/products/card_clean_migros.jpg")
 ]
 
 def resolve_card(title):
