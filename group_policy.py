@@ -30,6 +30,7 @@ DEFAULT_POLICY = {
     "allow_media": True,
     "allow_emojis": True,
     "max_lines": None,
+    "prefer_short": False,
     "forbidden_products": [],
     "account_hold": [],
     "hold_reason": "",
@@ -140,6 +141,28 @@ SEEDED_POLICIES = {
     },
 }
 
+OPEN_MENTION_GROUPS = {
+    "kodkuponmarketi", "kodindirimsatis", "kodalimsatim",
+    "kuponkodmerkez", "indirimcek", "kodkuponcek",
+}
+
+
+FAST_COUPON_GROUPS = {
+    "kuponindirimsatis", "satcek", "ceksat", "kuponhesapsatis", "kuponsatisgrup",
+    "kuponcekkodsatis", "indirim_kodu", "kuponkodsatisgrup", "tahaaslan11",
+    "indirimkodusatis", "kuponsatislari0", "kupongrupta", "kuponkodindirimilanlar",
+    "kuponcekm", "kodceksatismerkezi", "kuponkodhesapilan", "satiskodtakasi",
+    "kuponkodalimsatimm", "ceksatkupon", "kuponindirimpazari", "indirim363",
+    "kuponkodceksatis", "kuponkodualsat", "ceksatistakasgrup", "mukyemek",
+    "kuponvekodsatisgrubu", "ceksatkupon2", "kuponkodalimsatim", "kodmalf",
+    "indirimruzgari1", "kuponindirimkodalisveris", "kuponindirimcek", "uygunkod",
+    "yemeksepetikuponu", "kuponalsatgurup", "kodkuponmerkezi", "indirimkana",
+    "bedavainternetkodalimsatim", "kuponyaticaret", "cek_kupon_kod_ilan",
+    "minakuponkodsatis", "bedavainternetkod", "kuponinternet", "kuponceking",
+    "yucekuponsatis", "indirimkodbul", "kuponsatimalim", "kodevrenii",
+    "ilanticaret", "kuponceksatisi",
+}
+
 
 STRICT_NO_MENTION_TARGETS = {
     "alimsatimmerkezii", "alisverisforumuguncel", "alsatticarettz",
@@ -221,15 +244,32 @@ def resolve_group_policy(group_name=None, entity=None) -> tuple[str, dict]:
             candidate_aliases = {normalize_group(item) for item in candidate.get("aliases", [])}
             if aliases.intersection(candidate_aliases):
                 selected = candidate
-                break
     resolved = {**deepcopy(DEFAULT_POLICY), **deepcopy(selected or {})}
-    if aliases.intersection(STRICT_NO_MENTION_TARGETS):
+    if aliases.intersection(OPEN_MENTION_GROUPS):
+        resolved["allow_mentions"] = True
+        resolved["prefer_short"] = False
+    elif aliases.intersection(FAST_COUPON_GROUPS):
+        resolved.update({
+            "allow_urls": False,
+            "allow_deep_links": False,
+            "allow_mentions": False,
+            "prefer_short": True,
+        })
+        if not resolved.get("max_lines"):
+            resolved["max_lines"] = 15
+    elif aliases.intersection(STRICT_NO_MENTION_TARGETS):
         resolved.update({
             "allow_urls": False,
             "allow_deep_links": False,
             "allow_mentions": False,
         })
     return key, resolved
+
+
+def is_short_group_policy(policy: dict) -> bool:
+    return bool(policy.get("prefer_short")) or (
+        isinstance(policy.get("max_lines"), int) and policy["max_lines"] <= 20
+    )
 
 
 def update_policy(group_name=None, entity=None, **changes) -> dict:

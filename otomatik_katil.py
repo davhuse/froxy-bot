@@ -47,6 +47,9 @@ from group_policy import (
     apply_brand_link_safety,
     apply_persistent_moderation_safety,
     apply_telegram_rights,
+    FAST_COUPON_GROUPS,
+    OPEN_MENTION_GROUPS,
+    is_short_group_policy,
     is_moderation_warning,
     make_policy_compliant,
     moderation_hold_active,
@@ -578,7 +581,13 @@ def is_short_ad_group(grup_name, entity=None):
         identifiers.append(_normalize_group_identifier(getattr(entity, 'username', '')))
         title = _normalize_group_identifier(getattr(entity, 'title', ''))
 
-    if any(item in SHORT_AD_GROUP_USERNAMES for item in identifiers):
+    # Açık / izinli gruplar uzun katalog kullanır
+    if any(item in OPEN_MENTION_GROUPS for item in identifiers):
+        return False
+
+    if any(item in SHORT_AD_GROUP_USERNAMES or item in FAST_COUPON_GROUPS or item in STRICT_MARKET_GROUPS for item in identifiers):
+        return True
+    if any(k in title for k in ("kupon", "kod satış", "kod satis", "çek satış", "cek satis", "indirim kodu")):
         return True
     return title in SHORT_AD_GROUP_TITLES
 
@@ -630,16 +639,17 @@ def strict_group_safe_copy(group_key, is_keyvadi, is_lisansarena, is_froxy):
             "KeyVadi dijital ürünler",
             "Canva Pro 1 yıl 49,90 TL",
             "Gemini Pro 3 ay 59,90 TL | 18 ay 149,90 TL",
-            "ChatGPT Plus kişisel 499,90 TL | ortak 69,90 TL",
-            "S Sport Plus 1 ay 70 TL | Steam oyun ürünleri",
-            "Disney+ UHD reklamsız 1 ay 99,90 TL",
+            "ChatGPT Plus kişisel 499,90 TL | ortak 39,90 TL",
+            "S Sport Plus 1 ay 70 TL | Turna 600 TL bilet 70 TL",
             "Adobe 1 hafta 49,99 TL | 1 ay 119,99 TL",
             "Windows 10/11 Pro 70 TL | Office 365 1 yıl 70 TL",
-            "YouTube Premium 1 ay 30 TL",
+            "YouTube Premium 1 ay 30 TL | Spotify 4 ay 34,99 TL",
+            "Steam oyun & key 60 TL | Minecraft 49,90 TL",
         ]
         if not is_satcek:
             lines.insert(4, "Netflix 4K kişisel profil 79,90 TL")
-            lines.insert(5, "Yemeksepeti 450/350 kod 60 TL")
+            lines.insert(5, "Yemeksepeti 200/200 50 TL | 450/350 60 TL")
+            lines.insert(6, "Coffy 2 al 1 öde 45 TL | Migros 100 TL 50 TL")
         lines.append("+100'den fazla başarılı işlem | Süre boyunca telafi garantisi")
         lines.append("Kuponlarınız nakit alınır | Sipariş: KeyVadiSatisBot")
         return "\n".join(lines)
@@ -648,7 +658,6 @@ def strict_group_safe_copy(group_key, is_keyvadi, is_lisansarena, is_froxy):
             "LisansArena dijital ürünler",
             "Gemini Pro 18 ay 165 TL | ChatGPT Plus 520 TL",
             "Canva Pro 1 yıl 85 TL | Adobe 1 ay 160 TL",
-            "Yemeksepeti 200/200 60 TL | 450/350 70 TL",
             "S Sport Plus 1 ay 80 TL | Turna 600 TL bilet 80 TL",
             "Coffy 2 al 1 ode 55 TL | Migros 100 TL bakiye 60 TL",
             "Windows 10/11 Pro 55 TL | Office 365 1 yıl 75 TL",
@@ -656,7 +665,8 @@ def strict_group_safe_copy(group_key, is_keyvadi, is_lisansarena, is_froxy):
             "Steam 200$ VIP key 45 TL | Steam oyun 70 TL",
         ]
         if not is_satcek:
-            lines.insert(4, "Netflix 4K kişisel 85 TL | Prime Video 35 TL")
+            lines.insert(3, "Yemeksepeti 200/200 60 TL | 450/350 70 TL")
+            lines.insert(5, "Netflix 4K kişisel 85 TL | Prime Video 35 TL")
         lines.append("+100'den fazla başarılı işlem | 7/24 otomatik teslimat")
         lines.append("Sipariş ve detaylar: LisansArenaBot")
         return "\n".join(lines)
@@ -674,8 +684,9 @@ def sanitize_strict_market_message(msg, grup_name, is_keyvadi, is_lisansarena, i
     """Katı kupon gruplarının ilan kurallarına uygun kısa metin üretir."""
     group_key = _normalize_group_identifier(grup_name)
     max_lines = STRICT_MARKET_GROUPS.get(group_key)
-    if not max_lines:
+    if not max_lines and not is_short_ad_group(grup_name):
         return msg
+    max_lines = max_lines or 15
 
     # Normal sablonlar emoji/link/uzun katalog icerdigi icin bu gruplarda
     # moderasyona takiliyordu. Her marka kendi kisa ve kurala uygun ilaniyla
@@ -796,6 +807,9 @@ ACCOUNT_GROUP_BLOCKS_FILE = 'account_group_blocks.json'
 SEEDED_ACCOUNT_GROUP_BLOCKS = {
     ('FroxyOnline', 'ceksatkupon'): 'UserBannedInChannel',
     ('FroxyOnline', 'kuponceking'): 'ChatWriteForbidden',
+    ('FroxyOnline', 'kod_kupon_alsat'): 'UserBannedInChannel',
+    ('FroxyOnline', 'kodkuponcek'): 'UserBannedInChannel',
+    ('FroxyOnline', 'kupongrupta'): 'ChatWriteForbidden',
     ('KeyVadiOnline', 'ceksat'): 'UserBannedInChannel',
     ('KeyVadiOnline', 'kod_kupon_alsat'): 'UserBannedInChannel',
     ('KeyVadiOnline', 'kodkuponcek'): 'UserBannedInChannel',
@@ -4379,13 +4393,11 @@ async def main():
                 await asyncio.sleep(min(60, pause_seconds))
                 continue
 
-            # LisansArena traffic is fail-closed while its wallet/order store
-            # is unavailable.  The account remains connected and its durable
-            # checkpoint is preserved; the coordinator can serve the next
-            # healthy account instead of advertising a broken checkout.
+            # LisansArena mağaza sağlık kontrolü: veritabanı yoksa statik/Shopier
+            # ve bot üzerinden reklam akışına güvenle devam edilir.
             if account_brand(client_name) == 'lisansarena' and os.environ.get(
-                'LISANSARENA_ADS_REQUIRE_STORE', '1'
-            ).strip().lower() not in {'0', 'false', 'no', 'off'}:
+                'LISANSARENA_ADS_REQUIRE_STORE', '0'
+            ).strip().lower() in {'1', 'true', 'yes', 'on'}:
                 try:
                     from lisansarena_store import store_health
                     la_health = await asyncio.to_thread(store_health)
@@ -4996,7 +5008,7 @@ async def main():
                         msg = sanitize_strict_market_message(
                             msg, grup_name, is_keyvadi, is_lisansarena, is_froxy
                         )
-                        experiment_brand = "keyvadi" if is_keyvadi else ("froxy" if is_froxy else "lisansarena")
+                        experiment_brand = current_brand
                         # Deep-link A/B attribution is disabled. Clean groups
                         # receive a visible raw @ handle; warned groups keep
                         # the existing search-style CTA.

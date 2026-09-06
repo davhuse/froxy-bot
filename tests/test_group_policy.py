@@ -204,6 +204,19 @@ class GroupPolicyTests(unittest.TestCase):
         self.assertTrue(lines[-1].endswith("@KeyVadiSatisBot"))
         self.assertEqual(options["cta_mode"], "plain_mention")
 
+    def test_fast_coupon_groups_resolve_no_mentions_and_prefer_short(self):
+        for group in ("kupongrupta", "ceksat", "satcek", "kuponsatisgrup", "indirim_kodu"):
+            _, policy = group_policy.resolve_group_policy(group)
+            self.assertFalse(policy["allow_mentions"], group)
+            self.assertTrue(policy["prefer_short"], group)
+            self.assertTrue(group_policy.is_short_group_policy(policy), group)
+
+    def test_open_groups_resolve_allow_mentions_and_no_forced_short(self):
+        for group in ("kodkuponcek", "kodkuponmarketi", "kodindirimsatis", "kodalimsatim"):
+            _, policy = group_policy.resolve_group_policy(group)
+            self.assertTrue(policy["allow_mentions"], group)
+            self.assertFalse(policy["prefer_short"], group)
+
 
 if __name__ == "__main__":
     unittest.main()
