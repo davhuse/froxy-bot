@@ -37,6 +37,19 @@ def format_price_str(price_val) -> str:
     return s
 
 
+def make_green_button(text: str, url: str):
+    """Build a button with Telegram's new success (green) background style."""
+    try:
+        from telethon.tl import types
+        return types.KeyboardButtonUrl(
+            text=text,
+            url=url,
+            style=types.KeyboardButtonStyle(bg_success=True)
+        )
+    except Exception:
+        return Button.url(text, url)
+
+
 def build_price_drop_card(
     title: str,
     new_price: str,
@@ -83,7 +96,7 @@ def build_price_drop_card(
         "👉 *Fırsat stoklarla sınırlıdır, hemen yakalayın!*"
     )
 
-    buttons = [[Button.url(f"{icon} Fırsatı Yakala (Satın Al)", buy_url)]]
+    buttons = [[make_green_button(f"{icon} Fırsatı Yakala (Satın Al)", buy_url)]]
     return text, buttons
 
 
@@ -112,7 +125,7 @@ def build_selling_fast_card(
         "👉 *Tükenmeden hemen sepetinize ekleyin!*"
     )
 
-    buttons = [[Button.url(f"{icon} Tükenmeden Satın Al", buy_url)]]
+    buttons = [[make_green_button(f"{icon} Tükenmeden Satın Al", buy_url)]]
     return text, buttons
 
 

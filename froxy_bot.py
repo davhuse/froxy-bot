@@ -228,6 +228,33 @@ BOT_TOKEN = (
     ""
 ).strip()
 ADMIN_ID = int(os.environ.get("TELEGRAM_ADMIN_ID", config.get("admin_id", 0)) or 0)
+ADMIN_IDS = {
+    6196006704,  # KeyVadiDestek
+    5359327143,  # User / ittersdv / Klyde
+    8116518175,  # Habil
+}
+
+
+def is_admin(user_id):
+    """Check if user_id is authorized admin."""
+    if not user_id:
+        return False
+    try:
+        uid = int(user_id)
+        if uid in ADMIN_IDS:
+            return True
+        cfg = load_config() or {}
+        cfg_admin = cfg.get("admin_id")
+        if cfg_admin and uid == int(cfg_admin):
+            return True
+        for a_id in cfg.get("admin_ids", []):
+            if uid == int(a_id):
+                return True
+        if ADMIN_ID and uid == int(ADMIN_ID):
+            return True
+    except Exception:
+        pass
+    return False
 BOT_USER_ID = None
 PROFILE_CONFIGURED = False
 SHOPIER_LINKS = config.get("shopier_links", {})
@@ -299,13 +326,25 @@ def configure_bot_profile():
 
 
 def mini_app_markup(label="Mağazayı Aç"):
+    from telethon.tl import types
+    try:
+        btn_app = types.KeyboardButtonWebView(
+            text=f"🛍️ {label}",
+            url=KEYVADI_MINI_APP_URL,
+            style=types.KeyboardButtonStyle(bg_success=True)
+        )
+        btn_top7 = types.KeyboardButtonCallback(
+            text="🔥 En Çok Satan Fırsatlar (Price Drop)",
+            data=b"menu_top7",
+            style=types.KeyboardButtonStyle(bg_success=True)
+        )
+    except Exception:
+        btn_app = KeyboardButtonWebView(text=f"🛍️ {label}", url=KEYVADI_MINI_APP_URL)
+        btn_top7 = KeyboardButtonCallback(text="🔥 En Çok Satan 7 Ürün (Fırsatlar)", data=b"menu_top7")
+
     return ReplyInlineMarkup(rows=[
-        KeyboardButtonRow(buttons=[
-            KeyboardButtonWebView(text=f"🛍 {label}", url=KEYVADI_MINI_APP_URL)
-        ]),
-        KeyboardButtonRow(buttons=[
-            KeyboardButtonCallback(text="🔥 En Çok Satan 7 Ürün (Fırsatlar)", data=b"menu_top7")
-        ]),
+        KeyboardButtonRow(buttons=[btn_app]),
+        KeyboardButtonRow(buttons=[btn_top7]),
         KeyboardButtonRow(buttons=[
             KeyboardButtonCallback(text="📦 Kategoriler", data=b"menu_categories"),
             KeyboardButtonCallback(text="📞 Canlı Destek", data=b"menu_support")
@@ -917,15 +956,15 @@ async def show_lang_selection(event, is_callback=False):
 
 async def show_main_menu(event, user_id, is_callback=False):
     welcome = (
-        "🎮 **KEYVADI PRO — Dijital E-Pin & Oyun Mağazası** ⚡\n"
+        "🔥 **KEYVADI STORE — Dijital Lisans & E-Pin** ⚡\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
         "👋 **KeyVadi Dünyasına Hoş Geldiniz!**\n\n"
-        "YouTube Premium, Canva Pro, Netflix 4K, ChatGPT Plus, Steam VIP Random Key, FC26, Xbox Game Pass ve tüm orijinal lisanslar %70 indirimle burada!\n\n"
-        "💎 **Öne Çıkan Ayrıcalıklar:**\n"
-        "• ⚡ 7/24 Anında Otomatik Kod & Lisans Teslimatı\n"
-        "• 💳 3D Secure ile Güvenli Kartla Satın Alma & Bakiye Yükleme\n"
-        "• 🎁 Arkadaşını Davet Et, Harcamalarından %10 Nakit Kazan!\n\n"
-        "👇 **Alışverişe başlamak ve mağazayı açmak için aşağıdaki butona tıklayın:**"
+        "Netflix 4K, Gemini AI Pro, CapCut Pro, Xbox Game Pass ve Minecraft gibi tüm popüler lisanslar **%70 indirimle** anında teslim!\n\n"
+        "⚡ **7/24 Anında Otomatik Kod & Lisans Teslimatı**\n"
+        "🎁 **Tam Süre Kesintisiz Değişim & Telafi Garantisi**\n"
+        "💳 **3D Secure Güvenli Kartla Satın Alma**\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "👉 *Alışverişe başlamak veya indirimli ürünleri incelemek için aşağıdaki yeşil butonlara dokunun:*"
     )
     buttons = mini_app_markup("Mağazayı Aç")
     if is_callback:
@@ -1191,9 +1230,9 @@ async def menu_top7_handler(event):
         pass
     
     text = (
-        "🔥 **KEYVADİ — EN ÇOK SATAN 7 FIRSAT ÜRÜNÜ** 🔥\n"
+        "🔥 **Price Drop & Selling Fast Fırsatları!** 🔥\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        "En popüler dijital abonelik ve oyun lisansları rakipsiz fiyatlarla hemen teslim!\n\n"
+        "En popüler dijital abonelik ve oyun lisansları indirimli fiyatlarla hemen teslim!\n\n"
         "🍿 **1. Netflix 4K UHD** — 39,99 ₺ (Ortak) / 79,90 ₺ (Kişisel)\n"
         "🤖 **2. Google Gemini Pro (AI)** — 59,90 ₺ (3 Ay) / 99,90 ₺ (18 Ay)\n"
         "🎮 **3. Xbox Game Pass Ultimate** — 49,90 ₺ (1 Ay) / 69,90 ₺ (3 Ay)\n"
@@ -1201,21 +1240,31 @@ async def menu_top7_handler(event):
         "🎬 **5. CapCut Pro** — 49,90 ₺ (1 Ay Ortak) / 149,90 ₺ (Kişisel)\n"
         "🦉 **6. Duolingo Super Sınırsız** — 49,90 ₺ (Sınırsız Can & Reklamsız)\n"
         "📦 **7. Amazon Prime Video** — 9,99 ₺ (Ortak) / 29,90 ₺ (Özel Profil)\n\n"
-        "⚡ *Tüm ürünlerde 7/24 anında otomatik/hızlı teslimat ve tam süre garantisi mevcuttur.*\n"
-        "👇 **Satın almak istediğiniz ürünü seçin:**"
+        "⚡ *Tüm ürünlerde 7/24 anında otomatik teslimat ve tam süre garantisi mevcuttur.*\n"
+        "👉 *Satın almak istediğiniz ürüne tıklayın:*"
     )
+    from telethon.tl import types
     buttons = [
-        [Button.url("🍿 Netflix 4K Satın Al (39,99₺)", "https://www.shopier.com/keyvadi/49099014")],
-        [Button.url("🤖 Gemini Pro Satın Al (59,90₺)", "https://www.shopier.com/keyvadi/49362708")],
-        [Button.url("🎮 Xbox Game Pass Satın Al (49,90₺)", "https://www.shopier.com/keyvadi/49467735")],
-        [Button.url("⛏️ Minecraft Satın Al (49,90₺)", "https://www.shopier.com/50460191")],
-        [Button.url("🎬 CapCut Pro Satın Al (49,90₺)", "https://www.shopier.com/keyvadi/49467632")],
-        [Button.url("🦉 Duolingo Super Satın Al (49,90₺)", "https://www.shopier.com/keyvadi/47669390")],
-        [Button.url("📦 Prime Video Satın Al (9,99₺)", "https://www.shopier.com/keyvadi/49002145")],
-        [Button.url("🛍️ Tüm Ürünleri Gör (Mini App)", KEYVADI_MINI_APP_URL)],
-        [Button.inline("↩️ Ana Menü", b"menu_main")]
+        [types.KeyboardButtonUrl("🍿 Netflix 4K Satın Al (39,99₺)", "https://www.shopier.com/keyvadi/49099014", style=types.KeyboardButtonStyle(bg_success=True))],
+        [types.KeyboardButtonUrl("🤖 Gemini Pro Satın Al (59,90₺)", "https://www.shopier.com/keyvadi/49362708", style=types.KeyboardButtonStyle(bg_success=True))],
+        [types.KeyboardButtonUrl("🎮 Xbox Game Pass Satın Al (49,90₺)", "https://www.shopier.com/keyvadi/49467735", style=types.KeyboardButtonStyle(bg_success=True))],
+        [types.KeyboardButtonUrl("⛏️ Minecraft Satın Al (49,90₺)", "https://www.shopier.com/50460191", style=types.KeyboardButtonStyle(bg_success=True))],
+        [types.KeyboardButtonUrl("🎬 CapCut Pro Satın Al (49,90₺)", "https://www.shopier.com/keyvadi/49467632", style=types.KeyboardButtonStyle(bg_success=True))],
+        [types.KeyboardButtonUrl("🦉 Duolingo Super Satın Al (49,90₺)", "https://www.shopier.com/keyvadi/47669390", style=types.KeyboardButtonStyle(bg_success=True))],
+        [types.KeyboardButtonUrl("📦 Prime Video Satın Al (9,99₺)", "https://www.shopier.com/keyvadi/49002145", style=types.KeyboardButtonStyle(bg_success=True))],
+        [types.KeyboardButtonWebView("🛍️ Mağazayı Aç (Mini App)", KEYVADI_MINI_APP_URL, style=types.KeyboardButtonStyle(bg_success=True))],
+        [types.KeyboardButtonCallback("↩️ Ana Menü", b"menu_main")]
     ]
-    await safe_event_edit(event, text, buttons=buttons)
+    if hasattr(event, "edit"):
+        await safe_event_edit(event, text, buttons=buttons)
+    else:
+        await event.respond(text, buttons=buttons)
+
+
+@bot.on(events.NewMessage(pattern=r"(?i)^/(?:firsat|firsatlar|deals)$"))
+@once_per_command("firsatlar")
+async def firsatlar_cmd_handler(event):
+    await menu_top7_handler(event)
 
 @bot.on(events.CallbackQuery(data=b'menu_categories'))
 async def menu_categories_handler(event):
@@ -1310,9 +1359,7 @@ _MARKETING_DRAFTS = {}
 @bot.on(events.NewMessage(pattern=r"(?i)^/fiyatdusur(?:\s+(.+))?$"))
 @once_per_command("fiyatdusur")
 async def admin_fiyatdusur_handler(event):
-    config = load_config() or {}
-    admin_chat_id = config.get("admin_id", ADMIN_ID)
-    if event.sender_id != admin_chat_id:
+    if not is_admin(event.sender_id):
         return
 
     raw_args = (event.pattern_match.group(1) or "").strip()
@@ -1348,14 +1395,23 @@ async def admin_fiyatdusur_handler(event):
         "type": "Price Drop",
     }
 
+    from telethon.tl import types
+    btn_confirm = types.KeyboardButtonCallback(
+        text="🚀 Tüm Müşterilere Gönder",
+        data=f"confirm_card:{draft_id}".encode("utf-8"),
+        style=types.KeyboardButtonStyle(bg_success=True)
+    )
+    btn_cancel = types.KeyboardButtonCallback(
+        text="❌ İptal Et",
+        data=f"cancel_card:{draft_id}".encode("utf-8"),
+        style=types.KeyboardButtonStyle(bg_danger=True)
+    )
+    confirm_buttons = [[btn_confirm], [btn_cancel]]
+
     # 1. Send the exact card as live preview
     await event.respond(card_text, buttons=card_buttons, parse_mode="md")
 
     # 2. Send control confirmation panel
-    confirm_buttons = [
-        [Button.inline("🚀 Tüm Müşterilere Gönder", data=f"confirm_card:{draft_id}")],
-        [Button.inline("❌ İptal Et", data=f"cancel_card:{draft_id}")],
-    ]
     await event.respond(
         f"📢 **Yukarıdaki 'Price Drop' kartı tüm müşterilere gönderilsin mi?**\n\n"
         f"• **Ürün:** {title}\n"
@@ -1369,9 +1425,7 @@ async def admin_fiyatdusur_handler(event):
 @bot.on(events.NewMessage(pattern=r"(?i)^/sonstok(?:\s+(.+))?$"))
 @once_per_command("sonstok")
 async def admin_sonstok_handler(event):
-    config = load_config() or {}
-    admin_chat_id = config.get("admin_id", ADMIN_ID)
-    if event.sender_id != admin_chat_id:
+    if not is_admin(event.sender_id):
         return
 
     raw_args = (event.pattern_match.group(1) or "").strip()
@@ -1409,14 +1463,23 @@ async def admin_sonstok_handler(event):
         "type": "Selling Fast",
     }
 
+    from telethon.tl import types
+    btn_confirm = types.KeyboardButtonCallback(
+        text="🚀 Tüm Müşterilere Gönder",
+        data=f"confirm_card:{draft_id}".encode("utf-8"),
+        style=types.KeyboardButtonStyle(bg_success=True)
+    )
+    btn_cancel = types.KeyboardButtonCallback(
+        text="❌ İptal Et",
+        data=f"cancel_card:{draft_id}".encode("utf-8"),
+        style=types.KeyboardButtonStyle(bg_danger=True)
+    )
+    confirm_buttons = [[btn_confirm], [btn_cancel]]
+
     # 1. Send the exact card as live preview
     await event.respond(card_text, buttons=card_buttons, parse_mode="md")
 
     # 2. Send control confirmation panel
-    confirm_buttons = [
-        [Button.inline("🚀 Tüm Müşterilere Gönder", data=f"confirm_card:{draft_id}")],
-        [Button.inline("❌ İptal Et", data=f"cancel_card:{draft_id}")],
-    ]
     await event.respond(
         f"📢 **Yukarıdaki 'Selling Fast' aciliyet kartı tüm müşterilere gönderilsin mi?**\n\n"
         f"• **Ürün:** {title}\n"
@@ -1431,9 +1494,7 @@ async def admin_sonstok_handler(event):
 @bot.on(events.NewMessage(pattern=r"(?i)^/kartonizle(?:\s+(.+))?$"))
 @once_per_command("kartonizle")
 async def admin_kartonizle_handler(event):
-    config = load_config() or {}
-    admin_chat_id = config.get("admin_id", ADMIN_ID)
-    if event.sender_id != admin_chat_id:
+    if not is_admin(event.sender_id):
         return
 
     raw_args = (event.pattern_match.group(1) or "").strip()
@@ -1478,9 +1539,7 @@ async def admin_kartonizle_handler(event):
 @bot.on(events.CallbackQuery(pattern=r"^confirm_card:(.+)$"))
 async def confirm_card_callback_handler(event):
     draft_id = event.pattern_match.group(1).decode("utf-8")
-    config = load_config() or {}
-    admin_chat_id = config.get("admin_id", ADMIN_ID)
-    if event.sender_id != admin_chat_id:
+    if not is_admin(event.sender_id):
         await event.answer("Bu işlemi yalnızca admin yapabilir.", alert=True)
         return
 
