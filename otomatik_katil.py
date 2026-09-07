@@ -1559,6 +1559,32 @@ def ensure_seeded_account_group_blocks():
             record_account_group_block(group, account, reason)
 
 
+ACCOUNT_JOIN_HISTORY_FILE = "account_join_history.json"
+
+
+def get_account_recent_joins(client_name, window_seconds=3600):
+    """Return timestamps of joins in the last window_seconds for client_name."""
+    try:
+        data = _load_json_file(ACCOUNT_JOIN_HISTORY_FILE, {})
+        now = time.time()
+        return [ts for ts in data.get(client_name, []) if isinstance(ts, (int, float)) and now - ts < window_seconds]
+    except Exception:
+        return []
+
+
+def record_account_join_event(client_name):
+    """Record a join event timestamp persistently on disk."""
+    try:
+        data = _load_json_file(ACCOUNT_JOIN_HISTORY_FILE, {})
+        now = time.time()
+        recent = [ts for ts in data.get(client_name, []) if isinstance(ts, (int, float)) and now - ts < 3600]
+        recent.append(now)
+        data[client_name] = recent
+        _save_json_file(ACCOUNT_JOIN_HISTORY_FILE, data)
+    except Exception:
+        pass
+
+
 def ensure_seeded_account_join_quarantines(now=None):
     """Purge artificial RepeatedChannelPrivate quarantines so all valid target groups can be used."""
     failures = _load_json_file(GROUP_FAILURES_FILE, {})
@@ -5452,16 +5478,25 @@ async def main():
             
             if not_joined:
                 join_count = 0
-                print(f"\n[{client_name}] 🔍 {len(not_joined)} gruba henüz üye değiliz. Katılma başlıyor...")
+                recent_joins_count = len(get_account_recent_joins(client_name, 3600))
+                if recent_joins_count >= MAX_JOINS_PER_CYCLE:
+                    print(
+                        f"[{client_name}] 🔒 Son 1 saat içinde zaten {recent_joins_count} gruba katılındı "
+                        f"(saatlik limit: {MAX_JOINS_PER_CYCLE}), bu turda katılım atlanıyor."
+                    )
+                    not_joined = []
+                else:
+                    print(f"\n[{client_name}] 🔍 {len(not_joined)} gruba henüz üye değiliz (Kalan saatlik hak: {MAX_JOINS_PER_CYCLE - recent_joins_count}). Katılma başlıyor...")
                 if is_account_restricted(client_name, scope='join'):
                     state = account_restriction_status(client_name, scope='join')
                     print(f"[{client_name}] ⏸️ Join kısıtı aktif; {state.get('until', 'belirsiz')} tarihine kadar yeni gruba katılım atlandı.")
                     not_joined = []
                 for hedef_grup in not_joined:
-                    if join_count >= MAX_JOINS_PER_CYCLE:
+                    current_recent = len(get_account_recent_joins(client_name, 3600))
+                    if join_count >= MAX_JOINS_PER_CYCLE or current_recent >= MAX_JOINS_PER_CYCLE:
                         print(
-                            f"[{client_name}] 🔒 Bu turda {MAX_JOINS_PER_CYCLE} gruba katılındı "
-                            "(güvenli limit), durduruluyor."
+                            f"[{client_name}] 🔒 Bu turda/saatte {MAX_JOINS_PER_CYCLE} gruba katılındı "
+                            "(güvenli saatlik limit), durduruluyor."
                         )
                         break
 
@@ -5516,6 +5551,7 @@ async def main():
                         if entity:
                             joined_dialogs[hedef_grup.lower()] = entity
                             join_count += 1
+                            record_account_join_event(client_name)
                             # Katılım isteği onaylandıysa/katılım sağlandıysa pending'den çıkar
                             if hedef_grup.lower() in account_pending_invites:
                                 account_pending_invites.remove(hedef_grup.lower())
