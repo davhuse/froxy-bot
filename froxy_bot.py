@@ -28,6 +28,12 @@ from sales_conversion import (
     purchase_url,
     resolve_smart_roadmap_reply,
 )
+from marketing_cards import (
+    build_price_drop_card,
+    build_selling_fast_card,
+    parse_fiyatdusur_args,
+    parse_sonstok_args,
+)
 
 # Async wrappers for firestore_helper to prevent event loop deadlocks/freezes
 async def async_get_document(doc_id):
@@ -1293,6 +1299,255 @@ async def broadcast_handler(event):
         await asyncio.sleep(0.5)
         
     await event.respond(f"✅ **Toplu Mesaj Tamamlandı!**\n\nBaşarıyla Gönderilen: {success_count}\nBaşarısız (Botu silen/engelleyenler): {fail_count}")
+
+# ═══════════════════════════════════════════════════════════════
+# Marketing Cards & Interactive Broadcast Notifications
+# ═══════════════════════════════════════════════════════════════
+
+_MARKETING_DRAFTS = {}
+
+
+@bot.on(events.NewMessage(pattern=r"(?i)^/fiyatdusur(?:\s+(.+))?$"))
+@once_per_command("fiyatdusur")
+async def admin_fiyatdusur_handler(event):
+    config = load_config() or {}
+    admin_chat_id = config.get("admin_id", ADMIN_ID)
+    if event.sender_id != admin_chat_id:
+        return
+
+    raw_args = (event.pattern_match.group(1) or "").strip()
+    parsed = parse_fiyatdusur_args(raw_args)
+    if not parsed:
+        await event.respond(
+            "⚠️ **Kullanım:** `/fiyatdusur <ürün> <yeni_fiyat> <eski_fiyat> [toplu_fiyat]`\n\n"
+            "💡 **Örnekler:**\n"
+            "• `/fiyatdusur gemini 99 149`\n"
+            "• `/fiyatdusur capcut 49 79 39`\n"
+            "• `/fiyatdusur netflix 4k 69 119`"
+        )
+        return
+
+    prod_query, new_p, old_p, bulk_p = parsed
+    matched, score = match_product_from_text(prod_query)
+    if matched:
+        title = matched.get("title", prod_query.title())
+        buy_url = matched.get("url") or KEYVADI_MINI_APP_URL
+    else:
+        title = prod_query.title()
+        buy_url = KEYVADI_MINI_APP_URL
+
+    card_text, card_buttons = build_price_drop_card(title, new_p, old_p, buy_url, bulk_p)
+
+    import uuid
+    draft_id = str(uuid.uuid4())[:8]
+    _MARKETING_DRAFTS[draft_id] = {
+        "text": card_text,
+        "buttons": card_buttons,
+        "created_at": time.time(),
+        "title": title,
+        "type": "Price Drop",
+    }
+
+    # 1. Send the exact card as live preview
+    await event.respond(card_text, buttons=card_buttons, parse_mode="md")
+
+    # 2. Send control confirmation panel
+    confirm_buttons = [
+        [Button.inline("🚀 Tüm Müşterilere Gönder", data=f"confirm_card:{draft_id}")],
+        [Button.inline("❌ İptal Et", data=f"cancel_card:{draft_id}")],
+    ]
+    await event.respond(
+        f"📢 **Yukarıdaki 'Price Drop' kartı tüm müşterilere gönderilsin mi?**\n\n"
+        f"• **Ürün:** {title}\n"
+        f"• **Buton Linki:** {buy_url}\n\n"
+        "Onaylamak için aşağıdaki butona tıklayın:",
+        buttons=confirm_buttons,
+        parse_mode="md",
+    )
+
+
+@bot.on(events.NewMessage(pattern=r"(?i)^/sonstok(?:\s+(.+))?$"))
+@once_per_command("sonstok")
+async def admin_sonstok_handler(event):
+    config = load_config() or {}
+    admin_chat_id = config.get("admin_id", ADMIN_ID)
+    if event.sender_id != admin_chat_id:
+        return
+
+    raw_args = (event.pattern_match.group(1) or "").strip()
+    parsed = parse_sonstok_args(raw_args)
+    if not parsed:
+        await event.respond(
+            "⚠️ **Kullanım:** `/sonstok <ürün> <kalan_adet> [fiyat]`\n\n"
+            "💡 **Örnekler:**\n"
+            "• `/sonstok capcut 2`\n"
+            "• `/sonstok xbox 1 129`\n"
+            "• `/sonstok netflix 3`"
+        )
+        return
+
+    prod_query, count, custom_price = parsed
+    matched, score = match_product_from_text(prod_query)
+    if matched:
+        title = matched.get("title", prod_query.title())
+        buy_url = matched.get("url") or KEYVADI_MINI_APP_URL
+        price = custom_price or matched.get("price", "49 TL")
+    else:
+        title = prod_query.title()
+        buy_url = KEYVADI_MINI_APP_URL
+        price = custom_price or "49 TL"
+
+    card_text, card_buttons = build_selling_fast_card(title, price, count, buy_url)
+
+    import uuid
+    draft_id = str(uuid.uuid4())[:8]
+    _MARKETING_DRAFTS[draft_id] = {
+        "text": card_text,
+        "buttons": card_buttons,
+        "created_at": time.time(),
+        "title": title,
+        "type": "Selling Fast",
+    }
+
+    # 1. Send the exact card as live preview
+    await event.respond(card_text, buttons=card_buttons, parse_mode="md")
+
+    # 2. Send control confirmation panel
+    confirm_buttons = [
+        [Button.inline("🚀 Tüm Müşterilere Gönder", data=f"confirm_card:{draft_id}")],
+        [Button.inline("❌ İptal Et", data=f"cancel_card:{draft_id}")],
+    ]
+    await event.respond(
+        f"📢 **Yukarıdaki 'Selling Fast' aciliyet kartı tüm müşterilere gönderilsin mi?**\n\n"
+        f"• **Ürün:** {title}\n"
+        f"• **Kalan Stok:** {count} adet\n"
+        f"• **Buton Linki:** {buy_url}\n\n"
+        "Onaylamak için aşağıdaki butona tıklayın:",
+        buttons=confirm_buttons,
+        parse_mode="md",
+    )
+
+
+@bot.on(events.NewMessage(pattern=r"(?i)^/kartonizle(?:\s+(.+))?$"))
+@once_per_command("kartonizle")
+async def admin_kartonizle_handler(event):
+    config = load_config() or {}
+    admin_chat_id = config.get("admin_id", ADMIN_ID)
+    if event.sender_id != admin_chat_id:
+        return
+
+    raw_args = (event.pattern_match.group(1) or "").strip()
+    tokens = raw_args.split()
+    if not tokens:
+        await event.respond(
+            "⚠️ **Kullanım:**\n"
+            "• `/kartonizle fiyatdusur gemini 99 149`\n"
+            "• `/kartonizle sonstok capcut 2`"
+        )
+        return
+
+    sub = tokens[0].lower()
+    rest = " ".join(tokens[1:])
+    if sub in ("fiyatdusur", "pricedrop"):
+        parsed = parse_fiyatdusur_args(rest)
+        if not parsed:
+            await event.respond("⚠️ Örnek: `/kartonizle fiyatdusur gemini 99 149`")
+            return
+        prod_query, new_p, old_p, bulk_p = parsed
+        matched, _ = match_product_from_text(prod_query)
+        title = matched.get("title", prod_query.title()) if matched else prod_query.title()
+        buy_url = (matched.get("url") if matched else None) or KEYVADI_MINI_APP_URL
+        card_text, card_buttons = build_price_drop_card(title, new_p, old_p, buy_url, bulk_p)
+        await event.respond(card_text, buttons=card_buttons, parse_mode="md")
+    elif sub in ("sonstok", "sellingfast"):
+        parsed = parse_sonstok_args(rest)
+        if not parsed:
+            await event.respond("⚠️ Örnek: `/kartonizle sonstok capcut 2`")
+            return
+        prod_query, count, custom_price = parsed
+        matched, _ = match_product_from_text(prod_query)
+        title = matched.get("title", prod_query.title()) if matched else prod_query.title()
+        buy_url = (matched.get("url") if matched else None) or KEYVADI_MINI_APP_URL
+        price = custom_price or (matched.get("price", "49 TL") if matched else "49 TL")
+        card_text, card_buttons = build_selling_fast_card(title, price, count, buy_url)
+        await event.respond(card_text, buttons=card_buttons, parse_mode="md")
+    else:
+        await event.respond("⚠️ Desteklenen tipler: `fiyatdusur` veya `sonstok`")
+
+
+@bot.on(events.CallbackQuery(pattern=r"^confirm_card:(.+)$"))
+async def confirm_card_callback_handler(event):
+    draft_id = event.pattern_match.group(1).decode("utf-8")
+    config = load_config() or {}
+    admin_chat_id = config.get("admin_id", ADMIN_ID)
+    if event.sender_id != admin_chat_id:
+        await event.answer("Bu işlemi yalnızca admin yapabilir.", alert=True)
+        return
+
+    draft = _MARKETING_DRAFTS.pop(draft_id, None)
+    if not draft:
+        await event.edit("⚠️ Bu taslak süresi dolmuş veya zaten gönderilmiş.")
+        return
+
+    await event.edit("⏳ **Kart tüm müşterilere gönderiliyor...**\nLütfen işlem bitene kadar bekleyin.")
+
+    user_ids = set()
+    try:
+        doc = await async_get_document("keyvadi_users_data")
+        if doc and isinstance(doc.get("users"), dict):
+            user_ids.update(doc["users"].keys())
+    except Exception as e:
+        logger.warning(f"Could not load keyvadi_users_data: {e}")
+
+    if os.path.exists("welcomed_users.json"):
+        try:
+            with open("welcomed_users.json", "r", encoding="utf-8") as f_w:
+                welcomed = json.load(f_w)
+                if isinstance(welcomed, list):
+                    user_ids.update(str(x) for x in welcomed if str(x).isdigit())
+        except Exception:
+            pass
+
+    # Ensure admin itself is also in list for verification
+    if str(admin_chat_id) not in user_ids:
+        user_ids.add(str(admin_chat_id))
+
+    success_count = 0
+    fail_count = 0
+    text = draft["text"]
+    buttons = draft["buttons"]
+
+    from telethon.errors import FloodWaitError
+    for uid in user_ids:
+        try:
+            await bot.send_message(int(uid), text, buttons=buttons, parse_mode="md")
+            success_count += 1
+        except FloodWaitError as fe:
+            await asyncio.sleep(fe.seconds + 1)
+            try:
+                await bot.send_message(int(uid), text, buttons=buttons, parse_mode="md")
+                success_count += 1
+            except Exception:
+                fail_count += 1
+        except Exception:
+            fail_count += 1
+        await asyncio.sleep(0.05)
+
+    await event.respond(
+        f"🎉 **Pazarlama Kartı Başarıyla Dağıtıldı!**\n\n"
+        f"📦 **Ürün:** {draft.get('title')}\n"
+        f"🏷️ **Tür:** {draft.get('type')}\n"
+        f"✅ İletilen Müşteri: **{success_count}**\n"
+        f"⚠️ Ulaşılamayan: **{fail_count}**\n\n"
+        "Müşteriler kartı anında tıklayıp satın alabilir."
+    )
+
+
+@bot.on(events.CallbackQuery(pattern=r"^cancel_card:(.+)$"))
+async def cancel_card_callback_handler(event):
+    draft_id = event.pattern_match.group(1).decode("utf-8")
+    _MARKETING_DRAFTS.pop(draft_id, None)
+    await event.edit("❌ Kart yayını iptal edildi.")
 
 @bot.on(events.NewMessage(pattern=r"(?i)^/(?:id|myid|kimim)$"))
 @once_per_command("myid")
