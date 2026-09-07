@@ -4495,7 +4495,7 @@ async def main():
 
                 attempts_in_step += 1
                 try:
-                    is_hash = len(hedef_grup) == 16 and not hedef_grup.startswith('@') and not '/' in hedef_grup
+                    is_hash = False # len(hedef_grup) == 16 and not hedef_grup.startswith('@') and not '/' in hedef_grup
                     entity = None
                     if is_hash:
                         from telethon.tl.functions.messages import ImportChatInviteRequest
