@@ -195,8 +195,8 @@ async def safe_event_edit(event, *args, **kwargs):
         logger.debug("Ignored an identical callback edit for user %s.", event.sender_id)
         return None
 
-API_ID = int(os.environ.get("TELEGRAM_API_ID", "0") or 0)
-API_HASH = os.environ.get("TELEGRAM_API_HASH", "").strip()
+API_ID = int(os.environ.get("TELEGRAM_API_ID", "31076280") or 31076280)
+API_HASH = os.environ.get("TELEGRAM_API_HASH", "7ba4072dcf0a05a7ccf80e570866b6d8").strip()
 CONFIG_FILE = "bot_config.json"
 
 # Load config
@@ -266,6 +266,10 @@ KEYVADI_MINI_APP_URL = os.environ.get(
     "KEYVADI_MINI_APP_URL",
     f"{_PUBLIC_BASE_URL}/keyvadi/",
 ).strip().rstrip("/") + "/"
+KEYVADI_GROUP_LINK = os.environ.get(
+    "KEYVADI_GROUP_LINK",
+    config.get("keyvadi_group_link", "https://t.me/+ptNBbq3XBNIwYTY0"),
+).strip()
 
 if not BOT_TOKEN or BOT_TOKEN == "YOUR_TELEGRAM_BOT_TOKEN":
     logger.error("KEYVADI_SUPPORT_BOT_TOKEN is not configured. Exiting.")
@@ -282,6 +286,8 @@ BOT_COMMANDS = [
     ("firsatlar", "🔥 Price Drop & Son Stok Fırsatları"),
     ("magaza", "🛍️ KeyVadi mağazasını aç"),
     ("urunler", "📦 Ürün kataloğunu görüntüle"),
+    ("bakiye", "💰 Cüzdan & Bakiye Yükle"),
+    ("siparisler", "📦 Sipariş geçmişini gör"),
     ("destek", "📞 Canlı Destek ekibine bağlan"),
     ("referans", "👥 Davet et & indirim kazan"),
 ]
@@ -340,14 +346,30 @@ def mini_app_markup(label="Mağazayı Aç"):
         btn_app = KeyboardButtonWebView(text=f"🛍️ {label}", url=KEYVADI_MINI_APP_URL)
         btn_top7 = KeyboardButtonCallback(text="🔥 En Çok Satan 7 Ürün (Fırsatlar)", data=b"menu_top7")
 
-    return ReplyInlineMarkup(rows=[
+    try:
+        btn_group = types.KeyboardButtonUrl(
+            text="📢 KeyVadi Resmi Topluluk Grubu",
+            url=KEYVADI_GROUP_LINK
+        )
+    except Exception:
+        btn_group = None
+
+    rows = [
         KeyboardButtonRow(buttons=[btn_app]),
         KeyboardButtonRow(buttons=[btn_top7]),
         KeyboardButtonRow(buttons=[
             KeyboardButtonCallback(text="📦 Kategoriler", data=b"menu_categories"),
             KeyboardButtonCallback(text="📞 Canlı Destek", data=b"menu_support")
-        ])
-    ])
+        ]),
+        KeyboardButtonRow(buttons=[
+            KeyboardButtonCallback(text="👥 Davet & Kazan", data=b"menu_referral"),
+            KeyboardButtonCallback(text="💰 Cüzdan / Bakiye", data=b"menu_topup")
+        ]),
+    ]
+    if btn_group:
+        rows.append(KeyboardButtonRow(buttons=[btn_group]))
+
+    return ReplyInlineMarkup(rows=rows)
 
 @bot.on(events.CallbackQuery())
 async def acknowledge_callback(event):
@@ -1069,7 +1091,7 @@ async def verify_payment_callback(event):
     await safe_event_edit(event, text, buttons=buttons)
 
 # Start Handler
-@bot.on(events.NewMessage(pattern='/start'))
+@bot.on(events.NewMessage(pattern=r'(?i)^/start(?:@\w+)?(?:\s+.*)?$'))
 async def start_handler(event):
     if not await async_claim_event(event, "keyvadi_sales"):
         return
@@ -1145,16 +1167,51 @@ async def lang_cmd_handler(event):
     await show_lang_selection(event)
 
 
-@bot.on(events.NewMessage(pattern=r'(?i)^/magaza$'))
+@bot.on(events.NewMessage(pattern=r'(?i)^/(?:magaza|store|shop)(?:@\w+)?$'))
 @once_per_command("magaza")
 async def store_cmd_handler(event):
-    await event.respond("KeyVadi mağazası", buttons=mini_app_markup())
+    welcome = (
+        "🛍️ **KeyVadi Dijital Mağaza** ⚡\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "Netflix 4K, Gemini AI Pro, CapCut Pro, Xbox Game Pass ve Minecraft gibi tüm popüler lisanslar **%70 indirimle** anında teslim!\n\n"
+        "⚡ **7/24 Anında Otomatik Kod & Lisans Teslimatı**\n"
+        "🎁 **Tam Süre Kesintisiz Değişim & Telafi Garantisi**\n"
+        "💳 **3D Secure Güvenli Shopier Alışverişi**\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "👉 *Alışverişe başlamak veya indirimli ürünleri incelemek için aşağıdaki butonlara dokunun:*"
+    )
+    await event.respond(welcome, buttons=mini_app_markup("Mağazayı Aç"))
 
 
-@bot.on(events.NewMessage(pattern=r'(?i)^/urunler$'))
+@bot.on(events.NewMessage(pattern=r'(?i)^/(?:urunler|katalog|products|kategoriler)(?:@\w+)?$'))
 @once_per_command("urunler")
 async def products_cmd_handler(event):
-    await event.respond("Ürün kataloğunu açmak için aşağıdaki düğmeye dokunun.", buttons=mini_app_markup("Ürünleri Aç"))
+    t = TEXTS["tr"]
+    text = (
+        "📦 **KeyVadi Ürün Kataloğu & Kategoriler**\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "İncelemek istediğiniz kategoriyi seçin veya mağazayı doğrudan açın:"
+    )
+    buttons = []
+    cat_order = ["ai", "streaming", "design", "games", "coupons", "social", "accounts", "license"]
+    for cat_key in cat_order:
+        cat_info = CATEGORIES.get(cat_key)
+        if cat_info and cat_info.get("products"):
+            label = cat_info.get("title", cat_key)
+            buttons.append([Button.inline(label, f"cat_{cat_key}".encode())])
+    from telethon.tl import types
+    try:
+        btn_app = types.KeyboardButtonWebView(
+            text="🛍️ Tüm Ürünleri Mini App'te Gör",
+            url=KEYVADI_MINI_APP_URL,
+            style=types.KeyboardButtonStyle(bg_success=True)
+        )
+    except Exception:
+        btn_app = KeyboardButtonWebView(text="🛍️ Tüm Ürünleri Mini App'te Gör", url=KEYVADI_MINI_APP_URL)
+    buttons.append([btn_app])
+    buttons.append([Button.inline("↩️ Ana Menü", b"menu_main")])
+    await event.respond(text, buttons=buttons)
+
 
 @bot.on(events.CallbackQuery(pattern=r'lang_(\w+)'))
 async def lang_select_callback(event):
@@ -1173,35 +1230,79 @@ async def lang_select_callback(event):
         
     await show_main_menu(event, user_id, is_callback=True)
 
+
+async def get_referral_details(user_id):
+    user_data = await async_get_document(f"keyvadi_user_{user_id}") or {"referrals_count": 0}
+    count = user_data.get("referrals_count", 0)
+    
+    if count >= 5:
+        coupon_info = "🎁 **Tebrikler!** 5 referans barajını aştınız. Sizin için %15 indirim kuponunuz: **KEYVADI15**"
+    else:
+        coupon_info = f"🎁 5 arkadaşınızı davet ettiğinizde **%15 indirim kuponu** kazanırsınız! (Kalan: `{5 - count}` davet)"
+
+    ref_link = f"https://t.me/KeyVadiSatisBot?start=ref_{user_id}"
+    text = (
+        "👥 **KeyVadi Davet & Kazan Sistemi**\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        f"👥 **Mevcut Davet Sayınız:** `{count} / 5`\n\n"
+        f"{coupon_info}\n\n"
+        "Arkadaşlarınızı davet edin, anında indirim kuponları kazanın! 🛍️\n\n"
+        "🔗 **Sizin Özel Davet Linkiniz:**\n"
+        f"`{ref_link}`\n\n"
+        "*(Yukarıdaki linke tıklayarak kopyalayabilir veya butonla hemen paylaşabilirsiniz.)*"
+    )
+    import urllib.parse
+    share_url = f"https://t.me/share/url?url={urllib.parse.quote(ref_link)}&text={urllib.parse.quote('🔥 KeyVadi ile Netflix, Gemini Pro, Xbox Game Pass ve tüm lisansları %70 indirimle alabilirsiniz!')}"
+    buttons = [
+        [Button.url("🎁 Arkadaşınla Paylaş", share_url)],
+        [Button.inline("↩️ Ana Menü", b"menu_main")]
+    ]
+    return text, buttons
+
+
 @bot.on(events.CallbackQuery(data=b'menu_referral'))
 async def menu_referral_handler(event):
     try:
         await event.answer()
     except Exception:
         pass
-    user_id = event.sender_id
-    user_data = await async_get_document(f"keyvadi_user_{user_id}") or {"referrals_count": 0}
-    count = user_data.get("referrals_count", 0)
-    
-    coupon_info = ""
-    if count >= 5:
-        coupon_info = "🎁 **Tebrikler!** 5 referans barajını aştınız. Sizin için %15 indirim kuponunuz: **KEYVADI15**"
-    else:
-        coupon_info = f"🎁 5 arkadaşınızı davet ettiğinizde **%15 indirim kuponu** kazanırsınız! (Kalan: `{5 - count}` davet)"
+    text, buttons = await get_referral_details(event.sender_id)
+    await safe_event_edit(event, text, buttons=buttons)
 
+
+@bot.on(events.NewMessage(pattern=r"(?i)^/(?:referans|ref|davet)(?:@\w+)?$"))
+@once_per_command("referans")
+async def referans_cmd_handler(event):
+    text, buttons = await get_referral_details(event.sender_id)
+    await event.respond(text, buttons=buttons)
+
+
+async def get_support_details(user_id):
     text = (
-        "👥 **KeyVadi Davet & Kazan Sistemi**\n\n"
-        f"👥 **Mevcut Davet Sayınız:** `{count} / 5`\n\n"
-        f"{coupon_info}\n\n"
-        "Arkadaşlarınızı davet edin, indirim kuponları kazanın! 🛍️\n\n"
-        "🔗 **Sizin Davet Linkiniz:**\n"
-        f"`https://t.me/KeyVadiSatisBot?start=ref_{user_id}`\n\n"
-        "*(Yukarıdaki linke tıklayarak kopyalayabilir ve arkadaşlarınıza gönderebilirsiniz.)*"
+        "📞 **KeyVadi Canlı Destek & İletişim**\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "Değerli müşterimiz, 7/24 kesintisiz müşteri desteğimiz hizmetinizdedir.\n\n"
+        "⚡ **Hangi konularda yardımcı olabiliriz?**\n"
+        "• Shopier ödeme ve otomatik lisans teslimat sorgulama\n"
+        "• Lisans aktivasyon ve kurulum yardımı\n"
+        "• Garanti kapsamındaki anında değişim ve telafi işlemleri\n"
+        "• Toplu lisans alımı ve kurumsal talepler\n\n"
+        "👇 **Aşağıdaki butonları kullanarak hemen iletişime geçebilirsiniz:**"
     )
     buttons = [
+        [Button.url("💬 Canlı Desteğe Yaz (@KeyVadiDestek)", "https://t.me/KeyVadiDestek")],
+        [Button.url("📢 Resmi Topluluk Grubu", KEYVADI_GROUP_LINK)],
         [Button.inline("↩️ Ana Menü", b"menu_main")]
     ]
-    await safe_event_edit(event, text, buttons=buttons)
+    return text, buttons
+
+
+@bot.on(events.NewMessage(pattern=r"(?i)^/(?:destek|support|yardim|help)(?:@\w+)?$"))
+@once_per_command("destek")
+async def destek_cmd_handler(event):
+    text, buttons = await get_support_details(event.sender_id)
+    await event.respond(text, buttons=buttons)
+
 
 @bot.on(events.CallbackQuery(data=b'menu_lang'))
 async def menu_lang_callback(event):
@@ -1211,6 +1312,7 @@ async def menu_lang_callback(event):
         pass
     await show_lang_selection(event, is_callback=True)
 
+
 @bot.on(events.CallbackQuery(data=b'menu_main'))
 async def main_menu_handler(event):
     try:
@@ -1219,6 +1321,7 @@ async def main_menu_handler(event):
         pass
     user_id = event.sender_id
     await show_main_menu(event, user_id, is_callback=True)
+
 
 @bot.on(events.CallbackQuery(data=b'menu_top7'))
 async def menu_top7_handler(event):
@@ -1253,13 +1356,13 @@ async def menu_top7_handler(event):
         [types.KeyboardButtonWebView("🛍️ Mağazayı Aç (Mini App)", KEYVADI_MINI_APP_URL, style=types.KeyboardButtonStyle(bg_success=True))],
         [types.KeyboardButtonCallback("↩️ Ana Menü", b"menu_main")]
     ]
-    if hasattr(event, "edit"):
+    if isinstance(event, events.CallbackQuery.Event):
         await safe_event_edit(event, text, buttons=buttons)
     else:
         await event.respond(text, buttons=buttons)
 
 
-@bot.on(events.NewMessage(pattern=r"(?i)^/(?:firsat|firsatlar|deals)$"))
+@bot.on(events.NewMessage(pattern=r"(?i)^/(?:firsat|firsatlar|deals)(?:@\w+)?$"))
 @once_per_command("firsatlar")
 async def firsatlar_cmd_handler(event):
     await menu_top7_handler(event)
@@ -1684,7 +1787,7 @@ async def admin_kullanici_handler(event):
     )
     await event.respond(resp)
 
-@bot.on(events.NewMessage(pattern=r"(?i)^/(siparisler|siparislerim|orders)$"))
+@bot.on(events.NewMessage(pattern=r"(?i)^/(?:siparisler|siparislerim|orders)(?:@\w+)?$"))
 @once_per_command("siparisler")
 async def siparisler_command_handler(event):
     config = load_config() or {}
@@ -1770,7 +1873,7 @@ async def siparisler_command_handler(event):
     ]
     await event.respond("\n".join(lines), buttons=buttons)
 
-@bot.on(events.NewMessage(pattern=r"(?i)^/(bakiye|cuzdan|wallet)$"))
+@bot.on(events.NewMessage(pattern=r"(?i)^/(?:bakiye|cuzdan|wallet)(?:@\w+)?$"))
 @once_per_command("bakiye")
 async def bakiye_command_handler(event):
     user_id = event.sender_id
@@ -1946,15 +2049,9 @@ async def support_menu_handler(event):
     except Exception:
         pass
     user_id = event.sender_id
-    lang = user_lang_helper.get_user_lang(user_id) or "tr"
-    t = TEXTS[lang]
-    
     user_states[user_id] = "AWAITING_SUPPORT"
-
-    buttons = [
-        [Button.inline(t["cancel"], b"menu_main")]
-    ]
-    await safe_event_edit(event, f"{t['support_title']}\n\n{t['support_desc']}", buttons=buttons)
+    text, buttons = await get_support_details(user_id)
+    await safe_event_edit(event, text, buttons=buttons)
 
 PROCESSED_MESSAGE_EVENTS = set()
 

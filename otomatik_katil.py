@@ -2744,6 +2744,7 @@ async def presence_watchdog(client):
 
 
 _RECONNECT_LOCKS = {}
+_LAST_RECONNECT_LOG = {}
 
 async def ensure_telegram_connection(client, client_name, force=False):
     """Keep a Telegram client usable after transient network/DC disconnects."""
@@ -2760,7 +2761,11 @@ async def ensure_telegram_connection(client, client_name, force=False):
                     await client.disconnect()
                 await client.connect()
                 if client.is_connected() and await client.is_user_authorized():
-                    print(f"[{client_name}] Telegram bağlantısı yenilendi (deneme {attempt}).")
+                    now = time.monotonic()
+                    last_logged = _LAST_RECONNECT_LOG.get(client_name, 0)
+                    if attempt > 1 or (now - last_logged) > 600:
+                        _LAST_RECONNECT_LOG[client_name] = now
+                        print(f"[{client_name}] Telegram bağlantısı yenilendi (deneme {attempt}).")
                     return True
             except Exception as exc:
                 print(f"[{client_name}] Telegram reconnect denemesi {attempt}/3 başarısız: {type(exc).__name__}")
