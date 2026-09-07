@@ -1,0 +1,77 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e5]:
+        - img "Froxy Logo" [ref=e7]
+        - generic [ref=e9]:
+          - generic [ref=e10]: FROXY.AI
+          - generic [ref=e11]: ⚡ GPT OSS 120B Aktif
+      - generic [ref=e12]:
+        - generic [ref=e13] [cursor=pointer]:
+          - generic [ref=e14]: 💳
+          - generic [ref=e15]: ₺0,00
+          - generic [ref=e16]: +
+        - generic "AI Kredisi" [ref=e17] [cursor=pointer]:
+          - generic [ref=e18]: 🪙
+          - generic [ref=e19]: "0"
+        - button "🎰 1" [ref=e20] [cursor=pointer]:
+          - generic [ref=e21]: 🎰
+          - generic [ref=e22]: "1"
+    - generic [ref=e24]:
+      - generic [ref=e25]:
+        - text: "Doğrulanmış katalog:"
+        - generic [ref=e27]: 6 aktif model
+      - generic [ref=e28]:
+        - text: "Froxy ücretsiz hak:"
+        - generic [ref=e30]: 3 mesaj + 1 görsel
+      - generic [ref=e31]:
+        - text: "Shopier:"
+        - generic [ref=e33]: 3D Secure
+      - generic [ref=e34]:
+        - text: "Manuel teslimat:"
+        - generic [ref=e36]: 1–3 iş günü
+    - main [ref=e37]:
+      - generic [ref=e157]:
+        - generic [ref=e159]:
+          - generic [ref=e160]: 🎨
+          - generic [ref=e161]:
+            - heading "Froxy Vision & Görsel Stüdyosu" [level=2] [ref=e162]
+            - paragraph [ref=e163]: Metinden 8K ultra-gerçekçi yapay zeka görselleri oluşturun.
+        - generic [ref=e164]:
+          - generic [ref=e165]: Görsel İstemi (Prompt)
+          - generic [ref=e166]:
+            - 'textbox "Örn: Fütüristik siberpunk şehirde neon ışıklar altında yürüyen yapay zeka robotu, 8k render, unreal engine 5..." [ref=e167]'
+            - button "✨ Sihirli İyileştir" [ref=e168] [cursor=pointer]
+          - generic [ref=e169]: Stil Seçimi
+          - generic [ref=e170]:
+            - button "📸 Ultra Realistik 8K" [ref=e171] [cursor=pointer]
+            - button "🌆 Siberpunk Neon" [ref=e172] [cursor=pointer]
+            - button "🎌 Anime 4K Master" [ref=e173] [cursor=pointer]
+            - button "🔮 3D Karakter / Pixar" [ref=e174] [cursor=pointer]
+            - button "🎨 Vektörel Logo & İllüstrasyon" [ref=e175] [cursor=pointer]
+          - generic [ref=e176]: Boyut Oranı (Aspect Ratio)
+          - generic [ref=e177]:
+            - button "1:1 (Kare - Post)" [ref=e178] [cursor=pointer]
+            - button "9:16 (Story / Reel)" [ref=e179] [cursor=pointer]
+            - button "16:9 (Yatay / Banner)" [ref=e180] [cursor=pointer]
+            - button "4:5 (Instagram)" [ref=e181] [cursor=pointer]
+          - button "⚡ Görseli Üret (20 Kredi)" [ref=e182] [cursor=pointer]:
+            - generic [ref=e183]: ⚡
+            - generic [ref=e184]: Görseli Üret (20 Kredi)
+        - generic [ref=e185]:
+          - generic [ref=e186]:
+            - heading "Üretilen Görsel" [level=3] [ref=e187]
+            - generic [ref=e188]: Hazır
+          - img "Generated Art" [ref=e190]
+          - generic [ref=e191]:
+            - button "İndir (HD)" [ref=e192] [cursor=pointer]
+            - button "Tam Ekran" [ref=e197] [cursor=pointer]
+    - navigation [ref=e92]:
+      - button "Asistan" [ref=e93] [cursor=pointer]
+      - button "Görsel" [active] [ref=e98] [cursor=pointer]
+      - button "Mağaza" [ref=e105] [cursor=pointer]
+      - button "Ajanlar" [ref=e111] [cursor=pointer]
+      - button "Cüzdan" [ref=e119] [cursor=pointer]
+  - generic:
+    - generic: 🤖
+    - generic: GPT OSS 120B modeline geçildi!

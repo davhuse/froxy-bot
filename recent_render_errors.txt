@@ -1,0 +1,6 @@
+[FroxyOnline] ⚠️ @sosyalmedyaalimsatimticaret -> hedef çözümlenemedi (ValueError); 24 saat sonra yeniden kontrol edilecek.
+
+[FroxyOnline] ⚠️ @-3608209943 -> hedef çözümlenemedi (ValueError); 24 saat sonra yeniden kontrol edilecek.
+
+[FroxyOnline] ⚠️ @referanslinkpaylasimigrup -> hedef çözümlenemedi (UsernameInvalidError); 24 saat sonra yeniden kontrol edilecek.
+

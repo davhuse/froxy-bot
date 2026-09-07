@@ -1,0 +1,93 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e5]:
+        - img "Froxy AI Logo" [ref=e7]
+        - generic [ref=e9]:
+          - generic [ref=e10]: FROXY.AI
+          - generic [ref=e11]: ⚡ GPT OSS 20B Aktif
+      - generic [ref=e12]:
+        - generic [ref=e13] [cursor=pointer]:
+          - generic [ref=e14]: 💳
+          - generic [ref=e15]: ₺0,00
+          - generic [ref=e16]: +
+        - generic "AI Kredisi" [ref=e17] [cursor=pointer]:
+          - generic [ref=e18]: 🪙
+          - generic [ref=e19]: "0"
+    - main [ref=e37]:
+      - generic [ref=e511]:
+        - generic [ref=e512]:
+          - generic [ref=e513]:
+            - generic [ref=e514]: "ID: 202"
+            - generic [ref=e515]: FROXY AI
+          - generic [ref=e516]: TL Mağaza Bakiyesi
+          - generic [ref=e517]: ₺0,00
+          - generic [ref=e518]:
+            - generic [ref=e519]:
+              - generic [ref=e520]: "0"
+              - generic [ref=e521]: Toplam Sipariş
+            - generic [ref=e522]:
+              - generic [ref=e523]: "0"
+              - generic [ref=e524]: AI Kredisi
+            - generic [ref=e525]:
+              - generic [ref=e526]: 3+1
+              - generic [ref=e527]: Günlük Ücretsiz
+        - generic [ref=e528]:
+          - generic [ref=e529]:
+            - heading "Günlük ücretsiz kullanım" [level=3] [ref=e530]
+            - generic [ref=e531]: 00:00 yenilenir
+          - generic [ref=e532]:
+            - generic [ref=e533]:
+              - generic [ref=e534]: "3"
+              - generic [ref=e535]: Sohbet hakkı
+            - generic [ref=e536]:
+              - generic [ref=e537]: "1"
+              - generic [ref=e538]: Görsel hakkı
+        - generic [ref=e539]:
+          - generic [ref=e540]:
+            - heading "TL bakiye yükle" [level=3] [ref=e541]
+            - generic [ref=e542]: Shopier güvenli ödeme
+          - paragraph [ref=e543]: Bu bakiye mağazadaki lisans ve dijital ürün alımlarında kullanılır. AI kredisi ayrı tutulur.
+          - generic [ref=e544]:
+            - button "₺50" [ref=e545] [cursor=pointer]
+            - button "₺100" [ref=e546] [cursor=pointer]
+            - button "₺250" [ref=e547] [cursor=pointer]
+            - button "₺500" [ref=e548] [cursor=pointer]
+            - button "₺1.000" [ref=e549] [cursor=pointer]
+          - generic [ref=e550]:
+            - generic [ref=e551]: ₺
+            - spinbutton "Özel tutar" [ref=e552]
+          - button "Shopier ile güvenli bakiye yükle" [ref=e553] [cursor=pointer]
+        - generic [ref=e554]:
+          - heading "FAST / Havale / EFT" [level=3] [ref=e556]
+          - paragraph [ref=e557]: Ödeme sonrasında dekontu @FroxyDestekBOT üzerinden iletin.
+          - generic [ref=e558]:
+            - generic [ref=e559]:
+              - generic [ref=e560]: Banka
+              - generic [ref=e561]: Enpara / QNB
+            - generic [ref=e562]:
+              - generic [ref=e563]: Alıcı
+              - generic [ref=e564]: Habip Çelik
+            - generic [ref=e565]:
+              - generic [ref=e566]: IBAN
+              - generic [ref=e567]: TR48 0011 1000 0000 0127 7564 36
+              - button "Kopyala" [ref=e568] [cursor=pointer]
+        - generic [ref=e569]:
+          - heading "Siparişlerim ve lisanslarım" [level=3] [ref=e571]
+          - generic [ref=e572]:
+            - generic [ref=e573]: 📭
+            - paragraph [ref=e574]: Henüz siparişiniz bulunmuyor.
+        - generic [ref=e575]:
+          - generic [ref=e576]:
+            - heading "Yardıma mı ihtiyacınız var?" [level=4] [ref=e577]
+            - paragraph [ref=e578]: Sipariş ve ödeme desteği için @FroxyDestekBOT.
+          - button "Destek" [ref=e579] [cursor=pointer]
+    - navigation [ref=e92]:
+      - button "Asistan" [ref=e93] [cursor=pointer]
+      - button "Görsel" [ref=e98] [cursor=pointer]
+      - button "Mağaza" [ref=e105] [cursor=pointer]
+      - button "Ajanlar" [ref=e111] [cursor=pointer]
+      - button "Cüzdan" [active] [ref=e119] [cursor=pointer]
+  - generic:
+    - generic: ✓
+    - generic: GPT OSS 20B modeline geçildi!

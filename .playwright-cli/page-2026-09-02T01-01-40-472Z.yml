@@ -1,0 +1,66 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e5]:
+        - img "Froxy AI Logo" [ref=e7]
+        - generic [ref=e9]:
+          - generic [ref=e10]: FROXY.AI
+          - generic [ref=e11]: ⚡ GPT OSS 20B Aktif
+      - generic [ref=e12]:
+        - generic [ref=e13] [cursor=pointer]:
+          - generic [ref=e14]: 💳
+          - generic [ref=e15]: ₺0,00
+          - generic [ref=e16]: +
+        - generic "AI Kredisi" [ref=e17] [cursor=pointer]:
+          - generic [ref=e18]: 🪙
+          - generic [ref=e19]: "0"
+    - main [ref=e37]:
+      - generic [ref=e172]:
+        - generic [ref=e174]:
+          - generic [ref=e175]: 🎨
+          - generic [ref=e176]:
+            - heading "Froxy Vision & Görsel Stüdyosu" [level=2] [ref=e177]
+            - paragraph [ref=e178]: Aktif sağlayıcılardan model seçerek yapay zekâ görselleri oluşturun.
+        - generic [ref=e179]:
+          - generic [ref=e180]: Görsel Modeli
+          - generic [ref=e181]:
+            - img "Görsel modeli" [ref=e182]
+            - combobox "Görsel Modeli" [ref=e183]:
+              - option "Görsel sağlayıcısı şu anda kullanılamıyor" [selected]
+          - generic [ref=e184]: Görsel İstemi (Prompt)
+          - generic [ref=e185]:
+            - 'textbox "Örn: Fütüristik siberpunk şehirde neon ışıklar altında yürüyen yapay zeka robotu, 8k render, unreal engine 5..." [ref=e186]'
+            - button "✨ Sihirli İyileştir" [ref=e187] [cursor=pointer]
+          - generic [ref=e188]: Stil Seçimi
+          - generic [ref=e189]:
+            - button "📸 Ultra Realistik 8K" [ref=e190] [cursor=pointer]
+            - button "🌆 Siberpunk Neon" [ref=e191] [cursor=pointer]
+            - button "🎌 Anime 4K Master" [ref=e192] [cursor=pointer]
+            - button "🔮 3D Karakter / Pixar" [ref=e193] [cursor=pointer]
+            - button "🎨 Vektörel Logo & İllüstrasyon" [ref=e194] [cursor=pointer]
+          - generic [ref=e195]: Boyut Oranı (Aspect Ratio)
+          - generic [ref=e196]:
+            - button "1:1 (Kare - Post)" [ref=e197] [cursor=pointer]
+            - button "9:16 (Story / Reel)" [ref=e198] [cursor=pointer]
+            - button "16:9 (Yatay / Banner)" [ref=e199] [cursor=pointer]
+            - button "4:5 (Instagram)" [ref=e200] [cursor=pointer]
+          - button "⚡ Görseli Üret" [disabled] [ref=e201] [cursor=pointer]:
+            - generic [ref=e202]: ⚡
+            - generic [ref=e203]: Görseli Üret
+        - generic [ref=e204]:
+          - generic [ref=e205]:
+            - heading "Üretilen Görsel" [level=3] [ref=e206]
+            - generic [ref=e207]: Hazır
+          - img "Froxy AI tarafından üretilen görsel" [ref=e209]
+          - generic [ref=e210]:
+            - button "İndir (HD)" [ref=e211] [cursor=pointer]
+            - button "Tam Ekran" [ref=e216] [cursor=pointer]
+    - navigation [ref=e92]:
+      - button "Asistan" [ref=e93] [cursor=pointer]
+      - button "Görsel" [active] [ref=e98] [cursor=pointer]
+      - button "Mağaza" [ref=e105] [cursor=pointer]
+      - button "Ajanlar" [ref=e111] [cursor=pointer]
+      - button "Cüzdan" [ref=e119] [cursor=pointer]
+  - generic:
+    - generic: ✓
+    - generic: GPT OSS 20B modeline geçildi!

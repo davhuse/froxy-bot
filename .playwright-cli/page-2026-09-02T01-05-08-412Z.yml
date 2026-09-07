@@ -1,0 +1,93 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e5]:
+        - img "Froxy AI Logo" [ref=e7]
+        - generic [ref=e9]:
+          - generic [ref=e10]: FROXY.AI
+          - generic [ref=e11]: ⚡ Froxy Hızlı Aktif
+      - generic [ref=e12]:
+        - generic [ref=e13] [cursor=pointer]:
+          - generic [ref=e14]: 💳
+          - generic [ref=e15]: ₺0.00
+          - generic [ref=e16]: +
+        - generic "AI Kredisi" [ref=e17] [cursor=pointer]:
+          - generic [ref=e18]: 🪙
+          - generic [ref=e19]: "0"
+    - main [ref=e37]:
+      - generic [ref=e465]:
+        - generic [ref=e466]:
+          - generic [ref=e467]:
+            - generic [ref=e468]: Telegram Mini App üzerinden giriş yapın
+            - generic [ref=e469]: FROXY AI
+          - generic [ref=e470]: TL Mağaza Bakiyesi
+          - generic [ref=e471]: ₺0.00
+          - generic [ref=e472]:
+            - generic [ref=e473]:
+              - generic [ref=e474]: "0"
+              - generic [ref=e475]: Toplam Sipariş
+            - generic [ref=e476]:
+              - generic [ref=e477]: "0"
+              - generic [ref=e478]: AI Kredisi
+            - generic [ref=e479]:
+              - generic [ref=e480]: 3+1
+              - generic [ref=e481]: Günlük Ücretsiz
+        - generic [ref=e482]:
+          - generic [ref=e483]:
+            - heading "Günlük ücretsiz kullanım" [level=3] [ref=e484]
+            - generic [ref=e485]: İstanbul saatine göre yenilenir
+          - generic [ref=e486]:
+            - generic [ref=e487]:
+              - generic [ref=e488]: "3"
+              - generic [ref=e489]: Sohbet hakkı
+            - generic [ref=e490]:
+              - generic [ref=e491]: "1"
+              - generic [ref=e492]: Görsel hakkı
+        - generic [ref=e493]:
+          - generic [ref=e494]:
+            - heading "TL bakiye yükle" [level=3] [ref=e495]
+            - generic [ref=e496]: Shopier güvenli ödeme
+          - paragraph [ref=e497]: Bu bakiye mağazadaki lisans ve dijital ürün alımlarında kullanılır. AI kredisi ayrı tutulur.
+          - generic [ref=e498]:
+            - button "₺50" [ref=e499] [cursor=pointer]
+            - button "₺100" [ref=e500] [cursor=pointer]
+            - button "₺250" [ref=e501] [cursor=pointer]
+            - button "₺500" [ref=e502] [cursor=pointer]
+            - button "₺1.000" [ref=e503] [cursor=pointer]
+          - generic [ref=e504]:
+            - generic [ref=e505]: ₺
+            - spinbutton "Özel tutar" [ref=e506]
+          - button "Shopier ile güvenli bakiye yükle" [ref=e507] [cursor=pointer]
+        - generic [ref=e508]:
+          - heading "FAST / Havale / EFT" [level=3] [ref=e510]
+          - paragraph [ref=e511]: Ödeme sonrasında dekontu @FroxyDestekBOT üzerinden iletin.
+          - generic [ref=e512]:
+            - generic [ref=e513]:
+              - generic [ref=e514]: Banka
+              - generic [ref=e515]: Enpara / QNB
+            - generic [ref=e516]:
+              - generic [ref=e517]: Alıcı
+              - generic [ref=e518]: Habip Çelik
+            - generic [ref=e519]:
+              - generic [ref=e520]: IBAN
+              - generic [ref=e521]: TR48 0011 1000 0000 0127 7564 36
+              - button "Kopyala" [ref=e522] [cursor=pointer]
+        - generic [ref=e523]:
+          - heading "Siparişlerim ve lisanslarım" [level=3] [ref=e525]
+          - generic [ref=e526]:
+            - generic [ref=e527]: 📭
+            - paragraph [ref=e528]: Henüz siparişiniz bulunmuyor.
+        - generic [ref=e529]:
+          - generic [ref=e530]:
+            - heading "Yardıma mı ihtiyacınız var?" [level=4] [ref=e531]
+            - paragraph [ref=e532]: Sipariş ve ödeme desteği için @FroxyDestekBOT.
+          - button "Destek" [ref=e533] [cursor=pointer]
+    - navigation [ref=e92]:
+      - button "Asistan" [ref=e93] [cursor=pointer]
+      - button "Görsel" [ref=e98] [cursor=pointer]
+      - button "Mağaza" [ref=e105] [cursor=pointer]
+      - button "Ajanlar" [ref=e111] [cursor=pointer]
+      - button "Cüzdan" [active] [ref=e119] [cursor=pointer]
+  - generic:
+    - generic: ✓
+    - generic: Froxy Hızlı modeline geçildi!

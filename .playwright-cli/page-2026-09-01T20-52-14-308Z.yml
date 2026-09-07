@@ -1,0 +1,289 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e5]:
+        - img "Froxy Logo" [ref=e7]
+        - generic [ref=e9]:
+          - generic [ref=e10]: FROXY.AI
+          - generic [ref=e11]: ⚡ Froxy Hızlı Aktif
+      - generic [ref=e12]:
+        - generic [ref=e13] [cursor=pointer]:
+          - generic [ref=e14]: 💳
+          - generic [ref=e15]: ₺0,00
+          - generic [ref=e16]: +
+        - generic "AI Kredisi" [ref=e17] [cursor=pointer]:
+          - generic [ref=e18]: 🪙
+          - generic [ref=e19]: "0"
+        - button "🎰 1" [ref=e20] [cursor=pointer]:
+          - generic [ref=e21]: 🎰
+          - generic [ref=e22]: "1"
+    - generic [ref=e24]:
+      - generic [ref=e25]:
+        - text: "Doğrulanmış katalog:"
+        - generic [ref=e27]: 14 aktif model
+      - generic [ref=e28]:
+        - text: "Froxy ücretsiz hak:"
+        - generic [ref=e30]: 3 mesaj + 1 görsel
+      - generic [ref=e31]:
+        - text: "Shopier:"
+        - generic [ref=e33]: 3D Secure
+      - generic [ref=e34]:
+        - text: "Manuel teslimat:"
+        - generic [ref=e36]: 1–3 iş günü
+    - main [ref=e37]:
+      - generic [ref=e178]:
+        - generic [ref=e179]:
+          - generic [ref=e180]: ⚡ 7/24 OTOMATİK TESLİMAT & SHOPIER 3D GÜVENCESİ
+          - heading "Froxy Lisans & Kredi Mağazası" [level=2] [ref=e181]
+          - paragraph [ref=e182]: En uygun fiyatlarla orijinal ChatGPT Plus, Gemini Ultra, Perplexity Pro ve Froxy AI Kredi Paketleri.
+          - generic [ref=e183]:
+            - button "Tümü (18)" [ref=e184] [cursor=pointer]
+            - button "🤖 ChatGPT & Codex" [ref=e185] [cursor=pointer]
+            - button "💎 Gemini Ultra" [ref=e186] [cursor=pointer]
+            - button "🔍 Perplexity Pro" [ref=e187] [cursor=pointer]
+            - button "🪙 Token Paketleri" [ref=e188] [cursor=pointer]
+        - textbox "Yapay zeka lisansı veya model ara..." [ref=e190]
+        - generic [ref=e191]:
+          - generic [ref=e192]:
+            - generic [ref=e193]:
+              - generic [ref=e194]:
+                - generic [ref=e195]: 🔥 En Çok Satan
+                - generic [ref=e196]: GPT-4o & Canvas
+              - img "ChatGPT Plus (1 Aylık Ortak)" [ref=e198]
+              - generic [ref=e199]: ChatGPT Plus (1 Aylık Ortak)
+              - generic [ref=e200]: 1 aylık paylaşımlı ChatGPT Plus erişimi. Stok uygunsa otomatik, aksi durumda destek üzerinden 1–3 iş günü içinde teslim edilir.
+            - generic [ref=e201]:
+              - generic [ref=e202]:
+                - generic [ref=e203]: FİYAT
+                - generic [ref=e204]: 39,99 TL
+              - button "💳 Bakiyeyle Satın Al" [ref=e205] [cursor=pointer]
+          - generic [ref=e207]:
+            - generic [ref=e208]:
+              - generic [ref=e209]:
+                - generic [ref=e210]: 👑 Kişisel Hesap
+                - generic [ref=e211]: GPT-4o + DALL-E 3
+              - img "ChatGPT Plus 30 Gün — Kişisel" [ref=e213]
+              - generic [ref=e214]: ChatGPT Plus 30 Gün — Kişisel
+              - generic [ref=e215]: Kişisel kullanıma ayrılan 30 günlük ChatGPT Plus erişimi. Kullanım koşulları ve teslim bilgileri sipariş sırasında paylaşılır.
+            - generic [ref=e216]:
+              - generic [ref=e217]:
+                - generic [ref=e218]: FİYAT
+                - generic [ref=e219]: 499,90 TL
+              - button "💳 Bakiyeyle Satın Al" [ref=e220] [cursor=pointer]
+          - generic [ref=e222]:
+            - generic [ref=e223]:
+              - generic [ref=e224]:
+                - generic [ref=e225]: ⚡ Geliştirici Paketi
+                - generic [ref=e226]: GPT-4o + Codex API
+              - img "ChatGPT Plus + Codex (1 Aylık)" [ref=e228]
+              - generic [ref=e229]: ChatGPT Plus + Codex (1 Aylık)
+              - generic [ref=e230]: Yazılımcılar için ChatGPT Plus ve Codex API entegrasyonlu özel paket.
+            - generic [ref=e231]:
+              - generic [ref=e232]:
+                - generic [ref=e233]: FİYAT
+                - generic [ref=e234]: 599,90 TL
+              - button "💳 Bakiyeyle Satın Al" [ref=e235] [cursor=pointer]
+          - generic [ref=e237]:
+            - generic [ref=e238]:
+              - generic [ref=e239]:
+                - generic [ref=e240]: 🎟️ %80 İndirim Kodu
+                - generic [ref=e241]: 3 Aylık Aktivasyon
+              - img "ChatGPT Go (3 Aylık İndirim Kodu)" [ref=e243]
+              - generic [ref=e244]: ChatGPT Go (3 Aylık İndirim Kodu)
+              - generic [ref=e245]: ChatGPT Go için 3 aylık aktivasyon/indirim kodu. Uygunluk ve etkinleştirme koşulları teslimat sırasında bildirilir.
+            - generic [ref=e246]:
+              - generic [ref=e247]:
+                - generic [ref=e248]: FİYAT
+                - generic [ref=e249]: 49,99 TL
+              - button "💳 Bakiyeyle Satın Al" [ref=e250] [cursor=pointer]
+          - generic [ref=e252]:
+            - generic [ref=e253]:
+              - generic [ref=e254]:
+                - generic [ref=e255]: 📱 Tek Kullanımlık
+                - generic [ref=e256]: Global SMS Onayı
+              - img "Codex SMS Doğrulama Kodu" [ref=e258]
+              - generic [ref=e259]: Codex SMS Doğrulama Kodu
+              - generic [ref=e260]: Desteklenen hizmetlerde tek kullanımlık SMS doğrulama hizmeti. Bölge ve servis uygunluğu sipariş öncesinde doğrulanır.
+            - generic [ref=e261]:
+              - generic [ref=e262]:
+                - generic [ref=e263]: FİYAT
+                - generic [ref=e264]: 29,00 TL
+              - button "💳 Bakiyeyle Satın Al" [ref=e265] [cursor=pointer]
+          - generic [ref=e267]:
+            - generic [ref=e268]:
+              - generic [ref=e269]:
+                - generic [ref=e270]: 🧠 2500 Token Kredili
+                - generic [ref=e271]: Gemini 1.5 Ultra
+              - img "Gemini Ultra (1 Aylık 2500 Kredili)" [ref=e273]
+              - generic [ref=e274]: Gemini Ultra (1 Aylık 2500 Kredili)
+              - generic [ref=e275]: 1 aylık Gemini erişimi ve pakette belirtilen 2.500 kullanım kredisi. Hesap/aktivasyon bilgileri teslimat sırasında paylaşılır.
+            - generic [ref=e276]:
+              - generic [ref=e277]:
+                - generic [ref=e278]: FİYAT
+                - generic [ref=e279]: 399,00 TL
+              - button "💳 Bakiyeyle Satın Al" [ref=e280] [cursor=pointer]
+          - generic [ref=e282]:
+            - generic [ref=e283]:
+              - generic [ref=e284]:
+                - generic [ref=e285]: 💎 Sınırsız Web Sohbet
+                - generic [ref=e286]: Gemini 1.5 Ultra
+              - img "Gemini Ultra (1 Aylık Kredisiz)" [ref=e288]
+              - generic [ref=e289]: Gemini Ultra (1 Aylık Kredisiz)
+              - generic [ref=e290]: Gemini arayüzüne 1 aylık web sohbet erişimi. Kullanım, sağlayıcının güncel adil kullanım sınırlarına tabidir.
+            - generic [ref=e291]:
+              - generic [ref=e292]:
+                - generic [ref=e293]: FİYAT
+                - generic [ref=e294]: 299,00 TL
+              - button "💳 Bakiyeyle Satın Al" [ref=e295] [cursor=pointer]
+          - generic [ref=e297]:
+            - generic [ref=e298]:
+              - generic [ref=e299]:
+                - generic [ref=e300]: 🚀 18 Aylık Pro
+                - generic [ref=e301]: 2M Token Penceresi
+              - img "Gemini Pro + Antigravity (18 Aylık)" [ref=e303]
+              - generic [ref=e304]: Gemini Pro + Antigravity (18 Aylık)
+              - generic [ref=e305]: 18 aylık Gemini Pro ve Antigravity kodlama asistanı paketi. Uygunluk ve aktivasyon destek ekibince doğrulanır.
+            - generic [ref=e306]:
+              - generic [ref=e307]:
+                - generic [ref=e308]: FİYAT
+                - generic [ref=e309]: 249,99 TL
+              - button "💳 Bakiyeyle Satın Al" [ref=e310] [cursor=pointer]
+          - generic [ref=e312]:
+            - generic [ref=e313]:
+              - generic [ref=e314]:
+                - generic [ref=e315]: ⭐ 12 Aylık Lisans
+                - generic [ref=e316]: 2M Token Penceresi
+              - img "Gemini Pro + Antigravity (12 Aylık)" [ref=e318]
+              - generic [ref=e319]: Gemini Pro + Antigravity (12 Aylık)
+              - generic [ref=e320]: 12 Ay boyunca Gemini Pro ve Antigravity entegrasyonu.
+            - generic [ref=e321]:
+              - generic [ref=e322]:
+                - generic [ref=e323]: FİYAT
+                - generic [ref=e324]: 169,99 TL
+              - button "💳 Bakiyeyle Satın Al" [ref=e325] [cursor=pointer]
+          - generic [ref=e327]:
+            - generic [ref=e328]:
+              - generic [ref=e329]:
+                - generic [ref=e330]: 💌 Kendi Hesabına
+                - generic [ref=e331]: 18 Aylık Davet
+              - img "Gemini Pro (18 Aylık Davet)" [ref=e333]
+              - generic [ref=e334]: Gemini Pro (18 Aylık Davet)
+              - generic [ref=e335]: Kendi kişisel Google hesabınıza tanımlanan 18 aylık Gemini Pro daveti.
+            - generic [ref=e336]:
+              - generic [ref=e337]:
+                - generic [ref=e338]: FİYAT
+                - generic [ref=e339]: 99,99 TL
+              - button "💳 Bakiyeyle Satın Al" [ref=e340] [cursor=pointer]
+          - generic [ref=e342]:
+            - generic [ref=e343]:
+              - generic [ref=e344]:
+                - generic [ref=e345]: 💌 Kendi Hesabına
+                - generic [ref=e346]: 12 Aylık Davet
+              - img "Gemini Pro (12 Aylık Davet)" [ref=e348]
+              - generic [ref=e349]: Gemini Pro (12 Aylık Davet)
+              - generic [ref=e350]: Kendi kişisel Google hesabınıza tanımlanan 12 aylık Gemini Pro daveti.
+            - generic [ref=e351]:
+              - generic [ref=e352]:
+                - generic [ref=e353]: FİYAT
+                - generic [ref=e354]: 59,99 TL
+              - button "💳 Bakiyeyle Satın Al" [ref=e355] [cursor=pointer]
+          - generic [ref=e357]:
+            - generic [ref=e358]:
+              - generic [ref=e359]:
+                - generic [ref=e360]: 🔍 Canlı Web Araştırma
+                - generic [ref=e361]: Claude 3.5 + GPT-4o
+              - img "Perplexity Pro (1 Aylık Ortak)" [ref=e363]
+              - generic [ref=e364]: Perplexity Pro (1 Aylık Ortak)
+              - generic [ref=e365]: Canlı internet araması, akademik kaynak tarama ve Claude 3.5 Sonnet destekli Perplexity Pro.
+            - generic [ref=e366]:
+              - generic [ref=e367]:
+                - generic [ref=e368]: FİYAT
+                - generic [ref=e369]: 69,99 TL
+              - button "💳 Bakiyeyle Satın Al" [ref=e370] [cursor=pointer]
+          - generic [ref=e372]:
+            - generic [ref=e373]:
+              - generic [ref=e374]:
+                - generic [ref=e375]: 🌱 50.000 Token
+                - generic [ref=e376]: Tüm Modellerde Geçerli
+              - img "Froxy AI — Başlangıç Paketi" [ref=e378]
+              - generic [ref=e379]: Froxy AI — Başlangıç Paketi
+              - generic [ref=e380]: 129.990 AI kredisi. Kullanım maliyeti seçilen model ve gerçek token tüketimine göre hesaplanır.
+            - generic [ref=e381]:
+              - generic [ref=e382]:
+                - generic [ref=e383]: FİYAT
+                - generic [ref=e384]: 129,99 TL
+              - button "🪙 AI Kredisi Al" [ref=e385] [cursor=pointer]
+          - generic [ref=e387]:
+            - generic [ref=e388]:
+              - generic [ref=e389]:
+                - generic [ref=e390]: 🔥 150.000 Token
+                - generic [ref=e391]: Yüksek Hızlı Yanıt
+              - img "Froxy AI — Popüler Paket" [ref=e393]
+              - generic [ref=e394]: Froxy AI — Popüler Paket
+              - generic [ref=e395]: 249.990 AI kredisi. Kullanım maliyeti seçilen model ve gerçek token tüketimine göre hesaplanır.
+            - generic [ref=e396]:
+              - generic [ref=e397]:
+                - generic [ref=e398]: FİYAT
+                - generic [ref=e399]: 249,99 TL
+              - button "🪙 AI Kredisi Al" [ref=e400] [cursor=pointer]
+          - generic [ref=e402]:
+            - generic [ref=e403]:
+              - generic [ref=e404]:
+                - generic [ref=e405]: ⚡ 350.000 Token
+                - generic [ref=e406]: Görsel + Kod + Metin
+              - img "Froxy AI — Profesyonel Paket" [ref=e408]
+              - generic [ref=e409]: Froxy AI — Profesyonel Paket
+              - generic [ref=e410]: 449.990 AI kredisi. Kullanım maliyeti seçilen model ve gerçek token tüketimine göre hesaplanır.
+            - generic [ref=e411]:
+              - generic [ref=e412]:
+                - generic [ref=e413]: FİYAT
+                - generic [ref=e414]: 449,99 TL
+              - button "🪙 AI Kredisi Al" [ref=e415] [cursor=pointer]
+          - generic [ref=e417]:
+            - generic [ref=e418]:
+              - generic [ref=e419]:
+                - generic [ref=e420]: 🛠️ 600.000 Token
+                - generic [ref=e421]: API & Webhook Desteği
+              - img "Froxy AI — Geliştirici Paketi" [ref=e423]
+              - generic [ref=e424]: Froxy AI — Geliştirici Paketi
+              - generic [ref=e425]: 599.990 AI kredisi. Kullanım maliyeti seçilen model ve gerçek token tüketimine göre hesaplanır.
+            - generic [ref=e426]:
+              - generic [ref=e427]:
+                - generic [ref=e428]: FİYAT
+                - generic [ref=e429]: 599,99 TL
+              - button "🪙 AI Kredisi Al" [ref=e430] [cursor=pointer]
+          - generic [ref=e432]:
+            - generic [ref=e433]:
+              - generic [ref=e434]:
+                - generic [ref=e435]: 🏢 1.000.000 Token
+                - generic [ref=e436]: Çoklu Kullanıcı Desteği
+              - img "Froxy AI — İşletme Paketi" [ref=e438]
+              - generic [ref=e439]: Froxy AI — İşletme Paketi
+              - generic [ref=e440]: 799.990 AI kredisi. Kullanım maliyeti seçilen model ve gerçek token tüketimine göre hesaplanır.
+            - generic [ref=e441]:
+              - generic [ref=e442]:
+                - generic [ref=e443]: FİYAT
+                - generic [ref=e444]: 799,99 TL
+              - button "🪙 AI Kredisi Al" [ref=e445] [cursor=pointer]
+          - generic [ref=e447]:
+            - generic [ref=e448]:
+              - generic [ref=e449]:
+                - generic [ref=e450]: 👑 2.500.000 Token
+                - generic [ref=e451]: Öncelikli GPU Sunucu
+              - img "Froxy AI — Kurumsal Paket" [ref=e453]
+              - generic [ref=e454]: Froxy AI — Kurumsal Paket
+              - generic [ref=e455]: 1.499.990 AI kredisi. Kullanım maliyeti seçilen model ve gerçek token tüketimine göre hesaplanır.
+            - generic [ref=e456]:
+              - generic [ref=e457]:
+                - generic [ref=e458]: FİYAT
+                - generic [ref=e459]: 1.499,99 TL
+              - button "🪙 AI Kredisi Al" [ref=e460] [cursor=pointer]
+    - navigation [ref=e92]:
+      - button "Asistan" [ref=e93] [cursor=pointer]
+      - button "Görsel" [ref=e98] [cursor=pointer]
+      - button "Mağaza" [active] [ref=e105] [cursor=pointer]
+      - button "Ajanlar" [ref=e111] [cursor=pointer]
+      - button "Cüzdan" [ref=e119] [cursor=pointer]
+  - generic:
+    - generic: ⚡
+    - generic: Froxy Hızlı modeline geçildi!

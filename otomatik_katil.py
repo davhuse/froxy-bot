@@ -4432,6 +4432,9 @@ async def main():
                     raise
                 print(f"⚠️ Worker {client_name} önbellek hatası: {e}")
 
+        failed_join_targets = set()
+        last_queue_join_attempt = 0
+
         async def try_join_missing_groups(max_joins=MAX_JOINS_PER_CYCLE, targets_override=None):
             nonlocal account_pending_invites
             if not await ensure_telegram_connection(client, client_name):
@@ -4455,6 +4458,7 @@ async def main():
                 if (ent is None
                         and g_lower not in joined_dialogs
                         and g_lower not in blacklist_lower
+                        and g_lower not in failed_join_targets
                         and not is_account_group_blocked(g, client_name)
                         and not is_group_retry_blocked(g, client_name)
                         and g_lower not in account_pending_invites):
@@ -4466,8 +4470,9 @@ async def main():
             allowed_joins = min(max_joins, MAX_JOINS_PER_CYCLE - current_recent)
             print(f"\n[{client_name}] 🔍 {len(not_joined)} gruba henüz üye değiliz (Kalan saatlik hak: {allowed_joins}). Katılma başlıyor...")
             joined_in_step = 0
+            attempts_in_step = 0
             for hedef_grup in not_joined:
-                if joined_in_step >= allowed_joins:
+                if joined_in_step >= allowed_joins or attempts_in_step >= max_joins:
                     break
                 current_recent = len(get_account_recent_joins(client_name, 3600))
                 if current_recent >= MAX_JOINS_PER_CYCLE:
@@ -4488,6 +4493,7 @@ async def main():
                     print(f"[{client_name}] ⏳ @{hedef_grup} katılım isteği zaten gönderilmiş, bekleniyor.")
                     continue
 
+                attempts_in_step += 1
                 try:
                     is_hash = len(hedef_grup) == 16 and not hedef_grup.startswith('@') and not '/' in hedef_grup
                     entity = None
@@ -4530,6 +4536,7 @@ async def main():
                     print(f"[{client_name}] ⚠️ Join flood {e.seconds}sn; hesap duraklatılıyor, grup kara listeye alınmadı.")
                     break
                 except Exception as e:
+                    failed_join_targets.add(hedef_grup.lower())
                     err_msg = str(e)
                     err_type = type(e).__name__
                     error_class = classify_join_error(e)
@@ -4564,6 +4571,8 @@ async def main():
                     else:
                         record_group_failure(hedef_grup, client_name, err_type, 60 * 60)
                         print(f"[{client_name}] ⚠️ @{hedef_grup} -> {err_type} (Hata: {err_msg})")
+                    # Tek bir hata alındığında peş peşe diğer gruplara zorlama yapma; dur.
+                    break
             return joined_in_step
 
         # Başlangıçta diyalogları önbelleğe al
@@ -4666,8 +4675,13 @@ async def main():
                     remaining_minutes=(queue_wait + 59) // 60,
                     next_blast_at=utc_after_seconds_iso(queue_wait),
                 )
-                # Sıradayken de güvenli saatlik limit (max 3/saat) çerçevesinde eksik gruplara katılım sağla
-                await try_join_missing_groups(max_joins=1)
+                now_ts = time.time()
+                # Yalnızca havuzu 30'un altında olan eksik hesaplar (örn. LisansArena)
+                # ve en az 10 dakikada bir (600s) 1 gruba katılmayı dener.
+                # KeyVadi ve Froxy gibi havuzu tam olan hesaplar sıradayken asla katılım yapmaz.
+                if len(joined_dialogs) < 30 and (now_ts - last_queue_join_attempt) >= 600:
+                    last_queue_join_attempt = now_ts
+                    await try_join_missing_groups(max_joins=1)
                 await asyncio.sleep(min(15, max(3, queue_wait or 5)))
                 continue
 

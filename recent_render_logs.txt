@@ -1,0 +1,100 @@
+[FroxyOnline] ⏳ Sonraki grup için 21 saniye bekleniyor...
+
+[FroxyOnline] ✅ @mukyemek → Gönderildi! (15) [Şablon: froxy_hook.txt]
+
+[FroxyOnline] ⏳ Sonraki grup için 27 saniye bekleniyor...
+
+[FroxyOnline] ✅ @spyhackerz2006 → Gönderildi! (16) [Şablon: froxy_compare.txt]
+
+[FroxyOnline] ⏳ Sonraki grup için 23 saniye bekleniyor...
+
+[FroxyOnline] ✅ @tahaaslan11 → Gönderildi! (17) [Şablon: froxy_social.txt]
+
+[FroxyOnline] ⏳ Sonraki grup için 21 saniye bekleniyor...
+
+[FroxyOnline] ✅ @ticaretcanavari → Gönderildi! (18) [Şablon: froxy_question.txt]
+
+[FroxyOnline] ⏳ Sonraki grup için 30 saniye bekleniyor...
+
+[FroxyOnline] ✅ @ticaretgruptr → Gönderildi! (19) [Şablon: froxy_short.txt]
+
+[FroxyOnline] ⏳ Sonraki grup için 21 saniye bekleniyor...
+
+[FroxyOnline] ✅ @ticaretyapn → Gönderildi! (20) [Şablon: froxy_price.txt]
+
+[FroxyOnline] ⏳ Sonraki grup için 20 saniye bekleniyor...
+
+[FroxyOnline] ✅ @xalimsatiim → Gönderildi! (21) [Şablon: froxy_hook.txt]
+
+[FroxyOnline] ⏳ Sonraki grup için 30 saniye bekleniyor...
+
+🔄 [Firestore Sync] Firestore'dan güncel durum yükleniyor...
+
+🔄 [Firestore Sync] Cooldown geçmişi bulutla eşitlendi.
+
+[FroxyOnline] ✅ @zeroticaret → Gönderildi! (22) [Şablon: froxy_compare.txt]
+
+[FroxyOnline] ☁️ Tur sonu cooldown kayıtları buluta yazıldı.
+
+[FroxyOnline] 💾 Son blast zamanı kaydedildi: 2026-08-27T15:47:43.783719+00:00
+
+
+
+[FroxyOnline] 📊 BLAST SONUÇ: 41 başarılı, 1 başarısız, 0 atlandı / 32 toplam
+
+
+
+[FroxyOnline] 🔍 7 gruba henüz üye değiliz. Katılma başlıyor...
+
+[FroxyOnline] ⚠️ @kuponcekkodsatis -> davet bağlantısı geçersiz/süresi dolmuş; tekrar tekrar denenmeyecek.
+
+[FroxyOnline] ⚠️ @sosyalmedyaalimsatimticaret -> hedef çözümlenemedi (ValueError); 24 saat sonra yeniden kontrol edilecek.
+
+[FroxyOnline] ⏳ @kuponsat -> Katılım isteği gönderildi (onay bekleniyor).
+
+[FroxyOnline] ⚠️ @-3608209943 -> hedef çözümlenemedi (ValueError); 24 saat sonra yeniden kontrol edilecek.
+
+[FroxyOnline] ⚠️ @kuponkodceksatis -> davet bağlantısı geçersiz/süresi dolmuş; tekrar tekrar denenmeyecek.
+
+[FroxyOnline] ⚠️ @referanslinkpaylasimigrup -> hedef çözümlenemedi (UsernameInvalidError); 24 saat sonra yeniden kontrol edilecek.
+
+[FroxyOnline] ⏳ @kuponindirimlisatis -> Katılım isteği gönderildi (onay bekleniyor).
+
+
+
+[FroxyOnline] 🎉 Blast turu başarıyla tamamlandı (32 grup) → Sonraki blast 60 dakika sonra gerçekleşecek.
+
+📥 [KeyVadiOnline] (KeyVadi) DM Alındı: GÖNDEREN=5551401317 (@sigirciaslan1) MESAJ='Spariş verdim'
+
+📥 [KeyVadiOnline] DM Alındı: GÖNDEREN=5551401317 (@sigirciaslan1) MESAJ='Spariş verdim'
+
+⏭️ [KeyVadiOnline] Ürün sonrası takip mesajı yalnızca panele aktarıldı.
+
+📥 [KeyVadiOnline] (KeyVadi) DM Alındı: GÖNDEREN=5551401317 (@sigirciaslan1) MESAJ='Yazdım referansı'
+
+📥 [KeyVadiOnline] DM Alındı: GÖNDEREN=5551401317 (@sigirciaslan1) MESAJ='Yazdım referansı'
+
+⏭️ [KeyVadiOnline] Ürün sonrası takip mesajı yalnızca panele aktarıldı.
+
+🔄 [Firestore Sync] Firestore'dan güncel durum yükleniyor...
+
+🔄 [Firestore Sync] Cooldown geçmişi bulutla eşitlendi.
+
+Server closed the connection: [Errno 104] Connection reset by peer
+
+🔄 [Firestore Sync] Firestore'dan güncel durum yükleniyor...
+
+🔄 [Firestore Sync] Cooldown geçmişi bulutla eşitlendi.
+
+🔄 [Firestore Sync] Firestore'dan güncel durum yükleniyor...
+
+🔄 [Firestore Sync] Cooldown geçmişi bulutla eşitlendi.
+
+🔄 [Firestore Sync] Firestore'dan güncel durum yükleniyor...
+
+🔄 [Firestore Sync] Cooldown geçmişi bulutla eşitlendi.
+
+🔄 [Firestore Sync] Firestore'dan güncel durum yükleniyor...
+
+🔄 [Firestore Sync] Cooldown geçmişi bulutla eşitlendi.
+

@@ -1,0 +1,26 @@
+[
+  {
+    "id": "50594321",
+    "key": "yemeksepeti_200",
+    "title": "Yemeksepeti 200₺'ye 200₺ İndirim Kodu",
+    "price": "50.00 TL",
+    "url": "https://www.shopier.com/50594321",
+    "image": "https://raw.githubusercontent.com/davhuse/froxy-bot/main/miniapp/assets/products/card_clean_yemeksepeti_200.jpg"
+  },
+  {
+    "id": "50594322",
+    "key": "coffy",
+    "title": "Coffy 2 Kahve Alana 1'i Bedava Kupon Kodu",
+    "price": "45.00 TL",
+    "url": "https://www.shopier.com/50594322",
+    "image": "https://raw.githubusercontent.com/davhuse/froxy-bot/main/miniapp/assets/products/card_clean_coffy.jpg"
+  },
+  {
+    "id": "50594323",
+    "key": "migros",
+    "title": "Migros 100 TL Alışveriş Bakiye Kodu",
+    "price": "50.00 TL",
+    "url": "https://www.shopier.com/50594323",
+    "image": "https://raw.githubusercontent.com/davhuse/froxy-bot/main/miniapp/assets/products/card_clean_migros.jpg"
+  }
+]

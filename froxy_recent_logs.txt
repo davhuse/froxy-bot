@@ -1,0 +1,52 @@
+
+--- Logs from /api/froxy/logs ---
+
+--- Logs from /api/support/logs ---
+
+
+🚀 [Watchdog] Destek botu otomatik olarak başlatılıyor...
+
+2026-08-27 16:17:59,265 - KeyVadiBot - INFO - Loading KeyVadi products cache...
+
+2026-08-27 16:17:59,961 - KeyVadiBot - WARNING - Live KeyVadi catalog refresh failed; cached catalog retained: HTTP Error 403: Forbidden
+
+2026-08-27 16:17:59,961 - KeyVadiBot - INFO - Loaded 3 products from local file parsed_keyvadi_products.json.
+
+2026-08-27 16:17:59,961 - KeyVadiBot - INFO - Merged 71 products from keyvadi_shopier_links.json.
+
+2026-08-27 16:17:59,962 - KeyVadiBot - INFO - Total products available for matching: 71
+
+2026-08-27 16:17:59,964 - KeyVadiBot - INFO - In-memory categories rebuilt: {'ai': 20, 'streaming': 13, 'design': 13, 'social': 1, 'coupons': 12, 'games': 6, 'accounts': 1, 'license': 5}
+
+2026-08-27 16:18:00,060 - KeyVadiBot - INFO - Starting KeyVadi Sales Bot (@KeyVadiSatisBot)...
+
+2026-08-27 16:18:00,160 - telethon.network.mtprotosender - INFO - Connecting to 149.154.167.51:443/TcpFull...
+
+2026-08-27 16:18:04,269 - telethon.network.mtprotosender - INFO - Connection to 149.154.167.51:443/TcpFull complete!
+
+2026-08-27 16:18:05,562 - telethon.client.users - INFO - Phone migrated to 4
+
+2026-08-27 16:18:05,562 - telethon.client.telegrambaseclient - INFO - Reconnecting to new data center 4
+
+2026-08-27 16:18:05,727 - telethon.network.mtprotosender - INFO - Disconnecting from 149.154.167.51:443/TcpFull...
+
+2026-08-27 16:18:05,727 - telethon.network.mtprotosender - INFO - Disconnection from 149.154.167.51:443/TcpFull complete!
+
+2026-08-27 16:18:05,760 - telethon.network.mtprotosender - INFO - Connecting to 149.154.167.92:443/TcpFull...
+
+2026-08-27 16:18:09,750 - telethon.network.mtprotosender - INFO - Connection to 149.154.167.92:443/TcpFull complete!
+
+2026-08-27 16:18:13,376 - KeyVadiBot - WARNING - KeyVadi profile configuration warning: HTTP Error 429: Too Many Requests
+
+2026-08-27 16:18:13,376 - KeyVadiBot - INFO - KeyVadi Sales Bot started successfully! Bot User ID: 8712009642
+
+2026-08-27 22:57:21,469 - KeyVadiBot - INFO - 📥 [KeyVadi] DM Alındı: GÖNDEREN=5537073095 (@ahmeteren31) MESAJ='.'
+
+📥 [KeyVadi] DM Alındı: GÖNDEREN=5537073095 (@ahmeteren31) MESAJ='.'
+
+2026-08-27 23:30:16,091 - KeyVadiBot - INFO - 📥 [KeyVadi] DM Alındı: GÖNDEREN=6196006704 (@KeyVadiDestek) MESAJ='?'
+
+📥 [KeyVadi] DM Alındı: GÖNDEREN=6196006704 (@KeyVadiDestek) MESAJ='?'
+
+2026-08-27 23:30:16,387 - KeyVadiBot - INFO - Ignoring non-sales message: '?'
+

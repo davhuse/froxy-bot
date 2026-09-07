@@ -1,0 +1,69 @@
+- generic [ref=f1e2]:
+  - banner [ref=f1e3]:
+    - generic [ref=f1e5]:
+      - img "Froxy Logo" [ref=f1e7]
+      - generic [ref=f1e9]:
+        - generic [ref=f1e10]: FROXY.AI
+        - generic [ref=f1e11]: ⚡ Modeller doğrulanıyor
+    - generic [ref=f1e12]:
+      - generic [ref=f1e13] [cursor=pointer]:
+        - generic [ref=f1e14]: 💳
+        - generic [ref=f1e15]: ₺0,00
+        - generic [ref=f1e16]: +
+      - generic "AI Kredisi" [ref=f1e17] [cursor=pointer]:
+        - generic [ref=f1e18]: 🪙
+        - generic [ref=f1e19]: "0"
+      - button "🎰 1" [ref=f1e20] [cursor=pointer]:
+        - generic [ref=f1e21]: 🎰
+        - generic [ref=f1e22]: "1"
+  - generic [ref=f1e24]:
+    - generic [ref=f1e25]:
+      - text: "Doğrulanmış katalog:"
+      - generic [ref=f1e27]: Yükleniyor
+    - generic [ref=f1e28]:
+      - text: "Froxy ücretsiz hak:"
+      - generic [ref=f1e30]: 3 mesaj + 1 görsel
+    - generic [ref=f1e31]:
+      - text: "Shopier:"
+      - generic [ref=f1e33]: 3D Secure
+    - generic [ref=f1e34]:
+      - text: "Manuel teslimat:"
+      - generic [ref=f1e36]: 1–3 iş günü
+  - main [ref=f1e37]:
+    - generic [ref=f1e38]:
+      - generic [ref=f1e41] [cursor=pointer]:
+        - generic [ref=f1e42]: 🤖
+        - generic [ref=f1e43]:
+          - generic [ref=f1e44]: Seçili AI Modeli
+          - generic [ref=f1e45]: Froxy Hızlı
+      - generic [ref=f1e49]:
+        - img "Froxy" [ref=f1e51]
+        - heading "Froxy AI Asistanına Hoş Geldin! 👋" [level=2] [ref=f1e52]
+        - paragraph [ref=f1e53]: Ben senin çok modlu Türkçe yapay zeka asistanınım. Kod yazabilir, metin üretebilir, pazar analizi yapabilir veya dilediğin soruyu yanıtlayabilirim.
+        - generic [ref=f1e54]:
+          - button "✍️ Satış & Reklam Metni" [ref=f1e55] [cursor=pointer]:
+            - generic [ref=f1e56]: ✍️
+            - generic [ref=f1e57]: Satış & Reklam Metni
+          - button "💻 Full-Stack Kodlama" [ref=f1e58] [cursor=pointer]:
+            - generic [ref=f1e59]: 💻
+            - generic [ref=f1e60]: Full-Stack Kodlama
+          - button "💡 AI İş Fikirleri" [ref=f1e61] [cursor=pointer]:
+            - generic [ref=f1e62]: 💡
+            - generic [ref=f1e63]: AI İş Fikirleri
+          - button "🔍 SEO Optimizasyonu" [ref=f1e64] [cursor=pointer]:
+            - generic [ref=f1e65]: 🔍
+            - generic [ref=f1e66]: SEO Optimizasyonu
+      - generic [ref=f1e67]:
+        - generic [ref=f1e68]:
+          - button "Web (yakında)" [ref=f1e69] [cursor=pointer]
+          - button "Derin Akıl" [ref=f1e74] [cursor=pointer]
+          - button "Temizle" [ref=f1e81] [cursor=pointer]
+        - generic [ref=f1e86]:
+          - textbox "Froxy'ye dilediğini sor veya bir görev ver..." [ref=f1e87]
+          - button "Gönder" [ref=f1e88] [cursor=pointer]
+  - navigation [ref=f1e92]:
+    - button "Asistan" [ref=f1e93] [cursor=pointer]
+    - button "Görsel" [ref=f1e98] [cursor=pointer]
+    - button "Mağaza" [ref=f1e105] [cursor=pointer]
+    - button "Ajanlar" [ref=f1e111] [cursor=pointer]
+    - button "Cüzdan" [ref=f1e119] [cursor=pointer]

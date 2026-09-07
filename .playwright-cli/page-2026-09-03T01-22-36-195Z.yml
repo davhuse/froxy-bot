@@ -1,0 +1,99 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e5]:
+        - img "Froxy AI Logo" [ref=e7]
+        - generic [ref=e9]:
+          - generic [ref=e10]: FROXY.AI
+          - generic [ref=e11]: ⚡ Froxy Hızlı Aktif
+      - generic [ref=e12]:
+        - generic [ref=e13] [cursor=pointer]:
+          - generic [ref=e14]: 💳
+          - generic [ref=e15]: ₺0,00
+          - generic [ref=e16]: +
+        - generic "AI Kredisi" [ref=e17] [cursor=pointer]:
+          - generic [ref=e18]: 🪙
+          - generic [ref=e19]: "0"
+    - main [ref=e37]:
+      - generic [ref=e38]:
+        - generic [ref=e39]:
+          - button "Froxy Modelleri Seçili AI Modeli Froxy Hızlı" [expanded] [ref=e40] [cursor=pointer]:
+            - generic [ref=e41]:
+              - img "Froxy Modelleri" [ref=e43]
+              - generic [ref=e44]:
+                - generic [ref=e45]: Seçili AI Modeli
+                - generic [ref=e46]: Froxy Hızlı
+          - generic [ref=e125]:
+            - generic [ref=e126]:
+              - generic [ref=e127]: Model seç
+              - generic [ref=e128]: 6 aktif
+            - searchbox "Model veya sağlayıcı ara" [active] [ref=e129]
+            - generic [ref=e130]:
+              - button "Froxy Modelleri Froxy Hızlı FROXY Froxy Modelleri · Günlük ücretsiz kota" [ref=e131] [cursor=pointer]:
+                - img "Froxy Modelleri" [ref=e133]
+                - generic [ref=e134]:
+                  - generic [ref=e135]:
+                    - text: Froxy Hızlı
+                    - generic [ref=e136]: FROXY
+                  - generic [ref=e137]: Froxy Modelleri · Günlük ücretsiz kota
+              - button "Froxy Modelleri Froxy Akıllı FROXY Froxy Modelleri · Günlük ücretsiz kota" [ref=e138] [cursor=pointer]:
+                - img "Froxy Modelleri" [ref=e140]
+                - generic [ref=e141]:
+                  - generic [ref=e142]:
+                    - text: Froxy Akıllı
+                    - generic [ref=e143]: FROXY
+                  - generic [ref=e144]: Froxy Modelleri · Günlük ücretsiz kota
+              - button "Groq GPT OSS 120B Groq · ~28 kredi" [ref=e145] [cursor=pointer]:
+                - img "Groq" [ref=e147]
+                - generic [ref=e148]:
+                  - generic [ref=e149]: GPT OSS 120B
+                  - generic [ref=e150]: Groq · ~28 kredi
+              - button "Groq GPT OSS 20B Groq · ~14 kredi" [ref=e151] [cursor=pointer]:
+                - img "Groq" [ref=e153]
+                - generic [ref=e154]:
+                  - generic [ref=e155]: GPT OSS 20B
+                  - generic [ref=e156]: Groq · ~14 kredi
+              - button "Groq Qwen/Qwen3.6-27B Groq · ~132 kredi" [ref=e157] [cursor=pointer]:
+                - img "Groq" [ref=e159]
+                - generic [ref=e160]:
+                  - generic [ref=e161]: Qwen/Qwen3.6-27B
+                  - generic [ref=e162]: Groq · ~132 kredi
+              - button "Groq Qwen/Qwen3.8-27B Groq · ~175 kredi" [ref=e163] [cursor=pointer]:
+                - img "Groq" [ref=e165]
+                - generic [ref=e166]:
+                  - generic [ref=e167]: Qwen/Qwen3.8-27B
+                  - generic [ref=e168]: Groq · ~175 kredi
+        - generic [ref=e50]:
+          - img "Froxy AI" [ref=e52]
+          - heading "Froxy AI Asistanına Hoş Geldin! 👋" [level=2] [ref=e53]
+          - paragraph [ref=e54]: Ben senin çok modlu Türkçe yapay zeka asistanınım. Kod yazabilir, metin üretebilir, pazar analizi yapabilir veya dilediğin soruyu yanıtlayabilirim.
+          - generic [ref=e55]:
+            - button "✍️ Satış & Reklam Metni" [ref=e56] [cursor=pointer]:
+              - generic [ref=e57]: ✍️
+              - generic [ref=e58]: Satış & Reklam Metni
+            - button "💻 Full-Stack Kodlama" [ref=e59] [cursor=pointer]:
+              - generic [ref=e60]: 💻
+              - generic [ref=e61]: Full-Stack Kodlama
+            - button "💡 AI İş Fikirleri" [ref=e62] [cursor=pointer]:
+              - generic [ref=e63]: 💡
+              - generic [ref=e64]: AI İş Fikirleri
+            - button "🔍 SEO Optimizasyonu" [ref=e65] [cursor=pointer]:
+              - generic [ref=e66]: 🔍
+              - generic [ref=e67]: SEO Optimizasyonu
+        - generic [ref=e68]:
+          - generic [ref=e69]:
+            - button "Web (yakında)" [ref=e70] [cursor=pointer]
+            - button "Derin Akıl" [ref=e75] [cursor=pointer]
+            - button "Temizle" [ref=e82] [cursor=pointer]
+          - generic [ref=e87]:
+            - textbox "Froxy'ye dilediğini sor veya bir görev ver..." [ref=e88]
+            - button "Gönder" [ref=e89] [cursor=pointer]
+    - navigation [ref=e93]:
+      - button "Asistan" [ref=e94] [cursor=pointer]
+      - button "Görsel" [ref=e99] [cursor=pointer]
+      - button "Mağaza" [ref=e106] [cursor=pointer]
+      - button "Ajanlar" [ref=e112] [cursor=pointer]
+      - button "Cüzdan" [ref=e120] [cursor=pointer]
+  - generic:
+    - generic: ✓
+    - generic: Froxy Hızlı modeline geçildi!

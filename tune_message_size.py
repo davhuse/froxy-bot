@@ -1,0 +1,42 @@
+# Old lengths:
+# keyvadi_1.txt: 1196 chars
+# keyvadi_2.txt: 1246 chars
+# keyvadi_3.txt: 1289 chars
+# keyvadi_4.txt: 1241 chars
+# keyvadi_5.txt: 1370 chars
+# keyvadi_6.txt: 1375 chars
+
+# Target: exactly 1175 - 1190 chars (10-20 chars shorter than 1196)
+
+t1 = """[ KEYVADİ | GÜNCEL DİJİTAL ÜRÜN & LİSANS LİSTESİ ]
+
+Popüler abonelik, yapay zekâ, oyun ve yazılımlar tek adreste:
+
+Film, Dizi & Müzik:
+• Netflix 4K UHD Profil: 79,90₺ | Ortak: 39,99₺
+• YouTube Premium 3 Ay Kod: 19,90₺ | 1 Ay Davet: 30₺
+• Spotify Premium (4 Ay): 34,99₺ | Prime Video: 29,90₺
+• Disney+ UHD: 99,90₺ | HBO Max: 39,90₺ | Exxen: 34,99₺
+
+Yapay Zekâ, Tasarım & Ofis:
+• Canva Pro 1 Yıl (Kendi Mailinize): 49,90₺ | Öğretmen: 79,90₺
+• ChatGPT Plus Ortak: 39,90₺ | Kişisel Hesap: 499,90₺
+• Gemini Pro 18 Ay: 99,90₺ | Gemini Advanced 3 Ay: 59,90₺
+• CapCut Pro: 49,90₺ | Adobe CC 1 Ay: 119,99₺
+• Office 365 (1 Yıl): 70₺ | Windows 10/11 Pro Lisans: 70₺
+• Perplexity Pro: 119,90₺ | DeepL Pro: 29,90₺
+
+Oyun & Kuponlar:
+• Minecraft + Game Pass (1 Ay): 49,90₺ | (3 Ay): 119,90₺
+• Xbox Game Pass 1 Ay: 49,90₺ | 3 Ay: 69,90₺ | Steam Oyun: 60₺
+• Trendyol Market ve Yemek Kuponları: 49,99₺
+
+Güven ve Garanti:
+- +1000'den fazla başarılı işlem ve referansımız mevcuttur.
+- Kapanma ve sorunlara karşı süre boyunca telafi garantilidir.
+- Shopier ile 3D Secure kart veya havale ile güvenli ödeme.
+
+Sorularınız ve doğrudan sipariş için: @KeyvadiDestek
+7/24 Otomatik Sipariş Botu: @KeyVadiSatisBot"""
+
+print(f"T1 Length: {len(t1)} | Hedef: 1176-1196 | Fark: {len(t1) - 1196}")

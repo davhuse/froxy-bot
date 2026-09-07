@@ -1,0 +1,58 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e5]:
+        - img "Froxy AI Logo" [ref=e7]
+        - generic [ref=e9]:
+          - generic [ref=e10]: FROXY.AI
+          - generic [ref=e11]: ⚡ Froxy Akıllı Aktif
+      - generic [ref=e12]:
+        - generic [ref=e13] [cursor=pointer]:
+          - generic [ref=e14]: 💳
+          - generic [ref=e15]: ₺0,00
+          - generic [ref=e16]: +
+        - generic "AI Kredisi" [ref=e17] [cursor=pointer]:
+          - generic [ref=e18]: 🪙
+          - generic [ref=e19]: "0"
+    - main [ref=e37]:
+      - generic [ref=e38]:
+        - button "Froxy Modelleri Seçili AI Modeli Froxy Akıllı" [ref=e169] [cursor=pointer]:
+          - generic [ref=e41]:
+            - img "Froxy Modelleri" [ref=e170]
+            - generic [ref=e44]:
+              - generic [ref=e45]: Seçili AI Modeli
+              - generic [ref=e46]: Froxy Akıllı
+        - generic [ref=e50]:
+          - img "Froxy AI" [ref=e52]
+          - heading "Froxy AI Asistanına Hoş Geldin! 👋" [level=2] [ref=e53]
+          - paragraph [ref=e54]: Ben senin çok modlu Türkçe yapay zeka asistanınım. Kod yazabilir, metin üretebilir, pazar analizi yapabilir veya dilediğin soruyu yanıtlayabilirim.
+          - generic [ref=e55]:
+            - button "✍️ Satış & Reklam Metni" [ref=e56] [cursor=pointer]:
+              - generic [ref=e57]: ✍️
+              - generic [ref=e58]: Satış & Reklam Metni
+            - button "💻 Full-Stack Kodlama" [ref=e59] [cursor=pointer]:
+              - generic [ref=e60]: 💻
+              - generic [ref=e61]: Full-Stack Kodlama
+            - button "💡 AI İş Fikirleri" [ref=e62] [cursor=pointer]:
+              - generic [ref=e63]: 💡
+              - generic [ref=e64]: AI İş Fikirleri
+            - button "🔍 SEO Optimizasyonu" [ref=e65] [cursor=pointer]:
+              - generic [ref=e66]: 🔍
+              - generic [ref=e67]: SEO Optimizasyonu
+        - generic [ref=e68]:
+          - generic [ref=e69]:
+            - button "Web (yakında)" [ref=e70] [cursor=pointer]
+            - button "Derin Akıl" [ref=e75] [cursor=pointer]
+            - button "Temizle" [ref=e82] [cursor=pointer]
+          - generic [ref=e87]:
+            - textbox "Froxy'ye dilediğini sor veya bir görev ver..." [ref=e88]
+            - button "Gönder" [ref=e89] [cursor=pointer]
+    - navigation [ref=e93]:
+      - button "Asistan" [ref=e94] [cursor=pointer]
+      - button "Görsel" [ref=e99] [cursor=pointer]
+      - button "Mağaza" [ref=e106] [cursor=pointer]
+      - button "Ajanlar" [ref=e112] [cursor=pointer]
+      - button "Cüzdan" [ref=e120] [cursor=pointer]
+  - generic:
+    - generic: ✓
+    - generic: Froxy Akıllı modeline geçildi!
