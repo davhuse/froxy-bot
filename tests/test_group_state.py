@@ -1,5 +1,5 @@
 import asyncio
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import inspect
 import json
 import os
@@ -263,7 +263,15 @@ class GroupStateTests(unittest.TestCase):
                 self.assertGreater(
                     publisher.get_last_blast_remaining_wait("FroxyOnline"), 3500
                 )
+                # If a blast started recently, remaining wait is calculated from started_at
                 publisher.mark_blast_started("FroxyOnline")
+                self.assertGreater(
+                    publisher.get_last_blast_remaining_wait("FroxyOnline"), 3500
+                )
+                # If a blast started > 1 hour ago, wait is 0
+                stale_time = (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat()
+                with open(path, "w", encoding="utf-8") as f:
+                    json.dump({"__BLAST_STATE_V2_FroxyOnline": {"status": "in_progress", "started_at": stale_time}}, f)
                 self.assertEqual(
                     publisher.get_last_blast_remaining_wait("FroxyOnline"), 0
                 )

@@ -55,14 +55,15 @@ class BlastCoordinatorTests(unittest.TestCase):
             remote_state = seed.snapshot()
             checkpoint.unlink()
 
-            with patch.object(BlastCoordinator, "_load_remote", return_value=remote_state):
+            with patch.object(BlastCoordinator, "_load_remote", return_value=remote_state), \
+                 patch("firestore_helper.set_document"):
                 restored = BlastCoordinator(
                     checkpoint,
                     remote=True,
                     owner_id="after-deploy",
                     now_fn=clock,
                 )
-            restored.initialize_accounts({"KeyVadiOnline": 600})
+                restored.initialize_accounts({"KeyVadiOnline": 600})
 
             self.assertTrue(checkpoint.exists())
             self.assertEqual(

@@ -268,7 +268,7 @@ KEYVADI_MINI_APP_URL = os.environ.get(
 ).strip().rstrip("/") + "/"
 KEYVADI_GROUP_LINK = os.environ.get(
     "KEYVADI_GROUP_LINK",
-    config.get("keyvadi_group_link", "https://t.me/+ptNBbq3XBNIwYTY0"),
+    config.get("keyvadi_group_link", "https://t.me/keyvadipazar"),
 ).strip()
 
 if not BOT_TOKEN or BOT_TOKEN == "YOUR_TELEGRAM_BOT_TOKEN":

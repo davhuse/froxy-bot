@@ -1573,7 +1573,7 @@ def get_account_recent_joins(client_name, window_seconds=3600):
 
 
 def record_account_join_event(client_name):
-    """Record a join event timestamp persistently on disk."""
+    """Record a join event timestamp persistently on disk and sync to cloud."""
     try:
         data = _load_json_file(ACCOUNT_JOIN_HISTORY_FILE, {})
         now = time.time()
@@ -1581,8 +1581,36 @@ def record_account_join_event(client_name):
         recent.append(now)
         data[client_name] = recent
         _save_json_file(ACCOUNT_JOIN_HISTORY_FILE, data)
+        try:
+            from firestore_helper import set_document
+            from datetime import datetime, timezone
+            set_document("account_join_history", {
+                "payload": json.dumps(data, ensure_ascii=False),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            })
+        except Exception:
+            pass
     except Exception:
         pass
+
+
+def sync_account_join_history_from_cloud():
+    """Download and merge join history from cloud so redeploys preserve rolling limits."""
+    try:
+        from firestore_helper import get_document
+        doc = get_document("account_join_history")
+        if doc and doc.get("payload"):
+            remote_data = json.loads(doc["payload"])
+            local_data = _load_json_file(ACCOUNT_JOIN_HISTORY_FILE, {})
+            merged = {}
+            now = time.time()
+            for acc in set(list(remote_data.keys()) + list(local_data.keys())):
+                times = set(remote_data.get(acc, []) + local_data.get(acc, []))
+                merged[acc] = sorted(t for t in times if isinstance(t, (int, float)) and now - t < 3600)
+            _save_json_file(ACCOUNT_JOIN_HISTORY_FILE, merged)
+            print(f"📥 Grup katılım geçmişi buluttan indirildi: {[(k, len(v)) for k, v in merged.items()]}")
+    except Exception as e:
+        print(f"⚠️ Grup katılım geçmişi buluttan yüklenemedi: {e}")
 
 
 def ensure_seeded_account_join_quarantines(now=None):
@@ -1982,25 +2010,38 @@ def get_last_blast_remaining_wait(client_name, target_wait_seconds=3600):
                         states.append((marker_dt, state.get("status")))
                 except Exception:
                     pass
-
-        if states and max(states, key=lambda item: item[0])[1] == "in_progress":
-            print(f"[{cname}] Yarım kalan blast bulundu; beklemeden kalan gruplardan devam ediliyor.")
-            return 0
+        now_utc = datetime.now(timezone.utc)
+        if states:
+            latest_marker_dt, latest_status = max(states, key=lambda item: item[0])
+            if latest_status == "in_progress":
+                elapsed = (now_utc - latest_marker_dt).total_seconds()
+                if 0 <= elapsed < target_wait_seconds:
+                    rem = int(target_wait_seconds - elapsed)
+                    print(f"[{cname}] ⏳ Yarım kalan blast başlangıcından bu yana {int(elapsed // 60)}dk geçmiş (in_progress) → Kalan {int(rem // 60)}dk ({rem}sn) bekleniyor.")
+                    return rem
+                elif elapsed < 0:
+                    print(f"[{cname}] ⚠️ Future blast timestamp detected; applying a full safety wait.")
+                    return target_wait_seconds
+                else:
+                    print(f"[{cname}] ✅ Yarım kalan blast başlangıcından bu yana 1 saatten fazla geçmiş ({int(elapsed // 60)}dk), yeni blast zamanı geldi.")
+                    return 0
 
         # Older builds updated __LAST_BLAST_TIME after every accepted message,
-        # so such a timestamp cannot prove that the cycle completed.  Ignore it
+        # so such a timestamp cannot prove that the cycle completed. Ignore it
         # once during the V2 migration; per-group cooldowns still prevent a
         # duplicate send and the first completed scan writes a trusted marker.
         if timestamps and not states:
             print(f"[{cname}] Eski tip blast kaydı tamamlanma kanıtı değil; kalan hedefler kontrol ediliyor.")
             return 0
 
-        if not timestamps:
+        if not timestamps and not states:
             print(f"[{cname}] 🛡️ Sunucu başlangıcı: Son blast kaydı bulunamadı, 60 dakika güvenlik beklemesi uygulanıyor.")
             return target_wait_seconds
 
-        latest_dt = max(timestamps)
-        elapsed = (datetime.now(timezone.utc) - latest_dt).total_seconds()
+        latest_dt = max(timestamps) if timestamps else (max(states, key=lambda item: item[0])[0] if states else None)
+        if not latest_dt:
+            return target_wait_seconds
+        elapsed = (now_utc - latest_dt).total_seconds()
         if elapsed < 0:
             print(f"[{cname}] ⚠️ Future blast timestamp detected; applying a full safety wait.")
             return target_wait_seconds
@@ -4391,6 +4432,143 @@ async def main():
                     raise
                 print(f"⚠️ Worker {client_name} önbellek hatası: {e}")
 
+        async def try_join_missing_groups(max_joins=MAX_JOINS_PER_CYCLE, targets_override=None):
+            nonlocal account_pending_invites
+            if not await ensure_telegram_connection(client, client_name):
+                return 0
+            if len(joined_dialogs) <= 1:
+                return 0
+            if is_account_restricted(client_name, scope='join'):
+                return 0
+
+            current_recent = len(get_account_recent_joins(client_name, 3600))
+            if current_recent >= MAX_JOINS_PER_CYCLE:
+                return 0
+
+            blacklist = get_list(BLACKLIST_FILE)
+            blacklist_lower = set(b.lower() for b in blacklist)
+            candidates_source = targets_override if targets_override is not None else get_all_protected_groups()
+            not_joined = []
+            for g in candidates_source:
+                g_lower = g.lower()
+                ent = joined_entity_for_target(joined_dialogs, g_lower)
+                if (ent is None
+                        and g_lower not in joined_dialogs
+                        and g_lower not in blacklist_lower
+                        and not is_account_group_blocked(g, client_name)
+                        and not is_group_retry_blocked(g, client_name)
+                        and g_lower not in account_pending_invites):
+                    not_joined.append(g)
+
+            if not not_joined:
+                return 0
+
+            allowed_joins = min(max_joins, MAX_JOINS_PER_CYCLE - current_recent)
+            print(f"\n[{client_name}] 🔍 {len(not_joined)} gruba henüz üye değiliz (Kalan saatlik hak: {allowed_joins}). Katılma başlıyor...")
+            joined_in_step = 0
+            for hedef_grup in not_joined:
+                if joined_in_step >= allowed_joins:
+                    break
+                current_recent = len(get_account_recent_joins(client_name, 3600))
+                if current_recent >= MAX_JOINS_PER_CYCLE:
+                    print(f"[{client_name}] 🔒 Saatlik limit ({MAX_JOINS_PER_CYCLE}) doldu, katılım durduruluyor.")
+                    break
+
+                taze_engel = set()
+                for engelli in get_list(BLACKLIST_FILE):
+                    taze_engel.update(
+                        group_state_keys(engelli.lower(),
+                                         joined_dialogs.get(engelli.lower())))
+                if taze_engel.intersection(
+                        group_state_keys(hedef_grup, joined_dialogs.get(hedef_grup.lower()))):
+                    print(f"[{client_name}] ⛔ @{hedef_grup} kara listede, katılım atlandı.")
+                    continue
+
+                if hedef_grup.lower() in account_pending_invites:
+                    print(f"[{client_name}] ⏳ @{hedef_grup} katılım isteği zaten gönderilmiş, bekleniyor.")
+                    continue
+
+                try:
+                    is_hash = len(hedef_grup) == 16 and not hedef_grup.startswith('@') and not '/' in hedef_grup
+                    entity = None
+                    if is_hash:
+                        from telethon.tl.functions.messages import ImportChatInviteRequest
+                        try:
+                            updates = await client(ImportChatInviteRequest(hedef_grup))
+                            if hasattr(updates, 'chats') and updates.chats:
+                                entity = updates.chats[0]
+                            print(f"[{client_name}] ✅ Özel gruba katıldı: @{hedef_grup}")
+                        except Exception as e_hash:
+                            err_msg_hash = str(e_hash)
+                            if 'UserAlreadyParticipant' in type(e_hash).__name__ or 'already' in err_msg_hash.lower():
+                                try:
+                                    entity = await client.get_entity(hedef_grup)
+                                except Exception:
+                                    pass
+                            else:
+                                raise e_hash
+                    else:
+                        entity = await client.get_entity(telegram_target_reference(hedef_grup))
+                        await client(JoinChannelRequest(entity))
+                        print(f"[{client_name}] ✅ Gruba katıldı: @{hedef_grup}")
+                        
+                    if entity:
+                        joined_dialogs[hedef_grup.lower()] = entity
+                        joined_in_step += 1
+                        record_account_join_event(client_name)
+                        if hedef_grup.lower() in account_pending_invites:
+                            account_pending_invites.remove(hedef_grup.lower())
+                            save_pending_invites(client_name, account_pending_invites)
+                        await asyncio.sleep(
+                            random.randint(
+                                JOIN_DELAY_MIN_SECONDS,
+                                JOIN_DELAY_MAX_SECONDS,
+                            )
+                        )
+                except FloodWaitError as e:
+                    set_account_restriction(client_name, e.seconds, 'Telegram katılım FloodWait', type(e).__name__, scope='join')
+                    print(f"[{client_name}] ⚠️ Join flood {e.seconds}sn; hesap duraklatılıyor, grup kara listeye alınmadı.")
+                    break
+                except Exception as e:
+                    err_msg = str(e)
+                    err_type = type(e).__name__
+                    error_class = classify_join_error(e)
+                    if error_class == 'account_blocked':
+                        record_confirmed_join_block(
+                            hedef_grup, client_name, err_type, entity
+                        )
+                        print(f"[{client_name}] ⛔ @{hedef_grup} -> {err_type}; yalnız bu hesap için kalıcı olarak atlandı.")
+                    elif error_class == 'access_review':
+                        review = record_join_access_review(
+                            hedef_grup, client_name, err_type, entity
+                        )
+                        if review['status'] == 'quarantined':
+                            print(f"[{client_name}] ⛔ @{hedef_grup} -> {review['attempt']} kez özel/kapalı erişim sonucu; yalnız bu hesap için 30 gün karantinaya alındı.")
+                        else:
+                            retry_hours = review['retry_after'] // 3600
+                            print(f"[{client_name}] ⚠️ @{hedef_grup} -> Özel erişim/onay belirsiz; {retry_hours} saat sonra yeniden kontrol edilecek.")
+                    elif error_class == 'account_limit':
+                        set_account_restriction(client_name, 86400, 'Telegram 500 kanal limitine ulaşıldı', err_type, scope='join')
+                        print(f"[{client_name}] 🚨 Telegram 500 kanal/grup limitine ulaşıldı! Katılım aşaması durduruluyor.")
+                        break
+                    elif error_class == 'pending':
+                        account_pending_invites.add(hedef_grup.lower())
+                        save_pending_invites(client_name, account_pending_invites)
+                        print(f"[{client_name}] ⏳ @{hedef_grup} -> Katılım isteği gönderildi (onay bekleniyor).")
+                    elif error_class == 'invalid_invite':
+                        record_group_failure(hedef_grup, client_name, 'invalid_invite', 30 * 24 * 60 * 60)
+                        print(f"[{client_name}] ⚠️ @{hedef_grup} -> davet bağlantısı geçersiz/süresi dolmuş; tekrar denenmeyecek.")
+                    elif error_class == 'unresolvable':
+                        record_group_failure(hedef_grup, client_name, 'UsernameInvalidReview', 24 * 60 * 60)
+                        print(f"[{client_name}] ⚠️ @{hedef_grup} -> hedef çözümlenemedi ({err_type}); 24 saat sonra kontrol edilecek.")
+                    else:
+                        record_group_failure(hedef_grup, client_name, err_type, 60 * 60)
+                        print(f"[{client_name}] ⚠️ @{hedef_grup} -> {err_type} (Hata: {err_msg})")
+            return joined_in_step
+
+        # Başlangıçta diyalogları önbelleğe al
+        await cache_dialogs()
+
         # ═══════════════════════════════════════════════════
         # BLAST MODE: Tüm gruplara aynı anda mesaj at
         # ═══════════════════════════════════════════════════
@@ -4488,6 +4666,8 @@ async def main():
                     remaining_minutes=(queue_wait + 59) // 60,
                     next_blast_at=utc_after_seconds_iso(queue_wait),
                 )
+                # Sıradayken de güvenli saatlik limit (max 3/saat) çerçevesinde eksik gruplara katılım sağla
+                await try_join_missing_groups(max_joins=1)
                 await asyncio.sleep(min(15, max(3, queue_wait or 5)))
                 continue
 
@@ -5459,173 +5639,9 @@ async def main():
                     save_last_blast_time(client_name)
 
             # ═══════════════════════════════════════════════════
-            # YENİ GRUPLARA KATILMA AŞAMASI (blast sonrası)
+            # YENİ GRUPLARA KATILMA AŞAMASI (blast / tamamlama sonrası)
             # ═══════════════════════════════════════════════════
-            if not await ensure_telegram_connection(client, client_name):
-                print(f"[{client_name}] ⚠️ Telegram bağlantısı yok; katılım aşaması atlanıyor.")
-                not_joined = []
-            elif len(joined_dialogs) <= 1:
-                print(f"[{client_name}] ⚠️ Diyalog önbelleği boş ({len(joined_dialogs)}); yanlış katılım isteklerini önlemek için katılım atlanıyor.")
-                not_joined = []
-            else:
-                blacklist = get_list(BLACKLIST_FILE)
-                blacklist_lower = set(b.lower() for b in blacklist)
-                not_joined = []
-                for g in hedef_set:
-                    g_lower = g.lower()
-                    ent = joined_entity_for_target(joined_dialogs, g_lower)
-                    if (ent is None
-                            and g_lower not in joined_dialogs
-                            and g_lower not in blacklist_lower
-                            and not is_account_group_blocked(g, client_name)
-                            and not is_group_retry_blocked(g, client_name)):
-                        not_joined.append(g)
-            
-            if not_joined:
-                join_count = 0
-                recent_joins_count = len(get_account_recent_joins(client_name, 3600))
-                if recent_joins_count >= MAX_JOINS_PER_CYCLE:
-                    print(
-                        f"[{client_name}] 🔒 Son 1 saat içinde zaten {recent_joins_count} gruba katılındı "
-                        f"(saatlik limit: {MAX_JOINS_PER_CYCLE}), bu turda katılım atlanıyor."
-                    )
-                    not_joined = []
-                else:
-                    print(f"\n[{client_name}] 🔍 {len(not_joined)} gruba henüz üye değiliz (Kalan saatlik hak: {MAX_JOINS_PER_CYCLE - recent_joins_count}). Katılma başlıyor...")
-                if is_account_restricted(client_name, scope='join'):
-                    state = account_restriction_status(client_name, scope='join')
-                    print(f"[{client_name}] ⏸️ Join kısıtı aktif; {state.get('until', 'belirsiz')} tarihine kadar yeni gruba katılım atlandı.")
-                    not_joined = []
-                for hedef_grup in not_joined:
-                    current_recent = len(get_account_recent_joins(client_name, 3600))
-                    if join_count >= MAX_JOINS_PER_CYCLE or current_recent >= MAX_JOINS_PER_CYCLE:
-                        print(
-                            f"[{client_name}] 🔒 Bu turda/saatte {MAX_JOINS_PER_CYCLE} gruba katılındı "
-                            "(güvenli saatlik limit), durduruluyor."
-                        )
-                        break
-
-                    # Kara listeyi katilim aninda tekrar oku.  Liste tur icinde
-                    # degisebiliyor ve ban yedigimiz bir gruba yeniden girmek
-                    # hesabin tekrar banlanmasina yol aciyor.  Karsilastirma
-                    # kanonik anahtarla yapiliyor ki ID bicimi de yakalansin.
-                    taze_engel = set()
-                    for engelli in get_list(BLACKLIST_FILE):
-                        taze_engel.update(
-                            group_state_keys(engelli.lower(),
-                                             joined_dialogs.get(engelli.lower())))
-                    if taze_engel.intersection(
-                            group_state_keys(hedef_grup, joined_dialogs.get(hedef_grup.lower()))):
-                        print(f"[{client_name}] ⛔ @{hedef_grup} kara listede, katılım atlandı.")
-                        continue
-
-                    # Katilim istegi zaten gonderilmis ve admin onayi bekliyorsa
-                    # tekrar isteme.  pending_invites dolduruluyordu ama hicbir
-                    # yerde okunmuyordu: onay bekleyen tek bir grup her turda uc
-                    # hesaptan yeni istek aliyordu (gunde ~72 istek), bu da hem
-                    # grup yoneticisini rahatsiz ediyor hem PeerFlood riski.
-                    if hedef_grup.lower() in account_pending_invites:
-                        print(f"[{client_name}] ⏳ @{hedef_grup} katılım isteği zaten gönderilmiş, bekleniyor.")
-                        continue
-
-                    try:
-                        is_hash = len(hedef_grup) == 16 and not hedef_grup.startswith('@') and not '/' in hedef_grup
-                        
-                        entity = None
-                        if is_hash:
-                            from telethon.tl.functions.messages import ImportChatInviteRequest
-                            try:
-                                updates = await client(ImportChatInviteRequest(hedef_grup))
-                                if hasattr(updates, 'chats') and updates.chats:
-                                    entity = updates.chats[0]
-                                print(f"[{client_name}] ✅ Özel gruba katıldı: @{hedef_grup}")
-                            except Exception as e_hash:
-                                err_msg_hash = str(e_hash)
-                                if 'UserAlreadyParticipant' in type(e_hash).__name__ or 'already' in err_msg_hash.lower():
-                                    try:
-                                        entity = await client.get_entity(hedef_grup)
-                                    except:
-                                        pass
-                                else:
-                                    raise e_hash
-                        else:
-                            entity = await client.get_entity(telegram_target_reference(hedef_grup))
-                            await client(JoinChannelRequest(entity))
-                            print(f"[{client_name}] ✅ Gruba katıldı: @{hedef_grup}")
-                            
-                        if entity:
-                            joined_dialogs[hedef_grup.lower()] = entity
-                            join_count += 1
-                            record_account_join_event(client_name)
-                            # Katılım isteği onaylandıysa/katılım sağlandıysa pending'den çıkar
-                            if hedef_grup.lower() in account_pending_invites:
-                                account_pending_invites.remove(hedef_grup.lower())
-                                save_pending_invites(client_name, account_pending_invites)
-                            await asyncio.sleep(
-                                random.randint(
-                                    JOIN_DELAY_MIN_SECONDS,
-                                    JOIN_DELAY_MAX_SECONDS,
-                                )
-                            )
-                            
-                    except FloodWaitError as e:
-                        set_account_restriction(client_name, e.seconds, 'Telegram katılım FloodWait', type(e).__name__, scope='join')
-                        print(f"[{client_name}] ⚠️ Join flood {e.seconds}sn; hesap duraklatılıyor, grup kara listeye alınmadı.")
-                        break
-                    except Exception as e:
-                        err_msg = str(e)
-                        err_type = type(e).__name__
-                        error_class = classify_join_error(e)
-                        if error_class == 'account_blocked':
-                            record_confirmed_join_block(
-                                hedef_grup, client_name, err_type, entity
-                            )
-                            print(
-                                f"[{client_name}] ⛔ @{hedef_grup} -> {err_type}; "
-                                "yalnız bu hesap için kalıcı olarak atlandı."
-                            )
-                        elif error_class == 'access_review':
-                            review = record_join_access_review(
-                                hedef_grup, client_name, err_type, entity
-                            )
-                            if review['status'] == 'quarantined':
-                                print(
-                                    f"[{client_name}] ⛔ @{hedef_grup} -> "
-                                    f"{review['attempt']} kez özel/kapalı erişim sonucu; "
-                                    "yalnız bu hesap için 30 gün karantinaya alındı."
-                                )
-                            else:
-                                retry_hours = review['retry_after'] // 3600
-                                print(
-                                    f"[{client_name}] ⚠️ @{hedef_grup} -> Özel erişim/onay "
-                                    f"belirsiz ({review['attempt']}/"
-                                    f"{JOIN_ACCESS_REVIEW_PROMOTE_ATTEMPTS}); "
-                                    f"{retry_hours} saat sonra yeniden kontrol edilecek."
-                                )
-                        elif error_class == 'account_limit':
-                            set_account_restriction(client_name, 86400, 'Telegram 500 kanal limitine ulaşıldı', err_type, scope='join')
-                            print(f"[{client_name}] 🚨 Telegram 500 kanal/grup limitine ulaşıldı! Katılım aşaması durduruluyor.")
-                            break
-                        elif error_class == 'pending':
-                            account_pending_invites.add(hedef_grup.lower())
-                            save_pending_invites(client_name, account_pending_invites)
-                            print(f"[{client_name}] ⏳ @{hedef_grup} -> Katılım isteği gönderildi (onay bekleniyor).")
-                        elif error_class == 'invalid_invite':
-                            record_group_failure(
-                                hedef_grup, client_name, 'invalid_invite', 30 * 24 * 60 * 60
-                            )
-                            print(
-                                f"[{client_name}] ⚠️ @{hedef_grup} -> davet bağlantısı geçersiz/süresi dolmuş; "
-                                "tekrar tekrar denenmeyecek."
-                            )
-                        elif error_class == 'unresolvable':
-                            record_group_failure(
-                                hedef_grup, client_name, 'UsernameInvalidReview', 24 * 60 * 60
-                            )
-                            print(f"[{client_name}] ⚠️ @{hedef_grup} -> hedef çözümlenemedi ({err_type}); 24 saat sonra yeniden kontrol edilecek.")
-                        else:
-                            record_group_failure(hedef_grup, client_name, err_type, 60 * 60)
-                            print(f"[{client_name}] ⚠️ @{hedef_grup} -> {err_type} (Hata: {err_msg})")
+            await try_join_missing_groups(max_joins=MAX_JOINS_PER_CYCLE, targets_override=hedef_set)
 
             # Progress sıfırla (bir sonraki blast için)
             async with state_lock:
@@ -5731,6 +5747,9 @@ async def main():
             print("📥 Karşılanan kullanıcılar geçmişi buluttan indirildi.")
         except Exception as e:
             print(f"⚠️ Karşılanan kullanıcı yükleme hatası: {e}")
+
+    # Cloud sync for rolling group join rate limits
+    sync_account_join_history_from_cloud()
 
     # Initialize the durable V3 queue only after legacy cooldown state has been
     # reconciled from Firestore. Missing/unauthorized accounts are disabled so
