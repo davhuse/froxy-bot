@@ -924,8 +924,8 @@ ACTIVE_ACCOUNT_IDENTITIES = {
     },
     'lisansarenatr': {
         'stable_name': 'LisansArenaOnline',
-        'phone': '17207764294',
-        'user_id': 8617011628,
+        'phone': '905542891115',
+        'user_id': 8825645102,
         'slot': 3,
     },
     'lisansarenaonline': {
