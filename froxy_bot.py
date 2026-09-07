@@ -279,11 +279,11 @@ bot = TelegramClient(StringSession(), API_ID, API_HASH)
 
 BOT_COMMANDS = [
     ("start", "KeyVadi ana menüyü aç"),
-    ("magaza", "KeyVadi mağazasını aç"),
-    ("urunler", "Ürün kataloğunu görüntüle"),
-    ("destek", "Destek talebi oluştur"),
-    ("referans", "Referans bağlantını görüntüle"),
-    ("dil", "Dil seçimini değiştir"),
+    ("firsatlar", "🔥 Price Drop & Son Stok Fırsatları"),
+    ("magaza", "🛍️ KeyVadi mağazasını aç"),
+    ("urunler", "📦 Ürün kataloğunu görüntüle"),
+    ("destek", "📞 Canlı Destek ekibine bağlan"),
+    ("referans", "👥 Davet et & indirim kazan"),
 ]
 
 
@@ -302,7 +302,7 @@ def _bot_api_call(method, payload):
 
 
 def configure_bot_profile():
-    """Configure the KeyVadi command list and persistent Mini App entry."""
+    """Configure the KeyVadi command list and persistent 3-line menu button."""
     _bot_api_call("setMyCommands", {
         "commands": [
             {"command": command, "description": description}
@@ -311,9 +311,7 @@ def configure_bot_profile():
     })
     _bot_api_call("setChatMenuButton", {
         "menu_button": {
-            "type": "web_app",
-            "text": "🛍 Mağazayı Aç",
-            "web_app": {"url": KEYVADI_MINI_APP_URL},
+            "type": "commands",
         }
     })
     _bot_api_call("setMyName", {"name": "KeyVadi"})
