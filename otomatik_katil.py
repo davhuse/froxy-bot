@@ -3716,13 +3716,25 @@ def mark_dead_ad_session(client_name, exc):
     )
 
 
-BEKLENEN_HESAPLAR = {'FroxyOnline', 'KeyVadiOnline', 'LisansArenaOnline'}
-
-
 def disabled_ad_accounts():
     """Return advertising accounts held out of joins/blasts by configuration."""
     raw = os.environ.get("DISABLED_AD_ACCOUNTS", "")
     return {item.strip().casefold() for item in raw.split(",") if item.strip()}
+
+
+def get_expected_ad_accounts():
+    """Return the set of ad accounts actively expected to connect."""
+    disabled = disabled_ad_accounts()
+    expected = {'FroxyOnline', 'KeyVadiOnline'}
+    if (
+        'lisansarenaonline' not in disabled
+        and os.environ.get("DISABLE_LISANSARENA_AD", "true").lower() not in ("1", "true", "yes", "on")
+    ):
+        expected.add('LisansArenaOnline')
+    return expected
+
+
+BEKLENEN_HESAPLAR = {'FroxyOnline', 'KeyVadiOnline', 'LisansArenaOnline'}
 
 
 _last_eksik_alert_time = 0
@@ -3730,7 +3742,7 @@ _last_eksik_alert_time = 0
 async def uyar_eksik_hesap(ayakta, active_clients):
     global _last_eksik_alert_time
     import time
-    eksik = sorted(BEKLENEN_HESAPLAR - set(ayakta))
+    eksik = sorted(get_expected_ad_accounts() - set(ayakta))
     if not eksik or not active_clients:
         return
     # Throttle to once per 60 minutes max
@@ -3773,7 +3785,7 @@ async def uyar_eksik_hesap(ayakta, active_clients):
 
 async def update_persistent_account_health_alerts(alive_names, active_clients):
     """Send one alert per health transition, persisted across Render deploys."""
-    missing = sorted(BEKLENEN_HESAPLAR - set(alive_names))
+    missing = sorted(get_expected_ad_accounts() - set(alive_names))
     state = await async_get_document('ad_health_alert_state') or {}
     previous_missing = sorted(
         item for item in str(state.get('missing_accounts', '')).split(',') if item
@@ -3842,7 +3854,7 @@ async def main():
     if ensure_seeded_account_join_quarantines():
         print("🧭 Hesap bazlı katılım karantinaları canlı denetime göre yüklendi.")
     if not api_id or not api_hash:
-        for account_name in BEKLENEN_HESAPLAR:
+        for account_name in get_expected_ad_accounts():
             update_ad_account_status(
                 account_name,
                 process_running=True,
@@ -3857,7 +3869,7 @@ async def main():
 
     runtime_lease = RuntimeLease(ttl_seconds=120)
     if not await runtime_lease.acquire():
-        for account_name in BEKLENEN_HESAPLAR:
+        for account_name in get_expected_ad_accounts():
             update_ad_account_status(
                 account_name,
                 process_running=True,
@@ -3996,6 +4008,15 @@ async def main():
                 pass
     else:
         print("⏸️ 3. Hesap (LisansArena): Kullanıcı isteği doğrultusunda KAPALI tutuluyor (reklam gönderimi devre dışı).")
+        update_ad_account_status(
+            'LisansArenaOnline',
+            process_running=True,
+            telegram_connected=False,
+            telegram_authorized=False,
+            phase='disabled_by_config',
+            last_error='LisansArena reklam hesabi kullanici istegiyle devre disi birakildi.',
+            next_blast_at=None,
+        )
 
     # Fallback to local session file if no string session is configured at all
     if not string_session_key and not string_session_key_2 and not string_session_key_3:
@@ -4088,7 +4109,7 @@ async def main():
         sys.exit(1)
 
     if CONTROLLED_SMOKE_MODE:
-        expected = set(BEKLENEN_HESAPLAR)
+        expected = set(get_expected_ad_accounts())
         authorized = {name for _, name, _ in active_clients}
         missing = sorted(expected - authorized)
         invalid_request = (

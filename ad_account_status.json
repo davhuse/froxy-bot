@@ -1,13 +1,14 @@
 {
   "LisansArenaOnline": {
-    "phase": "completed",
-    "target_groups": 49,
-    "sendable_groups": 13,
-    "blacklisted_groups": 2,
-    "not_joined_groups": 19,
-    "updated_at": "2026-07-30T15:54:27.652862+00:00",
-    "sent_count": 8,
-    "failed_count": 0
+    "phase": "disabled_by_config",
+    "target_groups": 0,
+    "sendable_groups": 0,
+    "blacklisted_groups": 0,
+    "not_joined_groups": 0,
+    "updated_at": "2026-09-07T16:30:00.000000+00:00",
+    "sent_count": 0,
+    "failed_count": 0,
+    "last_error": "LisansArena reklam hesabi kullanici istegiyle devre disi birakildi."
   },
   "FroxyOnline": {
     "phase": "completed",

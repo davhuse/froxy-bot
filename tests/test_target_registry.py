@@ -190,5 +190,37 @@ class DiscoverySafetyTests(unittest.IsolatedAsyncioTestCase):
             )
 
 
+class ExpectedAdAccountsTests(unittest.TestCase):
+    def test_lisansarena_disabled_by_default(self):
+        with mock.patch.dict(os.environ, {}, clear=True):
+            expected = publisher.get_expected_ad_accounts()
+            self.assertEqual(expected, {"FroxyOnline", "KeyVadiOnline"})
+
+    def test_lisansarena_disabled_when_explicitly_set(self):
+        with mock.patch.dict(
+            os.environ,
+            {
+                "DISABLE_LISANSARENA_AD": "true",
+                "DISABLED_AD_ACCOUNTS": "LisansArenaOnline",
+            },
+        ):
+            expected = publisher.get_expected_ad_accounts()
+            self.assertEqual(expected, {"FroxyOnline", "KeyVadiOnline"})
+
+    def test_lisansarena_included_only_when_explicitly_enabled(self):
+        with mock.patch.dict(
+            os.environ,
+            {
+                "DISABLE_LISANSARENA_AD": "false",
+                "DISABLED_AD_ACCOUNTS": "",
+            },
+        ):
+            expected = publisher.get_expected_ad_accounts()
+            self.assertEqual(
+                expected,
+                {"FroxyOnline", "KeyVadiOnline", "LisansArenaOnline"},
+            )
+
+
 if __name__ == "__main__":
     unittest.main()
