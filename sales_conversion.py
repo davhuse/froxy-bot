@@ -113,7 +113,7 @@ BRAND_PHRASES = (
     "kiro", "steam", "shell", "whatsapp", "apple", "crunchyroll", "telegram", "blutv",
     "midjourney", "tradingview", "nordvpn", "vpn", "kaspersky", "envato",
     "freepik", "autocad", "figma", "elementor", "grammarly", "deepl",
-    "ideogram", "quillbot", "discord", "hbo", "prime video", "prime", "perplexity",
+    "ideogram", "quillbot", "discord", "hbo", "prime video", "prime", "amazon", "perplexity",
     "magnific", "zula", "fc 26", "fc26", "codex", "antigravity", "disney", "minecraft",
     "cape", "pelerin", "roblox", "instagram", "takipci", "gmail", "claude",
     "s sport", "yemeksepeti", "turna", "coffy", "cofy", "migros",
@@ -524,7 +524,7 @@ def _price_number(value: str) -> float:
 SPECIFIC_BRANDS_FOR_ROADMAP = {
     "netflix", "minecraft", "chatgpt", "canva", "adobe", "windows", "office",
     "spotify", "s sport", "turna", "duolingo", "capcut",
-    "kaspersky", "exxen", "prime", "hbo", "disney", "roblox", "steam",
+    "kaspersky", "exxen", "prime", "amazon", "hbo", "disney", "roblox", "steam",
     "fc 26", "fc26", "fifa", "zula", "gemini", "grok", "claude", "perplexity",
     "crunchyroll", "deepl", "grammarly", "nordvpn", "vpn", "envato", "freepik",
     "coffy", "cofy", "migros", "yemeksepeti"

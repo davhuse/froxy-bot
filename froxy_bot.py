@@ -11,7 +11,7 @@ from functools import wraps
 from telethon import TelegramClient, events, Button
 from telethon.errors import MessageNotModifiedError
 from telethon.sessions import StringSession
-from telethon.tl.types import KeyboardButtonRow, KeyboardButtonWebView, ReplyInlineMarkup
+from telethon.tl.types import KeyboardButtonRow, KeyboardButtonWebView, ReplyInlineMarkup, KeyboardButtonCallback
 import user_lang_helper
 import firestore_helper
 from gemini_helper import get_ai_response
@@ -293,9 +293,18 @@ def configure_bot_profile():
 
 
 def mini_app_markup(label="Mağazayı Aç"):
-    return ReplyInlineMarkup(rows=[KeyboardButtonRow(buttons=[
-        KeyboardButtonWebView(text=f"🛍 {label}", url=KEYVADI_MINI_APP_URL)
-    ])])
+    return ReplyInlineMarkup(rows=[
+        KeyboardButtonRow(buttons=[
+            KeyboardButtonWebView(text=f"🛍 {label}", url=KEYVADI_MINI_APP_URL)
+        ]),
+        KeyboardButtonRow(buttons=[
+            KeyboardButtonCallback(text="🔥 En Çok Satan 7 Ürün (Fırsatlar)", data=b"menu_top7")
+        ]),
+        KeyboardButtonRow(buttons=[
+            KeyboardButtonCallback(text="📦 Kategoriler", data=b"menu_categories"),
+            KeyboardButtonCallback(text="📞 Canlı Destek", data=b"menu_support")
+        ])
+    ])
 
 @bot.on(events.CallbackQuery())
 async def acknowledge_callback(event):
@@ -364,6 +373,8 @@ def match_product_from_text(msg_text):
     msg_clean = msg_clean.replace("office365", "office 365")
     msg_clean = msg_clean.replace("gamepass", "game pass")
     msg_clean = msg_clean.replace("cc", "creative cloud")
+    msg_clean = msg_clean.replace("prime video", "prime")
+    msg_clean = re.sub(r'\bmc\b', 'minecraft', msg_clean)
     
     query_words = _get_words(msg_clean)
     
@@ -375,7 +386,8 @@ def match_product_from_text(msg_text):
         "crunchyroll", "chatgpt", "midjourney", "creative",
         "4k", "uhd", "game", "lisans", "microsoft",
         "tradingview", "nordvpn", "vpn", "kaspersky", "envato", "freepik",
-        "autocad", "figma", "elementor", "grammarly", "deepl", "ideogram", "quillbot", "discord"
+        "autocad", "figma", "elementor", "grammarly", "deepl", "ideogram", "quillbot", "discord",
+        "minecraft", "amazon", "prime"
     }
     
     has_brand = any(w in brand_keywords for w in query_words)
@@ -740,7 +752,7 @@ def rebuild_categories(products):
         ]):
             cat_key = "ai"
         elif any(k in t for k in [
-            "netflix", "prime video", "hbo", "crunchyroll", "exxen", "blutv",
+            "netflix", "prime video", "prime", "amazon", "hbo", "crunchyroll", "exxen", "blutv",
             "disney", "youtube", "spotify", "music",
         ]):
             cat_key = "streaming"
@@ -753,11 +765,11 @@ def rebuild_categories(products):
             cat_key = "social"
         elif any(k in t for k in [
             "trendyol", "shell", "kupon", "indirim", "bakiye", "keyvadi.bond",
-            "akaryakıt", "puan",
+            "akaryakıt", "puan", "yemeksepeti", "coffy", "migros", "turna",
         ]):
             cat_key = "coupons"
         elif any(k in t for k in [
-            "steam", "xbox", "game pass", "gamepass", "fc26", "zula", "oyun",
+            "steam", "xbox", "game pass", "gamepass", "minecraft", "fc26", "zula", "oyun",
         ]):
             cat_key = "games"
         elif any(k in t for k in [
@@ -1164,6 +1176,63 @@ async def main_menu_handler(event):
         pass
     user_id = event.sender_id
     await show_main_menu(event, user_id, is_callback=True)
+
+@bot.on(events.CallbackQuery(data=b'menu_top7'))
+async def menu_top7_handler(event):
+    try:
+        await event.answer()
+    except Exception:
+        pass
+    
+    text = (
+        "🔥 **KEYVADİ — EN ÇOK SATAN 7 FIRSAT ÜRÜNÜ** 🔥\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "En popüler dijital abonelik ve oyun lisansları rakipsiz fiyatlarla hemen teslim!\n\n"
+        "🍿 **1. Netflix 4K UHD** — 39,99 ₺ (Ortak) / 79,90 ₺ (Kişisel)\n"
+        "🤖 **2. Google Gemini Pro (AI)** — 59,90 ₺ (3 Ay) / 99,90 ₺ (18 Ay)\n"
+        "🎮 **3. Xbox Game Pass Ultimate** — 49,90 ₺ (1 Ay) / 69,90 ₺ (3 Ay)\n"
+        "⛏️ **4. Minecraft Java & Bedrock** — 49,90 ₺ (1 Ay) / 119,90 ₺ (3 Ay)\n"
+        "🎬 **5. CapCut Pro** — 49,90 ₺ (1 Ay Ortak) / 149,90 ₺ (Kişisel)\n"
+        "🦉 **6. Duolingo Super Sınırsız** — 49,90 ₺ (Sınırsız Can & Reklamsız)\n"
+        "📦 **7. Amazon Prime Video** — 9,99 ₺ (Ortak) / 29,90 ₺ (Özel Profil)\n\n"
+        "⚡ *Tüm ürünlerde 7/24 anında otomatik/hızlı teslimat ve tam süre garantisi mevcuttur.*\n"
+        "👇 **Satın almak istediğiniz ürünü seçin:**"
+    )
+    buttons = [
+        [Button.url("🍿 Netflix 4K Satın Al (39,99₺)", "https://www.shopier.com/keyvadi/49099014")],
+        [Button.url("🤖 Gemini Pro Satın Al (59,90₺)", "https://www.shopier.com/keyvadi/49362708")],
+        [Button.url("🎮 Xbox Game Pass Satın Al (49,90₺)", "https://www.shopier.com/keyvadi/49467735")],
+        [Button.url("⛏️ Minecraft Satın Al (49,90₺)", "https://www.shopier.com/50460191")],
+        [Button.url("🎬 CapCut Pro Satın Al (49,90₺)", "https://www.shopier.com/keyvadi/49467632")],
+        [Button.url("🦉 Duolingo Super Satın Al (49,90₺)", "https://www.shopier.com/keyvadi/47669390")],
+        [Button.url("📦 Prime Video Satın Al (9,99₺)", "https://www.shopier.com/keyvadi/49002145")],
+        [Button.url("🛍️ Tüm Ürünleri Gör (Mini App)", KEYVADI_MINI_APP_URL)],
+        [Button.inline("↩️ Ana Menü", b"menu_main")]
+    ]
+    await safe_event_edit(event, text, buttons=buttons)
+
+@bot.on(events.CallbackQuery(data=b'menu_categories'))
+async def menu_categories_handler(event):
+    try:
+        await event.answer()
+    except Exception:
+        pass
+    
+    t = TEXTS["tr"]
+    text = (
+        "📦 **KeyVadi Ürün Kategorileri**\n\n"
+        "İncelemek istediğiniz kategoriyi seçin:"
+    )
+    buttons = []
+    cat_order = ["ai", "streaming", "design", "games", "coupons", "social", "accounts", "license"]
+    for cat_key in cat_order:
+        cat_info = CATEGORIES.get(cat_key)
+        if cat_info and cat_info.get("products"):
+            label = cat_info.get("title", cat_key)
+            buttons.append([Button.inline(label, f"cat_{cat_key}".encode())])
+    buttons.append([Button.inline(t["main_menu"], b"menu_main")])
+    await safe_event_edit(event, text, buttons=buttons)
+
 
 # Admin update handler
 @bot.on(events.NewMessage(pattern='/guncelle'))
