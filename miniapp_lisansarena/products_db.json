@@ -1,21 +1,5 @@
 [
   {
-    "id": "la_turna_600",
-    "title": "Turna 600 TL Uçak Bileti İndirim Kuponu",
-    "price": "80 TL",
-    "category": "coupons",
-    "is_vitrin": true,
-    "showcase": true,
-    "badge": "✈️ 600 TL İNDİRİM",
-    "image": "assets/products/card_clean_turna.jpg",
-    "rating": 4.8,
-    "sales_count": 180,
-    "delivery": "⚡ Anında Kod Teslimi",
-    "warranty": "🛡️ %100 Çalışma Garantili",
-    "desc": "Turna.com yurt içi ve yurt dışı tüm uçak bileti alımlarında geçerli 600 TL net indirim kuponu.",
-    "shopier_url": "https://www.shopier.com/50576031"
-  },
-  {
     "id": "la_ssport_1m",
     "title": "S Sport Plus (1 Aylık Lisans Kodu)",
     "price": "80 TL",
@@ -78,22 +62,6 @@
     "warranty": "🛡️ %100 Çalışma Garantili",
     "desc": "Yemeksepeti'nde 450 TL ve üzeri siparişlerde anında 350 TL indirim sağlayan özel kupon kodu.",
     "shopier_url": "https://www.shopier.com/50576030"
-  },
-  {
-    "id": "la_yemeksepeti_200",
-    "title": "Yemeksepeti 200₺'ye 200₺ İndirim Kodu",
-    "price": "60 TL",
-    "category": "coupons",
-    "is_vitrin": true,
-    "showcase": true,
-    "badge": "🍔 200₺ ANINDA İNDİRİM",
-    "image": "assets/products/card_clean_yemeksepeti_200.jpg",
-    "rating": 4.9,
-    "sales_count": 480,
-    "delivery": "⚡ Anında Kod Teslimi",
-    "warranty": "🛡️ %100 Çalışma Garantili",
-    "desc": "Yemeksepeti siparişlerinizde 200 TL ve üzerine anında 200 TL indirim sağlayan özel kupon kodu.",
-    "shopier_url": "https://www.shopier.com/50594321"
   },
   {
     "id": "la_gemini_pro_18m",

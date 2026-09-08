@@ -1,12 +1,10 @@
 LisansArena Hizmet ve Fiyat Listesi
 Siparişleriniz 7/24 otomatik olarak ekranda teslim edilir.
 
-[Yemek & Ulaşım Kuponları]
-- Yemeksepeti 200 TL İndirim: 60 TL
+[Yemek & Market Kuponları]
 - Yemeksepeti 350 TL İndirim: 70 TL
 - Coffy 2 Al 1 Öde Kuponu: 55 TL
 - Migros 100 TL Market Bakiyesi: 60 TL
-- Turna 600 TL Uçak Bileti Kuponu: 80 TL
 
 [Yapay Zeka ve Yazılım]
 - Gemini Pro (18 Ay Kesintisiz): 165 TL

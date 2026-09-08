@@ -631,15 +631,17 @@ def resolve_smart_roadmap_reply(message: str, brand: str = "keyvadi") -> str | N
     if re.search(r"\b(kupon|indirim kodu|kuponlar|kodlar)\b", norm):
         return (
             "🎟️ **Güncel İndirim Kuponu & Kod Fırsatlarımız:**\n\n"
-            "1️⃣ **Yemeksepeti 200₺'ye 200₺ İndirim Kodu** — 50,00 ₺\n"
-            "   👉 [Satın Al](https://www.shopier.com/50594321)\n\n"
+            "1️⃣ **TikTak 1.000 TL Araç Kiralama Kodu** — 30,00 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/50641700)\n\n"
             "2️⃣ **Yemeksepeti 450₺'ye 350₺ İndirim Kodu** — 60,00 ₺\n"
             "   👉 [Satın Al](https://www.shopier.com/50576030)\n\n"
-            "3️⃣ **Turna 600 TL Uçak Bileti Kuponu** — 70,00 ₺\n"
-            "   👉 [Satın Al](https://www.shopier.com/50576031)\n\n"
-            "4️⃣ **Coffy 2 Kahve Alana 1'i Bedava Kodu** — 45,00 ₺\n"
+            "3️⃣ **Enuygun Otobüs Biletinde 200 TL İndirim** — 20,00 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/50641704)\n\n"
+            "4️⃣ **FLO 3.000 TL'ye 800 TL İndirim Çeki** — 20,00 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/50641701)\n\n"
+            "5️⃣ **Coffy 2 Kahve Alana 1'i Bedava Kodu** — 45,00 ₺\n"
             "   👉 [Satın Al](https://www.shopier.com/50594322)\n\n"
-            "5️⃣ **Migros 100 TL Alışveriş Bakiye Kodu** — 50,00 ₺\n"
+            "6️⃣ **Migros 100 TL Alışveriş Bakiye Kodu** — 50,00 ₺\n"
             "   👉 [Satın Al](https://www.shopier.com/50594323)\n\n"
             "⚡ Kodlar sepette anında düşer, 7/24 otomatik teslim edilir!\n"
             "🛍️ Tüm Kuponlar: @KeyVadiSatisBot | Canlı Destek: @KeyvadiDestek"
@@ -649,10 +651,10 @@ def resolve_smart_roadmap_reply(message: str, brand: str = "keyvadi") -> str | N
     if re.search(r"\b(yemek|yemek kuponu|restoran)\b", norm):
         return (
             "🍔 **Yemek & Restoran İndirim Kuponları:**\n\n"
-            "1️⃣ **Yemeksepeti 200₺'ye 200₺ İndirim Kodu** — 50,00 ₺\n"
-            "   👉 [Satın Al](https://www.shopier.com/50594321)\n\n"
-            "2️⃣ **Yemeksepeti 450₺'ye 350₺ İndirim Kodu** — 60,00 ₺\n"
+            "1️⃣ **Yemeksepeti 450₺'ye 350₺ İndirim Kodu** — 60,00 ₺\n"
             "   👉 [Satın Al](https://www.shopier.com/50576030)\n\n"
+            "2️⃣ **Coffy 2 Kahve Alana 1'i Bedava Kodu** — 45,00 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/50594322)\n\n"
             "⚡ Sepette anında indirim düşer, 7/24 anında teslimattır."
         )
 
