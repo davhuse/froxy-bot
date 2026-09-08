@@ -585,9 +585,7 @@ def is_short_ad_group(grup_name, entity=None):
     if any(item in OPEN_MENTION_GROUPS for item in identifiers):
         return False
 
-    if any(item in SHORT_AD_GROUP_USERNAMES or item in FAST_COUPON_GROUPS or item in STRICT_MARKET_GROUPS for item in identifiers):
-        return True
-    if any(k in title for k in ("kupon", "kod satış", "kod satis", "çek satış", "cek satis", "indirim kodu")):
+    if any(item in SHORT_AD_GROUP_USERNAMES or item in STRICT_MARKET_GROUPS for item in identifiers):
         return True
     return title in SHORT_AD_GROUP_TITLES
 
