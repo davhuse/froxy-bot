@@ -18,65 +18,128 @@ token = re.search(r'"SHOPIER_KEYVADI_ACCESS_TOKEN":\s*"([^"]+)"', text).group(1)
 
 NEW_PRODUCTS = [
     {
-        "key": "ssport",
-        "title": "S Sport Plus (1 Aylık)",
-        "price": 70.0,
+        "key": "tiktak",
+        "title": "TikTak 1.000 TL Araç Kiralama İndirim Kodu",
+        "price": 30.0,
+        "badge": "🚗 1.000 TL Puan",
+        "category": "tools",
+        "category_label": "KUPON & İNDİRİM",
         "desc": (
-            "⚽ S Sport Plus 1 Aylık Premium Paket\n\n"
-            "✨ Özellikler:\n"
-            "• Premier League, La Liga, Serie A, EuroLeague, NBA, F1 ve tüm spor yayınları.\n"
-            "• Canlı maçlar ve geçmiş karşılaşmaları tekrar izleme imkanı.\n"
-            "• Full HD yüksek yayın kalitesi ve çoklu cihaz desteği.\n\n"
+            "🚗 TikTak 1.000 TL Araç Kiralama Puanı / İndirim Kodu\n\n"
+            "✨ Kampanya & Kullanım Detayları:\n"
+            "• TikTak ile yapacağınız ilk kiralamada 1.000 TL indirim sağlar.\n"
+            "• Dakikalık, anında ve rezervasyonlu günlük kiralamalarda geçerlidir.\n"
+            "• Araç kiralama ekranında 'Kupon Kodu Ekle' alanına girildiğinde tutardan anında 1.000 TL düşer.\n"
+            "• Kampanya kodu tek kullanımlıktır.\n\n"
+            "🔗 Kullanım Linki / Üye Olmak İçin:\n"
+            "https://zhde.adj.st?adj_t=1lk2lthw\n\n"
             "📌 Teslimat & Garanti:\n"
-            "• Sipariş sonrası bilgiler anında iletilir.\n"
-            "• 1 ay boyunca %100 değişim ve telafi garantisi."
+            "• Kupon kodunuz ödeme sonrası anında ekranda ve SMS ile iletilir.\n"
+            "• 7/24 Destek: @KeyvadiDestek"
         ),
-        "image_url": "https://raw.githubusercontent.com/davhuse/froxy-bot/main/miniapp/assets/products/card_clean_ssport.jpg"
+        "image_url": "https://raw.githubusercontent.com/davhuse/froxy-bot/main/miniapp/assets/products/card_clean_tiktak.jpg",
+        "local_image": "assets/products/card_clean_tiktak.jpg",
+        "stock": ["KZNQKZIM"]
     },
     {
-        "key": "yemeksepeti",
-        "title": "Yemeksepeti 450₺'ye 350₺ İndirim Kodu",
-        "price": 60.0,
+        "key": "flo",
+        "title": "FLO 3.000 TL'ye 800 TL İndirim Çeki",
+        "price": 20.0,
+        "badge": "👟 800 TL İndirim",
+        "category": "tools",
+        "category_label": "KUPON & GİYİM",
         "desc": (
-            "🍔 Yemeksepeti 450 TL Sepete 350 TL İndirim Kuponu\n\n"
+            "👟 FLO 3.000 TL ve Üzeri Alışverişlerde 800 TL İndirim Çeki\n\n"
+            "✨ Kampanya & Kullanım Detayları:\n"
+            "• FLO web sitesi ve mobil uygulamasında geçerlidir.\n"
+            "• 3.000 TL ve üzeri sepetlerde anında 800 TL indirim sağlar.\n"
+            "• Belirtilen kampanya linki içerisindeki ürünlerde geçerlidir.\n"
+            "• Kod tek kullanımlıktır.\n\n"
+            "🔗 Kampanya & Kullanım Linki:\n"
+            "https://www.flo.com.tr/kampanya/ozel-indirim\n\n"
+            "📌 Teslimat & Garanti:\n"
+            "• Kod ödeme anında otomatik olarak teslim edilir.\n"
+            "• 7/24 Destek: @KeyvadiDestek"
+        ),
+        "image_url": "https://raw.githubusercontent.com/davhuse/froxy-bot/main/miniapp/assets/products/card_clean_flo.jpg",
+        "local_image": "assets/products/card_clean_flo.jpg",
+        "stock": ["MY4ST7Z", "LN5SCNN"]
+    },
+    {
+        "key": "lumberjack",
+        "title": "Lumberjack 3.000 TL'ye 800 TL İndirim Çeki",
+        "price": 20.0,
+        "badge": "🥾 800 TL İndirim",
+        "category": "tools",
+        "category_label": "KUPON & MODA",
+        "desc": (
+            "🥾 Lumberjack 3.000 TL ve Üzeri Alışverişlerde 800 TL İndirim Çeki\n\n"
+            "✨ Kampanya & Kullanım Detayları:\n"
+            "• Kupon kodu Lumberjack web sitesine özeldir.\n"
+            "• 3.000 TL ve üzerine 800 TL anında indirim sağlar.\n"
+            "• Kampanya avantajlı ürünler linkinde geçerlidir.\n"
+            "• Sepette kupon kodu alanına girildiğinde anında uygulanır. Tek kullanımlıktır.\n\n"
+            "🔗 Kampanya & Kullanım Linki:\n"
+            "https://www.lumberjack.com.tr/kampanya/lumberjack-avantajli-urunler\n\n"
+            "📌 Teslimat & Garanti:\n"
+            "• Kupon kodu ödeme sonrası anında teslim edilir.\n"
+            "• 7/24 Destek: @KeyvadiDestek"
+        ),
+        "image_url": "https://raw.githubusercontent.com/davhuse/froxy-bot/main/miniapp/assets/products/card_clean_lumberjack.jpg",
+        "local_image": "assets/products/card_clean_lumberjack.jpg",
+        "stock": ["4SBF57Z", "77633FV"]
+    },
+    {
+        "key": "instreet",
+        "title": "In Street 4.500 TL'ye 1.250 TL İndirim Çeki",
+        "price": 20.0,
+        "badge": "🔥 1.250 TL İndirim",
+        "category": "tools",
+        "category_label": "KUPON & SNEAKER",
+        "desc": (
+            "👟 In Street 4.500 TL ve Üzeri Alışverişlerde 1.250 TL İndirim Çeki\n\n"
+            "✨ Kampanya & Kullanım Detayları:\n"
+            "• In Street mobil uygulaması ve web sitesinde geçerlidir.\n"
+            "• 4.500 TL ve üzeri alışverişlerde sepette anında 1.250 TL indirim sağlar.\n"
+            "• Belirtilen kampanya linki içerisindeki seçili ürünlerde geçerlidir.\n"
+            "• Tek kullanımlıktır.\n\n"
+            "🔗 Kampanya & Kullanım Linki:\n"
+            "https://www.instreet.com.tr/kampanya/flash-kampanya-4\n\n"
+            "📌 Teslimat & Garanti:\n"
+            "• Kupon kodu ödeme sonrası anında teslim edilir.\n"
+            "• 7/24 Destek: @KeyvadiDestek"
+        ),
+        "image_url": "https://raw.githubusercontent.com/davhuse/froxy-bot/main/miniapp/assets/products/card_clean_instreet.jpg",
+        "local_image": "assets/products/card_clean_instreet.jpg",
+        "stock": ["RNLCLX6"]
+    },
+    {
+        "key": "enuygun",
+        "title": "Enuygun Otobüs Biletinde 200 TL'ye Varan İndirim Kuponu",
+        "price": 20.0,
+        "badge": "🚌 200 TL Kupon",
+        "category": "tools",
+        "category_label": "KUPON & SEYAHAT",
+        "desc": (
+            "🚌 ENUYGUN Otobüs Biletlerinde 200 TL'ye Varan İndirim Kuponu\n\n"
             "✨ Kampanya Detayları:\n"
-            "• Yemeksepeti üzerinden vereceğiniz 450 TL ve üzeri yemek siparişlerinde 350 TL indirim sağlar.\n"
-            "• Sepetinizde kupon alanına girildiğinde anında düşer.\n"
-            "• Tüm geçerli restoranlarda geçerlidir.\n\n"
-            "📌 Teslimat:\n"
-            "• Kupon kodu ödeme sonrası anında teslim edilir."
+            "• ENUYGUN mobil uygulaması üzerinden yapılacak otobüs biletlerinde geçerlidir.\n"
+            "• Ödeme sayfasında 'İndirim Kodunu kullan' alanına yazılarak indirimden yararlanılır.\n\n"
+            "🎫 İndirim Baremleri:\n"
+            "• 500 TL'ye kadar biletlerde: 25 TL indirim\n"
+            "• 500 - 1.000 TL arası: 40 TL indirim\n"
+            "• 1.000 - 1.200 TL arası: 60 TL indirim\n"
+            "• 1.200 - 1.500 TL arası: 100 TL indirim\n"
+            "• 1.500 TL üzeri: 200 TL indirim\n\n"
+            "📱 Kullanım Şekli:\n"
+            "ENUYGUN.com mobil uygulamasını indirip üye girişi yaparak otobüs bileti alırken kupon alanına kodu giriniz.\n\n"
+            "📌 Teslimat & Garanti:\n"
+            "• Kod ödeme sonrası anında teslim edilir.\n"
+            "• 7/24 Destek: @KeyvadiDestek"
         ),
-        "image_url": "https://raw.githubusercontent.com/davhuse/froxy-bot/main/miniapp/assets/products/card_clean_yemeksepeti.jpg"
-    },
-    {
-        "key": "turna",
-        "title": "Turna.com 600 TL Uçak Bileti İndirim Kuponu",
-        "price": 70.0,
-        "desc": (
-            "✈️ Turna.com Uçak Biletlerinde 600 TL İndirim Kodu\n\n"
-            "✨ Kupon Detayları:\n"
-            "• Turna.com web sitesi veya mobil uygulaması üzerinden satın alınacak tek yön veya gidiş-dönüş uçak biletlerinde 600 TL indirim sağlar.\n"
-            "• Yurt içi ve yurt dışı her yöne uçuşlarda geçerlidir.\n"
-            "• Vodafone Red / Vodafone Pay ek nakit iade kampanyalarıyla birleştirilebilir.\n\n"
-            "📌 Teslimat:\n"
-            "• Kod satın alım anında SMS ve sipariş ekranında gösterilir."
-        ),
-        "image_url": "https://raw.githubusercontent.com/davhuse/froxy-bot/main/miniapp/assets/products/card_clean_turna.jpg"
-    },
-    {
-        "key": "tiklagelsin",
-        "title": "Tıkla Gelsin® 400₺'ye 200₺ Yemek Kupon Kodu",
-        "price": 50.0,
-        "desc": (
-            "🍟 Tıkla Gelsin® 400 TL ve Üzerine 200 TL İndirim Kodu\n\n"
-            "✨ Detaylar:\n"
-            "• Burger King, Popeyes, Arby's, Usta Dönerci, Sbarro siparişlerinde geçerli.\n"
-            "• Tıkla Gelsin® Gel Al ve Sana Gelsin kanallarındaki 400 TL ve üzeri yemek siparişlerinde 200 TL indirim kazandırır.\n"
-            "• Sepette kupon alanına girildiği anda indirim yansır.\n\n"
-            "📌 Teslimat:\n"
-            "• Kupon kodu satın alım sonrası anında iletilir."
-        ),
-        "image_url": "https://raw.githubusercontent.com/davhuse/froxy-bot/main/miniapp/assets/products/card_clean_tiklagelsin.jpg"
+        "image_url": "https://raw.githubusercontent.com/davhuse/froxy-bot/main/miniapp/assets/products/card_clean_enuygun.jpg",
+        "local_image": "assets/products/card_clean_enuygun.jpg",
+        "stock": ["ENEEWQ315", "ENANA956C"]
     }
 ]
 
@@ -115,14 +178,21 @@ for p in NEW_PRODUCTS:
         with urllib.request.urlopen(req, context=ctx) as r:
             data = json.loads(r.read().decode('utf-8'))
             prod_id = str(data.get("id"))
-            url = data.get("url") or f"https://www.shopier.com/keyvadi/{prod_id}"
+            url = data.get("url") or f"https://www.shopier.com/{prod_id}"
             print(f"   ✅ SUCCESS! ID: {prod_id} | URL: {url}")
             created_listings.append({
                 "id": prod_id,
                 "key": p["key"],
                 "title": p["title"],
                 "price": f"{p['price']:.2f} TL",
-                "url": url
+                "price_num": p["price"],
+                "url": url,
+                "badge": p["badge"],
+                "category": p["category"],
+                "category_label": p["category_label"],
+                "desc": p["desc"],
+                "image": p["local_image"],
+                "stock": p["stock"]
             })
     except urllib.error.HTTPError as e:
         print(f"   ❌ HTTP Error {e.code}: {e.read().decode('utf-8', errors='ignore')}")
@@ -130,16 +200,15 @@ for p in NEW_PRODUCTS:
         print(f"   ❌ Error: {e}")
 
 print(f"\nTotal created listings: {len(created_listings)}")
-with open('newly_created_shopier_products.json', 'w', encoding='utf-8') as f:
+with open('newly_created_5_products.json', 'w', encoding='utf-8') as f:
     json.dump(created_listings, f, ensure_ascii=False, indent=2)
 
-# Update keyvadi_shopier_links.json
+# 1. Update keyvadi_shopier_links.json
 with open('keyvadi_shopier_links.json', 'r', encoding='utf-8') as f:
-    existing = json.load(f)
+    existing_links = json.load(f)
 
-# Prepend new listings
 for item in reversed(created_listings):
-    existing.insert(0, {
+    existing_links.insert(0, {
         "id": item["id"],
         "title": item["title"],
         "price": item["price"],
@@ -147,6 +216,49 @@ for item in reversed(created_listings):
     })
 
 with open('keyvadi_shopier_links.json', 'w', encoding='utf-8') as f:
-    json.dump(existing, f, ensure_ascii=False, indent=2)
+    json.dump(existing_links, f, ensure_ascii=False, indent=2)
+print("Updated keyvadi_shopier_links.json!")
 
-print(f"Updated keyvadi_shopier_links.json! Total items now: {len(existing)}")
+# 2. Update miniapp/products_db.json
+with open('miniapp/products_db.json', 'r', encoding='utf-8') as f:
+    products_db = json.load(f)
+
+for item in reversed(created_listings):
+    products_db.insert(0, {
+        "id": item["id"],
+        "title": item["title"],
+        "price": f"{int(item['price_num']) if item['price_num'].is_integer() else item['price_num']:.2f}".replace('.', ',') + " TL",
+        "price_num": item["price_num"],
+        "category": item["category"],
+        "image": item["image"],
+        "badge": item["badge"],
+        "url": item["url"],
+        "description": item["desc"],
+        "showcase": True,
+        "is_vitrin": True,
+        "category_label": item["category_label"],
+        "delivery_type": "instant",
+        "delivery_label": "Anında Kod Teslimatı",
+        "max_qty": 5
+    })
+
+with open('miniapp/products_db.json', 'w', encoding='utf-8') as f:
+    json.dump(products_db, f, ensure_ascii=False, indent=2)
+print("Updated miniapp/products_db.json!")
+
+# 3. Update licenses.json stock
+with open('licenses.json', 'r', encoding='utf-8') as f:
+    licenses_stock = json.load(f)
+
+for item in created_listings:
+    k = item["key"]
+    existing_codes = licenses_stock.get(k, [])
+    for code in item["stock"]:
+        if code not in existing_codes:
+            existing_codes.append(code)
+    licenses_stock[k] = existing_codes
+
+with open('licenses.json', 'w', encoding='utf-8') as f:
+    json.dump(licenses_stock, f, ensure_ascii=False, indent=2)
+print("Updated licenses.json with initial coupon stock codes!")
+
