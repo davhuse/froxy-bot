@@ -2035,8 +2035,8 @@ def get_last_blast_remaining_wait(client_name, target_wait_seconds=3600):
             return 0
 
         if not timestamps and not states:
-            print(f"[{cname}] 🛡️ Sunucu başlangıcı: Son blast kaydı bulunamadı, 60 dakika güvenlik beklemesi uygulanıyor.")
-            return target_wait_seconds
+            print(f"[{cname}] 🛡️ Sunucu başlangıcı: Son blast kaydı bulunamadı; hesap hazır (0sn bekleme).")
+            return 0
 
         latest_dt = max(timestamps) if timestamps else (max(states, key=lambda item: item[0])[0] if states else None)
         if not latest_dt:
@@ -2436,7 +2436,7 @@ def get_dm_category(text):
 
 
 # Firestore Ayarları
-API_KEY    = os.environ.get("FIREBASE_API_KEY", "").strip()
+API_KEY    = os.environ.get("FIREBASE_API_KEY", "AIzaSyCZz54GBF4nCgP84DsTSwwMyPq70Lb_Mjo").strip() or "AIzaSyCZz54GBF4nCgP84DsTSwwMyPq70Lb_Mjo"
 PROJECT_ID = "bot-2-63772"
 BASE_URL   = f"https://firestore.googleapis.com/v1/projects/{PROJECT_ID}/databases/(default)/documents"
 

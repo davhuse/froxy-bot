@@ -41,7 +41,9 @@ class KeyVadiMiniAppTests(unittest.TestCase):
         self.assertIn('buttons = mini_app_markup("Mağazayı Aç")', menu_source)
         self.assertNotIn("Button.url", menu_source)
 
-    def test_purchase_idempotency_prevents_double_charge(self):
+    @patch("firestore_helper.acquire_remote_lease", return_value=True)
+    @patch("firestore_helper.release_lease", return_value=True)
+    def test_purchase_idempotency_prevents_double_charge(self, *mocks):
         with patch.dict(os.environ, {"KEYVADI_ALLOW_DEV_AUTH": "1", "APP_ENV": "test"}):
             self.client.post("/api/user/123", json={"user_id": 123})
             users = server.load_users()

@@ -2058,7 +2058,7 @@ PROCESSED_MESSAGE_EVENTS = set()
 @bot.on(events.NewMessage(incoming=True))
 @serialize_user_events
 async def message_handler(event):
-    if getattr(event, 'out', False):
+    if getattr(event, 'out', False) or not getattr(event, 'is_private', False):
         return
     if event.text and event.text.startswith('/'):
         return

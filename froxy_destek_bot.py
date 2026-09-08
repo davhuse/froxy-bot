@@ -777,7 +777,7 @@ async def support_menu_handler(event):
 @bot.on(events.NewMessage(incoming=True))
 @serialize_user_events
 async def message_handler(event):
-    if getattr(event, "out", False) or not event.text or event.text.startswith('/'):
+    if getattr(event, "out", False) or not getattr(event, 'is_private', False) or not event.text or event.text.startswith('/'):
         return
     event_key = (event.chat_id, getattr(event.message, "id", None))
     if event_key in PROCESSED_MESSAGE_EVENTS:
