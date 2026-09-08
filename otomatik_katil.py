@@ -2035,8 +2035,10 @@ def get_last_blast_remaining_wait(client_name, target_wait_seconds=3600):
             return 0
 
         if not timestamps and not states:
-            print(f"[{cname}] 🛡️ Sunucu başlangıcı: Son blast kaydı bulunamadı; hesap hazır (0sn bekleme).")
-            return 0
+            # Froxy has the active blast turn right now; KeyVadi keeps its ~30m cooldown
+            default_wait = 1800 if cname == "KeyVadiOnline" else 0
+            print(f"[{cname}] 🛡️ Sunucu başlangıcı: Kayıt yok, varsayılan bekleme: {default_wait}sn (Froxy aktif, KeyVadi 30dk).")
+            return default_wait
 
         latest_dt = max(timestamps) if timestamps else (max(states, key=lambda item: item[0])[0] if states else None)
         if not latest_dt:
