@@ -44,9 +44,39 @@ CATEGORY_KEYWORDS = [
     ("claude", ["claude"]),
     ("instagram", ["instagram", "takipci"]),
     ("gmail", ["gmail", "google hesap"]),
+    ("tiktak", ["tiktak"]),
+    ("flo", ["flo"]),
+    ("lumberjack", ["lumberjack"]),
+    ("instreet", ["instreet", "in street"]),
+    ("enuygun", ["enuygun"]),
 ]
 
 PRODUCT_GUIDES = {
+    "tiktak": {
+        "redeem_url": "https://zhde.adj.st?adj_t=1lk2lthw",
+        "guide": "TikTak uygulamasında ilk kiralamanızı başlatırken kupon kodu alanına girerek 1.000 TL indirimden yararlanabilirsiniz. Kullanım linki: https://zhde.adj.st?adj_t=1lk2lthw",
+        "needs_email": False
+    },
+    "flo": {
+        "redeem_url": "https://www.flo.com.tr/kampanya/ozel-indirim",
+        "guide": "FLO web sitesi veya uygulamasında sepetinizde kupon kodu alanına girerek 800 TL indirimden yararlanabilirsiniz. Kampanya linki: https://www.flo.com.tr/kampanya/ozel-indirim",
+        "needs_email": False
+    },
+    "lumberjack": {
+        "redeem_url": "https://www.lumberjack.com.tr/kampanya/lumberjack-avantajli-urunler",
+        "guide": "Lumberjack web sitesinde sepet adımında kupon alanına girerek 800 TL indirimden yararlanabilirsiniz. Kampanya linki: https://www.lumberjack.com.tr/kampanya/lumberjack-avantajli-urunler",
+        "needs_email": False
+    },
+    "instreet": {
+        "redeem_url": "https://www.instreet.com.tr/kampanya/flash-kampanya-4",
+        "guide": "In Street web sitesi veya mobil uygulamasında sepet adımında kupon alanına girerek 1.250 TL indirimden yararlanabilirsiniz. Kampanya linki: https://www.instreet.com.tr/kampanya/flash-kampanya-4",
+        "needs_email": False
+    },
+    "enuygun": {
+        "redeem_url": "https://www.enuygun.com",
+        "guide": "ENUYGUN mobil uygulamasını indirip üye girişi yaparak otobüs bileti alırken ödeme adımında 'İndirim Kodunu kullan' alanına girerek 200 TL'ye varan indirimden yararlanabilirsiniz.",
+        "needs_email": False
+    },
     "youtube": {
         "redeem_url": "https://youtube.com/redeem",
         "guide": "https://youtube.com/redeem linkinden kodunuzu kullanabilirsiniz. Yeni hesap ve yeni kartla aldığınızdan emin olun.",
