@@ -392,7 +392,7 @@ INJECTED_PRODUCTS = [
     # bu urunlerin katalogdan dusmemesi icin burada da tutuluyor.
     {"id": "49099017", "title": "FC26 + Online Her Şeyi Değişen Hesap", "price": "299.99 TL", "url": "https://www.shopier.com/49099017"},
     {"id": "49099015", "title": "Zula Random Hesap", "price": "5.00 TL", "url": "https://www.shopier.com/49099015"},
-    {"id": "49099014", "title": "Netflix 4K UHD Ortak Profil", "price": "39.99 TL", "url": "https://www.shopier.com/49099014"},
+    {"id": "50665156", "title": "Netflix 4K UHD Ortak Profil", "price": "39.99 TL", "url": "https://www.shopier.com/50665156"},
     {"id": "49099013", "title": "Steam 200 Dolar Random Key", "price": "30.00 TL", "url": "https://www.shopier.com/49099013"},
 ]
 
@@ -1346,7 +1346,7 @@ async def menu_top7_handler(event):
     )
     from telethon.tl import types
     buttons = [
-        [types.KeyboardButtonUrl("🍿 Netflix 4K Satın Al (39,99₺)", "https://www.shopier.com/keyvadi/49099014", style=types.KeyboardButtonStyle(bg_success=True))],
+        [types.KeyboardButtonUrl("🍿 Netflix 4K Satın Al (39,99₺)", "https://www.shopier.com/50665156", style=types.KeyboardButtonStyle(bg_success=True))],
         [types.KeyboardButtonUrl("🤖 Gemini Pro Satın Al (59,90₺)", "https://www.shopier.com/keyvadi/49362708", style=types.KeyboardButtonStyle(bg_success=True))],
         [types.KeyboardButtonUrl("🎮 Xbox Game Pass Satın Al (49,90₺)", "https://www.shopier.com/keyvadi/49467735", style=types.KeyboardButtonStyle(bg_success=True))],
         [types.KeyboardButtonUrl("⛏️ Minecraft Satın Al (49,90₺)", "https://www.shopier.com/50460191", style=types.KeyboardButtonStyle(bg_success=True))],

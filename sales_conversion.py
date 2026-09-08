@@ -560,7 +560,7 @@ def resolve_smart_roadmap_reply(message: str, brand: str = "keyvadi") -> str | N
         return (
             "🗓️ **1 Aylık En Çok Tercih Edilen Üyelikler:**\n\n"
             "1️⃣ **Netflix 4K UHD Ortak Profil** — 39,99 ₺\n"
-            "   👉 [Satın Al](https://www.shopier.com/49099014)\n\n"
+            "   👉 [Satın Al](https://www.shopier.com/50665156)\n\n"
             "2️⃣ **S Sport Plus Canlı Maç & Spor** — 70,00 ₺\n"
             "   👉 [Satın Al](https://www.shopier.com/50576029)\n\n"
             "3️⃣ **ChatGPT Plus 4o (1 Aylık)** — 39,90 ₺\n"
@@ -596,7 +596,7 @@ def resolve_smart_roadmap_reply(message: str, brand: str = "keyvadi") -> str | N
         return (
             "👥 **Ekonomik Ortak Profil Seçeneklerimiz:**\n\n"
             "1️⃣ **Netflix 4K UHD Ortak Profil** — 39,99 ₺\n"
-            "   👉 [Satın Al](https://www.shopier.com/49099014)\n\n"
+            "   👉 [Satın Al](https://www.shopier.com/50665156)\n\n"
             "2️⃣ **ChatGPT Plus Ortak Hesap** — 39,90 ₺\n"
             "   👉 [Satın Al](https://www.shopier.com/47669110)\n\n"
             "3️⃣ **Minecraft Premium Ortak Hesap** — 49,90 ₺\n"
