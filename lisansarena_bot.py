@@ -72,7 +72,7 @@ _render_external_url = os.environ.get("RENDER_EXTERNAL_URL", "").strip().rstrip(
 _canonical_mini_app_url = (
     f"{_render_external_url}/la/app/"
     if _render_external_url
-    else "https://froxy-bot-live-r5se.onrender.com/la/app/"
+    else "https://froxy-bot-kgky.onrender.com/la/app/"
 )
 if _render_external_url:
     # Render migration: the platform-provided public URL is authoritative.
@@ -389,7 +389,7 @@ async def show_main_menu(event, *, edit=False):
         "🛡️ **LİSANSARENA — Kurumsal & Bireysel Dijital Lisans Arenası** 🏆\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
         "✨ **LisansArena Resmi İşlem Paneline Hoş Geldiniz!**\n\n"
-        "Adobe Creative Cloud, Canva Pro, Microsoft Office 365, Windows 10/11 Pro, CapCut Pro, Envato Elements, Freepik, Netflix 4K ve yapay zeka araçları orijinal lisans güvencesiyle tek platformda!\n\n"
+        "Canva Pro, Microsoft Office 365, Windows 10/11 Pro, CapCut Pro, Envato Elements, Freepik, Netflix 4K ve yapay zeka araçları orijinal lisans güvencesiyle tek platformda!\n\n"
         "🌟 **LisansArena Güvenceleri:**\n"
         "• 🛡️ Tüm Lisans ve Hesaplarda Süresi Boyunca Değişim & Telafi Garantisi\n"
         "• ⚡ 7/24 Anında Otomatik Lisans Anahtarı Teslimatı\n"
@@ -421,7 +421,7 @@ async def show_products(event, *, edit=False):
         "🛍️ **LİSANSARENA ÜRÜN VE LİSANS KATALOĞU**\n\n"
         "Tüm profesyonel tasarım yazılımları, kurumsal Office lisansları ve yapay zeka abonelikleri:\n\n"
         "🌟 **Öne Çıkan Kategoriler:**\n"
-        "• 🎨 **Tasarım & Edit:** CapCut Pro, Adobe Creative Cloud, Canva Pro, Envato, Freepik\n"
+        "• 🎨 **Tasarım & Edit:** CapCut Pro, Canva Pro, Envato Elements, Freepik\n"
         "• 🔑 **Orijinal Lisans:** Windows 10/11 Pro, Office 365 Pro Plus, Antivirüs\n"
         "• 🎬 **Yayın & Eğlence:** Netflix 4K, Spotify Premium, YouTube Premium, Exxen, Prime Video\n"
         "• 🤖 **Yapay Zeka:** ChatGPT Plus, Gemini Pro, Perplexity Pro\n"

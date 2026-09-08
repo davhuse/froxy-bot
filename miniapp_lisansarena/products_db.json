@@ -125,7 +125,7 @@
     "delivery": "⚡ Anında Otomatik Teslimat",
     "warranty": "🛡️ 30 Gün Kesintisiz Garanti",
     "desc": "PIN korumalı tamamen size özel profil. 4K Ultra HD ve Spatial Audio desteği. Donma ve kapanma yapmaz.",
-    "shopier_url": "https://www.shopier.com/49002144"
+    "shopier_url": "https://www.shopier.com/47669117"
   },
   {
     "id": "la_youtube_3m",
@@ -592,38 +592,6 @@
     "shopier_url": "https://www.shopier.com/48901869"
   },
   {
-    "id": "48901859",
-    "title": "Adobe Creative Cloud (1 Aylık) - Ortak Hesap",
-    "price": "49,90 TL",
-    "category": "design",
-    "is_vitrin": true,
-    "showcase": true,
-    "badge": "🎨 TÜM ADOBE",
-    "image": "assets/products/card_clean_adobe.jpg",
-    "rating": 4.8,
-    "sales_count": 1620,
-    "delivery": "⚡ Anında Teslimat",
-    "warranty": "🛡️ 30 Gün Garanti",
-    "desc": "Photoshop, Illustrator, Premiere Pro, After Effects dahil 20+ Adobe masaüstü uygulaması.",
-    "shopier_url": "https://www.shopier.com/48901859"
-  },
-  {
-    "id": "48901858",
-    "title": "Adobe Creative Cloud (1 Haftalık) - Kendi Hesabınıza",
-    "price": "59,90 TL",
-    "category": "design",
-    "is_vitrin": false,
-    "showcase": false,
-    "badge": "🚀 KİŞİSEL ADOBE",
-    "image": "assets/products/card_clean_adobe.jpg",
-    "rating": 4.9,
-    "sales_count": 840,
-    "delivery": "⚡ Anında Tanımlama",
-    "warranty": "🛡️ Birebir Garanti",
-    "desc": "Kendi Adobe hesabınıza 7 gün süreli tam yetkili Creative Cloud lisans tanımlaması.",
-    "shopier_url": "https://www.shopier.com/48901858"
-  },
-  {
     "id": "48901857",
     "title": "Grammarly Pro (1 Aylık) - Ortak Hesap",
     "price": "49,90 TL",
@@ -701,7 +669,7 @@
     "delivery": "⚡ Anında Teslim",
     "warranty": "🛡️ 30 Gün Garanti",
     "desc": "4K Ultra HD kalitesinde ekonomik ortak Netflix hesabı.",
-    "shopier_url": "https://www.shopier.com/49002145"
+    "shopier_url": "https://www.shopier.com/50665156"
   },
   {
     "id": "la_prime_ozel",
@@ -894,22 +862,6 @@
     "warranty": "🛡️ 30 Gün Garanti",
     "desc": "Günde 100 Premium indirme hakkı, lisanslı vektörler, PSD'ler ve AI görsel oluşturucu.",
     "shopier_url": "https://www.shopier.com/49099018"
-  },
-  {
-    "id": "la_adobe_cc_1m",
-    "title": "Adobe Creative Cloud (1 Aylık Bireysel)",
-    "price": "149,90 TL",
-    "category": "design",
-    "is_vitrin": false,
-    "showcase": false,
-    "badge": "⚡ FULL YETKİ",
-    "image": "assets/products/card_clean_adobe.jpg",
-    "rating": 4.9,
-    "sales_count": 480,
-    "delivery": "⚡ Anında Teslim",
-    "warranty": "🛡️ 30 Gün Garanti",
-    "desc": "Bireysel 1 aylık Adobe Creative Cloud lisansı.",
-    "shopier_url": "https://www.shopier.com/48901859"
   },
   {
     "id": "la_office365",

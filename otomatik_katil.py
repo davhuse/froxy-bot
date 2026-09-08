@@ -2080,6 +2080,9 @@ LISANSARENA_MESSAGES = [
     os.path.join(MESSAGES_DIR, 'lisansarena_1.txt'),
     os.path.join(MESSAGES_DIR, 'lisansarena_2.txt'),
     os.path.join(MESSAGES_DIR, 'lisansarena_3.txt'),
+    os.path.join(MESSAGES_DIR, 'lisansarena_4.txt'),
+    os.path.join(MESSAGES_DIR, 'lisansarena_5.txt'),
+    os.path.join(MESSAGES_DIR, 'lisansarena_6.txt'),
 ]
 
 # Single-product conversion templates stay behind a release flag until each

@@ -700,9 +700,9 @@ def resolve_smart_roadmap_reply(message: str, brand: str = "keyvadi") -> str | N
             "• Canva Pro (1 Yıl): 39,90 ₺ | CapCut Pro: 39,90 ₺\n"
             "• Windows 10/11 Pro: 49,90 ₺ | Office 365: 49,90 ₺\n\n"
             "🎟️ **Yemek, Market & Kupon:**\n"
-            "• Yemeksepeti 200/200: 50,00 ₺ | 450/350: 60,00 ₺\n"
-            "• Migros 100 TL Bakiye: 50,00 ₺ | Coffy: 45,00 ₺\n"
-            "• Turna 600 TL Uçak Bilet: 70,00 ₺ | Tıkla Gelsin: 50,00 ₺\n\n"
+            "• Yemeksepeti 450/350: 60,00 ₺ | Coffy 2+1: 45,00 ₺\n"
+            "• TikTak 1000 TL: 30,00 ₺ | Enuygun 200 TL: 20,00 ₺\n"
+            "• FLO / Lumberjack / In Street: 20,00 ₺ | Migros: 50,00 ₺\n\n"
             "🛍️ **Tüm 60+ Ürün:** @KeyVadiSatisBot\n"
             "💬 **Canlı Destek:** @KeyvadiDestek"
         )

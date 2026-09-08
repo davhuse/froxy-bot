@@ -290,7 +290,7 @@ def greeting_for(brand: str) -> str:
     if brand_lower in ("lisansarena", "lisans arena"):
         return (
             "👋 **LisansArena Müşteri Hizmetlerine Hoş Geldiniz!**\n\n"
-            "Adobe CC, Canva Pro, Microsoft Office 365, Windows 10/11 Pro, CapCut Pro ve yapay "
+            "Canva Pro, Microsoft Office 365, Windows 10/11 Pro, CapCut Pro ve yapay "
             "zeka araçlarımız 7/24 otomatik teslimat ve değişim garantimiz altındadır.\n\n"
             "Talebiniz müşteri temsilcimize başarıyla aktarıldı, en kısa sürede size dönülecektir."
         )
