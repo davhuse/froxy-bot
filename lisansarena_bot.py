@@ -274,10 +274,10 @@ async def send_product_card(event, matched_products: list[dict[str, Any]]) -> bo
         bot_app_url = f"https://t.me/LisansArenaBot/app?startapp=p_{pid}"
         direct_url = purchase_url(product, "lisansarena", "support_bot_dm")
         buttons.append([
+            Button.url(f"💳 Satın Al ({price_txt})", direct_url),
             Button.url("🛍️ Mağazada Aç", bot_app_url),
-            Button.url("💳 Direkt Al", direct_url)
         ])
-    buttons.append([Button.inline("💬 Canlı Destek", b"ticket_support")])
+    buttons.append([Button.inline("💬 Canlı Destek", b"ticket_support"), Button.inline("🏠 Ana Menü", b"menu_main")])
     lines.extend([
         "",
         "⚡ *7/24 Anında Otomatik Teslimat · Shopier 3D Secure Güvencesi*",
@@ -384,52 +384,135 @@ async def safe_edit(event, text, **kwargs):
 
 # ==================== MAIN MENUS & SCREENS ====================
 
+CATEGORIES_MAP = {
+    "ai": ("🌟 Yapay Zeka (AI)", "🤖 **Yapay Zeka Çözümleri**\n\nChatGPT Plus, Gemini Pro, Perplexity Pro ve en popüler yapay zeka abonelikleri:"),
+    "cinema": ("📺 Dizi, Film & Spor", "🎬 **Dizi, Film, Müzik & Canlı Spor**\n\nNetflix 4K UHD, S Sport Plus, Spotify Premium, YouTube Premium, Prime Video:"),
+    "design": ("🎨 Tasarım & Ofis", "🎨 **Tasarım, Video & Ofis Yazılımları**\n\nCanva Pro, CapCut Pro, Envato Elements, Freepik:"),
+    "software": ("🔑 Windows & Office", "🔑 **Orijinal Lisans & Keyler**\n\nWindows 10/11 Pro, Microsoft Office 365:"),
+    "coupons": ("🎟️ Kupon & Bakiye", "🎟️ **İndirim Kuponları & Bakiyeler**\n\nYemeksepeti, Migros, Coffy indirim kodları:"),
+    "gaming": ("🎮 Oyun & E-Pin", "🎮 **Oyun Dünyası & E-Pin**\n\nSteam VIP Random Key, FC 26, Minecraft:"),
+    "social": ("📱 Sosyal & Hesaplar", "📱 **Sosyal Medya, Discord & Hesaplar**\n\nDiscord Nitro, Instagram Takipçi, Eski Tarihli Telegram Hesapları:"),
+}
+
+
+def main_menu_buttons():
+    return [
+        [Button.inline("🌟 Yapay Zeka (AI)", b"cat_ai"), Button.inline("📺 Dizi, Film & Spor", b"cat_cinema")],
+        [Button.inline("🎨 Tasarım & Ofis", b"cat_design"), Button.inline("🔑 Windows & Office", b"cat_software")],
+        [Button.inline("🎟️ Kupon & Bakiye", b"cat_coupons"), Button.inline("🎮 Oyun & E-Pin", b"cat_gaming")],
+        [Button.inline("📱 Sosyal & Hesaplar", b"cat_social")],
+        [Button.url("🛍️ Web Mağazasını Aç (Mini App)", MINI_APP_URL)],
+        [Button.inline("💳 Bakiye / Cüzdan", b"menu_balance"), Button.inline("📞 Canlı Destek", b"ticket_support")],
+    ]
+
+
 async def show_main_menu(event, *, edit=False):
     welcome = (
-        "🛡️ **LİSANSARENA — Kurumsal & Bireysel Dijital Lisans Arenası** 🏆\n"
+        "🛡️ **LİSANSARENA — Dijital Ürün & Lisans Pazarı** 🏆\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        "✨ **LisansArena Resmi İşlem Paneline Hoş Geldiniz!**\n\n"
-        "Canva Pro, Microsoft Office 365, Windows 10/11 Pro, CapCut Pro, Envato Elements, Freepik, Netflix 4K ve yapay zeka araçları orijinal lisans güvencesiyle tek platformda!\n\n"
+        "✨ **LisansArena Resmi Satış ve Destek Botuna Hoş Geldiniz!**\n\n"
+        "Netflix 4K UHD, S Sport Plus, ChatGPT Plus, Gemini Pro, Canva Pro, CapCut Pro, Windows 10/11 Pro, Office 365, Yemeksepeti ve Migros kuponları en uygun fiyatlarla anında teslim!\n\n"
         "🌟 **LisansArena Güvenceleri:**\n"
-        "• 🛡️ Tüm Lisans ve Hesaplarda Süresi Boyunca Değişim & Telafi Garantisi\n"
-        "• ⚡ 7/24 Anında Otomatik Lisans Anahtarı Teslimatı\n"
-        "• 🔒 Shopier 3D Secure / Kredi Kartı / Cüzdan ile Güvenli Ödeme\n\n"
-        "👇 **Lisansları incelemek ve sipariş vermek için mağazayı açın:**"
+        "• 🛡️ Süresi Boyunca %100 Birebir Değişim & Telafi Garantisi\n"
+        "• ⚡ 7/24 Anında Otomatik Kod ve Hesap Teslimatı\n"
+        "• 🔒 Shopier 3D Secure / Kredi Kartı / Cüzdan Güvencesi\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "👇 **İncelemek ve satın almak istediğiniz kategoriyi seçin:**"
     )
-    buttons = mini_app_markup("Mağazayı Aç (Mini App)")
+    buttons = main_menu_buttons()
     if edit:
         await safe_edit(event, welcome, buttons=buttons)
     else:
-        try:
-            await event.respond(welcome, buttons=buttons)
-        except ButtonTypeInvalidError:
-            await event.respond(
-                f"{welcome}\n\nMağazayı sohbet ekranının altındaki Menü düğmesinden açabilirsiniz."
-            )
-        # The product list is deliberately loaded at reply time, so this
-        # always mirrors the Mini App's current products and prices.
-        catalog_messages = current_product_catalog_messages()
-        for index, catalog_text in enumerate(catalog_messages):
-            await event.respond(
-                catalog_text,
-                buttons=buttons if index == len(catalog_messages) - 1 else None,
-            )
+        await event.respond(welcome, buttons=buttons)
 
 
 async def show_products(event, *, edit=False):
     text = (
-        "🛍️ **LİSANSARENA ÜRÜN VE LİSANS KATALOĞU**\n\n"
-        "Tüm profesyonel tasarım yazılımları, kurumsal Office lisansları ve yapay zeka abonelikleri:\n\n"
-        "🌟 **Öne Çıkan Kategoriler:**\n"
-        "• 🎨 **Tasarım & Edit:** CapCut Pro, Canva Pro, Envato Elements, Freepik\n"
-        "• 🔑 **Orijinal Lisans:** Windows 10/11 Pro, Office 365 Pro Plus, Antivirüs\n"
-        "• 🎬 **Yayın & Eğlence:** Netflix 4K, Spotify Premium, YouTube Premium, Exxen, Prime Video\n"
-        "• 🤖 **Yapay Zeka:** ChatGPT Plus, Gemini Pro, Perplexity Pro\n"
-        "• 🎮 **Oyun & E-Pin:** Minecraft Capeleri, Steam Random Key\n\n"
-        "⚡ **7/24 Anında Otomatik Teslimat · Shopier 3D Secure Güvencesi**\n\n"
-        "👇 Kataloğu incelemek ve sepete eklemek için mağazayı açın:"
+        "🛍️ **LİSANSARENA ÜRÜN VE LİSANS KATALOĞU**\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "Tüm yapay zeka, dizi-film, tasarım, orijinal lisans ve oyun ürünlerimiz kategorilere ayrılmıştır.\n\n"
+        "⚡ **7/24 Anında Otomatik Kod & Hesap Teslimatı**\n"
+        "🔒 **Shopier 3D Secure / Kart & Havale Güvencesi**\n\n"
+        "👇 İncelemek istediğiniz kategoriyi seçin:"
     )
-    buttons = mini_app_markup("🛍️ Ürünleri İncele")
+    buttons = main_menu_buttons()
+    if edit:
+        await safe_edit(event, text, buttons=buttons)
+    else:
+        await event.respond(text, buttons=buttons)
+
+
+async def show_category_products(event, cat_key: str, *, edit: bool = True):
+    cat_info = CATEGORIES_MAP.get(cat_key)
+    if not cat_info:
+        await show_main_menu(event, edit=edit)
+        return
+    cat_title, cat_desc = cat_info
+    products = [p for p in load_la_products() if isinstance(p, dict) and p.get("category") == cat_key]
+
+    lines = [
+        cat_desc,
+        "",
+        "Lütfen detayını görmek ve satın almak istediğiniz ürünü seçin 👇"
+    ]
+
+    buttons = []
+    for p in products:
+        pid = p.get("id")
+        title = p.get("title") or "Ürün"
+        short_title = title[:24].strip()
+        price = p.get("price") or ""
+        label = f"{short_title} — {price}" if price else short_title
+        buttons.append([Button.inline(label, f"prod_{pid}".encode())])
+
+    buttons.append([Button.inline("↩️ Ana Menü", b"menu_main")])
+    text = "\n".join(lines)
+    if edit:
+        await safe_edit(event, text, buttons=buttons)
+    else:
+        await event.respond(text, buttons=buttons)
+
+
+async def show_product_detail(event, prod_id: str, *, edit: bool = True):
+    products = [p for p in load_la_products() if isinstance(p, dict)]
+    product = next((p for p in products if p.get("id") == prod_id), None)
+    if not product:
+        await show_main_menu(event, edit=edit)
+        return
+
+    title = product.get("title") or "Ürün"
+    price = product.get("price") or "Fiyat için iletişime geçin"
+    category = product.get("category", "")
+    desc = product.get("desc") or "7/24 anında otomatik teslimat, tam süre değişim ve telafi garantilidir."
+    delivery = product.get("delivery") or "⚡ Anında Otomatik Kod/Hesap Teslimi"
+    warranty = product.get("warranty") or "🛡️ Süresi Boyunca %100 Değişim & Telafi Garantili"
+    badge = product.get("badge") or "💎 ORİJİNAL LİSANS"
+    shopier_url = product.get("shopier_url") or product.get("url") or "https://www.shopier.com/lisansarena"
+    bot_app_url = f"https://t.me/LisansArenaBot/app?startapp=p_{prod_id}"
+
+    text = (
+        f"🏷️ **{title}**\n"
+        f"*{badge}*\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        f"💰 **Fiyat:** `{price}`\n"
+        f"⚡ **Teslimat:** {delivery}\n"
+        f"🛡️ **Garanti:** {warranty}\n"
+        "🔒 **Ödeme:** Shopier 3D Secure ile Kredi/Banka Kartı veya Havale\n\n"
+        f"📝 **Açıklama:**\n{desc}\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "👉 *Satın almak için aşağıdaki butona dokunun:*"
+    )
+
+    buttons = [
+        [Button.url(f"💳 Shopier ile Güvenle Satın Al ({price})", shopier_url)],
+        [Button.url("🛍️ Web Mağazasında Aç", bot_app_url)],
+    ]
+    if category in CATEGORIES_MAP:
+        buttons.append([Button.inline(f"↩️ {CATEGORIES_MAP[category][0]}", f"cat_{category}".encode()), Button.inline("🏠 Ana Menü", b"menu_main")])
+    else:
+        buttons.append([Button.inline("🏠 Ana Menü", b"menu_main")])
+    buttons.append([Button.inline("📞 Canlı Destek & Soru Sor", b"ticket_support")])
+
     if edit:
         await safe_edit(event, text, buttons=buttons)
     else:
@@ -450,7 +533,10 @@ async def show_balance(event, *, edit=False):
         "• Özel Tutar veya Hazır Paket Seçenekleri\n\n"
         "👇 Bakiye yüklemek için mağazayı açın:"
     )
-    buttons = mini_app_markup("Bakiye Yükle")
+    buttons = [
+        [Button.url("💳 Shopier ile Bakiye Yükle", MINI_APP_URL)],
+        [Button.inline("↩️ Ana Menü", b"menu_main"), Button.inline("📞 Canlı Destek", b"ticket_support")],
+    ]
     if edit:
         await safe_edit(event, text, buttons=buttons)
     else:
@@ -473,7 +559,10 @@ async def show_orders(event, *, edit=False):
             lines.append(f"• **{title}** — `₺{price:.2f}` ({status})")
     lines.extend(["", "Sipariş detaylarınızı, teslimat kodlarınızı ve hesap bilgilerinizi mağazadan 7/24 görüntüleyebilirsiniz."])
     text = "\n".join(lines)
-    buttons = mini_app_markup("Siparişleri Aç")
+    buttons = [
+        [Button.url("📦 Siparişleri Mağazada Aç", MINI_APP_URL)],
+        [Button.inline("↩️ Ana Menü", b"menu_main")],
+    ]
     if edit:
         await safe_edit(event, text, buttons=buttons)
     else:
@@ -512,7 +601,10 @@ async def show_profile(event, *, edit=False):
         f"`{ref_link}`\n\n"
         "*(Linke dokunarak kopyalayabilir, arkadaşlarınıza göndererek her alışverişlerinden %10 anında nakit kazanabilirsiniz!)*"
     )
-    buttons = mini_app_markup("Mağazayı Aç")
+    buttons = [
+        [Button.url("🛍️ Mağazayı Aç", MINI_APP_URL)],
+        [Button.inline("↩️ Ana Menü", b"menu_main")],
+    ]
     if edit:
         await safe_edit(event, text, buttons=buttons)
     else:
@@ -762,40 +854,67 @@ async def help_handler(event):
 
 # ==================== CALLBACKS ====================
 
-@bot.on(events.CallbackQuery(pattern=rb"^menu_(products|balance|orders|profile)$"))
+@bot.on(events.CallbackQuery(pattern=rb"^menu_(products|balance|orders|profile|main)$"))
 async def menu_callback(event):
-    await event.answer()
+    try:
+        await event.answer()
+    except Exception:
+        pass
     raw = event.pattern_match.group(1)
     name = raw.decode() if isinstance(raw, bytes) else str(raw)
-    if not await claim_event_locally_and_remotely(event, f"cb_menu_{name}"):
-        return
     if name == "products":
         await show_products(event, edit=True)
     elif name == "balance":
         await show_balance(event, edit=True)
     elif name == "orders":
         await show_orders(event, edit=True)
-    else:
+    elif name == "profile":
         await show_profile(event, edit=True)
+    else:
+        await show_main_menu(event, edit=True)
+
+
+@bot.on(events.CallbackQuery(pattern=rb"^cat_(\w+)$"))
+async def category_callback(event):
+    try:
+        await event.answer()
+    except Exception:
+        pass
+    raw = event.pattern_match.group(1)
+    cat_key = raw.decode() if isinstance(raw, bytes) else str(raw)
+    await show_category_products(event, cat_key, edit=True)
+
+
+@bot.on(events.CallbackQuery(pattern=rb"^prod_([\w-]+)$"))
+async def product_callback(event):
+    try:
+        await event.answer()
+    except Exception:
+        pass
+    raw = event.pattern_match.group(1)
+    prod_id = raw.decode() if isinstance(raw, bytes) else str(raw)
+    await show_product_detail(event, prod_id, edit=True)
 
 
 @bot.on(events.CallbackQuery(pattern=rb"^ticket_(support|request|refund)$"))
 async def ticket_callback(event):
-    await event.answer()
+    try:
+        await event.answer()
+    except Exception:
+        pass
     raw = event.pattern_match.group(1)
     action = raw.decode() if isinstance(raw, bytes) else str(raw)
-    if not await claim_event_locally_and_remotely(event, f"cb_ticket_{action}"):
-        return
     await begin_ticket(event, action)
 
 
 @bot.on(events.CallbackQuery(pattern=rb"^lang_(tr|en)$"))
 async def language_callback(event):
-    await event.answer()
+    try:
+        await event.answer()
+    except Exception:
+        pass
     raw = event.pattern_match.group(1)
     language = raw.decode() if isinstance(raw, bytes) else str(raw)
-    if not await claim_event_locally_and_remotely(event, f"cb_lang_{language}"):
-        return
     msg = "Dil tercihiniz Türkçe olarak ayarlandı." if language == "tr" else "Language preference saved as English."
     await safe_edit(event, msg, buttons=mini_app_markup("Mağazayı Aç"))
 

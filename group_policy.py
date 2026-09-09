@@ -21,7 +21,7 @@ PLAIN_FROXY_CTA = "Detaylar için Telegram aramasına FroxyDestekBOT yazabilirsi
 PLAIN_LISANSARENA_CTA = "LisansArena ürün ve teslimat bilgisi için Telegram aramasında LisansArenaBot yazabilirsiniz."
 VISIBLE_KEYVADI_CTA = "Sipariş ve güncel fiyat: @KeyVadiSatisBot"
 VISIBLE_FROXY_CTA = "Detay ve destek: @FroxyDestekBOT"
-VISIBLE_LISANSARENA_CTA = "Sipariş ve destek: @LisansArenaBot"
+VISIBLE_LISANSARENA_CTA = "🛒 7/24 Anında Otomatik Kod & Sipariş: @LisansArenaBot"
 
 DEFAULT_POLICY = {
     "allow_urls": True,
@@ -380,6 +380,7 @@ def _remove_brand_cta_lines(text: str, brand: str) -> str:
         "lisansarena": (
             "lisansarenabot", "lisansarenadestek", "sipariş ve destek", "siparis ve destek",
             "stok, teslimat", "ürünü yaz", "urunu yaz", "telegram aramas", "hızlı sipariş",
+            "anında otomatik", "aninda otomatik", "otomatik kod", "otomatik sipariş", "otomatik siparis",
         ),
     }.get(brand.casefold(), ())
     return "\n".join(

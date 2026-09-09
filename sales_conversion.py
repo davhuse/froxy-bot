@@ -189,7 +189,7 @@ def apply_froxy_price_overrides(product: dict) -> dict:
 def _normalize_product(item: dict, brand: str = "") -> dict | None:
     product_id = str(item.get("id") or "").strip()
     title = str(item.get("title") or "").strip()
-    url = str(item.get("url") or item.get("link") or "").strip()
+    url = str(item.get("shopier_url") or item.get("url") or item.get("link") or "").strip()
     if not url and str(brand).lower() == "lisansarena" and product_id:
         url = f"{PUBLIC_BASE_URL}/la/app?product={quote(product_id, safe='')}"
     if not product_id or not title or not (is_allowed_shopier_url(url) or is_allowed_internal_purchase_url(url)):
@@ -395,10 +395,13 @@ def is_allowed_internal_purchase_url(url: str) -> bool:
 
 def purchase_target_url(brand: str, product: dict) -> str:
     """Return the product-specific Shopier or Mini App purchase target."""
+    target = str(product.get("shopier_url") or product.get("url") or "")
+    if target and (is_allowed_shopier_url(target) or is_allowed_internal_purchase_url(target)):
+        return target
     if str(brand).lower() == "lisansarena":
         pid = product.get("id", "")
         return f"https://t.me/LisansArenaBot/app?startapp=p_{pid}" if pid else "https://t.me/LisansArenaBot/app"
-    return str(product.get("url") or product.get("shopier_url") or "")
+    return target
 
 
 def _brand_phrases_in(text: str) -> list[str]:
@@ -762,13 +765,19 @@ def parse_purchase_token(token: str) -> dict | None:
 
 
 def purchase_url(product: dict, brand: str, source: str, arm: str = "") -> str:
+    shopier_link = str(product.get("shopier_url") or product.get("url") or "")
+    if shopier_link and is_allowed_shopier_url(shopier_link):
+        token = make_purchase_token(
+            brand, product.get("id", ""), source, arm, product.get("_cta_id", "")
+        )
+        return f"{PUBLIC_BASE_URL}/go/{token}" if token else shopier_link
     if str(brand).lower() == "lisansarena":
         pid = product.get("id", "")
         return f"https://t.me/LisansArenaBot/app?startapp=p_{pid}" if pid else "https://t.me/LisansArenaBot/app"
     token = make_purchase_token(
         brand, product.get("id", ""), source, arm, product.get("_cta_id", "")
     )
-    return f"{PUBLIC_BASE_URL}/go/{token}" if token else str(product.get("url") or product.get("shopier_url") or "")
+    return f"{PUBLIC_BASE_URL}/go/{token}" if token else shopier_link
 
 
 def listing_url(product: dict) -> str:

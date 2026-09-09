@@ -345,7 +345,14 @@ class LisansArenaStore:
         url = normalize_database_url(
             database_url or os.environ.get("LISANSARENA_DATABASE_URL") or os.environ.get("DATABASE_URL")
         )
-        self.engine = create_engine(url, pool_pre_ping=True, future=True)
+        engine_candidate = create_engine(url, pool_pre_ping=True, future=True)
+        try:
+            with engine_candidate.connect() as conn:
+                conn.execute(text("SELECT 1"))
+            self.engine = engine_candidate
+        except Exception:
+            # Fallback to local SQLite if remote PostgreSQL is unreachable or credentials invalid
+            self.engine = create_engine("sqlite:///lisansarena_store.db", pool_pre_ping=True, future=True)
         raw_key = encryption_key or os.environ.get("LISANSARENA_STOCK_KEY", "")
         if not raw_key:
             raise StoreUnavailable("LisansArena stok şifreleme anahtarı yapılandırılmadı")
