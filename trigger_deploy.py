@@ -1,8 +1,8 @@
-﻿import urllib.request
+import urllib.request
 
-url = "https://api.render.com/v1/services/srv-daem9k1t0dsc73ar02dg/deploys"
+url = "https://api.render.com/v1/services/srv-da6rbfu417fc73egreqg/deploys"
 headers = {
-    "Authorization": "Bearer rnd_coICmwUZglrHzzHC84glOBZTgl1U",
+    "Authorization": "Bearer rnd_ff6sp4PyEwlyiiziFhXZBFN5RaZB",
     "Content-Type": "application/json",
     "Accept": "application/json"
 }
