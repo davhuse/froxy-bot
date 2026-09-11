@@ -3797,14 +3797,32 @@ def disabled_ad_accounts():
     return {item.strip().casefold() for item in raw.split(",") if item.strip()}
 
 
+def is_lisansarena_ad_disabled() -> bool:
+    """Check if LisansArena advertising is disabled (supporting boolean or target date e.g. 2026-09-13)."""
+    disabled = disabled_ad_accounts()
+    if 'lisansarenaonline' in disabled or 'lisansarena' in disabled:
+        return True
+    val = os.environ.get("DISABLE_LISANSARENA_AD", "true").strip().lower()
+    if not val or val in ("0", "false", "no", "off"):
+        return False
+    if val in ("1", "true", "yes", "on"):
+        return True
+    try:
+        from datetime import datetime, timezone
+        if len(val) == 10 and val[4] == "-" and val[7] == "-":
+            target_date = datetime.strptime(val, "%Y-%m-%d").replace(hour=23, minute=59, second=59, tzinfo=timezone.utc)
+            if datetime.now(timezone.utc) <= target_date:
+                return True
+            return False
+    except Exception:
+        pass
+    return True
+
+
 def get_expected_ad_accounts():
     """Return the set of ad accounts actively expected to connect."""
-    disabled = disabled_ad_accounts()
     expected = {'FroxyOnline', 'KeyVadiOnline'}
-    if (
-        'lisansarenaonline' not in disabled
-        and os.environ.get("DISABLE_LISANSARENA_AD", "true").lower() not in ("1", "true", "yes", "on")
-    ):
+    if not is_lisansarena_ad_disabled():
         expected.add('LisansArenaOnline')
     return expected
 
@@ -4063,7 +4081,7 @@ async def main():
                 pass
 
     # Client 3 (LisansArena - Kullanici istegiyle kapali tutulur)
-    if string_session_key_3 and "lisansarenaonline" not in disabled_ad_accounts() and os.environ.get("DISABLE_LISANSARENA_AD", "true").lower() not in ("1", "true", "yes", "on"):
+    if string_session_key_3 and not is_lisansarena_ad_disabled():
         print("🔑 3. Hesap (LisansArena): StringSession kullanılarak bağlanılıyor...")
         try:
             from telethon.sessions import StringSession
@@ -4082,14 +4100,14 @@ async def main():
             except Exception:
                 pass
     else:
-        print("⏸️ 3. Hesap (LisansArena): Kullanıcı isteği doğrultusunda KAPALI tutuluyor (reklam gönderimi devre dışı).")
+        print("⏸️ 3. Hesap (LisansArena): Kullanıcı isteği doğrultusunda 13 Eylül'e kadar KAPALI tutuluyor (reklam gönderimi devre dışı).")
         update_ad_account_status(
             'LisansArenaOnline',
             process_running=True,
             telegram_connected=False,
             telegram_authorized=False,
             phase='disabled_by_config',
-            last_error='LisansArena reklam hesabi kullanici istegiyle devre disi birakildi.',
+            last_error='LisansArena reklam hesabi 13 Eylul tarihine kadar kullanici istegiyle devre disi birakildi.',
             next_blast_at=None,
         )
 
