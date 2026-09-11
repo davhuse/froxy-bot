@@ -329,46 +329,14 @@ def configure_bot_profile():
 
 
 def mini_app_markup(label="Mağazayı Aç"):
-    from telethon.tl import types
-    try:
-        btn_app = types.KeyboardButtonWebView(
-            text=f"🛍️ {label}",
-            url=KEYVADI_MINI_APP_URL,
-            style=types.KeyboardButtonStyle(bg_success=True)
-        )
-        btn_top7 = types.KeyboardButtonCallback(
-            text="🔥 En Çok Satan Fırsatlar (Price Drop)",
-            data=b"menu_top7",
-            style=types.KeyboardButtonStyle(bg_success=True)
-        )
-    except Exception:
-        btn_app = KeyboardButtonWebView(text=f"🛍️ {label}", url=KEYVADI_MINI_APP_URL)
-        btn_top7 = KeyboardButtonCallback(text="🔥 En Çok Satan 7 Ürün (Fırsatlar)", data=b"menu_top7")
-
-    try:
-        btn_group = types.KeyboardButtonUrl(
-            text="📢 KeyVadi Resmi Topluluk Grubu",
-            url=KEYVADI_GROUP_LINK
-        )
-    except Exception:
-        btn_group = None
-
-    rows = [
-        KeyboardButtonRow(buttons=[btn_app]),
-        KeyboardButtonRow(buttons=[btn_top7]),
-        KeyboardButtonRow(buttons=[
-            KeyboardButtonCallback(text="📦 Kategoriler", data=b"menu_categories"),
-            KeyboardButtonCallback(text="📞 Canlı Destek", data=b"menu_support")
-        ]),
-        KeyboardButtonRow(buttons=[
-            KeyboardButtonCallback(text="👥 Davet & Kazan", data=b"menu_referral"),
-            KeyboardButtonCallback(text="💰 Cüzdan / Bakiye", data=b"menu_topup")
-        ]),
+    from telethon import Button
+    return [
+        [Button.url(f"🛍️ {label}", KEYVADI_MINI_APP_URL)],
+        [Button.inline("🔥 En Çok Satan Fırsatlar (Price Drop)", b"menu_top7")],
+        [Button.inline("📦 Kategoriler", b"menu_categories"), Button.inline("📞 Canlı Destek", b"menu_support")],
+        [Button.inline("👥 Davet & Kazan", b"menu_referral"), Button.inline("💰 Cüzdan / Bakiye", b"menu_topup")],
+        [Button.url("📢 KeyVadi Resmi Topluluk Grubu", KEYVADI_GROUP_LINK)]
     ]
-    if btn_group:
-        rows.append(KeyboardButtonRow(buttons=[btn_group]))
-
-    return ReplyInlineMarkup(rows=rows)
 
 @bot.on(events.CallbackQuery())
 async def acknowledge_callback(event):
