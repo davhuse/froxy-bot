@@ -11,7 +11,6 @@ from functools import wraps
 from telethon import TelegramClient, events, Button
 from telethon.errors import MessageNotModifiedError
 from telethon.sessions import StringSession
-from telethon.tl.types import KeyboardButtonRow, KeyboardButtonWebView, ReplyInlineMarkup, KeyboardButtonCallback
 import user_lang_helper
 import firestore_helper
 from gemini_helper import get_ai_response

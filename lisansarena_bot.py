@@ -22,7 +22,6 @@ import requests
 from telethon import TelegramClient, events, Button
 from telethon.errors import ButtonTypeInvalidError, FloodWaitError, MessageNotModifiedError
 from telethon.sessions import StringSession
-from telethon.tl.types import KeyboardButtonRow, KeyboardButtonWebView, ReplyInlineMarkup
 
 from sales_metrics import conversation_key, record_dm_event, record_event
 from customer_intent import INTENT_SALES_LEAD
@@ -327,9 +326,7 @@ BOT_COMMANDS = [
 
 
 def mini_app_markup(label="Mağazayı Aç"):
-    return ReplyInlineMarkup(rows=[KeyboardButtonRow(buttons=[
-        KeyboardButtonWebView(text=f"🛍️ {label}", url=MINI_APP_URL)
-    ])])
+    return [[Button.url(f"🛍️ {label}", MINI_APP_URL)]]
 
 
 def _product_price_text(product: dict[str, Any]) -> str:
