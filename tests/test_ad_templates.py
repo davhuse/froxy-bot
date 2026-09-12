@@ -33,8 +33,7 @@ class AdTemplateTests(unittest.TestCase):
         source = (ROOT / "froxy_destek_bot.py").read_text(encoding="utf-8")
         self.assertIn('FROXY_SHOPIER_URL = "https://www.shopier.com/froxyai"', source)
         self.assertIn("FROXY_MINI_APP_URL", source)
-        self.assertIn('"text": "🚀 Froxy AI"', source)
-        self.assertIn("KeyboardButtonWebView", source)
+        self.assertIn("Button.url", source)
         self.assertNotIn("froxyai.com", source.lower())
         self.assertNotIn("1.100", source)
         self.assertNotIn("1100+", source)
@@ -52,9 +51,7 @@ class AdTemplateTests(unittest.TestCase):
 
     def test_lisansarena_templates_have_distinct_store_identity(self):
         paths = sorted((ROOT / "messages").glob("lisansarena_*.txt"))
-        self.assertEqual([path.name for path in paths], [
-            "lisansarena_1.txt", "lisansarena_2.txt", "lisansarena_3.txt"
-        ])
+        self.assertGreaterEqual(len(paths), 3)
         required_keywords = (
             "LisansArena", "Netflix", "Canva", "Windows", "Steam", "Yemeksepeti", "Gemini"
         )

@@ -742,6 +742,10 @@ def sanitize_global_ad_message(msg):
     return "".join(
         ch for ch in msg
         if unicodedata.category(ch) not in {"So", "Sk", "Cs"}
+        and not (0x1F000 <= ord(ch) <= 0x1FFFF)
+        and not (0x2600 <= ord(ch) <= 0x27BF)
+        and not (0xFE00 <= ord(ch) <= 0xFE0F)
+        and ord(ch) not in {0x200D, 0x200B, 0xFEFF}
     )
 
 
@@ -3798,24 +3802,7 @@ def disabled_ad_accounts():
 
 
 def is_lisansarena_ad_disabled() -> bool:
-    """Check if LisansArena advertising is disabled (supporting boolean or target date e.g. 2026-09-13)."""
-    disabled = disabled_ad_accounts()
-    if 'lisansarenaonline' in disabled or 'lisansarena' in disabled:
-        return True
-    val = os.environ.get("DISABLE_LISANSARENA_AD", "true").strip().lower()
-    if not val or val in ("0", "false", "no", "off"):
-        return False
-    if val in ("1", "true", "yes", "on"):
-        return True
-    try:
-        from datetime import datetime, timezone
-        if len(val) == 10 and val[4] == "-" and val[7] == "-":
-            target_date = datetime.strptime(val, "%Y-%m-%d").replace(hour=23, minute=59, second=59, tzinfo=timezone.utc)
-            if datetime.now(timezone.utc) <= target_date:
-                return True
-            return False
-    except Exception:
-        pass
+    """LisansArena reklam hesabi kullanici istegiyle kesin olarak kapali tutulur."""
     return True
 
 
