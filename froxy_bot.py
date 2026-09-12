@@ -1166,15 +1166,7 @@ async def products_cmd_handler(event):
         if cat_info and cat_info.get("products"):
             label = cat_info.get("title", cat_key)
             buttons.append([Button.inline(label, f"cat_{cat_key}".encode())])
-    from telethon.tl import types
-    try:
-        btn_app = types.KeyboardButtonWebView(
-            text="🛍️ Tüm Ürünleri Mini App'te Gör",
-            url=KEYVADI_MINI_APP_URL,
-            style=types.KeyboardButtonStyle(bg_success=True)
-        )
-    except Exception:
-        btn_app = KeyboardButtonWebView(text="🛍️ Tüm Ürünleri Mini App'te Gör", url=KEYVADI_MINI_APP_URL)
+    btn_app = Button.url("🛍️ Tüm Ürünleri Mini App'te Gör", KEYVADI_MINI_APP_URL)
     buttons.append([btn_app])
     buttons.append([Button.inline("↩️ Ana Menü", b"menu_main")])
     await event.respond(text, buttons=buttons)
@@ -1311,17 +1303,16 @@ async def menu_top7_handler(event):
         "⚡ *Tüm ürünlerde 7/24 anında otomatik teslimat ve tam süre garantisi mevcuttur.*\n"
         "👉 *Satın almak istediğiniz ürüne tıklayın:*"
     )
-    from telethon.tl import types
     buttons = [
-        [types.KeyboardButtonUrl("🍿 Netflix 4K Satın Al (39,99₺)", "https://www.shopier.com/50665156", style=types.KeyboardButtonStyle(bg_success=True))],
-        [types.KeyboardButtonUrl("🤖 Gemini Pro Satın Al (59,90₺)", "https://www.shopier.com/keyvadi/49362708", style=types.KeyboardButtonStyle(bg_success=True))],
-        [types.KeyboardButtonUrl("🎮 Xbox Game Pass Satın Al (49,90₺)", "https://www.shopier.com/keyvadi/49467735", style=types.KeyboardButtonStyle(bg_success=True))],
-        [types.KeyboardButtonUrl("⛏️ Minecraft Satın Al (49,90₺)", "https://www.shopier.com/50460191", style=types.KeyboardButtonStyle(bg_success=True))],
-        [types.KeyboardButtonUrl("🎬 CapCut Pro Satın Al (49,90₺)", "https://www.shopier.com/keyvadi/49467632", style=types.KeyboardButtonStyle(bg_success=True))],
-        [types.KeyboardButtonUrl("🦉 Duolingo Super Satın Al (49,90₺)", "https://www.shopier.com/keyvadi/47669390", style=types.KeyboardButtonStyle(bg_success=True))],
-        [types.KeyboardButtonUrl("📦 Prime Video Satın Al (9,99₺)", "https://www.shopier.com/keyvadi/49002145", style=types.KeyboardButtonStyle(bg_success=True))],
-        [types.KeyboardButtonWebView("🛍️ Mağazayı Aç (Mini App)", KEYVADI_MINI_APP_URL, style=types.KeyboardButtonStyle(bg_success=True))],
-        [types.KeyboardButtonCallback("↩️ Ana Menü", b"menu_main")]
+        [Button.url("🍿 Netflix 4K Satın Al (39,99₺)", "https://www.shopier.com/50665156")],
+        [Button.url("🤖 Gemini Pro Satın Al (59,90₺)", "https://www.shopier.com/keyvadi/49362708")],
+        [Button.url("🎮 Xbox Game Pass Satın Al (49,90₺)", "https://www.shopier.com/keyvadi/49467735")],
+        [Button.url("⛏️ Minecraft Satın Al (49,90₺)", "https://www.shopier.com/50460191")],
+        [Button.url("🎬 CapCut Pro Satın Al (49,90₺)", "https://www.shopier.com/keyvadi/49467632")],
+        [Button.url("🦉 Duolingo Super Satın Al (49,90₺)", "https://www.shopier.com/keyvadi/47669390")],
+        [Button.url("📦 Prime Video Satın Al (9,99₺)", "https://www.shopier.com/keyvadi/49002145")],
+        [Button.url("🛍️ Mağazayı Aç (Mini App)", KEYVADI_MINI_APP_URL)],
+        [Button.inline("↩️ Ana Menü", b"menu_main")]
     ]
     if isinstance(event, events.CallbackQuery.Event):
         await safe_event_edit(event, text, buttons=buttons)
@@ -1463,16 +1454,13 @@ async def admin_fiyatdusur_handler(event):
         "type": "Price Drop",
     }
 
-    from telethon.tl import types
-    btn_confirm = types.KeyboardButtonCallback(
-        text="🚀 Tüm Müşterilere Gönder",
-        data=f"confirm_card:{draft_id}".encode("utf-8"),
-        style=types.KeyboardButtonStyle(bg_success=True)
+    btn_confirm = Button.inline(
+        "🚀 Tüm Müşterilere Gönder",
+        f"confirm_card:{draft_id}".encode("utf-8")
     )
-    btn_cancel = types.KeyboardButtonCallback(
-        text="❌ İptal Et",
-        data=f"cancel_card:{draft_id}".encode("utf-8"),
-        style=types.KeyboardButtonStyle(bg_danger=True)
+    btn_cancel = Button.inline(
+        "❌ İptal Et",
+        f"cancel_card:{draft_id}".encode("utf-8")
     )
     confirm_buttons = [[btn_confirm], [btn_cancel]]
 
@@ -1531,16 +1519,13 @@ async def admin_sonstok_handler(event):
         "type": "Selling Fast",
     }
 
-    from telethon.tl import types
-    btn_confirm = types.KeyboardButtonCallback(
-        text="🚀 Tüm Müşterilere Gönder",
-        data=f"confirm_card:{draft_id}".encode("utf-8"),
-        style=types.KeyboardButtonStyle(bg_success=True)
+    btn_confirm = Button.inline(
+        "🚀 Tüm Müşterilere Gönder",
+        f"confirm_card:{draft_id}".encode("utf-8")
     )
-    btn_cancel = types.KeyboardButtonCallback(
-        text="❌ İptal Et",
-        data=f"cancel_card:{draft_id}".encode("utf-8"),
-        style=types.KeyboardButtonStyle(bg_danger=True)
+    btn_cancel = Button.inline(
+        "❌ İptal Et",
+        f"cancel_card:{draft_id}".encode("utf-8")
     )
     confirm_buttons = [[btn_confirm], [btn_cancel]]
 
