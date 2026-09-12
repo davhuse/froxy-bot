@@ -1165,7 +1165,7 @@ async def private_message_handler(event):
     # 2. Product matching on sales questions
     if event.raw_text and dm_intent == INTENT_SALES_LEAD:
         matched_products = match_sales_products(
-            event.raw_text, load_sales_catalog("lisansarena"), limit=3
+            event.raw_text, load_sales_catalog("lisansarena"), limit=6
         )
         if matched_products:
             await send_product_card(event, matched_products)

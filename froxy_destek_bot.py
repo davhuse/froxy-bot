@@ -833,7 +833,7 @@ async def message_handler(event):
     # must result in one product card, not a greeting followed by a card.
     matched_products = []
     if not is_admin_context and event.text and dm_intent == INTENT_SALES_LEAD:
-        matched_products = match_sales_products(event.text, load_sales_catalog("froxy"), limit=3)
+        matched_products = match_sales_products(event.text, load_sales_catalog("froxy"), limit=6)
 
     if matched_products:
         reply_event_id = getattr(event.message, "id", None)

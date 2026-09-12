@@ -2193,7 +2193,7 @@ async def message_handler(event):
     is_admin_context = event.sender_id == admin_chat_id or event.chat_id == support_chat_id
     matched_products = []
     if not is_admin_context and event.text and dm_intent == INTENT_SALES_LEAD:
-        matched_products = match_sales_products(event.text, load_sales_catalog("keyvadi"), limit=3)
+        matched_products = match_sales_products(event.text, load_sales_catalog("keyvadi"), limit=6)
 
     if one_time_mode_enabled() and not is_admin_context:
         buttons = [[Button.inline("🚫 Kullanıcıyı Engelle (Ban)", f"kv_adm_ban_{user_id}".encode())]]
@@ -2276,7 +2276,7 @@ async def message_handler(event):
             await respond_with_floodwait(event, roadmap_reply)
             return
         full_catalog = load_sales_catalog("keyvadi")
-        matched_products = matched_products or match_sales_products(event.text, full_catalog, limit=3)
+        matched_products = matched_products or match_sales_products(event.text, full_catalog, limit=6)
         # A product name by itself (for example "Gemini" or "Perplexity") is
         # valid sales intent even when the customer does not say "fiyat/link".
         if not has_sales_intent(event.text) and not matched_products:

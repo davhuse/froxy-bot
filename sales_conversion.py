@@ -476,6 +476,16 @@ def match_sales_products(message: str, products: list[dict], limit: int = 3) -> 
                 score += 180
             elif "sms" in title_tokens:
                 score -= 160
+        if "gemini" in query_tokens or "gemini" in brands:
+            if any(term in query for term in ["18", "18 ay", "18 aylik", "promosyon", "link", "baglanti"]):
+                if "18" in title_tokens or "18 ay" in title:
+                    score += 160
+            elif "18" in title_tokens or "18 ay" in title:
+                score += 50
+            if "promosyon" in query_tokens and ("promosyon" in title_tokens or "indirim" in title_tokens):
+                score += 120
+            if product.get("is_vitrin") or product.get("showcase"):
+                score += 40
         scored.append((score, product))
         
     scored.sort(key=lambda pair: (-pair[0], _price_number(pair[1].get("price")), pair[1]["title"]))
@@ -483,7 +493,7 @@ def match_sales_products(message: str, products: list[dict], limit: int = 3) -> 
         return []
 
     MULTI_VARIANT_BRANDS = {
-        "netflix", "minecraft", "yemeksepeti", "canva"
+        "netflix", "minecraft", "yemeksepeti", "canva", "gemini", "duolingo"
     }
 
     is_multi_variant_brand = any(b in MULTI_VARIANT_BRANDS for b in brands)
@@ -501,7 +511,7 @@ def match_sales_products(message: str, products: list[dict], limit: int = 3) -> 
             if product["title"] not in seen_titles:
                 results.append(product)
                 seen_titles.add(product["title"])
-            if len(results) >= max(1, min(limit, 3)):
+            if len(results) >= max(1, limit):
                 break
         return results
 
@@ -513,7 +523,7 @@ def match_sales_products(message: str, products: list[dict], limit: int = 3) -> 
         return [scored[0][1]]
     if variant_tokens and (len(scored) == 1 or scored[0][0] - scored[1][0] >= 25):
         return [scored[0][1]]
-    return [product for _score, product in scored[: max(1, min(limit, 3))]]
+    return [product for _score, product in scored[: max(1, limit)]]
 
 
 def _price_number(value: str) -> float:
