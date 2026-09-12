@@ -921,7 +921,13 @@ ACTIVE_ACCOUNT_IDENTITIES = {
     'keyvadidestek': {
         'stable_name': 'KeyVadiOnline',
         'phone': '905056798875',
-        'user_id': 6196006704,
+        'user_id': {8791896048, 6196006704},
+        'slot': 2,
+    },
+    'keyvadionline': {
+        'stable_name': 'KeyVadiOnline',
+        'phone': '905056798875',
+        'user_id': {8791896048, 6196006704},
         'slot': 2,
     },
     'lisansarenatr': {
@@ -4143,10 +4149,12 @@ async def main():
                 continue
 
             expected_user_id = identity.get('user_id')
-            if expected_user_id and me.id != expected_user_id:
-                print(f"⛔ @{username} Telegram kullanıcı kimliği doğrulanamadı; bağlantı kapatılıyor.")
-                await active_client.disconnect()
-                continue
+            if expected_user_id:
+                allowed_ids = expected_user_id if isinstance(expected_user_id, (set, list, tuple)) else {expected_user_id}
+                if me.id not in allowed_ids:
+                    print(f"⛔ @{username} Telegram kullanıcı kimliği doğrulanamadı; bağlantı kapatılıyor.")
+                    await active_client.disconnect()
+                    continue
 
             stable_name = identity['stable_name']
             allowed_clients.append((active_client, stable_name, {

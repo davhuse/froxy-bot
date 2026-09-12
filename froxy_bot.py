@@ -228,7 +228,8 @@ BOT_TOKEN = (
 ).strip()
 ADMIN_ID = int(os.environ.get("TELEGRAM_ADMIN_ID", config.get("admin_id", 0)) or 0)
 ADMIN_IDS = {
-    6196006704,  # KeyVadiDestek
+    8791896048,  # KeyVadiDestek (New ID)
+    6196006704,  # KeyVadiDestek (Legacy ID)
     5359327143,  # User / ittersdv / Klyde
     8116518175,  # Habil
 }
