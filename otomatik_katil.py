@@ -3808,8 +3808,11 @@ def disabled_ad_accounts():
 
 
 def is_lisansarena_ad_disabled() -> bool:
-    """LisansArena reklam hesabi kullanici istegiyle kesin olarak kapali tutulur."""
-    return True
+    """LisansArena reklam hesabi 13 Eylul 2026 saat 12:00'ye kadar (TR saati) kapali tutulur."""
+    from datetime import datetime, timezone, timedelta
+    tz_tr = timezone(timedelta(hours=3))
+    unlock_time = datetime(2026, 9, 13, 12, 0, 0, tzinfo=tz_tr)
+    return datetime.now(timezone.utc) < unlock_time
 
 
 def get_expected_ad_accounts():
@@ -4093,14 +4096,14 @@ async def main():
             except Exception:
                 pass
     else:
-        print("⏸️ 3. Hesap (LisansArena): Kullanıcı isteği doğrultusunda 13 Eylül'e kadar KAPALI tutuluyor (reklam gönderimi devre dışı).")
+        print("⏸️ 3. Hesap (LisansArena): 13 Eylül saat 12:00'ye kadar KAPALI tutuluyor (12:00'de otomatik açılacak).")
         update_ad_account_status(
             'LisansArenaOnline',
             process_running=True,
             telegram_connected=False,
             telegram_authorized=False,
             phase='disabled_by_config',
-            last_error='LisansArena reklam hesabi 13 Eylul tarihine kadar kullanici istegiyle devre disi birakildi.',
+            last_error='LisansArena reklam hesabi 13 Eylul saat 12:00 itibariyla otomatik acilacak.',
             next_blast_at=None,
         )
 
@@ -6001,8 +6004,23 @@ async def main():
             )
         tasks.append(connection_watchdog(client, name))
     
+    async def lisansarena_unlock_watcher():
+        """13 Eylul saat 12:00 (TR saati) geldiginde LisansArena hesabini devreye almak icin tetikler."""
+        from datetime import datetime, timezone, timedelta
+        tz_tr = timezone(timedelta(hours=3))
+        unlock_time = datetime(2026, 9, 13, 12, 0, 0, tzinfo=tz_tr)
+        while not stop_event.is_set():
+            await asyncio.sleep(30)
+            if datetime.now(timezone.utc) >= unlock_time:
+                lisans_active = any(name == 'LisansArenaOnline' for _, name, _ in active_clients)
+                if not lisans_active:
+                    print("⏰ [LisansArena] 13 Eylül 12:00 saati geldi! LisansArena hesabını devreye almak için servis yeniden başlatılıyor...")
+                    stop_event.set()
+                    break
+
     # Scraper tasks disabled: All accounts strictly use their assigned target group lists.
     tasks.append(periodic_firestore_sync())
+    tasks.append(lisansarena_unlock_watcher())
     
     # Tüm görevleri eşzamanlı olarak çalıştır
     running_tasks = [asyncio.create_task(task) for task in tasks]

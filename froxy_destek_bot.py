@@ -164,7 +164,7 @@ if _configured_mini_app_url and any(
 FROXY_MINI_APP_URL = (
     (f"{_render_external_url}/froxy" if _render_external_url else "")
     or _configured_mini_app_url
-    or "https://froxy-bot-kgky.onrender.com/froxy"
+    or "https://froxy-bot-live-r5se.onrender.com/froxy"
 ).rstrip("/") + "/"
 
 
