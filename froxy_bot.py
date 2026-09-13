@@ -307,7 +307,12 @@ def configure_bot_profile():
     })
     _bot_api_call("setChatMenuButton", {
         "menu_button": {
-            "type": "commands",
+            # A commands menu does not carry Telegram Web App initData.  Use
+            # the persistent three-line Mini App entry point so wallet and
+            # checkout requests can authenticate the customer.
+            "type": "web_app",
+            "text": "🛍️ Mağazayı Aç",
+            "web_app": {"url": KEYVADI_MINI_APP_URL},
         }
     })
     _bot_api_call("setMyName", {"name": "KeyVadi"})
@@ -321,8 +326,12 @@ def configure_bot_profile():
 
 def mini_app_markup(label="Mağazayı Aç"):
     from telethon import Button
+    # A plain HTTPS URL opens outside Telegram and therefore has no initData.
+    # The bot deep link launches the same Mini App with a signed Telegram
+    # context, while the persistent menu above remains the canonical entry.
+    app_launch_url = "https://t.me/KeyVadiSatisBot/app"
     return [
-        [Button.url(f"🛍️ {label}", KEYVADI_MINI_APP_URL)],
+        [Button.url(f"🛍️ {label}", app_launch_url)],
         [Button.inline("🔥 En Çok Satan Fırsatlar (Price Drop)", b"menu_top7")],
         [Button.inline("📦 Kategoriler", b"menu_categories"), Button.inline("📞 Canlı Destek", b"menu_support")],
         [Button.inline("👥 Davet & Kazan", b"menu_referral"), Button.inline("💰 Cüzdan / Bakiye", b"menu_topup")],

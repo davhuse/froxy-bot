@@ -179,9 +179,9 @@ BOT_COMMANDS = [
 
 
 def froxy_app_button(label="🚀 Froxy AI Uygulamasını Aç"):
-    """A genuine Telegram Web App button, not an ordinary browser URL."""
+    """Launch the Mini App with Telegram initData instead of a bare web URL."""
     from telethon import Button
-    return Button.url(text=label, url=FROXY_MINI_APP_URL)
+    return Button.url(text=label, url="https://t.me/FroxyDestekBOT/app")
 
 
 def _bot_api_call(method, payload):

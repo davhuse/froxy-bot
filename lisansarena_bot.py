@@ -327,7 +327,10 @@ BOT_COMMANDS = [
 
 
 def mini_app_markup(label="Mağazayı Aç"):
-    return [[Button.url(f"🛍️ {label}", MINI_APP_URL)]]
+    # Direct HTTPS links do not include Telegram Web App initData.  Keep the
+    # persistent menu on MINI_APP_URL, but use the bot deep link in replies so
+    # wallet/catalog calls authenticate even when the customer taps a card.
+    return [[Button.url(f"🛍️ {label}", "https://t.me/LisansArenaBot/app")]]
 
 
 def _product_price_text(product: dict[str, Any]) -> str:
@@ -485,7 +488,11 @@ async def show_product_detail(event, prod_id: str, *, edit: bool = True):
     delivery = product.get("delivery") or "⚡ Anında Otomatik Kod/Hesap Teslimi"
     warranty = product.get("warranty") or "🛡️ Süresi Boyunca %100 Değişim & Telafi Garantili"
     badge = product.get("badge") or "💎 ORİJİNAL LİSANS"
-    shopier_url = product.get("shopier_url") or product.get("url") or "https://www.shopier.com/lisansarena"
+    # Never send a LisansArena customer to a foreign Shopier seller (notably
+    # KeyVadi) when an old catalog row contains a generic/retired URL.  The
+    # Mini App deep link is the safe fallback and preserves this product's
+    # catalog price and ID.
+    shopier_url = purchase_url(product, "lisansarena", "bot_product_detail")
     bot_app_url = f"https://t.me/LisansArenaBot/app?startapp=p_{prod_id}"
 
     text = (

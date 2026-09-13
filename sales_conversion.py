@@ -394,6 +394,27 @@ def is_allowed_internal_purchase_url(url: str) -> bool:
         return False
 
 
+def is_lisansarena_shopier_url(url: str) -> bool:
+    """Accept only listings owned by the LisansArena Shopier storefront.
+
+    Legacy catalog rows used bare Shopier product URLs.  Those IDs are not
+    enough to prove seller ownership and can point at KeyVadi or another
+    account, so LisansArena falls back to its own Mini App until a canonical
+    ``/lisansarena/<id>`` listing is present.
+    """
+    try:
+        parsed = urlparse(str(url))
+        path = (parsed.path or "").rstrip("/").lower()
+        return (
+            parsed.scheme == "https"
+            and (parsed.hostname or "").lower() in SHOPIER_HOSTS
+            and path.startswith("/lisansarena/")
+            and path.rsplit("/", 1)[-1].isdigit()
+        )
+    except Exception:
+        return False
+
+
 def purchase_target_url(brand: str, product: dict) -> str:
     """Return the product-specific Shopier or Mini App purchase target."""
     target = str(product.get("shopier_url") or product.get("url") or "")
@@ -777,12 +798,16 @@ def parse_purchase_token(token: str) -> dict | None:
 
 def purchase_url(product: dict, brand: str, source: str, arm: str = "") -> str:
     shopier_link = str(product.get("shopier_url") or product.get("url") or "")
-    if shopier_link and is_allowed_shopier_url(shopier_link):
+    brand_name = str(brand).lower()
+    if shopier_link and (
+        is_allowed_shopier_url(shopier_link)
+        and (brand_name != "lisansarena" or is_lisansarena_shopier_url(shopier_link))
+    ):
         token = make_purchase_token(
             brand, product.get("id", ""), source, arm, product.get("_cta_id", "")
         )
         return f"{PUBLIC_BASE_URL}/go/{token}" if token else shopier_link
-    if str(brand).lower() == "lisansarena":
+    if brand_name == "lisansarena":
         pid = product.get("id", "")
         return f"https://t.me/LisansArenaBot/app?startapp=p_{pid}" if pid else "https://t.me/LisansArenaBot/app"
     token = make_purchase_token(
