@@ -418,6 +418,11 @@ def is_lisansarena_shopier_url(url: str) -> bool:
 def purchase_target_url(brand: str, product: dict) -> str:
     """Return the product-specific Shopier or Mini App purchase target."""
     target = str(product.get("shopier_url") or product.get("url") or "")
+    if str(brand).lower() == "lisansarena" and any(
+        marker in target.casefold() for marker in ("/keyvadi/", "/froxyai/")
+    ):
+        pid = product.get("id", "")
+        return f"https://t.me/LisansArenaBot/app?startapp=p_{pid}" if pid else "https://t.me/LisansArenaBot/app"
     if target and (is_allowed_shopier_url(target) or is_allowed_internal_purchase_url(target)):
         return target
     if str(brand).lower() == "lisansarena":
