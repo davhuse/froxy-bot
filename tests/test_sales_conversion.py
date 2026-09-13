@@ -17,6 +17,7 @@ from sales_conversion import (
     load_sales_catalog,
     make_purchase_token,
     match_sales_products,
+    normalize_sales_text,
     parse_cta_start_parameter,
     parse_purchase_token,
     listing_url,
@@ -44,12 +45,14 @@ class SalesCatalogMatchingTests(unittest.TestCase):
     def setUpClass(cls):
         cls.keyvadi = load_sales_catalog("keyvadi")
         cls.froxy = load_sales_catalog("froxy")
+        cls.lisansarena = load_sales_catalog("lisansarena")
         cls.all_products = cls.keyvadi + cls.froxy
 
     def test_all_active_products_match_their_own_name(self):
         self.assertGreaterEqual(len(self.keyvadi), 65)
         self.assertEqual(len(self.froxy), 19)
-        for catalog in (self.keyvadi, self.froxy):
+        self.assertEqual(len(self.lisansarena), 57)
+        for catalog in (self.keyvadi, self.froxy, self.lisansarena):
             for product in catalog:
                 with self.subTest(product=product["title"]):
                     matches = match_sales_products(product["title"], catalog)
@@ -85,7 +88,10 @@ class SalesCatalogMatchingTests(unittest.TestCase):
                 matches = match_sales_products(query, self.all_products)
                 self.assertGreaterEqual(len(matches), 1)
                 self.assertLessEqual(len(matches), 3)
-                self.assertTrue(all(query.casefold() in item["title"].casefold() for item in matches))
+                normalized_query = normalize_sales_text(query)
+                self.assertTrue(
+                    all(normalized_query in normalize_sales_text(item["title"]) for item in matches)
+                )
 
     def test_specific_variant_returns_one_product(self):
         matches = match_sales_products("chatgpt plus 1 aylik kisisel", self.all_products)

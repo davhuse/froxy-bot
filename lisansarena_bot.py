@@ -35,6 +35,7 @@ from support_flow import (
     respond_with_floodwait,
     save_ticket_record,
 )
+from bot_runtime_status import invalid_token_error, write_bot_status
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -71,7 +72,7 @@ _render_external_url = os.environ.get("RENDER_EXTERNAL_URL", "").strip().rstrip(
 _canonical_mini_app_url = (
     f"{_render_external_url}/la/app/"
     if _render_external_url
-    else "https://froxy-bot-kgky.onrender.com/la/app/"
+    else "https://froxy-bot-live-r5se.onrender.com/la/app/"
 )
 if _render_external_url:
     # Render migration: the platform-provided public URL is authoritative.
@@ -1171,28 +1172,35 @@ async def private_message_handler(event):
             await send_product_card(event, matched_products)
             return
 
-    # Forward customer question to Support Chat / Admin
-    forwarded = await forward_customer_message(
-        bot, event, SUPPORT_CHAT_ID, "LisansArena"
+    # Acknowledge the customer before support persistence/network work so a
+    # generic question never looks unanswered.
+    await event.respond(
+        "👋 **LisansArena Müşteri Hizmetlerine Hoş Geldiniz!**\n\n"
+        "Mesajınız destek ekibimize iletildi. Ürünleri hemen inceleyebilir veya canlı destek talebi oluşturabilirsiniz.",
+        buttons=[
+            [Button.url("🛍️ LisansArena Mağazasını Aç", MINI_APP_URL)],
+            [Button.inline("💬 Canlı Destek", b"ticket_support")],
+        ],
     )
-    if forwarded:
-        record_event(
-            "human_handoff", "LisansArena", source="telegram_private",
-            reason=dm_intent,
-        )
-
-    if await claim_first_greeting("lisansarena", event.sender_id):
-        await event.respond(
-            "👋 **LisansArena Müşteri Hizmetlerine Hoş Geldiniz!**\n\n"
-            "Talebiniz canlı destek ekibimize iletildi, en kısa sürede buradan yanıt alacaksınız.\n\n"
-            "Orijinal lisansları incelemek, bakiye yüklemek ve 7/24 anında teslimatla sipariş vermek için aşağıdaki butondan mağazamızı açabilirsiniz.",
-            buttons=mini_app_markup("🛍️ LisansArena Mağazasını Aç"),
-        )
+    asyncio.create_task(
+        forward_customer_message(bot, event, SUPPORT_CHAT_ID, "LisansArena")
+    )
+    record_event(
+        "human_handoff", "LisansArena", source="telegram_private",
+        reason=dm_intent,
+    )
+    record_event(
+        "dm_reply_sent", "LisansArena", source="telegram_private",
+        product="generic_menu",
+    )
 
 
 # ==================== MAIN LOOP ====================
 
 async def main():
+    write_bot_status(
+        "lisansarena", state="connecting", telegram_ready=False, token=BOT_TOKEN
+    )
     while True:
         try:
             await bot.start(bot_token=BOT_TOKEN)
@@ -1205,11 +1213,34 @@ async def main():
             else:
                 logger.info("Bot profile configuration skipped; canonical Mini App URL is %s", MINI_APP_URL)
             me = await bot.get_me()
+            write_bot_status(
+                "lisansarena",
+                state="ready",
+                telegram_ready=True,
+                token=BOT_TOKEN,
+                bot_username=getattr(me, "username", None),
+                connected=True,
+            )
             logger.info("LisansArena bot running as @%s", me.username)
             await bot.run_until_disconnected()
         except FloodWaitError as exc:
+            write_bot_status(
+                "lisansarena", state="retrying", telegram_ready=False,
+                token=BOT_TOKEN, last_error=type(exc).__name__,
+            )
             await asyncio.sleep(exc.seconds + 5)
         except Exception as exc:
+            if invalid_token_error(exc):
+                write_bot_status(
+                    "lisansarena", state="invalid_token", telegram_ready=False,
+                    token=BOT_TOKEN, last_error=type(exc).__name__,
+                )
+                logger.error("Bot token is invalid or expired; waiting for a replacement token.")
+                return
+            write_bot_status(
+                "lisansarena", state="error", telegram_ready=False,
+                token=BOT_TOKEN, last_error=type(exc).__name__,
+            )
             logger.error("Bot runtime error: %s", exc)
             await asyncio.sleep(30)
 

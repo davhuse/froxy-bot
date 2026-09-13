@@ -3297,7 +3297,11 @@ def froxy_product_reply(product, source="ad_account_dm", arm=""):
 def lisansarena_product_reply(product, source="ad_account_dm", arm=""):
     """Clean product info with a product-specific Telegram Mini App action."""
     price = product.get("price") or "Ürün sayfasında"
-    target = purchase_url(product, "lisansarena", source, arm)
+    product_id = str(product.get("id") or "").strip()
+    target = (
+        f"https://t.me/LisansArenaBot/app?startapp=p_{product_id}"
+        if product_id else "https://t.me/LisansArenaBot/app"
+    )
     reply = (
         f"📦 **{product['title']}**\n"
         f"💳 Fiyat: **{price}**\n"
@@ -3808,7 +3812,12 @@ def disabled_ad_accounts():
 
 
 def is_lisansarena_ad_disabled() -> bool:
-    """LisansArena reklam hesabi 13 Eylul 2026 saat 12:00'ye kadar (TR saati) kapali tutulur."""
+    """Honor explicit holds, otherwise use the temporary safety cutoff."""
+    if "lisansarenaonline" in disabled_ad_accounts():
+        return True
+    configured = os.environ.get("DISABLE_LISANSARENA_AD")
+    if configured is not None and configured.strip():
+        return configured.strip().casefold() in {"1", "true", "yes", "on"}
     from datetime import datetime, timezone, timedelta
     tz_tr = timezone(timedelta(hours=3))
     unlock_time = datetime(2026, 9, 13, 12, 0, 0, tzinfo=tz_tr)

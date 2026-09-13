@@ -117,6 +117,7 @@ BRAND_PHRASES = (
     "magnific", "zula", "fc 26", "fc26", "codex", "antigravity", "disney", "minecraft",
     "cape", "pelerin", "roblox", "instagram", "takipci", "gmail", "claude",
     "s sport", "yemeksepeti", "turna", "coffy", "cofy", "migros",
+    "tiktak", "flo", "lumberjack", "in street", "enuygun",
     "yemeksepeti 200", "yemeksepeti 450",
     "baslangic", "populer", "profesyonel", "gelistirici", "isletme", "kurumsal"
 )

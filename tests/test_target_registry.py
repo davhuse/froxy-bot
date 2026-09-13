@@ -191,10 +191,13 @@ class DiscoverySafetyTests(unittest.IsolatedAsyncioTestCase):
 
 
 class ExpectedAdAccountsTests(unittest.TestCase):
-    def test_lisansarena_disabled_by_default(self):
+    def test_lisansarena_enabled_after_safety_cutoff_by_default(self):
         with mock.patch.dict(os.environ, {}, clear=True):
             expected = publisher.get_expected_ad_accounts()
-            self.assertEqual(expected, {"FroxyOnline", "KeyVadiOnline"})
+            self.assertEqual(
+                expected,
+                {"FroxyOnline", "KeyVadiOnline", "LisansArenaOnline"},
+            )
 
     def test_lisansarena_disabled_when_explicitly_set(self):
         with mock.patch.dict(

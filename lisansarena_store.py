@@ -411,30 +411,28 @@ class LisansArenaStore:
                     ))
 
     def import_legacy_drafts(self):
-        """Synchronize the full Mini App catalogue independently of Shopier.
+        """Synchronize the canonical 57-item Mini App catalogue.
 
-        Shopier remains only the wallet top-up rail. The archived 34 entries,
-        the 10 products named in Shopier's removal notice and the six approved
-        advert products are sold as manual-delivery products inside Telegram.
+        Historical seed files used a different ID scheme and drifted away from
+        the customer-facing bot catalogue.  ``products_db.json`` is now the
+        single source of truth; obsolete legacy rows are retained for order
+        history but unpublished.
         """
+        path = os.path.join(
+            os.path.dirname(__file__), "miniapp_lisansarena", "products_db.json"
+        )
         seed = []
-        for filename in (
-            "lisansarena_shopier_links.json",
-            "lisansarena_catalog_additions.json",
-        ):
-            path = os.path.join(os.path.dirname(__file__), filename)
-            if os.path.exists(path):
-                with open(path, "r", encoding="utf-8") as handle:
-                    seed.extend(json.load(handle))
+        if os.path.exists(path):
+            with open(path, "r", encoding="utf-8") as handle:
+                seed = json.load(handle)
         if not seed:
             return
+        canonical_ids = {str(item.get("id") or "") for item in seed}
+        canonical_ids.discard("")
         now = utcnow()
         with self.engine.begin() as conn:
-            activation_done = conn.execute(select(audit_log.c.id).where(
-                audit_log.c.action == "catalog_seed_v2_activated"
-            ).limit(1)).first() is not None
-            price_alignment_done = conn.execute(select(audit_log.c.id).where(
-                audit_log.c.action == "catalog_prices_v3_aligned"
+            canonical_sync_done = conn.execute(select(audit_log.c.id).where(
+                audit_log.c.action == "catalog_seed_v4_canonical_57"
             ).limit(1)).first() is not None
             existing = {
                 row.legacy_shopier_id: row.id
@@ -450,7 +448,7 @@ class LisansArenaStore:
                 values = dict(
                     legacy_shopier_id=legacy_id,
                     name=str(item.get("title") or "İsimsiz ürün")[:220],
-                    description=str(item.get("description") or ""),
+                    description=str(item.get("desc") or item.get("description") or ""),
                     category=storefront_category(item.get("title") or ""),
                     price_cents=cents(item.get("price") or item.get("priceData", {}).get("price") or 0),
                     delivery_type="manual",
@@ -459,41 +457,24 @@ class LisansArenaStore:
                     updated_at=now,
                 )
                 if legacy_id in existing:
-                    if not activation_done:
+                    if not canonical_sync_done:
                         conn.execute(update(products).where(
                             products.c.id == existing[legacy_id]
-                        ).values(
-                            price_cents=values["price_cents"],
-                            delivery_type="manual",
-                            published=True,
-                            guide="Teslimat en geç 24 saat içinde sipariş kaydına eklenir.",
-                            updated_at=now,
-                        ))
-                    elif not price_alignment_done:
-                        conn.execute(update(products).where(
-                            products.c.id == existing[legacy_id]
-                        ).values(
-                            price_cents=values["price_cents"],
-                            updated_at=now,
-                        ))
+                        ).values(**values))
                 else:
                     conn.execute(insert(products).values(
                         **values, cost_cents=None, created_at=now
                     ))
-            if not activation_done:
+            if not canonical_sync_done:
+                conn.execute(update(products).where(and_(
+                    products.c.legacy_shopier_id.is_not(None),
+                    products.c.legacy_shopier_id.not_in(canonical_ids),
+                )).values(published=False, updated_at=now))
                 conn.execute(insert(audit_log).values(
                     admin_id=None,
-                    action="catalog_seed_v2_activated",
+                    action="catalog_seed_v4_canonical_57",
                     target="lisansarena_catalog",
-                    detail="Archived 34 + Shopier notice 10 + approved advert 6 activated for Mini App",
-                    created_at=now,
-                ))
-            if not price_alignment_done:
-                conn.execute(insert(audit_log).values(
-                    admin_id=None,
-                    action="catalog_prices_v3_aligned",
-                    target="lisansarena_catalog",
-                    detail="Approved LisansArena advert prices aligned once",
+                    detail="Canonical 57-item products_db catalogue synchronized",
                     created_at=now,
                 ))
 
@@ -597,7 +578,7 @@ class LisansArenaStore:
             return [{**dict(row), "price": money(row["price_cents"]), "stock": int(row["stock"])} for row in rows]
 
     def storefront_catalog(self):
-        """Show every unique product; drafts remain requestable but not purchasable."""
+        """Show each published canonical product once."""
         with self.engine.connect() as conn:
             stock_count = select(func.count(inventory.c.id)).where(and_(inventory.c.product_id == products.c.id, inventory.c.sold_order_id.is_(None))).scalar_subquery()
             rows = conn.execute(
@@ -605,6 +586,7 @@ class LisansArenaStore:
                 .select_from(products.outerjoin(
                     product_display, product_display.c.product_id == products.c.id
                 ))
+                .where(products.c.published.is_(True))
                 .order_by(
                     product_display.c.featured.desc(),
                     product_display.c.display_order,
@@ -1634,12 +1616,18 @@ def la_store_health_endpoint():
     try:
         store = get_store()
         with store.engine.connect() as conn:
-            product_count = conn.execute(select(func.count()).select_from(products)).scalar_one()
+            product_count = conn.execute(select(func.count()).select_from(products).where(
+                products.c.published.is_(True)
+            )).scalar_one()
+            database_product_count = conn.execute(
+                select(func.count()).select_from(products)
+            ).scalar_one()
         storefront_count = len(store.storefront_catalog())
         return jsonify({
             "ok": True,
             "database": "ready",
             "product_count": product_count,
+            "database_product_count": database_product_count,
             "storefront_count": storefront_count,
             "duplicate_records_hidden": max(0, int(product_count) - storefront_count),
         })

@@ -614,15 +614,17 @@ async function saveMessage3(event) {
 // SUPPORT CUSTOMER BOT LOGIC
 async function checkSupportStatus() {
     try {
-        const res = await fetch('/api/support/status');
+        const res = await adminFetch('/api/support/status');
         const data = await res.json();
-        updateSupportStatusUI(data.status);
+        updateSupportStatusUI(data);
     } catch (e) {
         updateSupportStatusUI('offline');
     }
 }
 
 function updateSupportStatusUI(status) {
+    const detail = typeof status === 'object' ? status : { status };
+    status = detail.status;
     UI.supportStatusBadge.className = 'status-badge ' + status;
     
     if (status === 'running') {
@@ -634,7 +636,7 @@ function updateSupportStatusUI(status) {
         UI.btnSupportStart.disabled = false; UI.btnSupportStart.style.opacity = '1';
         UI.btnSupportStop.disabled = true; UI.btnSupportStop.style.opacity = '0.5';
     } else {
-        UI.supportStatusText.textContent = 'Bağlantı Yok';
+        UI.supportStatusText.textContent = status === 'invalid_token' ? 'Token Geçersiz' : 'Bağlantı Yok';
         UI.btnSupportStart.disabled = true; UI.btnSupportStop.disabled = true;
     }
 }
@@ -660,15 +662,17 @@ async function stopSupportBot() {
 // FROXY AI BOT LOGIC
 async function checkFroxyStatus() {
     try {
-        const res = await fetch('/api/froxy/status');
+        const res = await adminFetch('/api/froxy/status');
         const data = await res.json();
-        updateFroxyStatusUI(data.status);
+        updateFroxyStatusUI(data);
     } catch (e) {
         updateFroxyStatusUI('offline');
     }
 }
 
 function updateFroxyStatusUI(status) {
+    const detail = typeof status === 'object' ? status : { status };
+    status = detail.status;
     UI.froxyStatusBadge.className = 'status-badge ' + status;
     
     if (status === 'running') {
@@ -680,7 +684,7 @@ function updateFroxyStatusUI(status) {
         UI.btnFroxyStart.disabled = false; UI.btnFroxyStart.style.opacity = '1';
         UI.btnFroxyStop.disabled = true; UI.btnFroxyStop.style.opacity = '0.5';
     } else {
-        UI.froxyStatusText.textContent = 'Bağlantı Yok';
+        UI.froxyStatusText.textContent = status === 'invalid_token' ? 'Token Geçersiz' : 'Bağlantı Yok';
         UI.btnFroxyStart.disabled = true; UI.btnFroxyStop.disabled = true;
     }
 }
@@ -748,15 +752,17 @@ async function saveFroxyConfig() {
 // LISANSARENA BOT LOGIC
 async function checkLisansarenaStatus() {
     try {
-        const res = await fetch('/api/lisansarena/status');
+        const res = await adminFetch('/api/lisansarena/status');
         const data = await res.json();
-        updateLisansarenaStatusUI(data.status);
+        updateLisansarenaStatusUI(data);
     } catch (e) {
         updateLisansarenaStatusUI('offline');
     }
 }
 
 function updateLisansarenaStatusUI(status) {
+    const detail = typeof status === 'object' ? status : { status };
+    status = detail.status;
     UI.lisansarenaStatusBadge.className = 'status-badge ' + status;
     
     if (status === 'running') {
@@ -768,7 +774,7 @@ function updateLisansarenaStatusUI(status) {
         UI.btnLisansarenaStart.disabled = false; UI.btnLisansarenaStart.style.opacity = '1';
         UI.btnLisansarenaStop.disabled = true; UI.btnLisansarenaStop.style.opacity = '0.5';
     } else {
-        UI.lisansarenaStatusText.textContent = 'Bağlantı Yok';
+        UI.lisansarenaStatusText.textContent = status === 'invalid_token' ? 'Token Geçersiz' : 'Bağlantı Yok';
         UI.btnLisansarenaStart.disabled = true; UI.btnLisansarenaStop.disabled = true;
     }
 }

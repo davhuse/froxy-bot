@@ -24,6 +24,7 @@ from sales_conversion import (
     parse_cta_start_parameter,
     listing_url,
 )
+from bot_runtime_status import invalid_token_error, write_bot_status
 
 # Logging configuration
 logging.basicConfig(
@@ -892,17 +893,6 @@ async def message_handler(event):
         record_event("dm_reply_sent", "Froxy AI", source="telegram_private", product=matched_products[0].get("title", ""))
         return
 
-    if one_time_mode_enabled() and not is_admin_context:
-        buttons = [[Button.inline("🚫 Kullanıcıyı Engelle (Ban)", f"adm_ban_{user_id}".encode())]]
-        if await forward_customer_message(bot, event, support_chat_id, "Froxy AI", buttons):
-            record_event("dm_manual_forwarded", "Froxy AI", source="telegram_private")
-            if await claim_first_greeting("froxy", user_id):
-                await event.respond(greeting_for("Froxy AI"))
-                record_event("dm_greeting_sent", "Froxy AI", source="telegram_private")
-        if user_states.get(user_id) == "AWAITING_SUPPORT":
-            user_states[user_id] = None
-            return
-
     if user_states.get(user_id) == "AWAITING_VERIFY_PAYMENT_INFO":
         if event.text.startswith('/'):
             user_states[user_id] = None
@@ -991,12 +981,35 @@ async def message_handler(event):
         user_states[user_id] = None
         return
 
-    if not is_admin_context and event.text:
+    if (
+        not is_admin_context
+        and event.text
+        and user_states.get(user_id) != "AWAITING_SUPPORT"
+    ):
         if dm_intent != INTENT_SALES_LEAD:
+            lang = user_lang_helper.get_user_lang(user_id) or "tr"
+            t = TEXTS[lang]
+            await event.respond(
+                greeting_for("Froxy AI"),
+                buttons=[
+                    [froxy_app_button("🚀 Froxy AI Uygulamasını Aç")],
+                    [Button.inline(t["support_btn"], b"menu_support")],
+                ],
+            )
+            asyncio.create_task(
+                forward_customer_message(
+                    bot,
+                    event,
+                    support_chat_id,
+                    "Froxy AI",
+                    [[Button.inline("🚫 Kullanıcıyı Engelle (Ban)", f"adm_ban_{user_id}".encode())]],
+                )
+            )
             record_event(
                 "human_handoff", "Froxy AI", source="telegram_private",
                 reason=dm_intent,
             )
+            record_event("dm_reply_sent", "Froxy AI", source="telegram_private", product="generic_menu")
             return
         context = SUPPORT_SALES_CONTEXT.get(user_id)
         if context and context.get("expires_at", 0) > asyncio.get_running_loop().time():
@@ -1140,12 +1153,23 @@ if __name__ == '__main__':
     
     async def start_with_retry():
         global BOT_USER_ID
+        write_bot_status(
+            "froxy", state="connecting", telegram_ready=False, token=BOT_TOKEN
+        )
         while True:
             try:
                 logger.info("Starting Froxy AI Support Bot (@FroxyDestekBOT)...")
                 await bot.start(bot_token=BOT_TOKEN)
                 me = await bot.get_me()
                 BOT_USER_ID = me.id
+                write_bot_status(
+                    "froxy",
+                    state="ready",
+                    telegram_ready=True,
+                    token=BOT_TOKEN,
+                    bot_username=getattr(me, "username", None),
+                    connected=True,
+                )
                 try:
                     configure_bot_profile()
                     logger.info("Froxy Telegram profile and menu configured for Shopier.")
@@ -1154,10 +1178,25 @@ if __name__ == '__main__':
                 logger.info(f"Froxy AI Support Bot started successfully! Bot User ID: {BOT_USER_ID}")
                 await bot.run_until_disconnected()
             except FloodWaitError as e:
+                write_bot_status(
+                    "froxy", state="retrying", telegram_ready=False,
+                    token=BOT_TOKEN, last_error=type(e).__name__,
+                )
                 logger.warning(f"FloodWait: Telegram {e.seconds} saniye beklememizi istiyor. Bekleniyor...")
                 await asyncio.sleep(e.seconds + 5)
                 logger.info("FloodWait süresi bitti, tekrar deneniyor...")
             except Exception as e:
+                if invalid_token_error(e):
+                    write_bot_status(
+                        "froxy", state="invalid_token", telegram_ready=False,
+                        token=BOT_TOKEN, last_error=type(e).__name__,
+                    )
+                    logger.error("Bot token is invalid or expired; waiting for a replacement token.")
+                    return
+                write_bot_status(
+                    "froxy", state="error", telegram_ready=False,
+                    token=BOT_TOKEN, last_error=type(e).__name__,
+                )
                 logger.error(f"Bot başlatma hatası: {e}")
                 await asyncio.sleep(30)
     

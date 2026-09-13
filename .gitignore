@@ -61,6 +61,7 @@ blacklist_legacy_backup_*.txt
 
 # Seven-day sales funnel runtime journal
 sales_metrics.jsonl
+/sales_bot_status_*.json
 
 # Mini App local credentials and mutable runtime state
 .env

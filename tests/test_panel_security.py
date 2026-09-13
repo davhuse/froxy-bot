@@ -64,6 +64,17 @@ class PanelSecurityTests(unittest.TestCase):
                 self.assertFalse(account["telegram_connected"])
                 self.assertFalse(account["telegram_authorized"])
 
+    def test_sales_status_exposes_telegram_readiness(self):
+        headers = {"X-Admin-Token": "test-panel-token"}
+        response = self.client.get("/api/support/status", headers=headers)
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertIn("process_running", payload)
+        self.assertIn("telegram_ready", payload)
+        self.assertIn("state", payload)
+        self.assertIn("last_error", payload)
+        self.assertIn("last_connected_at", payload)
+
     def test_process_matcher_never_treats_a_shell_command_as_the_bot(self):
         self.assertFalse(self.module.command_runs_python_script(
             "powershell.exe",

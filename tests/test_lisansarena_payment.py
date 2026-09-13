@@ -42,17 +42,17 @@ class LisansArenaPaymentTests(unittest.TestCase):
             second = store.get_or_create(42, "product-2", now=100)
         self.assertNotEqual(first["code"], second["code"])
 
-    def test_bot_has_no_public_shopier_checkout_or_auto_delivery(self):
+    def test_bot_has_direct_shopier_checkout_and_no_fake_auto_delivery(self):
         source = Path("lisansarena_bot.py").read_text(encoding="utf-8")
-        self.assertNotIn("https://www.shopier.com", source)
+        self.assertIn("https://www.shopier.com", source)
+        self.assertIn("Shopier ile Güvenle Satın Al", source)
         self.assertIn("Button.url", source)
         self.assertNotIn("Ödemeniz Başarıyla Doğrulandı", source)
 
-    def test_mini_app_uses_inline_webview_markup(self):
+    def test_mini_app_uses_inline_url_markup(self):
         source = Path("lisansarena_bot.py").read_text(encoding="utf-8")
-        self.assertIn("ReplyInlineMarkup", source)
-        self.assertIn("KeyboardButtonWebView", source)
         self.assertNotIn("ReplyKeyboardMarkup", source)
+        self.assertIn("Button.url", source)
         self.assertIn("setChatMenuButton", source)
         self.assertIn("ButtonTypeInvalidError", source)
 

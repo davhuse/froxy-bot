@@ -58,8 +58,12 @@ class LisansArenaBotGuardTests(unittest.TestCase):
     def test_generic_private_handler_does_not_answer_commands(self):
         self.assertIn('or (event.raw_text or "").startswith("/")', SOURCE)
 
+    def test_generic_private_message_gets_immediate_menu(self):
+        self.assertIn('product="generic_menu"', SOURCE)
+        self.assertIn('asyncio.create_task(', SOURCE)
+
     def test_mini_app_first_integration(self):
-        self.assertIn('buttons = mini_app_markup("Mağazayı Aç (Mini App)")', SOURCE)
+        self.assertIn('Button.url("🛍️ Web Mağazasını Aç (Mini App)", MINI_APP_URL)', SOURCE)
         self.assertIn('miniapp_lisansarena', SOURCE)
         self.assertIn('get_or_create_la_user', SOURCE)
         self.assertIn('load_la_users', SOURCE)
@@ -69,9 +73,12 @@ class LisansArenaBotGuardTests(unittest.TestCase):
         products = json.loads(
             Path("miniapp_lisansarena/products_db.json").read_text(encoding="utf-8")
         )
-        self.assertTrue(products)
+        self.assertEqual(len(products), 57)
         self.assertTrue(all(product.get("title") for product in products))
         self.assertTrue(all(product.get("price") or product.get("price_cents") is not None for product in products))
+        encoded = json.dumps(products, ensure_ascii=False)
+        self.assertNotIn("\ufffd", encoded)
+        self.assertFalse(any(marker in encoded for marker in ("Ã", "Ä", "Å")))
         self.assertIn("current_product_catalog_messages()", SOURCE)
         self.assertIn("load_la_products()", SOURCE)
         self.assertIn("len(candidate) > 3500", SOURCE)

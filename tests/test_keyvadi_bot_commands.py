@@ -60,7 +60,7 @@ class KeyVadiBotCommandsTest(unittest.TestCase):
         markup = froxy_bot.mini_app_markup()
         self.assertIsNotNone(markup)
         
-        all_buttons = [btn for row in markup.rows for btn in row.buttons]
+        all_buttons = [btn for row in markup for btn in row]
         group_btns = [b for b in all_buttons if hasattr(b, 'url') and 't.me' in b.url]
         self.assertTrue(len(group_btns) > 0, 'Expected at least one Telegram group link button in menu')
 

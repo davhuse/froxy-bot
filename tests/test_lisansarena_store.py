@@ -44,7 +44,7 @@ class LisansArenaStoreTests(unittest.TestCase):
                 reference_type="test", reference_id=reference, created_at=store_module.utcnow(),
             ))
 
-    def test_full_catalog_hides_duplicate_product_names_in_the_mini_app(self):
+    def test_full_catalog_uses_all_57_canonical_products(self):
         with self.store.engine.connect() as conn:
             count = conn.execute(select(func.count()).select_from(store_module.products)).scalar_one()
             published = conn.execute(select(func.count()).select_from(store_module.products).where(store_module.products.c.published.is_(True))).scalar_one()
@@ -53,7 +53,7 @@ class LisansArenaStoreTests(unittest.TestCase):
 
     def test_storefront_has_a_real_cart_action_and_generated_cover_for_every_product(self):
         catalog = self.store.storefront_catalog()
-        self.assertEqual(len(catalog), 56)
+        self.assertEqual(len(catalog), 57)
         normalized_names = {" ".join(item["name"].casefold().split()) for item in catalog}
         self.assertEqual(len(normalized_names), len(catalog))
         self.assertTrue(all(item["available"] is True for item in catalog))
@@ -75,17 +75,14 @@ class LisansArenaStoreTests(unittest.TestCase):
             for item in self.store.storefront_catalog()
         }
         expected = {
-            "ChatGPT Plus 30 Gün - Kişisel": 49990,
-            "ChatGPT Plus 30 Gün - Ortak": 6990,
-            "Gemini Pro 3 Aylık": 5990,
+            "Gemini Pro 18 Aylık Promosyon Linki (5+ Davet Hakkı)": 16500,
+            "Gemini Pro Davet (12 Aylık Lisans)": 9999,
             "Gemini Ultra (2.5k Kredili Hesap)": 59999,
             "Gamma Pro (1 Aylık Hesap)": 29999,
-            "Canva Pro (1 Yıllık Yetki)": 8399,
-            "Discord Nitro 14X Boost - 1 Aylık": 22499,
-            "Xbox Game Pass Ultimate 3 Aylık": 8990,
-            "Windows 10/11 Pro Lisans Anahtarı (Key)": 7000,
-            "Microsoft Office 365 (1 Yıllık Hesap)": 7000,
-            "Kaspersky Premium 1 Yıl - 1 Cihaz": 24499,
+            "Canva Pro (1 Yıllık Yetki & Özel Lisans)": 8399,
+            "Canva Pro Öğrenci (1 Yıllık Lisans)": 4990,
+            "Windows 10 / 11 Pro Orijinal Lisans Key": 4990,
+            "Office 365 Pro Plus Kişisel Hesap": 6990,
             "Shell 75 TL Akaryakıt Puanı": 1499,
         }
         for name, price_cents in expected.items():

@@ -33,6 +33,7 @@ from shopier_orders import ingest_shopier_order, reconcile_configured_orders
 from group_policy import load_policies, moderation_snapshot
 from target_registry import TargetRegistry
 from lisansarena_store import la as lisansarena_store_blueprint, start_store_worker
+from bot_runtime_status import read_bot_status, restart_blocked_for_token
 
 base_dir = os.path.abspath(os.path.dirname(__file__))
 app = Flask(__name__, 
@@ -201,6 +202,39 @@ AD_STOP_FILE = "ad_worker.disabled"
 AD_SMOKE_ACTIVE_FILE = "ad_smoke.active.json"
 AD_SMOKE_RESULT_FILE = "ad_smoke_result.json"
 AD_SMOKE_CHECKPOINT_FILE = "blast_smoke_checkpoint.json"
+
+SALES_BOT_SCRIPTS = {
+    "keyvadi": "froxy_bot.py",
+    "froxy": "froxy_destek_bot.py",
+    "lisansarena": "lisansarena_bot.py",
+}
+
+
+def sales_bot_status(brand):
+    """Combine process liveness with the bot's Telegram authorization state."""
+    script_name = SALES_BOT_SCRIPTS[brand]
+    process = get_process_by_script(script_name)
+    process_running = process is not None
+    runtime = read_bot_status(brand)
+    process_matches_status = bool(
+        process_running
+        and runtime.get("pid")
+        and str(runtime["pid"]) == str(process.pid)
+    )
+    telegram_ready = bool(process_matches_status and runtime.get("telegram_ready"))
+    state = runtime.get("state") or ("starting" if process_running else "stopped")
+    if not process_running and state not in {"invalid_token", "disabled"}:
+        state = "stopped"
+    return {
+        "status": "running" if telegram_ready else state,
+        "state": state,
+        "process_running": process_running,
+        "telegram_ready": telegram_ready,
+        "last_error": runtime.get("last_error"),
+        "last_connected_at": runtime.get("last_connected_at"),
+        "bot_username": runtime.get("bot_username"),
+        "updated_at": runtime.get("updated_at"),
+    }
 
 
 def bot_runtime_enabled():
@@ -581,7 +615,10 @@ def bot_watchdog(lease_owner=None):
                     ad_process = None
 
             # 2. Check Support Bot (froxy_bot.py)
-            if has_token and support_enabled:
+            keyvadi_restart_blocked = bool(
+                has_token and restart_blocked_for_token("keyvadi", token)
+            )
+            if has_token and support_enabled and not keyvadi_restart_blocked:
                 support_proc_os = get_process_by_script('froxy_bot.py')
                 if support_proc_os is None:
                     print("🤖 [Watchdog] Destek botu aktif değil veya durmuş. Başlatılıyor...")
@@ -637,7 +674,10 @@ def bot_watchdog(lease_owner=None):
                 except Exception:
                     pass
 
-            if has_froxy_token and froxy_enabled:
+            froxy_restart_blocked = bool(
+                has_froxy_token and restart_blocked_for_token("froxy", froxy_token)
+            )
+            if has_froxy_token and froxy_enabled and not froxy_restart_blocked:
                 froxy_proc_os = get_process_by_script('froxy_destek_bot.py')
                 if froxy_proc_os is None:
                     print("🤖 [Watchdog] Froxy AI botu aktif değil veya durmuş. Başlatılıyor...")
@@ -680,7 +720,11 @@ def bot_watchdog(lease_owner=None):
                 if lisansarena_token and lisansarena_token != "YOUR_TELEGRAM_BOT_TOKEN":
                     has_lisansarena_token = True
 
-            if has_lisansarena_token and lisansarena_enabled:
+            lisansarena_restart_blocked = bool(
+                has_lisansarena_token
+                and restart_blocked_for_token("lisansarena", lisansarena_token)
+            )
+            if has_lisansarena_token and lisansarena_enabled and not lisansarena_restart_blocked:
                 la_proc_os = get_process_by_script('lisansarena_bot.py')
                 if la_proc_os is None:
                     print("🤖 [Watchdog] LisansArena botu aktif değil veya durmuş. Başlatılıyor...")
@@ -853,6 +897,10 @@ def status():
             ),
             'pause_reason': queue_state.get('pause_reason'),
         }
+    sales_bots = {
+        brand: sales_bot_status(brand)
+        for brand in SALES_BOT_SCRIPTS
+    }
     return jsonify({
         'status': overall_status,
         'bot_runtime_enabled': bot_runtime_enabled(),
@@ -864,6 +912,7 @@ def status():
         'lisansarena_processes': len(get_processes_by_script('lisansarena_bot.py')),
         'smm_processes': len(get_processes_by_script('smm_worker.py')),
         'smm_runtime_enabled': smm_runtime_enabled(),
+        'sales_bots': sales_bots,
         'ad_accounts': public_ad_accounts,
         'blast_queue': public_queue,
     })
@@ -923,6 +972,14 @@ def system_checkup():
         name: (count == 1 if processes_enabled.get(name, True) else True)
         for name, count in expected_processes.items()
     }
+    sales_readiness = {
+        'keyvadi_support': sales_bot_status('keyvadi'),
+        'froxy_support': sales_bot_status('froxy'),
+        'lisansarena_support': sales_bot_status('lisansarena'),
+    }
+    for name, bot_state in sales_readiness.items():
+        if processes_enabled.get(name):
+            process_health[name] = bool(bot_state.get('telegram_ready'))
     shopier_health = catalog_refresh_status()
     shopier_sync_healthy = not any(
         item.get('state') == 'refresh_failed'
@@ -960,6 +1017,7 @@ def system_checkup():
         'processes': expected_processes,
         'processes_enabled': processes_enabled,
         'processes_healthy': process_health,
+        'sales_bots': sales_readiness,
         'durable_claims': claim_service,
         'lisansarena_store': store_health,
         'lisansarena_traffic_enabled': store_health.get('reachable') is True,
@@ -1491,8 +1549,7 @@ def get_dm_logs():
 
 @app.route('/api/support/status', methods=['GET'])
 def support_status():
-    is_running = get_process_by_script('froxy_bot.py') is not None
-    return jsonify({"status": "running" if is_running else "stopped"})
+    return jsonify(sales_bot_status("keyvadi"))
 
 @app.route('/api/support/start', methods=['POST'])
 def support_start():
@@ -1569,8 +1626,7 @@ def get_support_logs():
 
 @app.route('/api/froxy/status', methods=['GET'])
 def froxy_status():
-    is_running = get_process_by_script('froxy_destek_bot.py') is not None
-    return jsonify({"status": "running" if is_running else "stopped"})
+    return jsonify(sales_bot_status("froxy"))
 
 @app.route('/api/froxy/start', methods=['POST'])
 def froxy_start():
@@ -1678,8 +1734,7 @@ def save_froxy_config():
 
 @app.route('/api/lisansarena/status', methods=['GET'])
 def lisansarena_status():
-    is_running = get_process_by_script('lisansarena_bot.py') is not None
-    return jsonify({"status": "running" if is_running else "stopped"})
+    return jsonify(sales_bot_status("lisansarena"))
 
 @app.route('/api/lisansarena/start', methods=['POST'])
 def lisansarena_start():

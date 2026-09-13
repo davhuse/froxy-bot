@@ -33,6 +33,7 @@ from marketing_cards import (
     parse_fiyatdusur_args,
     parse_sonstok_args,
 )
+from bot_runtime_status import invalid_token_error, write_bot_status
 
 # Async wrappers for firestore_helper to prevent event loop deadlocks/freezes
 async def async_get_document(doc_id):
@@ -128,9 +129,6 @@ AUTO_REPLY_COOLDOWN_SECONDS = 300
 LAST_AUTO_REPLY_TIME = {}
 SUPPORT_SALES_CONTEXT = {}
 USER_CTA_ATTRIBUTION = {}
-MESSAGE_BURST_DEBOUNCE_SECONDS = 1.5
-LATEST_USER_MESSAGE_IDS = {}
-
 def _product_reply_key(user_id, product=None, fallback_key=None):
     if product:
         product_key = str(product.get('id') or product.get('url') or product.get('title') or '').lower()
@@ -172,14 +170,6 @@ USER_EVENT_LOCKS = {}
 def serialize_user_events(handler):
     async def serialized(event, *args, **kwargs):
         user_id = event.sender_id
-        message_id = getattr(event.message, 'id', None)
-        text = getattr(event, 'text', None)
-        if user_id and message_id and text and not text.startswith('/'):
-            LATEST_USER_MESSAGE_IDS[user_id] = message_id
-            await asyncio.sleep(MESSAGE_BURST_DEBOUNCE_SECONDS)
-            if LATEST_USER_MESSAGE_IDS.get(user_id) != message_id:
-                logger.info("Ignoring superseded burst message for user %s (message %s)", user_id, message_id)
-                return
         lock = USER_EVENT_LOCKS.setdefault(user_id, asyncio.Lock())
         async with lock:
             return await handler(event, *args, **kwargs)
@@ -2181,19 +2171,6 @@ async def message_handler(event):
     if not is_admin_context and event.text and dm_intent == INTENT_SALES_LEAD:
         matched_products = match_sales_products(event.text, load_sales_catalog("keyvadi"), limit=6)
 
-    if one_time_mode_enabled() and not is_admin_context:
-        buttons = [[Button.inline("🚫 Kullanıcıyı Engelle (Ban)", f"kv_adm_ban_{user_id}".encode())]]
-        if not matched_products and await forward_customer_message(bot, event, support_chat_id, "KeyVadi", buttons):
-            record_event("dm_manual_forwarded", "KeyVadi", source="telegram_private")
-            if await claim_first_greeting("keyvadi", user_id):
-                await event.respond(greeting_for("KeyVadi"))
-                record_event("dm_greeting_sent", "KeyVadi", source="telegram_private")
-        # A support-form message has already been forwarded above. Ordinary DMs
-        # must continue so the product matcher can return the Shopier URL.
-        if user_states.get(user_id) == "AWAITING_SUPPORT":
-            user_states[user_id] = None
-            return
-
     if user_states.get(user_id) == "AWAITING_SUPPORT":
         if event.text.startswith('/'):
             user_states[user_id] = None
@@ -2247,11 +2224,29 @@ async def message_handler(event):
     # ── Smart Product Matching for free-text messages ──
     # If user is NOT in any special state and NOT admin, try to match a product
     if event.text and not event.text.startswith('/'):
-        if not is_admin_context and dm_intent != INTENT_SALES_LEAD:
+        if (
+            not is_admin_context
+            and user_states.get(user_id) != "AWAITING_SUPPORT"
+            and dm_intent != INTENT_SALES_LEAD
+        ):
+            await event.respond(
+                greeting_for("KeyVadi"),
+                buttons=mini_app_markup("KeyVadi Mağazasını Aç"),
+            )
+            asyncio.create_task(
+                forward_customer_message(
+                    bot,
+                    event,
+                    support_chat_id,
+                    "KeyVadi",
+                    [[Button.inline("🚫 Kullanıcıyı Engelle (Ban)", f"kv_adm_ban_{user_id}".encode())]],
+                )
+            )
             record_event(
                 "human_handoff", "KeyVadi", source="telegram_private",
                 reason=dm_intent,
             )
+            record_event("dm_reply_sent", "KeyVadi", source="telegram_private", product="generic_menu")
             return
         roadmap_reply = resolve_smart_roadmap_reply(event.text, "keyvadi")
         if roadmap_reply:
@@ -2457,12 +2452,23 @@ if __name__ == '__main__':
     
     async def start_with_retry():
         global BOT_USER_ID, PROFILE_CONFIGURED
+        write_bot_status(
+            "keyvadi", state="connecting", telegram_ready=False, token=BOT_TOKEN
+        )
         while True:
             try:
                 logger.info("Starting KeyVadi Sales Bot (@KeyVadiSatisBot)...")
                 await bot.start(bot_token=BOT_TOKEN)
                 me = await bot.get_me()
                 BOT_USER_ID = me.id
+                write_bot_status(
+                    "keyvadi",
+                    state="ready",
+                    telegram_ready=True,
+                    token=BOT_TOKEN,
+                    bot_username=getattr(me, "username", None),
+                    connected=True,
+                )
                 if not PROFILE_CONFIGURED:
                     try:
                         await asyncio.to_thread(configure_bot_profile)
@@ -2473,10 +2479,25 @@ if __name__ == '__main__':
                 logger.info(f"KeyVadi Sales Bot started successfully! Bot User ID: {BOT_USER_ID}")
                 await bot.run_until_disconnected()
             except FloodWaitError as e:
+                write_bot_status(
+                    "keyvadi", state="retrying", telegram_ready=False,
+                    token=BOT_TOKEN, last_error=type(e).__name__,
+                )
                 logger.warning(f"FloodWait: Telegram {e.seconds} saniye beklememizi istiyor. Bekleniyor...")
                 await asyncio.sleep(e.seconds + 5)
                 logger.info("FloodWait süresi bitti, tekrar deneniyor...")
             except Exception as e:
+                if invalid_token_error(e):
+                    write_bot_status(
+                        "keyvadi", state="invalid_token", telegram_ready=False,
+                        token=BOT_TOKEN, last_error=type(e).__name__,
+                    )
+                    logger.error("Bot token is invalid or expired; waiting for a replacement token.")
+                    return
+                write_bot_status(
+                    "keyvadi", state="error", telegram_ready=False,
+                    token=BOT_TOKEN, last_error=type(e).__name__,
+                )
                 logger.error(f"Bot başlatma hatası: {e}")
                 await asyncio.sleep(30)
     

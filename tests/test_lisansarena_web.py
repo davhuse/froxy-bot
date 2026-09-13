@@ -44,8 +44,8 @@ class LisansArenaWebTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.get_json()["ok"])
         self.assertEqual(response.get_json()["product_count"], 57)
-        self.assertEqual(response.get_json()["storefront_count"], 56)
-        self.assertEqual(response.get_json()["duplicate_records_hidden"], 1)
+        self.assertEqual(response.get_json()["storefront_count"], 57)
+        self.assertEqual(response.get_json()["duplicate_records_hidden"], 0)
 
     def test_shopier_refresh_failure_degrades_system_health(self):
         with patch.object(self.web, "get_processes_by_script", return_value=[object()]), \
@@ -101,7 +101,7 @@ class LisansArenaWebTests(unittest.TestCase):
         self.assertTrue(auth_data["user"]["referral_code"].startswith("LA-"))
         catalog = self.client.get("/api/la/catalog")
         self.assertEqual(catalog.status_code, 200)
-        self.assertEqual(len(catalog.get_json()["products"]), 56)
+        self.assertEqual(len(catalog.get_json()["products"]), 57)
 
     def test_brand_asset_is_served(self):
         response = self.client.get("/la/assets/brand")
