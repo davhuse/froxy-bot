@@ -801,7 +801,11 @@ def purchase_url(product: dict, brand: str, source: str, arm: str = "") -> str:
     brand_name = str(brand).lower()
     if shopier_link and (
         is_allowed_shopier_url(shopier_link)
-        and (brand_name != "lisansarena" or is_lisansarena_shopier_url(shopier_link))
+        and (
+            brand_name != "lisansarena"
+            or is_lisansarena_shopier_url(shopier_link)
+            or str(product.get("shopier_owner") or "").casefold() == "lisansarena"
+        )
     ):
         token = make_purchase_token(
             brand, product.get("id", ""), source, arm, product.get("_cta_id", "")
