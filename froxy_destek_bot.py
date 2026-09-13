@@ -210,7 +210,7 @@ def configure_bot_profile():
         ("setChatMenuButton", {
             "menu_button": {
                 "type": "web_app",
-                "text": "🚀 Froxy AI",
+                "text": "🛍️ Mağazayı Aç",
                 "web_app": {"url": FROXY_MINI_APP_URL},
             }
         }),
