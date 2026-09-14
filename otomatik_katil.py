@@ -785,9 +785,30 @@ def ad_worker_dm_replies_enabled(client_name):
     return override in {"1", "true", "yes", "on"}
 
 
-def short_group_message(is_keyvadi, is_lisansarena, is_froxy=False):
+def short_group_message(is_keyvadi, is_lisansarena, is_froxy=False, group_name=None):
     brand = 'froxy' if is_froxy else ('lisansarena' if is_lisansarena else 'keyvadi')
-    filename = f'message_ticaret_{brand}_short.txt'
+    # Short-policy groups must remain short, but they should not receive the
+    # same copy forever.  Keep the existing file as the first option and add
+    # optional numbered variants.  The normal message history/rotation is
+    # reused so a group gets a different variant on the next successful cycle.
+    candidates = [
+        f'message_ticaret_{brand}_short.txt',
+        f'message_ticaret_{brand}_short_2.txt',
+        f'message_ticaret_{brand}_short_3.txt',
+    ]
+    candidates = [path for path in candidates if os.path.exists(path)]
+    filename = candidates[0] if candidates else f'message_ticaret_{brand}_short.txt'
+    if group_name and len(candidates) > 1:
+        try:
+            # Prefix the key to avoid colliding with the long-message history
+            # for a group that changes policy later.
+            history = load_msg_history()
+            filename = pick_message_for_group(
+                f'__short__{brand}__{group_name}', candidates, history
+            )
+            save_msg_history(history)
+        except Exception as exc:
+            logging.debug("short message rotation unavailable: %s", exc)
     try:
         with open(filename, 'r', encoding='utf-8') as template_file:
             message = template_file.read().strip()
@@ -2091,12 +2112,10 @@ def get_last_blast_remaining_wait(client_name, target_wait_seconds=3600):
 
 # --- Mesaj Rotasyonu (6 şablon: kısa/uzun, soru/direkt, fiyat/sosyal) ---
 FROXY_MESSAGES = [
-    os.path.join(MESSAGES_DIR, 'froxy_hook.txt'),
-    os.path.join(MESSAGES_DIR, 'froxy_compare.txt'),
-    os.path.join(MESSAGES_DIR, 'froxy_social.txt'),
-    os.path.join(MESSAGES_DIR, 'froxy_question.txt'),
-    os.path.join(MESSAGES_DIR, 'froxy_short.txt'),
-    os.path.join(MESSAGES_DIR, 'froxy_price.txt'),
+    os.path.join(MESSAGES_DIR, 'sales_froxy_7.txt'),
+    os.path.join(MESSAGES_DIR, 'sales_froxy_8.txt'),
+    os.path.join(MESSAGES_DIR, 'full_froxy_1.txt'),
+    os.path.join(MESSAGES_DIR, 'full_froxy_2.txt'),
 ]
 KEYVADI_MESSAGES = [
     os.path.join(MESSAGES_DIR, 'keyvadi_1.txt'),
@@ -2105,6 +2124,13 @@ KEYVADI_MESSAGES = [
     os.path.join(MESSAGES_DIR, 'keyvadi_4.txt'),
     os.path.join(MESSAGES_DIR, 'keyvadi_5.txt'),
     os.path.join(MESSAGES_DIR, 'keyvadi_6.txt'),
+    os.path.join(MESSAGES_DIR, 'keyvadi_7.txt'),
+    os.path.join(MESSAGES_DIR, 'keyvadi_8.txt'),
+    os.path.join(MESSAGES_DIR, 'full_keyvadi_1.txt'),
+    os.path.join(MESSAGES_DIR, 'full_keyvadi_2.txt'),
+    os.path.join(MESSAGES_DIR, 'full_keyvadi_3.txt'),
+    os.path.join(MESSAGES_DIR, 'full_keyvadi_4.txt'),
+    os.path.join(MESSAGES_DIR, 'full_keyvadi_5.txt'),
 ]
 
 LISANSARENA_MESSAGES = [
@@ -2114,6 +2140,13 @@ LISANSARENA_MESSAGES = [
     os.path.join(MESSAGES_DIR, 'lisansarena_4.txt'),
     os.path.join(MESSAGES_DIR, 'lisansarena_5.txt'),
     os.path.join(MESSAGES_DIR, 'lisansarena_6.txt'),
+    os.path.join(MESSAGES_DIR, 'lisansarena_7.txt'),
+    os.path.join(MESSAGES_DIR, 'lisansarena_8.txt'),
+    os.path.join(MESSAGES_DIR, 'full_lisansarena_1.txt'),
+    os.path.join(MESSAGES_DIR, 'full_lisansarena_2.txt'),
+    os.path.join(MESSAGES_DIR, 'full_lisansarena_3.txt'),
+    os.path.join(MESSAGES_DIR, 'full_lisansarena_4.txt'),
+    os.path.join(MESSAGES_DIR, 'full_lisansarena_5.txt'),
 ]
 
 # Single-product conversion templates stay behind a release flag until each
@@ -5289,7 +5322,9 @@ async def main():
                         msg = base_msg
                         is_short_group = is_short_ad_group(grup_name, entity)
                         if is_short_group:
-                            msg = short_group_message(is_keyvadi, is_lisansarena, is_froxy)
+                            msg = short_group_message(
+                                is_keyvadi, is_lisansarena, is_froxy, grup_name
+                            )
                         elif grup_name.lower() == "kuponceking":
                             msg = msg.replace("bot", "sistem").replace("Bot", "Sistem") \
                                      .replace("🤖", "").strip() + "\n"
@@ -5299,10 +5334,10 @@ async def main():
                         msg = process_marketing_features(
                             msg, is_keyvadi, is_lisansarena, is_short=is_short_group
                         )
-                        if is_short_group:
-                            # Spintax sonrasinda da sert sinir uygula; bu gruba asla uzun
-                            # normal-sablon veya ek kampanya blogu dusmez.
-                            msg = short_group_message(is_keyvadi, is_lisansarena, is_froxy)
+                        # The selected short variant is already bounded and is
+                        # intentionally kept intact after the marketing pass;
+                        # do not re-select here or the same send could change
+                        # variants midway through processing.
                         if is_spyforum_group(grup_name, entity):
                             # Grup filtresi "CC" ifadesini siliyor; yalnızca SpyForum'da
                             # urun adini Adobe olarak gonder.
