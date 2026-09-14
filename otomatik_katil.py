@@ -3687,7 +3687,8 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
             elif is_froxy:
                 reply_text = (
                     "Merhaba 👋 Froxy AI paneline hoş geldiniz!\n\n"
-                    "Tüm paket ve modelleri incelemek için: @FroxyDestekBOT\n"
+                    "Tüm paket ve modelleri Shopier mağazamızdan inceleyebilirsiniz:\n"
+                    "🛒 [Froxy Shopier Mağazasını Aç](https://www.shopier.com/froxyai)\n"
                     "Aradığınız ürün veya model adını yazabilirsiniz."
                 )
             else:
