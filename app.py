@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, jsonify, redirect, abort, session
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 from pathlib import Path
+from datetime import datetime, timezone
 import subprocess
 import os
 import sys
@@ -599,13 +600,10 @@ def bot_watchdog(lease_owner=None):
                 try:
                     with open(CONFIG_FILE, "r", encoding="utf-8") as f:
                         cfg = json.load(f)
-                    ad_enabled = cfg.get("ad_bot_running", True)
-                    # Production ownership is Render-only.  If the legacy
-                    # local config still has the old false flag, Render may
-                    # opt in through BOT_AD_ENABLED (true by default); local
-                    # watchdogs remain disabled by bot_runtime_enabled().
-                    if ad_runtime_enabled():
-                        ad_enabled = True
+                    # The durable panel preference is authoritative. Keeping
+                    # the repository's legacy true flag as a fallback allowed
+                    # a fresh Render deploy to start a deliberately paused ad.
+                    ad_enabled = ad_runtime_enabled()
                     support_enabled = cfg.get("support_bot_running", True)
                     token = (os.environ.get("KEYVADI_SUPPORT_BOT_TOKEN") or os.environ.get("KEYVADI_BOT_TOKEN") or cfg.get("keyvadi_bot_token") or "").strip()
                     if token and token != "YOUR_TELEGRAM_BOT_TOKEN":
