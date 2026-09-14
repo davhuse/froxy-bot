@@ -30,10 +30,76 @@ def safe_send_keys(driver, element_id, text, wait=None):
         """, el, text)
 
 products = [
-    {"name": "Steam 200 Dolar Random Key", "price": 30.00, "desc": "Steam platformunda gecerli random key. Aninda teslimat.", "img_kv": "keyvadi_steam_random.png", "img_la": "lisansarena_steam_random.png"},
-    {"name": "Netflix 4K UHD Ortak Profil", "price": 39.99, "desc": "Kisisel Netflix 4K Ultra HD Profili. Ortak hesapta size ait ozel profil.", "img_kv": "keyvadi_netflix_4k.png", "img_la": "lisansarena_netflix_4k.png"},
-    {"name": "Zula Random Hesap", "price": 5.00, "desc": "En az 0, en cok 250 skin cikmaktadir.\nEn az 1, en cok 155 level cikmaktadir.\nHesaplarda minumum 1000-3000 Zula altini cikmaktadir.\nYeni acilmis hesap cikma ihtimali vardir.\nAktif olmasak bile satin alim islemi gerceklestirebilirsiniz. Otomatik teslimattir.\nHer hesap tek bir kisiye satilir.", "img_kv": "keyvadi_zula_random.png", "img_la": "lisansarena_zula_random.png"},
-    {"name": "FC26 + Online Her Seyi Degisen Hesap", "price": 299.99, "desc": "FC26 ve Online dahil her seyi degisen Steam hesabi. Aninda teslim.", "img_kv": "keyvadi_fc26_hesap.png", "img_la": "lisansarena_fc26_hesap.png"}
+    {
+        "name": "Tıkla Gelsin 400 TL'ye 200 TL İndirim Kuponu",
+        "price_kv": 80.00,
+        "price_la": 95.00,
+        "desc": "Tıkla Gelsin (Burger King, Popeyes, Arby's, Sbarro vb.) uygulamasında 400 TL ve üzeri siparişlerde geçerli 200 TL anında indirim kupon kodu. Anında otomatik teslimat.",
+        "img": "card_clean_tiklagelsin.jpg"
+    },
+    {
+        "name": "Yemeksepeti 500 TL'ye 250 TL İndirim Kodu",
+        "price_kv": 100.00,
+        "price_la": 120.00,
+        "desc": "Yemeksepeti restoran siparişlerinde 500 TL ve üzeri sepetlerde anında 250 TL indirim sağlayan kupon kodu. Anında teslimat.",
+        "img": "card_clean_yemeksepeti.jpg"
+    },
+    {
+        "name": "Yemeksepeti 550 TL'ye 200 TL İndirim Kodu",
+        "price_kv": 75.00,
+        "price_la": 90.00,
+        "desc": "Yemeksepeti siparişlerinde geçerli 550 TL ve üzeri siparişlerde 200 TL indirim kodu. Anında teslimat.",
+        "img": "card_clean_yemeksepeti.jpg"
+    },
+    {
+        "name": "Trendyol Yemek Alt Limitsiz 200 TL Yemek Kodu",
+        "price_kv": 60.00,
+        "price_la": 75.00,
+        "desc": "Trendyol Yemek siparişlerinde alt limitsiz 200 TL indirim sağlayan özel yemek kupon kodu. Anında teslimat.",
+        "img": "card_clean_yemeksepeti.jpg"
+    },
+    {
+        "name": "Uber İlk 2 Yolculuğa %70 İndirim Kodu",
+        "price_kv": 125.00,
+        "price_la": 150.00,
+        "desc": "Uber taksi ve yolculuklarda ilk 2 kullanımda %70 indirim sağlayan promosyon kupon kodu. Anında teslimat.",
+        "img": "card_clean_turna.jpg"
+    },
+    {
+        "name": "Uber 500+500 TL Alt Limitsiz İndirim Kodu",
+        "price_kv": 85.00,
+        "price_la": 100.00,
+        "desc": "Uber üzerinde geçerli 2 adet 500 TL toplam 1.000 TL alt limitsiz indirim kupon kodu. Anında teslimat.",
+        "img": "card_clean_turna.jpg"
+    },
+    {
+        "name": "TOD TV Haftalık Taraftar Paketi",
+        "price_kv": 100.00,
+        "price_la": 120.00,
+        "desc": "TOD TV (beIN Sports) Süper Lig canlı maç yayınları, derbiler ve spor kanallarını içeren haftalık taraftar paketi kupon kodu. Anında teslimat.",
+        "img": "card_clean_ssport.jpg"
+    },
+    {
+        "name": "GPT GO 3 Aylık İndirim Kodu",
+        "price_kv": 150.00,
+        "price_la": 180.00,
+        "desc": "GPT GO platformunda 3 aylık kullanımda geçerli özel indirim kodu. Gelişmiş yapay zeka modellerine yüksek hızda erişim. Anında teslimat.",
+        "img": "card_clean_chatgpt.jpg"
+    },
+    {
+        "name": "TikTak 1.000 TL Araç Kiralama İndirim Kodu",
+        "price_kv": 30.00,
+        "price_la": 40.00,
+        "desc": "TikTak saatlik veya günlük araç kiralamada geçerli 1.000 TL indirim kodu. Anında teslimat.",
+        "img": "card_clean_tiktak.jpg"
+    },
+    {
+        "name": "FLO 3.000 TL'ye 800 TL İndirim Çeki",
+        "price_kv": 20.00,
+        "price_la": 30.00,
+        "desc": "FLO mobil ve web alışverişlerinde 3.000 TL ve üzeri sepetlerde 800 TL indirim sağlayan kupon kodu. Anında teslimat.",
+        "img": "card_clean_flo.jpg"
+    }
 ]
 
 def main():
@@ -45,16 +111,16 @@ def main():
         choice = sys.argv[1].strip()
     else:
         print("\nLutfen hangi magazaya urun eklemek istediginizi secin:")
-        print("1) KeyVadi (Mavi/Mor Konsept Gorsellerle)")
-        print("2) LisansArena (Kirmizi/Siyah Konsept Gorsellerle)")
+        print("1) KeyVadi (KeyVadi Fiyatlariyla)")
+        print("2) LisansArena (LisansArena Fiyatlariyla)")
         choice = input("Seciminiz (1 veya 2): ").strip()
     
     if choice == '1':
         store = "KeyVadi"
-        img_key = "img_kv"
+        price_key = "price_kv"
     elif choice == '2':
         store = "LisansArena"
-        img_key = "img_la"
+        price_key = "price_la"
     else:
         print("Gecersiz secim!")
         return
@@ -101,7 +167,7 @@ def main():
     print("\nGiris basarili! Otomatik urun ekleme basliyor...")
     
     for idx, p in enumerate(products):
-        print(f"\nUrun {idx + 1}/4 ekleniyor: {p['name']}")
+        print(f"\nUrun {idx + 1}/{len(products)} ekleniyor: {p['name']}")
         driver.get("https://www.shopier.com/m/products.php")
         
         on_add_page = False
@@ -120,7 +186,8 @@ def main():
         wait = WebDriverWait(driver, 10)
         safe_send_keys(driver, "subject", p["name"], wait)
         
-        price_str = f"{p['price']:.2f}".replace(".", ",")
+        price_val = p.get(price_key, p.get("price", 50.0))
+        price_str = f"{price_val:.2f}".replace(".", ",")
         safe_send_keys(driver, "price", price_str)
         safe_send_keys(driver, "stock", "999")
         safe_send_keys(driver, "description", p["desc"])
@@ -137,7 +204,8 @@ def main():
         except:
             pass
             
-        image_path = os.path.join(img_dir, p[img_key])
+        img_name = p.get("img") or "card_clean_yemeksepeti.jpg"
+        image_path = os.path.join(img_dir, img_name)
         if os.path.exists(image_path):
             file_input = driver.find_element(By.ID, "saved-image-picker")
             file_input.send_keys(os.path.abspath(image_path))

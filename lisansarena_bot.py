@@ -492,7 +492,7 @@ async def show_product_detail(event, prod_id: str, *, edit: bool = True):
     # KeyVadi) when an old catalog row contains a generic/retired URL.  The
     # Mini App deep link is the safe fallback and preserves this product's
     # catalog price and ID.
-    shopier_url = purchase_url(product, "lisansarena", "bot_product_detail")
+    shopier_url = purchase_url(product, "lisansarena", "bot_product_detail") or "https://www.shopier.com/lisansarena"
     bot_app_url = f"https://t.me/LisansArenaBot/app?startapp=p_{prod_id}"
 
     text = (

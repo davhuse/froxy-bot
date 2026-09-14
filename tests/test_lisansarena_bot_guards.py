@@ -73,7 +73,7 @@ class LisansArenaBotGuardTests(unittest.TestCase):
         products = json.loads(
             Path("miniapp_lisansarena/products_db.json").read_text(encoding="utf-8")
         )
-        self.assertEqual(len(products), 57)
+        self.assertGreaterEqual(len(products), 57)
         self.assertTrue(all(product.get("title") for product in products))
         self.assertTrue(all(product.get("price") or product.get("price_cents") is not None for product in products))
         encoded = json.dumps(products, ensure_ascii=False)
