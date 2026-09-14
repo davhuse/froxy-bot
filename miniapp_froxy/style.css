@@ -1813,6 +1813,51 @@ body {
   opacity: 1;
 }
 
+.provider-inventory {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255,255,255,.08);
+  color: var(--text-secondary);
+  font-size: 10px;
+}
+
+.provider-inventory-title {
+  margin-bottom: 7px;
+  color: var(--text-muted);
+  font-weight: 700;
+  letter-spacing: .02em;
+}
+
+.provider-inventory-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.provider-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 24px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.045);
+  border: 1px solid rgba(255,255,255,.08);
+  white-space: nowrap;
+}
+
+.provider-chip img {
+  width: 13px;
+  height: 13px;
+  object-fit: contain;
+}
+
+.provider-chip b { color: #f7f9ff; font-size: 10px; }
+.provider-chip small { color: var(--text-muted); font-size: 9px; }
+.provider-chip.is-live { border-color: rgba(74, 222, 128, .4); }
+.provider-chip.is-checking { border-color: rgba(250, 204, 21, .35); }
+.provider-chip.is-off { opacity: .68; }
+
 /* Telegram phones need a quiet, touch-first layout. */
 @media (max-width: 430px) {
   .top-header { padding: 10px 12px; }

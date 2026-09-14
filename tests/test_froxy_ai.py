@@ -313,6 +313,15 @@ class FroxyApiTests(unittest.TestCase):
         self.assertEqual([], catalog["models"])
         self.assertEqual(0, catalog["active_model_count"])
 
+    def test_catalog_exposes_provider_and_image_inventory_without_credentials(self):
+        gateway = FroxyGateway()
+        with mock.patch.object(gateway, "providers", return_value=[]):
+            catalog = gateway.public_catalog()
+        self.assertIn("providers", catalog)
+        self.assertIn("image_model_count", catalog)
+        self.assertGreater(catalog["image_model_count"], 0)
+        self.assertEqual(0, catalog["active_image_model_count"])
+
     def test_all_provider_logos_are_local_assets(self):
         from miniapp_froxy.froxy_gateway import PROVIDER_LOGOS
 

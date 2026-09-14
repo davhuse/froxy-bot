@@ -580,16 +580,53 @@ class FroxyGateway:
         with self._lock:
             statuses = json.loads(json.dumps(self._provider_status))
             runtime = json.loads(json.dumps(self._runtime_health))
-        image_providers = {row["provider"] for row in self.image_models() if row.get("active")}
+        image_rows = self.image_models()
+        image_providers = {row["provider"] for row in image_rows if row.get("active")}
+        image_provider_slugs = {row["provider"] for row in image_rows}
+        image_counts: dict[str, int] = {}
+        for row in image_rows:
+            image_counts[row["provider"]] = image_counts.get(row["provider"], 0) + 1
         for slug, status in statuses.items():
             status["capabilities"] = ["chat", *( ["image"] if slug in image_providers else [])]
             status["provider_logo"] = PROVIDER_LOGOS.get(slug, "")
+            status["image_models"] = image_counts.get(slug, 0)
             if slug in runtime:
                 status.update(runtime[slug])
                 if int(runtime[slug].get("cooldown_until", 0) or 0) > int(time.time()):
                     status["healthy"] = False
-        for slug in image_providers - set(statuses):
-            statuses[slug] = {"provider": slug, "healthy": self._provider_available(slug), "configured": True, "models": 0, "capabilities": ["image"], "provider_logo": PROVIDER_LOGOS.get(slug, ""), **runtime.get(slug, {})}
+        # Image-only providers (Runware, Stability, Modal, ImageGPT, ...) do
+        # not appear in the chat provider list. Keep them visible in the
+        # operational catalog so the app can show the complete integration
+        # inventory even when a credential has not been configured yet.
+        image_configured = {
+            "openai": bool(_all_keys("OPENAI_IMAGE_KEYS", "OPENAI_IMAGE_KEY", "OPENAI_API_KEY")),
+            "together": bool(_all_keys("TOGETHER_API_KEYS", "TOGETHER_API_KEY")),
+            "cloudflare": bool(os.environ.get("CLOUDFLARE_ACCOUNT_ID", "").strip() and _all_keys("CLOUDFLARE_API_TOKEN")),
+            "runware": bool(_all_keys("RUNWARE_API_KEYS", "RUNWARE_API_KEY")),
+            "pollinations": bool(_all_keys("POLLINATIONS_API_KEYS", "POLLINATIONS_API_KEY", "POLLINATIONS_KEY")),
+            "aimlapi": bool(_all_keys("AIMLAPI_KEY")),
+            "stability": bool(_all_keys("STABILITY_API_KEYS", "STABILITY_API_KEY")),
+            "google": bool(_all_keys("GEMINI_API_KEYS", "GEMINI_API_KEY", "GOOGLE_API_KEY")),
+            "evolink": bool(_all_keys("EVOLINK_API_KEYS", "EVOLINK_API_KEY")),
+            "imagegpt": bool(_all_keys("IMAGEGPT_API_KEY")),
+            "modal": bool(os.environ.get("MODAL_IMAGE_ENDPOINT", "").strip()),
+        }
+        for slug, configured in image_configured.items():
+            if slug in statuses and configured:
+                statuses[slug]["configured"] = True
+        image_labels = {row["provider"]: row["provider_label"] for row in image_rows}
+        for slug in image_provider_slugs - set(statuses):
+            statuses[slug] = {
+                "provider": slug,
+                "provider_label": image_labels.get(slug, slug.title()),
+                "healthy": slug in image_providers and self._provider_available(slug),
+                "configured": image_configured.get(slug, False),
+                "models": 0,
+                "image_models": image_counts.get(slug, 0),
+                "capabilities": ["image"],
+                "provider_logo": PROVIDER_LOGOS.get(slug, ""),
+                **runtime.get(slug, {}),
+            }
         return statuses
 
     def public_catalog(self) -> dict[str, Any]:
@@ -607,6 +644,7 @@ class FroxyGateway:
             }}
             item["estimated_1k_credits"] = self.estimate_credits(row, 600, 400)
             public.append(item)
+        providers = self.provider_status()
         return {
             "models": public,
             "count": len(public),
@@ -617,6 +655,11 @@ class FroxyGateway:
             # Kept for operational monitoring; this includes provider catalog
             # entries intentionally hidden when their price is not reliable.
             "verified_total": sum(int(row.get("models", 0) or 0) for row in self._provider_status.values() if row.get("healthy")),
+            "providers": providers,
+            "provider_count": len(providers),
+            "configured_provider_count": sum(1 for row in providers.values() if row.get("configured")),
+            "image_model_count": len(self.image_models()),
+            "active_image_model_count": sum(1 for row in self.image_models() if row.get("active")),
             "refreshed_at": int(self._refreshed_at),
         }
 

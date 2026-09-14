@@ -242,13 +242,20 @@ def froxy_health():
         else {"configured": False, "reachable": True, "status": "local_memory"}
     )
     status = "ok" if firestore.get("reachable") else "degraded"
+    providers = gateway.provider_status()
+    image_catalog = gateway.image_models()
     return jsonify(
         {
             "status": status,
             "store": store.backend,
             "firestore": firestore,
             "gateway_revision": getattr(gateway, "REVISION", "test"),
-            "configured_providers": sum(1 for provider in gateway.providers() if provider.key),
+            "configured_providers": sum(1 for row in providers.values() if row.get("configured")),
+            "provider_count": len(providers),
+            "active_providers": sum(1 for row in providers.values() if row.get("healthy")),
+            "image_model_count": len(image_catalog),
+            "active_image_models": sum(1 for row in image_catalog if row.get("active")),
+            "providers": providers,
         }
     ), (200 if status == "ok" else 503)
 
@@ -336,8 +343,15 @@ def image_models():
     visitor = request.headers.get("X-Forwarded-For", request.remote_addr or "anonymous").split(",")[0].strip()
     if not _rate_limit("image-models", visitor, 30):
         return jsonify({"success": False, "error": "Çok fazla görsel model isteği"}), 429
-    models = [row for row in gateway.image_models() if row.get("active")]
-    return jsonify({"success": True, "count": len(models), "models": models})
+    models = gateway.image_models()
+    active = [row for row in models if row.get("active")]
+    return jsonify({
+        "success": True,
+        "count": len(active),
+        "active_count": len(active),
+        "total_count": len(models),
+        "models": models,
+    })
 
 
 @app.route("/api/chat", methods=["POST"])

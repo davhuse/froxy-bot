@@ -41,6 +41,7 @@ let state = {
   currentView: 'view-store',
   selectedModel: { id: '', name: 'Model bekleniyor', providerLogo: 'assets/froxy_logo.png' },
   models: [],
+  providers: {},
   chatId: (window.crypto?.randomUUID?.() || `chat-${Date.now()}`),
   chatMessages: [],
   chatHistory: [],
@@ -236,9 +237,11 @@ async function loadModels() {
     const data = await response.json();
     if (!response.ok || !data.success) throw new Error(data.error || 'Model kataloğu alınamadı');
     state.models = Array.isArray(data.models) ? data.models : [];
-    if (!state.models.length) throw new Error('Şu anda doğrulanmış aktif sohbet modeli yok');
+    state.providers = data.providers && typeof data.providers === 'object' ? data.providers : {};
+    renderProviderInventory(state.providers);
     const countEl = document.getElementById('verifiedModelCount');
     if (countEl) countEl.textContent = `${Number(data.active_model_count || state.models.length).toLocaleString('tr-TR')} aktif model`;
+    if (!state.models.length) throw new Error('Aktif sohbet modeli yok — sağlayıcı API anahtarı bekleniyor');
     if (menu) {
       const renderRows = (query = '') => {
         const needle = query.trim().toLocaleLowerCase('tr-TR');
@@ -283,6 +286,24 @@ async function loadModels() {
     if (sendButton) sendButton.disabled = true;
     showToast(error.message || 'Model kataloğu alınamadı', '⚠️');
   }
+}
+
+function renderProviderInventory(providers) {
+  const root = document.getElementById('providerInventory');
+  if (!root) return;
+  const rows = Object.values(providers || {}).sort((a, b) => String(a.provider_label || a.provider).localeCompare(String(b.provider_label || b.provider), 'tr'));
+  if (!rows.length) {
+    root.textContent = 'Sağlayıcı envanteri alınamadı.';
+    return;
+  }
+  root.innerHTML = `<div class="provider-inventory-title">API ve model envanteri · ${rows.length} sağlayıcı</div><div class="provider-inventory-grid">${rows.map(row => {
+    const configured = Boolean(row.configured);
+    const healthy = Boolean(row.healthy);
+    const models = Number(row.models || 0) + Number(row.image_models || 0);
+    const label = configured ? (healthy ? 'aktif' : 'kontrol bekliyor') : 'anahtar bekliyor';
+    const icon = row.provider_logo ? `<img src="${escapeHtml(row.provider_logo)}" alt="">` : '<span>◇</span>';
+    return `<span class="provider-chip ${healthy ? 'is-live' : configured ? 'is-checking' : 'is-off'}">${icon}<b>${escapeHtml(row.provider_label || row.provider)}</b><small>${label}${models ? ` · ${models} model` : ''}</small></span>`;
+  }).join('')}</div>`;
 }
 
 // VIEW SWITCHING (Navigation Dock)
@@ -644,12 +665,15 @@ async function loadImageModels() {
     const response = await fetch(api('/api/image-models'), { headers: authHeaders() });
     const data = await response.json();
     if (!response.ok || !data.success) throw new Error(data.error || 'Görsel modelleri alınamadı');
-    state.imageModels = Array.isArray(data.models) ? data.models.filter(model => model.active) : [];
-    if (!state.imageModels.length) throw new Error('Aktif görsel modeli bulunamadı');
-    if (select) select.innerHTML = state.imageModels.map(model => `<option value="${escapeHtml(model.id)}">${escapeHtml(model.name)} · ~${Number(model.estimated_credits || 0).toLocaleString('tr-TR')} kredi</option>`).join('');
-    selectImageModel(state.imageModels[0].id);
+    state.imageModels = Array.isArray(data.models) ? data.models : [];
+    const activeModels = state.imageModels.filter(model => model.active);
+    if (select) {
+      select.innerHTML = state.imageModels.map(model => `<option value="${escapeHtml(model.id)}" ${model.active ? '' : 'disabled'}>${model.active ? '' : '⏳ '}${escapeHtml(model.name)} · ${model.active ? `~${Number(model.estimated_credits || 0).toLocaleString('tr-TR')} kredi` : 'API anahtarı bekleniyor'}</option>`).join('') || '<option value="">Görsel modelleri tanımlı değil</option>';
+    }
+    if (!activeModels.length) throw new Error(`Görsel sağlayıcısı anahtarı bekleniyor (${Number(data.total_count || state.imageModels.length)} model tanımlı)`);
+    selectImageModel(activeModels[0].id);
   } catch (error) {
-    if (select) select.innerHTML = '<option value="">Görsel sağlayıcısı şu anda kullanılamıyor</option>';
+    if (select && !state.imageModels.length) select.innerHTML = '<option value="">Görsel sağlayıcısı şu anda kullanılamıyor</option>';
     const button = document.getElementById('generateImageBtn');
     if (button) button.disabled = true;
   }
