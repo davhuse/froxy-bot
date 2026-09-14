@@ -238,7 +238,13 @@ async def send_and_verify_ad(client, entity, message, client_name, group_name, o
         group_name, client_name, "telegram_accepted", entity=entity, message_id=message_id
     )
     await asyncio.sleep(2)
-    visible = await client.get_messages(entity, ids=message_id)
+    try:
+        visible = await client.get_messages(entity, ids=message_id)
+    except Exception as read_err:
+        if type(read_err).__name__ == "TypeNotFoundError":
+            visible = sent
+        else:
+            raise
     if not visible or getattr(visible, "empty", False):
         record_moderation_hold(
             group_name, client_name, "Message disappeared after acceptance", entity=entity
@@ -489,8 +495,11 @@ def parse_spintax(text):
 SHORT_AD_GROUP_USERNAMES = {'ilanticaret', 'kodceksatismerkezi'}
 SHORT_AD_GROUP_TITLES = {'ticaret ve ilan grubu - sanal'}
 SPYFORUM_GROUP_MARKER = 'spyforum'
-EXCLUDED_REFERENCE_CHANNELS = {"froxyreferans", "keyvadireferans", "lisansarenareferans"}
-EXCLUDED_REFERENCE_CHAT_IDS = {3982754573, 4401324614, 4316589940}
+EXCLUDED_REFERENCE_CHANNELS = {
+    "froxyreferans", "keyvadireferans", "lisansarenareferans",
+    "yemeksepetikuponu", "yemeksepetikupon", "yemeksepetikupon0", "1604204718",
+}
+EXCLUDED_REFERENCE_CHAT_IDS = {3982754573, 4401324614, 4316589940, 1604204718}
 # Reklam gonderilmeyecek gruplar.  Bu liste bilerek KOD icinde tutuluyor:
 # blacklist.txt her acilista ve her 5 dakikada bir Firestore'daki surumle
 # eziliyor, dolayisiyla dosyaya yazilan haric tutmalar kalici olmuyor.
@@ -498,6 +507,11 @@ EXCLUDED_REFERENCE_CHAT_IDS = {3982754573, 4401324614, 4316589940}
 MANUALLY_EXCLUDED_AD_GROUPS = {
     "-1572316417",
     "-1001572316417",
+    "-1001604204718",
+    "1604204718",
+    "yemeksepetikuponu",
+    "yemeksepetikupon",
+    "yemeksepetikupon0",
     "kuponkodalsat",
     "reklamreferans",
     "ticar4t",
@@ -827,6 +841,15 @@ SEEDED_ACCOUNT_GROUP_BLOCKS = {
     ('KeyVadiOnline', 'kuponcekkodsatis'): 'invalid_invite',
     ('KeyVadiOnline', 'referanslinkpaylasimigrup'): 'UsernameInvalidError',
     ('KeyVadiOnline', 'sosyalmedyaalimsatimticaret'): 'UsernameInvalidError',
+    ('FroxyOnline', 'yemeksepetikuponu'): 'UserBannedInChannel',
+    ('KeyVadiOnline', 'yemeksepetikuponu'): 'UserBannedInChannel',
+    ('LisansArenaOnline', 'yemeksepetikuponu'): 'UserBannedInChannel',
+    ('FroxyOnline', 'yemeksepetikupon'): 'UserBannedInChannel',
+    ('KeyVadiOnline', 'yemeksepetikupon'): 'UserBannedInChannel',
+    ('LisansArenaOnline', 'yemeksepetikupon'): 'UserBannedInChannel',
+    ('FroxyOnline', '1604204718'): 'UserBannedInChannel',
+    ('KeyVadiOnline', '1604204718'): 'UserBannedInChannel',
+    ('LisansArenaOnline', '1604204718'): 'UserBannedInChannel',
 }
 # Live cross-account audit on 2026-08-26 showed repeated ChannelPrivate results
 # for these account/target pairs while several of the same groups remained

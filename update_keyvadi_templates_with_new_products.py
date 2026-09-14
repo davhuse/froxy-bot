@@ -1,208 +1,223 @@
 # -*- coding: utf-8 -*-
-import os
 import sys
-
 sys.stdout.reconfigure(encoding='utf-8')
 
-# KeyVadi Template 1: Genel Liste
 t1 = """[ KEYVADİ | GÜNCEL DİJİTAL ÜRÜN & LİSANS LİSTESİ ]
 
-Popüler abonelik, yapay zekâ, oyun ve yazılımlar tek adreste:
+HAFTANIN ÖNE ÇIKAN FIRSATLARI:
+• Netflix 4K UHD Profil: 79,90₺ | Ortak Hesap: 39,99₺
+• GPT GO 3 Aylık İndirim Kodu: 150₺ | ChatGPT Plus: 39,90₺
+• Gemini Pro AI (18 Ay Davet: 99,90₺ | 3 Ay: 59,90₺)
+• TOD TV Haftalık Taraftar Paketi: 100₺ | S Sport Plus: 70₺
+• Duolingo Super (Sınırsız Can & Reklamsız): 49,90₺
+• CapCut Pro: 1 Ay Ortak 49,90₺ | Kişisel 149,90₺
+• Canva Pro 1 Yıl (Kendi Mail): 49,90₺ | Öğretmen: 79,90₺
+• Xbox Game Pass Ultimate: 1 Ay 49,90₺ | Minecraft: 49,90₺
+• Amazon Prime Video: 9,99₺ | YouTube Premium 3 Ay: 19,90₺
 
-Film, Dizi & Spor:
-• Netflix 4K UHD Profil: 79,90₺ | Ortak: 39,99₺
-• S Sport Plus (1 Ay): 70₺ | Exxen: 34,99₺
+Yemek & Ulaşım İndirim Kuponları:
+• Yemeksepeti İlk Sipariş 450/350 Kodu: 50₺
+• Yemeksepeti 500/250 İndirim Kodu: 100₺
+• Yemeksepeti 550/200 Yemek Kodu: 75₺
+• Trendyol Yemek Alt Limitsiz 200 TL: 60₺
+• Tıkla Gelsin 400/200 Yemek Kuponu: 80₺
+• Uber İlk 2 Yolculuğunuza %70 İndirim: 125₺
+• Uber 500+500 Alt Limitsiz Kod: 85₺
+• TikTak 1.000 TL Araç: 30₺ | Enuygun 200 TL Otobüs: 20₺
+• FLO 3000/800 Çeki: 20₺ | Lumberjack 3000/800: 20₺ | In Street: 20₺
+
+Film, Dizi & Spor Üyelikleri:
+• TOD TV Haftalık Taraftar Paketi: 100₺
+• S Sport Plus (1 Ay): 70₺ | Exxen Reklamsız: 34,99₺
 • YouTube Premium 3 Ay Kod: 19,90₺ | 1 Ay Davet: 30₺
-• Spotify Premium (4 Ay): 34,99₺ | Prime Video: 29,90₺
-• Disney+ UHD: 99,90₺ | HBO Max: 39,90₺
+• Spotify Premium (4 Ay): 34,99₺ | Disney+ UHD: 99,90₺ | HBO Max: 39,90₺
 
 Yapay Zekâ, Tasarım & Ofis:
-• Canva Pro 1 Yıl (Kendi Mailinize): 49,90₺ | Öğretmen: 79,90₺
-• ChatGPT Plus Ortak: 39,90₺ | Kişisel Hesap: 499,90₺
-• Gemini Pro 18 Ay: 99,90₺ | Gemini Advanced 3 Ay: 59,90₺
-• CapCut Pro: 49,90₺ | Adobe CC 1 Ay: 119,99₺
+• GPT GO 3 Aylık İndirim Kodu: 150₺
+• ChatGPT Plus Ortak: 39,90₺ | Kişisel: 499,90₺
+• Canva Pro 1 Yıl: 49,90₺ | Adobe CC 1 Ay: 119,99₺
 • Office 365 (1 Yıl): 70₺ | Windows 10/11 Pro Lisans: 70₺
 • Perplexity Pro: 119,90₺ | DeepL Pro: 29,90₺
 
-İndirim Kuponları & Oyun:
-• Yemeksepeti 450/350 İndirim Kodu: 60₺
-• Turna.com 600 TL Uçak Bileti Kuponu: 70₺
-• Tıkla Gelsin 400/200 Yemek Kuponu: 50₺
-• Trendyol Market ve Yemek Kuponları: 49,99₺
-• Minecraft + Game Pass (1 Ay): 49,90₺ | (3 Ay): 119,90₺
-• Xbox Game Pass 1 Ay: 49,90₺ | 3 Ay: 69,90₺ | Steam: 60₺
-
 Güven ve Garanti:
-- +100'den fazla başarılı işlem ve referansımız mevcuttur.
-- Kapanma ve sorunlara karşı süre boyunca telafi garantilidir.
-- Shopier ile 3D Secure kart veya havale ile güvenli ödeme.
+- +100'den fazla başarılı işlem ve müşteri referansı mevcuttur.
+- Kapanmaya karşı süre boyunca birebir değişim ve telafi garantilidir.
+- Shopier ile 3D Secure kart veya havale güvencesi.
 
-💡 Elinizdeki kuponlar, kodlar ve hesaplar değerinde nakit alınır!
-Sorularınız, alım ve satış için: @KeyvadiDestek
-7/24 Otomatik Sipariş Botu: @KeyVadiSatisBot"""
+Elinizdeki kuponlar, kodlar ve hesaplar değerinde nakit alınır!
+7/24 Otomatik Sipariş & Canlı Destek Botu: @KeyVadiSatisBot"""
+t2 = """[ KEYVADİ | YAPAY ZEKÂ, YAZILIM VE İNDİRİM KUPONLARI ]
 
-# KeyVadi Template 2: Yapay Zekâ, Tasarım ve İçerik Odaklı
-t2 = """[ KEYVADİ | YAPAY ZEKÂ, TASARIM VE İÇERİK ARAÇLARI ]
+İş, eğitim, içerik üretimi ve avantajlı alışveriş fırsatları:
 
-İş, okul, içerik üretimi ve tasarım için popüler yazılımlar:
-
-Yapay Zekâ ve Tasarım:
+Yapay Zekâ & Üretkenlik:
+• GPT GO 3 Aylık İndirim Kodu: 150₺
 • ChatGPT Plus Ortak: 39,90₺ | Kişisel Hesap: 499,90₺
 • Canva Pro 1 Yıl (Kendi Mailinize): 49,90₺ | Öğretmen: 79,90₺
-• Gemini Pro 18 Ay Davet: 99,90₺ | Gemini Advanced 3 Ay: 59,90₺
+• Gemini Pro 18 Ay Davet: 99,90₺ | Gemini 3 Ay: 59,90₺
 • CapCut Pro Ortak: 49,90₺ | Kişisel Hesap: 199,90₺
+• Adobe Creative Cloud (1 Ay): 119,99₺ | Express: 99,99₺
 • Perplexity Pro: 119,90₺ | DeepL Pro Çeviri: 29,90₺
-• Adobe Creative Cloud (1 Ay): 119,99₺ | 1 Hafta: 49,99₺
-• Adobe Express Premium 3 Ay: 99,99₺ | Grammarly Pro: 49,90₺
+• Office 365 (1 Yıl): 70₺ | Windows 10/11 Pro: 70₺
 
-Spor, Eğlence & Kuponlar:
-• S Sport Plus (1 Ay): 70₺ | Netflix 4K UHD Profil: 79,90₺
+Yemek, Ulaşım & Alışveriş Kuponları:
+• Yemeksepeti İlk Sipariş 450/350 Kod: 50₺
+• Yemeksepeti 500/250 İndirim Kodu: 100₺
+• Yemeksepeti 550/200 Yemek Kodu: 75₺
+• Trendyol Yemek Alt Limitsiz 200 TL Kodu: 60₺
+• Uber İlk 2 Yolculuğa %70 İndirim: 125₺
+• Uber 500+500 Alt Limitsiz Kod: 85₺
+• Tıkla Gelsin 400/200 Kuponu: 80₺
+• TikTak 1.000 TL Puan: 30₺ | Enuygun 200 TL: 20₺
+
+Spor & Eğlence Servisleri:
+• TOD TV Haftalık Taraftar Paketi: 100₺
+• S Sport Plus (1 Ay): 70₺ | Netflix 4K UHD: 79,90₺
 • YouTube Premium 3 Ay Kod: 19,90₺ | Spotify: 34,99₺
-• Yemeksepeti 450/350 İndirim Kodu: 60₺ | Tıkla Gelsin: 50₺
-• Turna.com 600 TL Uçak Bileti Kuponu: 70₺
-• Office 365: 70₺ | Windows 10/11 Pro: 70₺
-• Minecraft + Game Pass: 49,90₺ | Trendyol Kupon: 49,99₺
 
-Güvenilirlik ve Satış Şartlarımız:
+Güvenilirlik ve Şartlarımız:
 - +100'den fazla başarılı işlem ve referansımız mevcuttur.
-- Süre boyunca kapanmaya karşı %100 telafi ve değişim garantisi.
+- Satın aldığınız süre boyunca kesintisiz telafi ve değişim garantisi.
 - Shopier altyapısıyla 3D Secure kart ve havale güvencesi.
 
 💡 Elinizdeki kuponlar, yemek kodları ve hesaplar nakit alınır!
-Detaylı bilgi, referanslar ve işlem için: @KeyvadiDestek
+Detaylı bilgi ve sipariş için: @KeyvadiDestek
 Hızlı Sipariş Botu: @KeyVadiSatisBot"""
+t3 = """[ KEYVADİ | SPOR, EĞLENCE VE YEMEK FIRSATLARI ]
 
-# KeyVadi Template 3: Film, Dizi, Spor & Eğlence
-t3 = """[ KEYVADİ | FİLM, DİZİ, SPOR VE EĞLENCE SERVİSLERİ ]
+Süper Lig maçları, popüler diziler ve avantajlı yemek kuponları:
 
-Popüler eğlence üyelikleri, spor paketleri ve dijital lisanslar:
-
-Spor, Streaming & Müzik:
-• S Sport Plus (1 Ay): 70₺ (Canlı Maçlar & Tekrar İzle)
+Canlı Maç & Eğlence Paketleri:
+• TOD TV Haftalık Taraftar Paketi: 100₺ (Tüm Lig Maçları & HD)
+• S Sport Plus (1 Ay): 70₺ (Premier League & EuroLeague)
 • Netflix 4K UHD Profil: 79,90₺ | Ortak Hesap: 39,99₺
 • YouTube Premium 3 Ay Kod: 19,90₺ | 1 Ay Davet: 30₺
 • Spotify Premium (4 Ay): 34,99₺ | Prime Video: 29,90₺
 • Disney+ UHD Reklamsız: 99,90₺ | HBO Max: 39,90₺ | Exxen: 34,99₺
-• Crunchyroll Ortak: 39,90₺ | Özel Hesap: 59,90₺
 
-Yemek & Seyahat Kuponları:
-• Yemeksepeti 450/350 İndirim Kodu: 60₺
-• Turna.com 600 TL Uçak Kuponu: 70₺ | Tıkla Gelsin: 50₺
-• Trendyol Market ve Yemek Kuponları: 49,99₺
+Yemek & Ulaşım Kuponları:
+• Yemeksepeti İlk Sipariş 450/350 Kod: 50₺
+• Yemeksepeti 500/250 İndirim Kodu: 100₺
+• Yemeksepeti 550/200 Yemek Kodu: 75₺
+• Trendyol Yemek Alt Limitsiz 200 TL Kodu: 60₺
+• Tıkla Gelsin 400/200 Kuponu: 80₺
+• Uber İlk 2 Yolculuk %70 İndirim: 125₺ | Uber 500+500: 85₺
+• Turna.com 600 TL Uçak Kuponu: 70₺
 
-AI, Yazılım ve Oyun:
+Yapay Zekâ & Oyun:
+• GPT GO 3 Aylık İndirim Kodu: 150₺
 • Canva Pro 1 Yıl: 49,90₺ | ChatGPT Plus Ortak: 39,90₺
-• Gemini Pro 18 Ay: 99,90₺ | CapCut Pro: 49,90₺ | Adobe CC: 119,99₺
-• Windows 10/11 Pro: 70₺ | Office 365: 70₺
-• Minecraft + Game Pass: 49,90₺ | Discord Nitro 14X: 224,99₺
+• Gemini Pro 18 Ay: 99,90₺ | CapCut Pro: 49,90₺
+• Minecraft + Game Pass: 49,90₺ | Steam Oyun: 60₺
 
-Hizmet ve İşlem Güvencemiz:
-- +100'den fazla başarılı işlem ve referansımız bulunmaktadır.
-- Donma veya kapanmaya karşı süre boyunca anında telafi garantisi.
-- Shopier ile 3D Secure kredi kartı veya havale geçerlidir.
+Hizmet ve Güvencemiz:
+- +100'den fazla başarılı işlem ve müşteri memnuniyeti.
+- Kapanmaya karşı süre boyunca anında birebir telafi garantisi.
+- Shopier ile 3D Secure resmi ödeme güvencesi.
 
-💡 Elinizdeki indirim kuponları ve hesaplar değerinde nakit alınır!
-Canlı destek, kupon satışı ve sipariş için: @KeyvadiDestek
-Otomatik Mağaza Botu: @KeyVadiSatisBot"""
+💡 Kupon kodlarınız ve hesaplarınız değerinde nakit alınır!
+Canlı Destek: @KeyvadiDestek
+Otomatik Sipariş Botu: @KeyVadiSatisBot"""
+t4 = """[ KEYVADİ | ÖĞRENCİ, ÇALIŞAN VE GÜNLÜK İHTİYAÇLAR ]
 
-# KeyVadi Template 4: Öğrenci, Çalışan & Günlük İhtiyaçlar
-t4 = """[ KEYVADİ | ÖĞRENCİ VE ÇALIŞAN DİJİTAL İHTİYAÇLARI ]
+Yemek, ulaşım, yapay zekâ ve lisans ihtiyaçlarınız tek adreste:
 
-Ders, sunum, proje, yemek ve seyahat için avantajlı lisanslar:
+Yemek & Ulaşım Avantajları:
+• Yemeksepeti İlk Sipariş 450/350 Kodu: 50₺
+• Yemeksepeti 500/250 İndirim Kodu: 100₺
+• Yemeksepeti 550/200 Yemek Kodu: 75₺
+• Trendyol Yemek Alt Limitsiz 200 TL: 60₺
+• Tıkla Gelsin 400/200 Kuponu: 80₺
+• Uber İlk 2 Yolculuğunuza %70 İndirim: 125₺
+• Uber 500+500 Alt Limitsiz Kod: 85₺
+• TikTak 1.000 TL Araç: 30₺ | Enuygun 200 TL Otobüs: 20₺
 
-Üretkenlik ve Yazılım:
-• Canva Pro 1 Yıl (Kendi Mailinize): 49,90₺ | Öğretmen: 79,90₺
-• Office 365 (1 Yıl): 70₺ | Windows 10/11 Pro Lisans: 70₺
+Yapay Zekâ, Tasarım & Ofis:
+• GPT GO 3 Aylık İndirim Kodu: 150₺
+• Canva Pro 1 Yıl: 49,90₺ | Öğretmen: 79,90₺
 • ChatGPT Plus Ortak: 39,90₺ | Kişisel: 499,90₺
-• Gemini Pro 18 Ay: 99,90₺ | Gemini Advanced 3 Ay: 59,90₺
-• CapCut Pro Ortak: 49,90₺ | Adobe CC 1 Ay: 119,99₺
-• Perplexity Pro: 119,90₺ | DeepL Pro Çeviri: 29,90₺
+• Gemini Pro 18 Ay: 99,90₺ | 3 Ay: 59,90₺
+• CapCut Pro: 49,90₺ | Adobe CC 1 Ay: 119,99₺
+• Office 365 (1 Yıl): 70₺ | Windows 10/11 Pro Lisans: 70₺
 
-Yemek, Seyahat ve Eğlence:
-• Yemeksepeti 450/350 İndirim Kodu: 60₺
-• Tıkla Gelsin 400/200 Yemek Kuponu: 50₺
-• Turna.com 600 TL Uçak Kuponu: 70₺ | Trendyol Kupon: 49,99₺
+Spor & Dizi Üyelikleri:
+• TOD TV Haftalık Taraftar Paketi: 100₺
 • S Sport Plus (1 Ay): 70₺ | Netflix 4K Profil: 79,90₺
 • YouTube Premium 3 Ay: 19,90₺ | Spotify Premium: 34,99₺
-• Minecraft + Game Pass (1 Ay): 49,90₺ | Steam Oyun: 60₺
 
 Satış ve Garanti Şartlarımız:
-- +100'den fazla başarılı işlem ve referansımız mevcuttur.
-- Satın aldığınız süre boyunca %100 değişim ve telafi garantisi.
-- Shopier ile 3D Secure kredi kartı veya havale güvencesi.
+- Süre boyunca %100 değişim ve teknik destek garantisi.
+- Shopier 3D Secure kredi kartı veya havale güvencesi.
 
-💡 Elinizdeki kupon kodları ve hesaplar nakit paraya çevrilir!
-Sorularınız, alım ve satış için: @KeyvadiDestek
+💡 Elinizdeki kupon kodları nakit paraya çevrilir!
+Alım, satış ve sorularınız için: @KeyvadiDestek
 7/24 Sipariş Botu: @KeyVadiSatisBot"""
+t5 = """[ KEYVADİ | GÜNCEL KUPON, YEMEK VE ULAŞIM FIRSATLARI ]
 
-# KeyVadi Template 5: Oyun, Kupon & Alışveriş Fırsatları
-t5 = """[ KEYVADİ | OYUN, KUPON VE ALIŞVERİŞ FIRSATLARI ]
+Bugüne özel indirimli yemek, ulaşım ve abonelik kodları:
 
-İndirimli alışveriş kuponları, spor üyelikleri ve popüler lisanslar:
+Yemek & Ulaşım Kuponları:
+• Yemeksepeti İlk Sipariş 450₺/350₺ Kodu: 50₺
+• Yemeksepeti 500₺/250₺ İndirim Kodu: 100₺
+• Yemeksepeti 550₺/200₺ Yemek Kodu: 75₺
+• Trendyol Yemek Alt Limitsiz 200 TL Kodu: 60₺
+• Tıkla Gelsin 400/200 Yemek Kuponu: 80₺
+• Uber İlk 2 Yolculukta %70 İndirim: 125₺
+• Uber 500+500 TL Alt Limitsiz Kod: 85₺
+• TikTak 1.000 TL: 30₺ | Enuygun 200 TL: 20₺
+• FLO 3000/800: 20₺ | Lumberjack 3000/800: 20₺ | In Street: 20₺
 
-Kuponlar & Fırsatlar:
-• Yemeksepeti 450₺/350₺ İndirim Kodu: 60₺
-• Turna.com 600 TL Uçak Kuponu: 70₺
-• Tıkla Gelsin® 400/200 Yemek Kuponu: 50₺
-• Trendyol Market 800/300 Kuponu: 49,99₺ | Yemek: 49,99₺
-• S Sport Plus 1 Aylık Premium: 70₺
-• Minecraft Premium + Game Pass (1 Ay): 49,90₺ | 3 Ay: 119,90₺
-• Xbox Game Pass 1 Ay: 49,90₺ | 3 Ay: 69,90₺ | Steam: 60₺
-• Discord Nitro 14X Boost (1 Ay): 224,99₺
-
-Popüler Lisanslar ve AI:
-• Windows 10/11 Pro Lisans: 70₺ | Office 365 1 Yıl: 70₺
-• Canva Pro (Kendi Mailinize): 49,90₺ | Öğretmen: 79,90₺
-• ChatGPT Plus Ortak: 39,90₺ | Gemini Pro 18 Ay: 99,90₺
+Spor & Popüler Lisanslar:
+• TOD TV Haftalık Taraftar Paketi: 100₺
+• S Sport Plus 1 Aylık: 70₺
+• GPT GO 3 Aylık İndirim Kodu: 150₺
 • Netflix 4K Profil: 79,90₺ | YouTube Premium 3 Ay: 19,90₺
-• Spotify Premium (4 Ay): 34,99₺ | CapCut Pro: 49,90₺
-• Adobe Creative Cloud 1 Ay: 119,99₺
-
-Neden KeyVadi?
-- +100'den fazla başarılı işlem ve müşteri referansımız mevcuttur.
-- Tüm ürünlerde süre boyunca teknik destek ve telafi garantisi.
-- Shopier 3D Secure güvencesiyle resmi kartla ödeme imkanı.
-
-💡 Elinizdeki tüm indirim kuponları ve hesaplar değerinde nakit alınır!
-Doğrudan sipariş, referanslar ve kupon satışı için: @KeyvadiDestek
-Hızlı Alışveriş Botu: @KeyVadiSatisBot"""
-
-# KeyVadi Template 6: Popüler Çok Satanlar & Yeni Ürünler
-t6 = """[ KEYVADİ | ÇOK SATANLAR VE YENİ DİJİTAL KUPONLAR ]
-
-Yemekten spora, yapay zekadan lisansa en popüler KeyVadi ürünleri:
-
-Çok Satan Güncel Liste:
-• S Sport Plus (1 Ay): 70₺ (Premier League & EuroLeague)
-• Yemeksepeti 450₺/350₺ İndirim Kodu: 60₺
-• Turna.com 600 TL Uçak Bileti Kuponu: 70₺
-• Tıkla Gelsin 400/200 Yemek Kuponu: 50₺
-• Canva Pro 1 Yıl Davet: 49,90₺ | Öğretmen 1 Yıl: 79,90₺
-• YouTube Premium 3 Ay Kod: 19,90₺ | 1 Ay Davet: 30₺
-• ChatGPT Plus Ortak: 39,90₺ | Kişisel Hesap: 499,90₺
-• Netflix 4K UHD Profil: 79,90₺ | Ortak Hesap: 39,99₺
-• Gemini Pro 18 Ay Davet: 99,90₺ | 3 Ay: 59,90₺
-• Spotify Premium 4 Ay: 34,99₺ | Exxen: 34,99₺
-• CapCut Pro Ortak: 49,90₺ | Adobe Creative Cloud 1 Ay: 119,99₺
+• Canva Pro (Kendi Mail): 49,90₺ | ChatGPT Plus: 39,90₺
 • Windows 10/11 Pro: 70₺ | Office 365 1 Yıl: 70₺
 • Minecraft Premium: 49,90₺ | Xbox Game Pass: 49,90₺
-• Trendyol Market ve Yemek Kuponları: 49,99₺
+
+Neden KeyVadi?
+- +100'den fazla başarılı işlem ve müşteri referansı.
+- Tüm kod ve hesaplarda anında telafi garantisi.
+- Shopier 3D Secure güvencesiyle resmi kartla ödeme.
+
+💡 Elinizdeki tüm kupon kodları ve hesaplar değerinde nakit alınır!
+İletişim & Kupon Bozdurma: @KeyvadiDestek
+Hızlı Alışveriş Botu: @KeyVadiSatisBot"""
+t6 = """[ KEYVADİ | ÇOK SATANLAR VE YENİ DİJİTAL KUPONLAR ]
+
+Yemekten ulaşıma, spordan yapay zekâya en çok tercih edilen KeyVadi ürünleri:
+
+Yeni Eklenen Fırsatlar:
+• Yemeksepeti İlk Sipariş 450/350 Kod: 50₺
+• Yemeksepeti 500/250 İndirim Kodu: 100₺
+• Yemeksepeti 550/200 Yemek Kodu: 75₺
+• Trendyol Yemek Alt Limitsiz 200 TL: 60₺
+• Uber İlk 2 Yolculuğa %70 İndirim: 125₺
+• Uber 500+500 Alt Limitsiz Kod: 85₺
+• TOD TV Haftalık Taraftar Paketi: 100₺
+• GPT GO 3 Aylık İndirim Kodu: 150₺
+• Tıkla Gelsin 400/200 Yemek Kuponu: 80₺
+
+Popüler Lisans ve Eğlence:
+• S Sport Plus (1 Ay): 70₺ | Netflix 4K UHD: 79,90₺
+• YouTube Premium 3 Ay Kod: 19,90₺ | Spotify 4 Ay: 34,99₺
+• Canva Pro 1 Yıl: 49,90₺ | ChatGPT Plus Ortak: 39,90₺
+• Gemini Pro 18 Ay: 99,90₺ | CapCut Pro: 49,90₺
+• Windows 10/11 Pro: 70₺ | Office 365 1 Yıl: 70₺
+• TikTak 1.000 TL: 30₺ | Enuygun 200 TL: 20₺
 
 Güvencelerimiz:
-- +100'den fazla başarılı işlem ve müşteri referansı mevcuttur.
-- Kapanma durumunda süre boyunca anında birebir telafi garantisi.
-- Shopier 3D Secure ile kart veya havale ile güvenli alışveriş.
+- +100'den fazla başarılı işlem ve referans.
+- Kapanma ve sorunlara karşı süre boyunca %100 telafi garantisi.
+- Shopier 3D Secure ile resmi kart veya havale geçerlidir.
 
-💡 Elinizdeki kupon kodları, yemek çekleri ve hesaplar nakit alınır!
-Referanslar, kupon satışı ve doğrudan sipariş için: @KeyvadiDestek
+💡 Elinizdeki kupon kodları ve hesaplar değerinde nakit alınır!
+Referanslar ve canlı destek için: @KeyvadiDestek
 Otomatik Mağaza Botu: @KeyVadiSatisBot"""
 
 templates = [t1, t2, t3, t4, t5, t6]
-
 for i, t in enumerate(templates, 1):
-    path = f"messages/keyvadi_{i}.txt"
-    with open(path, "w", encoding="utf-8") as f:
+    with open(f"messages/keyvadi_{i}.txt", "w", encoding="utf-8") as f:
         f.write(t)
-    print(f"Written: {path} | Length: {len(t)} chars | Lines: {len(t.splitlines())}")
-
-print("\nAll 6 templates updated!")
+print("Updated all keyvadi templates successfully!")

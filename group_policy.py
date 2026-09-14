@@ -156,7 +156,7 @@ FAST_COUPON_GROUPS = {
     "kuponkodceksatis", "kuponkodualsat", "ceksatistakasgrup", "mukyemek",
     "kuponvekodsatisgrubu", "ceksatkupon2", "kuponkodalimsatim", "kodmalf",
     "indirimruzgari1", "kuponindirimkodalisveris", "kuponindirimcek", "uygunkod",
-    "yemeksepetikuponu", "kuponalsatgurup", "kodkuponmerkezi", "indirimkana",
+    "kuponalsatgurup", "kodkuponmerkezi", "indirimkana",
     "bedavainternetkodalimsatim", "kuponyaticaret", "cek_kupon_kod_ilan",
     "minakuponkodsatis", "bedavainternetkod", "kuponinternet", "kuponceking",
     "yucekuponsatis", "indirimkodbul", "kuponsatimalim", "kodevrenii",
@@ -181,7 +181,7 @@ STRICT_NO_MENTION_TARGETS = {
     "kuponyaticaret", "letgoilanlari", "minakuponkodsatis", "mukyemek",
     "satcek", "satiskodtakasi", "tahaaslan11", "ticaretcanavari",
     "ticaretgruptr", "ticaretyapn", "ticaretz", "uygunkod", "wishx_2",
-    "xalimsatiim", "yemeksepetikuponu", "yucekuponsatis", "zeroticaret",
+    "xalimsatiim", "yucekuponsatis", "zeroticaret",
 }
 
 

@@ -43,7 +43,6 @@ kuponindirimkodalisveris
 alisverisforumuguncel
 kuponindirimcek
 uygunkod
-YemekSepetiKuponu
 kodalimsatim
 kuponalsatgurup
 KodKuponMerkezi

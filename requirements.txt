@@ -7,5 +7,5 @@ SQLAlchemy>=2.0,<3
 psycopg[binary]>=3.2,<4
 cryptography>=44,<46
 pyotp>=2.9,<3
-telethon>=1.36,<2
+telethon>=1.43.0,<2
 psutil>=5.9,<7

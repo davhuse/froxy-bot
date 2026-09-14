@@ -31,6 +31,22 @@ PUBLIC_BASE_URL = (
 CATALOG_REFRESH_STATUS: dict[str, dict] = {}
 
 TEXT_ALIASES = {
+    "alt limitsiz": "alt limitsiz",
+    "alt limitsiz yemek": "trendyol yemek alt limitsiz",
+    "550 200": "yemeksepeti 550",
+    "500 250": "yemeksepeti 500",
+    "taraftar paketi": "tod",
+    "tod tv": "tod",
+    "tod": "tod",
+    "uber indirim": "uber",
+    "uber kupon": "uber",
+    "uber": "uber",
+    "tiklagelsin": "tıkla gelsin",
+    "tıklagelsin": "tıkla gelsin",
+    "tikla gelsin": "tıkla gelsin",
+    "tıkla gelsin": "tıkla gelsin",
+    "gptgo": "gpt go",
+    "gpt go": "gpt go",
     "mc": "minecraft",
     "minecraft": "minecraft",
     "mine craft": "minecraft",
@@ -117,7 +133,8 @@ BRAND_PHRASES = (
     "magnific", "zula", "fc 26", "fc26", "codex", "antigravity", "disney", "minecraft",
     "cape", "pelerin", "roblox", "instagram", "takipci", "gmail", "claude",
     "s sport", "yemeksepeti", "turna", "coffy", "cofy", "migros",
-    "tiktak", "flo", "lumberjack", "in street", "enuygun",
+    "tiktak", "flo", "lumberjack", "in street", "enuygun", "tıkla gelsin", "tikla gelsin",
+    "uber", "tod",
     "yemeksepeti 200", "yemeksepeti 450",
     "baslangic", "populer", "profesyonel", "gelistirici", "isletme", "kurumsal"
 )
@@ -141,6 +158,15 @@ FROXY_PRICE_OVERRIDES = {
 # refreshed.  The live listing is still the checkout source; these overrides
 # keep bots, automatic replies and Mini App deep-link cards consistent.
 BRAND_PRICE_OVERRIDES = {
+    ("keyvadi", "50576030"): "50,00 TL",
+    ("keyvadi", "50576032"): "80,00 TL",
+    ("keyvadi", "50670101"): "150,00 TL",
+    ("keyvadi", "50670102"): "100,00 TL",
+    ("keyvadi", "50670103"): "75,00 TL",
+    ("keyvadi", "50670104"): "60,00 TL",
+    ("keyvadi", "50670105"): "125,00 TL",
+    ("keyvadi", "50670106"): "100,00 TL",
+    ("keyvadi", "50670107"): "85,00 TL",
     ("keyvadi", "47669117"): "79,90 TL",
     ("froxy", "49489691"): "499,90 TL",
     ("froxy", "49489721"): "599,90 TL",

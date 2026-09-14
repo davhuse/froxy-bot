@@ -361,6 +361,7 @@ INJECTED_PRODUCTS = [
     {"id": "49099015", "title": "Zula Random Hesap", "price": "5.00 TL", "url": "https://www.shopier.com/49099015"},
     {"id": "50665156", "title": "Netflix 4K UHD Ortak Profil", "price": "39.99 TL", "url": "https://www.shopier.com/50665156"},
     {"id": "49099013", "title": "Steam 200 Dolar Random Key", "price": "30.00 TL", "url": "https://www.shopier.com/49099013"},
+    {"id": "50576032", "title": "Tıkla Gelsin 400 TL'ye 200 TL İndirim Kuponu", "price": "80.00 TL", "url": "https://www.shopier.com/50576032"},
 ]
 
 # Flat list of all products (rebuilt when products are loaded)
@@ -379,6 +380,7 @@ SALES_INTENT_KEYWORDS = {
     "minecraft", "s sport", "ssport", "yemeksepeti", "turna",
     "coffy", "cofy", "migros", "kupon", "kod", "bakiye", "market", "kahve",
     "3 ay", "1 ay", "aylık", "yıllık", "ortak", "kişisel",
+    "tikla gelsin", "tıkla gelsin", "tiklagelsin", "tıklagelsin", "uber", "tod", "tiktak", "enuygun",
 }
 
 def has_sales_intent(text):
@@ -419,7 +421,8 @@ def match_product_from_text(msg_text):
         "4k", "uhd", "game", "lisans", "microsoft",
         "tradingview", "nordvpn", "vpn", "kaspersky", "envato", "freepik",
         "autocad", "figma", "elementor", "grammarly", "deepl", "ideogram", "quillbot", "discord",
-        "minecraft", "amazon", "prime"
+        "minecraft", "amazon", "prime", "tikla", "tıkla", "gelsin", "yemeksepeti", "uber", "tod",
+        "tiktak", "enuygun", "flo", "lumberjack", "zula", "fc26"
     }
     
     has_brand = any(w in brand_keywords for w in query_words)
