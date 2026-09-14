@@ -49,6 +49,13 @@ CATEGORY_KEYWORDS = [
     ("lumberjack", ["lumberjack"]),
     ("instreet", ["instreet", "in street"]),
     ("enuygun", ["enuygun"]),
+    ("tiklagelsin", ["tiklagelsin", "tıkla gelsin", "tikla gelsin", "tıklagelsin"]),
+    ("yemeksepeti", ["yemeksepeti"]),
+    ("uber", ["uber"]),
+    ("tod", ["tod", "taraftar"]),
+    ("gptgo", ["gpt go", "gptgo"]),
+    ("ssport", ["s sport", "ssport"]),
+    ("trendyol", ["trendyol yemek", "trendyol market", "trendyol"]),
 ]
 
 PRODUCT_GUIDES = {

@@ -124,8 +124,8 @@ TEXT_ALIASES = {
 
 BRAND_PHRASES = (
     "chatgpt", "netflix", "youtube", "adobe", "canva", "windows", "office",
-    "gemini", "grok", "xbox", "spotify", "exxen", "trendyol yemek",
-    "trendyol market", "duolingo", "semrush", "capcut", "scribd", "gamma",
+    "gemini", "grok", "xbox", "spotify", "exxen", "trendyol", "trendyol yemek",
+    "trendyol market", "alt limitsiz", "duolingo", "semrush", "capcut", "scribd", "gamma",
     "kiro", "steam", "shell", "whatsapp", "apple", "crunchyroll", "telegram", "blutv",
     "midjourney", "tradingview", "nordvpn", "vpn", "kaspersky", "envato",
     "freepik", "autocad", "figma", "elementor", "grammarly", "deepl",
@@ -134,7 +134,7 @@ BRAND_PHRASES = (
     "cape", "pelerin", "roblox", "instagram", "takipci", "gmail", "claude",
     "s sport", "yemeksepeti", "turna", "coffy", "cofy", "migros",
     "tiktak", "flo", "lumberjack", "in street", "enuygun", "tıkla gelsin", "tikla gelsin",
-    "uber", "tod",
+    "uber", "tod", "gpt go",
     "yemeksepeti 200", "yemeksepeti 450",
     "baslangic", "populer", "profesyonel", "gelistirici", "isletme", "kurumsal"
 )
