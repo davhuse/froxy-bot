@@ -4491,8 +4491,6 @@ async def main():
             nonlocal account_pending_invites
             if not await ensure_telegram_connection(client, client_name):
                 return 0
-            if len(joined_dialogs) <= 1:
-                return 0
             if is_account_restricted(client_name, scope='join'):
                 return 0
 
