@@ -386,6 +386,56 @@ class BlastCoordinator:
                 self.state["active_account"] = None
             self._persist()
 
+    def prepare_manual_stop_resume(self, reason="manual_panel_stop"):
+        """Preserve an interrupted cycle so a panel restart continues it.
+
+        A hard process stop can land after a target is claimed but before its
+        Telegram result is checkpointed. Requeue that one uncertain target;
+        the worker's recent-message guard will skip it if Telegram had already
+        accepted the message, otherwise it will be sent normally.
+        """
+        with self._lock:
+            resumable = []
+            requeued = 0
+            for account in ACCOUNT_ORDER:
+                record = self.state["accounts"].get(account, {})
+                targets = record.get("targets") or []
+                if not record.get("run_id") or not targets:
+                    continue
+                incomplete = False
+                for target in targets:
+                    state = target.get("state", "pending")
+                    if state == "claimed":
+                        target.update({
+                            "state": "pending",
+                            "attempt_owner": None,
+                            "claimed_at": None,
+                            "finished_at": None,
+                            "reason": reason,
+                        })
+                        requeued += 1
+                        incomplete = True
+                    elif state not in TERMINAL_TARGET_STATES:
+                        incomplete = True
+                if incomplete:
+                    record["status"] = "paused"
+                    record["pause_reason"] = reason
+                    resumable.append(account)
+
+            active = self.state.get("active_account")
+            active_changed = False
+            if active not in resumable:
+                replacement = resumable[0] if resumable else None
+                active_changed = replacement != active
+                self.state["active_account"] = replacement
+            if resumable or requeued or active_changed:
+                self._persist()
+            return {
+                "active_account": self.state.get("active_account"),
+                "resumable_accounts": resumable,
+                "requeued_claimed_targets": requeued,
+            }
+
     def complete_cycle(self, account, wait_seconds=3600):
         with self._lock:
             record = self.state["accounts"][account]

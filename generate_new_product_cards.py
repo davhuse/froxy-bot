@@ -41,7 +41,7 @@ PRODUCTS = [
     {
         "filename": "card_clean_turna.jpg",
         "brand_badge": "KEYVADI | SEYAHAT & UÇAK",
-        "title": "TURNA.COM",
+        "title": "TURNA",
         "subtitle": "600 TL Uçak Bileti Kuponu",
         "tagline": "Yurt İçi & Yurt Dışı Her Yöne Geçerli 600 TL İndirim",
         "highlight": "Tek Yön & Gidiş-Dönüş Biletlerde Geçerli",

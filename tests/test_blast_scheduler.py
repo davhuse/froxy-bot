@@ -110,6 +110,31 @@ class BlastCoordinatorTests(unittest.TestCase):
             state = second.snapshot()["accounts"]["KeyVadiOnline"]
             self.assertEqual(state["targets"][0]["state"], "skipped_uncertain")
 
+    def test_manual_stop_requeues_claimed_target_and_preserves_cycle(self):
+        with tempfile.TemporaryDirectory() as directory:
+            clock = Clock()
+            first = self.make_coordinator(directory, clock, owner="before-stop")
+            first.initialize_accounts({"KeyVadiOnline": 0})
+            first.try_acquire_turn("KeyVadiOnline")
+            cycle = first.begin_cycle(
+                "KeyVadiOnline", ["group-a", "group-b"], ["one.txt"]
+            )
+            target = first.next_target("KeyVadiOnline")
+            first.claim_target("KeyVadiOnline", target["index"])
+
+            prepared = first.prepare_manual_stop_resume()
+            self.assertEqual(prepared["active_account"], "KeyVadiOnline")
+            self.assertEqual(prepared["requeued_claimed_targets"], 1)
+
+            restarted = self.make_coordinator(directory, clock, owner="after-stop")
+            restarted.initialize_accounts({"KeyVadiOnline": 0})
+            self.assertTrue(restarted.try_acquire_turn("KeyVadiOnline"))
+            resumed = restarted.begin_cycle(
+                "KeyVadiOnline", ["different-target"], ["changed.txt"]
+            )
+            self.assertEqual(resumed["run_id"], cycle["run_id"])
+            self.assertEqual(restarted.next_target("KeyVadiOnline")["group"], "group-a")
+
     def test_deferred_target_releases_turn_for_another_due_account(self):
         with tempfile.TemporaryDirectory() as directory:
             clock = Clock()

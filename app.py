@@ -28,7 +28,7 @@ import socket
 import firestore_helper
 from sales_metrics import record_event, summarize as summarize_sales
 from sales_conversion import catalog_refresh_status, cta_experiment_status, parse_purchase_token, product_by_id, purchase_target_url, refresh_configured_catalogs
-from blast_scheduler import load_blast_snapshot
+from blast_scheduler import BlastCoordinator, load_blast_snapshot
 from shopier_orders import ingest_shopier_order, reconcile_configured_orders
 from group_policy import load_policies, moderation_snapshot
 from target_registry import TargetRegistry
@@ -461,6 +461,15 @@ def launch_ad_worker(*, env_overrides=None, truncate_log=False):
     with open("otomatik_katil.py.pid", "w", encoding="utf-8") as handle:
         handle.write(str(ad_process.pid))
     return ad_process
+
+
+def prepare_ad_resume_checkpoint(reason):
+    """Make a deliberately stopped V3 blast resumable before worker launch."""
+    coordinator = BlastCoordinator(
+        os.path.join(base_dir, "blast_checkpoint_v3.json"),
+        owner_id=f"panel-{os.getpid()}-{uuid.uuid4().hex[:8]}",
+    )
+    return coordinator.prepare_manual_stop_resume(reason)
 
 
 def read_controlled_smoke_result():
@@ -1368,6 +1377,7 @@ def start():
         
     try:
         kill_process_by_script('otomatik_katil.py')
+        resume_state = prepare_ad_resume_checkpoint("manual_panel_resume")
         
         flags = subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
         file_out = open(LOG_FILE, 'a', encoding="utf-8", buffering=1)
@@ -1387,7 +1397,7 @@ def start():
         except:
             pass
         update_config_state("ad_bot_running", True)
-        return jsonify({"success": True})
+        return jsonify({"success": True, "resume": resume_state})
     except Exception as e:
          return jsonify({"success": False, "message": str(e)})
 
@@ -1474,6 +1484,10 @@ def stop():
     with open(AD_STOP_FILE, "w", encoding="utf-8") as marker:
         marker.write("disabled by panel\n")
     kill_process_by_script('otomatik_katil.py')
+    try:
+        resume_state = prepare_ad_resume_checkpoint("manual_panel_stop")
+    except Exception as exc:
+        resume_state = {"error": type(exc).__name__}
     try: os.remove("otomatik_katil.py.pid")
     except: pass
     with open(LOG_FILE, "a", encoding="utf-8") as f:
@@ -1481,7 +1495,7 @@ def stop():
     global ad_process
     ad_process = None
     update_config_state("ad_bot_running", False)
-    return jsonify({"success": True})
+    return jsonify({"success": True, "resume": resume_state})
 
 @app.route('/api/logs', methods=['GET'])
 def get_logs():

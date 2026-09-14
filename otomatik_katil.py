@@ -652,7 +652,7 @@ def strict_group_safe_copy(group_key, is_keyvadi, is_lisansarena, is_froxy):
             "Canva Pro 1 yıl 49,90 TL",
             "Gemini Pro 3 ay 59,90 TL | 18 ay 149,90 TL",
             "ChatGPT Plus kişisel 499,90 TL | ortak 39,90 TL",
-            "S Sport Plus 1 ay 70 TL | Turna 600 TL bilet 70 TL",
+            "S Sport Plus 1 ay 70 TL | Turna 600 TL bilet 100 TL",
             "Adobe 1 hafta 49,99 TL | 1 ay 119,99 TL",
             "Windows 10/11 Pro 70 TL | Office 365 1 yıl 70 TL",
             "YouTube Premium 1 ay 30 TL | Spotify 4 ay 34,99 TL",

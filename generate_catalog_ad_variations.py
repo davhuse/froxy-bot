@@ -47,7 +47,7 @@ def balanced_chunks(items: list[dict], count: int) -> list[list[dict]]:
 def write_keyvadi(chunks: list[list[dict]]) -> None:
     for index, products in enumerate(chunks, 1):
         lines = [
-            f"[ KEYVADİ :: TAM KATALOG {index}/{len(chunks)} ] [ 7/24 ]",
+            "[ KEYVADİ | GÜNCEL ÜRÜNLER ] [ 7/24 ]",
             "KATEGORİ / GÜNCEL STOK VE FİYATLAR",
             "────────────────────────────────",
             "✓ Kod, davet, ortak ve kişisel seçenekler",
@@ -67,11 +67,11 @@ def write_keyvadi(chunks: list[list[dict]]) -> None:
 def write_lisansarena(chunks: list[list[dict]]) -> None:
     for index, products in enumerate(chunks, 1):
         lines = [
-            f"[ LİSANSARENA | TAM VİTRİN {index}/{len(chunks)} ] [ 7/24 ]",
-            "━━ ÜRÜN KATALOĞU / BUGÜNÜN FIRSATLARI ━━",
+            "[ LİSANSARENA | GÜNCEL FIRSATLAR ] [ 7/24 ]",
+            "━━ DİJİTAL ÜRÜNLER / BUGÜNÜN FIRSATLARI ━━",
             "✓ Lisans, abonelik, oyun ve kupon seçenekleri",
             "✓ Ürün adıyla arayın; güncel ilan doğrudan açılır",
-            "✓ Katalogdaki her ürün bu rotasyonda yer alır",
+            "✓ Güncel fırsatlar, net fiyatlar ve hızlı sipariş",
         ]
         for item in products:
             lines.append(f"» {item['title']} · {price_text(item)}")
@@ -79,7 +79,6 @@ def write_lisansarena(chunks: list[list[dict]]) -> None:
             "━━ ANLIK TESLİMAT ━━",
             "✓ Güvenli ödeme · hızlı teslimat · canlı destek",
             "✓ Stok ve fiyat bilgisi mağazayla senkron tutulur",
-            "✓ Yeni varyasyonda farklı ürünler dönüşümlü gösterilir",
             "Mağaza ve sipariş hattı: @LisansArenaBot",
         ])
         (MESSAGES / f"full_lisansarena_{index}.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -92,7 +91,7 @@ def write_froxy(products: list[dict]) -> None:
     variants = [products, list(reversed(products))]
     for index, variant in enumerate(variants, 1):
         lines = [
-            f"╭─ FROXY AI // TAM MODEL MENÜSÜ {index}/2 ─╮",
+            "╭─ FROXY AI // GÜNCEL MODEL & PAKETLER ─╮",
             "│ Gemini, ChatGPT, Codex ve üretim paketleri",
             "│ Model adını yazın; uygun Shopier ilanı açılsın",
             "│ Tüm ürünlerde güncel fiyat ve stok görünür",
