@@ -15,7 +15,6 @@ ChatGPT, Gemini, Claude ve daha birçok premium AI modelini tek bir panelden yö
 🔹 Gemini Pro 12 Ay (Davet) Sadece 59.99 ₺
 🔹 Perplexity Pro (1 Aylık Ortak) 69.99 ₺
 🔹 Codex SMS Onay 29.99 ₺
-🔹 ChatGPT Go (3 Aylık) 49.99 ₺
 
 Resmi Shopier güvencesiyle kolayca sipariş verin.
 

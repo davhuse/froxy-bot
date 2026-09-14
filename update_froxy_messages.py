@@ -21,7 +21,6 @@ Neler yapabilirsiniz?
 • ChatGPT Plus (Kişisel: 499.90₺ | Ortak: 39.99₺ | + Codex: 599.90₺)**
 • Codex SMS Doğrulama Kodu: 29.99₺
 • Gemini Ultra (1 Ay Kredisiz: 299.99₺ | 2.5K Kredili: 399.99₺)*
-• ChatGPT Go (3 Aylık İndirim Kodu): 49.99₺
 • Perplexity Pro (Ortak: 69.99₺ | Özel Profil: 79.99₺)
 
 *(Not: Tüm Gemini ürünlerinde maksimum 1 ay garanti mevcuttur.)

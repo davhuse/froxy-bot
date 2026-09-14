@@ -227,7 +227,6 @@ def configure_bot_profile():
 
 DEFAULT_FROXY_PRODUCTS = [
     {"id": "49489768", "title": "Perplexity Pro (1 Aylık Ortak)", "price": "69,99 TL", "url": "https://www.shopier.com/froxyai/49489768"},
-    {"id": "49489754", "title": "ChatGPT Go (3 Aylık İndirim Kodu)", "price": "49,99 TL", "url": "https://www.shopier.com/froxyai/49489754"},
     {"id": "49489749", "title": "Gemini Ultra (1 Aylık 2500 Kredili)", "price": "399,00 TL", "url": "https://www.shopier.com/froxyai/49489749"},
     {"id": "49489734", "title": "Gemini Ultra (1 Aylık Kredisiz)", "price": "299,00 TL", "url": "https://www.shopier.com/froxyai/49489734"},
     {"id": "49489726", "title": "Codex SMS Doğrulama Kodu", "price": "29,00 TL", "url": "https://www.shopier.com/froxyai/49489726"},
@@ -727,7 +726,6 @@ async def pkg_select_handler(event):
         "gemini_anti_18m": "49489681",
         "gemini_ultra_kredisiz": "49489734",
         "gemini_ultra_25k": "49489749",
-        "chatgpt_go": "49489754",
         "perplexity_ortak": "49489768",
     }
     selected_id = package_product_ids.get(pkg_key)

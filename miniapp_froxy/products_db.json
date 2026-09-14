@@ -34,23 +34,6 @@
     "max_qty": 5
   },
   {
-    "id": "49489754",
-    "title": "ChatGPT Go (3 Aylık İndirim Kodu)",
-    "price": "49,99 TL",
-    "price_num": 49.99,
-    "category": "ai",
-    "category_label": "YAPAY ZEKA LİSANSI",
-    "image": "https://cdn.shopier.app/pictures_large/froxyai_c2bbc4557f3b9e6ad02989ba5a9f1b53.jpg",
-    "badge": "✨ AI Pro Model",
-    "url": "https://www.shopier.com/froxyai/49489754",
-    "description": "Froxy AI — ChatGPT Go (3 Aylık İndirim Kodu). Resmi Shopier 3D Secure ödeme güvencesiyle anında teslimat.",
-    "showcase": true,
-    "is_vitrin": true,
-    "delivery_type": "stock_or_manual",
-    "delivery_label": "Stoktan otomatik veya 1-3 iş günü",
-    "max_qty": 5
-  },
-  {
     "id": "49489749",
     "title": "Gemini Ultra (1 Aylık 2500 Kredili)",
     "price": "399,00 TL",

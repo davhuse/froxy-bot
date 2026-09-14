@@ -50,7 +50,7 @@ class SalesCatalogMatchingTests(unittest.TestCase):
 
     def test_all_active_products_match_their_own_name(self):
         self.assertGreaterEqual(len(self.keyvadi), 65)
-        self.assertEqual(len(self.froxy), 19)
+        self.assertEqual(len(self.froxy), 18)
         self.assertEqual(len(self.lisansarena), 57)
         for catalog in (self.keyvadi, self.froxy, self.lisansarena):
             for product in catalog:

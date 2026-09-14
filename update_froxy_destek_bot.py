@@ -26,7 +26,6 @@ new_texts_tr = '''        "pkg_btn_list": [
             ("📱 Codex SMS Doğrulama Kodu (₺29.99)", "pkg_codex_sms"),
             ("💎 Gemini Ultra Kredisiz (₺299.99)", "pkg_gemini_ultra_kredisiz"),
             ("💎 Gemini Ultra 2500 Kredili (₺399.99)", "pkg_gemini_ultra_25k"),
-            ("⚡ ChatGPT Go 3 Aylık Kod (₺49.99)", "pkg_chatgpt_go"),
             ("🔍 Perplexity Pro 1 Aylık Ortak (₺69.99)", "pkg_perplexity_ortak")
         ],'''
 
