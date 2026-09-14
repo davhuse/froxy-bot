@@ -353,5 +353,65 @@
     "url": "https://www.shopier.com/lisansarena/48901851",
     "description": "Crunchyroll Premium 1 Aylık Ortak Kullanım Hesabı. Giriş garantilidir.",
     "type": "digital"
+  },
+  {
+    "id": "la_ssport_1m",
+    "title": "S Sport Plus (1 Aylık Lisans Kodu)",
+    "price": "80 TL",
+    "url": "https://www.shopier.com/50857162"
+  },
+  {
+    "id": "la_migros_100",
+    "title": "Migros 100 TL Alışveriş Bakiye Kodu",
+    "price": "60 TL",
+    "url": "https://www.shopier.com/50857164"
+  },
+  {
+    "id": "la_yemeksepeti_450",
+    "title": "Yemeksepeti 450₺'ye 350₺ İndirim Kodu",
+    "price": "70 TL",
+    "url": "https://www.shopier.com/50857165"
+  },
+  {
+    "id": "la_ig_1000",
+    "title": "Instagram 1000 Takipçi (30 Gün Telafili & Düşmeyen)",
+    "price": "49,90 TL",
+    "url": "https://www.shopier.com/50857167"
+  },
+  {
+    "id": "la_youtube_3m",
+    "title": "YouTube Premium (3 Aylık Lisans Kodu)",
+    "price": "39,90 TL",
+    "url": "https://www.shopier.com/50857169"
+  },
+  {
+    "id": "la_steam_200",
+    "title": "Steam 200$ Değerinde VIP Random Key",
+    "price": "39,90 TL",
+    "url": "https://www.shopier.com/50857170"
+  },
+  {
+    "id": "la_prime_ozel",
+    "title": "Amazon Prime Video 4K (Özel Profil)",
+    "price": "29,90 TL",
+    "url": "https://www.shopier.com/50857171"
+  },
+  {
+    "id": "la_steam_45",
+    "title": "Steam 45$ Değerinde Random Key",
+    "price": "19,90 TL",
+    "url": "https://www.shopier.com/50857172"
+  },
+  {
+    "id": "la_yemeksepeti_550",
+    "title": "Yemeksepeti 550₺'ye 200₺ İndirim Kodu",
+    "price": "90 TL",
+    "url": "https://www.shopier.com/50857181"
+  },
+  {
+    "id": "la_yemeksepeti_500",
+    "title": "Yemeksepeti 500₺'ye 250₺ İndirim Kodu",
+    "price": "120 TL",
+    "url": "https://www.shopier.com/50857182"
   }
 ]
