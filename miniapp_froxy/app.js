@@ -300,7 +300,7 @@ function renderProviderInventory(providers) {
     const configured = Boolean(row.configured);
     const healthy = Boolean(row.healthy);
     const models = Number(row.models || 0) + Number(row.image_models || 0);
-    const label = configured ? (healthy ? 'aktif' : 'kontrol bekliyor') : 'anahtar bekliyor';
+    const label = configured ? (row.catalog_only ? 'fiyat doğrulaması bekliyor' : healthy ? 'aktif' : 'kontrol bekliyor') : 'anahtar bekliyor';
     const icon = row.provider_logo ? `<img src="${escapeHtml(row.provider_logo)}" alt="">` : '<span>◇</span>';
     return `<span class="provider-chip ${healthy ? 'is-live' : configured ? 'is-checking' : 'is-off'}">${icon}<b>${escapeHtml(row.provider_label || row.provider)}</b><small>${label}${models ? ` · ${models} model` : ''}</small></span>`;
   }).join('')}</div>`;

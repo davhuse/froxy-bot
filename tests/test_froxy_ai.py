@@ -322,6 +322,19 @@ class FroxyApiTests(unittest.TestCase):
         self.assertGreater(catalog["image_model_count"], 0)
         self.assertEqual(0, catalog["active_image_model_count"])
 
+    def test_unpriced_provider_is_catalog_only_not_active(self):
+        gateway = FroxyGateway()
+        provider = Provider("freemodel", "FreeModel", "https://example.test", ("FREEMODEL_API_KEY",))
+        with mock.patch.object(gateway, "providers", return_value=[provider]), mock.patch.object(
+            gateway, "_fetch_provider", return_value=(
+                [{"id": "freemodel/test", "provider": "freemodel", "known_pricing": False, "is_free": False, "provider_model_id": "test", "modality": "text->text"}],
+                {"provider": "freemodel", "healthy": False, "catalog_only": True, "status": 200, "models": 1, "latency_ms": 1},
+            )
+        ):
+            status = gateway.provider_status()["freemodel"]
+        self.assertTrue(status["catalog_only"])
+        self.assertFalse(status["healthy"])
+
     def test_all_provider_logos_are_local_assets(self):
         from miniapp_froxy.froxy_gateway import PROVIDER_LOGOS
 

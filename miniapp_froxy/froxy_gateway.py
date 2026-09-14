@@ -227,9 +227,18 @@ class FroxyGateway:
                     rows = []
                 normalized = [self._normalize_model(provider, row) for row in rows if isinstance(row, dict)]
                 normalized = [row for row in normalized if row and self._is_chat_model(row)]
+                billable_or_free = [
+                    row for row in normalized
+                    if row.get("known_pricing") or row.get("is_free")
+                ]
                 return normalized, {
                     "provider": provider.slug,
-                    "healthy": bool(normalized),
+                    # A provider can expose a catalogue while rejecting
+                    # inference (for example an exhausted FreeModel balance).
+                    # Do not label that provider active or let it enter the
+                    # paid model picker without verified pricing.
+                    "healthy": bool(billable_or_free),
+                    "catalog_only": bool(normalized) and not bool(billable_or_free),
                     "status": 200,
                     "models": len(normalized),
                     "latency_ms": int((time.time() - started) * 1000),
