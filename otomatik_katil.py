@@ -4728,10 +4728,17 @@ async def main():
                     next_blast_at=utc_after_seconds_iso(queue_wait),
                 )
                 now_ts = time.time()
-                # Yalnızca havuzu 30'un altında olan eksik hesaplar (örn. LisansArena)
-                # ve en az 10 dakikada bir (600s) 1 gruba katılmayı dener.
-                # KeyVadi ve Froxy gibi havuzu tam olan hesaplar sıradayken asla katılım yapmaz.
-                if len(joined_dialogs) < 30 and (now_ts - last_queue_join_attempt) >= 600:
+                # Kuyrukta bekleyen hesaplar da hedef havuzunu doldurabilmeli.
+                # Önceki kontrol toplam Telegram diyalog sayısını kullanıyordu;
+                # hesapta 30'dan fazla alakasız sohbet varsa LisansArena hiç hedef
+                # gruba katılmadan sonsuza kadar kuyrukta kalıyordu. Burada yalnızca
+                # onaylı hedeflerden kaçının gerçekten bu hesaba ait olduğunu sayıyoruz.
+                # Güvenli katılım limiti korunur: en fazla 1 grup / 10 dakika.
+                protected_target_count = sum(
+                    1 for target in get_all_protected_groups()
+                    if joined_entity_for_target(joined_dialogs, target) is not None
+                )
+                if protected_target_count < 30 and (now_ts - last_queue_join_attempt) >= 600:
                     last_queue_join_attempt = now_ts
                     await try_join_missing_groups(max_joins=1)
                 await asyncio.sleep(min(15, max(3, queue_wait or 5)))
