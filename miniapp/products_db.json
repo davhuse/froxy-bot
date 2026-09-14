@@ -306,14 +306,14 @@
     "max_qty": 5
   },
   {
-    "id": "50576032",
+    "id": "50858094",
     "title": "Tıkla Gelsin 400₺'ye 200₺ İndirim Kuponu",
     "price": "80,00 TL",
     "price_num": 80.0,
     "category": "tools",
     "image": "assets/products/card_clean_tiklagelsin.jpg",
     "badge": "🍔 200₺ İndirim",
-    "url": "https://www.shopier.com/50576032",
+    "url": "https://www.shopier.com/50858094",
     "description": "Tıkla Gelsin (Burger King, Popeyes, Arby's, Sbarro, Usta Dönerci) 400 TL ve üzeri siparişlerde geçerli 200 TL anında indirim kupon kodu. Anında teslim edilir.",
     "showcase": false,
     "is_vitrin": false,

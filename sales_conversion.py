@@ -159,7 +159,7 @@ FROXY_PRICE_OVERRIDES = {
 # keep bots, automatic replies and Mini App deep-link cards consistent.
 BRAND_PRICE_OVERRIDES = {
     ("keyvadi", "50576030"): "50,00 TL",
-    ("keyvadi", "50576032"): "80,00 TL",
+    ("keyvadi", "50858094"): "80,00 TL",
     ("keyvadi", "50857983"): "150,00 TL",
     ("keyvadi", "50857984"): "100,00 TL",
     ("keyvadi", "50857985"): "75,00 TL",
