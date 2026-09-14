@@ -135,6 +135,22 @@ class BlastCoordinatorTests(unittest.TestCase):
             self.assertEqual(resumed["run_id"], cycle["run_id"])
             self.assertEqual(restarted.next_target("KeyVadiOnline")["group"], "group-a")
 
+    def test_safe_replay_prioritizes_selected_account_and_clears_partial_cycle(self):
+        with tempfile.TemporaryDirectory() as directory:
+            clock = Clock()
+            coordinator = self.make_coordinator(directory, clock, owner="recovery")
+            coordinator.initialize_accounts({"FroxyOnline": 0, "KeyVadiOnline": 0})
+            coordinator.try_acquire_turn("KeyVadiOnline")
+            coordinator.begin_cycle("KeyVadiOnline", ["group-a"], ["one.txt"])
+
+            result = coordinator.prepare_safe_replay("KeyVadiOnline")
+            snapshot = coordinator.snapshot()
+            self.assertEqual(result["recovery_account"], "KeyVadiOnline")
+            self.assertIsNone(snapshot["active_account"])
+            self.assertEqual(snapshot["accounts"]["KeyVadiOnline"]["status"], "queued")
+            self.assertEqual(snapshot["accounts"]["KeyVadiOnline"]["targets"], [])
+            self.assertTrue(coordinator.try_acquire_turn("KeyVadiOnline"))
+
     def test_deferred_target_releases_turn_for_another_due_account(self):
         with tempfile.TemporaryDirectory() as directory:
             clock = Clock()

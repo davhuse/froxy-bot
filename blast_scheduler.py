@@ -436,6 +436,45 @@ class BlastCoordinator:
                 "requeued_claimed_targets": requeued,
             }
 
+    def prepare_safe_replay(self, account, reason="checkpoint_recovery"):
+        """Rebuild scheduling after a lost deploy-local checkpoint.
+
+        Delivery cooldowns and the Telegram recent-message guard remain the
+        source of truth for duplicate prevention. Other partial cycles are
+        released so the selected account owns the next worker turn.
+        """
+        if account not in ACCOUNT_ORDER:
+            raise ValueError(f"Unknown advertising account: {account}")
+        with self._lock:
+            now = float(self.now_fn())
+            for name in ACCOUNT_ORDER:
+                record = self.state["accounts"].setdefault(
+                    name, self._empty_state()["accounts"][name]
+                )
+                record.update({
+                    "run_id": None,
+                    "started_at": None,
+                    "completed_at": None,
+                    "cursor": 0,
+                    "targets": [],
+                    "pause_reason": reason if name == account else None,
+                })
+                if name == account:
+                    record["status"] = "queued"
+                    record["due_at"] = now
+                else:
+                    record["status"] = "waiting"
+                    record["due_at"] = max(
+                        float(record.get("due_at", 0) or 0), now + 3600
+                    )
+            self.state["active_account"] = None
+            self._persist()
+            return {
+                "recovery_account": account,
+                "status": "queued",
+                "duplicate_guard": "cooldown_and_recent_telegram_history",
+            }
+
     def complete_cycle(self, account, wait_seconds=3600):
         with self._lock:
             record = self.state["accounts"][account]

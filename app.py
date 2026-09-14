@@ -199,6 +199,7 @@ SMM_LOG_FILE = "smm_bot_log.txt"
 MESSAGE_FILE = "message.txt"
 CONFIG_FILE = "bot_config.json"
 AD_STOP_FILE = "ad_worker.disabled"
+AD_RUNTIME_CONTROL_DOC = "ad_runtime_control_v1"
 AD_SMOKE_ACTIVE_FILE = "ad_smoke.active.json"
 AD_SMOKE_RESULT_FILE = "ad_smoke_result.json"
 AD_SMOKE_CHECKPOINT_FILE = "blast_smoke_checkpoint.json"
@@ -281,6 +282,15 @@ def ad_runtime_enabled():
     value = os.environ.get("BOT_AD_ENABLED", "1").strip().lower()
     if value in {"0", "false", "no", "off"}:
         return False
+    remote_enabled = None
+    try:
+        remote_control = firestore_helper.get_document(AD_RUNTIME_CONTROL_DOC) or {}
+        if "enabled" in remote_control:
+            remote_enabled = bool(remote_control.get("enabled"))
+            if not remote_enabled:
+                return False
+    except Exception:
+        pass
     # Render keeps the service filesystem between deploys.  The old repository
     # marker was a one-time maintenance pause and can otherwise survive every
     # future deploy, even after the explicit BOT_AD_ENABLED resume switch is
@@ -300,6 +310,17 @@ def ad_runtime_enabled():
                 return False
         except (FileNotFoundError, OSError):
             return False
+    if remote_enabled is True:
+        return True
+    # A fresh Render filesystem cannot prove that a previous panel stop was
+    # cleared. Default closed until the operator explicitly presses Start;
+    # that action persists the preference remotely for following deploys.
+    if (
+        os.environ.get("RENDER", "").strip().lower() == "true"
+        or os.environ.get("RENDER_SERVICE_ID", "").strip()
+        or os.environ.get("RENDER_EXTERNAL_URL", "").strip()
+    ):
+        return False
     return True
 
 
@@ -324,6 +345,16 @@ def update_config_state(key, value):
             json.dump(cfg, f, indent=2, ensure_ascii=False)
     except Exception as e:
         print(f"Error updating config state: {e}")
+
+
+def update_ad_runtime_control(enabled, reason):
+    """Persist the panel's ad start/stop choice across Render deploys."""
+    update_config_state("ad_bot_running", bool(enabled))
+    return firestore_helper.set_document(AD_RUNTIME_CONTROL_DOC, {
+        "enabled": bool(enabled),
+        "reason": str(reason),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    })
 
 # Process tracking helpers using psutil
 def command_runs_python_script(process_name, command_line, script_name):
@@ -1378,6 +1409,7 @@ def start():
     try:
         kill_process_by_script('otomatik_katil.py')
         resume_state = prepare_ad_resume_checkpoint("manual_panel_resume")
+        update_ad_runtime_control(True, "manual_panel_resume")
         
         flags = subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
         file_out = open(LOG_FILE, 'a', encoding="utf-8", buffering=1)
@@ -1396,9 +1428,9 @@ def start():
                 f.write(str(ad_process.pid))
         except:
             pass
-        update_config_state("ad_bot_running", True)
         return jsonify({"success": True, "resume": resume_state})
     except Exception as e:
+         update_ad_runtime_control(False, "manual_panel_resume_failed")
          return jsonify({"success": False, "message": str(e)})
 
 
@@ -1483,6 +1515,7 @@ def controlled_ad_smoke_status():
 def stop():
     with open(AD_STOP_FILE, "w", encoding="utf-8") as marker:
         marker.write("disabled by panel\n")
+    update_ad_runtime_control(False, "manual_panel_stop")
     kill_process_by_script('otomatik_katil.py')
     try:
         resume_state = prepare_ad_resume_checkpoint("manual_panel_stop")
@@ -1494,8 +1527,24 @@ def stop():
         f.write("\n🛑 Reklam botu kullanıcı tarafından durduruldu.\n")
     global ad_process
     ad_process = None
-    update_config_state("ad_bot_running", False)
     return jsonify({"success": True, "resume": resume_state})
+
+
+@app.route('/api/admin/blast/recover', methods=['POST'])
+def recover_blast_checkpoint():
+    if get_process_by_script('otomatik_katil.py') is not None:
+        return jsonify({"success": False, "message": "Önce reklam worker durdurulmalı"}), 409
+    payload = request.get_json(silent=True) or {}
+    account = str(payload.get("account") or "KeyVadiOnline").strip()
+    coordinator = BlastCoordinator(
+        os.path.join(base_dir, "blast_checkpoint_v3.json"),
+        owner_id=f"recovery-{os.getpid()}-{uuid.uuid4().hex[:8]}",
+    )
+    try:
+        recovery = coordinator.prepare_safe_replay(account)
+    except ValueError as exc:
+        return jsonify({"success": False, "message": str(exc)}), 400
+    return jsonify({"success": True, "recovery": recovery})
 
 @app.route('/api/logs', methods=['GET'])
 def get_logs():
