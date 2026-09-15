@@ -109,6 +109,20 @@ class SalesCatalogMatchingTests(unittest.TestCase):
             self.assertIn("gemini", m["title"].lower())
             self.assertNotIn("youtube", m["title"].lower())
 
+    def test_gpt_go_is_not_mistaken_for_chatgpt(self):
+        catalog = [
+            {"id": "gpt-go", "title": "GPT GO 3 Aylık İndirim Kodu", "price": "180 TL", "url": "https://www.shopier.com/1"},
+            {"id": "chatgpt", "title": "ChatGPT Plus 30 Gün - Kişisel", "price": "499 TL", "url": "https://www.shopier.com/2"},
+        ]
+        self.assertEqual(match_sales_products("GPT GO fiyat", catalog)[0]["id"], "gpt-go")
+        self.assertEqual(match_sales_products("ChatGPT Plus fiyat", catalog)[0]["id"], "chatgpt")
+
+    def test_missing_chatgpt_does_not_fall_back_to_gpt_go(self):
+        catalog = [
+            {"id": "gpt-go", "title": "GPT GO 3 Aylık İndirim Kodu", "price": "180 TL", "url": "https://www.shopier.com/1"},
+        ]
+        self.assertEqual(match_sales_products("ChatGPT Plus fiyat link", catalog), [])
+
     def test_windows_and_office_are_independent_sequential_products(self):
         windows = match_sales_products("windows keyi", self.keyvadi)
         office = match_sales_products("office 365", self.keyvadi)

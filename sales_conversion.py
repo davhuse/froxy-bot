@@ -213,6 +213,11 @@ def normalize_sales_text(value: str) -> str:
     for source, target in sorted(TEXT_ALIASES.items(), key=lambda item: -len(item[0])):
         source_norm = re.sub(r"[^a-z0-9]+", " ", normalize_alias_literal(source)).strip()
         text = re.sub(rf"(?<!\w){re.escape(source_norm)}(?!\w)", target, text)
+    # The generic ``gpt`` alias is useful for queries such as "gpt kişisel",
+    # but it must never rewrite the distinct GPT GO product into ChatGPT GO.
+    # Keep that product name isolated so a ChatGPT query cannot fall through
+    # to the GPT GO listing when the requested product is absent.
+    text = re.sub(r"\bchatgpt\s+go\b", "gpt go", text)
     return re.sub(r"\s+", " ", text).strip()
 
 
