@@ -332,5 +332,7 @@
   "blast_wait_seconds": 2700,
   "ai_response_enabled": false,
   "blast_wait_min": 3600,
-  "blast_wait_max": 3600
+  "blast_wait_max": 3600,
+  "group_delay_min": 30,
+  "group_delay_max": 45
 }

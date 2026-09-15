@@ -349,7 +349,17 @@ CANCELLED_JOIN_REQUESTS = set()
 # collectively hammer the same join window.
 def _safe_join_setting(name, default, minimum=1):
     try:
-        return max(minimum, int(os.environ.get(name, str(default))))
+        val = os.environ.get(name)
+        if val is None and os.path.exists("bot_config.json"):
+            try:
+                with open("bot_config.json", "r", encoding="utf-8") as f_cfg:
+                    cfg = json.load(f_cfg)
+                    val = cfg.get(name.lower()) or cfg.get(name.lower().replace("_seconds", ""))
+            except Exception:
+                pass
+        if val is not None:
+            return max(minimum, int(val))
+        return default
     except (TypeError, ValueError):
         return default
 
@@ -360,6 +370,11 @@ JOIN_DELAY_MAX_SECONDS = max(
     _safe_join_setting("JOIN_DELAY_MAX_SECONDS", 360, minimum=JOIN_DELAY_MIN_SECONDS),
 )
 MAX_JOINS_PER_CYCLE = _safe_join_setting("MAX_JOINS_PER_CYCLE", 3, minimum=1)
+GROUP_DELAY_MIN_SECONDS = _safe_join_setting("GROUP_DELAY_MIN_SECONDS", 30, minimum=10)
+GROUP_DELAY_MAX_SECONDS = max(
+    GROUP_DELAY_MIN_SECONDS,
+    _safe_join_setting("GROUP_DELAY_MAX_SECONDS", 45, minimum=GROUP_DELAY_MIN_SECONDS),
+)
 
 # Uyeliginden cikilacak gruplar.  Ban yedigimiz bir grupta uye kalmaya devam
 # etmek, yoneticiler hesabi tekrar fark ettiginde ikinci bir bana yol aciyor.
@@ -5681,7 +5696,7 @@ async def main():
                         blast_coordinator.next_target, client_name
                     )
                     if upcoming:
-                        delay = random.randint(20, 30)
+                        delay = random.randint(GROUP_DELAY_MIN_SECONDS, GROUP_DELAY_MAX_SECONDS)
                         print(f"[{client_name}] ⏳ Sonraki grup için {delay} saniye bekleniyor...")
                         await asyncio.sleep(delay)
                 
