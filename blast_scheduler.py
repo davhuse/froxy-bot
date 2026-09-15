@@ -150,7 +150,16 @@ class BlastCoordinator:
             database = load_checkpoint()
         except Exception:
             database = None
-        choices = [item for item in (local, remote, database) if self._valid_state(item)]
+        seed = None
+        seed_path = self.path.parent / "blast_checkpoint_seed.json"
+        if seed_path.exists():
+            try:
+                seed_data = json.loads(seed_path.read_text(encoding="utf-8"))
+                if self._valid_state(seed_data):
+                    seed = seed_data
+            except Exception:
+                pass
+        choices = [item for item in (local, remote, database, seed) if self._valid_state(item)]
         if not choices:
             return self._empty_state()
         state = max(choices, key=lambda item: _timestamp(item.get("updated_at")))

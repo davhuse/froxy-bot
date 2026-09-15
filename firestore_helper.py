@@ -40,6 +40,20 @@ DOCUMENT_PREFIX = (
 _TOKEN_LOCK = threading.Lock()
 _GOOGLE_CREDENTIALS = None
 _LOCAL_LOCK = threading.Lock()
+_CIRCUIT_OPEN_UNTIL = 0.0
+_LAST_429_LOG = 0.0
+
+
+def _record_429_error(doc_id=None):
+    global _CIRCUIT_OPEN_UNTIL, _LAST_429_LOG
+    now = time.time()
+    _CIRCUIT_OPEN_UNTIL = now + 120.0
+    if now - _LAST_429_LOG > 300.0:
+        _LAST_429_LOG = now
+        print(
+            "[Firestore] Kota/oran siniri (HTTP 429 RESOURCE_EXHAUSTED). "
+            "Sistem yerel SQLite ve onbellek moduna gecti (120s bekleniyor)."
+        )
 
 
 def _local_db_path():
@@ -70,15 +84,32 @@ def _local_get(doc_id):
 
 def _local_claim(doc_id, fields_dict):
     try:
+        now = time.time()
         with _LOCAL_LOCK:
             connection = _local_connect()
-            cursor = connection.execute(
-                "INSERT OR IGNORE INTO runtime_claims(doc_id, fields, updated_at) VALUES (?, ?, ?)",
-                (doc_id, json.dumps(fields_dict or {}, ensure_ascii=False), time.time()),
+            row = connection.execute(
+                "SELECT fields FROM runtime_claims WHERE doc_id = ?", (doc_id,)
+            ).fetchone()
+            if row:
+                try:
+                    data = json.loads(row[0])
+                    expires_at = float(data.get("expires_at", 0) or 0)
+                    if expires_at > 0 and expires_at <= now:
+                        pass
+                    else:
+                        connection.close()
+                        return False
+                except Exception:
+                    connection.close()
+                    return False
+            connection.execute(
+                "INSERT INTO runtime_claims(doc_id, fields, updated_at) VALUES (?, ?, ?) "
+                "ON CONFLICT(doc_id) DO UPDATE SET fields=excluded.fields, updated_at=excluded.updated_at",
+                (doc_id, json.dumps(fields_dict or {}, ensure_ascii=False), now),
             )
             connection.commit()
             connection.close()
-            return cursor.rowcount == 1
+            return True
     except (OSError, sqlite3.Error, TypeError):
         return None
 
@@ -148,6 +179,8 @@ def _auth_headers():
 
 def remote_credentials_configured():
     """Whether this process can use Firestore as a durable coordination store."""
+    if os.environ.get("FIRESTORE_DISABLED", "").strip().lower() in ("1", "true", "yes"):
+        return False
     return bool(os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON", "").strip() or API_KEY)
 
 
@@ -216,6 +249,8 @@ def _request(url, method="GET", payload=None, timeout=10):
 def get_document_with_meta(doc_id, quiet=False):
     if not remote_credentials_configured():
         return None, None
+    if time.time() < _CIRCUIT_OPEN_UNTIL:
+        return None, None
     try:
         with _request(f"{BASE_URL}/{urllib.parse.quote(doc_id)}") as response:
             data = json.loads(response.read().decode("utf-8"))
@@ -223,9 +258,13 @@ def get_document_with_meta(doc_id, quiet=False):
             key: _value_from_firestore(value)
             for key, value in data.get("fields", {}).items()
         }
+        _local_set(doc_id, fields)
         return fields, data.get("updateTime")
     except urllib.error.HTTPError as exc:
         if exc.code == 404:
+            return None, None
+        if exc.code == 429:
+            _record_429_error(doc_id)
             return None, None
         if not quiet:
             print(f"Firestore read error for doc {doc_id}: HTTP {exc.code}")
@@ -238,29 +277,52 @@ def get_document_with_meta(doc_id, quiet=False):
 
 def get_document(doc_id):
     fields, _ = get_document_with_meta(doc_id)
-    return fields if fields is not None else _local_get(doc_id)
+    if fields is not None:
+        return fields
+    local = _local_get(doc_id)
+    if local is not None:
+        return local
+    if doc_id == "account_join_history" and os.path.exists("account_join_history.json"):
+        try:
+            with open("account_join_history.json", "r", encoding="utf-8") as f:
+                disk_data = json.load(f)
+            return {"payload": json.dumps(disk_data, ensure_ascii=False)}
+        except Exception:
+            pass
+    elif doc_id == "blast_checkpoint_v3" and os.path.exists("blast_checkpoint_v3.json"):
+        try:
+            with open("blast_checkpoint_v3.json", "r", encoding="utf-8") as f:
+                disk_data = json.load(f)
+            return {"payload": json.dumps(disk_data, ensure_ascii=False)}
+        except Exception:
+            pass
+    return None
 
 
 def set_document(doc_id, fields_dict):
-    if not remote_credentials_configured():
-        return _local_set(doc_id, fields_dict)
+    _local_set(doc_id, fields_dict)
+    if not remote_credentials_configured() or time.time() < _CIRCUIT_OPEN_UNTIL:
+        return True
     try:
         with _request(
             f"{BASE_URL}/{urllib.parse.quote(doc_id)}",
             method="PATCH",
             payload={"fields": _fields_to_firestore(fields_dict)},
         ) as response:
-            ok = response.status in (200, 201)
-            if ok:
-                _local_set(doc_id, fields_dict)
-            return ok
+            return response.status in (200, 201)
+    except urllib.error.HTTPError as exc:
+        if exc.code == 429:
+            _record_429_error(doc_id)
+            return True
+        print(f"Firestore save error for doc {doc_id}: HTTP {exc.code}")
+        return True
     except Exception as exc:
         print(f"Firestore save error for doc {doc_id}: {type(exc).__name__}")
-        return _local_set(doc_id, fields_dict)
+        return True
 
 
 def _commit(write, quiet=False):
-    if not remote_credentials_configured():
+    if not remote_credentials_configured() or time.time() < _CIRCUIT_OPEN_UNTIL:
         return None
     try:
         with _request(COMMIT_URL, method="POST", payload={"writes": [write]}) as response:
@@ -268,6 +330,9 @@ def _commit(write, quiet=False):
     except urllib.error.HTTPError as exc:
         if exc.code in (400, 409):
             return False
+        if exc.code == 429:
+            _record_429_error("commit")
+            return None
         if not quiet:
             print(f"Firestore conditional write error: HTTP {exc.code}")
         return None
@@ -321,6 +386,17 @@ def health_check():
     """Return a non-secret Firestore connectivity/configuration summary."""
     if not remote_credentials_configured():
         return {"configured": False, "reachable": False, "status": "missing_credentials"}
+    if time.time() < _CIRCUIT_OPEN_UNTIL:
+        try:
+            _local_connect().close()
+            return {
+                "configured": True,
+                "reachable": True,
+                "status": "ready_local_fallback",
+                "remote_status": "http_429_cooldown",
+            }
+        except Exception:
+            return {"configured": True, "reachable": False, "status": "circuit_open"}
     try:
         url = f"{BASE_URL}?pageSize=1"
         with _request(url) as response:
@@ -442,7 +518,7 @@ def release_lease(doc_id, owner_id):
 
 
 def acquire_remote_lease(doc_id, owner_id, ttl_seconds=120):
-    """Acquire a lease only from Firestore; never use ephemeral local state."""
+    """Acquire a lease only from Firestore, falling back to local SQLite when remote is in 429 or unreachable."""
     if not remote_credentials_configured():
         return None
     now = int(time.time())
@@ -453,6 +529,14 @@ def acquire_remote_lease(doc_id, owner_id, ttl_seconds=120):
         "expires_at": now + int(ttl_seconds),
     }
     if fields is None:
+        local_fields = _local_get(doc_id)
+        if local_fields is not None:
+            local_owner = str(local_fields.get("owner_id", ""))
+            local_expires_at = int(local_fields.get("expires_at", 0) or 0)
+            if local_owner != str(owner_id) and local_expires_at > now:
+                return False
+            _local_set(doc_id, new_fields)
+            return True
         return claim_remote_document(doc_id, new_fields, quiet=True)
     current_owner = str(fields.get("owner_id", ""))
     expires_at = int(fields.get("expires_at", 0) or 0)
