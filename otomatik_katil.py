@@ -2094,9 +2094,9 @@ def get_last_blast_remaining_wait(client_name, target_wait_seconds=3600):
                     return 0
 
         if not timestamps and not states:
-            # Hic kayit yoksa guvenlik acisindan tam bekleme yap (KeyVadi 30dk, digerleri 1 saat)
-            default_wait = 1800 if cname == "KeyVadiOnline" else 3600
-            print(f"[{cname}] 🛡️ Sunucu başlangıcı: Kayıt yok, varsayılan bekleme: {default_wait}sn (KeyVadi 30dk, diğerleri 1saat).")
+            # Tum hesaplar 59 dakika guvenlik beklemesiyle baslar
+            default_wait = 59 * 60
+            print(f"[{cname}] 🛡️ Sunucu başlangıcı: Kayıt yok, varsayılan bekleme: {default_wait}sn (59 dakika).")
             return default_wait
 
         latest_dt = max(timestamps) if timestamps else (max(states, key=lambda item: item[0])[0] if states else None)
@@ -5965,9 +5965,7 @@ async def main():
             print(f"[{cname}] ⚠️ Telegram 'me' geçmişi okunamadı: {tg_sync_err}")
 
     legacy_waits = {
-        name: 0 if CONTROLLED_SMOKE_MODE else get_last_blast_remaining_wait(
-            name, target_wait_seconds=3600
-        )
+        name: 0 if CONTROLLED_SMOKE_MODE else 59 * 60
         for name in queue_account_names
     }
     await asyncio.to_thread(

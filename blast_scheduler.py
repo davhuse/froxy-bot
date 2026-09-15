@@ -235,8 +235,7 @@ class BlastCoordinator:
                 desired_due = now + max(0, int(waits.get(account, 0) or 0))
                 current_due = float(record.get("due_at", 0) or 0)
                 stale_due = current_due < (now - 86400 * 7) or current_due <= 0
-                needs_cooldown = not record.get("run_id") and desired_due > current_due and desired_due > now
-                if not record.get("initialized_v3") or stale_due or needs_cooldown:
+                if not record.get("run_id") or stale_due or not record.get("initialized_v3"):
                     record["due_at"] = desired_due
                     record["initialized_v3"] = True
                     record["status"] = "queued" if desired_due <= now else "waiting"
