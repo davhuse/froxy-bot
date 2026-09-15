@@ -29,6 +29,8 @@ import socket
 import firestore_helper
 from sales_metrics import record_event, summarize as summarize_sales
 from sales_conversion import catalog_refresh_status, cta_experiment_status, parse_purchase_token, product_by_id, purchase_target_url, refresh_configured_catalogs
+from announcement_delivery import AnnouncementQueue, dispatch_pending_new_product_announcements
+from shopier_campaigns import campaign_status, run_campaign_cycle
 from blast_scheduler import BlastCoordinator, load_blast_snapshot
 from shopier_orders import ingest_shopier_order, reconcile_configured_orders
 from group_policy import load_policies, moderation_snapshot
@@ -1028,6 +1030,29 @@ def system_checkup():
         brand for brand, item in shopier_health.items()
         if item.get('state') == 'refresh_failed'
     ]
+    announcement_health = {}
+    for brand in ('keyvadi', 'froxy', 'lisansarena'):
+        kinds = {}
+        for kind in ('stock', 'new_product'):
+            try:
+                rows = AnnouncementQueue(brand, kind).items()
+                kinds[kind] = {
+                    'pending': sum(1 for row in rows if row.get('status') in {'pending', 'sending'}),
+                    'completed': sum(1 for row in rows if row.get('status') == 'completed'),
+                    'failed_recipients': sum(len(row.get('failed_ids') or []) for row in rows),
+                }
+            except Exception as exc:
+                kinds[kind] = {'state': 'unavailable', 'error': type(exc).__name__}
+        announcement_health[brand] = kinds
+    try:
+        campaign_health = campaign_status()
+        campaign_health = {
+            'updated_at': campaign_health.get('updated_at'),
+            'campaigns': campaign_health.get('campaigns', {}),
+            'price_writes_enabled': os.environ.get('SHOPIER_PRICE_WRITES_ENABLED', '0').strip().lower() in {'1', 'true', 'yes', 'on'},
+        }
+    except Exception as exc:
+        campaign_health = {'state': 'unavailable', 'error': type(exc).__name__}
     try:
         target_data = TargetRegistry().load()
         target_rows = list((target_data.get('candidates') or {}).values())
@@ -1062,6 +1087,8 @@ def system_checkup():
         'shopier_catalogs': shopier_health,
         'shopier_sync_healthy': shopier_sync_healthy,
         'shopier_sync_warnings': shopier_sync_warnings,
+        'announcement_queues': announcement_health,
+        'shopier_campaigns': campaign_health,
         'target_registry': target_registry_health,
         'keyvadi_mini_app': {
             'url': os.environ.get(
@@ -2734,12 +2761,29 @@ def start_background_threads():
                 while True:
                     refreshed = refresh_configured_catalogs()
                     reconciled = reconcile_configured_orders()
+                    announcements = dispatch_pending_new_product_announcements()
                     if any(refreshed.values()):
                         print(f"[Catalog] Shopier API refresh completed: {refreshed}")
+                    if announcements.get("items"):
+                        print(f"[Catalog] New product announcements: {announcements}")
                     if any(reconciled.values()):
                         print(f"[Orders] Shopier API reconciliation completed: {reconciled}")
                     time.sleep(30 * 60)
             threading.Thread(target=catalog_refresh_loop, daemon=True).start()
+            def discount_campaign_loop():
+                while True:
+                    try:
+                        result = run_campaign_cycle(
+                            lambda brand: __import__(
+                                "sales_conversion", fromlist=["load_sales_catalog"]
+                            ).load_sales_catalog(brand)
+                        )
+                        if result.get("updated") or result.get("restored"):
+                            print(f"[Campaign] Shopier price cycle: {result}")
+                    except Exception as exc:
+                        print(f"[Campaign] Price cycle paused safely: {type(exc).__name__}")
+                    time.sleep(60)
+            threading.Thread(target=discount_campaign_loop, daemon=True).start()
 
 start_background_threads()
 start_store_worker()

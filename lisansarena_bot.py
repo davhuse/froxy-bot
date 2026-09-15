@@ -15,6 +15,7 @@ import re
 import tempfile
 import threading
 import time
+import uuid
 from pathlib import Path
 from typing import Any
 
@@ -27,6 +28,16 @@ from sales_metrics import conversation_key, record_dm_event, record_event
 from customer_intent import INTENT_SALES_LEAD
 import firestore_helper
 from sales_conversion import load_sales_catalog, match_sales_products, purchase_url
+from announcement_delivery import (
+    AnnouncementQueue,
+    build_announcement_item,
+    drain_queue,
+    load_subscribers,
+    match_stock_product,
+    parse_stock_command,
+    send_telethon_item,
+    stock_card_text,
+)
 from support_flow import (
     claim_first_greeting,
     claim_support_event,
@@ -97,6 +108,32 @@ ADMIN_ID = int(os.environ.get("TELEGRAM_ADMIN_ID", CONFIG.get("admin_id", 0)) or
 SUPPORT_CHAT_ID = int(CONFIG.get("support_chat_id") or ADMIN_ID or 0)
 PENDING_INPUT: dict[int, str] = {}
 USER_EVENT_LOCKS: dict[int, asyncio.Lock] = {}
+_STOCK_DRAFTS: dict[str, dict] = {}
+
+
+def _stock_draft(raw_text: str):
+    parsed = parse_stock_command(raw_text)
+    if not parsed:
+        return None, "⚠️ Kullanım: `/stok <ürün> <adet> [fiyat]`"
+    query, count, custom_price = parsed
+    product, matches = match_stock_product("lisansarena", query)
+    if not product:
+        suggestions = ", ".join(str(item.get("title")) for item in matches[:3])
+        suffix = f"\n\nBenzer ürünler: {suggestions}" if suggestions else ""
+        return None, f"❌ Ürün katalogda bulunamadı.{suffix}"
+    product = dict(product)
+    product["url"] = purchase_url(product, "lisansarena", "stock_announcement")
+    price = str(custom_price or product.get("price") or "Fiyat mağazada güncel")
+    item = build_announcement_item(
+        "lisansarena",
+        product,
+        text=stock_card_text(product.get("title", query), count, price),
+        kind="stock",
+        marker=str(count),
+        recipients=load_subscribers("lisansarena"),
+    )
+    item.update({"stock_count": count, "price": price})
+    return item, None
 
 
 # ==================== DATA HELPERS ====================
@@ -323,6 +360,7 @@ BOT_COMMANDS = [
     ("ayarlar", "Hesap ayarları"),
     ("dil", "Dil seçimini değiştir"),
     ("yardim", "Komutları ve yardımı görüntüle"),
+    ("stok", "Admin: stok duyurusu kartı oluştur"),
 ]
 
 
@@ -952,6 +990,68 @@ async def broadcast_handler(event):
         
     await event.respond(f"✅ **Toplu Mesaj Tamamlandı!**\n\nBaşarıyla Gönderilen: {success_count}\nBaşarısız (Botu silen/engelleyenler): {fail_count}")
 
+
+@bot.on(events.NewMessage(pattern=r"(?i)^/stok(?:@\w+)?(?:\s+(.+))?$"))
+async def admin_stok_handler(event):
+    if event.sender_id != ADMIN_ID:
+        return
+    item, error = _stock_draft(event.text or "")
+    if error:
+        await event.respond(error, parse_mode="md")
+        return
+    draft_id = uuid.uuid4().hex[:10]
+    _STOCK_DRAFTS[draft_id] = item
+    buttons = [[Button.url(item.get("button_text", "🛒 Satın Al"), item["button_url"])]] if item.get("button_url") else []
+    buttons.extend([
+        [Button.inline("🚀 Abonelere Gönder", f"confirm_stock:{draft_id}".encode())],
+        [Button.inline("❌ İptal", f"cancel_stock:{draft_id}".encode())],
+    ])
+    preview = f"{item['text']}\n\n👁️ **Önizleme:** Onaylarsanız yalnız LisansArena bot abonelerine gönderilir."
+    if str(item.get("image_url") or "").startswith("https://"):
+        await event.respond(preview, file=item["image_url"], buttons=buttons, parse_mode="md")
+    else:
+        await event.respond(preview, buttons=buttons, parse_mode="md")
+
+
+@bot.on(events.CallbackQuery(pattern=rb"^confirm_stock:(.+)$"))
+async def confirm_stock_callback_handler(event):
+    if event.sender_id != ADMIN_ID:
+        await event.answer("Bu işlem yalnızca admin içindir.", alert=True)
+        return
+    draft_id = event.pattern_match.group(1)
+    if isinstance(draft_id, bytes):
+        draft_id = draft_id.decode("utf-8")
+    item = _STOCK_DRAFTS.pop(str(draft_id), None)
+    if not item:
+        await event.edit("⚠️ Bu stok duyurusu taslağı süresi dolmuş veya zaten gönderilmiş.")
+        return
+    queue = AnnouncementQueue("lisansarena", "stock")
+    _queued, created = queue.enqueue(item)
+    if not created:
+        await event.edit("ℹ️ Bu ürün ve stok adedi zaten duyuruldu.")
+        return
+    await event.edit("⏳ Stok duyurusu abonelere gönderiliyor...")
+
+    async def send_one(user_id, current):
+        return await send_telethon_item(bot, Button.url, user_id, current)
+
+    result = await drain_queue(queue, send_one)
+    await event.respond(
+        f"✅ Stok duyurusu tamamlandı. Başarılı: {result['success']} · Başarısız: {result['failed']}"
+    )
+
+
+@bot.on(events.CallbackQuery(pattern=rb"^cancel_stock:(.+)$"))
+async def cancel_stock_callback_handler(event):
+    if event.sender_id != ADMIN_ID:
+        await event.answer("Bu işlem yalnızca admin içindir.", alert=True)
+        return
+    draft_id = event.pattern_match.group(1)
+    if isinstance(draft_id, bytes):
+        draft_id = draft_id.decode("utf-8")
+    _STOCK_DRAFTS.pop(str(draft_id), None)
+    await event.edit("❌ Stok duyurusu iptal edildi.")
+
 @bot.on(events.NewMessage(pattern=r"(?i)^/(?:id|myid|kimim)$"))
 @once_per_command("myid")
 async def la_my_id_handler(event):
@@ -1204,6 +1304,9 @@ async def private_message_handler(event):
 
 # ==================== MAIN LOOP ====================
 
+async def _send_pending_stock(user_id, item):
+    return await send_telethon_item(bot, Button.url, user_id, item)
+
 async def main():
     write_bot_status(
         "lisansarena", state="connecting", telegram_ready=False, token=BOT_TOKEN
@@ -1229,6 +1332,7 @@ async def main():
                 connected=True,
             )
             logger.info("LisansArena bot running as @%s", me.username)
+            await drain_queue(AnnouncementQueue("lisansarena", "stock"), _send_pending_stock)
             await bot.run_until_disconnected()
         except FloodWaitError as exc:
             write_bot_status(

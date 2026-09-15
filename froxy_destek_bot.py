@@ -4,6 +4,7 @@ import logging
 import re
 import asyncio
 import time
+import uuid
 from functools import wraps
 import urllib.request
 from telethon import TelegramClient, events, Button
@@ -23,6 +24,17 @@ from sales_conversion import (
     match_sales_products,
     parse_cta_start_parameter,
     listing_url,
+    purchase_url,
+)
+from announcement_delivery import (
+    AnnouncementQueue,
+    build_announcement_item,
+    drain_queue,
+    load_subscribers,
+    match_stock_product,
+    parse_stock_command,
+    send_telethon_item,
+    stock_card_text,
 )
 from bot_runtime_status import invalid_token_error, write_bot_status
 
@@ -34,6 +46,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger("FroxyDestekBot")
 USER_EVENT_LOCKS = {}
+_STOCK_DRAFTS = {}
 
 def serialize_user_events(handler):
     async def serialized(event, *args, **kwargs):
@@ -175,7 +188,45 @@ BOT_COMMANDS = [
     ("magaza", "Froxy mağazasını aç"),
     ("destek", "Destek talebi oluştur"),
     ("dil", "Dil seçimini değiştir"),
+    ("stok", "Admin: stok duyurusu kartı oluştur"),
 ]
+
+
+def _is_froxy_admin(user_id: int) -> bool:
+    try:
+        cfg = load_config() or {}
+        return int(user_id or 0) in {
+            int(ADMIN_ID or 0),
+            int(cfg.get("froxy_admin_id", 0) or 0),
+            int(cfg.get("admin_id", 0) or 0),
+        }
+    except Exception:
+        return False
+
+
+def _stock_draft(raw_text: str):
+    parsed = parse_stock_command(raw_text)
+    if not parsed:
+        return None, "⚠️ Kullanım: `/stok <ürün> <adet> [fiyat]`"
+    query, count, custom_price = parsed
+    product, matches = match_stock_product("froxy", query)
+    if not product:
+        suggestions = ", ".join(str(item.get("title")) for item in matches[:3])
+        suffix = f"\n\nBenzer ürünler: {suggestions}" if suggestions else ""
+        return None, f"❌ Ürün katalogda bulunamadı.{suffix}"
+    product = dict(product)
+    product["url"] = purchase_url(product, "froxy", "stock_announcement")
+    price = str(custom_price or product.get("price") or "Fiyat mağazada güncel")
+    item = build_announcement_item(
+        "froxy",
+        product,
+        text=stock_card_text(product.get("title", query), count, price),
+        kind="stock",
+        marker=str(count),
+        recipients=load_subscribers("froxy"),
+    )
+    item.update({"stock_count": count, "price": price})
+    return item, None
 
 
 def froxy_app_button(label="🚀 Froxy AI Uygulamasını Aç"):
@@ -535,6 +586,21 @@ async def start_handler(event):
     if not await async_claim_event(event, "froxy_support"):
         return
     user_id = event.sender_id
+    try:
+        users_doc = await asyncio.to_thread(firestore_helper.get_document, "froxy_users_data") or {}
+        users = users_doc.get("users", {}) if isinstance(users_doc, dict) else {}
+        if not isinstance(users, dict):
+            users = {}
+        sender = await event.get_sender()
+        users[str(user_id)] = {
+            "id": int(user_id),
+            "username": getattr(sender, "username", "") or "",
+            "first_name": getattr(sender, "first_name", "") or "",
+            "last_seen_at": time.time(),
+        }
+        await asyncio.to_thread(firestore_helper.set_document, "froxy_users_data", {"users": users})
+    except Exception as exc:
+        logger.debug("Froxy subscriber registration skipped: %s", exc)
     
     ban_data = firestore_helper.get_document(f"ban_{user_id}")
     if ban_data and ban_data.get("banned", False):
@@ -563,6 +629,64 @@ async def start_handler(event):
         await show_lang_selection(event)
     else:
         await show_main_menu(event, user_id)
+
+
+@bot.on(events.NewMessage(pattern=r"(?i)^/stok(?:@\w+)?(?:\s+(.+))?$"))
+async def admin_stok_handler(event):
+    if not _is_froxy_admin(event.sender_id):
+        return
+    item, error = _stock_draft(event.text or "")
+    if error:
+        await event.respond(error, parse_mode="md")
+        return
+    draft_id = uuid.uuid4().hex[:10]
+    _STOCK_DRAFTS[draft_id] = item
+    buttons = [[Button.url(item.get("button_text", "🛒 Satın Al"), item["button_url"])]] if item.get("button_url") else []
+    buttons.extend([
+        [Button.inline("🚀 Abonelere Gönder", f"confirm_stock:{draft_id}".encode())],
+        [Button.inline("❌ İptal", f"cancel_stock:{draft_id}".encode())],
+    ])
+    preview = f"{item['text']}\n\n👁️ **Önizleme:** Onaylarsanız yalnız Froxy bot abonelerine gönderilir."
+    if str(item.get("image_url") or "").startswith("https://"):
+        await event.respond(preview, file=item["image_url"], buttons=buttons, parse_mode="md")
+    else:
+        await event.respond(preview, buttons=buttons, parse_mode="md")
+
+
+@bot.on(events.CallbackQuery(pattern=r"^confirm_stock:(.+)$"))
+async def confirm_stock_callback_handler(event):
+    if not _is_froxy_admin(event.sender_id):
+        await event.answer("Bu işlem yalnızca admin içindir.", alert=True)
+        return
+    draft_id = event.pattern_match.group(1).decode("utf-8")
+    item = _STOCK_DRAFTS.pop(draft_id, None)
+    if not item:
+        await event.edit("⚠️ Bu stok duyurusu taslağı süresi dolmuş veya zaten gönderilmiş.")
+        return
+    queue = AnnouncementQueue("froxy", "stock")
+    _queued, created = queue.enqueue(item)
+    if not created:
+        await event.edit("ℹ️ Bu ürün ve stok adedi zaten duyuruldu.")
+        return
+    await event.edit("⏳ Stok duyurusu abonelere gönderiliyor...")
+
+    async def send_one(user_id, current):
+        return await send_telethon_item(bot, Button.url, user_id, current)
+
+    result = await drain_queue(queue, send_one)
+    await event.respond(
+        f"✅ Stok duyurusu tamamlandı. Başarılı: {result['success']} · Başarısız: {result['failed']}"
+    )
+
+
+@bot.on(events.CallbackQuery(pattern=r"^cancel_stock:(.+)$"))
+async def cancel_stock_callback_handler(event):
+    if not _is_froxy_admin(event.sender_id):
+        await event.answer("Bu işlem yalnızca admin içindir.", alert=True)
+        return
+    draft_id = event.pattern_match.group(1).decode("utf-8")
+    _STOCK_DRAFTS.pop(draft_id, None)
+    await event.edit("❌ Stok duyurusu iptal edildi.")
 
 @bot.on(events.NewMessage(pattern=r'/lang|/dil'))
 @once_per_command("lang")
@@ -1142,6 +1266,10 @@ async def admin_ban_user_callback(event):
     original_text = event.message.text
     await safe_event_edit(event, f"{original_text}\n\n⚙️ **Aksiyon:** Kullanıcı engellendi. (Yönetici: @{event.sender.username or event.sender_id})")
 
+
+async def _send_pending_stock(user_id, item):
+    return await send_telethon_item(bot, Button.url, user_id, item)
+
 if __name__ == '__main__':
     import asyncio
     from telethon.errors import FloodWaitError
@@ -1174,6 +1302,7 @@ if __name__ == '__main__':
                 except Exception as exc:
                     logger.warning("Froxy Telegram profile configuration failed: %s", exc)
                 logger.info(f"Froxy AI Support Bot started successfully! Bot User ID: {BOT_USER_ID}")
+                await drain_queue(AnnouncementQueue("froxy", "stock"), _send_pending_stock)
                 await bot.run_until_disconnected()
             except FloodWaitError as e:
                 write_bot_status(

@@ -357,6 +357,15 @@ def refresh_catalog_from_shopier_api(brand: str) -> int:
             "price": price,
             "url": raw.get("link") or raw.get("url") or old.get("url"),
             "description": raw.get("description") or old.get("description", ""),
+            "image_url": (
+                raw.get("image_url")
+                or raw.get("image")
+                or raw.get("cover_url")
+                or old.get("image_url")
+                or old.get("image")
+                or old.get("cover_url")
+                or ""
+            ),
             "stockStatus": raw.get("stockStatus") or old.get("stockStatus", ""),
             "stockQuantity": raw.get("stockQuantity", old.get("stockQuantity")),
         }, brand)
@@ -367,6 +376,19 @@ def refresh_catalog_from_shopier_api(brand: str) -> int:
     temporary = path.with_suffix(path.suffix + ".tmp")
     temporary.write_text(json.dumps(refreshed, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     os.replace(temporary, path)
+    # New product announcements are queued only for IDs that were not already
+    # present in the last valid catalog.  The queue itself is idempotent, so a
+    # repeated Shopier refresh cannot notify the same product twice.
+    try:
+        from announcement_delivery import enqueue_new_product
+
+        for product in refreshed:
+            if product.get("id") not in current:
+                enqueue_new_product(brand, product)
+    except Exception:
+        # Catalog refresh must remain available when announcement storage is
+        # temporarily unavailable.
+        pass
     CATALOG_REFRESH_STATUS[brand] = {
         "state": "fresh",
         "catalog_source": "shopier_api",

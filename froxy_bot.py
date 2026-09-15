@@ -7,6 +7,7 @@ import ssl
 import html
 import asyncio
 import time
+import uuid
 from functools import wraps
 from telethon import TelegramClient, events, Button
 from telethon.errors import MessageNotModifiedError
@@ -32,6 +33,16 @@ from marketing_cards import (
     build_selling_fast_card,
     parse_fiyatdusur_args,
     parse_sonstok_args,
+)
+from announcement_delivery import (
+    AnnouncementQueue,
+    build_announcement_item,
+    drain_queue,
+    load_subscribers,
+    match_stock_product,
+    parse_stock_command,
+    send_telethon_item,
+    stock_card_text,
 )
 from bot_runtime_status import invalid_token_error, write_bot_status
 
@@ -280,6 +291,7 @@ BOT_COMMANDS = [
     ("siparisler", "📦 Sipariş geçmişini gör"),
     ("destek", "📞 Canlı Destek ekibine bağlan"),
     ("referans", "👥 Davet et & indirim kazan"),
+    ("stok", "Admin: stok duyurusu kartı oluştur"),
 ]
 
 
@@ -1416,6 +1428,35 @@ async def broadcast_handler(event):
 # ═══════════════════════════════════════════════════════════════
 
 _MARKETING_DRAFTS = {}
+_STOCK_DRAFTS = {}
+
+
+def _stock_draft(brand: str, raw_text: str):
+    parsed = parse_stock_command(raw_text)
+    if not parsed:
+        return None, "⚠️ Kullanım: `/stok <ürün> <adet> [fiyat]`"
+    query, count, custom_price = parsed
+    product, matches = match_stock_product(brand, query)
+    if not product:
+        suggestions = ", ".join(str(item.get("title")) for item in matches[:3])
+        suffix = f"\n\nBenzer ürünler: {suggestions}" if suggestions else ""
+        return None, f"❌ Ürün katalogda bulunamadı.{suffix}"
+    product = dict(product)
+    product["url"] = purchase_url(product, brand, "stock_announcement")
+    price = str(custom_price or product.get("price") or "Fiyat mağazada güncel")
+    text = stock_card_text(product.get("title", query), count, price)
+    item = build_announcement_item(
+        brand,
+        product,
+        text=text,
+        kind="stock",
+        # Idempotency is intentionally product + stock count; changing the
+        # optional display price must not resend the same stock alert.
+        marker=str(count),
+        recipients=load_subscribers(brand),
+    )
+    item.update({"stock_count": count, "price": price})
+    return item, None
 
 
 @bot.on(events.NewMessage(pattern=r"(?i)^/fiyatdusur(?:\s+(.+))?$"))
@@ -1545,6 +1586,65 @@ async def admin_sonstok_handler(event):
         buttons=confirm_buttons,
         parse_mode="md",
     )
+
+
+@bot.on(events.NewMessage(pattern=r"(?i)^/stok(?:@\w+)?(?:\s+(.+))?$"))
+@once_per_command("stok")
+async def admin_stok_handler(event):
+    if not is_admin(event.sender_id):
+        return
+    item, error = _stock_draft("keyvadi", event.text or "")
+    if error:
+        await event.respond(error, parse_mode="md")
+        return
+    draft_id = uuid.uuid4().hex[:10]
+    _STOCK_DRAFTS[draft_id] = item
+    buttons = [[Button.url(item.get("button_text", "🛒 Satın Al"), item["button_url"])]] if item.get("button_url") else []
+    buttons.extend([
+        [Button.inline("🚀 Abonelere Gönder", f"confirm_stock:{draft_id}".encode())],
+        [Button.inline("❌ İptal", f"cancel_stock:{draft_id}".encode())],
+    ])
+    preview = f"{item['text']}\n\n👁️ **Önizleme:** Onaylarsanız yalnız KeyVadi bot abonelerine gönderilir."
+    if str(item.get("image_url") or "").startswith("https://"):
+        await event.respond(preview, file=item["image_url"], buttons=buttons, parse_mode="md")
+    else:
+        await event.respond(preview, buttons=buttons, parse_mode="md")
+
+
+@bot.on(events.CallbackQuery(pattern=r"^confirm_stock:(.+)$"))
+async def confirm_stock_callback_handler(event):
+    if not is_admin(event.sender_id):
+        await event.answer("Bu işlem yalnızca admin içindir.", alert=True)
+        return
+    draft_id = event.pattern_match.group(1).decode("utf-8")
+    item = _STOCK_DRAFTS.pop(draft_id, None)
+    if not item:
+        await event.edit("⚠️ Bu stok duyurusu taslağı süresi dolmuş veya zaten gönderilmiş.")
+        return
+    queue = AnnouncementQueue("keyvadi", "stock")
+    queued, created = queue.enqueue(item)
+    if not created:
+        await event.edit("ℹ️ Bu ürün ve stok adedi zaten duyuruldu.")
+        return
+    await event.edit("⏳ Stok duyurusu abonelere gönderiliyor...")
+
+    async def send_one(user_id, current):
+        return await send_telethon_item(bot, Button.url, user_id, current)
+
+    result = await drain_queue(queue, send_one)
+    await event.respond(
+        f"✅ Stok duyurusu tamamlandı. Başarılı: {result['success']} · Başarısız: {result['failed']}"
+    )
+
+
+@bot.on(events.CallbackQuery(pattern=r"^cancel_stock:(.+)$"))
+async def cancel_stock_callback_handler(event):
+    if not is_admin(event.sender_id):
+        await event.answer("Bu işlem yalnızca admin içindir.", alert=True)
+        return
+    draft_id = event.pattern_match.group(1).decode("utf-8")
+    _STOCK_DRAFTS.pop(draft_id, None)
+    await event.edit("❌ Stok duyurusu iptal edildi.")
 
 
 @bot.on(events.NewMessage(pattern=r"(?i)^/kartonizle(?:\s+(.+))?$"))
@@ -2454,6 +2554,10 @@ async def kv_admin_ban_user_callback(event):
     original_text = event.message.text
     await safe_event_edit(event, f"{original_text}\n\n⚙️ **Aksiyon:** Kullanıcı engellendi. (Yönetici: @{event.sender.username or event.sender_id})")
 
+
+async def _send_pending_stock(user_id, item):
+    return await send_telethon_item(bot, Button.url, user_id, item)
+
 if __name__ == '__main__':
     import asyncio
     from telethon.errors import FloodWaitError
@@ -2489,6 +2593,10 @@ if __name__ == '__main__':
                     except Exception as profile_error:
                         logger.warning("KeyVadi profile configuration warning: %s", profile_error)
                 logger.info(f"KeyVadi Sales Bot started successfully! Bot User ID: {BOT_USER_ID}")
+                await drain_queue(
+                    AnnouncementQueue("keyvadi", "stock"),
+                    _send_pending_stock,
+                )
                 await bot.run_until_disconnected()
             except FloodWaitError as e:
                 write_bot_status(
