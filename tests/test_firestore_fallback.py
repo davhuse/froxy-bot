@@ -7,6 +7,23 @@ import firestore_helper
 
 
 class FirestoreFallbackTests(unittest.TestCase):
+    def test_missing_remote_credentials_never_call_live_firestore(self):
+        with tempfile.TemporaryDirectory() as directory, patch.dict(
+            os.environ, {
+                "FIREBASE_SERVICE_ACCOUNT_JSON": "",
+                "RUNTIME_CLAIM_DB": os.path.join(directory, "claims.db"),
+            }
+        ), patch.object(firestore_helper, "API_KEY", ""), patch.object(
+            firestore_helper, "_request", side_effect=AssertionError("live Firestore request")
+        ):
+            self.assertFalse(firestore_helper.remote_credentials_configured())
+            self.assertEqual(
+                firestore_helper.health_check()["status"], "missing_credentials"
+            )
+            self.assertTrue(firestore_helper.set_document("local-test", {"ok": True}))
+            self.assertEqual(firestore_helper.get_document("local-test"), {"ok": True})
+            self.assertIsNone(firestore_helper.claim_remote_document("remote-test"))
+
     def test_nested_orders_are_encoded_as_real_firestore_maps_and_arrays(self):
         source = {"users": {"42": {"balance": 10.5, "orders": [{"id": "KV-1"}]}}}
         encoded = firestore_helper._fields_to_firestore(source)

@@ -19,7 +19,12 @@ import urllib.request
 
 
 PROJECT_ID = os.environ.get("FIREBASE_PROJECT_ID", "bot-2-63772").strip() or "bot-2-63772"
-API_KEY = os.environ.get("FIREBASE_API_KEY", "AIzaSyCZz54GBF4nCgP84DsTSwwMyPq70Lb_Mjo").strip() or "AIzaSyCZz54GBF4nCgP84DsTSwwMyPq70Lb_Mjo"
+API_KEY = os.environ.get("FIREBASE_API_KEY", "").strip()
+# Keep the deployed service's existing compatibility credential until its
+# Render environment is verified. Local development/tests must not spend the
+# production Firestore quota just by importing this module.
+if not API_KEY and os.environ.get("RENDER", "").strip().lower() == "true":
+    API_KEY = "AIzaSyCZz54GBF4nCgP84DsTSwwMyPq70Lb_Mjo"
 BASE_URL = (
     f"https://firestore.googleapis.com/v1/projects/{PROJECT_ID}/"
     "databases/(default)/documents/reklam"
@@ -209,6 +214,8 @@ def _request(url, method="GET", payload=None, timeout=10):
 
 
 def get_document_with_meta(doc_id, quiet=False):
+    if not remote_credentials_configured():
+        return None, None
     try:
         with _request(f"{BASE_URL}/{urllib.parse.quote(doc_id)}") as response:
             data = json.loads(response.read().decode("utf-8"))
@@ -235,6 +242,8 @@ def get_document(doc_id):
 
 
 def set_document(doc_id, fields_dict):
+    if not remote_credentials_configured():
+        return _local_set(doc_id, fields_dict)
     try:
         with _request(
             f"{BASE_URL}/{urllib.parse.quote(doc_id)}",
@@ -251,6 +260,8 @@ def set_document(doc_id, fields_dict):
 
 
 def _commit(write, quiet=False):
+    if not remote_credentials_configured():
+        return None
     try:
         with _request(COMMIT_URL, method="POST", payload={"writes": [write]}) as response:
             return response.status in (200, 201)
@@ -342,6 +353,8 @@ def compare_and_set_document(doc_id, fields_dict, update_time, quiet=False):
 
 
 def delete_document(doc_id, update_time=None):
+    if not remote_credentials_configured():
+        return _local_delete(doc_id)
     write = {"delete": f"{DOCUMENT_PREFIX}/{doc_id}"}
     if update_time:
         write["currentDocument"] = {"updateTime": update_time}

@@ -30,6 +30,7 @@ class GroupStateTests(unittest.TestCase):
             default_banned_rights=SimpleNamespace(send_messages=False),
         )
 
+
     def test_numeric_telegram_target_is_not_treated_as_username(self):
         self.assertEqual(publisher.telegram_target_reference("@-3608209943"), -1003608209943)
         self.assertEqual(publisher.telegram_target_reference("@ceksat"), "ceksat")
@@ -443,6 +444,19 @@ class GroupStateTests(unittest.TestCase):
         self.assertEqual(verifier.await_count, 1)
         self.assertEqual(verifier.await_args.kwargs["seconds"], 600)
         self.assertTrue(verifier.await_args.kwargs["raise_on_failure"])
+
+
+class DistributedBlastClaimTests(unittest.IsolatedAsyncioTestCase):
+    async def test_duplicate_and_outage_claims_remain_distinct(self):
+        with patch.object(publisher, "async_claim_document", new=AsyncMock(return_value=False)):
+            self.assertIs(
+                await publisher.claim_distributed_group_send("sample", "KeyVadiOnline"),
+                False,
+            )
+        with patch.object(publisher, "async_claim_document", new=AsyncMock(return_value=None)):
+            self.assertIsNone(
+                await publisher.claim_distributed_group_send("sample", "KeyVadiOnline")
+            )
 
 
 if __name__ == "__main__":

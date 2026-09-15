@@ -302,13 +302,16 @@ class BlastCoordinator:
             for index, target in enumerate(targets):
                 state = target.get("state", "pending")
                 if state == "claimed" and target.get("attempt_owner") != self.owner_id:
-                    # A previous process may have reached Telegram after its
-                    # final checkpoint.  Skipping is safer than a duplicate ad.
-                    target["state"] = "skipped_uncertain"
-                    target["reason"] = "claimed_by_previous_process"
-                    target["finished_at"] = _now_iso(float(self.now_fn()))
+                    # The previous process may have stopped before Telegram
+                    # accepted this target. Requeue it: the worker checks
+                    # recent Telegram history and the distributed hour claim
+                    # before sending, so an accepted target is not repeated.
+                    target["state"] = "pending"
+                    target["attempt_owner"] = None
+                    target["claimed_at"] = None
+                    target["reason"] = "requeued_after_process_restart"
                     changed = True
-                    continue
+                    state = "pending"
                 if state == "pending" or (
                     state == "claimed" and target.get("attempt_owner") == self.owner_id
                 ):

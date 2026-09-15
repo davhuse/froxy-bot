@@ -61,6 +61,48 @@ class LisansArenaWebTests(unittest.TestCase):
         self.assertEqual(body["status"], "degraded")
         self.assertFalse(body["shopier_sync_healthy"])
 
+    def test_ad_runtime_control_is_cached_between_panel_polls(self):
+        self.web._AD_CONTROL_CACHE.update({"expires_at": 0.0, "enabled": None})
+        with patch.object(self.web, "bot_runtime_enabled", return_value=True), patch.dict(
+            os.environ, {"RENDER": "true", "BOT_AD_ENABLED": "1"}
+        ), patch.object(self.web.os.path, "exists", return_value=False), patch(
+            "firestore_helper.get_document", return_value={"enabled": True}
+        ) as get_doc, patch.object(self.web, "update_config_state"), patch(
+            "firestore_helper.set_document", return_value=True
+        ):
+            self.assertTrue(self.web.ad_runtime_enabled())
+            self.assertTrue(self.web.ad_runtime_enabled())
+            self.assertEqual(get_doc.call_count, 1)
+            self.web.update_ad_runtime_control(False, "manual_panel_stop")
+            self.assertFalse(self.web.ad_runtime_enabled())
+
+    def test_stopped_blast_status_uses_durable_partial_run_counts(self):
+        from pathlib import Path
+        with tempfile.TemporaryDirectory() as directory:
+            original_base = self.web.base_dir
+            try:
+                self.web.base_dir = directory
+                Path(directory, "ad_account_status.json").write_text(json.dumps({
+                    "KeyVadiOnline": {"sent_count": 2, "failed_count": 0, "current_index": 3}
+                }), encoding="utf-8")
+                checkpoint = {"active_account": "KeyVadiOnline", "accounts": {
+                    "KeyVadiOnline": {"run_id": "partial", "cursor": 2, "targets": [
+                        {"state": "accepted"}, {"state": "failed"}, {"state": "pending"}
+                    ]}
+                }}
+                with patch.object(self.web, "get_processes_by_script", return_value=[]), patch.object(
+                    self.web, "load_blast_snapshot", return_value=checkpoint
+                ), patch.object(self.web, "sales_bot_status", return_value={}), patch.object(
+                    self.web, "ad_runtime_enabled", return_value=False
+                ):
+                    body = self.client.get("/api/status").get_json()
+            finally:
+                self.web.base_dir = original_base
+        keyvadi = body["ad_accounts"]["KeyVadiOnline"]
+        self.assertEqual(keyvadi["sent_count"], 1)
+        self.assertEqual(keyvadi["failed_count"], 1)
+        self.assertEqual(body["blast_queue"]["accounts"]["KeyVadiOnline"]["pending_count"], 1)
+
     def test_database_url_normalizes_render_postgres_and_quotes(self):
         normalized = store_module.normalize_database_url(
             "  'postgresql://user:pass@database.internal/store'  "

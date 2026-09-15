@@ -2776,7 +2776,7 @@ async def async_delete_document(doc_id):
     """Delete a temporary distributed claim after Telegram rejected a send."""
     loop = asyncio.get_event_loop()
     import firestore_helper
-    return await loop.run_in_executor(None, firestore_helper.delete_document, doc_id)
+    return await loop.run_in_executor(None, firestore_helper.delete_remote_document, doc_id)
 
 async def claim_lisansarena_auto_reply(client_name, sender_id, chat_id):
     """Allow only one automatic DM reply per LisansArena customer.
@@ -2824,9 +2824,10 @@ async def claim_distributed_group_send(grup_name, client_name, entity=None):
     if result is True:
         return doc_id
     if result is False:
-        print(f"[{client_name}] 🔒 @{grup_name} dağıtık saatlik gönderim kilidinde, atlanıyor...")
+        print(f"[{client_name}] 🔒 @{grup_name} dağıtık saatlik gönderim kilidinde, erteleniyor...")
+        return False
     else:
-        print(f"[{client_name}] ⚠️ Firestore gönderim kilidi kullanılamıyor; güvenlik için atlanıyor: @{grup_name}")
+        print(f"[{client_name}] ⚠️ Firestore gönderim kilidi kullanılamıyor; hedef kuyrukta tutuluyor: @{grup_name}")
     return None
 
 def _ascii_fold(text):
@@ -5294,7 +5295,14 @@ async def main():
                     if not distributed_claim_id:
                         async with state_lock:
                             release_send_lock(grup_name, client_name, entity)
-                        return {'status': 'skipped', 'reason': 'distributed_send_claim'}
+                        return {
+                            'status': 'deferred',
+                            'reason': (
+                                'distributed_claim_exists'
+                                if distributed_claim_id is False
+                                else 'distributed_claim_unavailable'
+                            ),
+                        }
 
                     retry_after = 0
                     sent_message = None
@@ -5614,6 +5622,22 @@ async def main():
                             int((until - datetime.now(timezone.utc)).total_seconds())
                             if until else 60,
                         )
+                        if outcome.get('reason') == 'distributed_claim_unavailable':
+                            wait_seconds = max(wait_seconds, 300)
+                        elif outcome.get('reason') == 'distributed_claim_exists':
+                            # The old hour claim may belong to an accepted
+                            # message or to a process that died before send.
+                            # Keep the target pending until a new UTC hour;
+                            # the Telegram recent-message guard then decides.
+                            next_hour = (
+                                datetime.now(timezone.utc).replace(
+                                    minute=0, second=0, microsecond=0
+                                ) + timedelta(hours=1)
+                            )
+                            wait_seconds = max(
+                                wait_seconds,
+                                int((next_hour - datetime.now(timezone.utc)).total_seconds()) + 5,
+                            )
                         await asyncio.to_thread(
                             blast_coordinator.defer_current,
                             client_name,

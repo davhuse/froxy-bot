@@ -94,7 +94,7 @@ class BlastCoordinatorTests(unittest.TestCase):
             self.assertEqual(resumed["run_id"], cycle["run_id"])
             self.assertEqual(after.next_target("KeyVadiOnline")["group"], "group-b")
 
-    def test_previous_process_claim_is_skipped_uncertain(self):
+    def test_previous_process_claim_is_requeued_for_guarded_retry(self):
         with tempfile.TemporaryDirectory() as directory:
             clock = Clock()
             first = self.make_coordinator(directory, clock, owner="old")
@@ -106,9 +106,11 @@ class BlastCoordinatorTests(unittest.TestCase):
             second = self.make_coordinator(directory, clock, owner="new")
             second.initialize_accounts({"KeyVadiOnline": 0})
             self.assertTrue(second.try_acquire_turn("KeyVadiOnline"))
-            self.assertEqual(second.next_target("KeyVadiOnline")["group"], "b")
+            self.assertEqual(second.next_target("KeyVadiOnline")["group"], "a")
             state = second.snapshot()["accounts"]["KeyVadiOnline"]
-            self.assertEqual(state["targets"][0]["state"], "skipped_uncertain")
+            self.assertEqual(state["targets"][0]["state"], "pending")
+            self.assertEqual(state["targets"][0]["reason"], "requeued_after_process_restart")
+            self.assertEqual(state["pending_targets"], 2)
 
     def test_manual_stop_requeues_claimed_target_and_preserves_cycle(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -217,6 +217,8 @@ MESSAGE_FILE = "message.txt"
 CONFIG_FILE = "bot_config.json"
 AD_STOP_FILE = "ad_worker.disabled"
 AD_RUNTIME_CONTROL_DOC = "ad_runtime_control_v1"
+_AD_CONTROL_CACHE = {"expires_at": 0.0, "enabled": None}
+_AD_CONTROL_CACHE_LOCK = threading.Lock()
 AD_SMOKE_ACTIVE_FILE = "ad_smoke.active.json"
 AD_SMOKE_RESULT_FILE = "ad_smoke_result.json"
 AD_SMOKE_CHECKPOINT_FILE = "blast_smoke_checkpoint.json"
@@ -299,15 +301,25 @@ def ad_runtime_enabled():
     value = os.environ.get("BOT_AD_ENABLED", "1").strip().lower()
     if value in {"0", "false", "no", "off"}:
         return False
-    remote_enabled = None
-    try:
-        remote_control = firestore_helper.get_document(AD_RUNTIME_CONTROL_DOC) or {}
-        if "enabled" in remote_control:
-            remote_enabled = bool(remote_control.get("enabled"))
-            if not remote_enabled:
-                return False
-    except Exception:
-        pass
+    # The panel polls /api/status every ten seconds. Reading Firestore for
+    # every poll wastes quota and can turn a healthy worker into HTTP 429.
+    # Start/Stop refresh this cache immediately; other changes are seen within
+    # 30 seconds.
+    with _AD_CONTROL_CACHE_LOCK:
+        now = time.monotonic()
+        if now >= _AD_CONTROL_CACHE["expires_at"]:
+            try:
+                remote_control = firestore_helper.get_document(AD_RUNTIME_CONTROL_DOC) or {}
+                _AD_CONTROL_CACHE["enabled"] = (
+                    bool(remote_control.get("enabled"))
+                    if "enabled" in remote_control else None
+                )
+            except Exception:
+                pass
+            _AD_CONTROL_CACHE["expires_at"] = now + 30
+        remote_enabled = _AD_CONTROL_CACHE["enabled"]
+    if remote_enabled is False:
+        return False
     # Render keeps the service filesystem between deploys.  The old repository
     # marker was a one-time maintenance pause and can otherwise survive every
     # future deploy, even after the explicit BOT_AD_ENABLED resume switch is
@@ -367,11 +379,15 @@ def update_config_state(key, value):
 def update_ad_runtime_control(enabled, reason):
     """Persist the panel's ad start/stop choice across Render deploys."""
     update_config_state("ad_bot_running", bool(enabled))
-    return firestore_helper.set_document(AD_RUNTIME_CONTROL_DOC, {
+    saved = firestore_helper.set_document(AD_RUNTIME_CONTROL_DOC, {
         "enabled": bool(enabled),
         "reason": str(reason),
         "updated_at": datetime.now(timezone.utc).isoformat(),
     })
+    with _AD_CONTROL_CACHE_LOCK:
+        _AD_CONTROL_CACHE["enabled"] = bool(enabled)
+        _AD_CONTROL_CACHE["expires_at"] = time.monotonic() + 30
+    return saved
 
 # Process tracking helpers using psutil
 def command_runs_python_script(process_name, command_line, script_name):
@@ -951,6 +967,17 @@ def status():
             ),
             'pause_reason': queue_state.get('pause_reason'),
         }
+        # The worker's summary file is updated during sends and may lag its
+        # durable checkpoint after a stop/deploy. Show the checkpoint counts
+        # for an unfinished run so the panel never reports a partial blast as
+        # completed or resets the visible counter on restart.
+        if targets and queue_state.get('run_id') and name in public_ad_accounts:
+            account_status = public_ad_accounts[name]
+            account_status['sent_count'] = public_queue['accounts'][name]['sent_count']
+            account_status['failed_count'] = public_queue['accounts'][name]['failed_count']
+            account_status['skipped_count'] = public_queue['accounts'][name]['skipped_count']
+            account_status['current_index'] = public_queue['accounts'][name]['current_index']
+            account_status['total_groups'] = len(targets)
     sales_bots = {
         brand: sales_bot_status(brand)
         for brand in SALES_BOT_SCRIPTS
