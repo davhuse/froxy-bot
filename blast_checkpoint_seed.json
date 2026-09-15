@@ -4,9 +4,9 @@
       "accepted_targets": 0,
       "completed_at": null,
       "current_group": null,
-      "cursor": 17,
+      "cursor": 54,
       "cycle_number": 1,
-      "due_at": 1789506657.2073193,
+      "due_at": 1789509000.0,
       "enabled": true,
       "failed_targets": 0,
       "initialized_v3": true,
@@ -16,7 +16,7 @@
       "run_id": "1001dfdb1fb64334b29a0bf3692ae5be",
       "skipped_targets": 0,
       "started_at": "2026-09-15T21:11:09.220686+00:00",
-      "status": "sending",
+      "status": "paused",
       "targets": [
         {
           "attempt_owner": "50-a60326be7d",
@@ -636,10 +636,10 @@
       "total_targets": 0
     },
     "LisansArenaOnline": {
-      "accepted_targets": 0,
+      "accepted_targets": 5,
       "completed_at": null,
       "current_group": null,
-      "cursor": 0,
+      "cursor": 6,
       "cycle_number": 0,
       "due_at": 1789506657.2073193,
       "enabled": true,

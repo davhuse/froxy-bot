@@ -5610,6 +5610,27 @@ async def main():
                     ) or {'status': 'failed', 'reason': 'empty_worker_outcome'}
                     last_outcome = outcome
 
+                    if outcome.get('status') == 'deferred' and outcome.get('reason') == 'distributed_claim_exists':
+                        await asyncio.to_thread(
+                            blast_coordinator.finish_target,
+                            client_name,
+                            target_index,
+                            'skipped',
+                            reason='distributed_claim_exists',
+                        )
+                        print(
+                            f"[{client_name}] ⏩ @{g} bu saatte kilitli/önceden gönderilmiş; "
+                            "yalnızca bu grup atlandı, sıradaki gruba devam ediliyor..."
+                        )
+                        upcoming = await asyncio.to_thread(
+                            blast_coordinator.next_target, client_name
+                        )
+                        if upcoming:
+                            delay = random.randint(15, 25)
+                            print(f"[{client_name}] ⏳ Sonraki grup için {delay} saniye bekleniyor...")
+                            await asyncio.sleep(delay)
+                        continue
+
                     if outcome.get('status') == 'deferred' or is_account_restricted(
                         client_name, scope='send'
                     ):
@@ -5775,7 +5796,7 @@ async def main():
 
             # Progress sıfırla (bir sonraki blast için)
             async with state_lock:
-                if os.path.exists(PROGRESS_FILE):
+                if not blast_interrupted and os.path.exists(PROGRESS_FILE):
                     os.remove(PROGRESS_FILE)
                 try:
                     blacklist_content = ""
@@ -5804,6 +5825,11 @@ async def main():
                 print(
                     f"\n[{client_name}] ⏸️ Gönderilebilir grup bulunamadı; "
                     "blast yapılmadı ve havuz 60 dakika sonra yeniden kontrol edilecek."
+                )
+            elif blast_interrupted:
+                print(
+                    f"\n[{client_name}] ⏸️ Blast turu ertelendi / tamamlanamadı; "
+                    "sonraki döngüde kalan gruplardan devam edilecek."
                 )
             # Gece (02:00 - 07:59) saat başı (3600 sn), diğer saatlerde config aralığı.
             elif 2 <= hour <= 7:

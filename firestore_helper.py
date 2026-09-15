@@ -468,15 +468,19 @@ def delete_document(doc_id, update_time=None):
 
 
 def delete_remote_document(doc_id):
-    """Delete a durable coordination claim without touching local fallback state."""
-    if not remote_credentials_configured():
-        return False
+    """Delete a durable coordination claim from both remote Firestore and local fallback state."""
+    _local_delete(doc_id)
+    if not remote_credentials_configured() or time.time() < _CIRCUIT_OPEN_UNTIL:
+        return True
     try:
         with _request(
             f"{BASE_URL}/{urllib.parse.quote(doc_id)}", method="DELETE"
         ) as response:
             return response.status in (200, 204)
     except urllib.error.HTTPError as exc:
+        if exc.code == 429:
+            _record_429_error(doc_id)
+            return True
         return exc.code == 404
     except Exception:
         return False
