@@ -2078,18 +2078,10 @@ def get_last_blast_remaining_wait(client_name, target_wait_seconds=3600):
                     print(f"[{cname}] ✅ Yarım kalan blast başlangıcından bu yana 1 saatten fazla geçmiş ({int(elapsed // 60)}dk), yeni blast zamanı geldi.")
                     return 0
 
-        # Older builds updated __LAST_BLAST_TIME after every accepted message,
-        # so such a timestamp cannot prove that the cycle completed. Ignore it
-        # once during the V2 migration; per-group cooldowns still prevent a
-        # duplicate send and the first completed scan writes a trusted marker.
-        if timestamps and not states:
-            print(f"[{cname}] Eski tip blast kaydı tamamlanma kanıtı değil; kalan hedefler kontrol ediliyor.")
-            return 0
-
         if not timestamps and not states:
-            # Froxy has the active blast turn right now; KeyVadi keeps its ~30m cooldown
-            default_wait = 1800 if cname == "KeyVadiOnline" else 0
-            print(f"[{cname}] 🛡️ Sunucu başlangıcı: Kayıt yok, varsayılan bekleme: {default_wait}sn (Froxy aktif, KeyVadi 30dk).")
+            # Hic kayit yoksa guvenlik acisindan tam bekleme yap (KeyVadi 30dk, digerleri 1 saat)
+            default_wait = 1800 if cname == "KeyVadiOnline" else 3600
+            print(f"[{cname}] 🛡️ Sunucu başlangıcı: Kayıt yok, varsayılan bekleme: {default_wait}sn (KeyVadi 30dk, diğerleri 1saat).")
             return default_wait
 
         latest_dt = max(timestamps) if timestamps else (max(states, key=lambda item: item[0])[0] if states else None)
@@ -5788,6 +5780,12 @@ async def main():
                     )
                 else:
                     save_last_blast_time(client_name)
+                    try:
+                        now_iso_me = datetime.now(timezone.utc).isoformat()
+                        await client.send_message('me', f"__BLAST_COMPLETED__{client_name}:{now_iso_me}")
+                        print(f"[{client_name}] 💾 Telegram 'me' hafızasına blast tamamlanma damgası kaydedildi.")
+                    except Exception as me_err:
+                        print(f"[{client_name}] ⚠️ Telegram 'me' kaydı hatası: {me_err}")
 
             # ═══════════════════════════════════════════════════
             # YENİ GRUPLARA KATILMA AŞAMASI (blast / tamamlama sonrası)
@@ -5922,6 +5920,35 @@ async def main():
         {CONTROLLED_SMOKE_ACCOUNT} if CONTROLLED_SMOKE_MODE
         else active_account_names
     )
+    # Telegram Saved Messages (me) hafiza senkronizasyonu:
+    for client, cname, _ in active_clients:
+        if cname not in queue_account_names:
+            continue
+        try:
+            me_msgs = await client.get_messages('me', limit=15)
+            for m in me_msgs:
+                txt = getattr(m, 'text', '') or ''
+                if txt.startswith(f"__BLAST_COMPLETED__{cname}:"):
+                    ts_str = txt.split(":", 1)[1].strip()
+                    try:
+                        ts_dt = datetime.fromisoformat(ts_str)
+                        if ts_dt.tzinfo is None:
+                            ts_dt = ts_dt.replace(tzinfo=timezone.utc)
+                        c_dict = load_cooldowns()
+                        for alias in get_account_aliases(cname):
+                            c_dict[f"__LAST_BLAST_TIME_{alias}"] = ts_str
+                            c_dict[f"__BLAST_STATE_V2_{alias}"] = {
+                                "status": "completed",
+                                "completed_at": ts_str,
+                            }
+                        save_cooldowns(c_dict)
+                        print(f"[{cname}] 📥 Telegram 'me' sohbetinden son blast zamanı geri yüklendi: {ts_str}")
+                        break
+                    except Exception:
+                        pass
+        except Exception as tg_sync_err:
+            print(f"[{cname}] ⚠️ Telegram 'me' geçmişi okunamadı: {tg_sync_err}")
+
     legacy_waits = {
         name: 0 if CONTROLLED_SMOKE_MODE else get_last_blast_remaining_wait(
             name, target_wait_seconds=3600
