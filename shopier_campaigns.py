@@ -135,7 +135,15 @@ class ShopierPriceWriter:
 
 
 def campaign_status() -> dict:
-    return _load_state()
+    state = _load_state()
+    # Do not present stale dry-run records as live discounts while the write
+    # feature is disabled. They remain persisted for safe migration/cleanup
+    # when an explicitly verified write endpoint is enabled.
+    if not _writes_enabled():
+        state = dict(state)
+        state["campaigns"] = {}
+        state["state"] = "disabled"
+    return state
 
 
 def run_campaign_cycle(catalog_loader, price_writer=None, now=None) -> dict:
