@@ -460,7 +460,7 @@ def run_dynamic_campaign_cycle(catalog_loader, now=None) -> dict:
             continue
         product = random.choice(products)
         original = str(product["price"])
-        percent = random.randint(5, 10)
+        percent = random.randint(5, 5)
         campaigns[brand] = {
             "active": True,
             "mode": "dynamic_listing",
@@ -473,6 +473,11 @@ def run_dynamic_campaign_cycle(catalog_loader, now=None) -> dict:
             "restore_at": current_time + 3 * 60 * 60,
         }
         updated += 1
+        try:
+            from announcement_delivery import enqueue_campaign_announcement
+            enqueue_campaign_announcement(brand, product, campaigns[brand])
+        except Exception as exc:
+            print(f"[Campaign] Announcement enqueue failed for {brand}: {type(exc).__name__}")
     state["updated_at"] = _utc()
     _save_state(state)
     return {"state": "enabled", "mode": "dynamic_listing", "updated": updated, "restored": restored}

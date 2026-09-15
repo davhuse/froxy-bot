@@ -606,3 +606,50 @@ def dispatch_pending_stock_announcements() -> dict:
         for key in totals:
             totals[key] += int(result.get(key, 0) or 0)
     return totals
+
+
+def enqueue_campaign_announcement(brand: str, product: dict, campaign: dict) -> tuple[dict, bool]:
+    title = str(campaign.get("title") or product.get("title") or "").strip()
+    orig_price = str(campaign.get("original_price") or product.get("price") or "").strip()
+    disc_price = str(campaign.get("discount_price") or "").strip()
+    percent = int(campaign.get("discount_percent") or 5)
+    
+    text = (
+        f"🔥 **SÜPER FIRSAT İNDİRİMİ!** (%{percent} İndirim)\n"
+        "━━━━━━━━━━━━━━━━━\n"
+        f"📦 **{title}**\n"
+        f"💰 Normal Fiyat: ~{orig_price} TL~\n"
+        f"⚡ **İndirimli Fiyat: {disc_price} TL**\n\n"
+        "⏳ **Önümüzdeki 3 saat boyunca geçerlidir!**\n"
+        "Aşağıdaki butona tıklayarak hemen indirimli fiyattan satın alabilirsiniz.\n"
+        "━━━━━━━━━━━━━━━━━"
+    )
+    product_copy = dict(product)
+    try:
+        from sales_conversion import purchase_url
+        product_copy["url"] = purchase_url(product_copy, brand, "campaign_announcement")
+    except Exception:
+        pass
+    
+    queue = AnnouncementQueue(brand, "discount")
+    return queue.enqueue(build_announcement_item(
+        brand,
+        product_copy,
+        text=text,
+        kind="discount",
+        marker=f"camp_{campaign.get('product_id')}_{int(campaign.get('restore_at', 0))}",
+        recipients=load_subscribers(brand),
+    ))
+
+
+def dispatch_pending_discount_announcements() -> dict:
+    totals = {"success": 0, "failed": 0, "items": 0}
+    for brand in BRANDS:
+        result = drain_queue_sync(
+            AnnouncementQueue(brand, "discount"),
+            lambda uid, item, current=brand: send_bot_api_message(current, uid, item),
+        )
+        for key in totals:
+            totals[key] += int(result.get(key, 0) or 0)
+    return totals
+

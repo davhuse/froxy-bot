@@ -33,6 +33,7 @@ from announcement_delivery import (
     AnnouncementQueue,
     dispatch_pending_new_product_announcements,
     dispatch_pending_stock_announcements,
+    dispatch_pending_discount_announcements,
     stock_auto_enabled,
 )
 from shopier_campaigns import (
@@ -2867,12 +2868,15 @@ def start_background_threads():
                             ).load_sales_catalog(brand)
                         )
                         cleanup_result = cleanup_dynamic_sale_listings()
+                        disc_result = dispatch_pending_discount_announcements()
                         if result.get("updated") or result.get("restored"):
                             print(f"[Campaign] Shopier price cycle: {result}")
                         if dynamic_result.get("updated") or dynamic_result.get("restored"):
                             print(f"[Campaign] Dynamic listing cycle: {dynamic_result}")
                         if cleanup_result.get("closed") or cleanup_result.get("failed"):
                             print(f"[Campaign] Dynamic listing cleanup: {cleanup_result}")
+                        if disc_result.get("items"):
+                            print(f"[Campaign] Discount announcements sent: {disc_result}")
                     except Exception as exc:
                         print(f"[Campaign] Price cycle paused safely: {type(exc).__name__}")
                     time.sleep(60)

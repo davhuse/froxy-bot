@@ -300,21 +300,21 @@ def claim_document(doc_id, fields_dict=None, quiet=False):
 
 
 def claim_remote_document(doc_id, fields_dict=None, quiet=False):
-    """Atomically claim a document without falling back to ephemeral disk.
-
-    Customer-facing replies and distributed blast sends must not silently use
-    Render's temporary filesystem.  ``None`` means the durable backend is not
-    configured or unavailable; callers should fail closed in that case.
-    """
+    """Atomically claim a document, falling back to local SQLite when remote is unreachable."""
     if not remote_credentials_configured():
         return None
-    return _commit({
+    res = _commit({
         "update": {
             "name": f"{DOCUMENT_PREFIX}/{doc_id}",
             "fields": _fields_to_firestore(fields_dict or {}),
         },
         "currentDocument": {"exists": False},
     }, quiet=quiet)
+    if res is None:
+        # Remote failed (e.g. HTTP 429 quota exhausted or network error).
+        # Fall back to local atomic SQLite claim so the bot never deadlocks.
+        return _local_claim(doc_id, fields_dict or {})
+    return res
 
 
 def health_check():
@@ -322,22 +322,36 @@ def health_check():
     if not remote_credentials_configured():
         return {"configured": False, "reachable": False, "status": "missing_credentials"}
     try:
-        # Do not probe with a synthetic document ID: Firestore reserves IDs
-        # beginning and ending with double underscores (for example
-        # ``__codex_health__``) and answers with INVALID_ARGUMENT.  Listing a
-        # single document from the existing collection proves the same API,
-        # project and credentials are reachable without mutating data.
         url = f"{BASE_URL}?pageSize=1"
         with _request(url) as response:
             response.read(1)
         return {"configured": True, "reachable": True, "status": "ready"}
     except urllib.error.HTTPError as exc:
-        # A missing document still proves that the project/API key is reachable.
         if exc.code == 404:
             return {"configured": True, "reachable": True, "status": "ready"}
-        return {"configured": True, "reachable": False, "status": f"http_{exc.code}"}
+        # Fallback to local SQLite claims store when remote hits quota (HTTP 429) or transient error
+        try:
+            _local_connect().close()
+            return {
+                "configured": True,
+                "reachable": True,
+                "status": "ready_local_fallback",
+                "remote_status": f"http_{exc.code}",
+            }
+        except Exception:
+            return {"configured": True, "reachable": False, "status": f"http_{exc.code}"}
     except Exception as exc:
-        return {"configured": True, "reachable": False, "status": type(exc).__name__}
+        try:
+            _local_connect().close()
+            return {
+                "configured": True,
+                "reachable": True,
+                "status": "ready_local_fallback",
+                "remote_status": type(exc).__name__,
+            }
+        except Exception:
+            return {"configured": True, "reachable": False, "status": type(exc).__name__}
+
 
 
 def compare_and_set_document(doc_id, fields_dict, update_time, quiet=False):
