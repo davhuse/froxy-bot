@@ -14,9 +14,13 @@ from announcement_delivery import (
     stock_card_text,
 )
 from shopier_campaigns import (
+    DynamicListingUnavailable,
     PriceWriteUnavailable,
     ShopierPriceWriter,
+    cleanup_dynamic_sale_listings,
+    create_dynamic_sale_listing,
     discounted_price,
+    run_dynamic_campaign_cycle,
     run_campaign_cycle,
 )
 
@@ -159,6 +163,93 @@ class AnnouncementTests(unittest.TestCase):
             )
             self.assertEqual(result["updated"], 3)
             self.assertTrue(all(product_id == "live" for _, product_id, _ in writer.calls))
+
+    def test_dynamic_listing_is_fail_closed_when_disabled(self):
+        with patch.dict("os.environ", {"SHOPIER_DYNAMIC_SALE_LISTINGS_ENABLED": "0"}, clear=False):
+            with self.assertRaises(DynamicListingUnavailable):
+                create_dynamic_sale_listing(
+                    "keyvadi", {"id": "p1", "title": "Ürün", "price": "100 TL"},
+                    idempotency_key="cta-1",
+                )
+
+    def test_dynamic_listing_creates_exact_title_price_and_is_idempotent(self):
+        class Response:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return False
+
+            def read(self):
+                return json.dumps({"id": "dynamic-1", "url": "https://www.shopier.com/dynamic-1"}).encode()
+
+        with tempfile.TemporaryDirectory() as folder, patch(
+            "shopier_campaigns.DYNAMIC_STATE_PATH", Path(folder) / "dynamic.json"
+        ), patch("shopier_campaigns.firestore_helper.get_document", return_value={}), patch(
+            "shopier_campaigns.firestore_helper.set_document", return_value=True
+        ), patch.dict(
+            "os.environ",
+            {
+                "SHOPIER_DYNAMIC_SALE_LISTINGS_ENABLED": "1",
+                "SHOPIER_KEYVADI_ACCESS_TOKEN": "pat",
+            },
+            clear=False,
+        ), patch("shopier_campaigns.urllib.request.urlopen", return_value=Response()) as opener:
+            product = {"id": "source-1", "title": "ChatGPT Plus", "price": "100 TL"}
+            first = create_dynamic_sale_listing("keyvadi", product, price="90 TL", idempotency_key="cta-1", now=10)
+            second = create_dynamic_sale_listing("keyvadi", product, price="90 TL", idempotency_key="cta-1", now=11)
+            self.assertEqual(first["shopier_product_id"], "dynamic-1")
+            self.assertEqual(first["amount"], "90.00")
+            self.assertTrue(second["duplicate"])
+            request = opener.call_args.args[0]
+            self.assertEqual(request.method, "POST")
+            payload = json.loads(request.data)
+            self.assertEqual(payload["title"], "ChatGPT Plus")
+            self.assertEqual(payload["priceData"]["price"], 90.0)
+
+    def test_dynamic_campaign_and_expired_listing_cleanup(self):
+        with tempfile.TemporaryDirectory() as folder, patch(
+            "shopier_campaigns.STATE_PATH", Path(folder) / "campaigns.json"
+        ), patch("shopier_campaigns.DYNAMIC_STATE_PATH", Path(folder) / "dynamic.json"), patch(
+            "shopier_campaigns.firestore_helper.get_document", return_value={}
+        ), patch("shopier_campaigns.firestore_helper.set_document", return_value=True), patch.dict(
+            "os.environ",
+            {
+                "SHOPIER_DYNAMIC_SALE_LISTINGS_ENABLED": "1",
+                "SHOPIER_KEYVADI_ACCESS_TOKEN": "pat",
+            },
+            clear=False,
+        ), patch("shopier_campaigns.random.choice", side_effect=lambda values: values[0]), patch(
+            "shopier_campaigns.random.randint", return_value=10
+        ):
+            now = __import__("time").time()
+            result = run_dynamic_campaign_cycle(
+                lambda brand: [{"id": "live", "title": "Live", "price": "100 TL", "stockQuantity": 2}],
+                now=now,
+            )
+            self.assertEqual(result["updated"], 3)
+            self.assertEqual(
+                __import__("shopier_campaigns").campaign_price_for_product(
+                    "keyvadi", {"id": "live", "price": "100 TL"}
+                ),
+                "90.00",
+            )
+
+            module = __import__("shopier_campaigns")
+            module.DYNAMIC_STATE_PATH.write_text(json.dumps({
+                "listings": {
+                    "cta-expired": {
+                        "brand": "keyvadi",
+                        "shopier_product_id": "dynamic-1",
+                        "status": "pending",
+                        "expires_at": 1,
+                    }
+                }
+            }), encoding="utf-8")
+            with patch("shopier_campaigns._dynamic_delete") as delete:
+                cleanup = cleanup_dynamic_sale_listings(now=2)
+            self.assertEqual(cleanup["closed"], 1)
+            delete.assert_called_once_with("keyvadi", "dynamic-1")
 
 
 if __name__ == "__main__":

@@ -71,6 +71,18 @@ def ingest_shopier_order(order: dict, account: str, source: str) -> bool:
     order_id = fields["order_id"]
     if not order_id or fields["payment_status"] not in {"paid", "completed", "success", "successful"}:
         return False
+    # Stop the one-off CTA cleaner from treating a completed dynamic listing
+    # as abandoned.  This is best-effort and never blocks normal order ingest.
+    try:
+        from shopier_campaigns import mark_dynamic_listing_paid
+
+        for item in _first_list(order, "lineItems", "line_items", "items", "products"):
+            if isinstance(item, dict):
+                product_id = item.get("productId") or item.get("product_id") or item.get("id")
+                if product_id:
+                    mark_dynamic_listing_paid(str(account).lower(), str(product_id), order_id)
+    except Exception:
+        pass
     claim_id = "shopier_order_" + re.sub(r"[^a-zA-Z0-9_-]+", "_", order_id)
     claimed = firestore_helper.claim_document(claim_id, {
         "order_id": order_id,

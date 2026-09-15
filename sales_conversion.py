@@ -287,6 +287,19 @@ def load_sales_catalog(brand: str) -> list[dict]:
             if product and product["id"] not in seen:
                 seen.add(product["id"])
                 products.append(product)
+    # Dynamic campaigns never rewrite the source catalog.  When explicitly
+    # enabled, overlay the active price in bot/Mini App cards so the CTA and
+    # the one-off Shopier listing show the same amount.
+    if os.environ.get("SHOPIER_DYNAMIC_SALE_LISTINGS_ENABLED", "0").strip().lower() in {
+        "1", "true", "yes", "on"
+    }:
+        try:
+            from shopier_campaigns import apply_dynamic_campaign_prices
+
+            products = apply_dynamic_campaign_prices(brand, products)
+        except Exception:
+            # A campaign state outage must not make the catalog unavailable.
+            pass
     return products
 
 

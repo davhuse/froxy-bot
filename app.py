@@ -35,7 +35,16 @@ from announcement_delivery import (
     dispatch_pending_stock_announcements,
     stock_auto_enabled,
 )
-from shopier_campaigns import campaign_status, run_campaign_cycle
+from shopier_campaigns import (
+    campaign_status,
+    cleanup_dynamic_sale_listings,
+    create_dynamic_sale_listing,
+    dynamic_sale_status,
+    run_campaign_cycle,
+    run_dynamic_campaign_cycle,
+    campaign_price_for_product,
+    DynamicListingUnavailable,
+)
 from blast_scheduler import BlastCoordinator, load_blast_snapshot
 from shopier_orders import ingest_shopier_order, reconcile_configured_orders
 from group_policy import load_policies, moderation_snapshot
@@ -1055,6 +1064,7 @@ def system_checkup():
             'updated_at': campaign_health.get('updated_at'),
             'campaigns': campaign_health.get('campaigns', {}),
             'price_writes_enabled': os.environ.get('SHOPIER_PRICE_WRITES_ENABLED', '0').strip().lower() in {'1', 'true', 'yes', 'on'},
+            'dynamic_sale_listings': dynamic_sale_status(),
         }
     except Exception as exc:
         campaign_health = {'state': 'unavailable', 'error': type(exc).__name__}
@@ -1419,6 +1429,25 @@ def purchase_redirect(token):
         arm=payload.get('a', ''),
         cta_key=payload.get('c', ''),
     )
+    # Optional campaign mode: create an exact-title, one-off Shopier listing
+    # at the price shown in the bot message.  The source product is never
+    # edited, and the idempotency key keeps repeated clicks on one CTA from
+    # creating a pile of abandoned listings.
+    try:
+        dynamic = create_dynamic_sale_listing(
+            payload['b'],
+            product,
+            price=campaign_price_for_product(payload['b'], product),
+            idempotency_key=f"cta:{payload.get('c') or token}",
+        )
+        if dynamic.get('payment_url'):
+            return redirect(dynamic['payment_url'], code=302)
+    except DynamicListingUnavailable as exc:
+        # The feature is fail-closed: missing/invalid Shopier write access
+        # never turns into a fake low price.  The normal source listing stays
+        # available as a safe fallback.
+        if os.environ.get('SHOPIER_DYNAMIC_SALE_LISTINGS_ENABLED', '0').strip().lower() in {'1', 'true', 'yes', 'on'}:
+            print(f'[Shopier] Dynamic CTA listing skipped: {type(exc).__name__}: {exc}')
     return redirect(purchase_target_url(payload['b'], product), code=302)
 
 @app.route('/api/start', methods=['POST'])
@@ -2787,8 +2816,18 @@ def start_background_threads():
                                 "sales_conversion", fromlist=["load_sales_catalog"]
                             ).load_sales_catalog(brand)
                         )
+                        dynamic_result = run_dynamic_campaign_cycle(
+                            lambda brand: __import__(
+                                "sales_conversion", fromlist=["load_sales_catalog"]
+                            ).load_sales_catalog(brand)
+                        )
+                        cleanup_result = cleanup_dynamic_sale_listings()
                         if result.get("updated") or result.get("restored"):
                             print(f"[Campaign] Shopier price cycle: {result}")
+                        if dynamic_result.get("updated") or dynamic_result.get("restored"):
+                            print(f"[Campaign] Dynamic listing cycle: {dynamic_result}")
+                        if cleanup_result.get("closed") or cleanup_result.get("failed"):
+                            print(f"[Campaign] Dynamic listing cleanup: {cleanup_result}")
                     except Exception as exc:
                         print(f"[Campaign] Price cycle paused safely: {type(exc).__name__}")
                     time.sleep(60)

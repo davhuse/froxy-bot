@@ -258,8 +258,9 @@ def check_and_sync_shopier_orders(users_data_path: Path):
 
     now = time.time()
     expired_pids = []
+    ttl_seconds = int(os.environ.get("FROXY_TOPUP_TTL_SECONDS", "900"))
     for pid, info in list(topups.items()):
-        if info.get("status") == "pending" and (now - info.get("created_at", now)) > 3600:
+        if info.get("status") == "pending" and (now - info.get("created_at", now)) > ttl_seconds:
             expired_pids.append(pid)
     
     for pid in expired_pids:
@@ -285,5 +286,5 @@ def start_background_shopier_cleaner(users_data_path: Path):
 
     t = threading.Thread(target=_worker, daemon=True)
     t.start()
-    print("[Froxy] Otomatik Ä°lan Temizleme Arka Plan Servisi BaÅŸlatÄ±ldÄ± (20s dÃ¶ngÃ¼, 5dk TTL).")
+    print("[Froxy] Otomatik İlan Temizleme Arka Plan Servisi Başlatıldı (20s döngü, 15dk TTL).")
 
