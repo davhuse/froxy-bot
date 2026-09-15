@@ -418,17 +418,26 @@ def send_bot_api_message(brand: str, user_id: int, item: dict) -> bool:
             "parse_mode": "Markdown",
             **({"reply_markup": payload["reply_markup"]} if "reply_markup" in payload else {}),
         }
-    request = urllib.request.Request(
-        f"https://api.telegram.org/bot{token}/{method}",
-        data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-    )
-    try:
+    def call(current_payload: dict) -> bool:
+        request = urllib.request.Request(
+            f"https://api.telegram.org/bot{token}/{method}",
+            data=json.dumps(current_payload, ensure_ascii=False).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+        )
         with urllib.request.urlopen(request, timeout=15) as response:
             result = json.loads(response.read().decode("utf-8"))
         return bool(result.get("ok"))
+
+    try:
+        return call(payload)
     except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, ValueError):
-        return False
+        # Telegram's legacy Markdown parser rejects some product names. A
+        # plain-text retry preserves delivery without changing the card data.
+        payload.pop("parse_mode", None)
+        try:
+            return call(payload)
+        except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, ValueError):
+            return False
 
 
 def enqueue_new_product(brand: str, product: dict) -> tuple[dict, bool]:

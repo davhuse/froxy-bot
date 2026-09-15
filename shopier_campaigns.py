@@ -150,10 +150,24 @@ def run_campaign_cycle(catalog_loader, price_writer=None, now=None) -> dict:
     for brand in BRANDS:
         current = campaigns.get(brand) or {}
         if current.get("active") and float(current.get("restore_at", 0) or 0) <= now:
-            writer.update(brand, current["product_id"], current["original_price"])
-            current = {"active": False, "next_run_at": now}
-            campaigns[brand] = current
-            restored += 1
+            # Never restore an orphaned/stale record (for example after a
+            # failed dry-run) against a newly reused Shopier product id.
+            try:
+                known_ids = {
+                    str(product.get("id"))
+                    for product in (catalog_loader(brand) or [])
+                    if product.get("id")
+                }
+            except Exception:
+                known_ids = set()
+            if str(current.get("product_id")) not in known_ids:
+                campaigns[brand] = {"active": False, "next_run_at": now}
+                current = campaigns[brand]
+            else:
+                writer.update(brand, current["product_id"], current["original_price"])
+                current = {"active": False, "next_run_at": now}
+                campaigns[brand] = current
+                restored += 1
         if current.get("active"):
             continue
         next_run = float(current.get("next_run_at", 0) or 0)
