@@ -1011,6 +1011,16 @@ def system_checkup():
             'reachable': False,
             'status': type(exc).__name__,
         }
+    try:
+        from blast_checkpoint_store import health_check as checkpoint_backup_health
+
+        checkpoint_backup = checkpoint_backup_health()
+    except Exception as exc:
+        checkpoint_backup = {
+            'configured': False,
+            'reachable': False,
+            'status': type(exc).__name__,
+        }
 
     runtime_cfg = {}
     try:
@@ -1124,6 +1134,7 @@ def system_checkup():
         'processes_healthy': process_health,
         'sales_bots': sales_readiness,
         'durable_claims': claim_service,
+        'blast_checkpoint_backup': checkpoint_backup,
         'lisansarena_store': store_health,
         'lisansarena_traffic_enabled': store_health.get('reachable') is True,
         'shopier_catalogs': shopier_health,
@@ -1481,6 +1492,13 @@ def purchase_redirect(token):
 def start():
     if os.environ.get("BOT_AD_ENABLED", "1").strip().lower() in {"0", "false", "no", "off"}:
         return jsonify({"success": False, "message": "Render maintenance lock keeps the ad worker disabled."}), 409
+    claim_health = firestore_helper.health_check()
+    if claim_health.get("reachable") is not True:
+        return jsonify({
+            "success": False,
+            "message": "Dağıtık gönderim kilidi erişilemiyor; blast güvenli biçimde kapalı tutuldu.",
+            "durable_claims": claim_health,
+        }), 503
     try:
         os.remove(AD_STOP_FILE)
     except FileNotFoundError:

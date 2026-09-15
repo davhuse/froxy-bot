@@ -86,10 +86,9 @@ class BlastCoordinator:
 
     @staticmethod
     def _remote_available() -> bool:
-        return bool(
-            os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON", "").strip()
-            or os.environ.get("FIREBASE_API_KEY", "").strip()
-        )
+        from firestore_helper import remote_credentials_configured
+
+        return remote_credentials_configured()
 
     def _empty_state(self):
         now = float(self.now_fn())
@@ -145,7 +144,13 @@ class BlastCoordinator:
     def _load_best_state(self):
         local = self._load_local()
         remote = self._load_remote()
-        choices = [item for item in (local, remote) if item]
+        try:
+            from blast_checkpoint_store import load_checkpoint
+
+            database = load_checkpoint()
+        except Exception:
+            database = None
+        choices = [item for item in (local, remote, database) if self._valid_state(item)]
         if not choices:
             return self._empty_state()
         state = max(choices, key=lambda item: _timestamp(item.get("updated_at")))
@@ -156,6 +161,15 @@ class BlastCoordinator:
         result.setdefault("accounts", {})
         for account in ACCOUNT_ORDER:
             result["accounts"].setdefault(account, self._empty_state()["accounts"][account])
+        if local is None:
+            # Materialize a durable copy immediately. A stopped worker has no
+            # next transition that would otherwise rewrite the local file.
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            temporary = self.path.with_suffix(self.path.suffix + ".tmp")
+            temporary.write_text(
+                json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8"
+            )
+            os.replace(temporary, self.path)
         return result
 
     def _persist(self):
@@ -166,6 +180,12 @@ class BlastCoordinator:
             json.dumps(self.state, ensure_ascii=False, indent=2), encoding="utf-8"
         )
         os.replace(temporary, self.path)
+        try:
+            from blast_checkpoint_store import save_checkpoint
+
+            save_checkpoint(self.state)
+        except Exception:
+            pass
         if self.remote:
             try:
                 from firestore_helper import set_document

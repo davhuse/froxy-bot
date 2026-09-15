@@ -76,6 +76,16 @@ class LisansArenaWebTests(unittest.TestCase):
             self.web.update_ad_runtime_control(False, "manual_panel_stop")
             self.assertFalse(self.web.ad_runtime_enabled())
 
+    def test_blast_start_fails_closed_when_distributed_claims_are_unavailable(self):
+        with patch.dict(os.environ, {"BOT_AD_ENABLED": "1"}), patch(
+            "firestore_helper.health_check",
+            return_value={"configured": True, "reachable": False, "status": "http_429"},
+        ), patch.object(self.web, "prepare_ad_resume_checkpoint") as resume:
+            response = self.client.post("/api/start")
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(response.get_json()["durable_claims"]["status"], "http_429")
+        resume.assert_not_called()
+
     def test_stopped_blast_status_uses_durable_partial_run_counts(self):
         from pathlib import Path
         with tempfile.TemporaryDirectory() as directory:

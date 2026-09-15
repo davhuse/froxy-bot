@@ -1,3 +1,4 @@
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -70,6 +71,34 @@ class BlastCoordinatorTests(unittest.TestCase):
                 restored.snapshot()["accounts"]["KeyVadiOnline"]["due_at"],
                 remote_state["accounts"]["KeyVadiOnline"]["due_at"],
             )
+
+    def test_database_backup_recovers_partial_cycle_after_filesystem_loss(self):
+        import blast_checkpoint_store as backup_store
+
+        with tempfile.TemporaryDirectory() as directory:
+            checkpoint = Path(directory) / "checkpoint.json"
+            backup_url = f"sqlite:///{Path(directory, 'backup.db').as_posix()}"
+            try:
+                with patch.dict(os.environ, {"BLAST_CHECKPOINT_DATABASE_URL": backup_url}):
+                    clock = Clock()
+                    first = self.make_coordinator(directory, clock)
+                    first.initialize_accounts({"KeyVadiOnline": 0})
+                    first.try_acquire_turn("KeyVadiOnline")
+                    run = first.begin_cycle("KeyVadiOnline", ["a", "b"], ["one.txt"])
+                    first.claim_target("KeyVadiOnline", 0)
+                    first.finish_target("KeyVadiOnline", 0, "accepted", message_id=42)
+                    self.assertTrue(backup_store.health_check()["has_checkpoint"])
+                    checkpoint.unlink()
+                    second = self.make_coordinator(directory, clock, owner="after-deploy")
+                    self.assertEqual(second.snapshot()["accounts"]["KeyVadiOnline"]["run_id"], run["run_id"])
+                    self.assertTrue(second.try_acquire_turn("KeyVadiOnline"))
+                    self.assertEqual(second.next_target("KeyVadiOnline")["group"], "b")
+                    self.assertTrue(checkpoint.exists())
+            finally:
+                if backup_store._ENGINE is not None:
+                    backup_store._ENGINE.dispose()
+                    backup_store._ENGINE = None
+                    backup_store._ENGINE_URL = None
 
     def test_deploy_resumes_same_targets_and_never_repeats_accepted(self):
         with tempfile.TemporaryDirectory() as directory:
