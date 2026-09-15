@@ -16,6 +16,7 @@ import random
 import time
 import urllib.error
 import urllib.request
+from urllib.parse import quote
 
 import firestore_helper
 
@@ -105,33 +106,74 @@ def _save_state(state: dict) -> None:
 
 
 class ShopierPriceWriter:
-    def update(self, brand: str, product_id: str, new_price: str) -> dict:
-        if not _writes_enabled():
-            raise PriceWriteUnavailable("SHOPIER_PRICE_WRITES_ENABLED is disabled")
+    def _url(self, brand: str, product_id: str) -> str:
+        configured = _endpoint(brand)
+        if configured:
+            return configured.replace("{id}", quote(str(product_id), safe=""))
+        return f"https://api.shopier.com/v1/products/{quote(str(product_id), safe='')}"
+
+    def _request(self, brand: str, product_id: str, *, method: str, payload: dict | None = None) -> dict:
         token = _token(brand)
-        endpoint = _endpoint(brand)
-        if not token or not endpoint:
-            raise PriceWriteUnavailable(f"Shopier write endpoint/token missing for {brand}")
-        method = os.environ.get(
-            f"SHOPIER_{_brand_key(brand).upper()}_PRODUCT_UPDATE_METHOD", "PATCH"
-        ).upper()
-        payload = {"id": str(product_id), "price": str(new_price)}
+        if not token:
+            raise PriceWriteUnavailable(f"Shopier access token missing for {brand}")
         request = urllib.request.Request(
-            endpoint,
-            data=json.dumps(payload).encode("utf-8"),
+            self._url(brand, product_id),
+            data=(json.dumps(payload, ensure_ascii=False).encode("utf-8") if payload is not None else None),
             method=method,
             headers={
                 "Authorization": f"Bearer {token}",
                 "Accept": "application/json",
-                "Content-Type": "application/json",
+                **({"Content-Type": "application/json"} if payload is not None else {}),
             },
         )
         try:
             with urllib.request.urlopen(request, timeout=30) as response:
-                body = response.read().decode("utf-8", errors="replace")
-            return {"ok": True, "status": response.status, "body": body[:1000]}
-        except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError) as exc:
-            raise PriceWriteUnavailable(f"Shopier price update failed: {type(exc).__name__}") from exc
+                raw = response.read().decode("utf-8", errors="replace")
+                body = json.loads(raw) if raw else {}
+            return {"ok": True, "status": response.status, "body": body}
+        except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, ValueError) as exc:
+            status = getattr(exc, "code", None)
+            suffix = f" status={status}" if status else ""
+            raise PriceWriteUnavailable(
+                f"Shopier product {method} failed for {brand}{suffix}"
+            ) from exc
+
+    def update(self, brand: str, product_id: str, new_price: str) -> dict:
+        if not _writes_enabled():
+            raise PriceWriteUnavailable("SHOPIER_PRICE_WRITES_ENABLED is disabled")
+        method = os.environ.get(
+            f"SHOPIER_{_brand_key(brand).upper()}_PRODUCT_UPDATE_METHOD", "PUT"
+        ).upper()
+        if method not in {"PUT", "PATCH"}:
+            raise PriceWriteUnavailable(f"Unsupported Shopier update method: {method}")
+        return self._request(
+            brand,
+            product_id,
+            method=method,
+            payload={"priceData": {"price": str(new_price)}},
+        )
+
+    def read(self, brand: str, product_id: str) -> dict:
+        if not _writes_enabled():
+            raise PriceWriteUnavailable("SHOPIER_PRICE_WRITES_ENABLED is disabled")
+        return self._request(brand, product_id, method="GET")
+
+    def verify(self, brand: str, product_id: str, expected_price: str) -> dict:
+        result = self.read(brand, product_id)
+        body = result.get("body") if isinstance(result, dict) else {}
+        price_data = body.get("priceData") if isinstance(body, dict) else {}
+        observed = (
+            price_data.get("price")
+            or price_data.get("discountedPrice")
+            or body.get("price")
+            if isinstance(body, dict)
+            else None
+        )
+        if observed is None or price_number(observed) != price_number(expected_price):
+            raise PriceWriteUnavailable(
+                f"Shopier price verification mismatch for {brand}/{product_id}"
+            )
+        return {"verified": True, "price": str(observed)}
 
 
 def campaign_status() -> dict:
@@ -144,6 +186,30 @@ def campaign_status() -> dict:
         state["campaigns"] = {}
         state["state"] = "disabled"
     return state
+
+
+def _write_verified(
+    writer,
+    brand: str,
+    product_id: str,
+    price: str,
+    rollback_price: str | None = None,
+) -> dict:
+    result = writer.update(brand, product_id, price)
+    verifier = getattr(writer, "verify", None)
+    if callable(verifier):
+        try:
+            verifier(brand, product_id, price)
+        except Exception:
+            # A write without a read-back confirmation is not a valid active
+            # campaign. Best-effort rollback prevents a stuck low price.
+            if rollback_price is not None:
+                try:
+                    writer.update(brand, product_id, rollback_price)
+                except Exception:
+                    pass
+            raise
+    return result
 
 
 def run_campaign_cycle(catalog_loader, price_writer=None, now=None) -> dict:
@@ -172,7 +238,7 @@ def run_campaign_cycle(catalog_loader, price_writer=None, now=None) -> dict:
                 campaigns[brand] = {"active": False, "next_run_at": now}
                 current = campaigns[brand]
             else:
-                writer.update(brand, current["product_id"], current["original_price"])
+                _write_verified(writer, brand, current["product_id"], current["original_price"])
                 current = {"active": False, "next_run_at": now}
                 campaigns[brand] = current
                 restored += 1
@@ -206,7 +272,18 @@ def run_campaign_cycle(catalog_loader, price_writer=None, now=None) -> dict:
         original = str(product["price"])
         percent = random.randint(5, 10)
         new_price = discounted_price(original, percent)
-        writer.update(brand, str(product["id"]), new_price)
+        try:
+            _write_verified(
+                writer,
+                brand,
+                str(product["id"]),
+                new_price,
+                rollback_price=original,
+            )
+        except Exception:
+            # Do not persist an active campaign unless Shopier confirms the
+            # exact price on a subsequent read.
+            raise
         campaigns[brand] = {
             "active": True,
             "product_id": str(product["id"]),

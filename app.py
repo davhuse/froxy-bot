@@ -29,7 +29,12 @@ import socket
 import firestore_helper
 from sales_metrics import record_event, summarize as summarize_sales
 from sales_conversion import catalog_refresh_status, cta_experiment_status, parse_purchase_token, product_by_id, purchase_target_url, refresh_configured_catalogs
-from announcement_delivery import AnnouncementQueue, dispatch_pending_new_product_announcements
+from announcement_delivery import (
+    AnnouncementQueue,
+    dispatch_pending_new_product_announcements,
+    dispatch_pending_stock_announcements,
+    stock_auto_enabled,
+)
 from shopier_campaigns import campaign_status, run_campaign_cycle
 from blast_scheduler import BlastCoordinator, load_blast_snapshot
 from shopier_orders import ingest_shopier_order, reconcile_configured_orders
@@ -1088,6 +1093,7 @@ def system_checkup():
         'shopier_sync_healthy': shopier_sync_healthy,
         'shopier_sync_warnings': shopier_sync_warnings,
         'announcement_queues': announcement_health,
+        'automatic_stock_announcements': stock_auto_enabled(),
         'shopier_campaigns': campaign_health,
         'target_registry': target_registry_health,
         'keyvadi_mini_app': {
@@ -2762,10 +2768,13 @@ def start_background_threads():
                     refreshed = refresh_configured_catalogs()
                     reconciled = reconcile_configured_orders()
                     announcements = dispatch_pending_new_product_announcements()
+                    stock_announcements = dispatch_pending_stock_announcements()
                     if any(refreshed.values()):
                         print(f"[Catalog] Shopier API refresh completed: {refreshed}")
                     if announcements.get("items"):
                         print(f"[Catalog] New product announcements: {announcements}")
+                    if stock_announcements.get("items"):
+                        print(f"[Catalog] Stock announcements: {stock_announcements}")
                     if any(reconciled.values()):
                         print(f"[Orders] Shopier API reconciliation completed: {reconciled}")
                     time.sleep(30 * 60)

@@ -336,6 +336,15 @@ def refresh_catalog_from_shopier_api(brand: str) -> int:
         return 0
     raw_products = _fetch_shopier_products(token)
     current = {item["id"]: item for item in load_sales_catalog(brand)}
+    try:
+        from announcement_delivery import record_stock_changes
+
+        stock_result = record_stock_changes(brand, raw_products)
+        if stock_result.get("queued"):
+            print(f"[Catalog] Stock transitions queued for {brand}: {stock_result}")
+    except Exception as exc:
+        # Stock announcements must never make a valid catalog refresh fail.
+        print(f"[Catalog] Stock transition tracking skipped for {brand}: {type(exc).__name__}")
     refreshed = []
     for raw in raw_products:
         if (

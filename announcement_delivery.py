@@ -25,6 +25,7 @@ import firestore_helper
 
 ROOT = Path(__file__).resolve().parent
 BRANDS = ("keyvadi", "froxy", "lisansarena")
+STOCK_AUTO_ENV = "STOCK_AUTO_ANNOUNCEMENTS_ENABLED"
 BRAND_CONFIG = {
     "keyvadi": {
         "token_vars": ("KEYVADI_SUPPORT_BOT_TOKEN", "KEYVADI_BOT_TOKEN"),
@@ -265,6 +266,130 @@ def stock_card_text(title: str, count: int, price: str | None) -> str:
     )
 
 
+def stock_auto_enabled() -> bool:
+    return os.environ.get(STOCK_AUTO_ENV, "1").strip().lower() in {
+        "1", "true", "yes", "on"
+    }
+
+
+def _stock_snapshot(brand: str) -> tuple[dict, Path, str]:
+    brand = normalize_brand(brand)
+    return {}, ROOT / f"stock_snapshot_{brand}_v1.json", f"stock_snapshot_{brand}_v1"
+
+
+def _load_stock_snapshot(brand: str) -> dict:
+    _, path, doc_id = _stock_snapshot(brand)
+    try:
+        remote = firestore_helper.get_document(doc_id) or {}
+        if isinstance(remote, dict) and isinstance(remote.get("products"), dict):
+            return remote
+    except Exception:
+        pass
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+        if isinstance(value, dict) and isinstance(value.get("products"), dict):
+            return value
+    except Exception:
+        pass
+    return {"products": {}}
+
+
+def _save_stock_snapshot(brand: str, state: dict) -> None:
+    _, path, doc_id = _stock_snapshot(brand)
+    path.write_text(json.dumps(state, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    try:
+        firestore_helper.set_document(doc_id, state)
+    except Exception:
+        pass
+
+
+def _stock_value(product: dict) -> tuple[bool, int | None]:
+    status = str(product.get("stockStatus") or "").replace("_", "").casefold()
+    quantity = product.get("stockQuantity")
+    try:
+        quantity = int(float(str(quantity).replace(",", "."))) if quantity not in (None, "") else None
+    except (TypeError, ValueError):
+        quantity = None
+    out = status in {"outofstock", "soldout", "stokyok", "tukendi"} or quantity == 0
+    return out, quantity
+
+
+def _raw_product_for_stock(raw: dict) -> dict:
+    price_data = raw.get("priceData") if isinstance(raw.get("priceData"), dict) else {}
+    return {
+        **raw,
+        "id": str(raw.get("id") or "").strip(),
+        "title": str(raw.get("title") or raw.get("name") or "").strip(),
+        "price": str(raw.get("price") or price_data.get("discountedPrice") or price_data.get("price") or "").strip(),
+        "url": str(raw.get("url") or raw.get("link") or "").strip(),
+        "image_url": str(raw.get("image_url") or raw.get("image") or "").strip(),
+    }
+
+
+def record_stock_changes(brand: str, raw_products: list[dict]) -> dict:
+    """Persist Shopier stock state and enqueue threshold transitions once."""
+    brand = normalize_brand(brand)
+    state = _load_stock_snapshot(brand)
+    previous = state.get("products") if isinstance(state.get("products"), dict) else {}
+    current = {}
+    changes = []
+    for raw in raw_products or []:
+        if not isinstance(raw, dict):
+            continue
+        product = _raw_product_for_stock(raw)
+        product_id = product.get("id")
+        if not product_id or not product.get("title"):
+            continue
+        out, quantity = _stock_value(product)
+        current[product_id] = {
+            "title": product["title"],
+            "price": product.get("price") or "Fiyat mağazada güncel",
+            "url": product.get("url") or "",
+            "image_url": product.get("image_url") or "",
+            "out_of_stock": out,
+            "quantity": quantity,
+        }
+        before = previous.get(product_id) if isinstance(previous, dict) else None
+        if not isinstance(before, dict):
+            continue
+        before_out = bool(before.get("out_of_stock"))
+        before_qty = before.get("quantity")
+        threshold = None
+        if out and not before_out:
+            threshold = 0
+        elif quantity in {1, 3} and not out:
+            try:
+                if before_qty is None or int(before_qty) > quantity:
+                    threshold = quantity
+            except (TypeError, ValueError):
+                threshold = quantity
+        if threshold is not None:
+            changes.append((product, threshold))
+    _save_stock_snapshot(brand, {"products": current, "updated_at": utc_now()})
+    if not stock_auto_enabled() or not previous:
+        return {"changes": 0, "queued": 0, "first_snapshot": not bool(previous)}
+
+    from sales_conversion import purchase_url
+
+    queued = 0
+    queue = AnnouncementQueue(brand, "stock")
+    for product, count in changes:
+        product = dict(product)
+        product["url"] = purchase_url(product, brand, "auto_stock_announcement")
+        item = build_announcement_item(
+            brand,
+            product,
+            text=stock_card_text(product["title"], count, product.get("price")),
+            kind="stock",
+            marker=str(count),
+            recipients=load_subscribers(brand),
+        )
+        item["stock_count"] = count
+        _, created = queue.enqueue(item)
+        queued += int(created)
+    return {"changes": len(changes), "queued": queued, "first_snapshot": False}
+
+
 def build_announcement_item(brand: str, product: dict, *, text: str, kind: str, marker: str, recipients: list[int]) -> dict:
     brand = normalize_brand(brand)
     product_id = str(product.get("id") or product.get("title") or "product")
@@ -464,6 +589,18 @@ def dispatch_pending_new_product_announcements() -> dict:
     for brand in BRANDS:
         result = drain_queue_sync(
             AnnouncementQueue(brand, "new_product"),
+            lambda uid, item, current=brand: send_bot_api_message(current, uid, item),
+        )
+        for key in totals:
+            totals[key] += int(result.get(key, 0) or 0)
+    return totals
+
+
+def dispatch_pending_stock_announcements() -> dict:
+    totals = {"success": 0, "failed": 0, "items": 0}
+    for brand in BRANDS:
+        result = drain_queue_sync(
+            AnnouncementQueue(brand, "stock"),
             lambda uid, item, current=brand: send_bot_api_message(current, uid, item),
         )
         for key in totals:

@@ -1,4 +1,5 @@
 import asyncio
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -9,6 +10,7 @@ from announcement_delivery import (
     build_announcement_item,
     drain_queue,
     parse_stock_command,
+    record_stock_changes,
     stock_card_text,
 )
 from shopier_campaigns import (
@@ -44,6 +46,28 @@ class AnnouncementTests(unittest.TestCase):
             text="fiyat 89", kind="stock", marker="3", recipients=[],
         )
         self.assertEqual(first["idempotency_key"], second["idempotency_key"])
+
+    def test_stock_transition_queues_threshold_once(self):
+        with tempfile.TemporaryDirectory() as folder, patch(
+            "announcement_delivery.ROOT", Path(folder)
+        ), patch("announcement_delivery.firestore_helper.get_document", return_value={}), patch(
+            "announcement_delivery.firestore_helper.set_document", return_value=True
+        ):
+            product = {
+                "id": "p1",
+                "name": "Ürün",
+                "price": "100 TL",
+                "link": "https://www.shopier.com/1",
+                "stockStatus": "inStock",
+                "stockQuantity": 4,
+            }
+            first = record_stock_changes("keyvadi", [product])
+            self.assertEqual(first["queued"], 0)
+            product["stockQuantity"] = 3
+            second = record_stock_changes("keyvadi", [product])
+            self.assertEqual(second["queued"], 1)
+            third = record_stock_changes("keyvadi", [product])
+            self.assertEqual(third["queued"], 0)
 
     def test_queue_is_idempotent_and_resumable(self):
         with tempfile.TemporaryDirectory() as folder, patch(
@@ -82,6 +106,34 @@ class AnnouncementTests(unittest.TestCase):
         with patch.dict("os.environ", {"SHOPIER_PRICE_WRITES_ENABLED": "0"}, clear=False):
             with self.assertRaises(PriceWriteUnavailable):
                 ShopierPriceWriter().update("keyvadi", "p1", "90.00")
+
+    def test_shopier_writer_uses_documented_product_put_payload(self):
+        class Response:
+            status = 200
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return False
+
+            def read(self):
+                return json.dumps({"id": "p1", "priceData": {"price": "90.00"}}).encode()
+
+        with patch.dict(
+            "os.environ",
+            {
+                "SHOPIER_PRICE_WRITES_ENABLED": "1",
+                "SHOPIER_KEYVADI_ACCESS_TOKEN": "pat",
+            },
+            clear=False,
+        ), patch("shopier_campaigns.urllib.request.urlopen", return_value=Response()) as opener:
+            result = ShopierPriceWriter().update("keyvadi", "p1", "90.00")
+            request = opener.call_args.args[0]
+            self.assertEqual(request.full_url, "https://api.shopier.com/v1/products/p1")
+            self.assertEqual(request.method, "PUT")
+            self.assertEqual(json.loads(request.data), {"priceData": {"price": "90.00"}})
+            self.assertTrue(result["ok"])
 
     def test_discount_cycle_skips_empty_stock(self):
         with tempfile.TemporaryDirectory() as folder, patch(
