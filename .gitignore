@@ -79,3 +79,5 @@ miniapp_froxy/pending_topups.json
 miniapp_froxy/credited_orders.json
 
 miniapp_lisansarena/pending_topups.json
+runtime_claims.db*
+announcement_queue_discount_*.json

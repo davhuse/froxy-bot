@@ -1,5 +1,23 @@
 [
     {
+        "id": "la_chatgpt_plus_ortak",
+        "title": "ChatGPT Plus Ortak Hesap (30 Günlük)",
+        "price": "59.90 TL",
+        "category": "ai",
+        "is_vitrin": true,
+        "showcase": true,
+        "badge": "🤖 30 GÜN PLUS",
+        "image": "assets/products/card_clean_chatgpt.jpg",
+        "rating": 4.9,
+        "sales_count": 340,
+        "delivery": "⚡ Anında Hesap Teslimi",
+        "warranty": "🛡️ 30 Gün %100 Değişim Garantili",
+        "desc": "ChatGPT Plus 30 günlük ortak kullanım hesabı. GPT-4o, DALL-E 3 ve gelişmiş veri analizi özellikleri aktif. 30 gün kesintisiz garanti.",
+        "shopier_url": "https://www.shopier.com/50889443",
+        "shopier_product_id": "50889443",
+        "shopier_owner": "lisansarena"
+    },
+    {
         "id": "la_flo_800",
         "title": "FLO 3.000 TL'ye 800 TL İndirim Çeki",
         "price": "30 TL",

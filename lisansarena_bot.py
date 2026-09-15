@@ -440,6 +440,7 @@ def main_menu_buttons():
         [Button.inline("🎨 Tasarım & Ofis", b"cat_design"), Button.inline("🔑 Windows & Office", b"cat_software")],
         [Button.inline("🎟️ Kupon & Bakiye", b"cat_coupons"), Button.inline("🎮 Oyun & E-Pin", b"cat_gaming")],
         [Button.inline("📱 Sosyal & Hesaplar", b"cat_social")],
+        [Button.url("🤖 ChatGPT Plus Ortak (59.90₺)", "https://www.shopier.com/50889443")],
         [Button.url("🛍️ Web Mağazasını Aç (Mini App)", MINI_APP_URL)],
         [Button.inline("💳 Bakiye / Cüzdan", b"menu_balance"), Button.inline("📞 Canlı Destek", b"ticket_support")],
     ]
@@ -450,6 +451,7 @@ async def show_main_menu(event, *, edit=False):
         "🛡️ **LİSANSARENA — Dijital Ürün & Lisans Pazarı** 🏆\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
         "✨ **LisansArena Resmi Satış ve Destek Botuna Hoş Geldiniz!**\n\n"
+        "🔥 **Öne Çıkan Kampanya:** [ChatGPT Plus Ortak Hesap (30 Günlük) — 59.90 TL](https://www.shopier.com/50889443)\n\n"
         "Netflix 4K UHD, S Sport Plus, ChatGPT Plus, Gemini Pro, Canva Pro, CapCut Pro, Windows 10/11 Pro, Office 365, Yemeksepeti ve Migros kuponları en uygun fiyatlarla anında teslim!\n\n"
         "🌟 **LisansArena Güvenceleri:**\n"
         "• 🛡️ Süresi Boyunca %100 Birebir Değişim & Telafi Garantisi\n"
