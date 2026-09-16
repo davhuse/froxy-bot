@@ -1,5 +1,22 @@
 [
   {
+    "id": "49362861",
+    "title": "ChatGPT Plus 30 Gün - Ortak Hesap",
+    "price": "69,90 TL",
+    "price_num": 69.9,
+    "category": "ai",
+    "image": "assets/products/card_clean_chatgpt.jpg",
+    "badge": "🔥 Popüler • 30 Gün Plus",
+    "url": "https://www.shopier.com/keyvadi/49362861",
+    "description": "ChatGPT Plus 30 Gün - Ortak Hesap. Teslimat yöntemi, hesap uygunluğu ve varsa garanti süresi ödeme öncesinde ürün detayında doğrulanır.",
+    "showcase": true,
+    "is_vitrin": true,
+    "category_label": "YAPAY ZEKÂ",
+    "delivery_type": "manual",
+    "delivery_label": "Teslimat ve uygunluk ödeme öncesi doğrulanır",
+    "max_qty": 1
+  },
+  {
     "id": "50857983",
     "title": "GPT GO 3 Aylık İndirim Kodu",
     "price": "150,00 TL",
@@ -437,23 +454,6 @@
     "showcase": true,
     "is_vitrin": true,
     "category_label": "EĞLENCE",
-    "delivery_type": "manual",
-    "delivery_label": "Teslimat ve uygunluk ödeme öncesi doğrulanır",
-    "max_qty": 1
-  },
-  {
-    "id": "49362861",
-    "title": "ChatGPT Plus 30 Gün - Ortak Hesap",
-    "price": "69,90 TL",
-    "price_num": 69.9,
-    "category": "ai",
-    "image": "assets/products/card_clean_chatgpt.jpg",
-    "badge": "👥 Ortak Hesap",
-    "url": "https://www.shopier.com/keyvadi/49362861",
-    "description": "ChatGPT Plus 30 Gün - Ortak Hesap. Teslimat yöntemi, hesap uygunluğu ve varsa garanti süresi ödeme öncesinde ürün detayında doğrulanır.",
-    "showcase": false,
-    "is_vitrin": false,
-    "category_label": "YAPAY ZEKÂ",
     "delivery_type": "manual",
     "delivery_label": "Teslimat ve uygunluk ödeme öncesi doğrulanır",
     "max_qty": 1
