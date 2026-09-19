@@ -675,8 +675,11 @@ def strict_group_safe_copy(group_key, is_keyvadi, is_lisansarena, is_froxy):
         ]
         if not is_satcek:
             lines.insert(4, "Netflix 4K kişisel profil 79,90 TL")
-            lines.insert(5, "Yemeksepeti 200/200 50 TL | 450/350 60 TL")
-            lines.insert(6, "Coffy 2 al 1 öde 45 TL | Migros 100 TL 50 TL")
+            lines.insert(5, "Yemeksepeti 360/270 45 TL | 450/350 50 TL")
+            lines.insert(6, "Trendyol Market 800/300 50 TL | Yemek 750/250 50 TL")
+            lines.insert(7, "Positive 110 TL 30 TL | GastroClub %20 20 TL")
+            lines.insert(8, "Garenta %40 20 TL | Enterprise %40 30 TL | ENUYGUN %10 20 TL")
+            lines.insert(9, "Gemini 18 ay kişiye özel | 5 davet alana 1 adet Canva Pro hediye | 149,90 TL")
         lines.append("+100'den fazla başarılı işlem | Süre boyunca telafi garantisi")
         lines.append("Kuponlarınız nakit alınır | Sipariş: KeyVadiSatisBot")
         return "\n".join(lines)
@@ -692,8 +695,10 @@ def strict_group_safe_copy(group_key, is_keyvadi, is_lisansarena, is_froxy):
             "Steam 200$ VIP key 45 TL | Steam oyun 70 TL",
         ]
         if not is_satcek:
-            lines.insert(3, "Yemeksepeti 200/200 60 TL | 450/350 70 TL")
-            lines.insert(5, "Netflix 4K kişisel 85 TL | Prime Video 35 TL")
+            lines.insert(3, "Yemeksepeti 360/270 55 TL | 450/350 60 TL")
+            lines.insert(4, "Trendyol Market 800/300 60 TL | Yemek 750/250 60 TL")
+            lines.insert(5, "Positive 110 TL 35 TL | GastroClub %20 25 TL")
+            lines.insert(6, "Garenta %40 30 TL | Enterprise %40 35 TL | ENUYGUN %10 30 TL")
         lines.append("+100'den fazla başarılı işlem | 7/24 otomatik teslimat")
         lines.append("Sipariş ve detaylar: LisansArenaBot")
         return "\n".join(lines)
@@ -1005,6 +1010,12 @@ ACTIVE_ACCOUNT_IDENTITIES = {
         'stable_name': 'LisansArenaOnline',
         'phone': '17207764294',
         'user_id': 8617011628,
+        'slot': 3,
+    },
+    'lisansarenakapali': {
+        'stable_name': 'LisansArenaOnline',
+        'phone': '14176608361',
+        'user_id': 8879941384,
         'slot': 3,
     },
 }
