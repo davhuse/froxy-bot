@@ -45,7 +45,7 @@ PRODUCTS = [
         "subtitle": "600 TL Uçak Bileti Kuponu",
         "tagline": "Yurt İçi & Yurt Dışı Her Yöne Geçerli 600 TL İndirim",
         "highlight": "Tek Yön & Gidiş-Dönüş Biletlerde Geçerli",
-        "price": "70.00 ₺",
+        "price": "80.00 ₺",
         "colors": {
             "bg_top": (35, 10, 15),
             "bg_bottom": (60, 15, 20),
@@ -198,12 +198,12 @@ def draw_card(p):
     
     # 6. Bottom footer info
     f_bot = get_font(22, bold=False)
-    bot_info = "Sipariş & Bilgi: @KeyvadiDestek  |  Otomatik Bot: @KeyVadiSatisBot"
+    bot_info = p.get("bot_info") or "Sipariş & Bilgi: @KeyvadiDestek  |  Otomatik Bot: @KeyVadiSatisBot"
     bw = draw.textlength(bot_info, font=f_bot)
     draw.text(((W - bw) / 2, H - margin - 45), bot_info, font=f_bot, fill=(160, 175, 200))
     
     # Save image
-    out_paths = [
+    out_paths = p.get("out_paths") or [
         os.path.join("miniapp", "assets", "products", p["filename"]),
         os.path.join("static", p["filename"])
     ]
@@ -215,4 +215,15 @@ def draw_card(p):
 for prod in PRODUCTS:
     draw_card(prod)
 
-print("All 4 product cards generated successfully!")
+# Also generate LisansArena Turna Card (90 TL)
+turna_la = dict(PRODUCTS[2])
+turna_la["brand_badge"] = "LISANSARENA | SEYAHAT & UÇAK"
+turna_la["price"] = "90.00 ₺"
+turna_la["bot_info"] = "Sipariş & Bilgi: @LisansArenaDestek  |  Otomatik Bot: @LisansArenaBot"
+turna_la["out_paths"] = [
+    os.path.join("miniapp_lisansarena", "assets", "products", "card_clean_turna.jpg"),
+    os.path.join("static", "card_clean_turna_la.jpg")
+]
+draw_card(turna_la)
+
+print("All product cards (KeyVadi 80 TL, LisansArena 90 TL) generated successfully!")

@@ -36,6 +36,23 @@
         "shopier_owner": "lisansarena"
     },
     {
+        "id": "la_turna_600",
+        "title": "Turna 600 TL Uçak Bileti İndirim Kuponu",
+        "price": "90 TL",
+        "category": "coupons",
+        "is_vitrin": false,
+        "showcase": false,
+        "badge": "✈️ 600 TL İNDİRİM",
+        "image": "assets/products/card_clean_turna.jpg",
+        "rating": 4.9,
+        "sales_count": 88,
+        "delivery": "⚡ Anında Kod Teslimi",
+        "warranty": "🛡️ %100 Çalışma Garantili",
+        "desc": "Turna.com üzerinden yapılacak uçak bileti alımlarında geçerli 600 TL indirim sağlayan kupon kodu.",
+        "shopier_url": "https://www.shopier.com/lisansarena",
+        "shopier_owner": "lisansarena"
+    },
+    {
         "id": "la_tiktak_1000",
         "title": "TikTak 1.000 TL Araç Kiralama İndirim Kodu",
         "price": "40 TL",

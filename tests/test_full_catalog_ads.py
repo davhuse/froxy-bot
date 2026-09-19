@@ -23,7 +23,7 @@ class FullCatalogAdTests(unittest.TestCase):
 
     def test_keyvadi_turna_copy_has_requested_name_and_price(self):
         text = (ROOT / "messages" / "keyvadi_3.txt").read_text(encoding="utf-8")
-        self.assertIn("Turna 600 TL Uçak Kuponu: 100₺", text)
+        self.assertIn("Turna 600 TL Uçak Kuponu: 80₺", text)
         self.assertNotIn("Turna.com", text)
 
     def test_keyvadi_catalog_is_present_across_long_rotation(self):

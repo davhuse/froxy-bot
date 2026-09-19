@@ -34,6 +34,23 @@
     "max_qty": 5
   },
   {
+    "id": "kv_turna_600",
+    "title": "Turna 600 TL Uçak Bileti İndirim Kuponu",
+    "price": "80,00 TL",
+    "price_num": 80.0,
+    "category": "tools",
+    "category_label": "KUPON & SEYAHAT",
+    "badge": "✈️ 600 TL İndirim",
+    "image": "assets/products/card_clean_turna.jpg",
+    "url": "https://www.shopier.com/keyvadi",
+    "description": "Turna.com üzerinden yapılacak uçak bileti rezervasyonlarında geçerli 600 TL indirim kodu. Ödeme sonrası anında teslim edilir.",
+    "showcase": false,
+    "is_vitrin": false,
+    "delivery_type": "instant",
+    "delivery_label": "Anında Kod Teslimatı",
+    "max_qty": 5
+  },
+  {
     "id": "50857984",
     "title": "Yemeksepeti 500 TL'ye 250 TL İndirim Kodu",
     "price": "100,00 TL",

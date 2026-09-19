@@ -99,6 +99,13 @@ products = [
         "price_la": 30.00,
         "desc": "FLO mobil ve web alışverişlerinde 3.000 TL ve üzeri sepetlerde 800 TL indirim sağlayan kupon kodu. Anında teslimat.",
         "img": "card_clean_flo.jpg"
+    },
+    {
+        "name": "Turna 600 TL Uçak Bileti İndirim Kuponu",
+        "price_kv": 80.00,
+        "price_la": 90.00,
+        "desc": "Turna.com üzerinden yapılacak uçak bileti alımlarında geçerli 600 TL indirim sağlayan kupon kodu. Anında otomatik teslimat.",
+        "img": "card_clean_turna.jpg"
     }
 ]
 
