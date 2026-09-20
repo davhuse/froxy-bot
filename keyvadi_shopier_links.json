@@ -1,5 +1,68 @@
 [
   {
+    "id": "51051022",
+    "title": "Adobe Express 12 Ay - Kendi Hesabına Aktivasyon",
+    "price": "499,90 TL",
+    "price_num": 499.9,
+    "url": "https://www.shopier.com/51051022"
+  },
+  {
+    "id": "51051020",
+    "title": "Duolingo Super 12 Ay - Kendi Hesabına Aktivasyon",
+    "price": "199,90 TL",
+    "price_num": 199.9,
+    "url": "https://www.shopier.com/51051020"
+  },
+  {
+    "id": "51024905",
+    "title": "Trendyol Yemek 750/250 İndirim Kodu",
+    "price": "50,00 TL",
+    "price_num": 50.0,
+    "url": "https://www.shopier.com/51024905"
+  },
+  {
+    "id": "51024900",
+    "title": "ENUYGUN Trendyol Plus %10 İndirim",
+    "price": "20,00 TL",
+    "price_num": 20.0,
+    "url": "https://www.shopier.com/51024900"
+  },
+  {
+    "id": "51024901",
+    "title": "Garenta %40 Araç Kiralama İndirimi",
+    "price": "20,00 TL",
+    "price_num": 20.0,
+    "url": "https://www.shopier.com/51024901"
+  },
+  {
+    "id": "51024899",
+    "title": "Enterprise %40 Araç Kiralama İndirimi",
+    "price": "30,00 TL",
+    "price_num": 30.0,
+    "url": "https://www.shopier.com/51024899"
+  },
+  {
+    "id": "51024902",
+    "title": "GastroClub 200 TL Hediye + %20 Puan",
+    "price": "20,00 TL",
+    "price_num": 20.0,
+    "url": "https://www.shopier.com/51024902"
+  },
+  {
+    "id": "51024903",
+    "title": "Positive 2.000 TL Alışverişe 110 TL Puan",
+    "price": "30,00 TL",
+    "price_num": 30.0,
+    "url": "https://www.shopier.com/51024903"
+  },
+  {
+    "id": "51024906",
+    "title": "Yemeksepeti İlk Sipariş 360₺'ye 270₺ İndirim Kodu",
+    "price": "45,00 TL",
+    "price_num": 45.0,
+    "url": "https://www.shopier.com/51024906"
+  },
+  {
     "id": "50857983",
     "title": "GPT GO 3 Aylık İndirim Kodu",
     "price": "150.00 TL",
@@ -90,10 +153,10 @@
     "url": "https://www.shopier.com/50665156"
   },
   {
-    "id": "50602543",
-    "title": "Gemini Pro 18 Ay İndirim Bağlantısı",
+    "id": "51025109",
+    "title": "Gemini Pro 18 Ay Kişiye Özel - 5 Davet Alana 1 Adet Canva Pro Hediye",
     "price": "149.90 TL",
-    "url": "https://www.shopier.com/50602543"
+    "url": "https://www.shopier.com/51025109"
   },
   {
     "id": "50594322",
@@ -114,10 +177,11 @@
     "url": "https://www.shopier.com/50576029"
   },
   {
-    "id": "50576030",
+    "id": "51024908",
     "title": "Yemeksepeti İlk Sipariş 450₺'ye 350₺ İndirim Kodu",
-    "price": "50.00 TL",
-    "url": "https://www.shopier.com/50576030"
+    "price": "50,00 TL",
+    "price_num": 50.0,
+    "url": "https://www.shopier.com/51024908"
   },
   {
     "id": "47669117",
@@ -336,10 +400,11 @@
     "url": "https://www.shopier.com/keyvadi/47669496"
   },
   {
-    "id": "47669486",
-    "title": "Trendyol Market Kuponu (800₺/300₺ İndirim)",
-    "price": "49,99 TL",
-    "url": "https://www.shopier.com/keyvadi/47669486"
+    "id": "51024904",
+    "title": "Trendyol Market 800/300 İndirim Kodu",
+    "price": "50,00 TL",
+    "price_num": 50.0,
+    "url": "https://www.shopier.com/51024904"
   },
   {
     "id": "47669482",

@@ -106,9 +106,24 @@ TEXT_ALIASES = {
     "yemek sepeti": "yemeksepeti",
     "yemeksepeti kupon": "yemeksepeti",
     "yemeksepeti 200": "yemeksepeti 200",
+    "360 270": "yemeksepeti 360",
+    "yemeksepeti 360": "yemeksepeti 360",
     "yemeksepeti 450": "yemeksepeti 450",
     "200 200": "yemeksepeti 200",
     "450 350": "yemeksepeti 450",
+    "positive puan": "positive",
+    "positive": "positive",
+    "gastro club": "gastroclub",
+    "gastroclub": "gastroclub",
+    "enterprise": "enterprise",
+    "garenta": "garenta",
+    "enuygun 10": "enuygun plus",
+    "enuygun plus": "enuygun plus",
+    "trendyol go": "trendyol market",
+    "800 300": "trendyol market 800",
+    "750 250": "trendyol yemek 750",
+    "market 800": "trendyol market 800",
+    "yemek 750": "trendyol yemek 750",
     "turna": "turna",
     "turna.com": "turna",
     "ucak bileti": "turna",
@@ -133,9 +148,11 @@ BRAND_PHRASES = (
     "magnific", "zula", "fc 26", "fc26", "codex", "antigravity", "disney", "minecraft",
     "cape", "pelerin", "roblox", "instagram", "takipci", "gmail", "claude",
     "s sport", "yemeksepeti", "turna", "coffy", "cofy", "migros",
-    "tiktak", "flo", "lumberjack", "in street", "enuygun", "tıkla gelsin", "tikla gelsin",
+    "tiktak", "flo", "lumberjack", "in street", "enuygun", "garenta", "enterprise",
+    "positive", "gastroclub", "tıkla gelsin", "tikla gelsin",
     "uber", "tod", "gpt go",
-    "yemeksepeti 200", "yemeksepeti 450",
+    "yemeksepeti 200", "yemeksepeti 360", "yemeksepeti 450", "positive", "gastroclub",
+    "garenta", "enterprise", "enuygun plus", "trendyol market 800", "trendyol yemek 750",
     "baslangic", "populer", "profesyonel", "gelistirici", "isletme", "kurumsal"
 )
 
@@ -159,6 +176,19 @@ FROXY_PRICE_OVERRIDES = {
 # keep bots, automatic replies and Mini App deep-link cards consistent.
 BRAND_PRICE_OVERRIDES = {
     ("keyvadi", "50576030"): "50,00 TL",
+    ("keyvadi", "47669486"): "50,00 TL",
+    ("keyvadi", "51024906"): "45,00 TL",
+    ("keyvadi", "51024908"): "50,00 TL",
+    ("keyvadi", "51024903"): "30,00 TL",
+    ("keyvadi", "51024902"): "20,00 TL",
+    ("keyvadi", "51024899"): "30,00 TL",
+    ("keyvadi", "51024901"): "20,00 TL",
+    ("keyvadi", "51024900"): "20,00 TL",
+    ("keyvadi", "51024904"): "50,00 TL",
+    ("keyvadi", "51024905"): "50,00 TL",
+    ("keyvadi", "51025109"): "149,90 TL",
+    ("keyvadi", "51051020"): "199,90 TL",
+    ("keyvadi", "51051022"): "499,90 TL",
     ("keyvadi", "50858094"): "80,00 TL",
     ("keyvadi", "50857983"): "150,00 TL",
     ("keyvadi", "50857984"): "100,00 TL",
@@ -175,6 +205,17 @@ BRAND_PRICE_OVERRIDES = {
     ("lisansarena", "la_tiklagelsin_400"): "95,00 TL",
     ("lisansarena", "la_yemeksepeti_500"): "120,00 TL",
     ("lisansarena", "la_yemeksepeti_550"): "90,00 TL",
+    ("lisansarena", "la_yemeksepeti_360"): "55,00 TL",
+    ("lisansarena", "la_yemeksepeti_450"): "60,00 TL",
+    ("lisansarena", "la_positive_110"): "35,00 TL",
+    ("lisansarena", "la_gastroclub_200"): "25,00 TL",
+    ("lisansarena", "la_enterprise_40"): "35,00 TL",
+    ("lisansarena", "la_garenta_40"): "30,00 TL",
+    ("lisansarena", "la_enuygun_plus_10"): "30,00 TL",
+    ("lisansarena", "la_trendyol_market_800"): "60,00 TL",
+    ("lisansarena", "la_trendyol_yemek_750"): "60,00 TL",
+    ("lisansarena", "la_duolingo_super_12_personal"): "249,90 TL",
+    ("lisansarena", "la_adobe_express_12_personal"): "599,90 TL",
     ("lisansarena", "la_trendyol_yemek_200"): "75,00 TL",
     ("lisansarena", "la_uber_70"): "150,00 TL",
     ("lisansarena", "la_uber_1000"): "100,00 TL",
@@ -766,18 +807,18 @@ def resolve_smart_roadmap_reply(message: str, brand: str = "keyvadi") -> str | N
     if re.search(r"\b(kupon|indirim kodu|kuponlar|kodlar)\b", norm):
         return (
             "🎟️ **Güncel İndirim Kuponu & Kod Fırsatlarımız:**\n\n"
-            "1️⃣ **TikTak 1.000 TL Araç Kiralama Kodu** — 30,00 ₺\n"
+            "1️⃣ **Yemeksepeti İlk Sipariş 360/270** — 45,00 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/51024906)\n\n"
+            "2️⃣ **Yemeksepeti İlk Sipariş 450/350** — 50,00 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/51024908)\n\n"
+            "3️⃣ **Trendyol Market 800/300** — 50,00 ₺ | **Trendyol Yemek 750/250** — 50,00 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/51024904)\n\n"
+            "4️⃣ **Positive 2.000 TL'ye 110 TL Puan** — 30,00 ₺ | **GastroClub 200 TL + %20** — 20,00 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/51024903)\n\n"
+            "5️⃣ **Garenta %40** — 20,00 ₺ | **Enterprise %40** — 30,00 ₺ | **ENUYGUN Plus %10** — 20,00 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/51024901)\n\n"
+            "6️⃣ **TikTak 1.000 TL Araç Kiralama Kodu** — 30,00 ₺ | **Coffy 2+1** — 45,00 ₺\n"
             "   👉 [Satın Al](https://www.shopier.com/50641700)\n\n"
-            "2️⃣ **Yemeksepeti 450₺'ye 350₺ İndirim Kodu** — 60,00 ₺\n"
-            "   👉 [Satın Al](https://www.shopier.com/50576030)\n\n"
-            "3️⃣ **Enuygun Otobüs Biletinde 200 TL İndirim** — 20,00 ₺\n"
-            "   👉 [Satın Al](https://www.shopier.com/50641704)\n\n"
-            "4️⃣ **FLO 3.000 TL'ye 800 TL İndirim Çeki** — 20,00 ₺\n"
-            "   👉 [Satın Al](https://www.shopier.com/50641701)\n\n"
-            "5️⃣ **Coffy 2 Kahve Alana 1'i Bedava Kodu** — 45,00 ₺\n"
-            "   👉 [Satın Al](https://www.shopier.com/50594322)\n\n"
-            "6️⃣ **Migros 100 TL Alışveriş Bakiye Kodu** — 50,00 ₺\n"
-            "   👉 [Satın Al](https://www.shopier.com/50594323)\n\n"
             "⚡ Kodlar sepette anında düşer, 7/24 otomatik teslim edilir!\n"
             "🛍️ Tüm Kuponlar: @KeyVadiSatisBot | Canlı Destek: @KeyvadiDestek"
         )
@@ -786,9 +827,13 @@ def resolve_smart_roadmap_reply(message: str, brand: str = "keyvadi") -> str | N
     if re.search(r"\b(yemek|yemek kuponu|restoran)\b", norm):
         return (
             "🍔 **Yemek & Restoran İndirim Kuponları:**\n\n"
-            "1️⃣ **Yemeksepeti 450₺'ye 350₺ İndirim Kodu** — 60,00 ₺\n"
-            "   👉 [Satın Al](https://www.shopier.com/50576030)\n\n"
-            "2️⃣ **Coffy 2 Kahve Alana 1'i Bedava Kodu** — 45,00 ₺\n"
+            "1️⃣ **Yemeksepeti İlk Sipariş 360/270** — 45,00 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/51024906)\n\n"
+            "2️⃣ **Yemeksepeti İlk Sipariş 450/350** — 50,00 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/51024908)\n\n"
+            "3️⃣ **Trendyol Yemek 750/250** — 50,00 ₺ | **GastroClub 200 TL + %20** — 20,00 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/51024905)\n\n"
+            "4️⃣ **Coffy 2 Kahve Alana 1'i Bedava Kodu** — 45,00 ₺\n"
             "   👉 [Satın Al](https://www.shopier.com/50594322)\n\n"
             "⚡ Sepette anında indirim düşer, 7/24 anında teslimattır."
         )
@@ -799,8 +844,8 @@ def resolve_smart_roadmap_reply(message: str, brand: str = "keyvadi") -> str | N
             "🛒 **Süpermarket & Alışveriş Kuponları:**\n\n"
             "1️⃣ **Migros 100 TL Alışveriş Bakiye Kodu** — 50,00 ₺\n"
             "   👉 [Satın Al](https://www.shopier.com/50594323)\n\n"
-            "2️⃣ **Trendyol Market İndirim Kuponu** — 49,90 ₺\n"
-            "   👉 [Satın Al](https://www.shopier.com/47669125)\n\n"
+            "2️⃣ **Trendyol Market 800/300 İndirim Kodu** — 50,00 ₺\n"
+            "   👉 [Satın Al](https://www.shopier.com/51024904)\n\n"
             "⚡ Kasada veya uygulamada anında 100 TL indirim sağlar!"
         )
 
@@ -835,8 +880,10 @@ def resolve_smart_roadmap_reply(message: str, brand: str = "keyvadi") -> str | N
             "• Canva Pro (1 Yıl): 39,90 ₺ | CapCut Pro: 39,90 ₺\n"
             "• Windows 10/11 Pro: 49,90 ₺ | Office 365: 49,90 ₺\n\n"
             "🎟️ **Yemek, Market & Kupon:**\n"
-            "• Yemeksepeti 450/350: 60,00 ₺ | Coffy 2+1: 45,00 ₺\n"
-            "• TikTak 1000 TL: 30,00 ₺ | Enuygun 200 TL: 20,00 ₺\n"
+            "• Yemeksepeti 360/270: 45,00 ₺ | 450/350: 50,00 ₺ | Coffy 2+1: 45,00 ₺\n"
+            "• Trendyol Market 800/300: 50,00 ₺ | Trendyol Yemek 750/250: 50,00 ₺\n"
+            "• Positive 110 TL: 30,00 ₺ | GastroClub: 20,00 ₺ | Enterprise %40: 30,00 ₺\n"
+            "• Garenta %40: 20,00 ₺ | ENUYGUN Plus %10: 20,00 ₺ | TikTak 1000 TL: 30,00 ₺\n"
             "• FLO / Lumberjack / In Street: 20,00 ₺ | Migros: 50,00 ₺\n\n"
             "🛍️ **Tüm 60+ Ürün:** @KeyVadiSatisBot\n"
             "💬 **Canlı Destek:** @KeyvadiDestek"

@@ -1,5 +1,82 @@
 [
   {
+    "id": "51051024",
+    "title": "Adobe Express 12 Ay - Kendi Hesabına Aktivasyon",
+    "price": "599.90 TL",
+    "price_num": 599.9,
+    "url": "https://www.shopier.com/51051024"
+  },
+  {
+    "id": "51051023",
+    "title": "Duolingo Super 12 Ay - Kendi Hesabına Aktivasyon",
+    "price": "249.90 TL",
+    "price_num": 249.9,
+    "url": "https://www.shopier.com/51051023"
+  },
+  {
+    "id": "51024917",
+    "title": "Trendyol Yemek 750/250 İndirim Kodu",
+    "price": "60.00 TL",
+    "price_num": 60.0,
+    "url": "https://www.shopier.com/51024917"
+  },
+  {
+    "id": "51024916",
+    "title": "Trendyol Market 800/300 İndirim Kodu",
+    "price": "60.00 TL",
+    "price_num": 60.0,
+    "url": "https://www.shopier.com/51024916"
+  },
+  {
+    "id": "51024911",
+    "title": "ENUYGUN Trendyol Plus %10 İndirim",
+    "price": "30.00 TL",
+    "price_num": 30.0,
+    "url": "https://www.shopier.com/51024911"
+  },
+  {
+    "id": "51024912",
+    "title": "Garenta %40 Araç Kiralama İndirimi",
+    "price": "30.00 TL",
+    "price_num": 30.0,
+    "url": "https://www.shopier.com/51024912"
+  },
+  {
+    "id": "51024909",
+    "title": "Enterprise %40 Araç Kiralama İndirimi",
+    "price": "35.00 TL",
+    "price_num": 35.0,
+    "url": "https://www.shopier.com/51024909"
+  },
+  {
+    "id": "51024913",
+    "title": "GastroClub 200 TL Hediye + %20 Puan",
+    "price": "25.00 TL",
+    "price_num": 25.0,
+    "url": "https://www.shopier.com/51024913"
+  },
+  {
+    "id": "51024915",
+    "title": "Positive 2.000 TL Alışverişe 110 TL Puan",
+    "price": "35.00 TL",
+    "price_num": 35.0,
+    "url": "https://www.shopier.com/51024915"
+  },
+  {
+    "id": "51024920",
+    "title": "Yemeksepeti İlk Sipariş 450₺'ye 350₺ İndirim Kodu",
+    "price": "60.00 TL",
+    "price_num": 60.0,
+    "url": "https://www.shopier.com/51024920"
+  },
+  {
+    "id": "51024918",
+    "title": "Yemeksepeti İlk Sipariş 360₺'ye 270₺ İndirim Kodu",
+    "price": "55.00 TL",
+    "price_num": 55.0,
+    "url": "https://www.shopier.com/51024918"
+  },
+  {
     "id": "50889443",
     "title": "ChatGPT Plus Ortak Hesap (30 Günlük)",
     "price": "59.90 TL",
@@ -82,19 +159,6 @@
     "title": "Coffy 2 Al 1 Öde Kupon Kodu",
     "price": "55 TL",
     "url": "https://www.shopier.com/50594322"
-  },
-  {
-    "id": "50576030",
-    "title": "Yemeksepeti 450₺'ye 350₺ İndirim Kodu",
-    "price": "70 TL",
-    "url": "https://www.shopier.com/50576030"
-  },
-  {
-    "id": "50602543",
-    "title": "Gemini Pro 18 Aylık Promosyon Linki (5+ Davet Hakkı)",
-    "price": "165 TL",
-    "url": "https://www.shopier.com/50602543",
-    "description": "Kendi kişisel Google hesabınıza tanımlanan 18 aylık resmi Gemini Pro promosyon/indirim bağlantısı. 5 kişiye kadar aile/arkadaş daveti ekleme imkanı, 2TB bulut depolama alanı ve gelişmiş yapay zeka dahildir."
   },
   {
     "id": "49099069",
@@ -371,12 +435,6 @@
     "title": "Migros 100 TL Alışveriş Bakiye Kodu",
     "price": "60 TL",
     "url": "https://www.shopier.com/50857164"
-  },
-  {
-    "id": "la_yemeksepeti_450",
-    "title": "Yemeksepeti 450₺'ye 350₺ İndirim Kodu",
-    "price": "70 TL",
-    "url": "https://www.shopier.com/50857165"
   },
   {
     "id": "la_ig_1000",
