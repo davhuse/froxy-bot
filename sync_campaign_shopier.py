@@ -159,11 +159,12 @@ def _entry(brand: str, key: str, product_id: str, url: str) -> dict:
             "delivery_label": "⚡ Anında Kod Teslimi",
             "max_qty": 1,
         }
-    return {
-        "id": "la_" + key,
-        "title": campaign["title"],
-        "price": price_text(value),
-        "category": campaign["category"],
+        return {
+            "id": "la_" + key,
+            "title": campaign["title"],
+            "price": price_text(value),
+            "price_num": value,
+            "category": campaign["category"],
         "is_vitrin": True,
         "showcase": True,
         "badge": campaign.get("badge", "⚡ Kampanya Kodu"),

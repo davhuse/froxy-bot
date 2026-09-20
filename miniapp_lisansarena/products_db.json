@@ -15,7 +15,8 @@
     "desc": "🎨 Adobe Express 12 aylık kişisel plan aktivasyonu. Üyelik kendi Adobe hesabınıza tanımlanır; ortak hesap değildir.\n\n• Satın alım sonrası Adobe hesabınızın e-posta adresini destek ekibine iletmeniz gerekir.\n• Aktivasyon tamamlandığında Adobe Express premium tasarım araçları 12 ay boyunca hesabınızda kullanılır.\n• Hesap bilgileriniz paylaşılmaz; yalnızca aktivasyon için gerekli e-posta adresi kullanılır.\n• Ürün kişiye özeldir, devredilemez ve ödeme sonrası aktivasyon süreci başlatılır.",
     "shopier_url": "https://www.shopier.com/51051024",
     "shopier_product_id": "51051024",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 599.9
   },
   {
     "id": "la_duolingo_super_12_personal",
@@ -33,7 +34,8 @@
     "desc": "🦉 Duolingo Super 12 aylık kişisel plan aktivasyonu. Üyelik kendi Duolingo hesabınıza tanımlanır; ortak hesap değildir.\n\n• Satın alım sonrası Duolingo hesabınızın e-posta adresini destek ekibine iletmeniz gerekir.\n• Aktivasyon tamamlandığında Super özellikleri 12 ay boyunca hesabınızda kullanılır.\n• Hesap bilgileriniz paylaşılmaz; yalnızca aktivasyon için gerekli e-posta adresi kullanılır.\n• Ürün kişiye özeldir, devredilemez ve ödeme sonrası aktivasyon süreci başlatılır.",
     "shopier_url": "https://www.shopier.com/51051023",
     "shopier_product_id": "51051023",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 249.9
   },
   {
     "id": "la_trendyol_yemek_750",
@@ -51,7 +53,8 @@
     "desc": "🍔 Trendyol Yemek'te 750 TL ve üzeri siparişe 250 TL indirim kodu. Kod tek kullanımlıktır ve kampanya stoklarla sınırlıdır.",
     "shopier_url": "https://www.shopier.com/51024917",
     "shopier_product_id": "51024917",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 60.0
   },
   {
     "id": "la_trendyol_market_800",
@@ -69,7 +72,8 @@
     "desc": "🛒 Trendyol Go/Market'te 800 TL ve üzeri siparişe 300 TL indirim kodu. Kod tek kullanımlıktır ve stoklarla sınırlıdır.",
     "shopier_url": "https://www.shopier.com/51024916",
     "shopier_product_id": "51024916",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 60.0
   },
   {
     "id": "la_enuygun_plus_10",
@@ -87,7 +91,8 @@
     "desc": "✈️ Trendyol Plus üyelerine ENUYGUN.com uçak, otobüs, otel ve araç kiralamalarında %10 indirim. Trendyol Plus > ENUYGUN avantaj sayfasındaki kodu kopyalayın; ENUYGUN hesabınıza giriş yapıp ödeme sayfasındaki İndirim Kodunu Kullan alanına girin.\n\nKampanya 17.07.2026-31.12.2026 tarihleri arasında ENUYGUN web ve mobilde geçerlidir. Kodlar 15.01.2027'ye kadar kullanılmalı, seyahat/konaklama 17.07.2026-31.03.2027 arasında olmalıdır. Maksimum indirim otobüs/otel/araçta 1.500 TL, uçakta 500 TL'dir. Daha önce ENUYGUN'dan satın almamış kullanıcılar yararlanabilir. Kod tek kullanımlık, bölünemez, nakde çevrilemez; iptal/iade kodunu geçersiz kılar. Metro Turizm, Avis, Budget ve Rent Go hariçtir. Stok ve firma koşulları geçerlidir; destek: 0850 333 88 88.",
     "shopier_url": "https://www.shopier.com/51024911",
     "shopier_product_id": "51024911",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 30.0
   },
   {
     "id": "la_garenta_40",
@@ -105,7 +110,8 @@
     "desc": "🚗 Trendyol Plus üyelerine özel Garenta araç kiralamalarında %40 indirim. Kampanya kodunu Trendyol Plus > Garenta avantaj sayfasından kopyalayıp Garenta'da Kampanya Kodu alanına girin; lokasyon/tarih seçip araçta Şimdi Öde ile tamamlayın. Satış ofisi ve 444 5 478 çağrı merkezi üzerinden de kullanılabilir.\n\nKampanya 12.06.2026-31.12.2026 arasında tüm Garenta satış kanallarında, filo ve stoklarla sınırlı geçerlidir. Günlük limit 500 km, aylık limit 4.000 km'dir. Kod tek kullanımlık, tek kiralama içindir; başka indirimlerle birleşmez. Teminat, kiralayanın kendi adına kredi kartından alınır; ehliyette T.C. kimlik numarası bulunmalıdır. Kod Ofiste Öde fiyatına uygulanır. İptal/iade kodu geçersiz kılar. KDV, 7/24 yol yardım, zorunlu trafik sigortası, bakım ve ikame araç dahildir; Garenta genel kiralama koşulları geçerlidir.",
     "shopier_url": "https://www.shopier.com/51024912",
     "shopier_product_id": "51024912",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 30.0
   },
   {
     "id": "la_enterprise_40",
@@ -123,7 +129,8 @@
     "desc": "🚗 Enterprise'dan araç kiralamalarında liste fiyatı üzerinden %40 indirim. Kampanya 31.12.2026 tarihine kadar online kiralamalarda ve tüm ofislerde geçerlidir.\n\n1-30 Eylül örnek kampanyaları: Hyundai Bayon Benzinli Otomatik 2.290 TL ve Volvo XC60 6.990 TL. Adana, Ankara, Antalya, Aydın, Balıkesir, Çanakkale, Denizli, İstanbul, İzmir, Kayseri, Kırıkkale, Kocaeli, Konya, Manisa, Mersin, Muğla, Ordu, Rize, Sakarya, Samsun ve Trabzon ofislerinde geçerlidir; Antalya Belek ve Muğla Fethiye hariçtir.\n\nHer kullanımda yeni şifre gerekir. Diğer kampanyalarla birleşmez, tek seferde en fazla 15 gün kiralanabilir. İndirim yalnız araç kiralamada geçerlidir; ek hizmetleri kapsamaz. Enterprise filo/stokları ve genel kiralama koşulları geçerlidir; uygunluk yoksa muadil grup sunulabilir. Enterprise koşulları önceden bildirmeden değiştirebilir.",
     "shopier_url": "https://www.shopier.com/51024909",
     "shopier_product_id": "51024909",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 35.0
   },
   {
     "id": "la_gastroclub_200",
@@ -141,7 +148,8 @@
     "desc": "🍽️ Hepsiburada Premium'a özel GastroClub üyeliğiyle 1.500'den fazla restoran ve kafede ilk Gastro harcamanıza 200 TL'ye kadar puan, sonraki harcamalarınızda iki ay boyunca %20 puan kazanın.\n\nNasıl kullanılır? GastroClub uygulamasını https://gastroclub.com.tr/apps/gastroclub adresinden indirin, Üye Olmak İstiyorum ile hesap açın ve Hepsiburada Premium'dan aldığınız aktivasyon kodunu girin. Üyelik tamamlanınca cüzdan > Kart Ekle adımından kartınızı ekleyip anlaşmalı restoranda QR ile ödeme yapın.\n\nKampanya koşulları: Üyelik tarihinden itibaren 60 gün ücretsiz üyelik ve ilk üyelikten itibaren 2 ay hizmet bedeli alınmaz. İlk harcama 200 TL altındaysa harcanan tutar, 200 TL ve üzerindeyse 200 TL puan yüklenir. %20 geri kazanım işlem başına 1.000 TL'ye kadar ve en fazla 200 TL'dir. Haklar devredilemez, nakde çevrilemez ve başka tekliflerle birleştirilemez; kullanıcı yalnızca 1 aktivasyon kodu kullanabilir. Kampanya Premium üyelerine özeldir; GastroClub ve Hepsiburada koşulları değiştirme/sonlandırma hakkını saklı tutar.",
     "shopier_url": "https://www.shopier.com/51024913",
     "shopier_product_id": "51024913",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 25.0
   },
   {
     "id": "la_positive_110",
@@ -159,7 +167,8 @@
     "desc": "⛽ Positive kampanyası: 2.000 TL ve üzeri akaryakıt ve/veya otogaz alışverişinizde 110 TL değerinde Positive Puan kazanın. Kampanyadan 2 kez yararlanarak toplam 220 TL puan kazanabilirsiniz.\n\nKampanya uygulama ve kullanıcı uygunluk koşullarına tabidir. Kod, satın alım sonrası otomatik teslim edilir; Positive uygulamasındaki kampanya alanından tanımlanır.",
     "shopier_url": "https://www.shopier.com/51024915",
     "shopier_product_id": "51024915",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 35.0
   },
   {
     "id": "la_yemeksepeti_450",
@@ -177,7 +186,8 @@
     "desc": "🍔 Yemeksepeti ilk siparişe özel 450 TL ve üzeri sepette 350 TL indirim kodu.\n\n• Yalnızca Yemeksepeti'nde daha önce sipariş vermemiş kullanıcılar içindir.\n• İlk siparişinizde, 450 TL ve üzeri sepet tutarında 350 TL indirim sağlar.\n• Ödeme adımındaki kupon alanına girilir; tek kullanımlıktır.\n• Kod satın alım sonrası otomatik teslim edilir. Kampanya koşulları ve stoklarla sınırlıdır.",
     "shopier_url": "https://www.shopier.com/51024920",
     "shopier_product_id": "51024920",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 60.0
   },
   {
     "id": "la_yemeksepeti_360",
@@ -195,7 +205,8 @@
     "desc": "🍔 Yemeksepeti ilk siparişe özel 360 TL ve üzeri sepette 270 TL indirim kodu.\n\n• Yalnızca Yemeksepeti'nde daha önce sipariş vermemiş kullanıcılar içindir.\n• İlk siparişinizde, 360 TL ve üzeri sepet tutarında 270 TL indirim sağlar.\n• Ödeme adımındaki kupon alanına girilir; tek kullanımlıktır.\n• Kod satın alım sonrası otomatik teslim edilir. Kampanya koşulları ve stoklarla sınırlıdır.",
     "shopier_url": "https://www.shopier.com/51024918",
     "shopier_product_id": "51024918",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 55.0
   },
   {
     "id": "la_chatgpt_plus_ortak",
@@ -213,7 +224,8 @@
     "desc": "ChatGPT Plus 30 günlük ortak kullanım hesabı. GPT-4o, DALL-E 3 ve gelişmiş veri analizi özellikleri aktif. 30 gün kesintisiz garanti.",
     "shopier_url": "https://www.shopier.com/50889443",
     "shopier_product_id": "50889443",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 59.9
   },
   {
     "id": "la_flo_800",
@@ -231,7 +243,8 @@
     "desc": "FLO mobil ve web alışverişlerinde 3.000 TL ve üzeri sepetlerde 800 TL indirim sağlayan kupon kodu.",
     "shopier_url": "https://www.shopier.com/50821452",
     "shopier_product_id": "50821452",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 30.0
   },
   {
     "id": "la_turna_600",
@@ -248,7 +261,8 @@
     "warranty": "🛡️ %100 Çalışma Garantili",
     "desc": "Turna.com üzerinden yapılacak uçak bileti alımlarında geçerli 600 TL indirim sağlayan kupon kodu.",
     "shopier_url": "https://www.shopier.com/lisansarena",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 90.0
   },
   {
     "id": "la_tiktak_1000",
@@ -266,7 +280,8 @@
     "desc": "TikTak saatlik veya günlük araç kiralamada geçerli 1.000 TL indirim kodu.",
     "shopier_url": "https://www.shopier.com/50821451",
     "shopier_product_id": "50821451",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 40.0
   },
   {
     "id": "la_gpt_go",
@@ -284,7 +299,8 @@
     "desc": "GPT GO platformunda 3 aylık kullanımda geçerli özel indirim kodu. Gelişmiş yapay zeka modellerine yüksek hızda erişim.",
     "shopier_url": "https://www.shopier.com/50821450",
     "shopier_product_id": "50821450",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 180.0
   },
   {
     "id": "la_tod_taraftar",
@@ -302,7 +318,8 @@
     "desc": "TOD TV (beIN Sports) Süper Lig canlı maç yayınları, derbiler ve spor kanallarını içeren haftalık taraftar paketi kupon kodu.",
     "shopier_url": "https://www.shopier.com/50821449",
     "shopier_product_id": "50821449",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 120.0
   },
   {
     "id": "la_uber_1000",
@@ -320,7 +337,8 @@
     "desc": "Uber üzerinde geçerli 2 adet 500 TL toplam 1.000 TL alt limitsiz indirim kupon kodu.",
     "shopier_url": "https://www.shopier.com/50821448",
     "shopier_product_id": "50821448",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 100.0
   },
   {
     "id": "la_uber_70",
@@ -338,7 +356,8 @@
     "desc": "Uber taksi ve yolculuklarda ilk 2 kullanımda %70 indirim sağlayan promosyon kupon kodu.",
     "shopier_url": "https://www.shopier.com/50821447",
     "shopier_product_id": "50821447",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 150.0
   },
   {
     "id": "la_trendyol_yemek_200",
@@ -356,7 +375,8 @@
     "desc": "Trendyol Yemek siparişlerinde alt limitsiz 200 TL indirim sağlayan özel yemek kupon kodu.",
     "shopier_url": "https://www.shopier.com/50821446",
     "shopier_product_id": "50821446",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 75.0
   },
   {
     "id": "la_yemeksepeti_550",
@@ -374,7 +394,8 @@
     "desc": "Yemeksepeti siparişlerinde geçerli 550 TL ve üzeri siparişlerde 200 TL indirim kodu.",
     "shopier_url": "https://www.shopier.com/50857181",
     "shopier_product_id": "50821445",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 90.0
   },
   {
     "id": "la_yemeksepeti_500",
@@ -392,7 +413,8 @@
     "desc": "Yemeksepeti restoran siparişlerinde 500 TL ve üzeri sepetlerde anında 250 TL indirim uygulayan kupon kodu.",
     "shopier_url": "https://www.shopier.com/50857182",
     "shopier_product_id": "50821444",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 120.0
   },
   {
     "id": "la_tiklagelsin_400",
@@ -410,7 +432,8 @@
     "desc": "Tıkla Gelsin (Burger King, Popeyes, Arby's, Sbarro vb.) uygulamasında 400 TL ve üzeri siparişlerde geçerli 200 TL anında indirim kupon kodu.",
     "shopier_url": "https://www.shopier.com/50821443",
     "shopier_product_id": "50821443",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 95.0
   },
   {
     "id": "la_ssport_1m",
@@ -428,7 +451,8 @@
     "desc": "S Sport Plus 1 Aylık üyelik aktivasyon kodu. Premier Lig, La Liga, EuroLeague, Serie A ve Formula 1 canlı yayınları.",
     "shopier_url": "https://www.shopier.com/50857162",
     "shopier_product_id": "50821367",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 80.0
   },
   {
     "id": "la_migros_100",
@@ -446,7 +470,8 @@
     "desc": "Tüm Migros ve Migros Sanal Market mağazalarında geçerli 100 TL hediye çeki / bakiye kodu.",
     "shopier_url": "https://www.shopier.com/50857164",
     "shopier_product_id": "50821369",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 60.0
   },
   {
     "id": "la_coffy_2al1ode",
@@ -464,7 +489,8 @@
     "desc": "Coffy mobil uygulamasında geçerli 2 kahve alana 1 kahve hediye kupon kodu.",
     "shopier_url": "https://www.shopier.com/50821371",
     "shopier_product_id": "50821371",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 55.0
   },
   {
     "id": "la_gemini_pro_18m",
@@ -482,7 +508,8 @@
     "desc": "Kendi kişisel Google hesabınıza tanımlanan 18 aylık resmi Gemini Pro promosyon/indirim bağlantısı. 5 kişiye kadar aile/arkadaş daveti ekleme imkanı, 2TB bulut depolama alanı ve gelişmiş yapay zeka dahildir. (Sadece promosyon linkidir, davet/ortak hesap değildir).",
     "shopier_url": "https://www.shopier.com/50821375",
     "shopier_product_id": "50821375",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 165.0
   },
   {
     "id": "la_ig_1000",
@@ -500,7 +527,8 @@
     "desc": "Türk & Global karışık kaliteli aktif profiller. Şifre gerekmez, sadece kullanıcı adı yeterlidir. 30 gün telafi garantilidir.",
     "shopier_url": "https://www.shopier.com/50857167",
     "shopier_product_id": "50821377",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 49.9
   },
   {
     "id": "48973858",
@@ -518,7 +546,8 @@
     "desc": "Kendi e-posta adresinize 1 yıllık Canva Pro lisansı tanımlanır. Tüm premium şablonlar, Magic Studio ve 1TB bulut alanı açıktır.",
     "shopier_url": "https://www.shopier.com/50821378",
     "shopier_product_id": "50821378",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 83.99
   },
   {
     "id": "la_netflix_ozel",
@@ -536,7 +565,8 @@
     "desc": "PIN korumalı tamamen size özel profil. 4K Ultra HD ve Spatial Audio desteği. Donma ve kapanma yapmaz.",
     "shopier_url": "https://www.shopier.com/50821379",
     "shopier_product_id": "50821379",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 84.9
   },
   {
     "id": "la_youtube_3m",
@@ -554,7 +584,8 @@
     "desc": "Reklamsız YouTube ve YouTube Music keyfi. Kendi Google hesabınızda geçerlidir. Arka planda oynatma ve çevrimdışı indirme.",
     "shopier_url": "https://www.shopier.com/50857169",
     "shopier_product_id": "50821380",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 39.9
   },
   {
     "id": "la_spotify_3m",
@@ -572,7 +603,8 @@
     "desc": "Kendi hesabınızda reklamsız, yüksek kaliteli ses ve sınırsız şarkı atlama. Çevrimdışı müzik indirme aktif.",
     "shopier_url": "https://www.shopier.com/50821381",
     "shopier_product_id": "50821381",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 19.9
   },
   {
     "id": "la_exxen_3m",
@@ -590,7 +622,8 @@
     "desc": "Exxen tüm dizi, film ve programları reklamsız izleme kodu. Türkiye sunucuları uyumlu anında aktivasyon.",
     "shopier_url": "https://www.shopier.com/50821382",
     "shopier_product_id": "50821382",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 29.9
   },
   {
     "id": "48945492",
@@ -608,7 +641,8 @@
     "desc": "Google Gemini Pro 1.5 Pro modeli ile kendi Gmail hesabınıza 12 aylık Pro erişim tanımlama daveti.",
     "shopier_url": "https://www.shopier.com/50821386",
     "shopier_product_id": "50821386",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 99.99
   },
   {
     "id": "48945487",
@@ -626,7 +660,8 @@
     "desc": "Google'ın en gelişmiş Gemini Ultra ve 2M Context Penceresi desteği. 2TB Google One Cloud alanı dahildir.",
     "shopier_url": "https://www.shopier.com/50821390",
     "shopier_product_id": "50821390",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 419.99
   },
   {
     "id": "la_capcut_kisisel",
@@ -644,7 +679,8 @@
     "desc": "PC ve Mobilde tüm premium AI efektleri, otomatik altyazı, 4K 60FPS export ve yeşil ekran araçları.",
     "shopier_url": "https://www.shopier.com/50821394",
     "shopier_product_id": "50821394",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 179.9
   },
   {
     "id": "la_steam_200",
@@ -662,7 +698,8 @@
     "desc": "Steam mağaza değeri 200$ ve üzeri olan garantili AAA / Popüler oyun lisans anahtarı. Sıfır boş key garantisi.",
     "shopier_url": "https://www.shopier.com/50857170",
     "shopier_product_id": "50821395",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 39.9
   },
   {
     "id": "48945475",
@@ -680,7 +717,8 @@
     "desc": "Steam kütüphanesindeki dilediğiniz güncel popüler oyuna tam erişimli hesap. Hikaye modunu sınırsız oynayabilirsiniz.",
     "shopier_url": "https://www.shopier.com/50821396",
     "shopier_product_id": "50821396",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 63.0
   },
   {
     "id": "49099069",
@@ -698,7 +736,8 @@
     "desc": "EA Sports FC 26 tam sürüm hesap. Mail, şifre ve güvenlik bilgileri tamamen üzerinize geçer. Online modlar açıktır.",
     "shopier_url": "https://www.shopier.com/50821398",
     "shopier_product_id": "50821398",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 299.99
   },
   {
     "id": "49099022",
@@ -716,7 +755,8 @@
     "desc": "Silahlı, kasalı veya efsane desenli sürpriz Zula hesabı. Şansınıza göre yüksek rütbeli hesaplar çıkabilir.",
     "shopier_url": "https://www.shopier.com/50821399",
     "shopier_product_id": "50821399",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 5.0
   },
   {
     "id": "49078922",
@@ -734,7 +774,8 @@
     "desc": "Öğretmen yetkili 1 yıllık Canva Pro hesabı. 500 öğrenci ekleme yetkisi ve tam yetkili yönetim paneli.",
     "shopier_url": "https://www.shopier.com/50821400",
     "shopier_product_id": "50821400",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 149.99
   },
   {
     "id": "la_canva_ogrenci",
@@ -752,7 +793,8 @@
     "desc": "1 Yıllık Canva Pro öğrenci lisansı. Kendi hesabınıza bağlanır, tüm Pro şablonlar ve yapay zeka araçları açıktır.",
     "shopier_url": "https://www.shopier.com/50821402",
     "shopier_product_id": "50821402",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 49.9
   },
   {
     "id": "48945675",
@@ -770,7 +812,8 @@
     "desc": "Shell istasyonlarında geçerli 75 TL değerinde ClubSmart akaryakıt puanı yükleme kodu.",
     "shopier_url": "https://www.shopier.com/50821403",
     "shopier_product_id": "50821403",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 14.99
   },
   {
     "id": "48945493",
@@ -788,7 +831,8 @@
     "desc": "Kullanıma hazır, 12 ay aktif Google Gemini Pro hesabı. Tüm Pro yapay zeka özellikleri ve yüksek token limiti açıktır.",
     "shopier_url": "https://www.shopier.com/50821404",
     "shopier_product_id": "50821404",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 209.89
   },
   {
     "id": "48945489",
@@ -806,7 +850,8 @@
     "desc": "İçerisinde 2.500 API / Web kredisi yüklü Gemini Ultra hesabı. Geliştiriciler ve ağır veri analizi için idealdir.",
     "shopier_url": "https://www.shopier.com/50821405",
     "shopier_product_id": "50821405",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 599.99
   },
   {
     "id": "48945485",
@@ -824,7 +869,8 @@
     "desc": "Yapay zeka ile saniyeler içinde büyüleyici sunumlar ve web sayfaları hazırlayan Gamma Pro hesabı.",
     "shopier_url": "https://www.shopier.com/50821406",
     "shopier_product_id": "50821406",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 299.99
   },
   {
     "id": "48945484",
@@ -842,7 +888,8 @@
     "desc": "Sınırsız AI kredi kullanımı, özel font yükleme ve gelişmiş analitik içeren en üst paket Gamma Ultra.",
     "shopier_url": "https://www.shopier.com/50821407",
     "shopier_product_id": "50821407",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 472.49
   },
   {
     "id": "48945482",
@@ -860,7 +907,8 @@
     "desc": "Elon Musk'ın xAI Grok 2 ve Grok 3 modellerine 12 ay kesintisiz sınırsız erişim sağlayan Premium hesap.",
     "shopier_url": "https://www.shopier.com/50821409",
     "shopier_product_id": "50821409",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 2414.99
   },
   {
     "id": "48945481",
@@ -878,7 +926,8 @@
     "desc": "6 Ay boyunca xAI Grok yapay zeka modellerine sansürsüz ve gerçek zamanlı Twitter/X verisiyle erişim.",
     "shopier_url": "https://www.shopier.com/50821410",
     "shopier_product_id": "50821410",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 1574.99
   },
   {
     "id": "48945480",
@@ -896,7 +945,8 @@
     "desc": "3 Aylık Super Grok hesabı. Kod yazma, analiz ve görsel üretimi (Flux 1) özelliklerini içerir.",
     "shopier_url": "https://www.shopier.com/50821411",
     "shopier_product_id": "50821411",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 997.49
   },
   {
     "id": "48945476",
@@ -914,7 +964,8 @@
     "desc": "1 Aylık Super Grok hesabı. Gerçek zamanlı haber analizi ve sınırsız sorgulama imkanı.",
     "shopier_url": "https://www.shopier.com/50821412",
     "shopier_product_id": "50821412",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 472.49
   },
   {
     "id": "48901878",
@@ -932,7 +983,8 @@
     "desc": "2020-2023 arası açılmış, temiz +1 Amerika numaralı eski tarihli Telegram hesabı. Reklam ve kanal yönetimi için ban riski minimumdur.",
     "shopier_url": "https://www.shopier.com/50821413",
     "shopier_product_id": "50821413",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 149.9
   },
   {
     "id": "48901877",
@@ -950,7 +1002,8 @@
     "desc": "GPT-4o, Claude 3.5 Sonnet ve Sonar modellerine sınırsız erişim. Akademik ve profesyonel araştırmalar için 1 numara.",
     "shopier_url": "https://www.shopier.com/50821414",
     "shopier_product_id": "50821414",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 119.9
   },
   {
     "id": "48901876",
@@ -968,7 +1021,8 @@
     "desc": "Sınırsız can, reklamsız öğrenme ve hata alıştırmaları. İstediğiniz dilde kesintisiz pratik yapın.",
     "shopier_url": "https://www.shopier.com/50821415",
     "shopier_product_id": "50821415",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 49.9
   },
   {
     "id": "48901875",
@@ -986,7 +1040,8 @@
     "desc": "Dünyanın en iyi yapay zeka çeviri motoru DeepL Pro. Sınırsız metin ve tam doküman (PDF, Word) çevirisi.",
     "shopier_url": "https://www.shopier.com/50821416",
     "shopier_product_id": "50821416",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 59.9
   },
   {
     "id": "48901874",
@@ -1004,7 +1059,8 @@
     "desc": "Ekonomik DeepL Pro ortak hesabı. Hızlı ve doğal dille profesyonel makale ve metin çevirisi.",
     "shopier_url": "https://www.shopier.com/50821417",
     "shopier_product_id": "50821417",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 29.9
   },
   {
     "id": "48901873",
@@ -1022,7 +1078,8 @@
     "desc": "Milyonlarca e-kitap, sesli kitap, akademik makale ve podcast'e sınırsız erişim sağlayan Scribd hesabı.",
     "shopier_url": "https://www.shopier.com/50821418",
     "shopier_product_id": "50821418",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 59.9
   },
   {
     "id": "48901872",
@@ -1040,7 +1097,8 @@
     "desc": "Ortak kullanımlı Scribd hesabı. E-kitapları ve sunumları sınırsız indirin.",
     "shopier_url": "https://www.shopier.com/50821419",
     "shopier_product_id": "50821419",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 29.9
   },
   {
     "id": "48901869",
@@ -1058,7 +1116,8 @@
     "desc": "Görselleri 8K ultra çözünürlüğe yükselten ve inanılmaz detaylar ekleyen Magnific AI Business hesabı.",
     "shopier_url": "https://www.shopier.com/50821420",
     "shopier_product_id": "50821420",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 49.9
   },
   {
     "id": "48901857",
@@ -1076,7 +1135,8 @@
     "desc": "İngilizce metin ve makaleleriniz için dilbilgisi, tonlama ve yapay zeka yeniden yazım asistanı.",
     "shopier_url": "https://www.shopier.com/50821421",
     "shopier_product_id": "50821421",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 49.9
   },
   {
     "id": "48901856",
@@ -1094,7 +1154,8 @@
     "desc": "Kendi Grammarly hesabınıza 7 günlük Premium davetiye tanımlaması.",
     "shopier_url": "https://www.shopier.com/50821422",
     "shopier_product_id": "50821422",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 79.9
   },
   {
     "id": "48901852",
@@ -1112,7 +1173,8 @@
     "desc": "Sadece size ait PIN korumalı özel profil. En yeni animeleri Japonya yayınıyla eşzamanlı reklamsız izleyin.",
     "shopier_url": "https://www.shopier.com/50821423",
     "shopier_product_id": "50821423",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 59.9
   },
   {
     "id": "48901851",
@@ -1130,7 +1192,8 @@
     "desc": "Ortak kullanımlı 1 aylık Mega Fan Crunchyroll hesabı. Çevrimdışı izleme ve HD anime keyfi.",
     "shopier_url": "https://www.shopier.com/50821424",
     "shopier_product_id": "50821424",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 39.9
   },
   {
     "id": "la_netflix_ortak",
@@ -1148,7 +1211,8 @@
     "desc": "4K Ultra HD kalitesinde ekonomik ortak Netflix hesabı.",
     "shopier_url": "https://www.shopier.com/50821425",
     "shopier_product_id": "50821425",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 59.9
   },
   {
     "id": "la_prime_ozel",
@@ -1166,7 +1230,8 @@
     "desc": "Size özel PIN korumalı profil. The Boys, Rings of Power ve binlerce film 4K HDR kalitesinde.",
     "shopier_url": "https://www.shopier.com/50857171",
     "shopier_product_id": "50821426",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 29.9
   },
   {
     "id": "la_hbo_ozel",
@@ -1184,7 +1249,8 @@
     "desc": "House of the Dragon, Game of Thrones, The Last of Us ve Warner Bros sinema yapımları.",
     "shopier_url": "https://www.shopier.com/50821428",
     "shopier_product_id": "50821428",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 39.9
   },
   {
     "id": "la_spotify_4m",
@@ -1202,7 +1268,8 @@
     "desc": "4 Ay boyunca sınırsız müzik ve podcast deneyimi.",
     "shopier_url": "https://www.shopier.com/50821429",
     "shopier_product_id": "50821429",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 39.9
   },
   {
     "id": "la_steam_45",
@@ -1220,7 +1287,8 @@
     "desc": "Minimum 45$ mağaza değerinde orijinal Steam oyun anahtarı.",
     "shopier_url": "https://www.shopier.com/50857172",
     "shopier_product_id": "50821430",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 19.9
   },
   {
     "id": "la_mc_purple_heart",
@@ -1238,7 +1306,8 @@
     "desc": "Resmi Minecraft Twitch & TikTok 15. Yıl Özel Purple Heart Pelerini etkinleştirme kodu.",
     "shopier_url": "https://www.shopier.com/50821431",
     "shopier_product_id": "50821431",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 315.0
   },
   {
     "id": "la_mc_builder",
@@ -1256,7 +1325,8 @@
     "desc": "Minecraft Builder pelerini aktivasyon kodu.",
     "shopier_url": "https://www.shopier.com/50821432",
     "shopier_product_id": "50821432",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 8.0
   },
   {
     "id": "la_mc_home",
@@ -1274,7 +1344,8 @@
     "desc": "Minecraft Home pelerini aktivasyon kodu.",
     "shopier_url": "https://www.shopier.com/50821433",
     "shopier_product_id": "50821433",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 10.0
   },
   {
     "id": "la_mc_copper",
@@ -1292,7 +1363,8 @@
     "desc": "Minecraft Copper (Bakır) pelerini aktivasyon kodu.",
     "shopier_url": "https://www.shopier.com/50821434",
     "shopier_product_id": "50821434",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 15.0
   },
   {
     "id": "la_roblox_5offsale",
@@ -1310,7 +1382,8 @@
     "desc": "Artık satışta olmayan nadir (Offsale) eşyalara ve kıyafetlere sahip 5 adet Roblox hesap paketi.",
     "shopier_url": "https://www.shopier.com/50821435",
     "shopier_product_id": "50821435",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 29.9
   },
   {
     "id": "la_capcut_ortak",
@@ -1328,7 +1401,8 @@
     "desc": "CapCut Pro ortak hesabı. Tüm Pro filtreler, efektler ve export özellikleri açıktır.",
     "shopier_url": "https://www.shopier.com/50821436",
     "shopier_product_id": "50821436",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 69.9
   },
   {
     "id": "la_envato_kisisel",
@@ -1346,7 +1420,8 @@
     "desc": "Milyonlarca video şablonu, stok müzik, grafik ve WordPress temasına sınırsız indirme erişimi.",
     "shopier_url": "https://www.shopier.com/50821437",
     "shopier_product_id": "50821437",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 89.9
   },
   {
     "id": "la_freepik_kisisel",
@@ -1364,7 +1439,8 @@
     "desc": "Günde 100 Premium indirme hakkı, lisanslı vektörler, PSD'ler ve AI görsel oluşturucu.",
     "shopier_url": "https://www.shopier.com/50821438",
     "shopier_product_id": "50821438",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 89.9
   },
   {
     "id": "la_office365",
@@ -1382,7 +1458,8 @@
     "desc": "Word, Excel, PowerPoint, Outlook ve 1TB / 5TB OneDrive depolama alanı içeren 5 cihaz lisansı.",
     "shopier_url": "https://www.shopier.com/50821439",
     "shopier_product_id": "50821439",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 69.9
   },
   {
     "id": "la_windows_pro",
@@ -1400,7 +1477,8 @@
     "desc": "Format sonrası dahi geçerli, 32/64 Bit tüm dillerle uyumlu orijinal Windows 10 & 11 Pro dijital aktivasyon anahtarı.",
     "shopier_url": "https://www.shopier.com/50821441",
     "shopier_product_id": "50821441",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 49.9
   },
   {
     "id": "la_gmail_garantili",
@@ -1418,6 +1496,7 @@
     "desc": "SMS doğrulaması yapılmış, temiz IP ile açılmış kullanıma hazır kaliteli Gmail hesabı.",
     "shopier_url": "https://www.shopier.com/50821442",
     "shopier_product_id": "50821442",
-    "shopier_owner": "lisansarena"
+    "shopier_owner": "lisansarena",
+    "price_num": 49.9
   }
 ]
