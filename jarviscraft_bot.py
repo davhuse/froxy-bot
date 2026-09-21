@@ -18,7 +18,7 @@ logger = logging.getLogger("JarvisCraftBot")
 
 API_ID = int(os.environ.get("TELEGRAM_API_ID", 31076280))
 API_HASH = os.environ.get("TELEGRAM_API_HASH", "7ba4072dcf0a05a7ccf80e570866b6d8")
-BOT_TOKEN = os.environ.get("JARVIS_BOT_TOKEN", "8940174381:AAF9lvAL0GHoA_azbNdbaDBZ_EcLb3KH2SI").strip()
+BOT_TOKEN = os.environ.get("JARVIS_BOT_TOKEN", "8940174381:AAE5M4yFbIZ8F5W8dsINCD3tQipHCYgOlzg").strip()
 
 DATA_DIR = "jarvis_data"
 SESSION_DIR = "sessions"
