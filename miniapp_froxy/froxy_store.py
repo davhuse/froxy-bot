@@ -282,6 +282,7 @@ class FroxyStore:
             "last_name": str(p.get("last_name") or ""),
             "wallet_kurus": 0,
             "ai_credits": 0,
+            "unlimited_quota": False,
             "quota_day": _quota_day(),
             "free_text_used": 0,
             "free_image_used": 0,
@@ -322,6 +323,25 @@ class FroxyStore:
         user.pop("_memory_version", None)
         return self.public_user(user)
 
+    def set_unlimited_quota(self, user_id: int, enabled: bool = True) -> dict[str, Any]:
+        """Grant or revoke unlimited free text/image quota for one account."""
+        user_id = int(user_id)
+
+        def mutate(user: dict[str, Any]) -> None:
+            user["unlimited_quota"] = bool(enabled)
+            if enabled:
+                user["free_text_used"] = 0
+                user["free_image_used"] = 0
+                user["quota_day"] = _quota_day()
+            user["updated_at"] = _utc_ts()
+
+        user, _ = self._mutate_doc(
+            self._user_doc_id(user_id),
+            lambda: self._default_user(user_id),
+            mutate,
+        )
+        return self.public_user(user)
+
     @staticmethod
     def _reset_quota_if_needed(user: dict[str, Any], now: float | None = None) -> None:
         day = _quota_day(now)
@@ -342,8 +362,12 @@ class FroxyStore:
         safe.pop("chats", None)
         safe.pop("research_watchlists", None)
         safe["wallet_balance"] = round(int(safe.get("wallet_kurus", 0)) / 100, 2)
-        safe["free_text_remaining"] = max(0, 3 - int(safe.get("free_text_used", 0)))
-        safe["free_image_remaining"] = max(0, 1 - int(safe.get("free_image_used", 0)))
+        if safe.get("unlimited_quota"):
+            safe["free_text_remaining"] = None
+            safe["free_image_remaining"] = None
+        else:
+            safe["free_text_remaining"] = max(0, 3 - int(safe.get("free_text_used", 0)))
+            safe["free_image_remaining"] = max(0, 1 - int(safe.get("free_image_used", 0)))
         safe["quota_reset_at"] = _quota_reset_at()
         safe["orders"] = list(reversed(safe.get("orders", [])))
         return safe
@@ -357,10 +381,17 @@ class FroxyStore:
             self._reset_quota_if_needed(user)
             processed = user.setdefault("processed_keys", {})
             if key in processed:
+                if user.get("unlimited_quota"):
+                    return {"text": -1, "image": -1}
                 return {
                     "text": max(0, 3 - int(user.get("free_text_used", 0))),
                     "image": max(0, 1 - int(user.get("free_image_used", 0))),
                 }
+            if user.get("unlimited_quota"):
+                processed[key] = {"created_at": _utc_ts(), "type": "quota"}
+                user["processed_keys"] = _trim_map(processed, MAX_PROCESSED_KEYS)
+                user["updated_at"] = _utc_ts()
+                return {"text": -1, "image": -1}
             field, limit = ("free_text_used", 3) if kind == "text" else ("free_image_used", 1)
             used = int(user.get(field, 0))
             if used >= limit:

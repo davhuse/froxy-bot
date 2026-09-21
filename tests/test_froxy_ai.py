@@ -98,6 +98,19 @@ class FroxyStoreTests(unittest.TestCase):
         self.store.consume_free_quota(101, "text", "q5")
         self.assertEqual(0, self.store.get_user(101)["free_text_remaining"])
 
+    def test_unlimited_quota_bypasses_daily_limits(self):
+        self.store.set_unlimited_quota(102, True)
+        for index in range(12):
+            result = self.store.consume_free_quota(102, "text", f"unlimited-{index}")
+            self.assertEqual(-1, result["text"])
+        for index in range(4):
+            result = self.store.consume_free_quota(102, "image", f"unlimited-image-{index}")
+            self.assertEqual(-1, result["image"])
+        user = self.store.get_user(102)
+        self.assertTrue(user["unlimited_quota"])
+        self.assertIsNone(user["free_text_remaining"])
+        self.assertIsNone(user["free_image_remaining"])
+
     def test_parallel_reservations_cannot_overspend(self):
         self.store.credit_balance(101, ai_credits=100, idempotency_key="fund", title="test")
         outcomes = []

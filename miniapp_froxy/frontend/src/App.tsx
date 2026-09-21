@@ -12,7 +12,7 @@ type Model = {
 }
 type Message = { role:'user'|'assistant'; content:string; sources?:{title:string;url:string;snippet?:string}[]; status?:string }
 type Product = { id:string; title:string; price_num:number; price:string; image:string; badge?:string; store_category?:string; delivery_label?:string; description?:string; max_qty?:number }
-type User = { first_name?:string; wallet_balance?:number; ai_credits?:number; free_text_remaining?:number; free_image_remaining?:number; orders?:Record<string,unknown>[] }
+type User = { first_name?:string; wallet_balance?:number; ai_credits?:number; unlimited_quota?:boolean; free_text_remaining?:number|null; free_image_remaining?:number|null; orders?:Record<string,unknown>[] }
 type ImageModel = { id:string; name:string; provider:string; provider_label?:string; provider_logo?:string; brand?:string; family?:string; active?:boolean; selectable?:boolean; availability?:string; estimated_credits?:number; status_reason?:string }
 
 declare global { interface Window { Telegram?: { WebApp?: any }; SpeechRecognition?: any; webkitSpeechRecognition?: any } }
