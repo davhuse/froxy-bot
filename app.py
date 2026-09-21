@@ -3008,6 +3008,8 @@ class _MountedRootMiddleware:
             environ['PATH_INFO'] = '/'
         return self.wsgi_app(environ, start_response)
 
+@app.route('/jarvis')
+@app.route('/jarvis/')
 @app.route('/jarvis/app')
 def jarvis_miniapp_view():
     return render_template('jarvis_miniapp.html')
