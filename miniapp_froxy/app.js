@@ -38,8 +38,8 @@ function authHeaders() {
 
 // Global App State
 let state = {
-  currentView: 'view-store',
-  selectedModel: { id: '', name: 'Model bekleniyor', providerLogo: 'assets/froxy_logo.png' },
+  currentView: 'view-chat',
+  selectedModel: { id: '', name: 'Modeller yükleniyor', providerLogo: 'assets/froxy_logo.png' },
   models: [],
   providers: {},
   chatId: (window.crypto?.randomUUID?.() || `chat-${Date.now()}`),
@@ -124,7 +124,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     else if (routeParam === 'store' || routeParam === 'magaza') switchView('view-store');
     else if (routeParam === 'image' || routeParam === 'gorsel') switchView('view-image');
     else if (routeParam === 'wallet' || routeParam === 'cuzdan') switchView('view-wallet');
-    else if (routeParam === 'agents' || routeParam === 'ajanlar') switchView('view-agents');
+    else if (routeParam === 'agents' || routeParam === 'ajanlar') switchView('view-chat');
   }
 
   if (urlParams.get('payment') === 'success' || urlParams.get('order') === 'success') {
@@ -232,6 +232,11 @@ function startBackgroundBalanceSync() {
 
 async function loadModels() {
   const menu = document.getElementById('modelDropdownMenu');
+  const countEl = document.getElementById('verifiedModelCount');
+  const title = document.getElementById('selectedModelTitle');
+  const status = document.getElementById('headerModelStatus');
+  const sendButton = document.getElementById('sendMsgBtn');
+  if (title) title.textContent = 'Modeller doğrulanıyor…';
   try {
     const response = await fetch(api('/api/models'), { headers: authHeaders() });
     const data = await response.json();
@@ -239,52 +244,54 @@ async function loadModels() {
     state.models = Array.isArray(data.models) ? data.models : [];
     state.providers = data.providers && typeof data.providers === 'object' ? data.providers : {};
     renderProviderInventory(state.providers);
-    const countEl = document.getElementById('verifiedModelCount');
-    if (countEl) countEl.textContent = `${Number(data.active_model_count || state.models.length).toLocaleString('tr-TR')} aktif model`;
-    if (!state.models.length) throw new Error('Aktif sohbet modeli yok — sağlayıcı API anahtarı bekleniyor');
+    const activeCount = Number(data.active_model_count || state.models.filter(model => model.availability === 'active' || model.selectable).length);
+    const catalogCount = Number(data.catalog_model_count || state.models.filter(model => model.availability === 'catalog_only').length);
+    const unavailableCount = Number(data.unavailable_model_count || state.models.filter(model => model.availability === 'unavailable').length);
+    if (countEl) countEl.textContent = `${activeCount} aktif · ${state.models.length} katalog`;
+    if (status) status.textContent = activeCount ? `⚡ ${activeCount} aktif model` : 'Katalog hazır · sağlayıcı bekleniyor';
     if (menu) {
       const renderRows = (query = '') => {
         const needle = query.trim().toLocaleLowerCase('tr-TR');
-        const filtered = state.models.filter(model => !needle || [model.name, model.provider_label, model.provider].join(' ').toLocaleLowerCase('tr-TR').includes(needle));
-        const rows = filtered.map((model, index) => `
-        <button type="button" class="model-opt ${model.id === state.selectedModel.id || (!state.selectedModel.id && index === 0) ? 'active' : ''}" data-model-id="${escapeHtml(model.id)}">
-          <span class="opt-icon">${renderProviderLogo(model.provider_logo, model.provider_label || model.provider)}</span>
-          <span class="opt-body">
-            <span class="opt-title">${escapeHtml(model.name)} ${model.is_froxy ? '<span class="opt-badge">FROXY</span>' : ''}</span>
-            <span class="opt-desc">${escapeHtml(model.provider_label || model.provider)} · ${model.is_froxy ? 'Günlük ücretsiz kota' : `~${Number(model.estimated_1k_credits || 0).toLocaleString('tr-TR')} kredi`}</span>
-          </span>
-        </button>
-        `).join('');
+        const filtered = state.models.filter(model => !needle || [model.name, model.provider_label, model.provider, model.status_reason].join(' ').toLocaleLowerCase('tr-TR').includes(needle));
+        const rows = filtered.map((model, index) => {
+          const selectable = model.availability === 'active' || model.selectable === true;
+          const stateLabel = selectable ? (model.is_froxy ? 'Günlük ücretsiz kota' : `~${Number(model.estimated_1k_credits || 0).toLocaleString('tr-TR')} kredi`) : (model.status_reason || (model.availability === 'catalog_only' ? 'Anahtar bekleniyor' : 'Geçici olarak kullanılamıyor'));
+          const stateClass = selectable ? '' : ` is-disabled ${model.availability || 'unavailable'}`;
+          return `<button type="button" class="model-opt${stateClass} ${model.id === state.selectedModel.id || (!state.selectedModel.id && selectable && index === 0) ? 'active' : ''}" data-model-id="${escapeHtml(model.id)}" ${selectable ? '' : 'disabled'}>
+            <span class="opt-icon">${renderProviderLogo(model.provider_logo, model.provider_label || model.provider)}</span>
+            <span class="opt-body"><span class="opt-title">${escapeHtml(model.name)} ${model.is_froxy ? '<span class="opt-badge">FROXY</span>' : ''}</span><span class="opt-desc">${escapeHtml(model.provider_label || model.provider)} · ${escapeHtml(stateLabel)}</span></span>
+            <span class="model-status-badge ${selectable ? 'ready' : ''}">${selectable ? 'Hazır' : (model.availability === 'catalog_only' ? 'Katalog' : 'Bekliyor')}</span>
+          </button>`;
+        }).join('');
         const list = menu.querySelector('.model-option-list');
         if (list) list.innerHTML = rows || '<div class="model-empty">Aramana uygun model bulunamadı.</div>';
-        menu.querySelectorAll('[data-model-id]').forEach(button => {
-        button.addEventListener('click', () => {
-          const model = state.models.find(row => row.id === button.dataset.modelId);
-          if (model) selectModel(model.id, model.name, model.provider_logo, model.provider_label);
+        menu.querySelectorAll('[data-model-id]:not(:disabled)').forEach(button => {
+          button.addEventListener('click', () => {
+            const model = state.models.find(row => row.id === button.dataset.modelId);
+            if (model && (model.selectable || model.availability === 'active')) selectModel(model.id, model.name, model.provider_logo, model.provider_label);
+          });
         });
-      });
       };
-      menu.innerHTML = `<div class="model-menu-head"><b>Model seç</b><span>${state.models.length} aktif</span></div><input id="modelSearchInput" class="model-search-input" type="search" autocomplete="off" placeholder="Model veya sağlayıcı ara"><div class="model-option-list"></div>`;
+      menu.innerHTML = `<div class="model-menu-head"><b>Model kataloğu</b><span>${activeCount} aktif · ${catalogCount + unavailableCount} bekliyor</span></div><input id="modelSearchInput" class="model-search-input" type="search" autocomplete="off" placeholder="Model veya sağlayıcı ara"><div class="model-option-list"></div>`;
       menu.querySelector('#modelSearchInput')?.addEventListener('input', event => renderRows(event.target.value));
       renderRows();
     }
-    const first = state.models.find(model => model.id === state.selectedModel.id) || state.models[0];
+    const first = state.models.find(model => model.id === state.selectedModel.id && (model.selectable || model.availability === 'active')) || state.models.find(model => model.selectable || model.availability === 'active');
     if (first) {
       selectModel(first.id, first.name, first.provider_logo, first.provider_label);
-      const sendButton = document.getElementById('sendMsgBtn');
       if (sendButton) sendButton.disabled = false;
+    } else {
+      state.selectedModel = { id: '', name: 'Aktif model bekleniyor', providerLogo: 'assets/froxy_logo.png' };
+      if (title) title.textContent = 'Aktif model bekleniyor';
+      if (sendButton) sendButton.disabled = true;
     }
   } catch (error) {
     state.models = [];
-    state.selectedModel = { id: '', name: 'Model kullanılamıyor', providerLogo: '' };
-    if (menu) menu.innerHTML = '<div class="model-opt"><span class="opt-body"><span class="opt-title">Model kataloğu kullanılamıyor</span><span class="opt-desc">Biraz sonra tekrar deneyin.</span></span></div>';
-    const title = document.getElementById('selectedModelTitle');
-    if (title) title.textContent = 'Model kullanılamıyor';
-    const status = document.getElementById('headerModelStatus');
-    if (status) status.textContent = 'Sağlayıcı bağlantısı bekleniyor';
-    const sendButton = document.getElementById('sendMsgBtn');
+    state.selectedModel = { id: '', name: 'Katalog yeniden deneniyor', providerLogo: 'assets/froxy_logo.png' };
+    if (menu) menu.innerHTML = '<div class="model-loading-state"><b>Katalog yüklenemedi</b><span>Bağlantı kurulunca otomatik yeniden deneyin.</span><button type="button" onclick="loadModels()">Yenile</button></div>';
+    if (title) title.textContent = 'Katalog yeniden deneniyor';
+    if (status) status.textContent = 'Model bağlantısı bekleniyor';
     if (sendButton) sendButton.disabled = true;
-    showToast(error.message || 'Model kataloğu alınamadı', '⚠️');
   }
 }
 
@@ -300,7 +307,7 @@ function renderProviderInventory(providers) {
     const configured = Boolean(row.configured);
     const healthy = Boolean(row.healthy);
     const models = Number(row.models || 0) + Number(row.image_models || 0);
-    const label = configured ? (row.catalog_only ? 'fiyat doğrulaması bekliyor' : healthy ? 'aktif' : 'kontrol bekliyor') : 'anahtar bekliyor';
+    const label = configured ? (row.catalog_only ? 'fiyat doğrulaması bekliyor' : healthy ? 'aktif' : (row.status_reason || 'kontrol bekliyor')) : 'anahtar bekliyor';
     const icon = row.provider_logo ? `<img src="${escapeHtml(row.provider_logo)}" alt="">` : '<span>◇</span>';
     return `<span class="provider-chip ${healthy ? 'is-live' : configured ? 'is-checking' : 'is-off'}">${icon}<b>${escapeHtml(row.provider_label || row.provider)}</b><small>${label}${models ? ` · ${models} model` : ''}</small></span>`;
   }).join('')}</div>`;
@@ -309,6 +316,7 @@ function renderProviderInventory(providers) {
 // VIEW SWITCHING (Navigation Dock)
 function switchView(viewId) {
   triggerHaptic('light');
+  if (viewId === 'view-agents') viewId = 'view-chat';
   state.currentView = viewId;
 
   // Toggle View Containers
@@ -661,21 +669,38 @@ function escapeHtml(text) {
 // -------------------------------------------------------------
 async function loadImageModels() {
   const select = document.getElementById('imageModelSelect');
+  const statusTag = document.getElementById('imageStatusTag');
+  const button = document.getElementById('generateImageBtn');
+  const notice = document.getElementById('imageProviderNotice');
   try {
     const response = await fetch(api('/api/image-models'), { headers: authHeaders() });
     const data = await response.json();
     if (!response.ok || !data.success) throw new Error(data.error || 'Görsel modelleri alınamadı');
     state.imageModels = Array.isArray(data.models) ? data.models : [];
-    const activeModels = state.imageModels.filter(model => model.active);
+    const activeModels = state.imageModels.filter(model => model.active || model.selectable || model.availability === 'active');
     if (select) {
-      select.innerHTML = state.imageModels.map(model => `<option value="${escapeHtml(model.id)}" ${model.active ? '' : 'disabled'}>${model.active ? '' : '⏳ '}${escapeHtml(model.name)} · ${model.active ? `~${Number(model.estimated_credits || 0).toLocaleString('tr-TR')} kredi` : 'API anahtarı bekleniyor'}</option>`).join('') || '<option value="">Görsel modelleri tanımlı değil</option>';
+      select.innerHTML = state.imageModels.map(model => {
+        const active = model.active || model.selectable || model.availability === 'active';
+        const reason = model.status_reason || (model.availability === 'catalog_only' ? 'API anahtarı bekleniyor' : 'Geçici olarak kullanılamıyor');
+        return `<option value="${escapeHtml(model.id)}" ${active ? '' : 'disabled'}>${active ? '' : '⏳ '}${escapeHtml(model.name)} · ${active ? `~${Number(model.estimated_credits || 0).toLocaleString('tr-TR')} kredi` : escapeHtml(reason)}</option>`;
+      }).join('') || '<option value="">Görsel modelleri tanımlı değil</option>';
     }
-    if (!activeModels.length) throw new Error(`Görsel sağlayıcısı anahtarı bekleniyor (${Number(data.total_count || state.imageModels.length)} model tanımlı)`);
+    if (!activeModels.length) {
+      if (statusTag) statusTag.textContent = `${Number(data.total_count || state.imageModels.length)} model katalogda · sağlayıcı bekleniyor`;
+      if (button) button.disabled = true;
+      if (notice) notice.innerHTML = 'Görsel modelleri katalogda görünüyor; üretim için doğrulanmış bir görsel API anahtarı bekleniyor. <button type="button" onclick="loadImageModels()">Yenile</button>';
+      state.selectedImageModel = null;
+      return;
+    }
+    if (statusTag) statusTag.textContent = `${activeModels.length} aktif görsel modeli`;
+    if (button) button.disabled = false;
+    if (notice) notice.textContent = `${activeModels.length} görsel modeli kullanıma hazır.`;
     selectImageModel(activeModels[0].id);
   } catch (error) {
     if (select && !state.imageModels.length) select.innerHTML = '<option value="">Görsel sağlayıcısı şu anda kullanılamıyor</option>';
-    const button = document.getElementById('generateImageBtn');
     if (button) button.disabled = true;
+    if (statusTag) statusTag.textContent = 'Görsel sağlayıcısı bekleniyor';
+    if (notice) notice.innerHTML = 'Görsel kataloğu yüklenemedi. <button type="button" onclick="loadImageModels()">Yeniden dene</button>';
   }
 }
 

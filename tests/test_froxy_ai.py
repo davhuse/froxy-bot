@@ -306,12 +306,14 @@ class FroxyApiTests(unittest.TestCase):
         self.assertTrue(model["provider_logo"].endswith("provider_together.svg"))
         self.assertIn("chat", model["capabilities"])
 
-    def test_catalog_does_not_advertise_unavailable_demo_models(self):
+    def test_catalog_keeps_unavailable_models_visible_but_not_selectable(self):
         gateway = FroxyGateway()
         with mock.patch.object(gateway, "providers", return_value=[]):
             catalog = gateway.public_catalog()
-        self.assertEqual([], catalog["models"])
+        self.assertGreater(len(catalog["models"]), 0)
         self.assertEqual(0, catalog["active_model_count"])
+        self.assertGreater(catalog["unavailable_model_count"], 0)
+        self.assertTrue(all(row["selectable"] is False for row in catalog["models"]))
 
     def test_catalog_exposes_provider_and_image_inventory_without_credentials(self):
         gateway = FroxyGateway()
@@ -321,6 +323,31 @@ class FroxyApiTests(unittest.TestCase):
         self.assertIn("image_model_count", catalog)
         self.assertGreater(catalog["image_model_count"], 0)
         self.assertEqual(0, catalog["active_image_model_count"])
+
+    def test_catalog_rows_expose_explicit_availability_contract(self):
+        gateway = FroxyGateway()
+        with mock.patch.object(gateway, "providers", return_value=[]):
+            row = gateway.public_catalog()["models"][0]
+        self.assertIn(row["availability"], {"active", "catalog_only", "unavailable"})
+        self.assertIn("selectable", row)
+        self.assertIn("status_reason", row)
+
+    def test_image_catalog_rows_expose_explicit_availability_contract(self):
+        gateway = FroxyGateway()
+        with mock.patch.dict(os.environ, {
+            "OPENAI_IMAGE_KEYS": "", "OPENAI_IMAGE_KEY": "", "OPENAI_API_KEY": "",
+            "TOGETHER_API_KEYS": "", "TOGETHER_API_KEY": "", "CLOUDFLARE_ACCOUNT_ID": "",
+            "CLOUDFLARE_API_TOKEN": "", "RUNWARE_API_KEYS": "", "RUNWARE_API_KEY": "",
+            "POLLINATIONS_API_KEYS": "", "POLLINATIONS_API_KEY": "", "POLLINATIONS_KEY": "",
+            "AIMLAPI_KEY": "", "STABILITY_API_KEYS": "", "STABILITY_API_KEY": "",
+            "GEMINI_API_KEYS": "", "GEMINI_API_KEY": "", "GOOGLE_API_KEY": "",
+            "EVOLINK_API_KEYS": "", "EVOLINK_API_KEY": "", "IMAGEGPT_API_KEY": "",
+            "MODAL_IMAGE_ENDPOINT": "", "MODAL_IMAGE_AUTH_TOKEN": "", "MODAL_AUTH_TOKEN": "",
+        }, clear=False):
+            row = gateway.image_models()[0]
+        self.assertEqual("catalog_only", row["availability"])
+        self.assertFalse(row["selectable"])
+        self.assertIn("status_reason", row)
 
     def test_unpriced_provider_is_catalog_only_not_active(self):
         gateway = FroxyGateway()

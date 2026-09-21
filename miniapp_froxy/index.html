@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Froxy AI | Yapay Zeka Asistanı & Lisans Hub</title>
+  <title>Froxy | AI çalışma alanı</title>
   <link rel="icon" href="assets/froxy_logo.png">
   
   <!-- Telegram WebApp SDK -->
@@ -15,7 +15,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
   
   <!-- Main Stylesheet -->
-  <link rel="stylesheet" href="style.css?v=20260903_2100">
+  <link rel="stylesheet" href="style.css?v=20260921_1">
 </head>
 <body>
   <!-- Ambient Glow Beams -->
@@ -75,7 +75,7 @@
       <!-- ========================================== -->
       <!-- VIEW 1: 🧠 FROXY AI ASİSTANI (CHAT & PLAYGROUND) -->
       <!-- ========================================== -->
-      <section id="view-chat" class="app-view">
+      <section id="view-chat" class="app-view active">
         <div class="chat-session-bar">
           <button type="button" class="chat-session-btn" onclick="openChatHistory()" aria-label="Sohbet geçmişini aç">
             <span>◷</span><b>Geçmiş</b><small id="chatHistoryCount">0</small>
@@ -146,6 +146,16 @@
               <button class="quick-prompt-btn" onclick="injectPrompt('Web sitem için SEO uyumlu başlık ve meta açıklamaları oluştur.')">
                 <span>🔍</span> <b>SEO Optimizasyonu</b>
               </button>
+            </div>
+
+            <div class="ai-tools-panel">
+              <div class="ai-tools-heading"><div><small>AI ARAÇLARI</small><h3>Bir sonraki işi seç</h3></div><span>4 araç</span></div>
+              <div class="ai-tools-grid">
+                <button type="button" class="ai-tool-card" onclick="launchAgent('copywriter')"><span>✍️</span><b>Satış metni</b><small>Reklam ve ürün açıklaması</small></button>
+                <button type="button" class="ai-tool-card" onclick="launchAgent('coder')"><span>💻</span><b>Kod yardımcısı</b><small>Debug ve geliştirme</small></button>
+                <button type="button" class="ai-tool-card" onclick="launchAgent('seo')"><span>🔍</span><b>SEO planı</b><small>Başlık ve içerik fikirleri</small></button>
+                <button type="button" class="ai-tool-card" onclick="launchAgent('finance')"><span>📊</span><b>Analiz</b><small>Pazar ve finans özeti</small></button>
+              </div>
             </div>
           </div>
 
@@ -225,6 +235,7 @@
               <option value="">Aktif görsel modelleri yükleniyor…</option>
             </select>
           </div>
+          <div id="imageProviderNotice" class="image-provider-notice" role="status">Görsel sağlayıcıları kontrol ediliyor…</div>
 
           <label class="studio-label">Görsel İstemi (Prompt)</label>
           <div class="prompt-input-wrap">
@@ -291,7 +302,7 @@
       <!-- ========================================== -->
       <!-- VIEW 3: 🛍️ FROXY MAĞAZA (LİSANSLAR & KREDİLER) -->
       <!-- ========================================== -->
-      <section id="view-store" class="app-view active">
+      <section id="view-store" class="app-view">
         <div class="view-header-card store-hero-card">
           <div class="store-hero-badge">⚡ SHOPIER 3D & ŞEFFAF TESLİMAT SÜRECİ</div>
           <h2 class="store-hero-title">Froxy Lisans & Kredi Mağazası</h2>
@@ -323,7 +334,7 @@
       <!-- ========================================== -->
       <!-- VIEW 4: 🤖 AI AJANLAR & UZMAN ARAÇLAR -->
       <!-- ========================================== -->
-      <section id="view-agents" class="app-view">
+      <section id="view-agents" class="app-view legacy-agents-view">
         <div class="view-header-card">
           <div class="view-header-title">
             <span class="header-icon-badge">⚡</span>
@@ -447,12 +458,12 @@
 
     </main>
 
-    <nav class="bottom-dock">
+    <nav class="bottom-dock" aria-label="Ana gezinme">
       <button class="dock-item" data-view="view-chat" onclick="switchView('view-chat')">
         <div class="dock-icon">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         </div>
-        <span class="dock-label">Asistan</span>
+        <span class="dock-label">AI</span>
       </button>
 
       <button class="dock-item" data-view="view-image" onclick="switchView('view-image')">
@@ -462,14 +473,15 @@
         <span class="dock-label">Görsel</span>
       </button>
 
-      <button class="dock-item dock-store-pulse active" data-view="view-store" onclick="switchView('view-store')">
+      <button class="dock-item dock-store-pulse" data-view="view-store" onclick="switchView('view-store')">
         <div class="dock-icon-circle">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
         </div>
         <span class="dock-label">Mağaza</span>
       </button>
 
-      <button class="dock-item" data-view="view-agents" onclick="switchView('view-agents')">
+      <!-- Agents are available from the AI tools panel; keep the bottom nav focused. -->
+      <button class="dock-item legacy-agents-nav" data-view="view-agents" onclick="switchView('view-chat')" aria-hidden="true" tabindex="-1">
         <div class="dock-icon">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2v4"/><path d="m4.93 4.93 2.83 2.83"/><path d="M2 12h4"/><path d="m4.93 19.07 2.83-2.83"/><path d="M12 22v-4"/><path d="m19.07 19.07-2.83-2.83"/><path d="M22 12h-4"/><path d="m19.07 4.93-2.83 2.83"/></svg>
         </div>
@@ -480,7 +492,7 @@
         <div class="dock-icon">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
         </div>
-        <span class="dock-label">Cüzdan</span>
+        <span class="dock-label">Hesap</span>
       </button>
     </nav>
 
@@ -511,6 +523,6 @@
   <div id="toastNotification" class="toast-popup"></div>
 
   <!-- Controller Script -->
-  <script src="app.js?v=20260903_2100"></script>
+  <script src="app.js?v=20260921_1"></script>
 </body>
 </html>

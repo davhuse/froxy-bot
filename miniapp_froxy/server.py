@@ -242,7 +242,8 @@ def froxy_health():
         else {"configured": False, "reachable": True, "status": "local_memory"}
     )
     status = "ok" if firestore.get("reachable") else "degraded"
-    providers = gateway.provider_status()
+    catalog = gateway.public_catalog()
+    providers = catalog.get("providers") or gateway.provider_status()
     image_catalog = gateway.image_models()
     return jsonify(
         {
@@ -255,6 +256,10 @@ def froxy_health():
             "active_providers": sum(1 for row in providers.values() if row.get("healthy")),
             "image_model_count": len(image_catalog),
             "active_image_models": sum(1 for row in image_catalog if row.get("active")),
+            "active_model_count": int(catalog.get("active_model_count", 0) or 0),
+            "catalog_model_count": int(catalog.get("catalog_model_count", 0) or 0),
+            "unavailable_model_count": int(catalog.get("unavailable_model_count", 0) or 0),
+            "catalog_cache_age": catalog.get("catalog_cache_age"),
             "providers": providers,
         }
     ), (200 if status == "ok" else 503)
@@ -350,6 +355,8 @@ def image_models():
         "count": len(active),
         "active_count": len(active),
         "total_count": len(models),
+        "catalog_only_count": sum(1 for row in models if row.get("availability") == "catalog_only"),
+        "unavailable_count": sum(1 for row in models if row.get("availability") == "unavailable"),
         "models": models,
     })
 

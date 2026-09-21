@@ -111,7 +111,7 @@ class Provider:
 
 
 class FroxyGateway:
-    REVISION = "2026-09-03.3"
+    REVISION = "2026-09-21.1"
     CATALOG_TTL = 15 * 60
 
     def __init__(self, session: requests.Session | None = None):
@@ -123,6 +123,7 @@ class FroxyGateway:
         self._provider_status: dict[str, dict[str, Any]] = {}
         self._key_indexes: dict[str, int] = {}
         self._runtime_health: dict[str, dict[str, Any]] = {}
+        self._last_catalog_error = ""
 
     def _ordered_keys(self, provider: Provider) -> list[str]:
         keys = provider.keys
@@ -328,7 +329,10 @@ class FroxyGateway:
                 "healthy": False,
                 "configured": bool(provider.key),
                 "models": 0,
+                "catalog_only": False,
                 "status": "not_configured" if not provider.key else "checking",
+                "status_reason": "Anahtar bekleniyor" if not provider.key else "Kontrol ediliyor",
+                "last_checked_at": int(time.time()),
             }
             for provider in providers
         }
@@ -341,10 +345,20 @@ class FroxyGateway:
                 statuses[status["provider"]] = status
 
         if not all_models:
-            # A static card is not an active model. Hiding unavailable models
-            # prevents users spending quota/credits on an impossible request.
-            visible: list[dict[str, Any]] = []
-            models_by_id: dict[str, dict[str, Any]] = {}
+            # Keep a useful catalog even while providers are booting, rate
+            # limited, or missing credentials. These rows are deliberately
+            # non-selectable and can never reach the billing/chat path.
+            visible = []
+            for row in self._default_fallback_models():
+                item = dict(row)
+                item.update({
+                    "availability": "unavailable",
+                    "selectable": False,
+                    "active": False,
+                    "status_reason": "Sağlayıcı anahtarı veya katalog yanıtı bekleniyor",
+                })
+                visible.append(item)
+            models_by_id = {m["id"]: dict(m) for m in visible}
             with self._lock:
                 self._catalog = visible
                 self._models = models_by_id
@@ -356,13 +370,54 @@ class FroxyGateway:
         for model in all_models:
             unique[model["id"]] = model
 
+        # Keep well-known models in the public catalog even when a provider did
+        # not return them in this refresh. This makes missing credentials and
+        # provider outages explicit instead of looking like a broken picker.
+        for fallback in self._default_fallback_models():
+            if not fallback.get("is_froxy"):
+                unique.setdefault(fallback["id"], dict(fallback))
+
+        def annotate(row: dict[str, Any]) -> dict[str, Any]:
+            item = dict(row)
+            provider = str(item.get("provider") or "")
+            item.setdefault("name", str(item.get("provider_model_id") or item.get("id") or "Model"))
+            item.setdefault("provider_label", provider.title() or "Sağlayıcı")
+            item.setdefault("provider_logo", PROVIDER_LOGOS.get(provider, ""))
+            item.setdefault("capabilities", ["chat"])
+            status = statuses.get(provider, {})
+            configured = bool(status.get("configured"))
+            healthy = bool(status.get("healthy")) and self._provider_available(provider)
+            if not configured:
+                availability, reason = "unavailable", "Sağlayıcı anahtarı bekleniyor"
+            elif not healthy:
+                availability, reason = "unavailable", "Sağlayıcı şu anda yanıt vermiyor"
+            elif item.get("known_pricing") or item.get("is_free"):
+                availability, reason = "active", "Kullanıma hazır"
+            else:
+                availability, reason = "catalog_only", "Fiyat doğrulaması bekleniyor"
+            item.update({
+                "availability": availability,
+                "selectable": availability == "active",
+                "active": availability == "active",
+                "status_reason": reason,
+            })
+            return item
+
+        annotated = {model_id: annotate(row) for model_id, row in unique.items()}
         aliases = self._build_aliases(list(unique.values()))
-        # Paid models without a reliable price are intentionally withheld. Free
-        # models are reachable through the curated Froxy aliases so their quota
-        # can be controlled consistently.
-        billable = [m for m in unique.values() if m.get("known_pricing") and not m.get("is_free")]
-        visible = aliases + sorted(billable, key=lambda row: (row["provider_label"], row["name"].lower()))
-        models_by_id = {m["id"]: m for m in unique.values()}
+        for alias in aliases:
+            targets = [annotated.get(alias.get("target_public_id"))]
+            targets.extend(annotated.get(target_id) for target_id in alias.get("fallback_targets", []))
+            active_target = next((target for target in targets if target and target.get("availability") == "active"), None)
+            alias.update({
+                "availability": "active" if active_target else "unavailable",
+                "selectable": bool(active_target),
+                "active": bool(active_target),
+                "status_reason": "Kullanıma hazır" if active_target else "Aktif sağlayıcı bekleniyor",
+            })
+
+        visible = aliases + sorted(annotated.values(), key=lambda row: (row["provider_label"], row["name"].lower()))
+        models_by_id = dict(annotated)
         models_by_id.update({m["id"]: m for m in aliases})
         with self._lock:
             self._catalog = visible
@@ -642,11 +697,6 @@ class FroxyGateway:
         rows = self.refresh_catalog()
         public = []
         for row in rows:
-            if row.get("is_froxy"):
-                if not any(self._provider_available(target.get("provider", "")) for target in self._target_candidates(row)):
-                    continue
-            elif not self._provider_available(str(row.get("provider") or "")):
-                continue
             item = {key: value for key, value in row.items() if key not in {
                 "target_public_id", "fallback_targets", "provider_model_id",
                 "prompt_usd_per_token", "completion_usd_per_token", "image_usd",
@@ -657,9 +707,9 @@ class FroxyGateway:
         return {
             "models": public,
             "count": len(public),
-            # This is the only number appropriate for the Mini App: every
-            # listed model is both healthy and selectable at this moment.
-            "active_model_count": len(public),
+            "active_model_count": sum(1 for row in public if row.get("availability") == "active"),
+            "catalog_model_count": sum(1 for row in public if row.get("availability") == "catalog_only"),
+            "unavailable_model_count": sum(1 for row in public if row.get("availability") == "unavailable"),
             "active_provider_count": sum(1 for slug, row in self._provider_status.items() if row.get("healthy") and self._provider_available(slug)),
             # Kept for operational monitoring; this includes provider catalog
             # entries intentionally hidden when their price is not reliable.
@@ -670,13 +720,14 @@ class FroxyGateway:
             "image_model_count": len(self.image_models()),
             "active_image_model_count": sum(1 for row in self.image_models() if row.get("active")),
             "refreshed_at": int(self._refreshed_at),
+            "catalog_cache_age": max(0, int(time.time() - self._refreshed_at)) if self._refreshed_at else None,
         }
 
     def get_model(self, public_id: str) -> dict[str, Any]:
         self.refresh_catalog()
         with self._lock:
             model = self._models.get(str(public_id))
-        if not model:
+        if not model or not model.get("selectable", model.get("availability") == "active"):
             raise GatewayError("Model aktif değil veya fiyatı doğrulanamadı")
         return dict(model)
 
@@ -903,17 +954,33 @@ class FroxyGateway:
             ("evolink-img-doubao-seedream-4.5", "EvoLink Seedream 4.5", "evolink", "doubao-seedream-4.5", 240),
             ("evolink-img-nano-banana-2-lite-beta", "EvoLink Nano Banana 2 Lite", "evolink", "nano-banana-2-lite-beta", 150),
         ]
-        return [{
-            "id": public_id,
-            "name": name,
-            "provider": provider,
-            "provider_label": {"google": "Google", "aimlapi": "AI/ML API", "imagegpt": "ImageGPT"}.get(provider, provider.title()),
-            "provider_logo": PROVIDER_LOGOS.get(provider, ""),
-            "provider_model": model,
-            "capabilities": ["text-to-image"],
-            "estimated_credits": estimated,
-            "active": bool(configured.get(provider) and self._provider_available(provider)),
-        } for public_id, name, provider, model, estimated in definitions]
+        rows = []
+        for public_id, name, provider, model, estimated in definitions:
+            is_configured = bool(configured.get(provider))
+            is_available = bool(is_configured and self._provider_available(provider))
+            runtime = self._runtime_health.get(provider, {})
+            if not is_configured:
+                availability, reason = "catalog_only", "Sağlayıcı anahtarı bekleniyor"
+            elif not is_available:
+                availability, reason = "unavailable", "Sağlayıcı şu anda yanıt vermiyor"
+            else:
+                availability, reason = "active", "Kullanıma hazır"
+            rows.append({
+                "id": public_id,
+                "name": name,
+                "provider": provider,
+                "provider_label": {"google": "Google", "aimlapi": "AI/ML API", "imagegpt": "ImageGPT"}.get(provider, provider.title()),
+                "provider_logo": PROVIDER_LOGOS.get(provider, ""),
+                "provider_model": model,
+                "capabilities": ["text-to-image"],
+                "estimated_credits": estimated,
+                "active": availability == "active",
+                "availability": availability,
+                "selectable": availability == "active",
+                "status_reason": reason,
+                "last_checked_at": runtime.get("last_runtime_at"),
+            })
+        return rows
 
     def get_image_model(self, public_id: str) -> dict[str, Any]:
         model = next((row for row in self.image_models() if row["id"] == str(public_id) and row.get("active")), None)
