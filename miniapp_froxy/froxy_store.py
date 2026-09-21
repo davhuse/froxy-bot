@@ -79,6 +79,12 @@ def _trim_map(data: dict[str, Any], limit: int) -> dict[str, Any]:
     return dict(ordered[:limit])
 
 
+def _env_unlimited_quota(user_id: int | str) -> bool:
+    configured = os.environ.get("FROXY_UNLIMITED_QUOTA_USER_IDS", "")
+    allowed = {part.strip() for part in configured.replace(",", "\n").splitlines() if part.strip()}
+    return str(user_id).strip() in allowed
+
+
 class FroxyStore:
     """Small CAS-based store over the repository's Firestore REST helper."""
 
@@ -303,6 +309,8 @@ class FroxyStore:
 
         def mutate(user: dict[str, Any]) -> None:
             user["id"] = user_id
+            if _env_unlimited_quota(user_id):
+                user["unlimited_quota"] = True
             for key in ("username", "first_name", "last_name"):
                 if profile.get(key) is not None:
                     user[key] = str(profile.get(key) or "")
@@ -362,7 +370,7 @@ class FroxyStore:
         safe.pop("chats", None)
         safe.pop("research_watchlists", None)
         safe["wallet_balance"] = round(int(safe.get("wallet_kurus", 0)) / 100, 2)
-        if safe.get("unlimited_quota"):
+        if safe.get("unlimited_quota") or _env_unlimited_quota(safe.get("id", "")):
             safe["free_text_remaining"] = None
             safe["free_image_remaining"] = None
         else:
@@ -381,13 +389,13 @@ class FroxyStore:
             self._reset_quota_if_needed(user)
             processed = user.setdefault("processed_keys", {})
             if key in processed:
-                if user.get("unlimited_quota"):
+                if user.get("unlimited_quota") or _env_unlimited_quota(user.get("id", "")):
                     return {"text": -1, "image": -1}
                 return {
                     "text": max(0, 3 - int(user.get("free_text_used", 0))),
                     "image": max(0, 1 - int(user.get("free_image_used", 0))),
                 }
-            if user.get("unlimited_quota"):
+            if user.get("unlimited_quota") or _env_unlimited_quota(user.get("id", "")):
                 processed[key] = {"created_at": _utc_ts(), "type": "quota"}
                 user["processed_keys"] = _trim_map(processed, MAX_PROCESSED_KEYS)
                 user["updated_at"] = _utc_ts()
