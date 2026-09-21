@@ -861,6 +861,31 @@ def bot_watchdog(lease_owner=None):
                     pass
                 smm_process = None
 
+            # 6. Check JarvisCraft Bot
+            jarvis_token = (os.environ.get("JARVIS_BOT_TOKEN") or "").strip()
+            if jarvis_token and jarvis_token != "YOUR_TELEGRAM_BOT_TOKEN":
+                jarvis_proc_os = get_process_by_script('jarviscraft_bot.py')
+                if jarvis_proc_os is None:
+                    print("🤖 [Watchdog] JarvisCraft botu aktif değil veya durmuş. Başlatılıyor...")
+                    kill_process_by_script('jarviscraft_bot.py')
+                    file_out = open("jarviscraft_log.txt", 'a', encoding="utf-8", buffering=1)
+                    jarvis_process = subprocess.Popen(
+                        [sys.executable, '-u', 'jarviscraft_bot.py'],
+                        stdout=file_out,
+                        stderr=subprocess.STDOUT,
+                        cwd=base_dir,
+                        creationflags=flags,
+                        env=env,
+                    )
+                    try:
+                        with open("jarviscraft_bot.py.pid", "w") as handle:
+                            handle.write(str(jarvis_process.pid))
+                    except OSError:
+                        pass
+                    time.sleep(1)
+                else:
+                    jarvis_process = jarvis_proc_os
+
         except Exception as e:
             print(f"⚠️ [Watchdog] Genel denetleme hatası: {e}")
             
@@ -2898,6 +2923,10 @@ class _MountedRootMiddleware:
             environ = dict(environ)
             environ['PATH_INFO'] = '/'
         return self.wsgi_app(environ, start_response)
+
+@app.route('/jarvis/app')
+def jarvis_miniapp_view():
+    return render_template('jarvis_miniapp.html')
 
 try:
     from miniapp.server import app as keyvadi_miniapp

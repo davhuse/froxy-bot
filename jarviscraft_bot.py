@@ -3,6 +3,7 @@ import json
 import logging
 import asyncio
 import sys
+import tempfile
 from telethon import TelegramClient, events, Button
 
 if sys.platform.startswith('win'):
@@ -19,7 +20,7 @@ DATA_DIR = "jarvis_data"
 os.makedirs(DATA_DIR, exist_ok=True)
 USERS_FILE = os.path.join(DATA_DIR, "users.json")
 
-# ─── Divider Lines & Decorations ───
+# ─── Divider Lines & Formatting ───
 LINE = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 DOT = "◈"
 
@@ -33,8 +34,21 @@ def load_data():
     return {}
 
 def save_data(data):
-    with open(USERS_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    try:
+        tmp_fd, tmp_path = tempfile.mkstemp(dir=DATA_DIR, prefix="users_", suffix=".tmp")
+        with os.fdopen(tmp_fd, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        if os.path.exists(USERS_FILE):
+            os.replace(tmp_path, USERS_FILE)
+        else:
+            os.rename(tmp_path, USERS_FILE)
+    except Exception as e:
+        logger.error(f"Error saving data: {e}")
+        try:
+            with open(USERS_FILE, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+        except Exception:
+            pass
 
 client = TelegramClient("sessions/jarviscraft_bot", API_ID, API_HASH)
 
@@ -52,17 +66,55 @@ def get_main_menu():
         [Button.inline("🧠  Jarvis AI", b"menu_ai_tools"),
          Button.inline("💎  VIP & Bakiye", b"menu_vip")],
         [Button.inline("👤  Profilim", b"menu_profile"),
-         Button.inline("📱  Web Panel", b"menu_miniapp")],
+         Button.url("📱  Web Panel", APP_URL)],
         [Button.inline("💬  Canlı Destek", b"menu_support")]
     ]
+
+async def render_ad_engine(event, user):
+    is_active = user.get("is_running", False)
+    status = "🟢  AKTİF — Gönderim yapılıyor" if is_active else "🔴  DURDURULDU"
+    interval = user.get('ad_interval', 30)
+    msg_count = len(user.get('ad_messages', []))
+    current_msg = user.get('ad_messages', ['—'])[0] if msg_count > 0 else "—"
+    preview = current_msg[:60] + "..." if len(current_msg) > 60 else current_msg
+
+    msg = (
+        f"           ⚡ **OTO-REKLAM MOTORU**\n"
+        f"{LINE}\n\n"
+        f"**Durum:**  {status}\n"
+        f"**Aralık:**  Her `{interval}` dakikada bir\n"
+        f"**Mesaj:**   {msg_count} adet kayıtlı\n"
+        f"**Gruplar:** 65+ aktif ticaret grubu\n\n"
+        f"📝 **Aktif Metin:**\n"
+        f"`{preview}`\n\n"
+        f"{LINE}"
+    )
+
+    toggle = (
+        Button.inline("⏸  Gönderimi Durdur", b"ad_stop")
+        if is_active else
+        Button.inline("▶️  Gönderimi Başlat", b"ad_start")
+    )
+
+    buttons = [
+        [toggle],
+        [Button.inline("📝 Reklam Metnini Düzenle", b"ad_edit_msg"),
+         Button.inline("⏱ Süre Ayarla", b"ad_set_interval")],
+        [Button.inline("🎯 Hedef Grupları", b"ad_show_groups"),
+         Button.inline("👤 Hesap Ekle", b"ad_add_account")],
+        [Button.inline("◀️  Ana Menü", b"main_menu")]
+    ]
+    await event.edit(msg, buttons=buttons)
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 #  /start  —  Welcome Screen
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-@client.on(events.NewMessage(pattern=r"^/start"))
+@client.on(events.NewMessage(pattern=r"^/start", func=lambda e: e.is_private))
 async def start_handler(event):
     sender = await event.get_sender()
+    if not sender:
+        return
     uid = str(sender.id)
     users = load_data()
     is_new = uid not in users
@@ -72,17 +124,15 @@ async def start_handler(event):
             "username": sender.username,
             "balance": 0.0,
             "vip_until": None,
-            "ad_messages": [],
+            "ad_messages": ["🚀 JarvisCraft ile otomatik reklam gönderimi aktif!"],
             "ad_interval": 30,
-            "is_running": False,
-            "joined_at": str(asyncio.get_event_loop().time())
+            "is_running": False
         }
         save_data(users)
 
     name = sender.first_name or "Kullanıcı"
 
     welcome = (
-        f"{'🎉 Yeni üyeliğiniz aktifleştirildi!' if is_new else ''}\n\n"
         f"                ⚡ **JARVISCRAFT** ⚡\n"
         f"{LINE}\n\n"
         f"Hoş geldiniz, **{name}**.\n\n"
@@ -105,6 +155,8 @@ async def start_handler(event):
 async def callback_handler(event):
     data = event.data.decode("utf-8")
     sender = await event.get_sender()
+    if not sender:
+        return
     uid = str(sender.id)
     users = load_data()
     user = users.get(uid, {})
@@ -122,57 +174,21 @@ async def callback_handler(event):
     #  1.  OTO-REKLAM & MESAJ MOTORU
     # ══════════════════════════════════
     elif data == "menu_ad_engine":
-        is_active = user.get("is_running", False)
-        status = "🟢  AKTİF — Gönderim yapılıyor" if is_active else "🔴  DURDURULDU"
-        interval = user.get('ad_interval', 30)
-        msg_count = len(user.get('ad_messages', []))
-        current_msg = user.get('ad_messages', ['—'])[0] if msg_count > 0 else "—"
-        preview = current_msg[:60] + "..." if len(current_msg) > 60 else current_msg
-
-        msg = (
-            f"           ⚡ **OTO-REKLAM MOTORU**\n"
-            f"{LINE}\n\n"
-            f"**Durum:**  {status}\n"
-            f"**Aralık:**  Her `{interval}` dakikada bir\n"
-            f"**Mesaj:**   {msg_count} adet kayıtlı\n"
-            f"**Gruplar:** 65+ aktif ticaret grubu\n\n"
-            f"📝 **Aktif Metin:**\n"
-            f"`{preview}`\n\n"
-            f"{LINE}"
-        )
-
-        toggle = (
-            Button.inline("⏸  Gönderimi Durdur", b"ad_stop")
-            if is_active else
-            Button.inline("▶️  Gönderimi Başlat", b"ad_start")
-        )
-
-        buttons = [
-            [toggle],
-            [Button.inline("📝 Reklam Metnini Düzenle", b"ad_edit_msg"),
-             Button.inline("⏱ Süre Ayarla", b"ad_set_interval")],
-            [Button.inline("🎯 Hedef Grupları", b"ad_show_groups"),
-             Button.inline("👤 Hesap Ekle", b"ad_add_account")],
-            [Button.inline("◀️  Ana Menü", b"main_menu")]
-        ]
-        await event.edit(msg, buttons=buttons)
+        await render_ad_engine(event, user)
 
     elif data == "ad_start":
         user["is_running"] = True
         users[uid] = user
         save_data(users)
         await event.answer("▶️  Otomatik gönderim başlatıldı!", alert=True)
-        # Re-render the panel
-        event.data = b"menu_ad_engine"
-        await callback_handler(event)
+        await render_ad_engine(event, user)
 
     elif data == "ad_stop":
         user["is_running"] = False
         users[uid] = user
         save_data(users)
         await event.answer("⏸  Gönderim durduruldu.", alert=True)
-        event.data = b"menu_ad_engine"
-        await callback_handler(event)
+        await render_ad_engine(event, user)
 
     elif data == "ad_edit_msg":
         USER_STATES[uid] = "waiting_ad_message"
@@ -214,8 +230,7 @@ async def callback_handler(event):
         users[uid] = user
         save_data(users)
         await event.answer(f"✅  Aralık {mins} dakika olarak ayarlandı.", alert=True)
-        event.data = b"menu_ad_engine"
-        await callback_handler(event)
+        await render_ad_engine(event, user)
 
     elif data == "ad_show_groups":
         msg = (
@@ -423,8 +438,6 @@ async def callback_handler(event):
             f"mesaj olarak gönderin.\n\n"
             f"Jarvis AI hatayı tespit edip düzeltilmiş\n"
             f"versiyonu sunacaktır.\n\n"
-            f"💡 Hata mesajını da eklemeniz analizi\n"
-            f"hızlandıracaktır.\n\n"
             f"{LINE}",
             buttons=[[Button.inline("❌ İptal", b"menu_ai_tools")]]
         )
@@ -508,27 +521,7 @@ async def callback_handler(event):
         ])
 
     # ══════════════════════════════════
-    #  6.  WEB MİNİ APP
-    # ══════════════════════════════════
-    elif data == "menu_miniapp":
-        msg = (
-            f"           📱 **WEB MİNİ APP PANELİ**\n"
-            f"{LINE}\n\n"
-            f"Telegram içerisinden tam ekran görsel\n"
-            f"web arayüzümüze erişin.\n\n"
-            f"{DOT}  Ürün katalogu & sipariş takibi\n"
-            f"{DOT}  Reklam motoru kontrol paneli\n"
-            f"{DOT}  AI araçları & hesap yönetimi\n\n"
-            f"{LINE}"
-        )
-        buttons = [
-            [Button.url("🌐  Web Paneli Aç", APP_URL)],
-            [Button.inline("◀️  Ana Menü", b"main_menu")]
-        ]
-        await event.edit(msg, buttons=buttons)
-
-    # ══════════════════════════════════
-    #  7.  CANLI DESTEK
+    #  6.  CANLI DESTEK
     # ══════════════════════════════════
     elif data == "menu_support":
         msg = (
@@ -550,9 +543,9 @@ async def callback_handler(event):
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-#  Text Message Handler (State Machine)
+#  Text Message Handler (Private Only)
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-@client.on(events.NewMessage)
+@client.on(events.NewMessage(func=lambda e: e.is_private))
 async def message_handler(event):
     if event.raw_text.startswith("/"):
         return
@@ -592,7 +585,7 @@ async def message_handler(event):
             f"reklam varyasyonu hazırlanıyor."
         )
 
-        await asyncio.sleep(1.5)  # Simulate thinking
+        await asyncio.sleep(1.2)
 
         opt1 = (
             f"🔥 **BÜYÜK FIRSAT!**\n\n"
@@ -633,7 +626,6 @@ async def message_handler(event):
 
     elif state == "waiting_code_debug":
         USER_STATES.pop(uid, None)
-        code_text = event.raw_text
         waiting_msg = await event.respond(
             f"🐛 **Jarvis AI kodu analiz ediyor...**"
         )
@@ -644,10 +636,9 @@ async def message_handler(event):
             f"           🐛 **KOD ANALİZ SONUCU**\n"
             f"{LINE}\n\n"
             f"**Gönderilen kod parçası incelendi.**\n\n"
-            f"💡 Detaylı analiz ve düzeltme önerileri\n"
-            f"için lütfen destek ekibimize ulaşın.\n\n"
-            f"Kodunuz kaydedildi ve teknik ekibimiz\n"
-            f"size en kısa sürede dönecektir.\n\n"
+            f"💡 Kodunuz kaydedildi. Detaylı analiz\n"
+            f"ve özel düzeltme için lütfen destek\n"
+            f"ekibimize ulaşın:\n\n"
             f"👨‍💻 @habil2121\n\n"
             f"{LINE}"
         )
@@ -659,7 +650,6 @@ async def message_handler(event):
     elif state == "waiting_session_string":
         USER_STATES.pop(uid, None)
         session = event.raw_text.strip()
-        # Save the session string for this user
         users = load_data()
         if uid in users:
             users[uid]["session_string"] = session
@@ -672,8 +662,6 @@ async def message_handler(event):
             f"doğrulama sürecine alınmıştır.\n\n"
             f"⏳ Hesap bağlama işlemi genellikle\n"
             f"birkaç dakika içinde tamamlanır.\n\n"
-            f"Durum güncellemesi için profil\n"
-            f"sayfanızı kontrol edebilirsiniz.\n\n"
             f"{LINE}",
             buttons=[
                 [Button.inline("⚡ Oto-Reklam Paneli", b"menu_ad_engine")],
