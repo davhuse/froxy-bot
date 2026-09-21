@@ -844,8 +844,28 @@ async def start_with_retry():
                 )
                 with urllib.request.urlopen(mb_req, timeout=5) as mb_resp:
                     logger.info("Chat menu button successfully synced with Telegram API.")
+
+                cmd_url = f"https://api.telegram.org/bot{BOT_TOKEN}/setMyCommands"
+                cmd_payload = {
+                    "commands": [
+                        {"command": "start", "description": "🚀 Ana Menü ve Başlangıç"},
+                        {"command": "magaza", "description": "🏪 Ürünler ve Satın Alma"},
+                        {"command": "demo", "description": "📦 J.A.R.V.I.S. Demo İndir (PC)"},
+                        {"command": "video", "description": "🎬 Kullanım ve Tanıtım Videosu"},
+                        {"command": "vip", "description": "💎 VIP Üyelik Paketleri"},
+                        {"command": "panel", "description": "⚡ Web Paneli & Mini App"},
+                        {"command": "yardim", "description": "💬 Canlı Destek ve İletişim"}
+                    ]
+                }
+                cmd_req = urllib.request.Request(
+                    cmd_url,
+                    data=json.dumps(cmd_payload).encode("utf-8"),
+                    headers={"Content-Type": "application/json"}
+                )
+                with urllib.request.urlopen(cmd_req, timeout=5) as cmd_resp:
+                    logger.info("Bot commands successfully synced with Telegram API.")
             except Exception as btn_err:
-                logger.warning(f"setChatMenuButton error: {btn_err}")
+                logger.warning(f"setChatMenuButton/setMyCommands error: {btn_err}")
             await client.run_until_disconnected()
         except FloodWaitError as e:
             write_bot_status(
