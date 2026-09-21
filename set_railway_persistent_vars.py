@@ -22,7 +22,10 @@ mutation SetVars($envId: String!, $projId: String!, $svcId: String!, $vars: Envi
 new_vars = {
     'PERSISTENT_DATA_DIR': '/app/data',
     'BLAST_CHECKPOINT_SQLITE_PATH': '/app/data/blast_checkpoint_backup.db',
-    'BLAST_CHECKPOINT_FILE': '/app/data/blast_checkpoint_v3.json'
+    'BLAST_CHECKPOINT_FILE': '/app/data/blast_checkpoint_v3.json',
+    'RENDER_EXTERNAL_URL': 'https://bot-service-production-9d74.up.railway.app',
+    'PUBLIC_BASE_URL': 'https://bot-service-production-9d74.up.railway.app',
+    'LISANSARENA_TOPUP_MEDIA_URL': 'https://bot-service-production-9d74.up.railway.app/la/app/assets/lisansarena_logo.png'
 }
 r = requests.post(url, json={'query': q, 'variables': {'envId': ENV_ID, 'projId': PROJECT_ID, 'svcId': SVC_ID, 'vars': new_vars}}, headers=headers)
 print('Upsert result:', json.dumps(r.json(), indent=2))

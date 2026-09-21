@@ -238,7 +238,14 @@
       await fetchUserProfile();
       
       if (data.success && data.credited_orders && data.credited_orders.length > 0) {
-        window.showToast("🎉 Bakiye yüklemeniz onaylandı ve cüzdanınıza yansıtıldı!");
+        window.currentActiveTopupPid = null;
+        if (topupRedirectModal) topupRedirectModal.classList.remove('active');
+        const first = data.credited_orders[0];
+        if (first.type === 'direct_purchase') {
+          window.showToast("🎉 Siparişiniz onaylandı ve teslim edildi!");
+        } else {
+          window.showToast("🎉 Bakiye yüklemeniz onaylandı ve cüzdanınıza yansıtıldı!");
+        }
       }
 
       if (triggerSuccessOnNewOrder) {
@@ -246,7 +253,9 @@
         if (currentOrders.length > prevOrderCount) {
           const latestOrder = currentOrders[currentOrders.length - 1];
           if (latestOrder && (latestOrder.order_id || '') !== prevLastOrderId) {
-            showPurchaseSuccessModal(latestOrder.title || "Dijital Lisans", latestOrder.subtotal || latestOrder.price);
+            window.currentActiveTopupPid = null;
+            if (topupRedirectModal) topupRedirectModal.classList.remove('active');
+            showPurchaseSuccessModal(latestOrder.title || "Dijital Lisans", latestOrder.subtotal || latestOrder.price || latestOrder.amount);
           }
         }
       }
@@ -711,9 +720,14 @@
       const data = await res.json();
       if (data.success) {
         userProfile.balance = data.new_balance;
+        if (Array.isArray(data.orders)) {
+          userProfile.orders = userProfile.orders || [];
+          userProfile.orders.push(...data.orders);
+        }
         updateUI();
         window.clearFullCart();
         showPurchaseSuccessModal("Sepet Alışverişi", totalCost);
+        syncOrdersSilently(false);
       } else {
         window.showToast(`⚠️ Hata: ${data.error || 'İşlem gerçekleştirilemedi'}`);
       }
@@ -730,9 +744,9 @@
     if (modalImg) modalImg.src = `${product.image}?v=8.0`;
     if (modalTitle) modalTitle.textContent = product.title;
     if (modalPrice) modalPrice.textContent = product.price;
-    if (modalDesc) modalDesc.textContent = product.description || `${product.title} - LisansArena güvencesiyle anında teslimat.`;
+    if (modalDesc) modalDesc.textContent = product.description || product.desc || `${product.title} - LisansArena güvencesiyle anında teslimat.`;
     if (modalBadge) modalBadge.textContent = (product.showcase || product.is_vitrin) ? "💎 VIP Lisans" : "⚡ Orijinal";
-    if (modalShopierLink) modalShopierLink.href = product.url;
+    if (modalShopierLink) modalShopierLink.href = product.url || product.shopier_url || "https://www.shopier.com/LisansArena";
 
     if (modalWalletBuyBtn) {
       modalWalletBuyBtn.innerHTML = `<span>💰 Cüzdan Bakiyesiyle Al (₺${Number(product.price_num || 0).toFixed(2)})</span>`;
@@ -773,9 +787,14 @@
       const data = await res.json();
       if (data.success) {
         userProfile.balance = data.new_balance;
+        if (data.order) {
+          userProfile.orders = userProfile.orders || [];
+          userProfile.orders.push(data.order);
+        }
         updateUI();
         closeProductModal();
         showPurchaseSuccessModal(selectedModalProduct.title, price);
+        syncOrdersSilently(false);
       } else {
         window.showToast(`⚠️ Hata: ${data.error || 'İşlem gerçekleştirilemedi'}`);
       }
@@ -811,6 +830,8 @@
           user_name: userProfile.full_name || `${tgUser.first_name} ${tgUser.last_name}`.trim(),
           username: tgUser.username || "",
           amount: price,
+          product_title: selectedModalProduct.title,
+          product_id: selectedModalProduct.id,
           idempotency_key: `la_buy_${selectedModalProduct.id}_${tgUser.id}_${Date.now()}`
         })
       });

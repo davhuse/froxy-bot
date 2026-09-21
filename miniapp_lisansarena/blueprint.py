@@ -81,12 +81,16 @@ def load_products():
             products = json.load(f)
         for product in products:
             product["price_num"] = product_price_number(product)
+            if not product.get("url") and product.get("shopier_url"):
+                product["url"] = product["shopier_url"]
+            if not product.get("description") and product.get("desc"):
+                product["description"] = product["desc"]
         return products
     return []
 
 
 def product_price_number(product):
-    """Read either numeric price_num or Turkish display prices such as 2.414,99 TL."""
+    """Read either numeric price_num or Turkish display prices such as 2.414,99 TL or 599.90 TL."""
     raw_num = product.get("price_num")
     if raw_num not in (None, ""):
         try:
@@ -94,8 +98,12 @@ def product_price_number(product):
             return round(value, 2) if value > 0 else None
         except (TypeError, ValueError):
             pass
-    raw = str(product.get("price") or "")
-    cleaned = re.sub(r"[^0-9,.-]", "", raw).replace(".", "").replace(",", ".")
+    raw = str(product.get("price") or "").strip()
+    cleaned = re.sub(r"[^0-9,.-]", "", raw)
+    if "," in cleaned and "." in cleaned:
+        cleaned = cleaned.replace(".", "").replace(",", ".")
+    elif "," in cleaned:
+        cleaned = cleaned.replace(",", ".")
     try:
         value = float(cleaned)
         return round(value, 2) if value > 0 else None
@@ -334,7 +342,9 @@ def create_dynamic_topup():
         user_id=user_id,
         user_name=user_name,
         username=username,
-        idempotency_key=str(data.get("idempotency_key", "")).strip()
+        idempotency_key=str(data.get("idempotency_key", "")).strip(),
+        product_title=str(data.get("product_title", "")).strip(),
+        target_product_id=str(data.get("product_id", "")).strip()
     )
     return jsonify(result)
 
@@ -417,7 +427,7 @@ def purchase_product():
                 return jsonify({"success": True, "duplicate": True, "new_balance": user["balance"], "order": existing})
         if user["balance"] < price:
             return jsonify({"success": False, "error": "Yetersiz bakiye"}), 400
-        user["balance"] -= price
+        user["balance"] = round(user["balance"] - price, 2)
         alloc = allocate_license(product.get("title", ""), brand="lisansarena")
         order = {
             "order_id": f"LA-{uuid.uuid4().hex[:12].upper()}",

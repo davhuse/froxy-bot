@@ -13,6 +13,7 @@ import sys
 import json
 import time
 import threading
+import uuid
 import requests
 from pathlib import Path
 
@@ -20,10 +21,87 @@ BASE_DIR = Path(__file__).resolve().parent
 ACTIVE_TOPUPS_FILE = BASE_DIR / "active_topups.json"
 
 LISANSARENA_TOKEN = (os.environ.get("SHOPIER_LISANSARENA_ACCESS_TOKEN") or os.environ.get("LISANSARENA_SHOPIER_BEARER_TOKEN") or "").strip()
-LISANSARENA_TOPUP_MEDIA_URL = os.environ.get(
-    "LISANSARENA_TOPUP_MEDIA_URL",
-    "https://froxy-bot-live-r5se.onrender.com/la/app/assets/lisansarena_logo.png",
-).strip()
+
+def _durable_load_users(users_data_path: Path):
+    try:
+        from .blueprint import load_users
+        return load_users()
+    except Exception:
+        try:
+            from blueprint import load_users
+            return load_users()
+        except Exception:
+            pass
+    if users_data_path.exists():
+        try:
+            with open(users_data_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return {}
+    return {}
+
+def _durable_save_users(users: dict, users_data_path: Path):
+    try:
+        from .blueprint import save_users
+        save_users(users)
+        return
+    except Exception:
+        try:
+            from blueprint import save_users
+            save_users(users)
+            return
+        except Exception:
+            pass
+    try:
+        import firestore_helper
+        firestore_helper.set_document("lisansarena_legacy_users_data", {"users": users})
+    except Exception:
+        pass
+    try:
+        with open(users_data_path, "w", encoding="utf-8") as f:
+            json.dump(users, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
+def get_topup_media_url():
+    base = (
+        os.environ.get("RENDER_EXTERNAL_URL")
+        or os.environ.get("PUBLIC_BASE_URL")
+        or "https://bot-service-production-9d74.up.railway.app"
+    ).rstrip("/")
+    return (os.environ.get("LISANSARENA_TOPUP_MEDIA_URL") or f"{base}/la/app/assets/lisansarena_logo.png").strip()
+
+try:
+    from license_delivery import allocate_license
+except ImportError:
+    try:
+        from ..license_delivery import allocate_license
+    except Exception:
+        def allocate_license(t, brand=None): return {"status": "pending_delivery", "license_key": None}
+
+def _notify_admin_of_shopier_order(user_id, display_name, title, amount, license_key=None):
+    token = os.environ.get("LISANSARENA_BOT_TOKEN", "").strip()
+    admin_id = os.environ.get("TELEGRAM_ADMIN_ID", "8791896048")
+    if not token or not admin_id:
+        return
+    try:
+        key_info = f"\n🔑 **Lisans Kodu:** `{license_key}`" if license_key else "\n⚡ **Teslimat:** Otomatik / Destek Temsilcisi"
+        text = (
+            f"🛒 **[LisansArena] Shopier Üzerinden Yeni İşlem!**\n\n"
+            f"👤 **Müşteri:** {display_name}\n"
+            f"🆔 **Kullanıcı ID:** `{user_id}`\n"
+            f"📦 **İşlem / Ürün:** {title}\n"
+            f"💰 **Tutar:** `₺{float(amount):.2f}` (Shopier 3D ile ödendi)\n"
+            f"{key_info}\n\n"
+            f"*(Sipariş Mini App üzerinden otomatik işlendi.)*"
+        )
+        requests.post(f"https://api.telegram.org/bot{token}/sendMessage", json={
+            "chat_id": int(admin_id),
+            "text": text,
+            "parse_mode": "Markdown"
+        }, timeout=5)
+    except Exception as exc:
+        print(f"[LisansArena Notify Admin] {exc}")
 
 _cleaner_started = False
 _lock = threading.Lock()
@@ -79,7 +157,7 @@ def cleanup_user_previous_topups(user_id: int):
     for pid in pids_to_del:
         cancel_and_delete_topup(pid)
 
-def create_dynamic_shopier_listing(amount: float, user_id: int, user_name: str = "", username: str = "", idempotency_key: str = "") -> dict:
+def create_dynamic_shopier_listing(amount: float, user_id: int, user_name: str = "", username: str = "", idempotency_key: str = "", product_title: str = "", target_product_id: str = "") -> dict:
     """Shopier REST API v1 ile LisansArena için anlık ilan açar."""
     token = (os.environ.get("SHOPIER_LISANSARENA_ACCESS_TOKEN") or os.environ.get("LISANSARENA_SHOPIER_BEARER_TOKEN") or LISANSARENA_TOKEN).strip()
     if not token:
@@ -110,10 +188,17 @@ def create_dynamic_shopier_listing(amount: float, user_id: int, user_name: str =
     display_name = user_name or (f"@{username}" if username else f"Müşteri #{user_id}")
     clean_amount = round(float(amount), 2)
     
+    if product_title:
+        title_str = f"LisansArena — {product_title} ({clean_amount:.2f} TL) - {display_name}"
+        desc_str = f"LisansArena siparişi: {product_title} | Müşteri: {display_name}"
+    else:
+        title_str = f"LisansArena Cüzdan Bakiye Yükleme ({clean_amount:.2f} TL) - {display_name}"
+        desc_str = f"LisansArena özel bakiye yükleme | Müşteri: {display_name}"
+
     payload = {
-        "title": f"LisansArena Cüzdan Bakiye Yükleme ({clean_amount:.2f} TL) - {display_name}",
+        "title": title_str,
         "type": "digital",
-        "description": f"LisansArena özel bakiye yükleme | Müşteri: {display_name}",
+        "description": desc_str,
         "stockQuantity": 1,
         "shippingPayer": "sellerPays",
         "priceData": {
@@ -122,7 +207,7 @@ def create_dynamic_shopier_listing(amount: float, user_id: int, user_name: str =
             "discount": False,
             "shippingPrice": 0.0
         },
-        "media": [{"type": "image", "url": LISANSARENA_TOPUP_MEDIA_URL, "placement": 1}]
+        "media": [{"type": "image", "url": get_topup_media_url(), "placement": 1}]
     }
 
     try:
@@ -139,7 +224,9 @@ def create_dynamic_shopier_listing(amount: float, user_id: int, user_name: str =
                 "created_at": time.time(),
                 "payment_url": pay_url,
                 "status": "pending",
-                "idempotency_key": idempotency_key
+                "idempotency_key": idempotency_key,
+                "product_title": product_title or "",
+                "target_product_id": target_product_id or ""
             }
             save_active_topups(topups)
 
@@ -163,8 +250,23 @@ def create_dynamic_shopier_listing(amount: float, user_id: int, user_name: str =
             "error": str(e)
         }
 
+
 def sweep_orphan_shopier_products():
     """Shopier üzerindeki tüm açık kalmış dinamik bakiye ilanlarını tarar ve süresi dolan veya yetim kalanları siler."""
+    ttl_seconds = int(os.environ.get("LISANSARENA_TOPUP_TTL_SECONDS", "900"))
+    now = time.time()
+
+    # 1. Yerel veritabanındaki süresi dolan pending ilanları derhal sil
+    topups = load_active_topups()
+    expired_pids = []
+    for pid, info in list(topups.items()):
+        if info.get("status") == "pending" and (now - info.get("created_at", now)) > ttl_seconds:
+            expired_pids.append(pid)
+    for pid in expired_pids:
+        print(f"[LisansArena Auto-Cleaner] Süresi dolan ilan siliniyor: {pid}")
+        cancel_and_delete_topup(pid)
+
+    # 2. Shopier API üzerinden de açık bakiye ilanlarını tara (erişim varsa)
     token = (os.environ.get("SHOPIER_LISANSARENA_ACCESS_TOKEN") or os.environ.get("LISANSARENA_SHOPIER_BEARER_TOKEN") or LISANSARENA_TOKEN).strip()
     if not token:
         return
@@ -177,8 +279,6 @@ def sweep_orphan_shopier_products():
         if res.status_code == 200:
             payload = res.json()
             products_list = payload if isinstance(payload, list) else (payload.get("products") or payload.get("data") or [])
-            now = time.time()
-            ttl_seconds = int(os.environ.get("LISANSARENA_TOPUP_TTL_SECONDS", "900"))
             topups = load_active_topups()
             for prod in products_list:
                 title = str(prod.get("title") or "")
@@ -204,7 +304,7 @@ def sweep_orphan_shopier_products():
         print(f"[LisansArena Sweep Error] {e}")
 
 def check_and_sync_shopier_orders(users_data_path: Path):
-    """Gelen Shopier siparişlerini kontrol edip bakiyeyi anında tanımlar ve ilanı siler."""
+    """Gelen Shopier siparişlerini kontrol edip bakiyeyi veya siparişi anında tanımlar ve ilanı siler."""
     token = (os.environ.get("SHOPIER_LISANSARENA_ACCESS_TOKEN") or os.environ.get("LISANSARENA_SHOPIER_BEARER_TOKEN") or LISANSARENA_TOKEN).strip()
     headers = {
         "Authorization": f"Bearer {token}",
@@ -232,35 +332,91 @@ def check_and_sync_shopier_orders(users_data_path: Path):
                                 t_info = topups[pid]
                                 uid = str(t_info["user_id"])
                                 amt = float(t_info["amount"])
+                                p_title = t_info.get("product_title", "").strip()
+                                target_p_id = t_info.get("target_product_id", "").strip()
+                                idem = t_info.get("idempotency_key", "")
+                                shopier_order_id = str(ord_item.get("id") or ord_item.get("orderId") or pid)
 
-                                if users_data_path.exists():
-                                    try:
-                                        with open(users_data_path, "r", encoding="utf-8") as f:
-                                            users = json.load(f)
-                                        if uid in users:
-                                            users[uid]["balance"] = round(users[uid].get("balance", 0.0) + amt, 2)
-                                            users[uid].setdefault("orders", []).append({
-                                                "type": "bakiye_yukleme",
-                                                "order_id": str(ord_item.get("id") or ord_item.get("orderId") or pid),
-                                                "product_id": pid,
-                                                "title": "LisansArena bakiye yükleme",
-                                                "amount": amt,
-                                                "status": "completed",
-                                                "created_at": int(time.time())
-                                            })
-                                            with open(users_data_path, "w", encoding="utf-8") as f:
-                                                json.dump(users, f, ensure_ascii=False, indent=2)
-                                    except Exception as ue:
-                                        print(f"[User Save Error] {ue}")
+                                users = _durable_load_users(users_data_path)
+                                if uid not in users:
+                                    users[uid] = {
+                                        "id": int(uid),
+                                        "username": "",
+                                        "first_name": "Müşteri",
+                                        "last_name": "",
+                                        "full_name": f"Müşteri #{uid}",
+                                        "balance": 0.0,
+                                        "referrals_count": 0,
+                                        "referral_earnings": 0.0,
+                                        "referred_by": None,
+                                        "orders": []
+                                    }
+                                user_obj = users[uid]
+
+                                if p_title:
+                                    # Kartla Direkt Satın Alındı: Lisans ata ve siparişi tamamla
+                                    alloc = allocate_license(p_title, brand="lisansarena")
+                                    order_rec = {
+                                        "order_id": f"LA-SHP-{uuid.uuid4().hex[:8].upper()}",
+                                        "shopier_order_id": shopier_order_id,
+                                        "product_id": target_p_id or pid,
+                                        "title": p_title,
+                                        "price": amt,
+                                        "amount": amt,
+                                        "status": alloc.get("status", "pending_delivery"),
+                                        "license_key": alloc.get("license_key"),
+                                        "delivery_note": alloc.get("delivery_note", "7/24 Teslimat"),
+                                        "support_handle": alloc.get("support_handle", "@LisansArenaOnline"),
+                                        "redeem_url": alloc.get("redeem_url"),
+                                        "activation_guide": alloc.get("activation_guide"),
+                                        "needs_email": alloc.get("needs_email", False),
+                                        "idempotency_key": idem,
+                                        "created_at": int(time.time())
+                                    }
+                                    user_obj.setdefault("orders", []).append(order_rec)
+                                    _notify_admin_of_shopier_order(
+                                        uid, user_obj.get("full_name", f"Müşteri #{uid}"),
+                                        p_title, amt, license_key=alloc.get("license_key")
+                                    )
+                                    credited_orders.append({
+                                        "user_id": uid, "amount": amt, "product_id": pid,
+                                        "type": "direct_purchase", "title": p_title, "order": order_rec
+                                    })
+                                else:
+                                    # Cüzdan Bakiye Yükleme
+                                    user_obj["balance"] = round(user_obj.get("balance", 0.0) + amt, 2)
+                                    order_rec = {
+                                        "type": "bakiye_yukleme",
+                                        "order_id": f"TOPUP-{shopier_order_id}",
+                                        "product_id": pid,
+                                        "title": f"Cüzdan Bakiye Yükleme (₺{amt:.2f})",
+                                        "price": amt,
+                                        "amount": amt,
+                                        "status": "completed",
+                                        "idempotency_key": idem,
+                                        "created_at": int(time.time())
+                                    }
+                                    user_obj.setdefault("orders", []).append(order_rec)
+                                    _notify_admin_of_shopier_order(
+                                        uid, user_obj.get("full_name", f"Müşteri #{uid}"),
+                                        f"Cüzdan Bakiye Yükleme (₺{amt:.2f})", amt, license_key=None
+                                    )
+                                    credited_orders.append({
+                                        "user_id": uid, "amount": amt, "product_id": pid,
+                                        "type": "topup", "title": f"Cüzdan Bakiye Yükleme (₺{amt:.2f})"
+                                    })
+
+                                users[uid] = user_obj
+                                _durable_save_users(users, users_data_path)
 
                                 t_info["status"] = "completed"
                                 topups[pid] = t_info
                                 save_active_topups(topups)
-                                credited_orders.append({"user_id": uid, "amount": amt, "product_id": pid})
 
-                                # Satın alındı, ilanı derhal sil
+                                # Satın alındı, ilanı Shopier'dan derhal sil
                                 try:
                                     requests.delete(f"https://api.shopier.com/v1/products/{pid}", headers=headers, timeout=8)
+                                    print(f"[LisansArena] Sipariş tamamlandı, ilan silindi: {pid}")
                                 except Exception:
                                     pass
         except Exception as e:
