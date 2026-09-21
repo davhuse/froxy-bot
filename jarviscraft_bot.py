@@ -4,7 +4,8 @@ import logging
 import asyncio
 import sys
 import tempfile
-from telethon import TelegramClient, events, Button
+from telethon import TelegramClient, events, Button, functions
+from telethon.errors import UserNotParticipantError
 
 if sys.platform.startswith('win'):
     sys.stdout.reconfigure(encoding='utf-8')
@@ -20,7 +21,14 @@ DATA_DIR = "jarvis_data"
 os.makedirs(DATA_DIR, exist_ok=True)
 USERS_FILE = os.path.join(DATA_DIR, "users.json")
 
-# ─── Divider Lines & Formatting ───
+# ─── Brand & Links ───
+CHANNEL_USERNAME = "JarvisCraftDuyuru"
+CHANNEL_URL = "https://t.me/JarvisCraftDuyuru"
+SUPPORT_USERNAME = "JarvisCraft"
+SUPPORT_URL = "https://t.me/JarvisCraft"
+SHOPIER_URL = "https://www.shopier.com/JarvisStore"
+APP_URL = "https://froxy-bot-1.onrender.com/jarvis/app"
+
 LINE = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 DOT = "◈"
 
@@ -55,9 +63,21 @@ client = TelegramClient("sessions/jarviscraft_bot", API_ID, API_HASH)
 # State tracking for interactive dialogs
 USER_STATES = {}
 
-SHOPIER_URL = "https://www.shopier.com/3051522"
-BOT_URL = "https://t.me/JarvisCraftsBot"
-APP_URL = "https://froxy-bot-1.onrender.com/jarvis/app"
+async def is_user_subscribed(user_id):
+    """Checks if the user has joined the official announcement channel."""
+    try:
+        channel = await client.get_entity(CHANNEL_USERNAME)
+        p = await client(functions.channels.GetParticipantRequest(
+            channel=channel,
+            participant=int(user_id)
+        ))
+        return p is not None
+    except UserNotParticipantError:
+        return False
+    except Exception as e:
+        logger.warning(f"Subscription check exception for {user_id}: {e}")
+        # If bot cannot check (e.g. temporary API limit), allow access
+        return True
 
 def get_main_menu():
     return [
@@ -67,7 +87,14 @@ def get_main_menu():
          Button.inline("💎  VIP & Bakiye", b"menu_vip")],
         [Button.inline("👤  Profilim", b"menu_profile"),
          Button.url("📱  Web Panel", APP_URL)],
-        [Button.inline("💬  Canlı Destek", b"menu_support")]
+        [Button.url("📢  Duyuru Kanalı", CHANNEL_URL),
+         Button.inline("💬  Canlı Destek", b"menu_support")]
+    ]
+
+def get_gatekeeper_menu():
+    return [
+        [Button.url("📢  Duyuru Kanalına Katıl", CHANNEL_URL)],
+        [Button.inline("✅  Katıldım, Doğrula", b"verify_join")]
     ]
 
 async def render_ad_engine(event, user):
@@ -84,8 +111,8 @@ async def render_ad_engine(event, user):
         f"**Durum:**  {status}\n"
         f"**Aralık:**  Her `{interval}` dakikada bir\n"
         f"**Mesaj:**   {msg_count} adet kayıtlı\n"
-        f"**Gruplar:** 65+ aktif ticaret grubu\n\n"
-        f"📝 **Aktif Metin:**\n"
+        f"**Gruplar:** 65+ aktif ticaret & alım-satım grubu\n\n"
+        f"📝 **Aktif Reklam Metni:**\n"
         f"`{preview}`\n\n"
         f"{LINE}"
     )
@@ -100,15 +127,15 @@ async def render_ad_engine(event, user):
         [toggle],
         [Button.inline("📝 Reklam Metnini Düzenle", b"ad_edit_msg"),
          Button.inline("⏱ Süre Ayarla", b"ad_set_interval")],
-        [Button.inline("🎯 Hedef Grupları", b"ad_show_groups"),
-         Button.inline("👤 Hesap Ekle", b"ad_add_account")],
+        [Button.inline("🎯 Hedef Grupları Gör", b"ad_show_groups"),
+         Button.inline("👤 Gönderici Hesap Ekle", b"ad_add_account")],
         [Button.inline("◀️  Ana Menü", b"main_menu")]
     ]
     await event.edit(msg, buttons=buttons)
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-#  /start  —  Welcome Screen
+#  /start  —  Welcome Screen with Gatekeeper
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 @client.on(events.NewMessage(pattern=r"^/start", func=lambda e: e.is_private))
 async def start_handler(event):
@@ -130,8 +157,27 @@ async def start_handler(event):
         }
         save_data(users)
 
-    name = sender.first_name or "Kullanıcı"
+    # 1. Check Channel Subscription (Gatekeeper)
+    is_subbed = await is_user_subscribed(sender.id)
+    if not is_subbed:
+        gate_msg = (
+            f"          ⚡ **JARVISCRAFT'A HOŞ GELDİNİZ** ⚡\n"
+            f"{LINE}\n\n"
+            f"Merhaba **{sender.first_name or 'Değerli Kullanıcı'}**,\n\n"
+            f"JarvisCraft bot ve yazılım ekosistemini kullanabilmek için\n"
+            f"resmi **Duyuru & Güncelleme Kanalımıza** katılmanız gerekmektedir.\n\n"
+            f"📢 **Kanalımızda Neler Var?**\n"
+            f"{DOT}  Satışa sunulan bot ve scriptlerin video demoları\n"
+            f"{DOT}  Açık kaynak Python kodları ve hazır kütüphaneler\n"
+            f"{DOT}  Özel indirim kuponları ve VIP çekilişler\n"
+            f"{DOT}  API ve sistem güncellemeleri\n\n"
+            f"{LINE}\n"
+            f"👇  Aşağıdaki butondan kanala katılın ve ardından **Doğrula**'ya tıklayın:"
+        )
+        await event.respond(gate_msg, buttons=get_gatekeeper_menu())
+        return
 
+    name = sender.first_name or "Kullanıcı"
     welcome = (
         f"                ⚡ **JARVISCRAFT** ⚡\n"
         f"{LINE}\n\n"
@@ -160,6 +206,41 @@ async def callback_handler(event):
     uid = str(sender.id)
     users = load_data()
     user = users.get(uid, {})
+
+    # ── Gatekeeper Verification ──
+    if data == "verify_join":
+        is_subbed = await is_user_subscribed(sender.id)
+        if is_subbed:
+            await event.answer("✅ Doğrulama başarılı! JarvisCraft'a hoş geldiniz.", alert=True)
+            name = sender.first_name or "Kullanıcı"
+            welcome = (
+                f"                ⚡ **JARVISCRAFT** ⚡\n"
+                f"{LINE}\n\n"
+                f"Hoş geldiniz, **{name}**.\n\n"
+                f"JarvisCraft, Telegram'ın en gelişmiş\n"
+                f"**yazılım & otomasyon ekosistemidir.**\n\n"
+                f"{DOT}  **Oto-Reklam Motoru** — 65+ gruba kesintisiz mesaj\n"
+                f"{DOT}  **Kod Mağazası** — Hazır bot & script paketleri\n"
+                f"{DOT}  **AI Araçları** — Yapay zeka destekli üretkenlik\n"
+                f"{DOT}  **VIP Sistem** — Premium özellikler & öncelik\n\n"
+                f"{LINE}\n"
+                f"👇  **İşlem yapmak istediğiniz bölümü seçin:**"
+            )
+            await event.edit(welcome, buttons=get_main_menu())
+        else:
+            await event.answer("❌ Henüz @JarvisCraftDuyuru kanalına katılmadınız! Lütfen önce kanala katılın.", alert=True)
+        return
+
+    # Check subscription for any action
+    if not await is_user_subscribed(sender.id):
+        await event.answer("⚠️ Lütfen önce resmi duyuru kanalımıza katılın!", alert=True)
+        await event.edit(
+            f"          ⚡ **DUYURU KANALINA KATILIN** ⚡\n"
+            f"{LINE}\n\n"
+            f"İşlemlere devam edebilmek için @{CHANNEL_USERNAME} kanalına üye olmanız gerekmektedir.",
+            buttons=get_gatekeeper_menu()
+        )
+        return
 
     # ── Ana Menü ──
     if data == "main_menu":
@@ -261,7 +342,7 @@ async def callback_handler(event):
             f"**2️⃣  Telefon & Kod ile**\n"
             f"Numaranızı girin, gelen SMS/Telegram\n"
             f"kodunu onaylayın.\n\n"
-            f"💬 Kurulum desteği: @habil2121\n\n"
+            f"💬 Kurulum desteği: @{SUPPORT_USERNAME}\n\n"
             f"{LINE}"
         )
         await event.edit(msg, buttons=[
@@ -378,10 +459,11 @@ async def callback_handler(event):
             f"✅ Açık kaynak kod teslimi\n"
             f"✅ Kurulum dokümanı dahil\n"
             f"✅ Shopier 3D Secure güvenli ödeme\n"
-            f"⚡ Ödeme sonrası **anında** dosya teslimi"
+            f"⚡ Ödeme sonrası **anında** teslimat"
         )
         buttons = [
-            [Button.url(f"🛒  Güvenle Satın Al  ·  {p['price']}", SHOPIER_URL)],
+            [Button.url(f"🛒  Shopier ile Satın Al  ·  {p['price']}", SHOPIER_URL)],
+            [Button.url("📹  Demoyu Kanalda İncele", CHANNEL_URL)],
             [Button.inline("◀️ Mağazaya Dön", b"menu_store")]
         ]
         await event.edit(msg, buttons=buttons)
@@ -459,7 +541,7 @@ async def callback_handler(event):
             f"Jarvis AI'ın önerdiği karlı proje fikirleri:\n\n"
             f"{ideas_text}\n\n"
             f"{LINE}\n\n"
-            f"💬 Detaylı proje planı için @habil2121"
+            f"💬 Detaylı proje geliştirme talepleri için @{SUPPORT_USERNAME}"
         )
         await event.edit(msg, buttons=[
             [Button.inline("🔄  Yeni Fikirler Üret", b"ai_project_idea")],
@@ -492,8 +574,8 @@ async def callback_handler(event):
             f"{LINE}"
         )
         buttons = [
-            [Button.url("⭐  Haftalık VIP  ·  150₺", SHOPIER_URL)],
-            [Button.url("🌟  Aylık VIP  ·  350₺", SHOPIER_URL)],
+            [Button.url("⭐  Haftalık VIP Satın Al", SHOPIER_URL)],
+            [Button.url("🌟  Aylık VIP Satın Al", SHOPIER_URL)],
             [Button.inline("◀️  Ana Menü", b"main_menu")]
         ]
         await event.edit(msg, buttons=buttons)
@@ -528,18 +610,20 @@ async def callback_handler(event):
             f"           💬 **CANLI DESTEK & İLETİŞİM**\n"
             f"{LINE}\n\n"
             f"Her türlü teknik soru, özel bot siparişi\n"
-            f"veya ödeme bildirimi için bize ulaşın.\n\n"
-            f"👨‍💻  **Geliştirici:**  @habil2121\n"
-            f"⚡  **Yanıt Süresi:**  5-10 dakika\n"
-            f"🕐  **Çalışma:**  7/24 aktif destek\n\n"
+            f"veya ödeme bildirimi için resmi hesabımıza yazın:\n\n"
+            f"👨‍💻  **Geliştirici & Destek:**  @{SUPPORT_USERNAME}\n"
+            f"🆔  **Destek Hesap ID:**     `8387947754`\n"
+            f"⚡  **Ortalama Yanıt:**       5-10 dakika\n"
+            f"🕐  **Çalışma:**              7/24 aktif destek\n\n"
             f"{LINE}\n\n"
-            f"📧 Özel bot geliştirme talepleri ve\n"
-            f"kurumsal çözümler için iletişime geçin."
+            f"🛒 **Resmi Shopier:**  {SHOPIER_URL}\n"
+            f"📢 **Duyuru Kanalı:**  {CHANNEL_URL}"
         )
-        await event.edit(msg, buttons=[
-            [Button.url("👨‍💻  @habil2121'e Yaz", "https://t.me/habil2121")],
+        buttons = [
+            [Button.url(f"👨‍💻  @{SUPPORT_USERNAME}'a Yaz", SUPPORT_URL)],
             [Button.inline("◀️  Ana Menü", b"main_menu")]
-        ])
+        ]
+        await event.edit(msg, buttons=buttons)
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -592,19 +676,20 @@ async def message_handler(event):
             f"⚡ {product_name}\n"
             f"En uygun fiyat & anında teslimat!\n\n"
             f"✅ %100 Çalışma Garantisi\n"
-            f"🛒 Sipariş: @{client_username or 'JarvisCraftsBot'}"
+            f"🛒 Sipariş: @{SUPPORT_USERNAME}\n"
+            f"📦 Mağaza: {SHOPIER_URL}"
         )
         opt2 = (
             f"🚀 **KALİTE ARAYANLAR İÇİN**\n\n"
             f"🎯 {product_name}\n\n"
             f"💎 Hızlı • Güvenilir • 7/24 Destek\n"
-            f"👇 DM ile hemen sipariş verin!"
+            f"👇 DM ile hemen sipariş verin: @{SUPPORT_USERNAME}"
         )
         opt3 = (
             f"⭐ **ÖZEL İNDİRİM**\n\n"
             f"{product_name}\n\n"
             f"📦 Sınırlı stok — Kaçırmayın!\n"
-            f"💬 Bilgi & Satın Alım → DM"
+            f"💬 Bilgi & Satın Alım → @{SUPPORT_USERNAME}"
         )
 
         result = (
@@ -636,14 +721,13 @@ async def message_handler(event):
             f"           🐛 **KOD ANALİZ SONUCU**\n"
             f"{LINE}\n\n"
             f"**Gönderilen kod parçası incelendi.**\n\n"
-            f"💡 Kodunuz kaydedildi. Detaylı analiz\n"
-            f"ve özel düzeltme için lütfen destek\n"
-            f"ekibimize ulaşın:\n\n"
-            f"👨‍💻 @habil2121\n\n"
+            f"💡 Kodunuz kaydedildi. Özel düzeltme\n"
+            f"ve teknik destek için resmi hesabımıza yazın:\n\n"
+            f"👨‍💻 @{SUPPORT_USERNAME}\n\n"
             f"{LINE}"
         )
         await waiting_msg.edit(result, buttons=[
-            [Button.url("👨‍💻 Destek Ekibi", "https://t.me/habil2121")],
+            [Button.url(f"👨‍💻 @{SUPPORT_USERNAME}'a Yaz", SUPPORT_URL)],
             [Button.inline("◀️ Ana Menü", b"main_menu")]
         ])
 
@@ -662,6 +746,7 @@ async def message_handler(event):
             f"doğrulama sürecine alınmıştır.\n\n"
             f"⏳ Hesap bağlama işlemi genellikle\n"
             f"birkaç dakika içinde tamamlanır.\n\n"
+            f"Destek: @{SUPPORT_USERNAME}\n\n"
             f"{LINE}",
             buttons=[
                 [Button.inline("⚡ Oto-Reklam Paneli", b"menu_ad_engine")],

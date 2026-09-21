@@ -3,29 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>JarvisCraft — AI Bots & Code Ecosystem</title>
+    <title>JarvisCraft — Premium AI & Bot Ecosystem</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
-            --bg-color: #070a13;
-            --surface: rgba(16, 22, 38, 0.72);
-            --surface-hover: rgba(24, 33, 56, 0.88);
+            --bg-base: #060913;
+            --bg-card: rgba(15, 22, 38, 0.78);
+            --bg-card-hover: rgba(22, 32, 56, 0.9);
             --primary: #00f2fe;
-            --primary-end: #4facfe;
+            --primary-gradient: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
             --purple: #8b5cf6;
-            --purple-glow: rgba(139, 92, 246, 0.3);
-            --cyan-glow: rgba(0, 242, 254, 0.25);
+            --purple-gradient: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+            --gold: #fbbf24;
+            --gold-gradient: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+            --success: #10b981;
+            --border: rgba(255, 255, 255, 0.08);
+            --border-hover: rgba(0, 242, 254, 0.35);
             --text-main: #ffffff;
             --text-muted: #94a3b8;
-            --gold: #f59e0b;
-            --gold-end: #fbbf24;
-            --success: #10b981;
-            --danger: #ef4444;
-            --border: rgba(255, 255, 255, 0.08);
-            --border-highlight: rgba(0, 242, 254, 0.35);
             --glass-blur: blur(16px);
         }
 
@@ -38,7 +36,7 @@
 
         body {
             font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-            background-color: var(--bg-color);
+            background-color: var(--bg-base);
             color: var(--text-main);
             overflow-x: hidden;
             overflow-y: auto;
@@ -48,26 +46,26 @@
             line-height: 1.5;
         }
 
-        /* Animated Ambient Background */
-        .bg-container {
+        /* Ambient Background */
+        .ambient-bg {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             z-index: -1;
-            overflow: hidden;
             pointer-events: none;
+            overflow: hidden;
             background: 
-                radial-gradient(circle at 50% 0%, rgba(14, 30, 68, 0.9) 0%, transparent 60%),
-                radial-gradient(circle at 100% 70%, rgba(37, 99, 235, 0.12) 0%, transparent 50%),
-                radial-gradient(circle at 0% 40%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
-                var(--bg-color);
+                radial-gradient(circle at 50% 0%, rgba(14, 30, 72, 0.95) 0%, transparent 60%),
+                radial-gradient(circle at 90% 60%, rgba(37, 99, 235, 0.12) 0%, transparent 50%),
+                radial-gradient(circle at 10% 40%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
+                var(--bg-base);
         }
 
         .particle {
             position: absolute;
-            background: rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.45);
             border-radius: 50%;
             animation: float linear infinite;
         }
@@ -79,29 +77,28 @@
             100% { transform: translateY(-10vh) scale(1.3); opacity: 0; }
         }
 
-        /* Main Container */
+        /* App Container */
         .app-container {
             max-width: 480px;
             margin: 0 auto;
-            padding-bottom: calc(96px + env(safe-area-inset-bottom, 16px));
+            padding-bottom: calc(90px + env(safe-area-inset-bottom, 16px));
             min-height: 100vh;
             position: relative;
         }
 
         /* Header */
         header {
-            padding: 28px 20px 20px;
+            padding: 24px 18px 16px;
             text-align: center;
             position: relative;
             z-index: 10;
         }
 
-        .logo-container {
-            width: 82px;
-            height: 82px;
-            margin: 0 auto 14px;
+        .logo-wrap {
+            width: 84px;
+            height: 84px;
+            margin: 0 auto 12px;
             position: relative;
-            border-radius: 24px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -112,7 +109,8 @@
             inset: -4px;
             border-radius: 26px;
             background: linear-gradient(135deg, var(--primary), var(--purple));
-            filter: blur(12px);
+            filter: blur(14px);
+            opacity: 0.75;
             animation: pulse-glow 3s infinite alternate ease-in-out;
             z-index: -1;
         }
@@ -122,47 +120,97 @@
             height: 100%;
             border-radius: 22px;
             object-fit: cover;
-            border: 1.5px solid rgba(255, 255, 255, 0.15);
-            background: #0d1117;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(255, 255, 255, 0.18);
+            background: #0b1120;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
         }
 
         @keyframes pulse-glow {
             0% { opacity: 0.45; transform: scale(0.96); }
-            100% { opacity: 0.95; transform: scale(1.06); }
+            100% { opacity: 0.95; transform: scale(1.05); }
         }
 
-        h1.brand-name {
+        .brand-title {
             font-size: 26px;
             font-weight: 800;
-            background: linear-gradient(135deg, #ffffff 10%, #38bdf8 50%, #818cf8 100%);
+            background: linear-gradient(135deg, #ffffff 15%, #38bdf8 55%, #818cf8 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            margin-bottom: 4px;
             letter-spacing: -0.5px;
+            margin-bottom: 4px;
         }
 
-        .tagline {
+        .brand-badge-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 6px;
+            flex-wrap: wrap;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.3);
             font-size: 11px;
-            color: var(--text-muted);
-            font-weight: 600;
-            letter-spacing: 1.2px;
-            text-transform: uppercase;
+            font-weight: 700;
+            color: #34d399;
+        }
+
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #10b981;
+            box-shadow: 0 0 8px #10b981;
+            animation: pulse-dot 2s infinite;
+        }
+
+        @keyframes pulse-dot {
+            0% { transform: scale(0.9); opacity: 0.7; }
+            50% { transform: scale(1.25); opacity: 1; }
+            100% { transform: scale(0.9); opacity: 0.7; }
+        }
+
+        .channel-pill-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            background: rgba(0, 242, 254, 0.12);
+            border: 1px solid rgba(0, 242, 254, 0.35);
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--primary);
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .channel-pill-btn:active {
+            transform: scale(0.96);
+            background: rgba(0, 242, 254, 0.2);
         }
 
         /* Tabs System */
         .tab-content {
             display: none;
-            padding: 0 18px;
+            padding: 10px 16px 0;
         }
 
         .tab-content.active {
             display: block;
         }
 
-        /* Glassmorphism Cards */
-        .glass-card {
-            background: var(--surface);
+        /* Glass Cards */
+        .card {
+            background: var(--bg-card);
             backdrop-filter: var(--glass-blur);
             -webkit-backdrop-filter: var(--glass-blur);
             border: 1px solid var(--border);
@@ -171,49 +219,89 @@
             margin-bottom: 16px;
             position: relative;
             overflow: hidden;
-            transition: transform 0.25s ease, background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
-            animation: cardFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+            transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+            animation: cardFade 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
         }
 
-        @keyframes cardFadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(14px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        @keyframes cardFade {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        .tab-content .glass-card:nth-child(1) { animation-delay: 0.04s; }
-        .tab-content .glass-card:nth-child(2) { animation-delay: 0.10s; }
-        .tab-content .glass-card:nth-child(3) { animation-delay: 0.16s; }
-        .tab-content .glass-card:nth-child(4) { animation-delay: 0.22s; }
-
-        .glass-card:hover {
+        .card:hover {
+            border-color: var(--border-hover);
             transform: translateY(-2px);
-            background: var(--surface-hover);
-            border-color: rgba(255, 255, 255, 0.16);
-            box-shadow: 0 12px 36px -8px var(--cyan-glow);
+            box-shadow: 0 12px 36px rgba(0, 242, 254, 0.12);
         }
 
-        /* Highlighted/VIP Card */
         .card-highlight {
-            border: 1.5px solid rgba(139, 92, 246, 0.6);
-            background: linear-gradient(180deg, rgba(28, 22, 54, 0.85) 0%, rgba(16, 20, 38, 0.85) 100%);
-            box-shadow: 0 12px 40px -8px var(--purple-glow);
+            border: 1.5px solid rgba(139, 92, 246, 0.55);
+            background: linear-gradient(180deg, rgba(28, 20, 56, 0.85) 0%, rgba(15, 22, 38, 0.85) 100%);
+            box-shadow: 0 12px 40px rgba(139, 92, 246, 0.25);
         }
 
-        /* Typography */
-        h3.card-title {
+        /* Shimmer Effect */
+        .shimmer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.04) 50%, transparent 100%);
+            transform: translateX(-100%);
+            animation: shimmer-anim 4s infinite;
+            pointer-events: none;
+        }
+
+        @keyframes shimmer-anim {
+            100% { transform: translateX(100%); }
+        }
+
+        /* Product Card Elements */
+        .card-header-row {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            gap: 12px;
+        }
+
+        .tag-badge {
+            display: inline-block;
+            padding: 3px 9px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        .tag-popular { background: linear-gradient(135deg, #f59e0b, #ef4444); color: #fff; }
+        .tag-bestseller { background: linear-gradient(135deg, #ef4444, #b91c1c); color: #fff; }
+        .tag-new { background: linear-gradient(135deg, #00f2fe, #4facfe); color: #060913; }
+        .tag-value { background: linear-gradient(135deg, #10b981, #059669); color: #fff; }
+
+        .card-title {
             font-size: 17px;
             font-weight: 700;
-            margin-bottom: 8px;
-            line-height: 1.3;
-            padding-right: 76px;
             color: #ffffff;
+            line-height: 1.35;
+        }
+
+        .price-badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 18px;
+            font-weight: 700;
+            background: var(--gold-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            padding: 4px 10px;
+            border-radius: 10px;
+            background-color: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.25);
+            white-space: nowrap;
         }
 
         .card-desc {
@@ -223,56 +311,22 @@
             line-height: 1.5;
         }
 
-        .price-tag {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 18px;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--gold), var(--gold-end));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            padding: 4px 8px;
-            border-radius: 8px;
-            background-color: rgba(245, 158, 11, 0.1);
-            border: 1px solid rgba(245, 158, 11, 0.2);
-        }
-
-        /* Badges */
-        .badge {
-            display: inline-block;
-            padding: 3px 10px;
-            border-radius: 12px;
-            font-size: 10px;
-            font-weight: 800;
-            letter-spacing: 0.8px;
-            text-transform: uppercase;
-            margin-bottom: 10px;
-        }
-
-        .badge-popular { background: linear-gradient(135deg, #f59e0b, #ef4444); color: #fff; }
-        .badge-new { background: linear-gradient(135deg, #00f2fe, #4facfe); color: #070a13; font-weight: 800; }
-        .badge-value { background: linear-gradient(135deg, #10b981, #059669); color: #fff; }
-        .badge-recommended { background: linear-gradient(135deg, #8b5cf6, #ec4899); color: #fff; }
-
-        /* Feature List */
-        .feature-list {
+        .feature-bullets {
             list-style: none;
-            margin-bottom: 18px;
+            margin-bottom: 16px;
             display: flex;
             flex-direction: column;
             gap: 6px;
         }
 
-        .feature-list li {
+        .feature-bullets li {
             font-size: 12.5px;
             color: #cbd5e1;
             display: flex;
             align-items: center;
         }
 
-        .feature-list li::before {
+        .feature-bullets li::before {
             content: '✓';
             display: inline-flex;
             align-items: center;
@@ -288,32 +342,49 @@
             flex-shrink: 0;
         }
 
-        /* Buttons */
+        /* Action Buttons */
+        .btn-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
         .btn {
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 100%;
-            padding: 13px;
+            gap: 6px;
+            padding: 12px 14px;
             border-radius: 12px;
-            font-size: 14px;
+            font-size: 13.5px;
             font-weight: 700;
             text-decoration: none;
             border: none;
             cursor: pointer;
-            transition: all 0.2s ease;
-            position: relative;
-            overflow: hidden;
+            transition: all 0.2s;
             font-family: inherit;
         }
 
-        .btn-buy {
+        .btn:active {
+            transform: scale(0.97);
+        }
+
+        .btn-primary {
             background: linear-gradient(135deg, #2563eb 0%, #00f2fe 100%);
             color: #ffffff;
             box-shadow: 0 4px 18px rgba(37, 99, 235, 0.35);
         }
 
-        .btn-buy:active { transform: scale(0.98); }
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #e2e8f0;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
 
         .btn-purple {
             background: linear-gradient(135deg, #7c3aed 0%, #ec4899 100%);
@@ -321,222 +392,152 @@
             box-shadow: 0 4px 18px rgba(124, 58, 237, 0.35);
         }
 
-        .btn-purple:active { transform: scale(0.98); }
-
-        .btn-outline {
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.14);
-            color: #ffffff;
-        }
-
-        .btn-outline:active { background: rgba(255, 255, 255, 0.08); transform: scale(0.98); }
-
-        /* Shimmer Loading / Accent */
-        .shimmer {
-            position: absolute;
-            top: 0;
-            left: 0;
+        .btn-full {
             width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.04) 50%, transparent 100%);
-            transform: translateX(-100%);
-            animation: shimmer 3.5s infinite;
-            pointer-events: none;
         }
 
-        @keyframes shimmer {
-            100% { transform: translateX(100%); }
-        }
-
-        /* Status Dot */
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            background-color: var(--success);
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 6px;
-            box-shadow: 0 0 10px var(--success);
-            animation: pulse-dot 2s infinite;
-        }
-
-        @keyframes pulse-dot {
-            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-            70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-        }
-
-        /* Stats Grid */
+        /* Interactive Ad Engine Dashboard */
         .stats-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(2, 1fr);
             gap: 10px;
-            margin-bottom: 20px;
+            margin-bottom: 18px;
         }
 
-        .stat-card {
-            background: rgba(0, 0, 0, 0.25);
+        .stat-box {
+            background: rgba(0, 0, 0, 0.3);
             border: 1px solid var(--border);
             border-radius: 14px;
-            padding: 14px;
+            padding: 12px;
             text-align: center;
         }
 
-        .stat-val {
+        .stat-num {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 22px;
+            font-size: 20px;
             font-weight: 700;
             color: var(--primary);
-            margin-bottom: 2px;
         }
 
-        .stat-label {
+        .stat-text {
             font-size: 11px;
             color: var(--text-muted);
+            font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            font-weight: 600;
+            margin-top: 2px;
         }
 
-        /* Steps */
-        .steps {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin: 20px 0;
-            position: relative;
+        .input-group {
+            margin-bottom: 14px;
         }
 
-        .steps::before {
-            content: '';
-            position: absolute;
-            top: 20px;
-            left: 10%;
-            right: 10%;
-            height: 2px;
-            background: rgba(255, 255, 255, 0.1);
-            z-index: 1;
-        }
-
-        .step {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            z-index: 2;
-        }
-
-        .step-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 12px;
-            background: #111827;
-            border: 1px solid var(--primary);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 6px;
-            box-shadow: 0 0 16px rgba(0, 242, 254, 0.2);
-            font-size: 17px;
-        }
-
-        .step-label {
-            font-size: 10.5px;
-            color: #cbd5e1;
-            font-weight: 600;
-        }
-
-        /* Bottom Navigation */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background: rgba(7, 10, 19, 0.94);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-top: 1px solid rgba(255, 255, 255, 0.08);
-            display: flex;
-            justify-content: space-around;
-            padding: 10px 10px calc(14px + env(safe-area-inset-bottom, 12px));
-            z-index: 100;
-        }
-
-        .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-muted);
-            text-decoration: none;
-            width: 25%;
-            position: relative;
-            transition: all 0.2s ease;
-            cursor: pointer;
-            padding: 4px 0;
-        }
-
-        .nav-item.active {
-            color: var(--primary);
-        }
-
-        .nav-item.active::before {
-            content: '';
-            position: absolute;
-            top: -10px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 32px;
-            height: 3px;
-            background: linear-gradient(90deg, var(--primary), var(--purple));
-            border-radius: 0 0 4px 4px;
-            box-shadow: 0 0 12px var(--primary);
-        }
-
-        .nav-icon {
-            width: 22px;
-            height: 22px;
-            margin-bottom: 3px;
-            transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            fill: currentColor;
-        }
-
-        .nav-item.active .nav-icon {
-            transform: translateY(-2px) scale(1.12);
-        }
-
-        .nav-label {
-            font-size: 11px;
-            font-weight: 600;
-        }
-
-        /* Typing indicator */
-        .typing-indicator {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            margin-top: 8px;
-            padding: 6px 12px;
-            background: rgba(0, 242, 254, 0.08);
-            border-radius: 10px;
+        .input-label {
             font-size: 12px;
+            font-weight: 600;
+            color: #cbd5e1;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .text-input, .textarea-input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 12px;
+            padding: 12px;
+            color: #ffffff;
+            font-family: inherit;
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .text-input:focus, .textarea-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 12px rgba(0, 242, 254, 0.2);
+        }
+
+        .textarea-input {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .preview-bubble {
+            background: rgba(14, 25, 48, 0.9);
+            border: 1px solid rgba(0, 242, 254, 0.3);
+            border-radius: 14px;
+            padding: 14px;
+            margin-bottom: 14px;
+            font-size: 12.5px;
+            color: #e2e8f0;
+            white-space: pre-wrap;
+            position: relative;
+        }
+
+        .preview-badge {
+            position: absolute;
+            top: -9px;
+            right: 12px;
+            background: var(--primary);
+            color: #060913;
+            font-size: 9px;
+            font-weight: 800;
+            padding: 2px 8px;
+            border-radius: 8px;
+            letter-spacing: 0.5px;
+        }
+
+        /* AI Interactive Output Box */
+        .ai-output-box {
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 12px;
+            margin-top: 10px;
+            font-size: 12.5px;
+            line-height: 1.5;
+            position: relative;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(0, 242, 254, 0.15);
+            border: 1px solid rgba(0, 242, 254, 0.3);
             color: var(--primary);
-            border: 1px solid rgba(0, 242, 254, 0.15);
+            border-radius: 6px;
+            padding: 3px 8px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
         }
-        
-        .typing-indicator span {
-            width: 4px;
-            height: 4px;
-            background: currentColor;
+
+        /* Support / Profile Box */
+        .support-contact-box {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 14px;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .support-avatar {
+            width: 48px;
+            height: 48px;
             border-radius: 50%;
-            animation: bounce 1.4s infinite ease-in-out both;
-        }
-        
-        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
-        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
-        
-        @keyframes bounce {
-            0%, 80%, 100% { transform: scale(0); }
-            40% { transform: scale(1); }
+            background: linear-gradient(135deg, var(--primary), var(--purple));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 800;
+            color: #fff;
+            flex-shrink: 0;
         }
 
         /* Comparison Table */
@@ -565,7 +566,7 @@
             color: var(--text-muted);
             background: rgba(255, 255, 255, 0.03);
             text-transform: uppercase;
-            font-size: 10.5px;
+            font-size: 10px;
             letter-spacing: 0.5px;
         }
         
@@ -576,205 +577,343 @@
         
         .check { color: var(--success); font-weight: 700; }
         .cross { color: var(--text-muted); opacity: 0.45; }
+
+        /* Bottom Navigation Bar */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(6, 9, 19, 0.94);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 10px calc(12px + env(safe-area-inset-bottom, 12px));
+            z-index: 100;
+        }
+
+        .nav-tab-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            width: 25%;
+            position: relative;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            padding: 4px 0;
+        }
+
+        .nav-tab-item.active {
+            color: var(--primary);
+        }
+
+        .nav-tab-item.active::before {
+            content: '';
+            position: absolute;
+            top: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 32px;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary), var(--purple));
+            border-radius: 0 0 4px 4px;
+            box-shadow: 0 0 12px var(--primary);
+        }
+
+        .nav-icon {
+            width: 22px;
+            height: 22px;
+            margin-bottom: 3px;
+            fill: currentColor;
+            transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .nav-tab-item.active .nav-icon {
+            transform: translateY(-2px) scale(1.12);
+        }
+
+        .nav-label {
+            font-size: 11px;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
-    <!-- Ambient Particles -->
-    <div class="bg-container" id="bg-particles"></div>
+    <!-- Ambient Background Particles -->
+    <div class="ambient-bg" id="ambient-particles"></div>
 
     <div class="app-container">
         <!-- Header -->
         <header>
-            <div class="logo-container">
+            <div class="logo-wrap">
                 <div class="logo-glow"></div>
-                <img src="/static/jarviscraft_logo_v2.jpg" onerror="this.src='/static/jarviscraft_logo.jpg'; this.onerror=null;" alt="JarvisCraft Logo" class="logo-img">
+                <img src="/static/jarviscraft_logo_v2.jpg" onerror="this.src='/static/jarviscraft_logo.jpg'; this.onerror=null;" alt="JarvisCraft" class="logo-img">
             </div>
-            <h1 class="brand-name">JarvisCraft</h1>
-            <p class="tagline">AI-Powered Code & Bot Ecosystem</p>
+            <h1 class="brand-title">JarvisCraft</h1>
+            
+            <div class="brand-badge-bar">
+                <div class="status-pill">
+                    <span class="status-dot"></span>
+                    <span>AI Engine v2.4</span>
+                </div>
+                <div class="channel-pill-btn" onclick="handleTelegram('https://t.me/JarvisCraftDuyuru')">
+                    <span>📢 Duyuru Kanalı</span>
+                </div>
+            </div>
         </header>
 
-        <!-- Tab 1: Store -->
+        <!-- ════════════════════════════════════════════ -->
+        <!-- TAB 1: MAĞAZA (STORE)                        -->
+        <!-- ════════════════════════════════════════════ -->
         <div id="tab-store" class="tab-content active">
             <!-- Product 1 -->
-            <div class="glass-card">
+            <div class="card">
                 <div class="shimmer"></div>
-                <span class="badge badge-popular">🔥 POPÜLER</span>
-                <h3 class="card-title">🤖 Jarvis Core AI Asistan İskeleti</h3>
-                <div class="price-tag">350₺</div>
-                <p class="card-desc">Python + LLM destekli yapay zeka asistan çekirdeği. Sesli ve yazılı komutlarla sistem otomasyonları kurun.</p>
-                <ul class="feature-list">
+                <div class="card-header-row">
+                    <div>
+                        <span class="tag-badge tag-popular">🔥 POPÜLER</span>
+                        <h3 class="card-title">🤖 Jarvis Core AI Asistan İskeleti</h3>
+                    </div>
+                    <div class="price-badge">350₺</div>
+                </div>
+                <p class="card-desc">Python + LLM destekli tam donanımlı yapay zeka asistan çekirdeği. Sesli ve yazılı komutlarla sistem otomasyonları kurun.</p>
+                <ul class="feature-bullets">
                     <li>Python 3.10+ & AsyncIO Altyapısı</li>
-                    <li>Telegram & Desktop Entegrasyonu</li>
+                    <li>Telegram & Masaüstü Entegrasyonu</li>
                     <li>Tam açık kaynak kod + kurulum rehberi</li>
-                    <li>GPT / Claude / Gemini API desteği</li>
+                    <li>GPT / Claude / Gemini API desteği hazır</li>
                 </ul>
-                <button onclick="handleBuy('https://www.shopier.com/3051522')" class="btn btn-buy">🛒 Güvenle Satın Al (Shopier)</button>
+                <div class="btn-group">
+                    <button onclick="handleShopier('https://www.shopier.com/JarvisStore')" class="btn btn-primary">🛒 Satın Al</button>
+                    <button onclick="handleTelegram('https://t.me/JarvisCraftDuyuru')" class="btn btn-secondary">📹 Demo İzle</button>
+                </div>
             </div>
 
             <!-- Product 2 -->
-            <div class="glass-card">
+            <div class="card">
                 <div class="shimmer"></div>
-                <span class="badge badge-popular" style="background: linear-gradient(135deg, #ef4444, #b91c1c);">🏆 ÇOK SATAN</span>
-                <h3 class="card-title">⚡ Telegram Oto-Reklam & Mesaj Botu</h3>
-                <div class="price-tag">450₺</div>
+                <div class="card-header-row">
+                    <div>
+                        <span class="tag-badge tag-bestseller">🏆 ÇOK SATAN</span>
+                        <h3 class="card-title">⚡ Telegram Oto-Reklam & Mesaj Botu</h3>
+                    </div>
+                    <div class="price-badge">450₺</div>
+                </div>
                 <p class="card-desc">Anti-flood özellikli, çoklu hesap destekli ve 65+ ticaret grubu rotasyon motorlu profesyonel reklam botu.</p>
-                <ul class="feature-list">
+                <ul class="feature-bullets">
                     <li>Telethon tabanlı, Anti-Ban & Replay Guard</li>
-                    <li>Gelişmiş Web Panel & Zamanlayıcı</li>
-                    <li>Sınırsız grup ekleme kapasitesi</li>
-                    <li>Rotasyonlu hesap ve proxy uyumu</li>
+                    <li>Gelişmiş Web Panel & Zamanlayıcı Entegre</li>
+                    <li>Sınırsız grup ekleme & rotasyon motoru</li>
+                    <li>Otomatik hesap rotasyonu ve proxy uyumu</li>
                 </ul>
-                <button onclick="handleBuy('https://www.shopier.com/3051522')" class="btn btn-buy">🛒 Güvenle Satın Al (Shopier)</button>
+                <div class="btn-group">
+                    <button onclick="handleShopier('https://www.shopier.com/JarvisStore')" class="btn btn-primary">🛒 Satın Al</button>
+                    <button onclick="handleTelegram('https://t.me/JarvisCraftDuyuru')" class="btn btn-secondary">📹 Demo İzle</button>
+                </div>
             </div>
 
             <!-- Product 3 -->
-            <div class="glass-card">
+            <div class="card">
                 <div class="shimmer"></div>
-                <span class="badge badge-new">🆕 YENİ</span>
-                <h3 class="card-title">🔍 E-Ticaret & Fiyat Takip Scraper</h3>
-                <div class="price-tag">300₺</div>
-                <p class="card-desc">Trendyol, Yemeksepeti ve e-ticaret sitelerinden anlık kupon ve fiyat alarmı toplayan Python bot seti.</p>
-                <ul class="feature-list">
-                    <li>Playwright & Cloudflare Bypass</li>
+                <div class="card-header-row">
+                    <div>
+                        <span class="tag-badge tag-new">🆕 YENİ</span>
+                        <h3 class="card-title">🔍 E-Ticaret & Fiyat Takip Scraper</h3>
+                    </div>
+                    <div class="price-badge">300₺</div>
+                </div>
+                <p class="card-desc">Trendyol, Yemeksepeti ve e-ticaret sitelerinden anlık kupon, stok ve fiyat alarmı toplayan Python bot seti.</p>
+                <ul class="feature-bullets">
+                    <li>Playwright & Cloudflare Bypass altyapısı</li>
                     <li>Anında Telegram Alarm Bildirimleri</li>
-                    <li>Otomatik stok ve kupon kontrolü</li>
+                    <li>Otomatik kupon ve stok kontrol algoritması</li>
                 </ul>
-                <button onclick="handleBuy('https://www.shopier.com/3051522')" class="btn btn-buy">🛒 Güvenle Satın Al (Shopier)</button>
+                <div class="btn-group">
+                    <button onclick="handleShopier('https://www.shopier.com/JarvisStore')" class="btn btn-primary">🛒 Satın Al</button>
+                    <button onclick="handleTelegram('https://t.me/JarvisCraftDuyuru')" class="btn btn-secondary">📹 Demo İzle</button>
+                </div>
             </div>
 
             <!-- Product 4 -->
-            <div class="glass-card">
+            <div class="card">
                 <div class="shimmer"></div>
-                <span class="badge badge-value">💎 EN İYİ DEĞER</span>
-                <h3 class="card-title">🚀 Full-Stack Mini App + Shopier Kiti</h3>
-                <div class="price-tag">400₺</div>
-                <p class="card-desc">Kendi Telegram Mini App mağazanızı 10 dakikada kurun. Flask backend ve Shopier ödeme entegrasyonu hazır.</p>
-                <ul class="feature-list">
+                <div class="card-header-row">
+                    <div>
+                        <span class="tag-badge tag-value">💎 EN İYİ DEĞER</span>
+                        <h3 class="card-title">🚀 Full-Stack Mini App + Shopier Kiti</h3>
+                    </div>
+                    <div class="price-badge">400₺</div>
+                </div>
+                <p class="card-desc">Kendi Telegram Mini App mağazanızı 10 dakikada kurun. Flask backend ve Shopier ödeme entegrasyonu hazır şablon.</p>
+                <ul class="feature-bullets">
                     <li>Hazır Premium Tasarım & Webhooklar</li>
                     <li>Render / Vercel Deploy'a Hazır</li>
-                    <li>Detaylı dokümantasyon ve örnek kodlar</li>
+                    <li>Detaylı dokümantasyon ve örnek konfigürasyon</li>
                 </ul>
-                <button onclick="handleBuy('https://www.shopier.com/3051522')" class="btn btn-buy">🛒 Güvenle Satın Al (Shopier)</button>
+                <div class="btn-group">
+                    <button onclick="handleShopier('https://www.shopier.com/JarvisStore')" class="btn btn-primary">🛒 Satın Al</button>
+                    <button onclick="handleTelegram('https://t.me/JarvisCraftDuyuru')" class="btn btn-secondary">📹 Demo İzle</button>
+                </div>
             </div>
         </div>
 
-        <!-- Tab 2: Engine -->
+        <!-- ════════════════════════════════════════════ -->
+        <!-- TAB 2: OTO-MESAJ MOTORU (AD ENGINE)         -->
+        <!-- ════════════════════════════════════════════ -->
         <div id="tab-engine" class="tab-content">
-            <div class="glass-card">
+            <div class="card">
                 <div class="shimmer"></div>
-                <div style="display: flex; align-items: center; margin-bottom: 16px;">
-                    <div class="status-dot"></div>
-                    <span style="font-size: 13px; font-weight: 700; color: var(--success);">Motor Aktif & Çalışıyor</span>
-                </div>
-                
-                <h3 class="card-title" style="padding-right: 0; text-align: center; margin-bottom: 20px;">Oto-Mesaj Motoru Durumu</h3>
+                <h3 class="card-title" style="margin-bottom: 12px;">⚡ Oto-Reklam Motoru Kontrol Paneli</h3>
                 
                 <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-val">65+</div>
-                        <div class="stat-label">Aktif Grup</div>
+                    <div class="stat-box">
+                        <div class="stat-num">65+</div>
+                        <div class="stat-text">Aktif Grup Havuzu</div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-val">30-60m</div>
-                        <div class="stat-label">Oto Aralık</div>
+                    <div class="stat-box">
+                        <div class="stat-num">30 dk</div>
+                        <div class="stat-text">Gönderim Aralığı</div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-val">24/7</div>
-                        <div class="stat-label">Kesintisiz</div>
+                    <div class="stat-box">
+                        <div class="stat-num">24/7</div>
+                        <div class="stat-text">Kesintisiz Döngü</div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-val">5 Slot</div>
-                        <div class="stat-label">Hesap Havuzu</div>
-                    </div>
-                </div>
-
-                <div class="steps">
-                    <div class="step">
-                        <div class="step-icon">🔌</div>
-                        <div class="step-label">Bağlan</div>
-                    </div>
-                    <div class="step">
-                        <div class="step-icon">⚙️</div>
-                        <div class="step-label">Ayarla</div>
-                    </div>
-                    <div class="step">
-                        <div class="step-icon">🚀</div>
-                        <div class="step-label">Başlat</div>
-                    </div>
-                    <div class="step">
-                        <div class="step-icon">📈</div>
-                        <div class="step-label">İzle</div>
+                    <div class="stat-box">
+                        <div class="stat-num">Anti-Ban</div>
+                        <div class="stat-text">Akıllı Gecikme</div>
                     </div>
                 </div>
 
-                <button onclick="handleBot('https://t.me/JarvisCraftsBot')" class="btn btn-outline" style="margin-top: 14px;">🤖 Telegram Botunda Yönet ↗</button>
+                <!-- Interactive Ad Editor & Live Preview -->
+                <div class="input-group">
+                    <label class="input-label">📝 Reklam Metniniz (Canlı Düzenle):</label>
+                    <textarea id="liveAdInput" class="textarea-input" oninput="updatePreview()">🚀 JarvisCraft ile otomatik mesaj gönderimi aktif! En uygun fiyatlı bot paketleri ve yazılım çözümleri burada: @JarvisCraft</textarea>
+                </div>
+
+                <div class="preview-bubble">
+                    <span class="preview-badge">CANLI ÖNİZLEME</span>
+                    <div id="adPreviewText">🚀 JarvisCraft ile otomatik mesaj gönderimi aktif! En uygun fiyatlı bot paketleri ve yazılım çözümleri burada: @JarvisCraft</div>
+                </div>
+
+                <button onclick="handleTelegram('https://t.me/JarvisCraftsBot')" class="btn btn-primary btn-full" style="margin-top: 6px;">
+                    🤖 Telegram Botunda Döngüyü Başlat
+                </button>
             </div>
         </div>
 
-        <!-- Tab 3: AI -->
+        <!-- ════════════════════════════════════════════ -->
+        <!-- TAB 3: JARVIS AI (LIVE IN-APP GENERATOR)     -->
+        <!-- ════════════════════════════════════════════ -->
         <div id="tab-ai" class="tab-content">
-            <div class="glass-card">
+            <div class="card">
                 <div class="shimmer"></div>
-                <span class="badge badge-popular">AI METİN</span>
-                <h3 class="card-title">📝 Reklam Metni Sihirbazı</h3>
-                <p class="card-desc">Ürününüzün adını verin, yapay zeka en yüksek dönüşüm getiren 3 farklı reklam metnini saniyeler içinde oluştursun.</p>
-                <div class="typing-indicator">
-                    <span></span><span></span><span></span> <i style="margin-left: 4px;">Jarvis AI hazır</i>
+                <h3 class="card-title" style="margin-bottom: 8px;">🧠 Jarvis AI Reklam Sihirbazı</h3>
+                <p class="card-desc">Satmak istediğiniz ürünü yazın, yapay zeka en yüksek dönüşüm getiren 3 farklı reklam varyasyonu üretsin.</p>
+                
+                <div class="input-group">
+                    <label class="input-label">Ürününüz veya Hizmetiniz:</label>
+                    <input type="text" id="aiProductName" class="text-input" placeholder="Örn: Netflix ortak hesap 50 TL, garantili">
                 </div>
-                <button onclick="handleBot('https://t.me/JarvisCraftsBot')" class="btn btn-outline" style="margin-top: 16px;">Sihirbazı Başlat ↗</button>
-            </div>
 
-            <div class="glass-card">
-                <div class="shimmer"></div>
-                <span class="badge badge-new">AI KOD</span>
-                <h3 class="card-title">🐛 Kod Hata Ayıklayıcı</h3>
-                <p class="card-desc">Python kodunuzdaki hataları yapay zekaya analiz ettirin, hatasız çözümü ve açıklamayı anında alın.</p>
-                <button onclick="handleBot('https://t.me/JarvisCraftsBot')" class="btn btn-outline" style="margin-top: 10px;">Kodu Analiz Et ↗</button>
-            </div>
+                <button onclick="generateAiCopies()" class="btn btn-primary btn-full">
+                    ⚡ 3 Reklam Varyasyonu Üret
+                </button>
 
-            <div class="glass-card">
-                <div class="shimmer"></div>
-                <span class="badge badge-value">AI PROJE</span>
-                <h3 class="card-title">💡 Bot & Proje Fikir Jeneratörü</h3>
-                <p class="card-desc">En karlı yazılım projeleri, SaaS bot fikirleri ve gelir getiren otomasyon senaryoları üretin.</p>
-                <button onclick="handleBot('https://t.me/JarvisCraftsBot')" class="btn btn-outline" style="margin-top: 10px;">Fikir Üret ↗</button>
+                <div id="aiResultsContainer" style="display: none; margin-top: 14px;">
+                    <div class="ai-output-box">
+                        <button class="copy-btn" onclick="copyText('copyOpt1')">Kopyala</button>
+                        <strong>1️⃣ Dikkat Çekici & Fırsat:</strong>
+                        <p id="copyOpt1" style="margin-top: 4px;"></p>
+                    </div>
+
+                    <div class="ai-output-box">
+                        <button class="copy-btn" onclick="copyText('copyOpt2')">Kopyala</button>
+                        <strong>2️⃣ Profesyonel & Kurumsal:</strong>
+                        <p id="copyOpt2" style="margin-top: 4px;"></p>
+                    </div>
+
+                    <div class="ai-output-box">
+                        <button class="copy-btn" onclick="copyText('copyOpt3')">Kopyala</button>
+                        <strong>3️⃣ Kısa & Net:</strong>
+                        <p id="copyOpt3" style="margin-top: 4px;"></p>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Tab 4: VIP -->
+        <!-- ════════════════════════════════════════════ -->
+        <!-- TAB 4: VIP & DESTEK                         -->
+        <!-- ════════════════════════════════════════════ -->
         <div id="tab-vip" class="tab-content">
-            <div class="glass-card">
+            <!-- Weekly VIP -->
+            <div class="card">
                 <div class="shimmer"></div>
-                <h3 class="card-title">⭐ Haftalık VIP Slot</h3>
-                <div class="price-tag">150₺</div>
-                <p class="card-desc">Hızlı reklam kampanyaları ve kısa süreli yoğun tanıtımlar için ideal başlangıç paketi.</p>
-                <ul class="feature-list">
-                    <li>7 Gün Kesintisiz Erişim</li>
+                <div class="card-header-row">
+                    <div>
+                        <span class="tag-badge tag-popular">⭐ BAŞLANGIÇ</span>
+                        <h3 class="card-title">Haftalık VIP Slot</h3>
+                    </div>
+                    <div class="price-badge">150₺</div>
+                </div>
+                <p class="card-desc">Hızlı reklam kampanyaları ve kısa süreli yoğun tanıtımlar için ideal paket.</p>
+                <ul class="feature-bullets">
+                    <li>7 Gün Kesintisiz Reklam Döngüsü</li>
                     <li>15 Dakika Gönderim Aralığı</li>
                     <li>2 Gönderici Hesap Slotu</li>
                     <li>Standart Destek</li>
                 </ul>
-                <button onclick="handleBuy('https://www.shopier.com/3051522')" class="btn btn-outline">🛒 Haftalık VIP Satın Al</button>
+                <button onclick="handleShopier('https://www.shopier.com/JarvisStore')" class="btn btn-secondary btn-full">
+                    🛒 Haftalık VIP Satın Al (Shopier)
+                </button>
             </div>
 
-            <div class="glass-card card-highlight">
+            <!-- Monthly VIP -->
+            <div class="card card-highlight">
                 <div class="shimmer"></div>
-                <span class="badge badge-recommended">⭐ EN ÇOK TERCİH EDİLEN</span>
-                <h3 class="card-title">🌟 Aylık Sınırsız VIP</h3>
-                <div class="price-tag">350₺</div>
-                <p class="card-desc">Profesyonel kullanıcılar için limitsiz gönderim ve tam yetkili premium paket.</p>
-                <ul class="feature-list">
+                <div class="card-header-row">
+                    <div>
+                        <span class="tag-badge tag-popular" style="background: linear-gradient(135deg, #8b5cf6, #ec4899);">🌟 EN ÇOK TERCİH EDİLEN</span>
+                        <h3 class="card-title">Aylık Sınırsız VIP</h3>
+                    </div>
+                    <div class="price-badge">350₺</div>
+                </div>
+                <p class="card-desc">Profesyonel kullanıcılar için limitsiz gönderim, öncelikli sıra ve tam yetkili paket.</p>
+                <ul class="feature-bullets">
                     <li>30 Gün Limitsiz Gönderim</li>
                     <li>Özelleştirilebilir Gönderim Aralığı</li>
                     <li>5 Gönderici Hesap Slotu</li>
-                    <li>7/24 VIP Öncelikli Destek (@habil2121)</li>
+                    <li>7/24 VIP Öncelikli Destek (@JarvisCraft)</li>
                 </ul>
-                <button onclick="handleBuy('https://www.shopier.com/3051522')" class="btn btn-purple">💎 Aylık VIP Satın Al (Shopier)</button>
+                <button onclick="handleShopier('https://www.shopier.com/JarvisStore')" class="btn btn-purple btn-full">
+                    💎 Aylık VIP Satın Al (Shopier)
+                </button>
             </div>
 
-            <div class="glass-card">
+            <!-- Support & Contact Card -->
+            <div class="card">
                 <div class="shimmer"></div>
-                <h3 class="card-title" style="text-align: center; padding: 0; font-size: 15px; margin-bottom: 10px;">Paket Karşılaştırması</h3>
+                <h3 class="card-title" style="margin-bottom: 12px;">👨‍💻 Resmi Destek & İletişim</h3>
+                <div class="support-contact-box">
+                    <div class="support-avatar">J</div>
+                    <div>
+                        <div style="font-weight: 700; font-size: 14px;">Jarvis Destek</div>
+                        <div style="font-size: 12px; color: var(--text-muted);">@JarvisCraft (ID: 8387947754)</div>
+                        <div style="font-size: 11px; color: #34d399; margin-top: 2px;">🟢 7/24 Aktif Destek</div>
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <button onclick="handleTelegram('https://t.me/JarvisCraft')" class="btn btn-primary">💬 Destek Al</button>
+                    <button onclick="handleTelegram('https://t.me/JarvisCraftDuyuru')" class="btn btn-secondary">📢 Kanal</button>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="card">
+                <h3 class="card-title" style="font-size: 14px; text-align: center; margin-bottom: 8px;">Paket Karşılaştırması</h3>
                 <div class="table-wrap">
                     <table class="compare-table">
                         <thead>
@@ -817,29 +956,34 @@
         </div>
     </div>
 
-    <!-- Bottom Navigation Bar -->
+    <!-- ════════════════════════════════════════════ -->
+    <!-- BOTTOM NAVIGATION (HIGH-END ICONS & TABS)    -->
+    <!-- ════════════════════════════════════════════ -->
     <nav class="bottom-nav">
-        <div class="nav-item active" data-target="tab-store" onclick="switchTab('tab-store')">
+        <div class="nav-tab-item active" data-tab="tab-store" onclick="switchNavTab('tab-store')">
             <svg class="nav-icon" viewBox="0 0 24 24">
-                <path d="M21,6V8H3V6H21M3,18H12V20H3V18M3,10H21V16H3V10M7,10V16M11,10V16M15,10V16M19,10V16" />
+                <path d="M19 6h-2c0-2.76-2.24-5-5-5S7 3.24 7 6H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-7-3c1.66 0 3 1.34 3 3H9c0-1.66 1.34-3 3-3zm7 17H5V8h14v12zm-7-8c-1.66 0-3-1.34-3-3H7c0 2.76 2.24 5 5 5s5-2.24 5-5h-2c0 1.66-1.34 3-3 3z"/>
             </svg>
             <span class="nav-label">Mağaza</span>
         </div>
-        <div class="nav-item" data-target="tab-engine" onclick="switchTab('tab-engine')">
+
+        <div class="nav-tab-item" data-tab="tab-engine" onclick="switchNavTab('tab-engine')">
             <svg class="nav-icon" viewBox="0 0 24 24">
-                <path d="M11,21.93V19.93C7.06,19.43 4,16.05 4,12C4,7.95 7.06,4.57 11,4.07V2.07C5.96,2.58 2,7.05 2,12C2,16.95 5.96,21.42 11,21.93M13,2.07V4.07C16.94,4.57 20,7.95 20,12C20,16.05 16.94,19.43 13,19.93V21.93C18.04,21.42 22,16.95 22,12C22,7.05 18.04,2.58 13,2.07M12,7.5C9.5,7.5 7.5,9.5 7.5,12C7.5,14.5 9.5,16.5 12,16.5C14.5,16.5 16.5,14.5 16.5,12C16.5,9.5 14.5,7.5 12,7.5Z" />
+                <path d="M11 21h-1l1-7H7.5c-.88 0-.33-.75-.31-.78C8.48 10.94 10.42 7.54 13.01 3h1l-1 7h3.51c.4 0 .62.19.4.66C12.97 17.55 11 21 11 21z"/>
             </svg>
             <span class="nav-label">Motor</span>
         </div>
-        <div class="nav-item" data-target="tab-ai" onclick="switchTab('tab-ai')">
+
+        <div class="nav-tab-item" data-tab="tab-ai" onclick="switchNavTab('tab-ai')">
             <svg class="nav-icon" viewBox="0 0 24 24">
-                <path d="M12,2C6.48,2 2,6.48 2,12C2,17.52 6.48,22 12,22C17.52,22 22,17.52 22,12C22,6.48 17.52,2 12,2M15.5,15.5C14.5,14.5 13.5,14 12,14C10.5,14 9.5,14.5 8.5,15.5L7.5,14.5C8.8,13.2 10.2,12.5 12,12.5C13.8,12.5 15.2,13.2 16.5,14.5L15.5,15.5M16.5,10.5C15.2,9.2 13.8,8.5 12,8.5C10.2,8.5 8.8,9.2 7.5,10.5L8.5,11.5C9.5,10.5 10.5,10 12,10C13.5,10 14.5,10.5 15.5,11.5L16.5,10.5Z" />
+                <path d="M21 10.12h-6.78l2.74-2.82c-2.73-2.7-7.15-2.8-9.88-.1-2.73 2.71-2.73 7.08 0 9.79s7.15 2.71 9.88 0C18.32 15.65 19 14.08 19 12.1h2c0 2.4-.94 4.7-2.76 6.53-3.64 3.64-9.54 3.64-13.18 0-3.64-3.64-3.64-9.54 0-13.19 3.64-3.64 9.54-3.64 13.18 0l2.76-2.82v7.5zM12.5 8H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
             </svg>
-            <span class="nav-label">AI</span>
+            <span class="nav-label">Jarvis AI</span>
         </div>
-        <div class="nav-item" data-target="tab-vip" onclick="switchTab('tab-vip')">
+
+        <div class="nav-tab-item" data-tab="tab-vip" onclick="switchNavTab('tab-vip')">
             <svg class="nav-icon" viewBox="0 0 24 24">
-                <path d="M18 2H6L2 8L12 22L22 8L18 2M16.83 4L19.33 7H15.65L16.83 4M12 4.41L13.82 7H10.18L12 4.41M7.17 4L8.35 7H4.67L7.17 4M4.29 9H8.62L12 17.61L4.29 9M10.37 9H13.62L12 18.06L10.37 9M15.38 9H19.71L12 17.61L15.38 9Z" />
+                <path d="M18 2H6L2 8l10 14L22 8l-4-6zM4.29 9H8.6l3.4 8.61L4.29 9zm6.08 0h3.26l-1.63 8.06L10.37 9zm5.01 0h4.33l-7.71 8.61 3.38-8.61zM16.83 4l1.25 3H15.6l-1.25-3h2.48zM12 4.41L13.82 7H10.18L12 4.41zM7.17 4h2.48L8.4 7H5.92l1.25-3z"/>
             </svg>
             <span class="nav-label">VIP</span>
         </div>
@@ -847,32 +991,29 @@
 
     <script>
         // Init Telegram Web App
-        (function initTelegram() {
+        (function initTg() {
             try {
                 if (window.Telegram && window.Telegram.WebApp) {
                     const tg = window.Telegram.WebApp;
                     tg.ready();
                     tg.expand();
-                    if (tg.setHeaderColor) tg.setHeaderColor('#070a13');
-                    if (tg.setBackgroundColor) tg.setBackgroundColor('#070a13');
+                    if (tg.setHeaderColor) tg.setHeaderColor('#060913');
+                    if (tg.setBackgroundColor) tg.setBackgroundColor('#060913');
                 }
-            } catch(e) {
-                console.log("Running in browser mode.");
-            }
+            } catch(e) {}
         })();
 
-        // Ambient Background Particles
+        // Background Particles
         (function initParticles() {
-            const bg = document.getElementById('bg-particles');
+            const bg = document.getElementById('ambient-particles');
             if (!bg) return;
-            for (let i = 0; i < 22; i++) {
+            for (let i = 0; i < 20; i++) {
                 const p = document.createElement('div');
                 p.className = 'particle';
-                const size = Math.random() * 3.5 + 1.2;
+                const size = Math.random() * 3 + 1.2;
                 const left = Math.random() * 100;
                 const animDuration = Math.random() * 12 + 10;
                 const delay = Math.random() * 8;
-                
                 p.style.width = size + 'px';
                 p.style.height = size + 'px';
                 p.style.left = left + '%';
@@ -883,33 +1024,28 @@
         })();
 
         // Tab Switching
-        function switchTab(targetId) {
+        function switchNavTab(targetTabId) {
             triggerHaptic('selection');
-            
-            // Remove active from all tabs & nav items
-            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-            
-            // Activate selected tab & nav item
-            const targetTab = document.getElementById(targetId);
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-tab-item').forEach(n => n.classList.remove('active'));
+
+            const targetTab = document.getElementById(targetTabId);
             if (targetTab) {
                 targetTab.classList.add('active');
-                // Re-trigger entrance animation
-                const cards = targetTab.querySelectorAll('.glass-card');
-                cards.forEach(card => {
-                    card.style.animation = 'none';
-                    card.offsetHeight; // trigger reflow
-                    card.style.animation = '';
+                targetTab.querySelectorAll('.card').forEach(c => {
+                    c.style.animation = 'none';
+                    c.offsetHeight;
+                    c.style.animation = '';
                 });
             }
-            
-            const activeNav = document.querySelector(`.nav-item[data-target="${targetId}"]`);
+
+            const activeNav = document.querySelector(`.nav-tab-item[data-tab="${targetTabId}"]`);
             if (activeNav) activeNav.classList.add('active');
 
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        // Haptic Feedback Helper
+        // Haptic Feedback
         function triggerHaptic(type = 'light') {
             try {
                 if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
@@ -922,8 +1058,8 @@
             } catch(e) {}
         }
 
-        // Buy Button Handler (Shopier)
-        function handleBuy(url) {
+        // External Link Handlers
+        function handleShopier(url) {
             triggerHaptic('medium');
             if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openLink) {
                 window.Telegram.WebApp.openLink(url);
@@ -932,14 +1068,56 @@
             }
         }
 
-        // Bot / Telegram Link Handler
-        function handleBot(url) {
+        function handleTelegram(url) {
             triggerHaptic('light');
             if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
                 window.Telegram.WebApp.openTelegramLink(url);
             } else {
                 window.open(url, '_blank');
             }
+        }
+
+        // Live Ad Preview Sync
+        function updatePreview() {
+            const input = document.getElementById('liveAdInput');
+            const preview = document.getElementById('adPreviewText');
+            if (input && preview) {
+                preview.textContent = input.value || 'Metin girilmedi...';
+            }
+        }
+
+        // In-App AI Copywriter
+        function generateAiCopies() {
+            triggerHaptic('medium');
+            const input = document.getElementById('aiProductName');
+            const val = (input && input.value.trim()) || 'Özel Yazılım & Bot Hizmeti';
+
+            const opt1 = `🔥 BÜYÜK FIRSAT!\n\n⚡ ${val} en uygun fiyat ve anında teslimatla satışta!\n✅ %100 Çalışma Garantisi\n🛒 Sipariş: @JarvisCraft\n📦 Mağaza: https://www.shopier.com/JarvisStore`;
+            const opt2 = `🚀 KALİTE ARAYANLAR İÇİN\n\n🎯 ${val}\n💎 Hızlı • Güvenilir • 7/24 Kesintisiz Destek\n👇 Hemen iletişime geçin: @JarvisCraft`;
+            const opt3 = `⭐ ÖZEL İNDİRİM\n\n${val}\n📦 Sınırlı stok — Kaçırmayın!\n💬 Satın Alım & Bilgi: @JarvisCraft`;
+
+            document.getElementById('copyOpt1').textContent = opt1;
+            document.getElementById('copyOpt2').textContent = opt2;
+            document.getElementById('copyOpt3').textContent = opt3;
+
+            const container = document.getElementById('aiResultsContainer');
+            container.style.display = 'block';
+            container.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Copy Text Helper
+        function copyText(elementId) {
+            triggerHaptic('light');
+            const text = document.getElementById(elementId).textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.showAlert) {
+                    window.Telegram.WebApp.showAlert('✅ Reklam metni panoya kopyalandı!');
+                } else {
+                    alert('✅ Reklam metni panoya kopyalandı!');
+                }
+            }).catch(() => {
+                alert('Metin kopyalandı.');
+            });
         }
     </script>
 </body>
