@@ -2111,9 +2111,9 @@ def get_last_blast_remaining_wait(client_name, target_wait_seconds=3600):
             return 0
 
         if not timestamps and not states:
-            # Hic kayit yoksa guvenlik acisindan tam bekleme yap (KeyVadi 30dk, digerleri 1 saat)
-            default_wait = 1800 if cname == "KeyVadiOnline" else 3600
-            print(f"[{cname}] 🛡️ Sunucu başlangıcı: Kayıt yok, varsayılan bekleme: {default_wait}sn (KeyVadi 30dk, diğerleri 1saat).")
+            # Hic kayit yoksa guvenlik acisindan kisa kademeli baslatma (KeyVadi 30sn, digerleri 90-180sn)
+            default_wait = 30 if cname == "KeyVadiOnline" else (90 if cname == "FroxyOnline" else 180)
+            print(f"[{cname}] 🛡️ Sunucu başlangıcı: Kayıt yok, güvenli kademeli başlama: {default_wait}sn.")
             return default_wait
 
         latest_dt = max(timestamps) if timestamps else (max(states, key=lambda item: item[0])[0] if states else None)
@@ -5739,11 +5739,20 @@ async def main():
                     print(f"[{client_name}] ⚠️ Cooldown bulut yedeği alınamadı: {e}")
 
                 if not blast_interrupted:
+                    cycle_wait = 1800 if client_name == "KeyVadiOnline" else 3600
                     await asyncio.to_thread(
-                        blast_coordinator.complete_cycle, client_name, 3600
+                        blast_coordinator.complete_cycle, client_name, cycle_wait
                     )
                     if not CONTROLLED_SMOKE_MODE:
                         save_last_blast_time(client_name)
+                        try:
+                            now_iso_me = datetime.now(timezone.utc).isoformat()
+                            due_iso_me = (datetime.now(timezone.utc) + timedelta(seconds=cycle_wait)).isoformat()
+                            await client.send_message('me', f"__BLAST_COMPLETED__{client_name}:{now_iso_me}")
+                            await client.send_message('me', f"__BLAST_DUE__{client_name}:{due_iso_me}")
+                            print(f"[{client_name}] 💾 Telegram 'me' hafızasına blast tamamlanma ve planlanan damga kaydedildi ({due_iso_me}).")
+                        except Exception as me_err:
+                            print(f"[{client_name}] ⚠️ Telegram 'me' kaydı hatası: {me_err}")
                     update_ad_account_status(
                         client_name,
                         phase='completed',
@@ -5953,14 +5962,34 @@ async def main():
         else active_account_names
     )
     # Telegram Saved Messages (me) hafiza senkronizasyonu:
+    scheduled_waits = {}
+    now_utc = datetime.now(timezone.utc)
     for client, cname, _ in active_clients:
         if cname not in queue_account_names:
             continue
         try:
-            me_msgs = await client.get_messages('me', limit=15)
+            me_msgs = await client.get_messages('me', limit=50)
+            completed_found = False
+            due_found = False
             for m in me_msgs:
                 txt = getattr(m, 'text', '') or ''
-                if txt.startswith(f"__BLAST_COMPLETED__{cname}:"):
+                if not due_found and txt.startswith(f"__BLAST_DUE__{cname}:"):
+                    due_str = txt.split(":", 1)[1].strip()
+                    try:
+                        due_dt = datetime.fromisoformat(due_str)
+                        if due_dt.tzinfo is None:
+                            due_dt = due_dt.replace(tzinfo=timezone.utc)
+                        rem = (due_dt - now_utc).total_seconds()
+                        if rem > 0:
+                            scheduled_waits[cname] = int(rem)
+                            print(f"[{cname}] 📥 Telegram 'me' sohbetinden planlanan blast zamanı geri yüklendi: {due_str} (Kalan: {int(rem)}sn / {int(rem // 60)}dk)")
+                        else:
+                            scheduled_waits[cname] = 0
+                            print(f"[{cname}] 📥 Telegram 'me' planlanan blast zamanı dolmuş ({int(-rem)}sn önce) → Hemen başlatılıyor.")
+                        due_found = True
+                    except Exception:
+                        pass
+                if not completed_found and txt.startswith(f"__BLAST_COMPLETED__{cname}:"):
                     ts_str = txt.split(":", 1)[1].strip()
                     try:
                         ts_dt = datetime.fromisoformat(ts_str)
@@ -5975,18 +6004,23 @@ async def main():
                             }
                         save_cooldowns(c_dict)
                         print(f"[{cname}] 📥 Telegram 'me' sohbetinden son blast zamanı geri yüklendi: {ts_str}")
-                        break
+                        completed_found = True
                     except Exception:
                         pass
+                if due_found and completed_found:
+                    break
         except Exception as tg_sync_err:
             print(f"[{cname}] ⚠️ Telegram 'me' geçmişi okunamadı: {tg_sync_err}")
 
-    legacy_waits = {
-        name: 0 if CONTROLLED_SMOKE_MODE else get_last_blast_remaining_wait(
-            name, target_wait_seconds=3600
-        )
-        for name in queue_account_names
-    }
+    legacy_waits = {}
+    for name in queue_account_names:
+        if CONTROLLED_SMOKE_MODE:
+            legacy_waits[name] = 0
+        elif name in scheduled_waits:
+            legacy_waits[name] = scheduled_waits[name]
+        else:
+            t_wait = 1800 if name == "KeyVadiOnline" else 3600
+            legacy_waits[name] = get_last_blast_remaining_wait(name, target_wait_seconds=t_wait)
     await asyncio.to_thread(
         blast_coordinator.initialize_accounts,
         legacy_waits,

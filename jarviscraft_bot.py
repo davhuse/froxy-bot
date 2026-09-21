@@ -4,6 +4,8 @@ import logging
 import asyncio
 import sys
 import tempfile
+import urllib.request
+import urllib.error
 from telethon import TelegramClient, events, Button, functions
 from telethon.errors import UserNotParticipantError, FloodWaitError
 from bot_runtime_status import write_bot_status, invalid_token_error
@@ -67,23 +69,28 @@ client = TelegramClient("sessions/jarviscraft_bot", API_ID, API_HASH)
 USER_STATES = {}
 
 async def is_user_subscribed(user_id):
-    """Checks if the user has joined the official announcement channel."""
-    try:
-        channel = await client.get_entity(CHANNEL_USERNAME)
-        p = await client(functions.channels.GetParticipantRequest(
-            channel=channel,
-            participant=int(user_id)
-        ))
-        return p is not None
-    except UserNotParticipantError:
-        return False
-    except Exception as e:
-        logger.warning(f"Subscription check exception for {user_id}: {e}")
-        # If bot cannot check (e.g. temporary API limit), allow access
-        return True
+    """Checks if the user has joined the official announcement channel via Telegram Bot API."""
+    def _check():
+        try:
+            url = f"https://api.telegram.org/bot{BOT_TOKEN}/getChatMember?chat_id=@{CHANNEL_USERNAME}&user_id={user_id}"
+            req = urllib.request.Request(url, headers={"User-Agent": "JarvisBot/1.0"})
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                if data.get("ok"):
+                    status = data.get("result", {}).get("status")
+                    return status in ("creator", "administrator", "member", "restricted")
+            return False
+        except urllib.error.HTTPError:
+            # 400 Bad Request means user not in channel / not found
+            return False
+        except Exception as e:
+            logger.warning(f"Subscription check error for {user_id}: {e}")
+            return False
+    return await asyncio.to_thread(_check)
 
 def get_main_menu():
     return [
+        [Button.url("🛍️  Shopier Mağazası (Tüm İlanlar)", SHOPIER_URL)],
         [Button.inline("⚡  Oto-Reklam Motoru", b"menu_ad_engine"),
          Button.inline("🏪  Kod Mağazası", b"menu_store")],
         [Button.inline("🧠  Jarvis AI", b"menu_ai_tools"),
@@ -96,7 +103,7 @@ def get_main_menu():
 
 def get_gatekeeper_menu():
     return [
-        [Button.url("📢  Duyuru Kanalına Katıl", CHANNEL_URL)],
+        [Button.url("📢  Duyuru Kanalına Katıl (@JarvisCraftDuyuru)", CHANNEL_URL)],
         [Button.inline("✅  Katıldım, Doğrula", b"verify_join")]
     ]
 
@@ -383,6 +390,7 @@ async def callback_handler(event):
             f"👇  Detay görmek için paketi seçin:"
         )
         buttons = [
+            [Button.url("🛍️  Shopier Mağazasını Aç (Tüm İlanlar)", SHOPIER_URL)],
             [Button.inline("🤖 Jarvis Core AI Asistan  ·  350₺", b"prod_1")],
             [Button.inline("⚡ Oto-Reklam Bot Scripti  ·  450₺", b"prod_2")],
             [Button.inline("🔍 Fiyat Takip Scraper  ·  300₺", b"prod_3")],
@@ -465,7 +473,7 @@ async def callback_handler(event):
             f"⚡ Ödeme sonrası **anında** teslimat"
         )
         buttons = [
-            [Button.url(f"🛒  Shopier ile Satın Al  ·  {p['price']}", SHOPIER_URL)],
+            [Button.url(f"🛒  Shopier'dan Satın Al / İlanı Aç  ·  {p['price']}", SHOPIER_URL)],
             [Button.url("📹  Demoyu Kanalda İncele", CHANNEL_URL)],
             [Button.inline("◀️ Mağazaya Dön", b"menu_store")]
         ]

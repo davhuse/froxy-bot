@@ -64,7 +64,8 @@ def _fallback_engine():
     global _FALLBACK_ENGINE
     with _LOCK:
         if _FALLBACK_ENGINE is None:
-            db_path = os.environ.get("BLAST_CHECKPOINT_SQLITE_PATH", "blast_checkpoint_backup.db")
+            default_sqlite = "/app/data/blast_checkpoint_backup.db" if os.path.isdir("/app/data") else "blast_checkpoint_backup.db"
+            db_path = os.environ.get("BLAST_CHECKPOINT_SQLITE_PATH", default_sqlite)
             _FALLBACK_ENGINE = create_engine(f"sqlite:///{db_path}", pool_pre_ping=True, future=True)
             with _FALLBACK_ENGINE.begin() as connection:
                 connection.execute(text(
@@ -76,7 +77,8 @@ def _fallback_engine():
 
 def load_checkpoint():
     raw_url = _database_url()
-    sqlite_path = os.environ.get("BLAST_CHECKPOINT_SQLITE_PATH")
+    default_sqlite = "/app/data/blast_checkpoint_backup.db" if os.path.isdir("/app/data") else None
+    sqlite_path = os.environ.get("BLAST_CHECKPOINT_SQLITE_PATH", default_sqlite)
     if not raw_url and not sqlite_path:
         return None
     engines = [_engine] if not raw_url else [_engine, _fallback_engine]
@@ -101,7 +103,8 @@ def load_checkpoint():
 
 def save_checkpoint(state):
     raw_url = _database_url()
-    sqlite_path = os.environ.get("BLAST_CHECKPOINT_SQLITE_PATH")
+    default_sqlite = "/app/data/blast_checkpoint_backup.db" if os.path.isdir("/app/data") else None
+    sqlite_path = os.environ.get("BLAST_CHECKPOINT_SQLITE_PATH", default_sqlite)
     if not raw_url and not sqlite_path:
         return False
     engines = [_engine] if not raw_url else [_engine, _fallback_engine]

@@ -77,6 +77,18 @@ class BlastCoordinator:
         owner_id=None,
         now_fn=time.time,
     ):
+        if path == "blast_checkpoint_v3.json":
+            data_dir = os.environ.get("PERSISTENT_DATA_DIR", "/app/data" if os.path.isdir("/app/data") else "")
+            if data_dir and os.path.isdir(data_dir):
+                target_path = Path(data_dir) / "blast_checkpoint_v3.json"
+                # If target does not exist yet but local file exists, copy it over
+                if not target_path.exists() and Path("blast_checkpoint_v3.json").exists():
+                    try:
+                        import shutil
+                        shutil.copy2("blast_checkpoint_v3.json", target_path)
+                    except Exception:
+                        pass
+                path = target_path
         self.path = Path(path)
         self.owner_id = owner_id or f"{os.getpid()}-{uuid.uuid4().hex[:10]}"
         self.now_fn = now_fn
@@ -236,9 +248,14 @@ class BlastCoordinator:
                 current_due = float(record.get("due_at", 0) or 0)
                 stale_due = current_due < (now - 86400 * 7) or current_due <= 0
                 if not record.get("run_id") or stale_due or not record.get("initialized_v3"):
-                    record["due_at"] = desired_due
+                    # Preserve existing future due_at if not stale across server restarts!
+                    if current_due > now and not stale_due:
+                        final_due = current_due
+                    else:
+                        final_due = desired_due
+                    record["due_at"] = final_due
                     record["initialized_v3"] = True
-                    record["status"] = "queued" if desired_due <= now else "waiting"
+                    record["status"] = "queued" if final_due <= now else "waiting"
                     changed = True
             # The web process reads the local checkpoint for its status API.
             # When a fresh deploy restores an already-initialized state from
@@ -595,7 +612,14 @@ class BlastCoordinator:
 
 def load_blast_snapshot(path="blast_checkpoint_v3.json"):
     try:
-        state = json.loads(Path(path).read_text(encoding="utf-8"))
+        p = Path(path)
+        if p.name == "blast_checkpoint_v3.json":
+            data_dir = os.environ.get("PERSISTENT_DATA_DIR", "/app/data" if os.path.isdir("/app/data") else "")
+            if data_dir and os.path.isdir(data_dir):
+                alt = Path(data_dir) / "blast_checkpoint_v3.json"
+                if alt.exists():
+                    p = alt
+        state = json.loads(p.read_text(encoding="utf-8"))
         return state if isinstance(state, dict) else {}
     except (FileNotFoundError, OSError, json.JSONDecodeError):
         return {}
