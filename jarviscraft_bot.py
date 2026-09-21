@@ -167,38 +167,25 @@ async def start_handler(event):
         }
         save_data(users)
 
-    # 1. Her zaman Gatekeeper mesajini goster
-    gate_msg = (
-        f"          ⚡ **JARVISCRAFT\'A HOŞ GELDİNİZ** ⚡
-"
-        f"{LINE}
-
-"
-        f"Merhaba **{sender.first_name or \'Değerli Kullanıcı\'}**,
-
-"
-        f"JarvisCraft bot ve yazılım ekosistemini kullanabilmek için
-"
-        f"resmi **Duyuru & Güncelleme Kanalımıza** katılmanız gerekmektedir.
-
-"
-        f"📢 **Kanalımızda Neler Var?**
-"
-        f"{DOT}  Satışa sunulan bot ve scriptlerin video demoları
-"
-        f"{DOT}  Açık kaynak Python kodları ve hazır kütüphaneler
-"
-        f"{DOT}  Özel indirim kuponları ve VIP çekilişler
-"
-        f"{DOT}  API ve sistem güncellemeleri
-
-"
-        f"{LINE}
-"
-        f"👇  Aşağıdaki butondan kanala katılın ve ardından **Doğrula**\'ya tıklayın:"
-    )
-    await event.respond(gate_msg, buttons=get_gatekeeper_menu())
-    return
+    # 1. Check Channel Subscription (Gatekeeper)
+    is_subbed = await is_user_subscribed(sender.id)
+    if not is_subbed:
+        gate_msg = (
+            f"          ⚡ **JARVISCRAFT'A HOŞ GELDİNİZ** ⚡\n"
+            f"{LINE}\n\n"
+            f"Merhaba **{sender.first_name or 'Değerli Kullanıcı'}**,\n\n"
+            f"JarvisCraft bot ve yazılım ekosistemini kullanabilmek için\n"
+            f"resmi **Duyuru & Güncelleme Kanalımıza** katılmanız gerekmektedir.\n\n"
+            f"📢 **Kanalımızda Neler Var?**\n"
+            f"{DOT}  Satışa sunulan bot ve scriptlerin video demoları\n"
+            f"{DOT}  Açık kaynak Python kodları ve hazır kütüphaneler\n"
+            f"{DOT}  Özel indirim kuponları ve VIP çekilişler\n"
+            f"{DOT}  API ve sistem güncellemeleri\n\n"
+            f"{LINE}\n"
+            f"👇  Aşağıdaki butondan kanala katılın ve ardından **Doğrula**'ya tıklayın:"
+        )
+        await event.respond(gate_msg, buttons=get_gatekeeper_menu())
+        return
 
     name = sender.first_name or "Kullanıcı"
     welcome = (
@@ -420,6 +407,7 @@ async def callback_handler(event):
                 "title": "Jarvis Core AI Asistan İskeleti",
                 "price": "350₺",
                 "badge": "🔥 POPÜLER",
+                "url": "https://www.shopier.com/51058105",
                 "desc": "Sesli/yazılı komut algılayan, Python + LLM mimarili,\nsistem görevlerini otomatikleştiren akıllı asistan çekirdeği.",
                 "features": [
                     "Python 3.10+ & AsyncIO altyapısı",
@@ -433,6 +421,7 @@ async def callback_handler(event):
                 "title": "Telegram Oto-Reklam Bot Scripti",
                 "price": "450₺",
                 "badge": "🏆 ÇOK SATAN",
+                "url": "https://www.shopier.com/51058117",
                 "desc": "Çoklu hesap yönetimi, anti-flood gecikme sistemi,\n65+ ticaret grubu entegrasyonu ve rotasyonlu mesaj motoru.",
                 "features": [
                     "Telethon tabanlı güçlü motor",
@@ -446,6 +435,7 @@ async def callback_handler(event):
                 "title": "E-Ticaret & Fiyat Takip Scraper",
                 "price": "300₺",
                 "badge": "🆕 YENİ",
+                "url": "https://www.shopier.com/51058118",
                 "desc": "Trendyol, Yemeksepeti ve e-ticaret sitelerinden\nanlık kupon ve fiyat alarmı toplayan bot seti.",
                 "features": [
                     "Playwright & Cloudflare Bypass",
@@ -458,6 +448,7 @@ async def callback_handler(event):
                 "title": "Full-Stack Mini App + Shopier Kiti",
                 "price": "400₺",
                 "badge": "💎 EN İYİ DEĞER",
+                "url": "https://www.shopier.com/51058119",
                 "desc": "Kendi Telegram Mini App mağazanızı 10 dakikada kurun.\nFlask backend + Vite frontend + Shopier ödeme entegrasyonu.",
                 "features": [
                     "Hazır tasarım & webhooklar",
@@ -486,7 +477,7 @@ async def callback_handler(event):
             f"⚡ Ödeme sonrası **anında** teslimat"
         )
         buttons = [
-            [Button.url(f"🛒  Shopier'dan Satın Al / İlanı Aç  ·  {p['price']}", SHOPIER_URL)],
+            [Button.url(f"🛒  Shopier'dan Satın Al  ·  {p['price']}", p.get("url", SHOPIER_URL))],
             [Button.url("📹  Demoyu Kanalda İncele", CHANNEL_URL)],
             [Button.inline("◀️ Mağazaya Dön", b"menu_store")]
         ]
@@ -598,8 +589,8 @@ async def callback_handler(event):
             f"{LINE}"
         )
         buttons = [
-            [Button.url("⭐  Haftalık VIP Satın Al", SHOPIER_URL)],
-            [Button.url("🌟  Aylık VIP Satın Al", SHOPIER_URL)],
+            [Button.url("⭐  Haftalık VIP Satın Al  ·  150₺", "https://www.shopier.com/51058120")],
+            [Button.url("🌟  Aylık VIP Satın Al  ·  350₺", "https://www.shopier.com/51058121")],
             [Button.inline("◀️  Ana Menü", b"main_menu")]
         ]
         await event.edit(msg, buttons=buttons)
