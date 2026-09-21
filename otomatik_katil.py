@@ -146,7 +146,7 @@ async def verify_ad_after_window(client, entity, message_id, client_name, group_
         )
         template_name = template or "fallback"
         hero_product = {
-            "sales_hero_duolingo.txt": "Duolingo Sınıf Daveti",
+            "sales_hero_duolingo.txt": "Duolingo Super 12 Ay Kendi Hesabına Aktivasyon",
             "sales_hero_capcut.txt": "CapCut Pro 30 Gün - Ortak Hesap",
             "sales_hero_netflix_youtube.txt": "Netflix/YouTube Testi",
         }.get(template_name, "")
@@ -672,6 +672,7 @@ def strict_group_safe_copy(group_key, is_keyvadi, is_lisansarena, is_froxy):
             "Windows 10/11 Pro 70 TL | Office 365 1 yıl 70 TL",
             "YouTube Premium 1 ay 30 TL | Spotify 4 ay 34,99 TL",
             "Steam oyun & key 60 TL | Minecraft 49,90 TL",
+            "Duolingo Super 12 ay kişisel aktivasyon 199,90 TL | Adobe Express 12 ay kişisel aktivasyon 499,90 TL",
         ]
         if not is_satcek:
             lines.insert(4, "Netflix 4K kişisel profil 79,90 TL")
@@ -693,6 +694,7 @@ def strict_group_safe_copy(group_key, is_keyvadi, is_lisansarena, is_froxy):
             "Windows 10/11 Pro 55 TL | Office 365 1 yıl 75 TL",
             "YouTube Premium 3 ay 45 TL | Spotify 4 ay 40 TL",
             "Steam 200$ VIP key 45 TL | Steam oyun 70 TL",
+            "Duolingo Super 12 ay kişisel aktivasyon 249,90 TL | Adobe Express 12 ay kişisel aktivasyon 599,90 TL",
         ]
         if not is_satcek:
             lines.insert(3, "Yemeksepeti 360/270 55 TL | 450/350 60 TL")

@@ -17,3 +17,8 @@
 Teslimat türü, stok ve uygunluk ürün detayında belirtilir.
 7/24 Otomatik Sipariş: @KeyVadiSatisBot
 Canlı Destek & Kupon Bozdurma: @KeyvadiDestek
+• Yemeksepeti İlk Sipariş 360/270: 45₺ | 450/350: 50₺
+• Trendyol Market 800/300: 50₺ | Trendyol Yemek 750/250: 50₺
+• Positive 110 TL: 30₺ | GastroClub: 20₺ | Enterprise %40: 30₺
+• Garenta %40: 20₺ | ENUYGUN %10: 20₺
+• Gemini Pro 18 Ay Kişiye Özel - 5 Davet Alana 1 Adet Canva Pro Hediye: 149,90₺

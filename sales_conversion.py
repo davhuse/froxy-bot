@@ -717,6 +717,14 @@ def resolve_smart_roadmap_reply(message: str, brand: str = "keyvadi") -> str | N
     if any(re.search(rf"(?<!\w){re.escape(b)}(?!\w)", norm) for b in SPECIFIC_BRANDS_FOR_ROADMAP):
         return None
 
+    # Marka bazlı kişisel yıllık ürün bağlantıları; genel akışta yanlış mağaza
+    # fiyatı gösterilmemesi için aynı ürünün iki mağaza kaydını ayrı tut.
+    is_lisansarena = str(brand or "").lower().startswith("lisans")
+    personal_duolingo_price = "249,90" if is_lisansarena else "199,90"
+    personal_duolingo_url = "https://www.shopier.com/51051023" if is_lisansarena else "https://www.shopier.com/51051020"
+    personal_adobe_price = "599,90" if is_lisansarena else "499,90"
+    personal_adobe_url = "https://www.shopier.com/51051024" if is_lisansarena else "https://www.shopier.com/51051022"
+
     # 1. 3 Aylık / 3 Ay
     if re.search(r"\b3\s*ay(lik)?\b", norm):
         return (
@@ -763,6 +771,10 @@ def resolve_smart_roadmap_reply(message: str, brand: str = "keyvadi") -> str | N
             "   👉 [Satın Al](https://www.shopier.com/47669118)\n\n"
             "5️⃣ **Kaspersky Total Security Lisans** — 89,90 ₺\n"
             "   👉 [Satın Al](https://www.shopier.com/47669123)\n\n"
+            f"6️⃣ **Duolingo Super 12 Ay - Kendi Hesabına Aktivasyon** — {personal_duolingo_price} ₺\n"
+            f"   👉 [Hemen Satın Al]({personal_duolingo_url})\n\n"
+            f"7️⃣ **Adobe Express 12 Ay - Kendi Hesabına Aktivasyon** — {personal_adobe_price} ₺\n"
+            f"   👉 [Hemen Satın Al]({personal_adobe_url})\n\n"
             "📌 Aradığınız farklı bir program veya lisans var mı?\n"
             "🛍️ Tüm Ürünler: @KeyVadiSatisBot | Canlı Destek: @KeyvadiDestek"
         )
@@ -878,6 +890,7 @@ def resolve_smart_roadmap_reply(message: str, brand: str = "keyvadi") -> str | N
             "• Perplexity Pro: 49,90 ₺ | Claude Pro: 49,90 ₺\n\n"
             "💻 **Tasarım & Yazılım & Lisans:**\n"
             "• Canva Pro (1 Yıl): 39,90 ₺ | CapCut Pro: 39,90 ₺\n"
+            f"• Duolingo Super 12 Ay kişisel: {personal_duolingo_price} ₺ | Adobe Express 12 Ay kişisel: {personal_adobe_price} ₺\n"
             "• Windows 10/11 Pro: 49,90 ₺ | Office 365: 49,90 ₺\n\n"
             "🎟️ **Yemek, Market & Kupon:**\n"
             "• Yemeksepeti 360/270: 45,00 ₺ | 450/350: 50,00 ₺ | Coffy 2+1: 45,00 ₺\n"
