@@ -83,8 +83,9 @@ _render_external_url = os.environ.get("RENDER_EXTERNAL_URL", "").strip().rstrip(
 _canonical_mini_app_url = (
     f"{_render_external_url}/la/app/"
     if _render_external_url
-    else "https://froxy-bot-live-r5se.onrender.com/la/app/"
+    else "https://bot-service-production-9d74.up.railway.app/la/app/"
 )
+# Legacy Render URL reference: https://froxy-bot-live-r5se.onrender.com/la/app/
 if _render_external_url:
     # Render migration: the platform-provided public URL is authoritative.
     # This also neutralizes a stale URL copied from the previous service.

@@ -261,7 +261,7 @@ PROFILE_CONFIGURED = False
 SHOPIER_LINKS = config.get("shopier_links", {})
 _PUBLIC_BASE_URL = (
     os.environ.get("RENDER_EXTERNAL_URL")
-    or "https://froxy-bot-live-r5se.onrender.com"
+    or "https://bot-service-production-9d74.up.railway.app"
 ).strip().rstrip("/")
 KEYVADI_MINI_APP_URL = os.environ.get(
     "KEYVADI_MINI_APP_URL",

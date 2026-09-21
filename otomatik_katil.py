@@ -787,11 +787,22 @@ def sanitize_global_ad_message(msg):
 
 def account_brand(client_name):
     name = (client_name or '').lower()
+    if 'jarvis' in name or name in {'hesap #4', 'jarviscraftonline'}:
+        return 'jarvis'
     if 'lisans' in name or name in {'hesap #3', 'hesap #5'}:
         return 'lisansarena'
     if 'froxy' in name or name in {'hesap #1', 'yerel hesap'}:
         return 'froxy'
     return 'keyvadi'
+
+
+def is_join_only_account(client_name):
+    """Accounts configured to only join groups and never send marketing messages."""
+    cname = get_canonical_account_name(client_name)
+    if cname == 'JarvisCraftOnline':
+        return True
+    configured = os.environ.get("JOIN_ONLY_ACCOUNTS", "").lower()
+    return cname.lower() in configured
 
 
 def account_flags(client_name):
@@ -1019,6 +1030,12 @@ ACTIVE_ACCOUNT_IDENTITIES = {
         'phone': '14176608361',
         'user_id': 8879941384,
         'slot': 3,
+    },
+    'jarviscraft': {
+        'stable_name': 'JarvisCraftOnline',
+        'phone': '13255674614',
+        'user_id': 8387947754,
+        'slot': 4,
     },
 }
 ACTIVE_ACCOUNT_USERNAMES = set(ACTIVE_ACCOUNT_IDENTITIES)
@@ -1980,6 +1997,8 @@ def set_cooldown(grup_name, client_name, entity=None, preserve_existing=False):
 
 def get_canonical_account_name(client_name):
     name = str(client_name or '').strip().lower()
+    if 'jarvis' in name or name in {'hesap #4', 'jarviscraftonline', 'jarviscraft'}:
+        return 'JarvisCraftOnline'
     if 'lisans' in name or name in {'hesap #3', 'hesap #5', 'lisansarenaonline'}:
         return 'LisansArenaOnline'
     if 'froxy' in name or name in {'hesap #1', 'froxyonline', 'froxy_ai', 'c4hex'}:
@@ -2001,6 +2020,9 @@ def get_account_aliases(client_name):
         aliases.add('lisansarenaonline')
         aliases.add('lisansarenadestek')
         aliases.add('lisansarenatr')
+    elif cname == 'JarvisCraftOnline':
+        aliases.add('jarviscraft')
+        aliases.add('jarviscraftonline')
     return aliases
 
 def mark_blast_started(client_name):
@@ -3911,10 +3933,12 @@ def get_expected_ad_accounts():
     expected = {'FroxyOnline', 'KeyVadiOnline'}
     if not is_lisansarena_ad_disabled():
         expected.add('LisansArenaOnline')
+    if os.environ.get("AD_STRING_SESSION_JARVIS"):
+        expected.add('JarvisCraftOnline')
     return expected
 
 
-BEKLENEN_HESAPLAR = {'FroxyOnline', 'KeyVadiOnline', 'LisansArenaOnline'}
+BEKLENEN_HESAPLAR = {'FroxyOnline', 'KeyVadiOnline', 'LisansArenaOnline', 'JarvisCraftOnline'}
 
 
 _last_eksik_alert_time = 0
@@ -4091,6 +4115,7 @@ async def main():
     string_session_key = ""
     string_session_key_2 = ""
     string_session_key_3 = ""
+    string_session_key_4 = ""
     ad_sleep_min = 600
     ad_sleep_max = 1200
     
@@ -4107,18 +4132,22 @@ async def main():
                     os.environ.get("RENDER")
                     or os.environ.get("RENDER_SERVICE_ID")
                     or os.environ.get("RENDER_EXTERNAL_URL")
+                    or os.environ.get("RAILWAY_ENVIRONMENT")
                 )
                 env_froxy = os.environ.get("AD_STRING_SESSION_FROXY", "").strip()
                 env_keyvadi = os.environ.get("AD_STRING_SESSION_KEYVADI", "").strip()
                 env_lisans = os.environ.get("AD_STRING_SESSION_LISANSARENA", "").strip()
+                env_jarvis = os.environ.get("AD_STRING_SESSION_JARVIS", "").strip()
                 if is_render_runtime:
                     string_session_key = env_froxy
                     string_session_key_2 = env_keyvadi
                     string_session_key_3 = env_lisans
+                    string_session_key_4 = env_jarvis
                 else:
                     string_session_key = env_froxy or cfg.get("string_session_key", "") or cfg.get("ad_string_session", "")
                     string_session_key_2 = env_keyvadi or cfg.get("string_session_key_2", "") or cfg.get("ad_string_session2_final", "") or cfg.get("ad_string_session2_new", "")
                     string_session_key_3 = env_lisans or cfg.get("string_session_key_3", "") or cfg.get("ad_string_session3_final", "") or cfg.get("ad_string_session3_new", "")
+                    string_session_key_4 = env_jarvis or cfg.get("string_session_key_4", "")
                 ad_sleep_min = cfg.get("ad_sleep_min", 600)
                 ad_sleep_max = cfg.get("ad_sleep_max", 1200)
         except:
@@ -4197,6 +4226,26 @@ async def main():
             last_error='LisansArena reklam hesabi 13 Eylul saat 12:00 itibariyla otomatik acilacak.',
             next_blast_at=None,
         )
+
+    # Client 4 (JarvisCraft - Sadece gruplara katılır, reklam mesajı atmaz)
+    if string_session_key_4:
+        print("🔑 4. Hesap (JarvisCraft): StringSession kullanılarak bağlanılıyor...")
+        try:
+            from telethon.sessions import StringSession
+            client4 = TelegramClient(StringSession(string_session_key_4), api_id, api_hash, timeout=20, connection_retries=-1, auto_reconnect=True, flood_sleep_threshold=5)
+            await client4.connect()
+            if await client4.is_user_authorized():
+                me = await client4.get_me()
+                active_clients.append((client4, "Hesap #4", {"id": me.id, "slot": 4}))
+                print(f"✅ 4. Hesap (JarvisCraft) yetkilendirildi. ID: {me.id} (@{me.username})")
+            else:
+                print("❌ HATA: 4. Hesap (JarvisCraft) yetkilendirilmemiş!")
+        except Exception as e:
+            report_client_error(4, e)
+            try:
+                await client4.disconnect()
+            except Exception:
+                pass
 
     # Fallback to local session file if no string session is configured at all
     if not string_session_key and not string_session_key_2 and not string_session_key_3:
@@ -5159,6 +5208,10 @@ async def main():
             # NameError -> worker cokup 60 saniyede bir yeniden basliyordu.
             sent_count = 0
             fail_count = 0
+
+            if is_join_only_account(client_name):
+                print(f"[{client_name}] 🛡️ SADECE GRUBA KATILMA MODU AKTİF! Reklam/mesaj gönderimi kapalı.")
+                blast_targets = []
 
             if defer_for_floor or not blast_targets:
                 if defer_for_floor:

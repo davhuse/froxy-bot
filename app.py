@@ -953,7 +953,7 @@ def status():
         ad_accounts = {}
 
     process_running = bool(ad_processes)
-    expected_accounts = ('FroxyOnline', 'KeyVadiOnline', 'LisansArenaOnline')
+    expected_accounts = ('FroxyOnline', 'KeyVadiOnline', 'LisansArenaOnline', 'JarvisCraftOnline')
     for account_name in expected_accounts:
         account = ad_accounts.setdefault(account_name, {})
         account['process_running'] = process_running
@@ -1194,7 +1194,7 @@ def system_checkup():
         'keyvadi_mini_app': {
             'url': os.environ.get(
                 'KEYVADI_MINI_APP_URL',
-                f"{(os.environ.get('RENDER_EXTERNAL_URL') or 'https://froxy-bot-live-r5se.onrender.com').rstrip('/')}/keyvadi/",
+                f"{(os.environ.get('RENDER_EXTERNAL_URL') or os.environ.get('PUBLIC_BASE_URL') or 'https://bot-service-production-9d74.up.railway.app').rstrip('/')}/keyvadi/",
             ),
             'mounted': True,
         },
@@ -2509,7 +2509,7 @@ def api_groups():
 def keep_alive():
     import urllib.request
     time.sleep(30)  # App'in ayağa kalkmasını bekle
-    render_url = os.environ.get("RENDER_EXTERNAL_URL", "https://froxy-bot-live-r5se.onrender.com")
+    render_url = os.environ.get("RENDER_EXTERNAL_URL", "https://bot-service-production-9d74.up.railway.app")
     ping_url = render_url.rstrip('/') + "/api/status"
     print(f"[KeepAlive] Başlatıldı. Her 10dk {ping_url} adresine ping atılacak.")
     while True:
