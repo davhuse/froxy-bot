@@ -12,12 +12,12 @@ os.environ["FROXY_STORE_BACKEND"] = "memory"
 os.environ["FROXY_ALLOW_DEV_AUTH"] = "1"
 
 from miniapp_froxy import server  # noqa: E402
-from miniapp_froxy.froxy_gateway import FroxyGateway  # noqa: E402
+from miniapp_froxy.froxy_gateway import FroxyGateway, Provider  # noqa: E402
 from miniapp_froxy.froxy_store import FroxyStore  # noqa: E402
 
 
 class CatalogGateway:
-    def public_catalog(self):
+    def public_catalog(self, force=False):
         rows = [
             {"id": f"vendor/model-{index}", "name": f"Model {index}", "provider": "vendor", "family": "Test", "kind": "chat", "capabilities": ["chat", "reasoning"] if index % 2 or index == 0 else ["chat"], "availability": "active", "selectable": True, "estimated_1k_credits": index + 1}
             for index in range(7)
@@ -27,7 +27,7 @@ class CatalogGateway:
     def image_models(self):
         return []
 
-    def media_models(self, modality):
+    def media_models(self, modality, force=False):
         return [{"id": "catalog-video", "name": "Catalog Video", "provider": "vendor", "kind": modality, "availability": "catalog_only", "selectable": False, "active": False}]
 
 
@@ -59,6 +59,11 @@ class FroxyV2ApiTests(unittest.TestCase):
         with mock.patch.object(server.gateway, "public_catalog", return_value={"models": rows, "providers": {}}):
             body = self.client.get("/api/models?scope=recommended&limit=40").get_json()
         self.assertEqual(["Shared Model", "Unique Model"], [row["name"] for row in body["models"]])
+
+    def test_force_refresh_is_forwarded_to_model_catalog(self):
+        with mock.patch.object(server.gateway, "public_catalog", wraps=server.gateway.public_catalog) as catalog:
+            self.client.get("/api/models?refresh=1&limit=1")
+        catalog.assert_called_once_with(force=True)
 
     def test_model_detail_contains_health_pricing_and_schema(self):
         body = self.client.get("/api/models/vendor/model-1").get_json()
@@ -96,6 +101,24 @@ class FroxyV2ApiTests(unittest.TestCase):
 
 
 class FroxyCatalogCacheTests(unittest.TestCase):
+    def test_reachable_unpriced_provider_is_catalog_only(self):
+        gateway = FroxyGateway(session=mock.Mock())
+        provider = Provider(
+            "test-provider", "Test Provider", "https://example.test/v1", ("TEST_PROVIDER_KEY",)
+        )
+        response = mock.Mock(status_code=200)
+        response.json.return_value = {"data": [
+            {"id": "test-chat", "pricing": {}},
+            {"id": "test-video", "type": "video"},
+        ]}
+        gateway.session.get.return_value = response
+        with mock.patch.object(gateway, "_ordered_keys", return_value=["redacted-test-key"]):
+            rows, status = gateway._fetch_provider(provider)
+        self.assertEqual(["test-chat"], [row["provider_model_id"] for row in rows])
+        self.assertTrue(status["healthy"])
+        self.assertTrue(status["catalog_only"])
+        self.assertEqual("test-video", gateway._media_catalog[0]["provider_model_id"])
+
     def test_non_chat_modalities_never_enter_chat_picker(self):
         self.assertFalse(FroxyGateway._is_chat_model({"kind": "audio", "provider_model_id": "gpt-audio", "modality": "text->text"}))
         self.assertFalse(FroxyGateway._is_chat_model({"kind": "image", "provider_model_id": "qwen-image", "modality": "text->text"}))

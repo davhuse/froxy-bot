@@ -356,9 +356,18 @@ class FroxyGateway:
                     rows = []
                 normalized_all = [self._normalize_model(provider, row) for row in rows if isinstance(row, dict)]
                 normalized_all = [row for row in normalized_all if row]
-                if provider.slug == "aimlapi":
+                # A provider's model endpoint is the source of truth for every
+                # modality it advertises.  Keep non-chat rows in the media
+                # catalogue as well; previously only AIMLAPI rows survived,
+                # which made working video/audio/embedding providers appear
+                # to have no models.  The rows remain catalog-only until a
+                # provider-specific execution schema is verified.
+                discovered_media = [row for row in normalized_all if row.get("kind") != "chat"]
+                if discovered_media:
                     with self._lock:
-                        self._media_catalog = [row for row in normalized_all if row.get("kind") != "chat"]
+                        merged_media = {str(row.get("id")): row for row in self._media_catalog if row.get("id")}
+                        merged_media.update({str(row.get("id")): row for row in discovered_media if row.get("id")})
+                        self._media_catalog = list(merged_media.values())
                 normalized = [row for row in normalized_all if self._is_chat_model(row)]
                 billable_or_free = [
                     row for row in normalized
@@ -366,11 +375,12 @@ class FroxyGateway:
                 ]
                 return normalized, {
                     "provider": provider.slug,
-                    # A provider can expose a catalogue while rejecting
-                    # inference (for example an exhausted FreeModel balance).
-                    # Do not label that provider active or let it enter the
-                    # paid model picker without verified pricing.
-                    "healthy": bool(billable_or_free),
+                    # A reachable model endpoint is healthy even when its
+                    # pricing metadata is incomplete.  Such models are kept
+                    # visible as catalog-only (and never selectable) instead
+                    # of being mislabeled unavailable or disappearing from
+                    # the provider inventory.
+                    "healthy": bool(normalized_all),
                     "catalog_only": bool(normalized) and not bool(billable_or_free),
                     "status": 200,
                     "models": len(normalized),
@@ -867,8 +877,8 @@ class FroxyGateway:
             }
         return statuses
 
-    def public_catalog(self) -> dict[str, Any]:
-        rows = self.refresh_catalog()
+    def public_catalog(self, force: bool = False) -> dict[str, Any]:
+        rows = self.refresh_catalog(force=force)
         public = []
         for row in rows:
             item = {key: value for key, value in row.items() if key not in {
@@ -1174,12 +1184,40 @@ class FroxyGateway:
                 "status_reason": reason,
                 "last_checked_at": runtime.get("last_runtime_at"),
             })
+        # Include image models discovered from every reachable provider's
+        # model endpoint.  They are intentionally catalog-only until their
+        # provider-specific generation schema is verified, but hiding them
+        # would make the media library look incomplete.
+        with self._lock:
+            discovered = list(self._media_catalog)
+        seen_provider_models = {str(row.get("provider_model") or "") for row in rows}
+        for source in discovered:
+            if str(source.get("kind") or "").lower() != "image":
+                continue
+            provider_model = str(source.get("provider_model_id") or "")
+            if not provider_model or provider_model in seen_provider_models:
+                continue
+            item = {key: value for key, value in source.items() if key not in {
+                "prompt_usd_per_token", "completion_usd_per_token", "image_usd", "provider_model_id",
+            }}
+            provider = str(source.get("provider") or "")
+            item.update({
+                "provider_model": provider_model,
+                "kind": "image",
+                "estimated_credits": max(1, cost),
+                "active": False,
+                "selectable": False,
+                "availability": "catalog_only",
+                "status_reason": "Model bulundu; güvenli görsel çağrı şeması doğrulanmayı bekliyor",
+            })
+            rows.append(item)
+            seen_provider_models.add(provider_model)
         return rows
 
-    def media_models(self, modality: str = "image") -> list[dict[str, Any]]:
+    def media_models(self, modality: str = "image", force: bool = False) -> list[dict[str, Any]]:
         """Return the broad catalog while keeping only implemented schemas selectable."""
         wanted = str(modality or "image").lower()
-        self.refresh_catalog()
+        self.refresh_catalog(force=force)
         implemented = self.image_models() if wanted == "image" else []
         rows: list[dict[str, Any]] = [dict(row) for row in implemented]
         seen = {str(row.get("provider_model") or row.get("id")) for row in rows}

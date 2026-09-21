@@ -319,8 +319,9 @@ def get_models():
     visitor = request.headers.get("X-Forwarded-For", request.remote_addr or "anonymous").split(",")[0].strip()
     if not _rate_limit("models", visitor, 30):
         return jsonify({"success": False, "error": "Çok fazla model yenileme isteği"}), 429
+    force_refresh = str(request.args.get("refresh") or "").lower() in {"1", "true", "yes"}
     try:
-        catalog = gateway.public_catalog()
+        catalog = gateway.public_catalog(force=force_refresh)
     except Exception:
         return jsonify({"success": False, "error": "Model kataloğu şu anda yenilenemiyor"}), 503
     rows = list(catalog.get("models") or [])
@@ -504,6 +505,9 @@ def image_models():
     visitor = request.headers.get("X-Forwarded-For", request.remote_addr or "anonymous").split(",")[0].strip()
     if not _rate_limit("image-models", visitor, 30):
         return jsonify({"success": False, "error": "Çok fazla görsel model isteği"}), 429
+    force_refresh = str(request.args.get("refresh") or "").lower() in {"1", "true", "yes"}
+    if force_refresh:
+        gateway.refresh_catalog(force=True)
     models = gateway.image_models()
     active = [row for row in models if row.get("active")]
     return jsonify({
@@ -522,7 +526,8 @@ def media_models():
     modality = str(request.args.get("modality") or "image").lower()
     if modality not in {"image", "edit", "variation", "upscale", "background", "video", "audio", "music", "3d", "embedding", "realtime"}:
         return jsonify({"success": False, "error": "Geçersiz medya türü"}), 400
-    rows = gateway.media_models(modality)
+    force_refresh = str(request.args.get("refresh") or "").lower() in {"1", "true", "yes"}
+    rows = gateway.media_models(modality, force=force_refresh)
     normalized = []
     for row in rows:
         item = dict(row)
