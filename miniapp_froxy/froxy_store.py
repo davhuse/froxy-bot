@@ -187,6 +187,7 @@ class FroxyStore:
             "chats": [],
             "image_job_ids": [],
             "topup_ids": [],
+            "research_watchlists": [],
             "processed_keys": {},
             "reservations": {},
             "ledger_tail": [],
@@ -237,6 +238,7 @@ class FroxyStore:
         # them out of /me prevents an old account from making every balance
         # refresh unnecessarily large.
         safe.pop("chats", None)
+        safe.pop("research_watchlists", None)
         safe["wallet_balance"] = round(int(safe.get("wallet_kurus", 0)) / 100, 2)
         safe["free_text_remaining"] = max(0, 3 - int(safe.get("free_text_used", 0)))
         safe["free_image_remaining"] = max(0, 1 - int(safe.get("free_image_used", 0)))
@@ -543,6 +545,68 @@ class FroxyStore:
         _, deleted = self._mutate_doc(self._user_doc_id(user_id), lambda: self._default_user(user_id), mutate)
         return bool(deleted)
 
+    def list_watchlists(self, user_id: int) -> list[dict[str, Any]]:
+        user, _ = self._read(self._user_doc_id(user_id))
+        rows = list((user or {}).get("research_watchlists", []))
+        return list(reversed(copy.deepcopy(rows)))
+
+    def save_watchlist(self, user_id: int, topic: str, query: str | None = None) -> dict[str, Any]:
+        clean_topic = " ".join(str(topic or "").split())[:120]
+        clean_query = " ".join(str(query or clean_topic).split())[:300]
+        if len(clean_topic) < 2:
+            raise ValueError("Takip konusu çok kısa")
+        watch_id = uuid.uuid5(uuid.NAMESPACE_URL, f"froxy:{user_id}:{clean_query.lower()}").hex[:20]
+
+        def mutate(user: dict[str, Any]) -> dict[str, Any]:
+            rows = list(user.get("research_watchlists", []))
+            existing = next((row for row in rows if row.get("watch_id") == watch_id), None)
+            if existing:
+                return copy.deepcopy(existing)
+            row = {
+                "watch_id": watch_id,
+                "topic": clean_topic,
+                "query": clean_query,
+                "status": "ready",
+                "results": [],
+                "created_at": _utc_ts(),
+                "updated_at": _utc_ts(),
+            }
+            rows.append(row)
+            user["research_watchlists"] = rows[-20:]
+            user["updated_at"] = _utc_ts()
+            return copy.deepcopy(row)
+
+        _, row = self._mutate_doc(self._user_doc_id(user_id), lambda: self._default_user(user_id), mutate)
+        return row
+
+    def update_watchlist(self, user_id: int, watch_id: str, updates: dict[str, Any]) -> dict[str, Any] | None:
+        safe_updates = {key: copy.deepcopy(value) for key, value in updates.items() if key in {"status", "results", "provider", "refreshed_at", "error"}}
+
+        def mutate(user: dict[str, Any]) -> dict[str, Any] | None:
+            rows = list(user.get("research_watchlists", []))
+            target = next((row for row in rows if row.get("watch_id") == str(watch_id)), None)
+            if not target:
+                return None
+            target.update(safe_updates)
+            target["updated_at"] = _utc_ts()
+            user["research_watchlists"] = rows
+            user["updated_at"] = _utc_ts()
+            return copy.deepcopy(target)
+
+        _, row = self._mutate_doc(self._user_doc_id(user_id), lambda: self._default_user(user_id), mutate)
+        return row
+
+    def delete_watchlist(self, user_id: int, watch_id: str) -> bool:
+        def mutate(user: dict[str, Any]) -> bool:
+            rows = list(user.get("research_watchlists", []))
+            filtered = [row for row in rows if row.get("watch_id") != str(watch_id)]
+            user["research_watchlists"] = filtered
+            user["updated_at"] = _utc_ts()
+            return len(filtered) != len(rows)
+
+        _, deleted = self._mutate_doc(self._user_doc_id(user_id), lambda: self._default_user(user_id), mutate)
+        return bool(deleted)
+
     def create_image_job(self, user_id: int, job: dict[str, Any]) -> dict[str, Any]:
         job_id = str(job.get("job_id") or uuid.uuid4().hex)
         row = {**copy.deepcopy(job), "job_id": job_id, "user_id": int(user_id), "status": "queued", "created_at": _utc_ts(), "updated_at": _utc_ts()}
@@ -576,6 +640,16 @@ class FroxyStore:
             row.pop("_memory_version", None)
             return row
         return None
+
+    def list_image_jobs(self, user_id: int, limit: int = 30) -> list[dict[str, Any]]:
+        user, _ = self._read(self._user_doc_id(user_id))
+        ids = list((user or {}).get("image_job_ids", []))[-max(1, min(int(limit), 40)):]
+        rows = []
+        for job_id in reversed(ids):
+            row = self.get_image_job(user_id, str(job_id))
+            if row:
+                rows.append(row)
+        return rows
 
     def update_image_job(self, job_id: str, updates: dict[str, Any]) -> dict[str, Any]:
         doc_id = f"froxy_job_v1_{_safe_id(job_id)}"

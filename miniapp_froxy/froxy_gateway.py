@@ -3,15 +3,20 @@
 from __future__ import annotations
 
 import base64
+import hashlib
+import hmac
 import json
 import math
 import os
+import sqlite3
+import tempfile
 import threading
 import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from io import BytesIO
+from pathlib import Path
 from typing import Any, Iterable
 from urllib.parse import quote, urlparse
 
@@ -51,6 +56,21 @@ PROVIDER_LOGOS = {
     "modal": "assets/provider_modal.svg",
 }
 
+# Vendor-maintained marks replace the old generated letter tiles.  The
+# transport/provider mark remains separate from the model developer mark.
+BRAND_LOGOS = {
+    "openai": "assets/provider_openai.svg",
+    "anthropic": "assets/provider_anthropic.svg",
+    "google": "assets/provider_google.svg",
+    "meta": "assets/provider_meta.svg",
+    "mistral": "assets/provider_mistral.svg",
+    "nvidia": "assets/provider_nvidia.svg",
+    "deepseek": "assets/provider_deepseek.svg",
+    "xai": "assets/provider_xai.svg",
+    "huggingface": "assets/provider_huggingface.svg",
+    "cloudflare": "assets/provider_cloudflare.svg",
+}
+
 
 def _model_brand(provider_slug: str, model_id: str, name: str) -> str:
     value = f"{model_id} {name}".lower()
@@ -62,7 +82,55 @@ def _model_brand(provider_slug: str, model_id: str, name: str) -> str:
         return "google"
     if "meta-llama" in value or "llama" in value:
         return "meta"
+    if "mistral" in value or "mixtral" in value:
+        return "mistral"
+    if "deepseek" in value:
+        return "deepseek"
+    if "grok" in value or "x-ai" in value:
+        return "xai"
+    if "nvidia" in value or "nemotron" in value:
+        return "nvidia"
     return provider_slug if provider_slug in PROVIDER_LOGOS else ""
+
+
+def _model_family(model_id: str, name: str) -> str:
+    value = f"{model_id} {name}".lower()
+    for family, fragments in (
+        ("GPT", ("gpt-", "openai/", "o1-", "o3-", "o4-")),
+        ("Claude", ("claude", "anthropic")),
+        ("Gemini", ("gemini", "gemma")),
+        ("Llama", ("llama", "meta-")),
+        ("Qwen", ("qwen",)),
+        ("DeepSeek", ("deepseek",)),
+        ("Mistral", ("mistral", "mixtral")),
+        ("Grok", ("grok", "x-ai")),
+        ("Flux", ("flux",)),
+    ):
+        if any(fragment in value for fragment in fragments):
+            return family
+    return "AI"
+
+
+def _model_modality(raw: dict[str, Any], model_id: str) -> tuple[str, list[str], list[str]]:
+    raw_type = str(raw.get("type") or raw.get("task") or "").lower()
+    architecture = raw.get("architecture") if isinstance(raw.get("architecture"), dict) else {}
+    declared = str(architecture.get("modality") or raw.get("modality") or "").lower()
+    value = f"{raw_type} {declared} {model_id.lower()}"
+    if "realtime" in value:
+        return "realtime", ["audio", "text"], ["audio", "text"]
+    if any(token in value for token in ("text-to-speech", "speech", "tts", "audio", "music")):
+        return ("music" if "music" in value else "audio"), ["text", "audio"], ["audio", "text"]
+    if "video" in value:
+        return "video", ["text", "image", "video"], ["video"]
+    if any(token in value for token in ("image", "flux", "stable-diffusion", "imagen")) and "text->text" not in declared:
+        return "image", ["text", "image"], ["image"]
+    if "embedding" in value or "embed-" in value:
+        return "embedding", ["text"], ["embedding"]
+    if "3d" in value:
+        return "3d", ["text", "image"], ["3d"]
+    inputs = [part for part in declared.split("->", 1)[0].split("+") if part] if "->" in declared else ["text"]
+    outputs = [part for part in declared.rsplit("->", 1)[-1].split("+") if part] if declared else ["text"]
+    return "chat", inputs or ["text"], outputs or ["text"]
 
 
 def _first_key(*names: str) -> str:
@@ -82,6 +150,11 @@ def _all_keys(*names: str) -> list[str]:
             if value and value not in result:
                 result.append(value)
     return result
+
+
+def _key_fingerprint(value: str) -> str:
+    secret = (os.environ.get("FROXY_KEY_FINGERPRINT_SECRET") or os.environ.get("SECRET_KEY") or "froxy-local-fingerprint-v1").encode()
+    return hmac.new(secret, value.encode(), hashlib.sha256).hexdigest()[:16]
 
 
 def _float(value: Any, default: float = 0.0) -> float:
@@ -112,7 +185,7 @@ class Provider:
 
 
 class FroxyGateway:
-    REVISION = "2026-09-21.1"
+    REVISION = "2026-09-21.2"
     CATALOG_TTL = 15 * 60
 
     def __init__(self, session: requests.Session | None = None):
@@ -124,7 +197,51 @@ class FroxyGateway:
         self._provider_status: dict[str, dict[str, Any]] = {}
         self._key_indexes: dict[str, int] = {}
         self._runtime_health: dict[str, dict[str, Any]] = {}
+        self._credential_fingerprints: dict[str, list[str]] = {
+            provider.slug: [_key_fingerprint(value) for value in provider.keys]
+            for provider in self.providers() if provider.keys
+        }
         self._last_catalog_error = ""
+        self._media_catalog: list[dict[str, Any]] = []
+        self._cache_path = Path(os.environ.get("FROXY_CATALOG_DB") or (Path(tempfile.gettempdir()) / "froxy_catalog_v2.db"))
+        self._cache_enabled = bool(os.environ.get("FROXY_CATALOG_DB")) or (session is None and "PYTEST_CURRENT_TEST" not in os.environ)
+        if self._cache_enabled:
+            self._load_catalog_cache()
+
+    def _load_catalog_cache(self) -> None:
+        """Warm the model library without involving Firestore or provider I/O."""
+        try:
+            with sqlite3.connect(str(self._cache_path), timeout=2) as db:
+                db.execute("CREATE TABLE IF NOT EXISTS catalog_cache (cache_key TEXT PRIMARY KEY, payload TEXT NOT NULL, refreshed_at REAL NOT NULL)")
+                row = db.execute("SELECT payload, refreshed_at FROM catalog_cache WHERE cache_key='models-v2'").fetchone()
+            if not row:
+                return
+            payload = json.loads(row[0])
+            models = payload.get("models") if isinstance(payload, dict) else None
+            if not isinstance(models, list) or not models:
+                return
+            self._catalog = [item for item in models if isinstance(item, dict)]
+            self._models = {str(item["id"]): dict(item) for item in self._catalog if item.get("id")}
+            self._provider_status = payload.get("providers") if isinstance(payload.get("providers"), dict) else {}
+            self._media_catalog = payload.get("media") if isinstance(payload.get("media"), list) else []
+            self._refreshed_at = float(row[1] or 0)
+        except (OSError, sqlite3.Error, ValueError, TypeError):
+            return
+
+    def _save_catalog_cache(self) -> None:
+        if not self._cache_enabled:
+            return
+        payload = json.dumps({"models": self._catalog, "providers": self._provider_status, "media": self._media_catalog}, ensure_ascii=False)
+        try:
+            self._cache_path.parent.mkdir(parents=True, exist_ok=True)
+            with sqlite3.connect(str(self._cache_path), timeout=2) as db:
+                db.execute("CREATE TABLE IF NOT EXISTS catalog_cache (cache_key TEXT PRIMARY KEY, payload TEXT NOT NULL, refreshed_at REAL NOT NULL)")
+                db.execute(
+                    "INSERT INTO catalog_cache(cache_key,payload,refreshed_at) VALUES('models-v2',?,?) ON CONFLICT(cache_key) DO UPDATE SET payload=excluded.payload, refreshed_at=excluded.refreshed_at",
+                    (payload, float(self._refreshed_at)),
+                )
+        except (OSError, sqlite3.Error):
+            return
 
     def _ordered_keys(self, provider: Provider) -> list[str]:
         keys = provider.keys
@@ -227,8 +344,12 @@ class FroxyGateway:
                 rows = payload if isinstance(payload, list) else payload.get("data", payload.get("models", []))
                 if not isinstance(rows, list):
                     rows = []
-                normalized = [self._normalize_model(provider, row) for row in rows if isinstance(row, dict)]
-                normalized = [row for row in normalized if row and self._is_chat_model(row)]
+                normalized_all = [self._normalize_model(provider, row) for row in rows if isinstance(row, dict)]
+                normalized_all = [row for row in normalized_all if row]
+                if provider.slug == "aimlapi":
+                    with self._lock:
+                        self._media_catalog = [row for row in normalized_all if row.get("kind") != "chat"]
+                normalized = [row for row in normalized_all if self._is_chat_model(row)]
                 billable_or_free = [
                     row for row in normalized
                     if row.get("known_pricing") or row.get("is_free")
@@ -275,6 +396,11 @@ class FroxyGateway:
             if image >= 0:
                 image /= 1_000_000
         known_pricing = prompt >= 0 and completion >= 0
+        pricing_state = "verified" if known_pricing else "estimated"
+        if not known_pricing and provider.slug in {"aimlapi", "pollinations", "freemodel"}:
+            prompt = _float(os.environ.get("FROXY_UNKNOWN_INPUT_USD_PER_1K"), 0.005) / 1000
+            completion = _float(os.environ.get("FROXY_UNKNOWN_OUTPUT_USD_PER_1K"), 0.015) / 1000
+            known_pricing = True
         is_free = (
             model_id.endswith(":free")
             or (known_pricing and prompt == 0 and completion == 0)
@@ -282,30 +408,52 @@ class FroxyGateway:
         architecture = raw.get("architecture") if isinstance(raw.get("architecture"), dict) else {}
         modality = str(architecture.get("modality") or raw.get("modality") or "text->text")
         public_id = f"{provider.slug}/{model_id}"
-        name = str(raw.get("name") or raw.get("display_name") or model_id)
+        info = raw.get("info") if isinstance(raw.get("info"), dict) else {}
+        name = str(info.get("name") or raw.get("name") or raw.get("display_name") or model_id)
         brand = _model_brand(provider.slug, model_id, name)
-        context = int(_float(raw.get("context_length", raw.get("context_window", 0)), 0))
+        context = int(_float(info.get("contextLength", raw.get("context_length", raw.get("context_window", 0))), 0))
+        kind, input_types, output_types = _model_modality(raw, model_id)
+        features = [str(value) for value in (raw.get("features") or []) if isinstance(value, str)]
+        reasoning = any("reason" in feature.lower() or "thinking" in feature.lower() for feature in features)
+        capabilities = ["chat"] if kind == "chat" else [kind]
+        if "image" in modality.lower() or "image" in input_types:
+            capabilities.append("vision" if kind == "chat" else "image-input")
+        if reasoning or any(token in model_id.lower() for token in ("reason", "thinking", "o1", "o3", "o4", "gpt-oss")):
+            capabilities.append("reasoning")
         return {
             "id": public_id,
             "provider_model_id": model_id,
             "name": name,
             "provider": provider.slug,
             "provider_label": provider.label,
-            "provider_logo": PROVIDER_LOGOS.get(brand, ""),
-            "capabilities": ["chat", *( ["vision"] if "image" in modality.lower() else [])],
+            "provider_logo": PROVIDER_LOGOS.get(provider.slug, ""),
+            "brand": brand or provider.slug,
+            "brand_logo": BRAND_LOGOS.get(brand, PROVIDER_LOGOS.get(brand, "")),
+            "developer": str(info.get("developer") or raw.get("owned_by") or brand or provider.label),
+            "family": _model_family(model_id, name),
+            "capabilities": capabilities,
+            "features": features,
+            "reasoning_levels": ["adaptive", "high", "max"] if "reasoning" in capabilities else ["adaptive"],
+            "kind": kind,
+            "input_types": input_types,
+            "output_types": output_types,
             "context_length": context,
             "modality": modality,
             "supports_vision": "image" in modality.lower(),
             "is_free": is_free,
             "known_pricing": known_pricing,
+            "pricing_state": pricing_state,
             "prompt_usd_per_token": max(0.0, prompt),
             "completion_usd_per_token": max(0.0, completion),
             "image_usd": max(0.0, image),
             "is_froxy": False,
+            "description": str(info.get("description") or raw.get("description") or "")[:500],
         }
 
     @staticmethod
     def _is_chat_model(model: dict[str, Any]) -> bool:
+        if str(model.get("kind") or "chat").lower() != "chat":
+            return False
         model_id = str(model.get("provider_model_id", "")).lower()
         denied = (
             "whisper", "speech", "tts", "guard", "moderation", "embedding",
@@ -346,6 +494,11 @@ class FroxyGateway:
                 statuses[status["provider"]] = status
 
         if not all_models:
+            with self._lock:
+                stale = list(self._catalog)
+            if stale:
+                self._last_catalog_error = "Sağlayıcılar yanıt vermedi; son başarılı SQLite kataloğu kullanılıyor"
+                return stale
             # Keep a useful catalog even while providers are booting, rate
             # limited, or missing credentials. These rows are deliberately
             # non-selectable and can never reach the billing/chat path.
@@ -365,6 +518,7 @@ class FroxyGateway:
                 self._models = models_by_id
                 self._provider_status = statuses
                 self._refreshed_at = time.time()
+            self._save_catalog_cache()
             return list(visible)
 
         unique: dict[str, dict[str, Any]] = {}
@@ -384,6 +538,12 @@ class FroxyGateway:
             item.setdefault("name", str(item.get("provider_model_id") or item.get("id") or "Model"))
             item.setdefault("provider_label", provider.title() or "Sağlayıcı")
             item.setdefault("provider_logo", PROVIDER_LOGOS.get(provider, ""))
+            item.setdefault("brand_logo", item.get("provider_logo", ""))
+            item.setdefault("family", _model_family(str(item.get("provider_model_id") or ""), str(item.get("name") or "")))
+            item.setdefault("kind", "chat")
+            item.setdefault("input_types", ["text"])
+            item.setdefault("output_types", ["text"])
+            item.setdefault("pricing_state", "verified" if item.get("known_pricing") else "estimated")
             item.setdefault("capabilities", ["chat"])
             status = statuses.get(provider, {})
             configured = bool(status.get("configured"))
@@ -425,6 +585,7 @@ class FroxyGateway:
             self._models = models_by_id
             self._provider_status = statuses
             self._refreshed_at = time.time()
+        self._save_catalog_cache()
         return list(visible)
 
     @staticmethod
@@ -654,6 +815,7 @@ class FroxyGateway:
         for slug, status in statuses.items():
             status["capabilities"] = ["chat", *( ["image"] if slug in image_providers else [])]
             status["provider_logo"] = PROVIDER_LOGOS.get(slug, "")
+            status["key_count"] = len(self._credential_fingerprints.get(slug, []))
             status["image_models"] = image_counts.get(slug, 0)
             if slug in runtime:
                 status.update(runtime[slug])
@@ -785,6 +947,8 @@ class FroxyGateway:
         *,
         max_tokens: int = 800,
         temperature: float = 0.7,
+        reasoning_level: str = "adaptive",
+        mode: str = "general",
     ) -> Iterable[dict[str, Any]]:
         last_error = "Model yanıt vermedi"
         for target in self._target_candidates(model):
@@ -804,11 +968,21 @@ class FroxyGateway:
                         "stream": True,
                     }
                     provider_model_id = str(target["provider_model_id"]).lower()
-                    if provider.slug == "groq" and "qwen" in provider_model_id:
-                        payload["reasoning_effort"] = "none"
-                    elif provider.slug == "groq" and "gpt-oss" in provider_model_id:
-                        payload["reasoning_effort"] = "low"
-                        payload["include_reasoning"] = False
+                    requested = str(reasoning_level or "adaptive").lower()
+                    supports_reasoning = "reasoning" in (target.get("capabilities") or []) or any(
+                        token in provider_model_id for token in ("reason", "thinking", "gpt-oss", "o1", "o3", "o4")
+                    )
+                    if supports_reasoning:
+                        if requested == "max":
+                            payload["reasoning_effort"] = "high"
+                        elif requested in {"high", "balanced"}:
+                            payload["reasoning_effort"] = "medium"
+                        elif mode in {"code", "plan", "research"}:
+                            payload["reasoning_effort"] = "high"
+                        else:
+                            payload["reasoning_effort"] = "low"
+                        if provider.slug == "groq" and "gpt-oss" in provider_model_id:
+                            payload["include_reasoning"] = False
                     response = self.session.post(
                         f"{provider.base_url}{provider.chat_path}",
                         headers=self._headers(provider, key),
@@ -975,6 +1149,12 @@ class FroxyGateway:
                 "provider": provider,
                 "provider_label": {"google": "Google", "aimlapi": "AI/ML API", "imagegpt": "ImageGPT"}.get(provider, provider.title()),
                 "provider_logo": PROVIDER_LOGOS.get(provider, ""),
+                "brand_logo": BRAND_LOGOS.get(_model_brand(provider, model, name), PROVIDER_LOGOS.get(provider, "")),
+                "developer": _model_brand(provider, model, name).title() or provider.title(),
+                "family": _model_family(model, name),
+                "kind": "image",
+                "input_types": ["text", "image"],
+                "output_types": ["image"],
                 "provider_model": model,
                 "capabilities": ["text-to-image"],
                 "estimated_credits": estimated,
@@ -984,6 +1164,39 @@ class FroxyGateway:
                 "status_reason": reason,
                 "last_checked_at": runtime.get("last_runtime_at"),
             })
+        return rows
+
+    def media_models(self, modality: str = "image") -> list[dict[str, Any]]:
+        """Return the broad catalog while keeping only implemented schemas selectable."""
+        wanted = str(modality or "image").lower()
+        self.refresh_catalog()
+        implemented = self.image_models() if wanted == "image" else []
+        rows: list[dict[str, Any]] = [dict(row) for row in implemented]
+        seen = {str(row.get("provider_model") or row.get("id")) for row in rows}
+        with self._lock:
+            discovered = list(self._media_catalog)
+        for source in discovered:
+            kind = str(source.get("kind") or "").lower()
+            if wanted in {"edit", "variation", "upscale", "background"}:
+                matches = kind == "image"
+            else:
+                matches = kind == wanted
+            provider_model = str(source.get("provider_model_id") or "")
+            if not matches or not provider_model or provider_model in seen:
+                continue
+            item = {key: value for key, value in source.items() if key not in {
+                "prompt_usd_per_token", "completion_usd_per_token", "image_usd", "provider_model_id",
+            }}
+            item.update({
+                "provider_model": provider_model,
+                "active": False,
+                "selectable": False,
+                "availability": "catalog_only",
+                "status_reason": "Model bulundu; güvenli çağrı şeması doğrulanmayı bekliyor",
+                "estimated_credits": max(1, self.image_credit_cost()),
+            })
+            rows.append(item)
+            seen.add(provider_model)
         return rows
 
     def get_image_model(self, public_id: str) -> dict[str, Any]:

@@ -82,3 +82,9 @@ miniapp_lisansarena/pending_topups.json
 runtime_claims.db*
 blast_checkpoint_backup.db*
 announcement_queue_discount_*.json
+
+# Froxy V2 frontend build artifacts
+miniapp_froxy/frontend/node_modules/
+miniapp_froxy/dist/
+miniapp_froxy/frontend/*.tsbuildinfo
+miniapp_froxy/frontend/.pytest_cache/

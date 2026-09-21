@@ -43,13 +43,14 @@ except (ImportError, ValueError):  # pragma: no cover
 
 
 BASE_DIR = Path(__file__).resolve().parent
+DIST_DIR = BASE_DIR / "dist"
 PRODUCTS_DB_PATH = BASE_DIR / "products_db.json"
 MAX_INIT_DATA_AGE = int(os.environ.get("FROXY_INIT_DATA_MAX_AGE", "86400"))
 SUPPORT_HANDLE = "@FroxyDestekBOT"
 MANUAL_DELIVERY_LABEL = "1–3 iş günü içinde manuel teslimat"
 
-app = Flask(__name__, static_folder=str(BASE_DIR), static_url_path="")
-app.config.update(MAX_CONTENT_LENGTH=256 * 1024)
+app = Flask(__name__, static_folder=str(DIST_DIR if DIST_DIR.exists() else BASE_DIR), static_url_path="")
+app.config.update(MAX_CONTENT_LENGTH=12 * 1024 * 1024)
 store = FroxyStore()
 gateway = FroxyGateway()
 image_executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="froxy-image")
@@ -211,13 +212,14 @@ def load_products() -> list[dict]:
 def add_froxy_security_headers(response):
     response.headers.setdefault("X-Content-Type-Options", "nosniff")
     response.headers.setdefault("Referrer-Policy", "same-origin")
-    response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+    response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(self), geolocation=()")
     response.headers.setdefault("Cache-Control", "no-store")
     response.headers["Content-Security-Policy"] = (
-        "default-src 'self'; script-src 'self' 'unsafe-inline' https://telegram.org; "
+        "default-src 'self'; script-src 'self' 'unsafe-inline' https://telegram.org https://cdn.jsdelivr.net; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; "
-        "connect-src 'self'; frame-ancestors https://web.telegram.org https://*.telegram.org; "
+        "connect-src 'self' https://cdn.jsdelivr.net; media-src 'self' data: blob: https:; worker-src 'self' blob:; "
+        "frame-ancestors https://web.telegram.org https://*.telegram.org; "
         "base-uri 'none'; form-action 'self' https://www.shopier.com"
     )
     response.headers.pop("X-Frame-Options", None)
@@ -231,7 +233,16 @@ def handle_store_unavailable(_error):
 
 @app.route("/")
 def serve_index():
-    return send_from_directory(str(BASE_DIR), "index.html")
+    root = DIST_DIR if DIST_DIR.exists() else BASE_DIR
+    return send_from_directory(str(root), "index.html")
+
+
+@app.route("/assets/<path:path>")
+def serve_froxy_asset(path: str):
+    built = DIST_DIR / "assets" / path
+    if built.exists():
+        return send_from_directory(str(DIST_DIR / "assets"), path)
+    return send_from_directory(str(BASE_DIR / "assets"), path)
 
 
 @app.route("/api/health", methods=["GET"])
@@ -310,7 +321,74 @@ def get_models():
         catalog = gateway.public_catalog()
     except Exception:
         return jsonify({"success": False, "error": "Model kataloğu şu anda yenilenemiyor"}), 503
-    return jsonify({"success": True, **catalog})
+    rows = list(catalog.get("models") or [])
+    scope = str(request.args.get("scope") or "all").lower()
+    modality = str(request.args.get("modality") or "").lower().strip()
+    provider = str(request.args.get("provider") or "").lower().strip()
+    availability = str(request.args.get("availability") or "").lower().strip()
+    capability = str(request.args.get("capability") or "").lower().strip()
+    query = " ".join(str(request.args.get("q") or "").lower().split())[:120]
+    if provider:
+        rows = [row for row in rows if str(row.get("provider") or "").lower() == provider]
+    if modality:
+        rows = [row for row in rows if str(row.get("kind") or "chat").lower() == modality]
+    if availability:
+        rows = [row for row in rows if str(row.get("availability") or "").lower() == availability]
+    if capability:
+        rows = [row for row in rows if capability in [str(value).lower() for value in row.get("capabilities") or []]]
+    if query:
+        rows = [row for row in rows if query in " ".join(str(row.get(key) or "") for key in ("name", "provider", "provider_label", "developer", "family", "description")).lower()]
+
+    def score(row: dict) -> tuple:
+        model_id = str(row.get("id") or "").lower()
+        preferred = any(token in model_id for token in ("froxy-", "gpt", "claude", "gemini", "llama", "qwen", "deepseek", "mistral"))
+        return (
+            0 if row.get("availability") == "active" else 1,
+            0 if row.get("is_froxy") else 1,
+            0 if preferred else 1,
+            int(row.get("estimated_1k_credits") or 0),
+            str(row.get("name") or "").lower(),
+        )
+
+    rows.sort(key=score)
+    if scope == "recommended":
+        active = [row for row in rows if row.get("availability") == "active"]
+        rows = active[:48]
+    try:
+        offset = max(0, int(request.args.get("cursor") or 0))
+        limit = max(1, min(int(request.args.get("limit") or (40 if scope == "recommended" else len(rows) or 1)), 100))
+    except (TypeError, ValueError):
+        return jsonify({"success": False, "error": "Geçersiz sayfalama"}), 400
+    total_filtered = len(rows)
+    page = rows[offset:offset + limit]
+    next_cursor = str(offset + limit) if offset + limit < total_filtered else None
+    facets = {
+        "providers": sorted({str(row.get("provider") or "") for row in rows if row.get("provider")}),
+        "capabilities": sorted({str(value) for row in rows for value in (row.get("capabilities") or [])}),
+        "families": sorted({str(row.get("family") or "AI") for row in rows}),
+    }
+    summary = {key: value for key, value in catalog.items() if key != "models"}
+    return jsonify({"success": True, **summary, "models": page, "count": len(page), "total_filtered": total_filtered, "next_cursor": next_cursor, "facets": facets})
+
+
+@app.route("/api/models/<path:model_id>", methods=["GET"])
+def get_model_detail(model_id: str):
+    catalog = gateway.public_catalog()
+    model = next((row for row in catalog.get("models") or [] if str(row.get("id")) == str(model_id)), None)
+    if not model:
+        return jsonify({"success": False, "error": "Model bulunamadı"}), 404
+    return jsonify({"success": True, "model": model, "input_schema": {
+        "text": True,
+        "attachments": "vision" in (model.get("capabilities") or []),
+        "reasoning_levels": model.get("reasoning_levels") or ["adaptive"],
+    }, "health": {
+        "availability": model.get("availability"),
+        "status_reason": model.get("status_reason"),
+        "last_checked_at": model.get("last_checked_at"),
+    }, "pricing": {
+        "state": model.get("pricing_state"),
+        "estimated_1k_credits": model.get("estimated_1k_credits"),
+    }})
 
 
 @app.route("/api/chats", methods=["GET"])
@@ -333,6 +411,50 @@ def chat_history_item(chat_id: str):
     if not row:
         return jsonify({"success": False, "error": "Sohbet bulunamadı"}), 404
     return jsonify({"success": True, "chat": row})
+
+
+@app.route("/api/research/watchlists", methods=["GET", "POST"])
+def research_watchlists():
+    telegram_user, error = _require_user()
+    if error:
+        return error
+    user_id = int(telegram_user["id"])
+    if request.method == "GET":
+        return jsonify({"success": True, "watchlists": store.list_watchlists(user_id)})
+    data = request.get_json(silent=True) or {}
+    try:
+        row = store.save_watchlist(user_id, str(data.get("topic") or ""), str(data.get("query") or ""))
+    except ValueError as exc:
+        return jsonify({"success": False, "error": str(exc)}), 400
+    return jsonify({"success": True, "watchlist": row}), 201
+
+
+@app.route("/api/research/watchlists/<watch_id>", methods=["DELETE"])
+def delete_research_watchlist(watch_id: str):
+    telegram_user, error = _require_user()
+    if error:
+        return error
+    deleted = store.delete_watchlist(int(telegram_user["id"]), watch_id[:40])
+    return jsonify({"success": True, "deleted": deleted})
+
+
+@app.route("/api/research/watchlists/<watch_id>/refresh", methods=["POST"])
+def refresh_research_watchlist(watch_id: str):
+    telegram_user, error = _require_user()
+    if error:
+        return error
+    user_id = int(telegram_user["id"])
+    row = next((item for item in store.list_watchlists(user_id) if item.get("watch_id") == watch_id), None)
+    if not row:
+        return jsonify({"success": False, "error": "Takip konusu bulunamadı"}), 404
+    result = perform_web_search(str(row.get("query") or row.get("topic") or ""), max_results=8)
+    updated = store.update_watchlist(user_id, watch_id, {
+        "status": "ready" if result.get("results") else "unavailable",
+        "results": result.get("results") or [],
+        "provider": result.get("provider"),
+        "refreshed_at": int(time.time()),
+    })
+    return jsonify({"success": True, "watchlist": updated})
 
 
 @app.route("/api/provider-status", methods=["GET"])
@@ -361,6 +483,124 @@ def image_models():
     })
 
 
+@app.route("/api/media/models", methods=["GET"])
+def media_models():
+    modality = str(request.args.get("modality") or "image").lower()
+    if modality not in {"image", "edit", "variation", "upscale", "background", "video", "audio", "music", "3d", "embedding", "realtime"}:
+        return jsonify({"success": False, "error": "Geçersiz medya türü"}), 400
+    rows = gateway.media_models(modality)
+    normalized = []
+    for row in rows:
+        item = dict(row)
+        item.update({
+            "modality": str(item.get("kind") or modality),
+            "operations": ["generate", "edit", "variation", "upscale", "background"] if modality in {"image", "edit", "variation", "upscale", "background"} else ["generate"],
+            "input_schema": {
+                "prompt": True,
+                "reference_image": modality in {"image", "edit", "variation", "upscale", "background", "video"},
+                "ratios": ["1:1", "4:5", "9:16", "16:9"] if modality in {"image", "edit", "variation", "upscale", "background", "video"} else [],
+            },
+        })
+        normalized.append(item)
+    return jsonify({"success": True, "modality": modality, "models": normalized, "count": len(normalized), "active_count": sum(1 for row in normalized if row.get("active"))})
+
+
+@app.route("/api/media/jobs", methods=["GET", "POST"])
+def media_jobs():
+    telegram_user, error = _require_user()
+    if error:
+        return error
+    if request.method == "GET":
+        return jsonify({"success": True, "jobs": store.list_image_jobs(int(telegram_user["id"]))})
+    operation = str((request.get_json(silent=True) or {}).get("operation") or "generate")
+    if operation != "generate":
+        return jsonify({"success": False, "error": "Bu işlem için etkin sağlayıcı şeması henüz bulunmuyor", "operation": operation}), 409
+    return create_image()
+
+
+def _audio_key() -> str:
+    for name in ("OPENAI_AUDIO_KEY", "OPENAI_API_KEY", "POLLINATIONS_API_KEY", "POLLINATIONS_API_KEYS"):
+        raw = os.environ.get(name, "").replace(",", "\n")
+        value = next((part.strip() for part in raw.splitlines() if part.strip()), "")
+        if value:
+            return value
+    return ""
+
+
+@app.route("/api/audio/transcriptions", methods=["POST"])
+def audio_transcription():
+    telegram_user, error = _require_user()
+    if error:
+        return error
+    audio = request.files.get("file")
+    if not audio:
+        return jsonify({"success": False, "error": "Ses kaydı gerekli"}), 400
+    key = _audio_key()
+    if not key:
+        return jsonify({"success": False, "error": "Ses sağlayıcısı yapılandırılmadı", "fallback": "browser"}), 503
+    base = os.environ.get("FROXY_AUDIO_BASE_URL", "https://gen.pollinations.ai/v1").rstrip("/")
+    try:
+        response = requests.post(
+            f"{base}/audio/transcriptions",
+            headers={"Authorization": f"Bearer {key}"},
+            files={"file": (audio.filename or "voice.webm", audio.stream, audio.mimetype or "audio/webm")},
+            data={"model": os.environ.get("FROXY_TRANSCRIBE_MODEL", "gpt-transcribe"), "language": request.form.get("language", "tr")},
+            timeout=(8, 90),
+        )
+        payload = response.json() if "json" in response.headers.get("Content-Type", "") else {}
+        if response.status_code >= 400:
+            return jsonify({"success": False, "error": "Ses çözümlenemedi"}), 502
+        text = str(payload.get("text") or ((payload.get("data") or {}).get("text") if isinstance(payload.get("data"), dict) else ""))
+        return jsonify({"success": True, "text": text})
+    except (requests.RequestException, ValueError):
+        return jsonify({"success": False, "error": "Ses sağlayıcısına ulaşılamadı", "fallback": "browser"}), 503
+
+
+@app.route("/api/audio/speech", methods=["POST"])
+def audio_speech():
+    telegram_user, error = _require_user()
+    if error:
+        return error
+    data = request.get_json(silent=True) or {}
+    text = str(data.get("text") or "").strip()[:4000]
+    if not text:
+        return jsonify({"success": False, "error": "Seslendirilecek metin gerekli"}), 400
+    key = _audio_key()
+    if not key:
+        return jsonify({"success": False, "error": "Sunucu ses modeli yok", "fallback": "browser"}), 503
+    base = os.environ.get("FROXY_AUDIO_BASE_URL", "https://gen.pollinations.ai/v1").rstrip("/")
+    try:
+        response = requests.post(
+            f"{base}/audio/speech",
+            headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+            json={"model": os.environ.get("FROXY_TTS_MODEL", "openai-audio"), "voice": str(data.get("voice") or "alloy")[:30], "input": text},
+            timeout=(8, 90),
+        )
+        if response.status_code >= 400:
+            return jsonify({"success": False, "error": "Ses üretilemedi", "fallback": "browser"}), 502
+        return Response(response.content, content_type=response.headers.get("Content-Type", "audio/mpeg"))
+    except requests.RequestException:
+        return jsonify({"success": False, "error": "Ses sağlayıcısına ulaşılamadı", "fallback": "browser"}), 503
+
+
+@app.route("/api/realtime/session", methods=["POST"])
+def realtime_session():
+    telegram_user, error = _require_user()
+    if error:
+        return error
+    # No long-lived credential is ever returned to the browser.  A provider
+    # that supports ephemeral sessions can be connected through this URL.
+    broker = os.environ.get("FROXY_REALTIME_SESSION_URL", "").strip()
+    if not broker:
+        return jsonify({"success": True, "supported": False, "mode": "push_to_talk", "reason": "Canlı sağlayıcı yok; bas-konuş hazır"})
+    try:
+        response = requests.post(broker, headers={"Authorization": f"Bearer {_audio_key()}"}, json={"language": "tr"}, timeout=(5, 20))
+        payload = response.json()
+        return jsonify({"success": response.ok, "supported": response.ok, "mode": "realtime", "session": payload if response.ok else None}), (200 if response.ok else 502)
+    except (requests.RequestException, ValueError):
+        return jsonify({"success": True, "supported": False, "mode": "push_to_talk", "reason": "Canlı bağlantı kurulamadı"})
+
+
 @app.route("/api/chat", methods=["POST"])
 def chat():
     telegram_user, error = _require_user()
@@ -370,6 +610,12 @@ def chat():
     if not _rate_limit("chat", str(user_id), 10):
         return jsonify({"success": False, "error": "Dakikalık sohbet sınırına ulaştınız"}), 429
     data = request.get_json(silent=True) or {}
+    mode = str(data.get("mode") or "general").lower()
+    if mode not in {"general", "research", "code", "plan"}:
+        mode = "general"
+    reasoning_level = str(data.get("reasoning_level") or "adaptive").lower()
+    if reasoning_level not in {"adaptive", "fast", "balanced", "high", "max"}:
+        reasoning_level = "adaptive"
     model_id = str(data.get("model") or "froxy-fast")[:220]
     request_id = str(data.get("request_id") or uuid.uuid4().hex)[:120]
     chat_id = str(data.get("chat_id") or uuid.uuid4().hex)[:80]
@@ -386,17 +632,24 @@ def chat():
     if not messages or messages[-1]["role"] != "user":
         return jsonify({"success": False, "error": "Son mesaj kullanıcı mesajı olmalı"}), 400
     try:
-        max_tokens = max(64, min(int(data.get("max_tokens", 800)), 1200))
+        max_tokens = max(64, min(int(data.get("max_tokens", 1400)), 4000))
         temperature = max(0.0, min(float(data.get("temperature", 0.7)), 1.5))
     except (TypeError, ValueError):
         return jsonify({"success": False, "error": "Üretim ayarları geçersiz"}), 400
     search = {"query": "", "provider": "none", "results": []}
     gateway_messages = list(messages)
-    if data.get("web_search") is True:
+    mode_prompts = {
+        "research": "Kaynak odaklı araştırma asistanısın. Güncellik, tarih ve kaynak güvenilirliğini açıkça belirt.",
+        "code": "Kıdemli yazılım mühendisisin. Çalışan, güvenli ve test edilebilir çözümler üret; belirsizlikleri belirt.",
+        "plan": "Uygulanabilir planlar hazırlayan ürün ve mühendislik danışmanısın. Kararları, bağımlılıkları ve kabul ölçütlerini netleştir.",
+        "general": "Yararlı, doğru ve açık bir Türkçe yapay zeka asistanısın.",
+    }
+    gateway_messages = [{"role": "system", "content": mode_prompts[mode]}, *gateway_messages]
+    if data.get("web_search") is True or mode == "research":
         search = perform_web_search(messages[-1]["content"], max_results=5)
         if not search.get("results"):
             return jsonify({"success": False, "error": "Web araması şu anda güvenilir kaynak döndüremedi"}), 503
-        gateway_messages = [web_context(search), *messages]
+        gateway_messages = [{"role": "system", "content": mode_prompts[mode]}, web_context(search), *messages]
     try:
         model = gateway.get_model(model_id)
         is_free = bool(model.get("is_froxy"))
@@ -415,8 +668,12 @@ def chat():
         usage: dict = {}
         provider_meta: dict = {}
         try:
-            yield _json_sse("meta", {"request_id": request_id, "chat_id": chat_id, "model": model_id, "reserved_credits": reservation, "web_search": bool(search["results"])})
-            for event in gateway.stream_chat(model, gateway_messages, max_tokens=max_tokens, temperature=temperature):
+            yield _json_sse("meta", {"request_id": request_id, "chat_id": chat_id, "model": model_id, "reserved_credits": reservation, "web_search": bool(search["results"]), "mode": mode, "reasoning_level": reasoning_level})
+            yield _json_sse("reasoning_status", {"state": "thinking", "level": reasoning_level})
+            if search["results"]:
+                yield _json_sse("tool_start", {"tool": "web_search", "query": search.get("query")})
+                yield _json_sse("tool_result", {"tool": "web_search", "count": len(search["results"]), "provider": search.get("provider")})
+            for event in gateway.stream_chat(model, gateway_messages, max_tokens=max_tokens, temperature=temperature, reasoning_level=reasoning_level, mode=mode):
                 if event["type"] == "delta":
                     output_parts.append(event["content"])
                     yield _json_sse("delta", {"content": event["content"]})
@@ -440,6 +697,7 @@ def chat():
                 )
                 stored_output = f"{output}\n\nKaynaklar:\n{source_lines}"
             store.append_chat(user_id, chat_id, model_id, messages[-1]["content"], stored_output)
+            yield _json_sse("reasoning_status", {"state": "complete", "level": reasoning_level})
             yield _json_sse("done", {"usage": usage, "billing": billing, "stored_content": stored_output, "web_sources": search["results"], "search_provider": search["provider"], **provider_meta})
         except Exception as exc:
             if is_free:
@@ -562,7 +820,7 @@ def _shopier_token() -> str:
     return os.environ.get("SHOPIER_FROXY_ACCESS_TOKEN", "").strip()
 
 
-def _create_topup(telegram_user: dict, *, amount: float, kind: str, product: dict | None, idempotency_key: str) -> dict:
+def _create_topup(telegram_user: dict, *, amount: float, kind: str, product: dict | None, idempotency_key: str, metadata: dict | None = None) -> dict:
     user_id = int(telegram_user["id"])
     if kind == "credits" and not product:
         raise ValueError("Kredi paketi bulunamadı")
@@ -577,7 +835,7 @@ def _create_topup(telegram_user: dict, *, amount: float, kind: str, product: dic
         }
     result = create_dynamic_shopier_listing(amount=amount, user_id=user_id, user_name=str(telegram_user.get("first_name") or "Froxy Müşteri"), username=str(telegram_user.get("username") or ""), idempotency_key=idempotency_key, purpose="credits" if kind == "credits" else "wallet", purpose_title=(product or {}).get("title", ""), persist_local=False)
     if result.get("success"):
-        store.save_topup({"product_id": str(result["product_id"]), "user_id": user_id, "amount_kurus": int(round(amount * 100)), "kind": kind, "ai_credits": _credit_amount_for_product(product) if product else 0, "credit_product_id": str((product or {}).get("id") or ""), "payment_url": result.get("payment_url"), "status": "pending", "idempotency_key": idempotency_key, "created_at": int(time.time())})
+        store.save_topup({"product_id": str(result["product_id"]), "user_id": user_id, "amount_kurus": int(round(amount * 100)), "kind": kind, "ai_credits": _credit_amount_for_product(product) if product else 0, "credit_product_id": str((product or {}).get("id") or ""), "payment_url": result.get("payment_url"), "status": "pending", "idempotency_key": idempotency_key, "metadata": metadata or {}, "created_at": int(time.time())})
     return result
 
 
@@ -617,6 +875,94 @@ def create_credit_checkout():
     if result.get("success"):
         result["ai_credits"] = int(product["ai_credits"])
     return jsonify(result), 200 if result.get("success") else 502
+
+
+def _cart_orders(items: list[dict]) -> tuple[list[dict], int]:
+    products = {str(row["id"]): row for row in load_products()}
+    orders: list[dict] = []
+    for item in items[:20]:
+        product = products.get(str(item.get("id")))
+        if not product:
+            raise ValueError("Sepette geçersiz ürün var")
+        try:
+            qty = max(1, min(int(item.get("qty", 1)), int(product.get("max_qty", 3) or 3), 5))
+        except (TypeError, ValueError):
+            raise ValueError("Ürün adedi geçersiz") from None
+        for _ in range(qty):
+            order = _make_order(product)
+            if product.get("store_category") == "credits":
+                order.update({"is_credit": True, "ai_credits": _credit_amount_for_product(product)})
+            orders.append(order)
+    if not orders:
+        raise ValueError("Sepet boş")
+    return orders, sum(int(row["subtotal_kurus"]) for row in orders)
+
+
+def _settle_cart_orders(user_id: int, orders: list[dict], purchase_id: str) -> list[dict]:
+    finalized = []
+    for order in orders:
+        if order.get("is_credit"):
+            store.credit_balance(
+                user_id,
+                ai_credits=int(order.get("ai_credits", 0)),
+                idempotency_key=f"cart-credit:{purchase_id}:{order['order_id']}",
+                title=str(order.get("title") or "Froxy AI kredi paketi"),
+            )
+            finalized.append({**order, "status": "delivered", "delivery_note": "AI kredileri anında hesabına tanımlandı", "support_handle": SUPPORT_HANDLE})
+        else:
+            finalized.append(_finalize_delivery(order))
+    store.finalize_orders(user_id, finalized)
+    return finalized
+
+
+@app.route("/api/checkout", methods=["POST"])
+def create_checkout():
+    telegram_user, error = _require_user()
+    if error:
+        return error
+    data = request.get_json(silent=True) or {}
+    mode = str(data.get("mode") or "wallet")
+    idem = str(data.get("idempotency_key") or uuid.uuid4().hex)[:120]
+    try:
+        orders, total = _cart_orders(data.get("items") or [])
+    except ValueError as exc:
+        return jsonify({"success": False, "error": str(exc)}), 400
+    user_id = int(telegram_user["id"])
+    if mode == "wallet":
+        try:
+            reserved = store.reserve_wallet_purchase(user_id, idem, total, orders)
+        except InsufficientBalance as exc:
+            return jsonify({"success": False, "error": str(exc), "required_kurus": total}), 402
+        if reserved.get("duplicate"):
+            return jsonify({"success": True, "completed": True, **reserved})
+        finalized = _settle_cart_orders(user_id, orders, idem)
+        return jsonify({"success": True, "completed": True, "orders": finalized, "new_balance": round(int(reserved["wallet_kurus"]) / 100, 2)})
+    if mode not in {"card", "hybrid_shortfall"}:
+        return jsonify({"success": False, "error": "Geçersiz ödeme yöntemi"}), 400
+    if not _shopier_token():
+        return jsonify({"success": False, "error": "Shopier ödeme altyapısı yapılandırılmadı"}), 503
+    user = store.get_user(user_id) or {}
+    wallet = int(user.get("wallet_kurus", 0)) if mode == "hybrid_shortfall" else 0
+    shortfall = max(0, total - wallet)
+    if shortfall == 0:
+        try:
+            reserved = store.reserve_wallet_purchase(user_id, idem, total, orders)
+        except InsufficientBalance as exc:
+            return jsonify({"success": False, "error": str(exc)}), 402
+        finalized = _settle_cart_orders(user_id, orders, idem)
+        return jsonify({"success": True, "completed": True, "orders": finalized, "new_balance": round(int(reserved["wallet_kurus"]) / 100, 2)})
+    charge_kurus = max(1000, shortfall if mode == "hybrid_shortfall" else total)
+    result = _create_topup(
+        telegram_user,
+        amount=round(charge_kurus / 100, 2),
+        kind="cart_shortfall" if mode == "hybrid_shortfall" else "cart_card",
+        product=None,
+        idempotency_key=idem,
+        metadata={"items": data.get("items") or [], "cart_total_kurus": total, "checkout_mode": mode},
+    )
+    if result.get("success"):
+        result.update({"completed": False, "required_kurus": charge_kurus, "cart_total_kurus": total, "checkout_mode": mode})
+    return jsonify(result), (200 if result.get("success") else 502)
 
 
 def _paid_shopier_orders() -> list[dict]:
@@ -664,10 +1010,24 @@ def _sync_shopier_topups(user_id: int | None = None, quiet: bool = False) -> lis
                 if paid_kurus < int(topup.get("amount_kurus", 0)):
                     continue
             uid = int(topup["user_id"])
-            result = store.credit_balance(uid, wallet_kurus=int(topup["amount_kurus"]) if topup.get("kind") == "wallet" else 0, ai_credits=int(topup.get("ai_credits", 0)) if topup.get("kind") == "credits" else 0, idempotency_key=f"shopier:{order_id}:{pid}", title="Froxy AI kredi paketi" if topup.get("kind") == "credits" else "Froxy mağaza cüzdanı yükleme")
-            store.update_topup(pid, {"status": "completed", "shopier_order_id": order_id, "completed_at": int(time.time())})
+            is_cart = topup.get("kind") in {"cart_shortfall", "cart_card"}
+            result = store.credit_balance(uid, wallet_kurus=int(topup["amount_kurus"]) if topup.get("kind") == "wallet" or is_cart else 0, ai_credits=int(topup.get("ai_credits", 0)) if topup.get("kind") == "credits" else 0, idempotency_key=f"shopier:{order_id}:{pid}", title="Froxy AI kredi paketi" if topup.get("kind") == "credits" else "Froxy mağaza ödeme bakiyesi")
+            completed_orders = []
+            checkout_error = ""
+            if is_cart:
+                try:
+                    cart_orders, cart_total = _cart_orders((topup.get("metadata") or {}).get("items") or [])
+                    purchase = store.reserve_wallet_purchase(uid, str(topup.get("idempotency_key") or pid), cart_total, cart_orders)
+                    if purchase.get("duplicate"):
+                        completed_orders = purchase.get("orders") or []
+                    else:
+                        completed_orders = _settle_cart_orders(uid, cart_orders, str(topup.get("idempotency_key") or pid))
+                except (ValueError, InsufficientBalance) as exc:
+                    checkout_error = str(exc)
+            final_status = "completed" if not checkout_error else "payment_completed_purchase_pending"
+            store.update_topup(pid, {"status": final_status, "shopier_order_id": order_id, "completed_at": int(time.time()), "checkout_error": checkout_error, "order_ids": [row.get("order_id") for row in completed_orders]})
             cancel_and_delete_topup(pid)
-            credited.append({"user_id": uid, "product_id": pid, "order_id": order_id, **result})
+            credited.append({"user_id": uid, "product_id": pid, "order_id": order_id, "checkout_status": final_status, "orders": completed_orders, **result})
     return credited
 
 
