@@ -375,9 +375,19 @@ def get_models():
         )
 
     rows.sort(key=score)
+    if scope != "all":
+        unique_rows = []
+        seen_names = set()
+        for row in rows:
+            display_name = " ".join(str(row.get("name") or row.get("id") or "").lower().split())
+            if display_name in seen_names:
+                continue
+            seen_names.add(display_name)
+            unique_rows.append(row)
+        rows = unique_rows
     if scope == "recommended":
         active = [row for row in rows if row.get("availability") == "active"]
-        rows = active[:48]
+        rows = active[:18]
     try:
         offset = max(0, int(request.args.get("cursor") or 0))
         limit = max(1, min(int(request.args.get("limit") or (40 if scope == "recommended" else len(rows) or 1)), 100))

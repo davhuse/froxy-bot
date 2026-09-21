@@ -50,6 +50,16 @@ class FroxyV2ApiTests(unittest.TestCase):
         self.assertEqual(1, len(second["models"]))
         self.assertIsNone(second["next_cursor"])
 
+    def test_recommended_models_are_deduplicated_by_display_name(self):
+        rows = [
+            {"id": "first/shared", "name": "Shared Model", "provider": "first", "availability": "active", "selectable": True},
+            {"id": "second/shared", "name": "Shared Model", "provider": "second", "availability": "active", "selectable": True},
+            {"id": "third/unique", "name": "Unique Model", "provider": "third", "availability": "active", "selectable": True},
+        ]
+        with mock.patch.object(server.gateway, "public_catalog", return_value={"models": rows, "providers": {}}):
+            body = self.client.get("/api/models?scope=recommended&limit=40").get_json()
+        self.assertEqual(["Shared Model", "Unique Model"], [row["name"] for row in body["models"]])
+
     def test_model_detail_contains_health_pricing_and_schema(self):
         body = self.client.get("/api/models/vendor/model-1").get_json()
         self.assertTrue(body["success"])
