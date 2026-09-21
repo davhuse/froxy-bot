@@ -42,6 +42,7 @@ let state = {
   selectedModel: { id: '', name: 'Modeller yükleniyor', providerLogo: 'assets/froxy_logo.png' },
   models: [],
   providers: {},
+  modelRetryTimer: null,
   chatId: (window.crypto?.randomUUID?.() || `chat-${Date.now()}`),
   chatMessages: [],
   chatHistory: [],
@@ -242,6 +243,7 @@ async function loadModels() {
     const data = await response.json();
     if (!response.ok || !data.success) throw new Error(data.error || 'Model kataloğu alınamadı');
     state.models = Array.isArray(data.models) ? data.models : [];
+    if (state.modelRetryTimer) { clearTimeout(state.modelRetryTimer); state.modelRetryTimer = null; }
     state.providers = data.providers && typeof data.providers === 'object' ? data.providers : {};
     renderProviderInventory(state.providers);
     const activeCount = Number(data.active_model_count || state.models.filter(model => model.availability === 'active' || model.selectable).length);
@@ -292,6 +294,12 @@ async function loadModels() {
     if (title) title.textContent = 'Katalog yeniden deneniyor';
     if (status) status.textContent = 'Model bağlantısı bekleniyor';
     if (sendButton) sendButton.disabled = true;
+    if (!state.modelRetryTimer) {
+      state.modelRetryTimer = setTimeout(() => {
+        state.modelRetryTimer = null;
+        loadModels();
+      }, 8000);
+    }
   }
 }
 
