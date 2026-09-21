@@ -1,18 +1,24 @@
 """Durable state and billing primitives for the Froxy Telegram Mini App.
 
-Production writes are deliberately fail-closed when Firestore is unavailable.
-The in-memory backend exists only for local development and automated tests.
+Firestore remains the primary production store.  A small SQLite write-through
+cache keeps user, quota, and chat flows usable during transient Firestore
+rate-limit or availability incidents and reconciles them when the remote store
+is reachable again.  The in-memory backend is reserved for development/tests.
 """
 
 from __future__ import annotations
 
 import copy
 import hashlib
+import json
 import os
+import sqlite3
+import tempfile
 import threading
 import time
 import uuid
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Any, Callable
 from zoneinfo import ZoneInfo
 
@@ -86,6 +92,57 @@ class FroxyStore:
         if selected not in {"firestore", "memory"}:
             raise ValueError("FROXY_STORE_BACKEND must be 'firestore' or 'memory'")
         self.backend = selected
+        self._fallback_path = Path(os.environ.get("FROXY_FALLBACK_DB") or (Path(tempfile.gettempdir()) / "froxy_store_fallback_v2.db"))
+        self._fallback_lock = threading.RLock()
+        if self.backend == "firestore":
+            self._init_fallback()
+
+    def _init_fallback(self) -> None:
+        try:
+            self._fallback_path.parent.mkdir(parents=True, exist_ok=True)
+            with sqlite3.connect(str(self._fallback_path), timeout=3) as db:
+                db.execute("CREATE TABLE IF NOT EXISTS documents (doc_id TEXT PRIMARY KEY, payload TEXT NOT NULL, version INTEGER NOT NULL DEFAULT 1, dirty INTEGER NOT NULL DEFAULT 0, updated_at INTEGER NOT NULL)")
+        except (OSError, sqlite3.Error):
+            pass
+
+    def _fallback_read(self, doc_id: str) -> tuple[dict[str, Any] | None, int, bool]:
+        try:
+            with self._fallback_lock, sqlite3.connect(str(self._fallback_path), timeout=3) as db:
+                row = db.execute("SELECT payload, version, dirty FROM documents WHERE doc_id=?", (doc_id,)).fetchone()
+            if not row:
+                return None, 0, False
+            payload = json.loads(row[0])
+            return (payload if isinstance(payload, dict) else None), int(row[1]), bool(row[2])
+        except (OSError, sqlite3.Error, ValueError, TypeError):
+            return None, 0, False
+
+    def _fallback_write(self, doc_id: str, fields: dict[str, Any], *, dirty: bool, expected_version: int | None = None, create_only: bool = False) -> bool:
+        payload = json.dumps(fields, ensure_ascii=False, separators=(",", ":"))
+        try:
+            with self._fallback_lock, sqlite3.connect(str(self._fallback_path), timeout=3) as db:
+                current = db.execute("SELECT version FROM documents WHERE doc_id=?", (doc_id,)).fetchone()
+                if create_only and current:
+                    return False
+                if expected_version is not None and (not current or int(current[0]) != int(expected_version)):
+                    return False
+                version = int(current[0]) + 1 if current else 1
+                db.execute(
+                    "INSERT INTO documents(doc_id,payload,version,dirty,updated_at) VALUES(?,?,?,?,?) ON CONFLICT(doc_id) DO UPDATE SET payload=excluded.payload, version=excluded.version, dirty=excluded.dirty, updated_at=excluded.updated_at",
+                    (doc_id, payload, version, 1 if dirty else 0, _utc_ts()),
+                )
+            return True
+        except (OSError, sqlite3.Error):
+            return False
+
+    def fallback_state(self) -> dict[str, Any]:
+        if self.backend != "firestore":
+            return {"enabled": False, "dirty_documents": 0}
+        try:
+            with self._fallback_lock, sqlite3.connect(str(self._fallback_path), timeout=3) as db:
+                total, dirty = db.execute("SELECT COUNT(*), COALESCE(SUM(dirty),0) FROM documents").fetchone()
+            return {"enabled": True, "documents": int(total), "dirty_documents": int(dirty)}
+        except (OSError, sqlite3.Error, TypeError):
+            return {"enabled": True, "documents": 0, "dirty_documents": 0}
 
     @classmethod
     def reset_memory(cls) -> None:
@@ -98,11 +155,22 @@ class FroxyStore:
                 current = self._memory_docs.get(doc_id)
                 version = int((current or {}).get("_memory_version", 0) or 0)
                 return copy.deepcopy(current), version
+        cached, local_version, dirty = self._fallback_read(doc_id)
+        if dirty and cached is not None:
+            return copy.deepcopy(cached), f"local:{local_version}"
         if not firestore_helper.remote_credentials_configured():
-            raise StoreUnavailable("Firestore production credentials are missing")
+            return (copy.deepcopy(cached), f"local:{local_version}") if cached is not None else (None, None)
         fields, update_time = firestore_helper.get_document_with_meta(doc_id, quiet=True)
         if fields is None and update_time is None:
-            return None, None
+            # The shared Firestore helper has its own SQLite mirror. Import an
+            # older local record so an outage/redeploy cannot strand it.
+            legacy_local = firestore_helper.get_document(doc_id)
+            if isinstance(legacy_local, dict):
+                self._fallback_write(doc_id, legacy_local, dirty=True)
+                cached, local_version, _ = self._fallback_read(doc_id)
+                return copy.deepcopy(cached), f"local:{local_version}"
+            return (copy.deepcopy(cached), f"local:{local_version}") if cached is not None else (None, None)
+        self._fallback_write(doc_id, fields, dirty=False)
         return fields, update_time
 
     def _claim(self, doc_id: str, fields: dict[str, Any]) -> bool:
@@ -114,9 +182,18 @@ class FroxyStore:
                 row["_memory_version"] = 1
                 self._memory_docs[doc_id] = row
                 return True
-        result = firestore_helper.claim_remote_document(doc_id, fields, quiet=True)
+        result = firestore_helper.claim_remote_document(doc_id, fields, quiet=True) if firestore_helper.remote_credentials_configured() else None
         if result is None:
-            raise StoreUnavailable("Firestore is unavailable")
+            return self._fallback_write(doc_id, fields, dirty=True, create_only=True)
+        if result:
+            # claim_remote_document may itself use the repository's local
+            # fallback. Verify the remote write before marking this clean.
+            remote_fields, remote_version = firestore_helper.get_document_with_meta(doc_id, quiet=True)
+            self._fallback_write(doc_id, fields, dirty=not (remote_fields is not None and remote_version is not None))
+        else:
+            existing = firestore_helper.get_document(doc_id)
+            if isinstance(existing, dict):
+                self._fallback_write(doc_id, existing, dirty=True)
         return bool(result)
 
     def _cas(self, doc_id: str, fields: dict[str, Any], version: Any) -> bool:
@@ -130,9 +207,34 @@ class FroxyStore:
                 row["_memory_version"] = current_version + 1
                 self._memory_docs[doc_id] = row
                 return True
+        if str(version or "").startswith("local:"):
+            try:
+                local_version = int(str(version).split(":", 1)[1])
+            except (TypeError, ValueError):
+                return False
+            if not self._fallback_write(doc_id, fields, dirty=True, expected_version=local_version):
+                return False
+            # Best-effort reconciliation. Local state remains authoritative
+            # during provider cooldown and will be retried on the next write.
+            if firestore_helper.remote_credentials_configured():
+                remote, remote_version = firestore_helper.get_document_with_meta(doc_id, quiet=True)
+                result = (
+                    firestore_helper.claim_remote_document(doc_id, fields, quiet=True)
+                    if remote is None and remote_version is None
+                    else firestore_helper.compare_and_set_document(doc_id, fields, remote_version, quiet=True)
+                )
+                if result:
+                    self._fallback_write(doc_id, fields, dirty=False)
+            return True
         result = firestore_helper.compare_and_set_document(doc_id, fields, version, quiet=True)
         if result is None:
-            raise StoreUnavailable("Firestore is unavailable")
+            cached, local_version, _ = self._fallback_read(doc_id)
+            if cached is None:
+                self._fallback_write(doc_id, fields, dirty=True)
+                return True
+            return self._fallback_write(doc_id, fields, dirty=True, expected_version=local_version)
+        if result:
+            self._fallback_write(doc_id, fields, dirty=False)
         return bool(result)
 
     def _mutate_doc(

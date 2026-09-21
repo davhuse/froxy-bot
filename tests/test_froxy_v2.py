@@ -104,5 +104,17 @@ class FroxyCatalogCacheTests(unittest.TestCase):
                 self.assertEqual("cached/model", restarted.refresh_catalog(force=True)[0]["id"])
 
 
+class FroxyFirestoreFallbackTests(unittest.TestCase):
+    def test_firestore_outage_uses_sqlite_for_user_mutations(self):
+        with tempfile.TemporaryDirectory() as directory, mock.patch.dict(os.environ, {"FROXY_FALLBACK_DB": str(Path(directory) / "state.db")}, clear=False), mock.patch("miniapp_froxy.froxy_store.firestore_helper.remote_credentials_configured", return_value=True), mock.patch("miniapp_froxy.froxy_store.firestore_helper.get_document_with_meta", return_value=(None, None)), mock.patch("miniapp_froxy.froxy_store.firestore_helper.claim_remote_document", return_value=None):
+            store = FroxyStore("firestore")
+            created = store.get_or_create_user({"id": 42, "first_name": "Çevrimdışı"})
+            self.assertEqual("Çevrimdışı", created["first_name"])
+            self.assertEqual(1, store.fallback_state()["dirty_documents"])
+            restarted = FroxyStore("firestore")
+            loaded = restarted.get_user(42)
+            self.assertEqual("Çevrimdışı", loaded["first_name"])
+
+
 if __name__ == "__main__":
     unittest.main()

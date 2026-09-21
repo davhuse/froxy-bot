@@ -9,13 +9,16 @@
     "check": "tsc -b --pretty false"
   },
   "dependencies": {
+    "@fontsource/jetbrains-mono": "^5.3.0",
+    "@fontsource/manrope": "^5.3.0",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
     "@vitejs/plugin-react": "latest",
-    "vite": "latest",
-    "typescript": "latest",
     "react": "latest",
     "react-dom": "latest",
-    "@types/react": "latest",
-    "@types/react-dom": "latest"
-  },
-  "devDependencies": {}
+    "simple-icons": "^13.21.0",
+    "simple-icons-latest": "npm:simple-icons@^16.32.0",
+    "typescript": "latest",
+    "vite": "latest"
+  }
 }

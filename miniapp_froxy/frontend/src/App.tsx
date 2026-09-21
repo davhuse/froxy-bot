@@ -1,17 +1,19 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react'
+import { siAdobe, siAnthropic, siCanva, siCloudflare, siGooglegemini, siHuggingface, siMeta, siNvidia, siOpenai, siPerplexity, siX } from 'simple-icons'
+import { siBytedance, siDeepseek, siMistralai, siQwen } from 'simple-icons-latest'
 
 type Tab = 'ai' | 'studio' | 'store' | 'account'
 type Mode = 'general' | 'research' | 'code' | 'plan'
 type Model = {
   id:string; name:string; provider:string; provider_label?:string; provider_logo?:string;
-  brand_logo?:string; family?:string; developer?:string; capabilities?:string[];
+  brand?:string; brand_logo?:string; family?:string; developer?:string; capabilities?:string[];
   availability?:string; selectable?:boolean; status_reason?:string; estimated_1k_credits?:number;
   context_length?:number; description?:string; is_froxy?:boolean
 }
 type Message = { role:'user'|'assistant'; content:string; sources?:{title:string;url:string;snippet?:string}[]; status?:string }
 type Product = { id:string; title:string; price_num:number; price:string; image:string; badge?:string; store_category?:string; delivery_label?:string; description?:string; max_qty?:number }
 type User = { first_name?:string; wallet_balance?:number; ai_credits?:number; free_text_remaining?:number; free_image_remaining?:number; orders?:Record<string,unknown>[] }
-type ImageModel = { id:string; name:string; provider:string; provider_logo?:string; active?:boolean; selectable?:boolean; estimated_credits?:number; status_reason?:string }
+type ImageModel = { id:string; name:string; provider:string; provider_label?:string; provider_logo?:string; brand?:string; family?:string; active?:boolean; selectable?:boolean; availability?:string; estimated_credits?:number; status_reason?:string }
 
 declare global { interface Window { Telegram?: { WebApp?: any }; SpeechRecognition?: any; webkitSpeechRecognition?: any } }
 
@@ -34,9 +36,37 @@ function Icon({name,size=20}:{name:string,size?:number}) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={paths[name]||paths.spark}/></svg>
 }
 
+const brandIcons:Record<string,{path:string;hex:string;title:string}> = {
+  openai:siOpenai, anthropic:siAnthropic, google:siGooglegemini, gemini:siGooglegemini,
+  meta:siMeta, mistral:siMistralai, nvidia:siNvidia, deepseek:siDeepseek, xai:siX,
+  huggingface:siHuggingface, cloudflare:siCloudflare, qwen:siQwen, alibaba:siQwen,
+  bytedance:siBytedance, perplexity:siPerplexity, adobe:siAdobe, canva:siCanva
+}
+
+function modelBrand(model?:Partial<Model>) {
+  const value=`${model?.brand||''} ${model?.family||''} ${model?.developer||''} ${model?.name||''}`.toLocaleLowerCase('tr')
+  if(value.includes('claude')||value.includes('anthropic'))return 'anthropic'
+  if(value.includes('gemini')||value.includes('gemma')||value.includes('google'))return 'google'
+  if(value.includes('openai')||value.includes('gpt')||/\bo[134]\b/.test(value))return 'openai'
+  if(value.includes('deepseek'))return 'deepseek'
+  if(value.includes('qwen')||value.includes('alibaba'))return 'qwen'
+  if(value.includes('mistral')||value.includes('mixtral')||value.includes('codestral'))return 'mistral'
+  if(value.includes('llama')||value.includes('meta'))return 'meta'
+  if(value.includes('grok')||value.includes('xai'))return 'xai'
+  if(value.includes('nvidia')||value.includes('nemotron'))return 'nvidia'
+  if(value.includes('perplexity'))return 'perplexity'
+  if(value.includes('hugging'))return 'huggingface'
+  return String(model?.brand||'').toLowerCase()
+}
+
 function Logo({model,size=38}:{model?:Partial<Model>,size?:number}) {
-  const src = model?.brand_logo || model?.provider_logo
-  return <span className="brand-mark" style={{width:size,height:size}}>{src ? <img src={src} alt="" onError={e=>{e.currentTarget.style.display='none'}}/> : <b>{(model?.family||model?.name||'AI').slice(0,2).toUpperCase()}</b>}</span>
+  const brand=modelBrand(model), icon=brandIcons[brand]
+  return <span className={`brand-mark brand-${brand||'ai'}`} style={{width:size,height:size}}>{model?.is_froxy||model?.provider==='froxy'?<img src={`${rootPrefix}/assets/froxy_logo.png`} alt="Froxy"/>:icon?<svg viewBox="0 0 24 24" role="img" aria-label={icon.title}><path fill={`#${icon.hex}`} d={icon.path}/></svg>:<b>{(model?.family||model?.name||'AI').slice(0,2).toUpperCase()}</b>}</span>
+}
+
+function ChoiceMenu({value,options,onChange,label}:{value:string;options:{value:string;label:string;hint?:string}[];onChange:(value:string)=>void;label:string}) {
+  const [open,setOpen]=useState(false); const selected=options.find(option=>option.value===value)||options[0]
+  return <div className="choice-wrap"><button className="choice-trigger" type="button" onClick={()=>setOpen(!open)} aria-expanded={open}><span>{selected.label}</span><Icon name="chevron" size={14}/></button>{open&&<><button className="choice-dismiss" aria-label="Seçimi kapat" onClick={()=>setOpen(false)}/><div className="choice-menu" role="listbox" aria-label={label}>{options.map(option=><button key={option.value} className={option.value===value?'active':''} onClick={()=>{onChange(option.value);setOpen(false)}}><span><b>{option.label}</b>{option.hint&&<small>{option.hint}</small>}</span>{option.value===value&&<i>✓</i>}</button>)}</div></>}</div>
 }
 
 function CodeBlock({language,code}:{language:string;code:string}) {
@@ -65,9 +95,9 @@ function RichText({text}:{text:string}) {
 
 function ProductCover({product}:{product:Product}) {
   const title=product.title.toLocaleLowerCase('tr')
-  const brand=title.includes('gemini')?['Gemini',`${rootPrefix}/assets/provider_google.svg`]:title.includes('chatgpt')||title.includes('openai')?['OpenAI',`${rootPrefix}/assets/provider_openai.svg`]:title.includes('perplexity')?['Perplexity',`${rootPrefix}/assets/provider_perplexity.svg`]:title.includes('canva')?['Canva','https://cdn.simpleicons.org/canva/FFFFFF']:title.includes('adobe')?['Adobe','https://cdn.simpleicons.org/adobe/FFFFFF']:null
-  if(!brand)return <div className="product-art"><img src={product.image} alt={product.title}/><span>{product.badge||'Froxy'}</span></div>
-  return <div className={`product-art branded ${brand[0].toLowerCase()}`}><img src={brand[1]} alt={brand[0]}/><span>{brand[0]}</span><b>{product.title}</b></div>
+  const local=title.includes('gemini ultra')?'google_gemini_ultra_mockup_1783808955484.png':title.includes('gemini')?'google_gemini_mockup_1783808543925.png':title.includes('adobe express')?'adobe_express_mockup_1783808968647.png':title.includes('adobe')?'adobe_product_mockup_1783808303595.png':title.includes('canva')?'canva_pro_mockup_1783808487040.png':title.includes('duolingo')?'duolingo_super_mockup_1783808576605.png':null
+  const image=local?`${rootPrefix}/assets/${local}`:product.image
+  return <div className="product-art"><img src={image} alt={product.title}/><span>{product.badge||'Froxy'}</span></div>
 }
 
 function App() {
@@ -145,23 +175,32 @@ function ChatView({selected,onModels,messages,onSend,sending,mode,setMode,reason
       {messages.map((m,i)=><article key={i} className={`message ${m.role}`}><div className="message-label">{m.role==='user'?'Sen':selected?.name||'Froxy'}</div><div className="message-body">{m.content?<RichText text={m.content}/>:<span className="thinking"><i/><i/><i/> {m.status}</span>}</div>{m.sources?.length?<div className="sources"><b>Kaynaklar</b>{m.sources.map((s,j)=><a key={j} href={s.url} target="_blank" rel="noreferrer"><span>{j+1}</span>{s.title}</a>)}</div>:null}{m.role==='assistant'&&m.content&&<div className="message-actions"><button onClick={()=>navigator.clipboard.writeText(m.content)}><Icon name="copy" size={15}/>Kopyala</button><button onClick={()=>speechSynthesis.speak(new SpeechSynthesisUtterance(m.content))}><Icon name="mic" size={15}/>Dinle</button></div>}</article>)}
       <div ref={end}/>
     </div>
-    <div className="composer-wrap"><div className="composer-meta"><span>{mode==='research'?'Web araştırması açık':mode==='code'?'Kod araçları hazır':mode==='plan'?'Planlama modu':'Genel asistan'}</span><select value={reasoning} onChange={e=>setReasoning(e.target.value)}><option value="adaptive">Akıllı düşünme</option><option value="fast">Hızlı</option><option value="balanced">Dengeli</option><option value="max">Maksimum</option></select></div><form className="composer" onSubmit={submit}><button type="button" className={listening?'recording':''} onClick={voice}><Icon name="mic"/></button><textarea value={value} onChange={e=>setValue(e.target.value)} placeholder="Froxy'ye mesaj yaz…" rows={1} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();submit()}}}/><button className="send" disabled={!value.trim()||sending}><Icon name="send"/></button></form></div>
+    <div className="composer-wrap"><div className="composer-meta"><span>{mode==='research'?'Web araştırması açık':mode==='code'?'Kod araçları hazır':mode==='plan'?'Planlama modu':'Genel asistan'}</span><ChoiceMenu value={reasoning} onChange={setReasoning} label="Düşünme seviyesi" options={[{value:'adaptive',label:'Akıllı',hint:'Göreve göre otomatik seçer'},{value:'fast',label:'Hızlı',hint:'Kısa yanıtlar için'},{value:'balanced',label:'Dengeli',hint:'Hız ve kalite dengesi'},{value:'max',label:'Maksimum',hint:'En derin analiz'}]}/></div><form className="composer" onSubmit={submit}><button type="button" className={listening?'recording':''} onClick={voice}><Icon name="mic"/></button><textarea value={value} onChange={e=>setValue(e.target.value)} placeholder="Froxy'ye mesaj yaz…" rows={1} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();submit()}}}/><button className="send" disabled={!value.trim()||sending}><Icon name="send"/></button></form></div>
   </section>
 }
 
 function ModelLibrary({current,initial,onClose,onSelect}:{current:Model|null;initial:Model[];onClose:()=>void;onSelect:(m:Model)=>void}){
   const [rows,setRows]=useState<Model[]>(initial),[query,setQuery]=useState(''),[filter,setFilter]=useState('recommended'),[cursor,setCursor]=useState<string|null>(null),[loading,setLoading]=useState(false)
-  const load=async(reset=true)=>{setLoading(true);const params=new URLSearchParams({scope:filter==='recommended'?'recommended':'all',limit:'50'});if(query)params.set('q',query);if(filter==='free')params.set('availability','active');if(!reset&&cursor)params.set('cursor',cursor);const d=await fetch(api(`/api/models?${params}`)).then(r=>r.json());setRows(reset?(d.models||[]):[...rows,...(d.models||[])]);setCursor(d.next_cursor||null);setLoading(false)}
+  const load=async(reset=true)=>{setLoading(true);const params=new URLSearchParams({scope:filter,limit:'40'});if(query)params.set('q',query);if(!reset&&cursor)params.set('cursor',cursor);const d=await fetch(api(`/api/models?${params}`)).then(r=>r.json());setRows(reset?(d.models||[]):[...rows,...(d.models||[])]);setCursor(d.next_cursor||null);setLoading(false)}
   useEffect(()=>{const t=setTimeout(()=>load(true),250);return()=>clearTimeout(t)},[query,filter])
-  return <div className="sheet-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)onClose()}}><section className="model-sheet"><header><div><p className="eyebrow">MODEL KÜTÜPHANESİ</p><h2>İşin için doğru modeli seç</h2></div><button onClick={onClose}><Icon name="close"/></button></header><div className="library-search"><Icon name="search"/><input autoFocus value={query} onChange={e=>setQuery(e.target.value)} placeholder="Model, aile veya sağlayıcı ara"/></div><div className="library-tabs">{[['recommended','Önerilen'],['all','Tüm modeller'],['free','Çalışanlar']].map(([id,label])=><button className={filter===id?'active':''} onClick={()=>setFilter(id)} key={id}>{label}</button>)}</div><div className="model-list">{rows.map(m=>{const enabled=m.selectable||m.availability==='active';return <button key={m.id} disabled={!enabled} className={current?.id===m.id?'selected':''} onClick={()=>onSelect(m)}><Logo model={m}/><span className="model-copy"><b>{m.name}</b><small>{m.family||m.developer||m.provider_label} · {m.provider_label||m.provider}</small><em>{enabled?`~${m.estimated_1k_credits||1} kredi / 1K`:(m.status_reason||'Kullanılamıyor')}</em></span><span className={`status ${enabled?'ready':''}`}>{enabled?'Hazır':'Bekliyor'}</span></button>})}{!rows.length&&!loading&&<div className="empty-state">Bu filtrede model bulunamadı.</div>}{cursor&&<button className="load-more" onClick={()=>load(false)}>Daha fazla model</button>}{loading&&<div className="skeleton-list"><i/><i/><i/></div>}</div></section></div>
+  const filters=[['recommended','Önerilen'],['best','En iyi'],['coding','Kodlama'],['research','Araştırma'],['vision','Görsel anlayan'],['fast','Hızlı'],['free','Ücretsiz'],['all','Tümü']]
+  return <div className="sheet-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)onClose()}}><section className="model-sheet"><header><div><p className="eyebrow">MODEL KÜTÜPHANESİ</p><h2>Ne yapmak istiyorsun?</h2><p>Önce kullanım alanını seç, sonra modeli karşılaştır.</p></div><button onClick={onClose}><Icon name="close"/></button></header><div className="library-search"><Icon name="search"/><input autoFocus value={query} onChange={e=>setQuery(e.target.value)} placeholder="Model, aile veya geliştirici ara"/></div><div className="library-tabs model-categories">{filters.map(([id,label])=><button className={filter===id?'active':''} onClick={()=>setFilter(id)} key={id}>{label}</button>)}</div><div className="library-summary"><b>{filters.find(([id])=>id===filter)?.[1]}</b><span>{loading?'Modeller hazırlanıyor':`${rows.length} model gösteriliyor`}</span></div><div className="model-list">{rows.map(m=>{const enabled=m.selectable||m.availability==='active';return <button key={m.id} disabled={!enabled} className={current?.id===m.id?'selected':''} onClick={()=>onSelect(m)}><Logo model={m}/><span className="model-copy"><b>{m.name}</b><small>{m.family||m.developer||m.provider_label}<i>via {m.provider_label||m.provider}</i></small><em>{enabled?`${(m.estimated_1k_credits||1).toLocaleString('tr-TR')} kredi / 1K token`:(m.status_reason||'Kullanılamıyor')}</em></span><span className={`status ${enabled?'ready':''}`}>{current?.id===m.id?'Seçili':enabled?'Hazır':'Bekliyor'}</span></button>})}{!rows.length&&!loading&&<div className="empty-state">Bu bölümde uygun model bulunamadı.</div>}{cursor&&<button className="load-more" onClick={()=>load(false)}>Daha fazla göster</button>}{loading&&<div className="skeleton-list"><i/><i/><i/></div>}</div></section></div>
+}
+
+function MediaModelPicker({models,current,onClose,onSelect}:{models:ImageModel[];current:string;onClose:()=>void;onSelect:(id:string)=>void}) {
+  const [query,setQuery]=useState(''),[showAll,setShowAll]=useState(false)
+  const rows=models.filter(model=>(showAll||model.active)&&`${model.name} ${model.provider_label||model.provider}`.toLowerCase().includes(query.toLowerCase()))
+  const activeCount=models.filter(model=>model.active).length
+  return <div className="sheet-backdrop" onMouseDown={event=>{if(event.target===event.currentTarget)onClose()}}><section className="model-sheet media-model-sheet"><header><div><p className="eyebrow">STÜDYO MODELLERİ</p><h2>Üretim motorunu seç</h2><p>{activeCount} model kullanıma hazır. Diğerleri bilgi amaçlı katalogda.</p></div><button onClick={onClose}><Icon name="close"/></button></header><div className="library-search"><Icon name="search"/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Görsel model veya sağlayıcı ara"/></div><div className="availability-toggle"><button className={!showAll?'active':''} onClick={()=>setShowAll(false)}>Kullanıma hazır <b>{activeCount}</b></button><button className={showAll?'active':''} onClick={()=>setShowAll(true)}>Tüm katalog <b>{models.length}</b></button></div><div className="media-model-grid">{rows.map(item=><button key={item.id} disabled={!item.active} className={current===item.id?'selected':''} onClick={()=>{onSelect(item.id);onClose()}}><Logo model={item}/><span><b>{item.name}</b><small>{item.provider_label||item.provider}</small><em>{item.active?`${item.estimated_credits||1} kredi tahmini`:item.status_reason||'Henüz kullanılamıyor'}</em></span><i className={item.active?'ready':''}>{current===item.id?'Seçili':item.active?'Hazır':'Katalog'}</i></button>)}{!rows.length&&<div className="empty-state">Bu filtrede model bulunamadı.</div>}</div></section></div>
 }
 
 function Studio({user,refreshUser,notify}:{user:User;refreshUser:()=>void;notify:(s:string)=>void}){
-  const [section,setSection]=useState('generate'),[models,setModels]=useState<ImageModel[]>([]),[model,setModel]=useState(''),[prompt,setPrompt]=useState(''),[ratio,setRatio]=useState('1:1'),[busy,setBusy]=useState(false),[image,setImage]=useState('')
+  const [section,setSection]=useState('generate'),[models,setModels]=useState<ImageModel[]>([]),[model,setModel]=useState(''),[picker,setPicker]=useState(false),[prompt,setPrompt]=useState(''),[ratio,setRatio]=useState('1:1'),[busy,setBusy]=useState(false),[image,setImage]=useState('')
   useEffect(()=>{const modality=['generate','edit','variation','upscale','background'].includes(section)?(section==='generate'?'image':section):section;setModels([]);setModel('');fetch(api(`/api/media/models?modality=${modality}`)).then(r=>r.json()).then(d=>{setModels(d.models||[]);setModel((d.models||[]).find((m:ImageModel)=>m.active)?.id||'')})},[section])
   const generate=async()=>{if(section!=='generate'){notify('Bu işlem için etkin sağlayıcı şeması bekleniyor');return}if(!prompt.trim()||!model)return;setBusy(true);try{const r=await fetch(api('/api/media/jobs'),{method:'POST',headers:headers(),body:JSON.stringify({operation:'generate',model,prompt,ratio,style:'auto',request_id:uid(),job_id:uid()})});const d=await r.json();if(!r.ok)throw new Error(d.error);let job=d.job;for(let i=0;i<50&&['queued','running'].includes(job.status);i++){await new Promise(x=>setTimeout(x,2000));job=await fetch(api(`/api/generation-jobs/${job.job_id}`),{headers:headers(false)}).then(x=>x.json()).then(x=>x.job)}if(job.status!=='completed')throw new Error(job.error||'Üretim zaman aşımına uğradı');setImage(job.image_url);refreshUser();notify('Görsel hazır')}catch(e:any){notify(e.message)}finally{setBusy(false)}}
   const tools=[['generate','Üret'],['edit','Düzenle'],['variation','Varyasyon'],['upscale','Upscale'],['background','Arka plan'],['video','Video'],['audio','Ses']]
-  return <section className="page studio-page"><div className="page-heading"><div><p className="eyebrow">FROXY CREATIVE</p><h1>Medya Stüdyosu</h1><p>Tek bir çalışma alanında üret, düzenle ve geliştir.</p></div><span className="quota">{user.free_image_remaining??1} ücretsiz üretim</span></div><div className="tool-strip">{tools.map(([id,label])=><button className={section===id?'active':''} onClick={()=>setSection(id)} key={id}>{label}</button>)}</div><div className="studio-grid"><div className="studio-form"><label>Model</label><select value={model} onChange={e=>setModel(e.target.value)}>{models.map(m=><option key={m.id} value={m.id} disabled={!m.active}>{m.name}{m.active?'':` — ${m.status_reason}`}</option>)}</select><label>İstem</label><textarea value={prompt} onChange={e=>setPrompt(e.target.value)} placeholder={section==='generate'?'Işık, kompozisyon, stil ve sahneyi anlat…':'Referans medya ve talimatlarını ekle…'} rows={6}/><div className="ratio-row">{['1:1','4:5','9:16','16:9'].map(x=><button className={ratio===x?'active':''} onClick={()=>setRatio(x)} key={x}>{x}</button>)}</div><button className="primary" onClick={generate} disabled={busy||!model}>{busy?'Üretiliyor…':section==='generate'?'Görseli üret':'İşlemi başlat'}</button></div><div className="canvas"><div className="canvas-top"><span>Çıktı</span><em>{busy?'İşleniyor':'Hazır'}</em></div>{image?<img src={image} alt="Üretilen görsel"/>:<div className="canvas-empty"><Icon name="studio" size={38}/><b>Üretimin burada görünecek</b><span>Bir model seç ve istemini yaz.</span></div>}</div></div></section>
+  const selectedModel=models.find(item=>item.id===model)
+  return <section className="page studio-page"><div className="page-heading"><div><p className="eyebrow">FROXY CREATIVE</p><h1>Medya Stüdyosu</h1><p>Üretim türünü seç, ayarları sade bir akışta tamamla.</p></div><span className="quota">{user.free_image_remaining??1} ücretsiz üretim</span></div><div className="tool-strip">{tools.map(([id,label])=><button className={section===id?'active':''} onClick={()=>setSection(id)} key={id}>{label}</button>)}</div><div className="studio-grid"><div className="studio-form"><label>Üretim modeli</label><button className="studio-model-trigger" onClick={()=>setPicker(true)}><Logo model={selectedModel}/><span><small>{selectedModel?.provider_label||selectedModel?.provider||'Model kütüphanesi'}</small><b>{selectedModel?.name||'Kullanıma hazır model seç'}</b></span><Icon name="chevron"/></button><label>İstem</label><textarea value={prompt} onChange={e=>setPrompt(e.target.value)} placeholder={section==='generate'?'Sahneyi, ışığı, kompozisyonu ve stili anlat…':'Referans medya ve yapmak istediğin değişikliği anlat…'} rows={6}/><div className="ratio-label"><span>Oran</span><small>{ratio}</small></div><div className="ratio-row">{['1:1','4:5','9:16','16:9'].map(x=><button className={ratio===x?'active':''} onClick={()=>setRatio(x)} key={x}>{x}</button>)}</div><button className="primary" onClick={generate} disabled={busy||!model}>{busy?'Üretiliyor…':section==='generate'?'Görseli üret':'İşlemi başlat'}</button></div><div className="canvas"><div className="canvas-top"><span>Önizleme</span><em>{busy?'İşleniyor':'Hazır'}</em></div>{image?<img src={image} alt="Üretilen görsel"/>:<div className="canvas-empty"><Icon name="studio" size={38}/><b>Yeni bir şey üret</b><span>Modeli seç, fikrini anlat ve sonucu burada gör.</span></div>}</div></div>{picker&&<MediaModelPicker models={models} current={model} onClose={()=>setPicker(false)} onSelect={setModel}/>}</section>
 }
 
 function Store({user,refreshUser,notify}:{user:User;refreshUser:()=>void;notify:(s:string)=>void}){

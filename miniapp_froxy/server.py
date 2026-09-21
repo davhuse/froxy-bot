@@ -256,6 +256,7 @@ def froxy_health():
     catalog = gateway.public_catalog()
     providers = catalog.get("providers") or gateway.provider_status()
     image_catalog = gateway.image_models()
+    fallback = store.fallback_state()
     return jsonify(
         {
             "status": status,
@@ -271,6 +272,7 @@ def froxy_health():
             "catalog_model_count": int(catalog.get("catalog_model_count", 0) or 0),
             "unavailable_model_count": int(catalog.get("unavailable_model_count", 0) or 0),
             "catalog_cache_age": catalog.get("catalog_cache_age"),
+            "local_fallback": fallback,
             "providers": providers,
         }
     ), (200 if status == "ok" else 503)
@@ -338,6 +340,28 @@ def get_models():
         rows = [row for row in rows if capability in [str(value).lower() for value in row.get("capabilities") or []]]
     if query:
         rows = [row for row in rows if query in " ".join(str(row.get(key) or "") for key in ("name", "provider", "provider_label", "developer", "family", "description")).lower()]
+
+    def matches_scope(row: dict, requested: str) -> bool:
+        haystack = " ".join(str(row.get(key) or "") for key in ("id", "name", "family", "developer", "description")).lower()
+        capabilities = {str(value).lower() for value in row.get("capabilities") or []}
+        if requested in {"all", "recommended"}:
+            return True
+        if requested == "best":
+            return any(token in haystack for token in ("gpt-5", "gpt-4.1", "claude opus", "claude sonnet", "gemini 2.5 pro", "gemini 3", "deepseek", "qwen3", "llama 4", "mistral large"))
+        if requested == "coding":
+            return "code" in capabilities or any(token in haystack for token in ("code", "coder", "codestral", "devstral", "gpt", "claude", "deepseek", "qwen"))
+        if requested == "research":
+            return "reasoning" in capabilities or any(token in haystack for token in ("reason", "search", "perplexity", "sonar", "deepseek", "gemini", "claude"))
+        if requested == "vision":
+            return "vision" in capabilities or bool(row.get("supports_vision"))
+        if requested == "fast":
+            return any(token in haystack for token in ("fast", "flash", "mini", "nano", "instant", "8b", "haiku", "lite"))
+        if requested == "free":
+            return bool(row.get("is_free") or row.get("is_froxy")) and row.get("availability") == "active"
+        return True
+
+    if scope not in {"all", "recommended"}:
+        rows = [row for row in rows if matches_scope(row, scope)]
 
     def score(row: dict) -> tuple:
         model_id = str(row.get("id") or "").lower()

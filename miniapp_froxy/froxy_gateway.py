@@ -90,6 +90,16 @@ def _model_brand(provider_slug: str, model_id: str, name: str) -> str:
         return "xai"
     if "nvidia" in value or "nemotron" in value:
         return "nvidia"
+    if "qwen" in value or "alibaba" in value:
+        return "qwen"
+    if "cohere" in value or "command-r" in value:
+        return "cohere"
+    if "phi-" in value or "microsoft" in value:
+        return "microsoft"
+    if "seedream" in value or "bytedance" in value:
+        return "bytedance"
+    if "stability" in value or "stable-diffusion" in value:
+        return "stability"
     return provider_slug if provider_slug in PROVIDER_LOGOS else ""
 
 
