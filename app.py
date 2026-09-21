@@ -144,12 +144,24 @@ def add_security_headers(response):
     response.headers.setdefault('Referrer-Policy', 'same-origin')
     response.headers.setdefault('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
     response.headers.setdefault('Cache-Control', 'no-store')
-    if request.path.startswith('/la/') or request.path.startswith('/api/la/') or request.path == '/api/shopier/lisansarena/webhook':
+    if (
+        request.path.startswith('/la/')
+        or request.path.startswith('/api/la/')
+        or request.path.startswith('/jarvis/')
+        or request.path.startswith('/keyvadi')
+        or request.path.startswith('/froxy')
+        or request.path == '/api/shopier/lisansarena/webhook'
+    ):
         response.headers['Content-Security-Policy'] = (
-            "default-src 'self'; script-src 'self' https://telegram.org; "
-            "style-src 'self'; img-src 'self' data:; connect-src 'self'; "
-            "frame-ancestors 'self' https://web.telegram.org https://*.telegram.org; "
-            "base-uri 'none'; form-action 'self'"
+            "default-src 'self' 'unsafe-inline' https: data: blob:; "
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://telegram.org https://*.telegram.org https://cdnjs.cloudflare.com; "
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; "
+            "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; "
+            "img-src 'self' data: https: blob:; "
+            "media-src 'self' https: data: blob:; "
+            "connect-src 'self' https:; "
+            "frame-ancestors 'self' https://web.telegram.org https://*.telegram.org https://webk.telegram.org https://webz.telegram.org; "
+            "base-uri 'none'; form-action 'self' https:"
         )
         response.headers.pop('X-Frame-Options', None)
     return response

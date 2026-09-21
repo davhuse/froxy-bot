@@ -484,85 +484,122 @@ async def callback_handler(event):
         await event.edit(msg, buttons=buttons)
 
     # ══════════════════════════════════
-    #  3.  JARVIS AI ARAÇLARI
+    #  3.  J.A.R.V.I.S. MASAÜSTÜ AI PROJESİ
     # ══════════════════════════════════
     elif data == "menu_ai_tools":
         msg = (
-            f"           🧠 **JARVIS AI ARAÇLARI**\n"
+            f"           🤖 **J.A.R.V.I.S. AI MASAÜSTÜ ASİSTANI**\n"
             f"{LINE}\n\n"
-            f"Yapay zeka destekli üretkenlik araçlarınızı\n"
-            f"doğrudan bu sohbet üzerinden kullanın.\n\n"
-            f"{DOT}  **Reklam Metni Üretici**\n"
-            f"     Ürününüzü söyleyin, 3 farklı\n"
-            f"     dönüşüm odaklı metin üretsin.\n\n"
-            f"{DOT}  **Kod Hata Ayıklayıcı**\n"
-            f"     Hata veren kodu yapıştırın,\n"
-            f"     çözümü saniyeler içinde alın.\n\n"
-            f"{DOT}  **Bot & Proje Fikir Jeneratörü**\n"
-            f"     En karlı yazılım projeleri hakkında\n"
-            f"     yapay zeka destekli ilham alın.\n\n"
-            f"{LINE}"
+            f"Tony Stark'ın yapay zeka asistanı artık masanızda!\n\n"
+            f"Windows için özel geliştirilmiş, Python gerektirmeyen\n"
+            f"**taşınabilir masaüstü sesli asistan projesi.**\n\n"
+            f"{DOT}  **Ultra Gerçekçi Türkçe Ses:**\n"
+            f"     İnsan doğallığında konuşur, anında sesli cevap verir.\n\n"
+            f"{DOT}  **0 ms Anında Susturma:**\n"
+            f"     Konuşurken `Esc` tuşuna bastığınız an susar.\n\n"
+            f"{DOT}  **Canlı İnternet & Çok Kaynaklı Web Arama:**\n"
+            f"     Güncel piyasa ve haber verilerini internetten derler.\n\n"
+            f"{DOT}  **Sıfır Kurulum:**\n"
+            f"     Direkt çalıştırılabilir `.exe` paketi.\n\n"
+            f"{LINE}\n"
+            f"👇  Aşağıdaki butonlarla videoyu izleyin veya PC demo paketini indirin:"
         )
         buttons = [
-            [Button.inline("✍️  Reklam Metni Üret", b"ai_ad_copy")],
-            [Button.inline("🐛  Kod Hata Ayıkla", b"ai_code_debug")],
-            [Button.inline("💡  Proje Fikri Al", b"ai_project_idea")],
+            [Button.inline("📹  Kullanım Videosunu Gönder (Chat'e)", b"jarvis_send_video")],
+            [Button.inline("📥  Ücretsiz PC Demo Paketi (.ZIP)", b"jarvis_send_demo")],
+            [Button.url("🛒  Shopier'dan Lisans Satın Al (350 ₺)", "https://www.shopier.com/51058105")],
+            [Button.inline("📢  Duyuru Kanalına Paylaş (Video & Demo)", b"jarvis_broadcast_channel")],
             [Button.inline("◀️  Ana Menü", b"main_menu")]
         ]
         await event.edit(msg, buttons=buttons)
 
-    elif data == "ai_ad_copy":
-        USER_STATES[uid] = "waiting_ai_ad"
-        await event.edit(
-            f"           ✍️ **REKLAM METNİ ÜRETİCİ**\n"
-            f"{LINE}\n\n"
-            f"Satmak istediğiniz ürün veya hizmeti\n"
-            f"kısaca yazıp gönderin.\n\n"
-            f"💡 **Örnek:**\n"
-            f"`Netflix ortak hesap 50 TL, garantili`\n\n"
-            f"Jarvis AI sizin için **3 farklı** profesyonel\n"
-            f"reklam varyasyonu hazırlayacaktır.\n\n"
-            f"{LINE}",
-            buttons=[[Button.inline("❌ İptal", b"menu_ai_tools")]]
+    elif data == "jarvis_send_video":
+        await event.answer("📹 Tanıtım videosu gönderiliyor...", alert=False)
+        video_path = os.path.join("static", "jarvis_demo_video.mp4")
+        caption = (
+            "🤖 **J.A.R.V.I.S. Kişisel AI Masaüstü Asistanı — Kullanım Rehberi**\n\n"
+            "• Ultra gerçekçi Türkçe sesli yanıt sistemi\n"
+            "• 0 ms anında Esc tuşuyla susturma\n"
+            "• Canlı web tarama ve akıllı görev yürütme\n"
+            "• Sıfır kurulum: Windows portable EXE paketi\n\n"
+            "📥 **Ücretsiz Demo:** https://bot-service-production-9d74.up.railway.app/static/JARVIS_MUSTERI_DEMO_PAKETI.zip\n"
+            "🛒 **Shopier Lisans:** https://www.shopier.com/51058105\n"
+            "📢 **Duyuru Kanalı:** @JarvisCraftDuyuru"
         )
+        try:
+            if os.path.exists(video_path):
+                await client.send_file(
+                    event.chat_id,
+                    video_path,
+                    caption=caption,
+                    supports_streaming=True
+                )
+            else:
+                await event.respond(
+                    f"📹 **J.A.R.V.I.S. Tanıtım Videosu:**\n"
+                    f"https://bot-service-production-9d74.up.railway.app/static/jarvis_demo_video.mp4\n\n"
+                    f"{caption}"
+                )
+        except Exception as e:
+            logger.warning(f"Direct video send error: {e}")
+            await event.respond(
+                f"📹 **J.A.R.V.I.S. Tanıtım Videosu:**\n"
+                f"https://bot-service-production-9d74.up.railway.app/static/jarvis_demo_video.mp4\n\n"
+                f"{caption}"
+            )
 
-    elif data == "ai_code_debug":
-        USER_STATES[uid] = "waiting_code_debug"
-        await event.edit(
-            f"           🐛 **KOD HATA AYIKLAYICI**\n"
-            f"{LINE}\n\n"
-            f"Hata veren kod parçanızı bu sohbete\n"
-            f"mesaj olarak gönderin.\n\n"
-            f"Jarvis AI hatayı tespit edip düzeltilmiş\n"
-            f"versiyonu sunacaktır.\n\n"
-            f"{LINE}",
-            buttons=[[Button.inline("❌ İptal", b"menu_ai_tools")]]
+    elif data == "jarvis_send_demo":
+        await event.answer("📥 Demo paketi hazırlanıyor...", alert=False)
+        demo_msg = (
+            "💻 **J.A.R.V.I.S. Müşteri Demo Paketi**\n\n"
+            "• 10 Soru / Komut Deneme Hakkı\n"
+            "• İlk 3 yanıtta ultra gerçekçi Türkçe sesli asistan\n"
+            "• 0 ms anında `Esc` ile susturma\n"
+            "• Canlı çok kaynaklı web arama\n\n"
+            "👇 **Aşağıdaki bağlantıdan doğrudan bilgisayarınıza indirebilirsiniz:**\n"
+            "https://bot-service-production-9d74.up.railway.app/static/JARVIS_MUSTERI_DEMO_PAKETI.zip\n\n"
+            "💡 *İndirdiğiniz ZIP dosyasını klasöre çıkartıp `LisansArena_JARVIS_DEMO.exe`ye çift tıklamanız yeterlidir. Sıfır kurulum gerektirir.*"
         )
-
-    elif data == "ai_project_idea":
-        ideas = [
-            "🤖 **Telegram Müşteri Destek Botu**\nAI destekli, otomatik cevaplayan, ticket sistemi entegreli destek botu. Aylık 500-2000₺ lisans geliri potansiyeli.",
-            "📊 **Kripto Fiyat Alarm Botu**\nBinance/Gate.io API entegreli, kullanıcıya alarm gönderen Telegram botu. VIP üyelik modeliyle aylık gelir.",
-            "🛒 **Dropshipping Otomasyon Aracı**\nTrendyol/Hepsiburada ürün çekme, otomatik fiyat güncelleme ve sipariş yönetim scripti.",
-            "📱 **Instagram DM Oto-Cevaplama Botu**\nİşletmeler için Instagram Direct mesajlarını AI ile otomatik yanıtlayan SaaS aracı."
+        buttons = [
+            [Button.url("📥 Demo Paketini İndir (.ZIP)", "https://bot-service-production-9d74.up.railway.app/static/JARVIS_MUSTERI_DEMO_PAKETI.zip")],
+            [Button.url("🛒 Tam Sürüm Lisans Al (350 ₺)", "https://www.shopier.com/51058105")],
+            [Button.inline("◀️ J.A.R.V.I.S. Menüsü", b"menu_ai_tools")]
         ]
-        import random
-        selected = random.sample(ideas, min(3, len(ideas)))
-        ideas_text = "\n\n".join(f"{i+1}️⃣  {idea}" for i, idea in enumerate(selected))
+        await event.respond(demo_msg, buttons=buttons)
 
-        msg = (
-            f"           💡 **PROJE FİKİR JENERATÖRÜ**\n"
-            f"{LINE}\n\n"
-            f"Jarvis AI'ın önerdiği karlı proje fikirleri:\n\n"
-            f"{ideas_text}\n\n"
-            f"{LINE}\n\n"
-            f"💬 Detaylı proje geliştirme talepleri için @{SUPPORT_USERNAME}"
+    elif data == "jarvis_broadcast_channel":
+        await event.answer("📢 Kanala gönderiliyor...", alert=False)
+        channel_post = (
+            "🚀 **J.A.R.V.I.S. AI MASAÜSTÜ ASİSTANI YAYINDA!** 🚀\n\n"
+            "Tony Stark'ın efsanevi asistanı artık gerçek oldu! Windows bilgisayarınızda sıfır kurulumla çalışan, konuşan, araştıran ve komutlarınızı yerine getiren yapay zeka.\n\n"
+            "✨ **Öne Çıkan Özellikler:**\n"
+            "• 🎙️ Ultra gerçekçi Türkçe sesli yanıt\n"
+            "• ⚡ 0 ms anında 'Esc' tuşuyla susturma\n"
+            "• 🌐 Canlı çok kaynaklı internet araması\n"
+            "• 💻 Kuruluma ihtiyaç duymayan taşınabilir .exe\n\n"
+            "📥 **Ücretsiz Demo İndir:**\n"
+            "https://bot-service-production-9d74.up.railway.app/static/JARVIS_MUSTERI_DEMO_PAKETI.zip\n\n"
+            "🛒 **Shopier Güvenli Sipariş (350 ₺):**\n"
+            "https://www.shopier.com/51058105\n\n"
+            "🤖 **Bot:** @JarvisCraftsBot\n"
+            "💬 **Destek:** tg://user?id=32186"
         )
-        await event.edit(msg, buttons=[
-            [Button.inline("🔄  Yeni Fikirler Üret", b"ai_project_idea")],
-            [Button.inline("◀️  AI Araçları", b"menu_ai_tools")],
-            [Button.inline("◀️  Ana Menü", b"main_menu")]
-        ])
+        video_path = os.path.join("static", "jarvis_demo_video.mp4")
+        try:
+            target_chan = f"@{CHANNEL_USERNAME}"
+            if os.path.exists(video_path):
+                await client.send_file(
+                    target_chan,
+                    video_path,
+                    caption=channel_post,
+                    supports_streaming=True
+                )
+            else:
+                await client.send_message(target_chan, channel_post)
+            await event.respond("✅ J.A.R.V.I.S. tanıtım videosu ve demo paketi @JarvisCraftDuyuru kanalına başarıyla gönderildi!")
+        except Exception as e:
+            logger.error(f"Channel broadcast failed: {e}")
+            await event.respond(f"⚠️ Kanala gönderilirken bir durum oluştu: {e}\n(Botun @{CHANNEL_USERNAME} kanalında yönetici yetkisi olduğundan emin olun.)")
 
     # ══════════════════════════════════
     #  4.  VIP & BAKİYE
@@ -789,6 +826,26 @@ async def start_with_retry():
                 token=BOT_TOKEN,
             )
             logger.info(f"✅ JarvisCraftBot is ONLINE! @{me.username} (ID: {me.id})")
+            try:
+                mb_url = f"https://api.telegram.org/bot{BOT_TOKEN}/setChatMenuButton"
+                mb_payload = {
+                    "menu_button": {
+                        "type": "web_app",
+                        "text": "⚡ Mağaza & Panel",
+                        "web_app": {
+                            "url": APP_URL
+                        }
+                    }
+                }
+                mb_req = urllib.request.Request(
+                    mb_url,
+                    data=json.dumps(mb_payload).encode("utf-8"),
+                    headers={"Content-Type": "application/json"}
+                )
+                with urllib.request.urlopen(mb_req, timeout=5) as mb_resp:
+                    logger.info("Chat menu button successfully synced with Telegram API.")
+            except Exception as btn_err:
+                logger.warning(f"setChatMenuButton error: {btn_err}")
             await client.run_until_disconnected()
         except FloodWaitError as e:
             write_bot_status(
