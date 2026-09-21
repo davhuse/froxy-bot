@@ -1009,7 +1009,7 @@ def _paid_shopier_orders() -> list[dict]:
     if not token:
         return []
     try:
-        response = requests.get("https://api.shopier.com/v1/orders?limit=50", headers={"Authorization": f"Bearer {token}", "Accept": "application/json"}, timeout=12)
+        response = requests.get("https://api.shopier.com/v1/orders?limit=50", headers={"Authorization": f"Bearer {token}", "Accept": "application/json"}, timeout=25)
         if response.status_code != 200:
             return []
         payload = response.json()

@@ -2586,12 +2586,16 @@ if __name__ == '__main__':
                     connected=True,
                 )
                 if not PROFILE_CONFIGURED:
-                    try:
-                        await asyncio.to_thread(configure_bot_profile)
+                    if os.environ.get("KEYVADI_CONFIGURE_PROFILE", "0").strip().lower() in {"1", "true", "yes"}:
+                        try:
+                            await asyncio.to_thread(configure_bot_profile)
+                            PROFILE_CONFIGURED = True
+                            logger.info("KeyVadi commands and Mini App menu configured")
+                        except Exception as profile_error:
+                            logger.warning("KeyVadi profile configuration warning: %s", profile_error)
+                    else:
                         PROFILE_CONFIGURED = True
-                        logger.info("KeyVadi commands and Mini App menu configured")
-                    except Exception as profile_error:
-                        logger.warning("KeyVadi profile configuration warning: %s", profile_error)
+                        logger.info("KeyVadi profile configuration skipped; canonical Mini App URL is %s", KEYVADI_MINI_APP_URL)
                 logger.info(f"KeyVadi Sales Bot started successfully! Bot User ID: {BOT_USER_ID}")
                 await drain_queue(
                     AnnouncementQueue("keyvadi", "stock"),

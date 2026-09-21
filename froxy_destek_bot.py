@@ -1296,11 +1296,14 @@ if __name__ == '__main__':
                     bot_username=getattr(me, "username", None),
                     connected=True,
                 )
-                try:
-                    configure_bot_profile()
-                    logger.info("Froxy Telegram profile and menu configured for Shopier.")
-                except Exception as exc:
-                    logger.warning("Froxy Telegram profile configuration failed: %s", exc)
+                if os.environ.get("FROXY_CONFIGURE_PROFILE", "0").strip().lower() in {"1", "true", "yes"}:
+                    try:
+                        configure_bot_profile()
+                        logger.info("Froxy Telegram profile and menu configured for Shopier.")
+                    except Exception as exc:
+                        logger.warning("Froxy Telegram profile configuration failed: %s", exc)
+                else:
+                    logger.info("Froxy Telegram profile configuration skipped; canonical Mini App URL is %s", FROXY_MINI_APP_URL)
                 logger.info(f"Froxy AI Support Bot started successfully! Bot User ID: {BOT_USER_ID}")
                 await drain_queue(AnnouncementQueue("froxy", "stock"), _send_pending_stock)
                 await bot.run_until_disconnected()

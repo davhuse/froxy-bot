@@ -10,10 +10,12 @@ import urllib.request
 
 def fetch_shopier_catalog(store_slug: str, timeout: int = 15) -> list[dict]:
     url = f"https://www.shopier.com/{store_slug}"
-    request = urllib.request.Request(
-        url,
-        headers={"User-Agent": "Mozilla/5.0 (compatible; TelegramSupportBot/1.0)"},
-    )
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7",
+    }
+    request = urllib.request.Request(url, headers=headers)
     with urllib.request.urlopen(request, timeout=timeout) as response:
         body = response.read().decode("utf-8", errors="replace")
     return parse_shopier_catalog(body, store_slug)

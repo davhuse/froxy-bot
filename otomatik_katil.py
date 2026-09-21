@@ -5208,6 +5208,8 @@ async def main():
             # NameError -> worker cokup 60 saniyede bir yeniden basliyordu.
             sent_count = 0
             fail_count = 0
+            blast_interrupted = False
+            last_outcome = None
 
             if is_join_only_account(client_name):
                 print(f"[{client_name}] 🛡️ SADECE GRUBA KATILMA MODU AKTİF! Reklam/mesaj gönderimi kapalı.")
@@ -5872,6 +5874,15 @@ async def main():
                         remaining_minutes=5,
                         next_blast_at=utc_after_seconds_iso(300),
                     )
+                elif is_join_only_account(client_name):
+                    update_ad_account_status(
+                        client_name,
+                        phase='queued',
+                        remaining_seconds=3600,
+                        remaining_minutes=60,
+                        next_blast_at=utc_after_seconds_iso(3600),
+                    )
+                    print(f"[{client_name}] 🛡️ Sadece gruba katılma modu: Mesaj gönderilmedi. Durum güncellendi.")
                 else:
                     save_last_blast_time(client_name)
                     try:
@@ -5911,6 +5922,12 @@ async def main():
                     f"\n[{client_name}] 🧩 Havuz tamamlama turu bitti: "
                     f"{grup_sayisi}/{minimum_sendable_groups} grup hazır. "
                     "Blast yapılmadı; 5 dakika sonra havuz yeniden kontrol edilecek."
+                )
+            elif is_join_only_account(client_name):
+                bekleme = 3600
+                print(
+                    f"\n[{client_name}] 🛡️ Sadece gruba katılma turu tamamlandı. "
+                    "Reklam gönderilmiyor; sonraki kontrol 60 dakika sonra."
                 )
             elif not blast_targets:
                 bekleme = 3600

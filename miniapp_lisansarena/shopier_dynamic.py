@@ -315,7 +315,7 @@ def check_and_sync_shopier_orders(users_data_path: Path):
     credited_orders = []
     if topups:
         try:
-            res = requests.get("https://api.shopier.com/v1/orders?limit=20", headers=headers, timeout=12)
+            res = requests.get("https://api.shopier.com/v1/orders?limit=20", headers=headers, timeout=25)
             if res.status_code == 200:
                 payload = res.json()
                 orders = payload if isinstance(payload, list) else (payload.get("orders") or payload.get("data") or [])
@@ -419,6 +419,8 @@ def check_and_sync_shopier_orders(users_data_path: Path):
                                     print(f"[LisansArena] Sipariş tamamlandı, ilan silindi: {pid}")
                                 except Exception:
                                     pass
+        except requests.exceptions.Timeout:
+            pass
         except Exception as e:
             print(f"[LisansArena Shopier Sync Error] {e}")
 
