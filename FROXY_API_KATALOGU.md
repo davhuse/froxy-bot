@@ -27,6 +27,7 @@ Froxy gateway artık sohbet ve görsel sağlayıcılarının tamamını tek bir 
 | Shenfeng | `SHENFENG_GEMINI_KEY` / `SHENFENG_OPENAI_KEY` | Sohbet |
 | GuiCore | `GUICORE_CLAUDE_KEY` / `GUICORE_GEMINI_KEY` | Sohbet |
 | Pollinations | `POLLINATIONS_API_KEYS` | Sohbet + görsel |
+| WaveSpeedAI | `WAVESPEED_API_KEYS` | Görsel |
 | Cloudflare Workers AI | `CLOUDFLARE_ACCOUNT_ID` + `CLOUDFLARE_API_TOKEN` | Sohbet + görsel |
 
 ## Görsel sağlayıcıları

@@ -464,6 +464,32 @@ class FroxyWebSearchTests(unittest.TestCase):
         for model_id in ("gemini-3.1-flash-image", "imagen-4-fast", "evolink-img-gpt-image-2", "imagegpt-free", "modal-sdxl"):
             self.assertTrue(by_id[model_id]["active"], model_id)
 
+    def test_wavespeed_image_model_is_active_when_configured(self):
+        gateway = FroxyGateway()
+        with mock.patch.dict(os.environ, {"WAVESPEED_API_KEY": "wavespeed-test"}, clear=False):
+            model = next(row for row in gateway.image_models() if row["provider"] == "wavespeed")
+        self.assertTrue(model["active"])
+        self.assertEqual("active", model["availability"])
+
+    def test_wavespeed_image_adapter_polls_prediction_without_retrying_submit(self):
+        gateway = FroxyGateway()
+        submitted = mock.Mock(status_code=200)
+        submitted.json.return_value = {"code": 200, "data": {"id": "pred_test", "status": "created"}}
+        submitted.close = mock.Mock()
+        completed = mock.Mock(status_code=200)
+        completed.json.return_value = {"code": 200, "data": {"status": "completed", "outputs": ["https://example.test/wavespeed.png"]}}
+        completed.close = mock.Mock()
+        gateway.session.post = mock.Mock(return_value=submitted)
+        gateway.session.get = mock.Mock(return_value=completed)
+        with mock.patch.dict(os.environ, {"WAVESPEED_API_KEY": "wavespeed-test"}, clear=False), mock.patch(
+            "miniapp_froxy.froxy_gateway.time.sleep"
+        ):
+            result = gateway._image_wavespeed("blue fox", 512, 512, "wavespeed-ai/z-image/turbo", "wavespeed-test")
+        self.assertEqual("wavespeed", result["provider"])
+        self.assertEqual("https://example.test/wavespeed.png", result["image_url"])
+        self.assertEqual(1, gateway.session.post.call_count)
+        self.assertEqual(1, gateway.session.get.call_count)
+
     def test_google_image_adapter_accepts_inline_data(self):
         gateway = FroxyGateway()
         encoded = __import__("base64").b64encode(b"\x89PNG\r\n\x1a\n" + b"0" * 32).decode()

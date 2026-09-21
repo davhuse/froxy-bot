@@ -42,6 +42,7 @@ PROVIDER_LOGOS = {
     "huggingface": "assets/provider_huggingface.svg",
     "aimlapi": "assets/provider_aimlapi.svg",
     "runware": "assets/provider_runware.svg",
+    "wavespeed": "assets/provider_runware.svg",
     "pollinations": "assets/provider_pollinations.svg",
     "mistral": "assets/provider_mistral.svg",
     "xai": "assets/provider_xai.svg",
@@ -667,6 +668,7 @@ class FroxyGateway:
             "together": bool(_all_keys("TOGETHER_API_KEYS", "TOGETHER_API_KEY")),
             "cloudflare": bool(os.environ.get("CLOUDFLARE_ACCOUNT_ID", "").strip() and _all_keys("CLOUDFLARE_API_TOKEN")),
             "runware": bool(_all_keys("RUNWARE_API_KEYS", "RUNWARE_API_KEY")),
+            "wavespeed": bool(_all_keys("WAVESPEED_API_KEYS", "WAVESPEED_API_KEY")),
             "pollinations": bool(_all_keys("POLLINATIONS_API_KEYS", "POLLINATIONS_API_KEY", "POLLINATIONS_KEY")),
             "aimlapi": bool(_all_keys("AIMLAPI_KEY")),
             "stability": bool(_all_keys("STABILITY_API_KEYS", "STABILITY_API_KEY")),
@@ -896,6 +898,7 @@ class FroxyGateway:
             "together": bool(_all_keys("TOGETHER_API_KEYS", "TOGETHER_API_KEY")),
             "cloudflare": bool(account and _all_keys("CLOUDFLARE_API_TOKEN")),
             "runware": bool(_all_keys("RUNWARE_API_KEYS", "RUNWARE_API_KEY")),
+            "wavespeed": bool(_all_keys("WAVESPEED_API_KEYS", "WAVESPEED_API_KEY")),
             "pollinations": bool(_all_keys("POLLINATIONS_API_KEYS", "POLLINATIONS_API_KEY", "POLLINATIONS_KEY")),
             "aimlapi": bool(_all_keys("AIMLAPI_KEY")),
             "stability": bool(_all_keys("STABILITY_API_KEYS", "STABILITY_API_KEY")),
@@ -923,6 +926,7 @@ class FroxyGateway:
             ("cf-flux-klein", "Cloudflare FLUX.2 Klein", "cloudflare", "@cf/black-forest-labs/flux-2-klein-4b", cost),
             ("runware-flux", "Runware FLUX", "runware", "bfl:5@1", cost),
             ("runware-sdxl", "Runware SDXL", "runware", "runware:101@1", cost),
+            ("wavespeed-z-image", "WaveSpeed Z-Image Turbo", "wavespeed", "wavespeed-ai/z-image/turbo", max(30, cost)),
             ("pollinations-zimage", "Pollinations Z-Image", "pollinations", "zimage", cost),
             ("pollinations-flux", "Pollinations FLUX", "pollinations", "flux", cost),
             ("pollinations-gptimage", "Pollinations GPT Image", "pollinations", "gptimage", cost),
@@ -995,6 +999,7 @@ class FroxyGateway:
             "together": ("TOGETHER_API_KEYS", "TOGETHER_API_KEY"),
             "cloudflare": ("CLOUDFLARE_API_TOKEN",),
             "runware": ("RUNWARE_API_KEYS", "RUNWARE_API_KEY"),
+            "wavespeed": ("WAVESPEED_API_KEYS", "WAVESPEED_API_KEY"),
             "pollinations": ("POLLINATIONS_API_KEYS", "POLLINATIONS_API_KEY", "POLLINATIONS_KEY"),
             "aimlapi": ("AIMLAPI_KEY",),
             "stability": ("STABILITY_API_KEYS", "STABILITY_API_KEY"),
@@ -1020,6 +1025,7 @@ class FroxyGateway:
             "together": self._image_together,
             "cloudflare": self._image_cloudflare,
             "runware": self._image_runware,
+            "wavespeed": self._image_wavespeed,
             "pollinations": self._image_pollinations,
             "aimlapi": self._image_aimlapi,
             "stability": self._image_stability,
@@ -1183,6 +1189,55 @@ class FroxyGateway:
         if parsed.scheme not in {"https", "http"} or not parsed.netloc:
             raise GatewayError("Runware geçersiz görsel URL'si döndürdü")
         return {"image_url": image_url, "provider": "runware", "model": model}
+
+    def _image_wavespeed(self, prompt: str, width: int, height: int, model_override: str | None = None, key_override: str | None = None) -> dict[str, Any] | None:
+        key = key_override or _first_key("WAVESPEED_API_KEYS", "WAVESPEED_API_KEY")
+        if not key:
+            return None
+        model = model_override or os.environ.get("FROXY_WAVESPEED_IMAGE_MODEL", "wavespeed-ai/z-image/turbo")
+        headers = {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}
+        response = self.session.post(
+            f"https://api.wavespeed.ai/api/v3/{model}",
+            headers=headers,
+            json={"prompt": prompt, "size": f"{max(512, int(width))}*{max(512, int(height))}"},
+            timeout=(8, 60),
+        )
+        if response.status_code >= 400:
+            raise GatewayError(f"WaveSpeed görsel HTTP {response.status_code}", response.status_code)
+        try:
+            payload = response.json()
+        except ValueError as exc:
+            raise GatewayError("WaveSpeed görsel yanıtı okunamadı") from exc
+        task = payload.get("data") if isinstance(payload, dict) else None
+        if not isinstance(task, dict) or payload.get("code") not in {None, 200}:
+            raise GatewayError(str((payload or {}).get("message") or "WaveSpeed görevi başlatılamadı"))
+        task_id = str(task.get("id") or "").strip()
+        result_url = str((task.get("urls") or {}).get("get") or "").strip()
+        if not result_url and task_id:
+            result_url = f"https://api.wavespeed.ai/api/v3/predictions/{quote(task_id, safe='')}/result"
+        if not result_url:
+            raise GatewayError("WaveSpeed görev kimliği alınamadı")
+        for _ in range(30):
+            time.sleep(2)
+            result_response = self.session.get(result_url, headers={"Authorization": f"Bearer {key}"}, timeout=(8, 30))
+            if result_response.status_code >= 400:
+                raise GatewayError(f"WaveSpeed sonuç HTTP {result_response.status_code}", result_response.status_code)
+            try:
+                result_payload = result_response.json()
+            except ValueError as exc:
+                raise GatewayError("WaveSpeed sonuç yanıtı okunamadı") from exc
+            result = result_payload.get("data") if isinstance(result_payload, dict) else None
+            if not isinstance(result, dict):
+                continue
+            status = str(result.get("status") or "").lower()
+            if status == "completed":
+                parsed = self._image_result_from_payload({"output": result.get("outputs")}, "wavespeed", model)
+                if parsed:
+                    return parsed
+                raise GatewayError("WaveSpeed tamamlandı fakat görsel URL'si dönmedi")
+            if status in {"failed", "cancelled", "timeout", "deleted"}:
+                raise GatewayError(str(result.get("error") or f"WaveSpeed görevi {status}"))
+        raise GatewayError("WaveSpeed görsel üretimi zaman aşımına uğradı")
 
     def _image_pollinations(self, prompt: str, width: int, height: int, model_override: str | None = None, key_override: str | None = None) -> dict[str, Any] | None:
         key = key_override or _first_key("POLLINATIONS_API_KEYS", "POLLINATIONS_API_KEY", "POLLINATIONS_KEY")
@@ -1411,7 +1466,7 @@ class FroxyGateway:
             if isinstance(value, dict):
                 candidates.append(value)
             elif isinstance(value, list):
-                candidates.extend(value[:2])
+                candidates.extend({"url": item} if isinstance(item, str) else item for item in value[:2])
             elif isinstance(value, str):
                 candidates.append({"url": value})
         results = payload.get("results")
