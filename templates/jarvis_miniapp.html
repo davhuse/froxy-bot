@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>JarvisCraft - Premium Store</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --bg-color: #0a0e1a;
+            --surface: rgba(20, 25, 40, 0.6);
+            --surface-hover: rgba(30, 38, 60, 0.8);
+            --primary: #00f2fe;
+            --primary-end: #4facfe;
+            --purple: #8b5cf6;
+            --text-main: #ffffff;
+            --text-muted: #94a3b8;
+            --gold: #f59e0b;
+            --gold-end: #fbbf24;
+            --success: #10b981;
+            --danger: #ef4444;
+            --border: rgba(255, 255, 255, 0.08);
+            --glass-blur: blur(12px);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            overflow-x: hidden;
+            width: 100%;
+            height: 100vh;
+            position: relative;
+        }
+
+        /* Animated Background */
+        .bg-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+            background: radial-gradient(circle at 50% 0%, rgba(20, 30, 60, 1) 0%, var(--bg-color) 60%);
+        }
+
+        .particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+
+        .particle {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            animation: float 15s infinite linear;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(100vh) scale(0); opacity: 0; }
+            50% { opacity: 0.8; }
+            100% { transform: translateY(-10vh) scale(1.5); opacity: 0; }
+        }
+
+        /* Container */
+        .app-container {
+            max-width: 480px;
+            margin: 0 auto;
+            padding-bottom: 90px;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* Header */
+        header {
+            padding: 24px 20px;
+            text-align: center;
+            position: relative;
+            z-index: 10;
+        }
+
+        .logo-container {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 16px;
+            position: relative;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-glow {
+            position: absolute;
+            inset: -4px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, var(--primary), var(--purple));
+            filter: blur(10px);
+            animation: pulse-glow 3s infinite alternate;
+            z-index: -1;
+        }
+
+        .logo-img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid rgba(255,255,255,0.1);
+            background: #111;
+        }
+
+        @keyframes pulse-glow {
+            0% { opacity: 0.6; transform: scale(0.95); }
+            100% { opacity: 1; transform: scale(1.05); }
+        }
+
+        h1.brand-name {
+            font-size: 28px;
+            font-weight: 800;
+            background: linear-gradient(to right, var(--primary-end), var(--purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 6px;
+            letter-spacing: -0.5px;
+        }
+
+        .tagline {
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        /* Tabs System */
+        .tab-content {
+            display: none;
+            padding: 0 20px;
+            animation: fadeSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeSlideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Cards & Glassmorphism */
+        .glass-card {
+            background: var(--surface);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 16px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .glass-card.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .glass-card:hover {
+            transform: translateY(-2px);
+            background: var(--surface-hover);
+            border-color: rgba(255,255,255,0.15);
+            box-shadow: 0 10px 30px -10px rgba(0, 242, 254, 0.15);
+        }
+
+        /* Highlighted/VIP Card */
+        .card-highlight {
+            border: 1px solid rgba(139, 92, 246, 0.5);
+            box-shadow: inset 0 0 20px rgba(139, 92, 246, 0.1), 0 0 20px rgba(139, 92, 246, 0.15);
+        }
+
+        /* Typography */
+        h3.card-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            line-height: 1.3;
+            padding-right: 70px;
+        }
+
+        .card-desc {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+
+        .price-tag {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 20px;
+            font-weight: 700;
+            background: linear-gradient(to right, var(--gold), var(--gold-end));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+
+        /* Badges */
+        .badge {
+            position: absolute;
+            top: -10px;
+            left: 20px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            z-index: 2;
+        }
+
+        .badge-popular { background: linear-gradient(45deg, #f59e0b, #ef4444); color: #fff; }
+        .badge-new { background: linear-gradient(45deg, var(--primary), var(--purple)); color: #fff; }
+        .badge-value { background: linear-gradient(45deg, #10b981, #059669); color: #fff; }
+
+        /* Feature List */
+        .feature-list {
+            list-style: none;
+            margin-bottom: 20px;
+        }
+
+        .feature-list li {
+            font-size: 13px;
+            color: #cbd5e1;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+
+        .feature-list li::before {
+            content: '';
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            background: var(--primary);
+            border-radius: 50%;
+            margin-right: 10px;
+            box-shadow: 0 0 8px var(--primary);
+        }
+
+        /* Buttons */
+        .btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-buy {
+            background: linear-gradient(45deg, var(--primary), var(--purple));
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+        }
+
+        .btn-buy:active { transform: scale(0.97); }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #fff;
+        }
+
+        .btn-outline:active { background: rgba(255,255,255,0.05); }
+
+        /* Shimmer Loading */
+        .shimmer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+            transform: translateX(-100%);
+            animation: shimmer 2s infinite;
+            pointer-events: none;
+        }
+
+        @keyframes shimmer {
+            100% { transform: translateX(100%); }
+        }
+
+        /* Status Dot */
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--success);
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+            box-shadow: 0 0 10px var(--success);
+            animation: pulse-dot 2s infinite;
+        }
+
+        @keyframes pulse-dot {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: rgba(0,0,0,0.2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .stat-val {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Steps */
+        .steps {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 24px 0;
+            position: relative;
+        }
+
+        .steps::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 10%;
+            right: 10%;
+            height: 2px;
+            background: var(--border);
+            z-index: 1;
+        }
+
+        .step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 2;
+        }
+
+        .step-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--surface);
+            border: 1px solid var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px;
+            box-shadow: 0 0 15px rgba(0, 242, 254, 0.2);
+        }
+
+        .step-label {
+            font-size: 10px;
+            color: #cbd5e1;
+        }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(10, 14, 26, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-around;
+            padding: 12px 10px 24px;
+            z-index: 100;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            text-decoration: none;
+            width: 25%;
+            position: relative;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .nav-item.active {
+            color: var(--primary);
+        }
+
+        .nav-item.active::before {
+            content: '';
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 3px;
+            background: var(--primary);
+            border-radius: 0 0 4px 4px;
+            box-shadow: 0 0 10px var(--primary);
+        }
+
+        .nav-icon {
+            margin-bottom: 4px;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .nav-item.active .nav-icon {
+            transform: translateY(-4px) scale(1.1);
+        }
+
+        .nav-label {
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        svg {
+            fill: currentColor;
+            width: 24px;
+            height: 24px;
+        }
+
+        /* Typing indicator */
+        .typing-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 10px;
+            padding: 8px 12px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            font-size: 12px;
+            color: var(--primary);
+        }
+        
+        .typing-indicator span {
+            width: 4px;
+            height: 4px;
+            background: currentColor;
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        
+        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+        
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        /* Comparison Table */
+        .compare-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 12px;
+        }
+        
+        .compare-table th, .compare-table td {
+            padding: 10px 8px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        .compare-table th {
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+        
+        .compare-table td:first-child, .compare-table th:first-child {
+            text-align: left;
+        }
+        
+        .check { color: var(--success); font-weight: bold; }
+        .cross { color: var(--text-muted); opacity: 0.5; }
+    </style>
+</head>
+<body>
+    <!-- Animated BG -->
+    <div class="bg-container" id="bg-particles"></div>
+
+    <div class="app-container">
+        <!-- Header -->
+        <header>
+            <div class="logo-container">
+                <div class="logo-glow"></div>
+                <img src="/static/jarviscraft_logo_v2.jpg" onerror="this.src='/static/jarviscraft_logo.jpg'; this.onerror=null;" alt="JarvisCraft Logo" class="logo-img">
+            </div>
+            <h1 class="brand-name">JarvisCraft</h1>
+            <p class="tagline">AI-Powered Code & Bot Ecosystem</p>
+        </header>
+
+        <!-- Tab 1: Store -->
+        <div id="tab-store" class="tab-content active">
+            <!-- Product 1 -->
+            <div class="glass-card animate-on-scroll">
+                <div class="shimmer"></div>
+                <div class="badge badge-popular">POPULAR</div>
+                <h3 class="card-title">🤖 Jarvis Core AI Asistan İskeleti</h3>
+                <div class="price-tag">350₺</div>
+                <p class="card-desc">Python + LLM destekli yapay zeka asistan iskeleti. Sesli ve yazılı komutlarla sistem otomasyonu kurun.</p>
+                <ul class="feature-list">
+                    <li>Python 3.10+ & AsyncIO Altyapısı</li>
+                    <li>Telegram & Desktop Entegrasyonu</li>
+                    <li>Tam açık kaynak + kurulum rehberi</li>
+                </ul>
+                <a href="https://www.shopier.com/3051522" target="_blank" class="btn btn-buy">🛒 Güvenle Satın Al</a>
+            </div>
+
+            <!-- Product 2 -->
+            <div class="glass-card animate-on-scroll">
+                <div class="shimmer"></div>
+                <div class="badge badge-popular" style="background: linear-gradient(45deg, #ef4444, #b91c1c);">BEST SELLER</div>
+                <h3 class="card-title">⚡ Telegram Oto-Reklam & Mesaj Botu</h3>
+                <div class="price-tag">450₺</div>
+                <p class="card-desc">Anti-flood özellikli, çoklu hesap destekli ve 65+ ticaret grubu rotasyon motorlu profesyonel reklam botu.</p>
+                <ul class="feature-list">
+                    <li>Telethon tabanlı, Anti-Ban & Replay Guard</li>
+                    <li>Gelişmiş Web Panel & Zamanlayıcı</li>
+                    <li>Sınırsız grup ekleme kapasitesi</li>
+                </ul>
+                <a href="https://www.shopier.com/3051522" target="_blank" class="btn btn-buy">🛒 Güvenle Satın Al</a>
+            </div>
+
+            <!-- Product 3 -->
+            <div class="glass-card animate-on-scroll">
+                <div class="shimmer"></div>
+                <div class="badge badge-new">NEW</div>
+                <h3 class="card-title">🔍 E-Ticaret & Fiyat Takip Scraper</h3>
+                <div class="price-tag">300₺</div>
+                <p class="card-desc">Trendyol, Yemeksepeti gibi platformlar için fiyat ve kupon takip edici otomasyon botu.</p>
+                <ul class="feature-list">
+                    <li>Playwright & Cloudflare Bypass</li>
+                    <li>Anında Telegram Bildirimleri</li>
+                    <li>Özelleştirilebilir alarm limitleri</li>
+                </ul>
+                <a href="https://www.shopier.com/3051522" target="_blank" class="btn btn-buy">🛒 Güvenle Satın Al</a>
+            </div>
+
+            <!-- Product 4 -->
+            <div class="glass-card animate-on-scroll">
+                <div class="shimmer"></div>
+                <div class="badge badge-value">BEST VALUE</div>
+                <h3 class="card-title">🚀 Full-Stack Mini App + Shopier Kiti</h3>
+                <div class="price-tag">400₺</div>
+                <p class="card-desc">Eksiksiz Telegram Mini App şablonu. Flask backend ve Shopier ödeme entegrasyonu hazır.</p>
+                <ul class="feature-list">
+                    <li>Hazır Premium Tasarım & Webhooklar</li>
+                    <li>Render/Vercel Deploy'a Hazır</li>
+                    <li>Detaylı dokümantasyon</li>
+                </ul>
+                <a href="https://www.shopier.com/3051522" target="_blank" class="btn btn-buy">🛒 Güvenle Satın Al</a>
+            </div>
+        </div>
+
+        <!-- Tab 2: Engine -->
+        <div id="tab-engine" class="tab-content">
+            <div class="glass-card animate-on-scroll">
+                <div class="shimmer"></div>
+                <div style="display: flex; align-items: center; margin-bottom: 20px;">
+                    <div class="status-dot"></div>
+                    <span style="font-size: 13px; font-weight: 600; color: var(--success);">Sistem Aktif</span>
+                </div>
+                
+                <h3 class="card-title" style="padding-right: 0; text-align: center; margin-bottom: 24px;">Oto-Mesaj Motoru Durumu</h3>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-val">65+</div>
+                        <div class="stat-label">Aktif Grup</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-val">30m</div>
+                        <div class="stat-label">Oto Süre</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-val">24/7</div>
+                        <div class="stat-label">Uptime</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-val">3</div>
+                        <div class="stat-label">Hesap Slotu</div>
+                    </div>
+                </div>
+
+                <div class="steps">
+                    <div class="step">
+                        <div class="step-icon">🔌</div>
+                        <div class="step-label">Bağlan</div>
+                    </div>
+                    <div class="step">
+                        <div class="step-icon">⚙️</div>
+                        <div class="step-label">Ayarla</div>
+                    </div>
+                    <div class="step">
+                        <div class="step-icon">🚀</div>
+                        <div class="step-label">Başlat</div>
+                    </div>
+                    <div class="step">
+                        <div class="step-icon">📈</div>
+                        <div class="step-label">İzle</div>
+                    </div>
+                </div>
+
+                <a href="https://t.me/JarvisCraftsBot" target="_blank" class="btn btn-outline" style="margin-top: 20px;">Telegram Botunda Yönet ↗</a>
+            </div>
+        </div>
+
+        <!-- Tab 3: AI -->
+        <div id="tab-ai" class="tab-content">
+            <div class="glass-card animate-on-scroll">
+                <div class="shimmer"></div>
+                <h3 class="card-title">📝 Reklam Metni Sihirbazı</h3>
+                <p class="card-desc">Yapay zeka ile dönüşüm oranınızı artıracak çarpıcı reklam metinleri oluşturun.</p>
+                <div class="typing-indicator">
+                    <span></span><span></span><span></span> <i>Jarvis düşünüyor...</i>
+                </div>
+                <a href="https://t.me/JarvisCraftsBot" target="_blank" class="btn btn-outline" style="margin-top: 16px;">Sihirbazı Başlat ↗</a>
+            </div>
+
+            <div class="glass-card animate-on-scroll">
+                <div class="shimmer"></div>
+                <h3 class="card-title">🐛 Kod Hata Ayıklayıcı</h3>
+                <p class="card-desc">Python kodunuzdaki hataları yapay zekaya analiz ettirin, çözüm önerileri alın.</p>
+                <a href="https://t.me/JarvisCraftsBot" target="_blank" class="btn btn-outline">Kodu Analiz Et ↗</a>
+            </div>
+
+            <div class="glass-card animate-on-scroll">
+                <div class="shimmer"></div>
+                <h3 class="card-title">💡 Bot Fikir Generatörü</h3>
+                <p class="card-desc">Sektörünüze özel Telegram bot senaryoları ve fikirleri üretin.</p>
+                <a href="https://t.me/JarvisCraftsBot" target="_blank" class="btn btn-outline">Fikir Üret ↗</a>
+            </div>
+        </div>
+
+        <!-- Tab 4: VIP -->
+        <div id="tab-vip" class="tab-content">
+            <div class="glass-card animate-on-scroll">
+                <div class="shimmer"></div>
+                <h3 class="card-title">Haftalık VIP</h3>
+                <div class="price-tag" style="color: #fff; background: none; -webkit-text-fill-color: #fff;">150₺</div>
+                <p class="card-desc">Kısa süreli denemeler ve hızlı reklam kampanyaları için ideal.</p>
+                <ul class="feature-list">
+                    <li>7 Gün Erişim</li>
+                    <li>15 Dakika Gönderim Aralığı</li>
+                    <li>2 Hesap Slotu</li>
+                </ul>
+                <a href="https://www.shopier.com/3051522" target="_blank" class="btn btn-buy" style="background: rgba(255,255,255,0.1); box-shadow: none;">Satın Al</a>
+            </div>
+
+            <div class="glass-card card-highlight animate-on-scroll">
+                <div class="shimmer"></div>
+                <div class="badge" style="background: var(--purple); color: #fff;">RECOMMENDED</div>
+                <h3 class="card-title">Aylık Sınırsız VIP</h3>
+                <div class="price-tag">350₺</div>
+                <p class="card-desc">Profesyonel kullanıcılar için en iyi fiyat/performans paketi.</p>
+                <ul class="feature-list">
+                    <li>30 Gün Kesintisiz Erişim</li>
+                    <li>Sınırsız Gönderim</li>
+                    <li>5 Hesap Slotu</li>
+                    <li>Öncelikli 7/24 Destek (@habil2121)</li>
+                </ul>
+                <a href="https://www.shopier.com/3051522" target="_blank" class="btn btn-buy">💎 VIP Satın Al</a>
+            </div>
+
+            <div class="glass-card animate-on-scroll">
+                <div class="shimmer"></div>
+                <h3 class="card-title" style="text-align: center; padding: 0; font-size: 15px;">Plan Karşılaştırması</h3>
+                <table class="compare-table">
+                    <tr>
+                        <th>Özellik</th>
+                        <th>Free</th>
+                        <th>Haftalık</th>
+                        <th>Aylık VIP</th>
+                    </tr>
+                    <tr>
+                        <td>Mesaj Aralığı</td>
+                        <td>60dk</td>
+                        <td>15dk</td>
+                        <td class="check">Sınırsız</td>
+                    </tr>
+                    <tr>
+                        <td>Hesap Ekleme</td>
+                        <td>1</td>
+                        <td>2</td>
+                        <td class="check">5</td>
+                    </tr>
+                    <tr>
+                        <td>AI Araçları</td>
+                        <td class="cross">Yok</td>
+                        <td class="check">Var</td>
+                        <td class="check">Sınırsız</td>
+                    </tr>
+                    <tr>
+                        <td>Öncelikli Destek</td>
+                        <td class="cross">Yok</td>
+                        <td class="cross">Yok</td>
+                        <td class="check">Var</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <a class="nav-item active" data-target="tab-store">
+            <svg class="nav-icon" viewBox="0 0 24 24">
+                <path d="M21,6V8H3V6H21M3,18H12V20H3V18M3,10H21V16H3V10M7,10V16M11,10V16M15,10V16M19,10V16" />
+            </svg>
+            <span class="nav-label">Mağaza</span>
+        </a>
+        <a class="nav-item" data-target="tab-engine">
+            <svg class="nav-icon" viewBox="0 0 24 24">
+                <path d="M11,21.93V19.93C7.06,19.43 4,16.05 4,12C4,7.95 7.06,4.57 11,4.07V2.07C5.96,2.58 2,7.05 2,12C2,16.95 5.96,21.42 11,21.93M13,2.07V4.07C16.94,4.57 20,7.95 20,12C20,16.05 16.94,19.43 13,19.93V21.93C18.04,21.42 22,16.95 22,12C22,7.05 18.04,2.58 13,2.07M12,7.5C9.5,7.5 7.5,9.5 7.5,12C7.5,14.5 9.5,16.5 12,16.5C14.5,16.5 16.5,14.5 16.5,12C16.5,9.5 14.5,7.5 12,7.5Z" />
+            </svg>
+            <span class="nav-label">Motor</span>
+        </a>
+        <a class="nav-item" data-target="tab-ai">
+            <svg class="nav-icon" viewBox="0 0 24 24">
+                <path d="M12,2C6.48,2 2,6.48 2,12C2,17.52 6.48,22 12,22C17.52,22 22,17.52 22,12C22,6.48 17.52,2 12,2M15.5,15.5C14.5,14.5 13.5,14 12,14C10.5,14 9.5,14.5 8.5,15.5L7.5,14.5C8.8,13.2 10.2,12.5 12,12.5C13.8,12.5 15.2,13.2 16.5,14.5L15.5,15.5M16.5,10.5C15.2,9.2 13.8,8.5 12,8.5C10.2,8.5 8.8,9.2 7.5,10.5L8.5,11.5C9.5,10.5 10.5,10 12,10C13.5,10 14.5,10.5 15.5,11.5L16.5,10.5Z" />
+            </svg>
+            <span class="nav-label">AI</span>
+        </a>
+        <a class="nav-item" data-target="tab-vip">
+            <svg class="nav-icon" viewBox="0 0 24 24">
+                <path d="M18 2H6L2 8L12 22L22 8L18 2M16.83 4L19.33 7H15.65L16.83 4M12 4.41L13.82 7H10.18L12 4.41M7.17 4L8.35 7H4.67L7.17 4M4.29 9H8.62L12 17.61L4.29 9M10.37 9H13.62L12 18.06L10.37 9M15.38 9H19.71L12 17.61L15.38 9Z" />
+            </svg>
+            <span class="nav-label">VIP</span>
+        </a>
+    </nav>
+
+    <script>
+        // Init Telegram Web App
+        try {
+            if (window.Telegram && window.Telegram.WebApp) {
+                const tg = window.Telegram.WebApp;
+                tg.ready();
+                tg.expand();
+                
+                // Set theme color based on TG settings if desired, or enforce ours
+                tg.setHeaderColor('#0a0e1a');
+                tg.setBackgroundColor('#0a0e1a');
+            }
+        } catch(e) {
+            console.log("Telegram WebApp not found, running in browser mode.");
+        }
+
+        // Background Particles Generation
+        const bg = document.getElementById('bg-particles');
+        for (let i = 0; i < 20; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            
+            // Randomize properties
+            const size = Math.random() * 4 + 1;
+            const left = Math.random() * 100;
+            const animDuration = Math.random() * 10 + 10;
+            const delay = Math.random() * 10;
+            
+            p.style.width = size + 'px';
+            p.style.height = size + 'px';
+            p.style.left = left + '%';
+            p.style.animationDuration = animDuration + 's';
+            p.style.animationDelay = delay + 's';
+            
+            bg.appendChild(p);
+        }
+
+        // Tab Navigation
+        const navItems = document.querySelectorAll('.nav-item');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        navItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                // Remove active class from all
+                navItems.forEach(nav => nav.classList.remove('active'));
+                tabContents.forEach(tab => {
+                    tab.classList.remove('active');
+                    // Reset scroll animations for re-trigger
+                    const cards = tab.querySelectorAll('.glass-card');
+                    cards.forEach(card => card.classList.remove('visible'));
+                });
+
+                // Add active to clicked
+                item.classList.add('active');
+                
+                // Show corresponding tab
+                const targetId = item.getAttribute('data-target');
+                const targetTab = document.getElementById(targetId);
+                targetTab.classList.add('active');
+                
+                // Retrigger intersection observer for new tab elements
+                setTimeout(observeCards, 50);
+                
+                // Provide haptic feedback if available
+                if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
+                    window.Telegram.WebApp.HapticFeedback.selectionChanged();
+                }
+            });
+        });
+
+        // Scroll Animations with Intersection Observer
+        function observeCards() {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                        // Optional: Unobserve after animation
+                        // observer.unobserve(entry.target); 
+                    }
+                });
+            }, {
+                threshold: 0.1,
+                rootMargin: '0px 0px -20px 0px'
+            });
+
+            const activeTabCards = document.querySelectorAll('.tab-content.active .animate-on-scroll');
+            activeTabCards.forEach((card, index) => {
+                // Add staggered delay based on index
+                card.style.transitionDelay = `${index * 0.1}s`;
+                observer.observe(card);
+            });
+        }
+
+        // Initial setup
+        document.addEventListener('DOMContentLoaded', () => {
+            observeCards();
+            
+            // Ripple effect on buttons
+            const buttons = document.querySelectorAll('.btn');
+            buttons.forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    const rect = this.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    
+                    const ripple = document.createElement('span');
+                    ripple.style.position = 'absolute';
+                    ripple.style.background = 'rgba(255,255,255,0.3)';
+                    ripple.style.borderRadius = '50%';
+                    ripple.style.transform = 'translate(-50%, -50%)';
+                    ripple.style.left = x + 'px';
+                    ripple.style.top = y + 'px';
+                    ripple.style.width = '0';
+                    ripple.style.height = '0';
+                    ripple.style.transition = 'width 0.4s ease-out, height 0.4s ease-out, opacity 0.4s ease-out';
+                    
+                    this.appendChild(ripple);
+                    
+                    // Trigger animation
+                    setTimeout(() => {
+                        const size = Math.max(rect.width, rect.height) * 2.5;
+                        ripple.style.width = size + 'px';
+                        ripple.style.height = size + 'px';
+                        ripple.style.opacity = '0';
+                    }, 0);
+                    
+                    setTimeout(() => {
+                        ripple.remove();
+                    }, 400);
+                });
+            });
+        });
+    </script>
+</body>
+</html>
