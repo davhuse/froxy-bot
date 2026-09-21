@@ -90,7 +90,21 @@ class AdAccountDmTests(unittest.IsolatedAsyncioTestCase):
 
     def test_every_lisansarena_product_has_price_and_product_specific_miniapp_link(self):
         products = load_sales_catalog("lisansarena")
-        self.assertEqual(len(products), 69)
+        # The catalog is campaign-driven; assert the known campaign IDs rather
+        # than freezing the test to a historical product count.
+        self.assertGreaterEqual(len(products), 69)
+        expected_campaign_ids = {
+            "la_yemeksepeti_360",
+            "la_yemeksepeti_450",
+            "la_positive_110",
+            "la_gastroclub_200",
+            "la_enterprise_40",
+            "la_garenta_40",
+            "la_enuygun_plus_10",
+            "la_trendyol_market_800",
+            "la_trendyol_yemek_750",
+        }
+        self.assertTrue(expected_campaign_ids.issubset({item["id"] for item in products}))
         for product in products:
             reply = publisher.lisansarena_product_reply(product)
             self.assertIn(str(product["price"]), reply)

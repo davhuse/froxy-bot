@@ -1,0 +1,97 @@
+- generic [ref=f1e3]:
+  - banner [ref=f1e4]:
+    - button "Froxy Froxy Model seç" [ref=f1e85] [cursor=pointer]:
+      - img "Froxy" [ref=f1e6]
+      - generic [ref=f1e7]:
+        - generic [ref=f1e8]: Froxy
+        - generic [ref=f1e9]: Model seç
+    - button "₺0,00" [ref=f1e10] [cursor=pointer]
+  - main [ref=f1e14]:
+    - generic [ref=f1e353]:
+      - generic [ref=f1e354]:
+        - generic [ref=f1e355]:
+          - paragraph [ref=f1e356]: FROXY CREATIVE
+          - heading "Medya Stüdyosu" [level=1] [ref=f1e357]
+          - paragraph [ref=f1e358]: Tek bir çalışma alanında üret, düzenle ve geliştir.
+        - generic [ref=f1e359]: 1 ücretsiz üretim
+      - generic [ref=f1e360]:
+        - button "Üret" [ref=f1e361] [cursor=pointer]
+        - button "Düzenle" [ref=f1e362] [cursor=pointer]
+        - button "Varyasyon" [ref=f1e363] [cursor=pointer]
+        - button "Upscale" [ref=f1e364] [cursor=pointer]
+        - button "Arka plan" [ref=f1e365] [cursor=pointer]
+        - button "Video" [ref=f1e366] [cursor=pointer]
+        - button "Ses" [ref=f1e367] [cursor=pointer]
+      - generic [ref=f1e368]:
+        - generic [ref=f1e369]:
+          - generic [ref=f1e370]: Model
+          - combobox [ref=f1e371]:
+            - option "OpenAI GPT Image — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "OpenAI DALL-E 3 — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "Together FLUX.1 Schnell — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "Together Juggernaut FLUX — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "Together Qwen Image — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "Together FLUX.2 Dev — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "Together Imagen 4 Fast — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "Together FLUX.1 Kontext Pro — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "Together FLUX.2 Pro — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "Together Gemini Flash Image — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "Together Qwen Image 2 Pro — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "Together Gemini 3 Pro Image — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "Cloudflare SDXL — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "Cloudflare SDXL Lightning — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "Cloudflare DreamShaper 8 LCM — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "Cloudflare FLUX.2 Klein — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "Runware FLUX — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "Runware SDXL — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "WaveSpeed Z-Image Turbo — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "Pollinations Z-Image — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "Pollinations FLUX — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "Pollinations GPT Image — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "Pollinations Nano Banana — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "AI/ML API FLUX — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "AI/ML API Nano Banana — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "Stability Core — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "Stability Ultra — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "Gemini 2.5 Flash Image — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "Gemini 3.1 Flash Image — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "Gemini 3 Pro Image — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "Google Imagen 4 Fast — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "Google Imagen 4 — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "Google Imagen 4 Ultra — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "ImageGPT FLUX Schnell — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "Modal GPU SDXL — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "Modal Local SD — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "Modal Cloud GPU — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "Modal DreamShaper — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "Modal Realistic Vision — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "Modal A1111 Compatible — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "EvoLink Z-Image Turbo — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "EvoLink Wan 2.5 — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "EvoLink Gemini 3.1 Flash Lite Image — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "EvoLink Gemini 3.1 Flash Image — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "EvoLink GPT Image 2 — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "EvoLink GPT Image 1.5 — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "EvoLink Seedream 5 Lite — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "EvoLink Seedream 4.5 — Sağlayıcı anahtarı bekleniyor" [disabled]
+            - option "EvoLink Nano Banana 2 Lite — Sağlayıcı anahtarı bekleniyor" [disabled]
+          - generic [ref=f1e372]: İstem
+          - textbox "Işık, kompozisyon, stil ve sahneyi anlat…" [ref=f1e373]
+          - generic [ref=f1e374]:
+            - button "1:1" [ref=f1e375] [cursor=pointer]
+            - button "4:5" [ref=f1e376] [cursor=pointer]
+            - button "9:16" [ref=f1e377] [cursor=pointer]
+            - button "16:9" [ref=f1e378] [cursor=pointer]
+          - button "Görseli üret" [disabled] [ref=f1e379] [cursor=pointer]
+        - generic [ref=f1e380]:
+          - generic [ref=f1e381]:
+            - generic [ref=f1e382]: Çıktı
+            - emphasis [ref=f1e383]: Hazır
+          - generic [ref=f1e384]:
+            - generic [ref=f1e387]: Üretimin burada görünecek
+            - generic [ref=f1e388]: Bir model seç ve istemini yaz.
+  - navigation [ref=f1e68]:
+    - button "AI" [ref=f1e69] [cursor=pointer]
+    - button "Stüdyo" [active] [ref=f1e73] [cursor=pointer]
+    - button "Mağaza" [ref=f1e77] [cursor=pointer]
+    - button "Hesap" [ref=f1e81] [cursor=pointer]

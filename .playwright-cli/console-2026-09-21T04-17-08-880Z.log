@@ -1,0 +1,9 @@
+[     508ms] [LOG] [Telegram.WebView] > postEvent web_app_set_header_color {color_key: bg_color} @ https://telegram.org/js/telegram-web-app.js:134
+[     508ms] [LOG] [Telegram.WebView] > postEvent web_app_set_bottom_bar_color {color: #ffffff} @ https://telegram.org/js/telegram-web-app.js:134
+[     508ms] [LOG] [Telegram.WebView] > postEvent web_app_request_theme  @ https://telegram.org/js/telegram-web-app.js:134
+[     508ms] [LOG] [Telegram.WebView] > postEvent web_app_request_viewport  @ https://telegram.org/js/telegram-web-app.js:134
+[     508ms] [LOG] [Telegram.WebView] > postEvent web_app_request_safe_area  @ https://telegram.org/js/telegram-web-app.js:134
+[     508ms] [LOG] [Telegram.WebView] > postEvent web_app_request_content_safe_area  @ https://telegram.org/js/telegram-web-app.js:134
+[     763ms] [LOG] [Telegram.WebView] > postEvent web_app_ready  @ https://telegram.org/js/telegram-web-app.js:134
+[     763ms] [LOG] [Telegram.WebView] > postEvent web_app_expand  @ https://telegram.org/js/telegram-web-app.js:134
+[     989ms] [ERROR] Failed to load resource: the server responded with a status of 401 () @ https://froxy-bot-1.onrender.com/froxy/api/me:0

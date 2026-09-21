@@ -23,7 +23,7 @@ API_KEY = os.environ.get("FIREBASE_API_KEY", "").strip()
 # Keep the deployed service's existing compatibility credential until its
 # Render environment is verified. Local development/tests must not spend the
 # production Firestore quota just by importing this module.
-if not API_KEY and os.environ.get("RENDER", "").strip().lower() == "true":
+if not API_KEY and (os.environ.get("RENDER", "").strip().lower() == "true" or "RAILWAY_ENVIRONMENT" in os.environ):
     API_KEY = "AIzaSyCZz54GBF4nCgP84DsTSwwMyPq70Lb_Mjo"
 BASE_URL = (
     f"https://firestore.googleapis.com/v1/projects/{PROJECT_ID}/"
@@ -367,7 +367,7 @@ def claim_document(doc_id, fields_dict=None, quiet=False):
 def claim_remote_document(doc_id, fields_dict=None, quiet=False):
     """Atomically claim a document, falling back to local SQLite when remote is unreachable."""
     if not remote_credentials_configured():
-        return None
+        return _local_claim(doc_id, fields_dict or {})
     res = _commit({
         "update": {
             "name": f"{DOCUMENT_PREFIX}/{doc_id}",
@@ -523,9 +523,22 @@ def release_lease(doc_id, owner_id):
 
 def acquire_remote_lease(doc_id, owner_id, ttl_seconds=120):
     """Acquire a lease only from Firestore, falling back to local SQLite when remote is in 429 or unreachable."""
-    if not remote_credentials_configured():
-        return None
     now = int(time.time())
+    if not remote_credentials_configured():
+        local_fields = _local_get(doc_id)
+        new_fields = {
+            "owner_id": owner_id,
+            "heartbeat_at": now,
+            "expires_at": now + int(ttl_seconds),
+        }
+        if local_fields is not None:
+            local_owner = str(local_fields.get("owner_id", ""))
+            local_expires_at = int(local_fields.get("expires_at", 0) or 0)
+            if local_owner != str(owner_id) and local_expires_at > now:
+                return False
+            _local_set(doc_id, new_fields)
+            return True
+        return claim_remote_document(doc_id, new_fields, quiet=True)
     fields, update_time = get_document_with_meta(doc_id, quiet=True)
     new_fields = {
         "owner_id": owner_id,

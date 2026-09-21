@@ -1,0 +1,10 @@
+[    9595ms] [ERROR] Failed to load resource: net::ERR_SSL_PROTOCOL_ERROR @ https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap:0
+[    9599ms] [LOG] [Telegram.WebView] > postEvent web_app_set_header_color {color_key: bg_color} @ https://telegram.org/js/telegram-web-app.js:134
+[    9600ms] [LOG] [Telegram.WebView] > postEvent web_app_set_bottom_bar_color {color: #ffffff} @ https://telegram.org/js/telegram-web-app.js:134
+[    9601ms] [LOG] [Telegram.WebView] > postEvent web_app_request_theme  @ https://telegram.org/js/telegram-web-app.js:134
+[    9601ms] [LOG] [Telegram.WebView] > postEvent web_app_request_viewport  @ https://telegram.org/js/telegram-web-app.js:134
+[    9601ms] [LOG] [Telegram.WebView] > postEvent web_app_request_safe_area  @ https://telegram.org/js/telegram-web-app.js:134
+[    9601ms] [LOG] [Telegram.WebView] > postEvent web_app_request_content_safe_area  @ https://telegram.org/js/telegram-web-app.js:134
+[    9656ms] [LOG] [Telegram.WebView] > postEvent web_app_ready  @ https://telegram.org/js/telegram-web-app.js:134
+[    9656ms] [LOG] [Telegram.WebView] > postEvent web_app_expand  @ https://telegram.org/js/telegram-web-app.js:134
+[    9896ms] [ERROR] Failed to load resource: the server responded with a status of 401 () @ https://froxy-bot-1.onrender.com/froxy/api/me:0

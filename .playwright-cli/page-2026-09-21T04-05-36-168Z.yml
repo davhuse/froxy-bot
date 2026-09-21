@@ -1,0 +1,64 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - button "Froxy Froxy Froxy Akıllı" [ref=e90] [cursor=pointer]:
+      - img "Froxy" [ref=e6]
+      - generic [ref=e7]:
+        - generic [ref=e8]: Froxy
+        - generic [ref=e9]: Froxy Akıllı
+    - button "₺0,00" [ref=e91] [cursor=pointer]
+  - main [ref=e15]:
+    - generic [ref=e16]:
+      - generic [ref=e17]:
+        - button "FR Model Froxy Akıllı" [ref=e92] [cursor=pointer]:
+          - generic [ref=e19]: FR
+          - generic [ref=e21]:
+            - generic [ref=e22]: Model
+            - generic [ref=e23]: Froxy Akıllı
+        - button "Yeni sohbet" [ref=e26] [cursor=pointer]
+      - generic [ref=e29]:
+        - button "Genel" [ref=e30] [cursor=pointer]
+        - button "Araştırma" [ref=e31] [cursor=pointer]
+        - button "Kod" [ref=e32] [cursor=pointer]
+        - button "Plan" [ref=e33] [cursor=pointer]
+      - generic [ref=e35]:
+        - paragraph [ref=e37]: FROXY AI WORKSPACE
+        - heading "Ne üzerinde çalışıyoruz?" [level=1] [ref=e38]
+        - paragraph [ref=e39]: Model seç, bir çalışma modu belirle ve doğal şekilde anlat.
+        - generic [ref=e40]:
+          - button "Bir konuyu güncel kaynaklarla araştır" [ref=e41] [cursor=pointer]
+          - button "Bu kodu analiz et ve iyileştir" [ref=e45] [cursor=pointer]
+          - button "Fikrim için uygulanabilir plan hazırla" [ref=e49] [cursor=pointer]
+          - button "Karmaşık bir şeyi sade anlat" [ref=e53] [cursor=pointer]
+      - generic [ref=e57]:
+        - generic [ref=e58]:
+          - generic [ref=e59]: Genel asistan
+          - generic [ref=e60]:
+            - button "Akıllı" [expanded] [active] [ref=e61] [cursor=pointer]
+            - button "Seçimi kapat" [ref=e93]
+            - listbox "Düşünme seviyesi" [ref=e94]:
+              - button "Akıllı Göreve göre otomatik seçer ✓" [ref=e95]:
+                - generic [ref=e96]:
+                  - generic [ref=e97]: Akıllı
+                  - generic [ref=e98]: Göreve göre otomatik seçer
+                - generic [ref=e99]: ✓
+              - button "Hızlı Kısa yanıtlar için" [ref=e100]:
+                - generic [ref=e101]:
+                  - generic [ref=e102]: Hızlı
+                  - generic [ref=e103]: Kısa yanıtlar için
+              - button "Dengeli Hız ve kalite dengesi" [ref=e104]:
+                - generic [ref=e105]:
+                  - generic [ref=e106]: Dengeli
+                  - generic [ref=e107]: Hız ve kalite dengesi
+              - button "Maksimum En derin analiz" [ref=e108]:
+                - generic [ref=e109]:
+                  - generic [ref=e110]: Maksimum
+                  - generic [ref=e111]: En derin analiz
+        - generic [ref=e65]:
+          - button [ref=e66] [cursor=pointer]
+          - textbox "Froxy'ye mesaj yaz…" [ref=e69]
+          - button [disabled] [ref=e70] [cursor=pointer]
+  - navigation [ref=e73]:
+    - button "AI" [ref=e74] [cursor=pointer]
+    - button "Stüdyo" [ref=e78] [cursor=pointer]
+    - button "Mağaza" [ref=e82] [cursor=pointer]
+    - button "Hesap" [ref=e86] [cursor=pointer]

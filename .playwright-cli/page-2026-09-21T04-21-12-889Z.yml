@@ -1,0 +1,123 @@
+- generic [ref=f4e3]:
+  - banner [ref=f4e4]:
+    - button "Froxy Froxy Froxy Akıllı" [ref=f4e89] [cursor=pointer]:
+      - img "Froxy" [ref=f4e6]
+      - generic [ref=f4e7]:
+        - generic [ref=f4e8]: Froxy
+        - generic [ref=f4e9]: Froxy Akıllı
+    - button "₺0,00" [ref=f4e10] [cursor=pointer]
+  - main [ref=f4e14]:
+    - generic [ref=f4e92]:
+      - generic [ref=f4e93]:
+        - generic [ref=f4e94]:
+          - paragraph [ref=f4e95]: FROXY CREATIVE
+          - heading "Medya Stüdyosu" [level=1] [ref=f4e96]
+          - paragraph [ref=f4e97]: Üretim türünü seç, ayarları sade bir akışta tamamla.
+        - generic [ref=f4e98]: 1 ücretsiz üretim
+      - generic [ref=f4e99]:
+        - button "Üret" [ref=f4e100] [cursor=pointer]
+        - button "Düzenle" [ref=f4e101] [cursor=pointer]
+        - button "Varyasyon" [ref=f4e102] [cursor=pointer]
+        - button "Upscale" [ref=f4e103] [cursor=pointer]
+        - button "Arka plan" [ref=f4e104] [cursor=pointer]
+        - button "Video" [ref=f4e105] [cursor=pointer]
+        - button "Ses" [ref=f4e106] [cursor=pointer]
+      - generic [ref=f4e107]:
+        - generic [ref=f4e108]:
+          - generic [ref=f4e109]: Üretim modeli
+          - button "Black Forest Labs Runware Runware FLUX" [active] [ref=f4e110] [cursor=pointer]:
+            - img "Black Forest Labs" [ref=f4e112]
+            - generic [ref=f4e113]:
+              - generic [ref=f4e114]: Runware
+              - generic [ref=f4e115]: Runware FLUX
+          - generic [ref=f4e118]: İstem
+          - textbox "Sahneyi, ışığı, kompozisyonu ve stili anlat…" [ref=f4e119]
+          - generic [ref=f4e120]:
+            - generic [ref=f4e121]: Oran
+            - generic [ref=f4e122]: 1:1
+          - generic [ref=f4e123]:
+            - button "1:1" [ref=f4e124] [cursor=pointer]
+            - button "4:5" [ref=f4e125] [cursor=pointer]
+            - button "9:16" [ref=f4e126] [cursor=pointer]
+            - button "16:9" [ref=f4e127] [cursor=pointer]
+          - button "Görseli üret" [ref=f4e128] [cursor=pointer]
+        - generic [ref=f4e129]:
+          - generic [ref=f4e130]:
+            - generic [ref=f4e131]: Önizleme
+            - emphasis [ref=f4e132]: Hazır
+          - generic [ref=f4e133]:
+            - generic [ref=f4e136]: Yeni bir şey üret
+            - generic [ref=f4e137]: Modeli seç, fikrini anlat ve sonucu burada gör.
+      - generic [ref=f4e139]:
+        - generic [ref=f4e140]:
+          - generic [ref=f4e141]:
+            - paragraph [ref=f4e142]: STÜDYO MODELLERİ
+            - heading "Üretim motorunu seç" [level=2] [ref=f4e143]
+            - paragraph [ref=f4e144]: 8 model kullanıma hazır. Diğerleri bilgi amaçlı katalogda.
+          - button [ref=f4e145]
+        - textbox "Görsel model veya sağlayıcı ara" [ref=f4e151]
+        - generic [ref=f4e152]:
+          - button "Kullanıma hazır 8" [ref=f4e153]
+          - button "Tüm katalog 178" [ref=f4e154]
+        - generic [ref=f4e155]:
+          - button "Black Forest Labs Runware FLUX Runware 160 kredi tahmini Seçili" [ref=f4e156]:
+            - img "Black Forest Labs" [ref=f4e158]
+            - generic [ref=f4e159]:
+              - generic [ref=f4e160]: Runware FLUX
+              - generic [ref=f4e161]: Runware
+              - emphasis [ref=f4e162]: 160 kredi tahmini
+            - generic [ref=f4e163]: Seçili
+          - button "AI Runware SDXL Runware 160 kredi tahmini Hazır" [ref=f4e164]:
+            - generic [ref=f4e165]: AI
+            - generic [ref=f4e167]:
+              - generic [ref=f4e168]: Runware SDXL
+              - generic [ref=f4e169]: Runware
+              - emphasis [ref=f4e170]: 160 kredi tahmini
+            - generic [ref=f4e171]: Hazır
+          - button "AI Pollinations Z-Image Pollinations 160 kredi tahmini Hazır" [ref=f4e172]:
+            - generic [ref=f4e173]: AI
+            - generic [ref=f4e175]:
+              - generic [ref=f4e176]: Pollinations Z-Image
+              - generic [ref=f4e177]: Pollinations
+              - emphasis [ref=f4e178]: 160 kredi tahmini
+            - generic [ref=f4e179]: Hazır
+          - button "Black Forest Labs Pollinations FLUX Pollinations 160 kredi tahmini Hazır" [ref=f4e180]:
+            - img "Black Forest Labs" [ref=f4e182]
+            - generic [ref=f4e183]:
+              - generic [ref=f4e184]: Pollinations FLUX
+              - generic [ref=f4e185]: Pollinations
+              - emphasis [ref=f4e186]: 160 kredi tahmini
+            - generic [ref=f4e187]: Hazır
+          - button "OpenAI Pollinations GPT Image Pollinations 160 kredi tahmini Hazır" [ref=f4e188]:
+            - img "OpenAI" [ref=f4e190]
+            - generic [ref=f4e192]:
+              - generic [ref=f4e193]: Pollinations GPT Image
+              - generic [ref=f4e194]: Pollinations
+              - emphasis [ref=f4e195]: 160 kredi tahmini
+            - generic [ref=f4e196]: Hazır
+          - button "AI Pollinations Nano Banana Pollinations 160 kredi tahmini Hazır" [ref=f4e197]:
+            - generic [ref=f4e198]: AI
+            - generic [ref=f4e200]:
+              - generic [ref=f4e201]: Pollinations Nano Banana
+              - generic [ref=f4e202]: Pollinations
+              - emphasis [ref=f4e203]: 160 kredi tahmini
+            - generic [ref=f4e204]: Hazır
+          - button "Black Forest Labs AI/ML API FLUX AI/ML API 160 kredi tahmini Hazır" [ref=f4e205]:
+            - img "Black Forest Labs" [ref=f4e207]
+            - generic [ref=f4e208]:
+              - generic [ref=f4e209]: AI/ML API FLUX
+              - generic [ref=f4e210]: AI/ML API
+              - emphasis [ref=f4e211]: 160 kredi tahmini
+            - generic [ref=f4e212]: Hazır
+          - button "Google Gemini AI/ML API Nano Banana AI/ML API 160 kredi tahmini Hazır" [ref=f4e213]:
+            - img "Google Gemini" [ref=f4e215]
+            - generic [ref=f4e217]:
+              - generic [ref=f4e218]: AI/ML API Nano Banana
+              - generic [ref=f4e219]: AI/ML API
+              - emphasis [ref=f4e220]: 160 kredi tahmini
+            - generic [ref=f4e221]: Hazır
+  - navigation [ref=f4e72]:
+    - button "AI" [ref=f4e73] [cursor=pointer]
+    - button "Stüdyo" [ref=f4e77] [cursor=pointer]
+    - button "Mağaza" [ref=f4e81] [cursor=pointer]
+    - button "Hesap" [ref=f4e85] [cursor=pointer]

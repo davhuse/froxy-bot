@@ -1,0 +1,145 @@
+[
+  {
+    "username": "firsatspt",
+    "url": "https://t.me/firsatspt",
+    "type": "group",
+    "audience_observed": "3.95K",
+    "focus": "E-ticaret indirimleri, kupon kodları ve sıcak fırsatlar",
+    "local_status": "new",
+    "priority": 1,
+    "posting_permission": "unknown_manual_check_required",
+    "source_url": "https://telegramchannels.me/tr/groups/firsatspt"
+  },
+  {
+    "username": "firsatdolu",
+    "url": "https://t.me/firsatdolu",
+    "type": "group_or_channel",
+    "audience_observed": "3.57K",
+    "focus": "Amazon, Trendyol, Hepsiburada, N11, MediaMarkt ve Migros fırsatları",
+    "local_status": "new",
+    "priority": 1,
+    "posting_permission": "unknown_manual_check_required",
+    "source_url": "https://telegramchannels.me/tr/groups/firsatdolu"
+  },
+  {
+    "username": "trendindirimlerim",
+    "url": "https://t.me/trendindirimlerim",
+    "type": "channel",
+    "audience_observed": "31.2K subscribers",
+    "focus": "İndirim, kupon ve sıcak fırsat paylaşımı; işbirliği etiketli içerikler görülüyor",
+    "local_status": "new",
+    "priority": 1,
+    "posting_permission": "admin_contact_required",
+    "source_url": "https://t.me/trendindirimlerim"
+  },
+  {
+    "username": "indirimalarmi_tr",
+    "url": "https://t.me/indirimalarmi_tr",
+    "type": "channel",
+    "audience_observed": "18,033 subscribers",
+    "focus": "Amazon/Trendyol indirim ve kuponları; işbirliği iletişimi açık",
+    "local_status": "new",
+    "priority": 1,
+    "posting_permission": "admin_contact_required",
+    "source_url": "https://t.me/indirimalarmi_tr/"
+  },
+  {
+    "username": "onual_firsat",
+    "url": "https://t.me/onual_firsat",
+    "type": "channel",
+    "audience_observed": "46.9K subscribers",
+    "focus": "Trendyol, Hepsiburada, Amazon kampanyaları ve takipçiye özel kuponlar",
+    "local_status": "new",
+    "priority": 1,
+    "posting_permission": "admin_contact_required",
+    "source_url": "https://t.me/s/onual_firsat"
+  },
+  {
+    "username": "tazefirsat",
+    "url": "https://t.me/TazeFirsat",
+    "type": "channel",
+    "audience_observed": "33.9K subscribers",
+    "focus": "Anlık fırsatlar, kupon kodları ve promosyonlar",
+    "local_status": "new",
+    "priority": 2,
+    "posting_permission": "admin_contact_required",
+    "source_url": "https://t.me/TazeFirsat"
+  },
+  {
+    "username": "firsatlarco",
+    "url": "https://t.me/firsatlarco",
+    "type": "channel",
+    "audience_observed": "11.2K subscribers",
+    "focus": "Amazon/Hepsiburada ürün fırsatları, kupon ve işbirliği paylaşımları",
+    "local_status": "new",
+    "priority": 2,
+    "posting_permission": "admin_contact_required",
+    "source_url": "https://t.me/s/firsatlarco"
+  },
+  {
+    "username": "sicakfirsatlar",
+    "url": "https://t.me/sicakfirsatlar",
+    "type": "channel",
+    "audience_observed": "8,741 members",
+    "focus": "Ürün paylaşımı, alışveriş, indirim ve kuponlar",
+    "local_status": "new",
+    "priority": 2,
+    "posting_permission": "admin_contact_required",
+    "source_url": "https://t.me/sicakfirsatlar"
+  },
+  {
+    "username": "firsat_robotu",
+    "url": "https://t.me/firsat_robotu",
+    "type": "group",
+    "audience_observed": "6.81K",
+    "focus": "Dönemsel indirim, kupon, Hepsiburada ve Trendyol fırsatları",
+    "local_status": "new",
+    "priority": 2,
+    "posting_permission": "unknown_manual_check_required",
+    "source_url": "https://telegramchannels.me/tr/groups/firsat_robotu"
+  },
+  {
+    "username": "indirimbakanligi",
+    "url": "https://t.me/indirimbakanligi",
+    "type": "channel",
+    "audience_observed": "3.78K subscribers",
+    "focus": "Amazon, Hepsiburada ve n11 kampanya/kupon paylaşımları; işbirliği içerikleri görülüyor",
+    "local_status": "new",
+    "priority": 2,
+    "posting_permission": "admin_contact_required",
+    "source_url": "https://t.me/s/indirimbakanligi"
+  },
+  {
+    "username": "banggoodturkey",
+    "url": "https://t.me/banggoodturkey",
+    "type": "group",
+    "audience_observed": "1.18K",
+    "focus": "Kupon ve yurtdışı ürün fırsatları",
+    "local_status": "new",
+    "priority": 3,
+    "posting_permission": "unknown_manual_check_required",
+    "source_url": "https://telegramchannels.me/tr/groups/banggoodturkey"
+  },
+  {
+    "username": "indirimfirsatmagazasi",
+    "url": "https://t.me/indirimfirsatmagazasi",
+    "type": "group",
+    "audience_observed": "1.31K",
+    "focus": "İndirim ve kampanya paylaşımı",
+    "local_status": "new",
+    "priority": 3,
+    "posting_permission": "unknown_manual_check_required",
+    "source_url": "https://telegramchannels.me/tr/groups/indirimfirsatmagazasi"
+  },
+  {
+    "username": "aliexpresskuponindirim",
+    "url": "https://t.me/s/Aliexpresskuponindirim",
+    "type": "channel",
+    "audience_observed": "853 subscribers",
+    "focus": "AliExpress kupon ve indirimleri",
+    "local_status": "new",
+    "priority": 3,
+    "posting_permission": "admin_contact_required",
+    "source_url": "https://t.me/s/Aliexpresskuponindirim"
+  }
+]

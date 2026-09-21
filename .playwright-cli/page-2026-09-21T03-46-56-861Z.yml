@@ -1,0 +1,347 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - button "Froxy Froxy Froxy Akıllı" [ref=e86] [cursor=pointer]:
+      - img "Froxy" [ref=e6]
+      - generic [ref=e7]:
+        - generic [ref=e8]: Froxy
+        - generic [ref=e9]: Froxy Akıllı
+    - button "₺0,00" [ref=e87] [cursor=pointer]
+  - main [ref=e15]:
+    - generic [ref=e16]:
+      - generic [ref=e17]:
+        - button "Model Froxy Akıllı" [ref=e88] [cursor=pointer]:
+          - generic [ref=e21]:
+            - generic [ref=e22]: Model
+            - generic [ref=e23]: Froxy Akıllı
+        - button "Yeni sohbet" [ref=e26] [cursor=pointer]
+      - generic [ref=e29]:
+        - button "Genel" [ref=e30] [cursor=pointer]
+        - button "Araştırma" [ref=e31] [cursor=pointer]
+        - button "Kod" [ref=e32] [cursor=pointer]
+        - button "Plan" [ref=e33] [cursor=pointer]
+      - generic [ref=e35]:
+        - paragraph [ref=e37]: FROXY AI WORKSPACE
+        - heading "Ne üzerinde çalışıyoruz?" [level=1] [ref=e38]
+        - paragraph [ref=e39]: Model seç, bir çalışma modu belirle ve doğal şekilde anlat.
+        - generic [ref=e40]:
+          - button "Bir konuyu güncel kaynaklarla araştır" [ref=e41] [cursor=pointer]
+          - button "Bu kodu analiz et ve iyileştir" [ref=e45] [cursor=pointer]
+          - button "Fikrim için uygulanabilir plan hazırla" [ref=e49] [cursor=pointer]
+          - button "Karmaşık bir şeyi sade anlat" [ref=e53] [cursor=pointer]
+      - generic [ref=e57]:
+        - generic [ref=e58]:
+          - generic [ref=e59]: Genel asistan
+          - combobox [ref=e60]:
+            - option "Akıllı düşünme" [selected]
+            - option "Hızlı"
+            - option "Dengeli"
+            - option "Maksimum"
+        - generic [ref=e61]:
+          - button [ref=e62] [cursor=pointer]
+          - textbox "Froxy'ye mesaj yaz…" [ref=e65]
+          - button [disabled] [ref=e66] [cursor=pointer]
+  - navigation [ref=e69]:
+    - button "AI" [ref=e70] [cursor=pointer]
+    - button "Stüdyo" [ref=e74] [cursor=pointer]
+    - button "Mağaza" [ref=e78] [cursor=pointer]
+    - button "Hesap" [ref=e82] [cursor=pointer]
+  - generic [ref=e90]:
+    - generic [ref=e91]:
+      - generic [ref=e92]:
+        - paragraph [ref=e93]: MODEL KÜTÜPHANESİ
+        - heading "İşin için doğru modeli seç" [level=2] [ref=e94]
+      - button [ref=e95]
+    - textbox "Model, aile veya sağlayıcı ara" [active] [ref=e101]
+    - generic [ref=e102]:
+      - button "Önerilen" [ref=e103] [cursor=pointer]
+      - button "Tüm modeller" [ref=e104] [cursor=pointer]
+      - button "Çalışanlar" [ref=e105] [cursor=pointer]
+    - generic [ref=e106]:
+      - button "Froxy Akıllı Froxy Modelleri · Froxy Modelleri ~1 kredi / 1K Hazır" [ref=e107] [cursor=pointer]:
+        - generic [ref=e109]:
+          - generic [ref=e110]: Froxy Akıllı
+          - generic [ref=e111]: Froxy Modelleri · Froxy Modelleri
+          - emphasis [ref=e112]: ~1 kredi / 1K
+        - generic [ref=e113]: Hazır
+      - button "Froxy Hızlı Froxy Modelleri · Froxy Modelleri ~1 kredi / 1K Hazır" [ref=e114] [cursor=pointer]:
+        - generic [ref=e116]:
+          - generic [ref=e117]: Froxy Hızlı
+          - generic [ref=e118]: Froxy Modelleri · Froxy Modelleri
+          - emphasis [ref=e119]: ~1 kredi / 1K
+        - generic [ref=e120]: Hazır
+      - button "GPT OSS 20B GPT · Groq ~14 kredi / 1K Hazır" [ref=e121] [cursor=pointer]:
+        - generic [ref=e123]:
+          - generic [ref=e124]: GPT OSS 20B
+          - generic [ref=e125]: GPT · Groq
+          - emphasis [ref=e126]: ~14 kredi / 1K
+        - generic [ref=e127]: Hazır
+      - button "GPT OSS 120B GPT · Groq ~28 kredi / 1K Hazır" [ref=e128] [cursor=pointer]:
+        - generic [ref=e130]:
+          - generic [ref=e131]: GPT OSS 120B
+          - generic [ref=e132]: GPT · Groq
+          - emphasis [ref=e133]: ~28 kredi / 1K
+        - generic [ref=e134]: Hazır
+      - button "Qwen/Qwen3.8-27B Qwen · Groq ~175 kredi / 1K Hazır" [ref=e135] [cursor=pointer]:
+        - generic [ref=e137]:
+          - generic [ref=e138]: Qwen/Qwen3.8-27B
+          - generic [ref=e139]: Qwen · Groq
+          - emphasis [ref=e140]: ~175 kredi / 1K
+        - generic [ref=e141]: Hazır
+      - button "Aion-RP 1.0 (8B) Llama · AI/ML API ~756 kredi / 1K Hazır" [ref=e142] [cursor=pointer]:
+        - generic [ref=e144]:
+          - generic [ref=e145]: Aion-RP 1.0 (8B)
+          - generic [ref=e146]: Llama · AI/ML API
+          - emphasis [ref=e147]: ~756 kredi / 1K
+        - generic [ref=e148]: Hazır
+      - button "Chat GPT audio GPT · AI/ML API ~756 kredi / 1K Hazır" [ref=e149] [cursor=pointer]:
+        - generic [ref=e151]:
+          - generic [ref=e152]: Chat GPT audio
+          - generic [ref=e153]: GPT · AI/ML API
+          - emphasis [ref=e154]: ~756 kredi / 1K
+        - generic [ref=e155]: Hazır
+      - button "Chat GPT audio GPT · AI/ML API ~756 kredi / 1K Hazır" [ref=e156] [cursor=pointer]:
+        - generic [ref=e158]:
+          - generic [ref=e159]: Chat GPT audio
+          - generic [ref=e160]: GPT · AI/ML API
+          - emphasis [ref=e161]: ~756 kredi / 1K
+        - generic [ref=e162]: Hazır
+      - button "Chat GPT mini audio GPT · AI/ML API ~756 kredi / 1K Hazır" [ref=e163] [cursor=pointer]:
+        - generic [ref=e165]:
+          - generic [ref=e166]: Chat GPT mini audio
+          - generic [ref=e167]: GPT · AI/ML API
+          - emphasis [ref=e168]: ~756 kredi / 1K
+        - generic [ref=e169]: Hazır
+      - button "Chat GPT mini audio GPT · AI/ML API ~756 kredi / 1K Hazır" [ref=e170] [cursor=pointer]:
+        - generic [ref=e172]:
+          - generic [ref=e173]: Chat GPT mini audio
+          - generic [ref=e174]: GPT · AI/ML API
+          - emphasis [ref=e175]: ~756 kredi / 1K
+        - generic [ref=e176]: Hazır
+      - button "Claude 3 Haiku Claude · AI/ML API ~756 kredi / 1K Hazır" [ref=e177] [cursor=pointer]:
+        - generic [ref=e179]:
+          - generic [ref=e180]: Claude 3 Haiku
+          - generic [ref=e181]: Claude · AI/ML API
+          - emphasis [ref=e182]: ~756 kredi / 1K
+        - generic [ref=e183]: Hazır
+      - button "Claude 4.1 Opus Claude · AI/ML API ~756 kredi / 1K Hazır" [ref=e184] [cursor=pointer]:
+        - generic [ref=e186]:
+          - generic [ref=e187]: Claude 4.1 Opus
+          - generic [ref=e188]: Claude · AI/ML API
+          - emphasis [ref=e189]: ~756 kredi / 1K
+        - generic [ref=e190]: Hazır
+      - button "Claude 4.1 Opus Claude · AI/ML API ~756 kredi / 1K Hazır" [ref=e191] [cursor=pointer]:
+        - generic [ref=e193]:
+          - generic [ref=e194]: Claude 4.1 Opus
+          - generic [ref=e195]: Claude · AI/ML API
+          - emphasis [ref=e196]: ~756 kredi / 1K
+        - generic [ref=e197]: Hazır
+      - button "Claude 4.5 Haiku Claude · AI/ML API ~756 kredi / 1K Hazır" [ref=e198] [cursor=pointer]:
+        - generic [ref=e200]:
+          - generic [ref=e201]: Claude 4.5 Haiku
+          - generic [ref=e202]: Claude · AI/ML API
+          - emphasis [ref=e203]: ~756 kredi / 1K
+        - generic [ref=e204]: Hazır
+      - button "Claude 4.5 Haiku Claude · AI/ML API ~756 kredi / 1K Hazır" [ref=e205] [cursor=pointer]:
+        - generic [ref=e207]:
+          - generic [ref=e208]: Claude 4.5 Haiku
+          - generic [ref=e209]: Claude · AI/ML API
+          - emphasis [ref=e210]: ~756 kredi / 1K
+        - generic [ref=e211]: Hazır
+      - button "Claude 4.5 Opus Claude · AI/ML API ~756 kredi / 1K Hazır" [ref=e212] [cursor=pointer]:
+        - generic [ref=e214]:
+          - generic [ref=e215]: Claude 4.5 Opus
+          - generic [ref=e216]: Claude · AI/ML API
+          - emphasis [ref=e217]: ~756 kredi / 1K
+        - generic [ref=e218]: Hazır
+      - button "Claude 4.5 Opus Claude · AI/ML API ~756 kredi / 1K Hazır" [ref=e219] [cursor=pointer]:
+        - generic [ref=e221]:
+          - generic [ref=e222]: Claude 4.5 Opus
+          - generic [ref=e223]: Claude · AI/ML API
+          - emphasis [ref=e224]: ~756 kredi / 1K
+        - generic [ref=e225]: Hazır
+      - button "Claude 4.5 Sonnet Claude · AI/ML API ~756 kredi / 1K Hazır" [ref=e226] [cursor=pointer]:
+        - generic [ref=e228]:
+          - generic [ref=e229]: Claude 4.5 Sonnet
+          - generic [ref=e230]: Claude · AI/ML API
+          - emphasis [ref=e231]: ~756 kredi / 1K
+        - generic [ref=e232]: Hazır
+      - button "Claude 4.5 Sonnet Claude · AI/ML API ~756 kredi / 1K Hazır" [ref=e233] [cursor=pointer]:
+        - generic [ref=e235]:
+          - generic [ref=e236]: Claude 4.5 Sonnet
+          - generic [ref=e237]: Claude · AI/ML API
+          - emphasis [ref=e238]: ~756 kredi / 1K
+        - generic [ref=e239]: Hazır
+      - button "Claude 4.6 Opus Claude · AI/ML API ~756 kredi / 1K Hazır" [ref=e240] [cursor=pointer]:
+        - generic [ref=e242]:
+          - generic [ref=e243]: Claude 4.6 Opus
+          - generic [ref=e244]: Claude · AI/ML API
+          - emphasis [ref=e245]: ~756 kredi / 1K
+        - generic [ref=e246]: Hazır
+      - button "Claude 4.6 Sonnet Claude · AI/ML API ~756 kredi / 1K Hazır" [ref=e247] [cursor=pointer]:
+        - generic [ref=e249]:
+          - generic [ref=e250]: Claude 4.6 Sonnet
+          - generic [ref=e251]: Claude · AI/ML API
+          - emphasis [ref=e252]: ~756 kredi / 1K
+        - generic [ref=e253]: Hazır
+      - button "Claude 4.6 Sonnet Claude · AI/ML API ~756 kredi / 1K Hazır" [ref=e254] [cursor=pointer]:
+        - generic [ref=e256]:
+          - generic [ref=e257]: Claude 4.6 Sonnet
+          - generic [ref=e258]: Claude · AI/ML API
+          - emphasis [ref=e259]: ~756 kredi / 1K
+        - generic [ref=e260]: Hazır
+      - button "Claude 4.7 Opus Claude · AI/ML API ~756 kredi / 1K Hazır" [ref=e261] [cursor=pointer]:
+        - generic [ref=e263]:
+          - generic [ref=e264]: Claude 4.7 Opus
+          - generic [ref=e265]: Claude · AI/ML API
+          - emphasis [ref=e266]: ~756 kredi / 1K
+        - generic [ref=e267]: Hazır
+      - button "Claude 4.7 Opus Claude · AI/ML API ~756 kredi / 1K Hazır" [ref=e268] [cursor=pointer]:
+        - generic [ref=e270]:
+          - generic [ref=e271]: Claude 4.7 Opus
+          - generic [ref=e272]: Claude · AI/ML API
+          - emphasis [ref=e273]: ~756 kredi / 1K
+        - generic [ref=e274]: Hazır
+      - button "Claude 4.8 Opus Claude · AI/ML API ~756 kredi / 1K Hazır" [ref=e275] [cursor=pointer]:
+        - generic [ref=e277]:
+          - generic [ref=e278]: Claude 4.8 Opus
+          - generic [ref=e279]: Claude · AI/ML API
+          - emphasis [ref=e280]: ~756 kredi / 1K
+        - generic [ref=e281]: Hazır
+      - button "Claude 4.8 Opus Claude · AI/ML API ~756 kredi / 1K Hazır" [ref=e282] [cursor=pointer]:
+        - generic [ref=e284]:
+          - generic [ref=e285]: Claude 4.8 Opus
+          - generic [ref=e286]: Claude · AI/ML API
+          - emphasis [ref=e287]: ~756 kredi / 1K
+        - generic [ref=e288]: Hazır
+      - button "Claude Fable 5 Claude · AI/ML API ~756 kredi / 1K Hazır" [ref=e289] [cursor=pointer]:
+        - generic [ref=e291]:
+          - generic [ref=e292]: Claude Fable 5
+          - generic [ref=e293]: Claude · AI/ML API
+          - emphasis [ref=e294]: ~756 kredi / 1K
+        - generic [ref=e295]: Hazır
+      - button "Claude Fable 5.1 Claude · AI/ML API ~756 kredi / 1K Hazır" [ref=e296] [cursor=pointer]:
+        - generic [ref=e298]:
+          - generic [ref=e299]: Claude Fable 5.1
+          - generic [ref=e300]: Claude · AI/ML API
+          - emphasis [ref=e301]: ~756 kredi / 1K
+        - generic [ref=e302]: Hazır
+      - button "Claude Fable 5.1 Claude · AI/ML API ~756 kredi / 1K Hazır" [ref=e303] [cursor=pointer]:
+        - generic [ref=e305]:
+          - generic [ref=e306]: Claude Fable 5.1
+          - generic [ref=e307]: Claude · AI/ML API
+          - emphasis [ref=e308]: ~756 kredi / 1K
+        - generic [ref=e309]: Hazır
+      - button "Claude Fable Latest Claude · AI/ML API ~756 kredi / 1K Hazır" [ref=e310] [cursor=pointer]:
+        - generic [ref=e312]:
+          - generic [ref=e313]: Claude Fable Latest
+          - generic [ref=e314]: Claude · AI/ML API
+          - emphasis [ref=e315]: ~756 kredi / 1K
+        - generic [ref=e316]: Hazır
+      - button "Claude Haiku Latest Claude · AI/ML API ~756 kredi / 1K Hazır" [ref=e317] [cursor=pointer]:
+        - generic [ref=e319]:
+          - generic [ref=e320]: Claude Haiku Latest
+          - generic [ref=e321]: Claude · AI/ML API
+          - emphasis [ref=e322]: ~756 kredi / 1K
+        - generic [ref=e323]: Hazır
+      - button "Claude Opus 4 Claude · AI/ML API ~756 kredi / 1K Hazır" [ref=e324] [cursor=pointer]:
+        - generic [ref=e326]:
+          - generic [ref=e327]: Claude Opus 4
+          - generic [ref=e328]: Claude · AI/ML API
+          - emphasis [ref=e329]: ~756 kredi / 1K
+        - generic [ref=e330]: Hazır
+      - button "Claude Opus 5 Claude · AI/ML API ~756 kredi / 1K Hazır" [ref=e331] [cursor=pointer]:
+        - generic [ref=e333]:
+          - generic [ref=e334]: Claude Opus 5
+          - generic [ref=e335]: Claude · AI/ML API
+          - emphasis [ref=e336]: ~756 kredi / 1K
+        - generic [ref=e337]: Hazır
+      - button "Claude Opus Latest Claude · AI/ML API ~756 kredi / 1K Hazır" [ref=e338] [cursor=pointer]:
+        - generic [ref=e340]:
+          - generic [ref=e341]: Claude Opus Latest
+          - generic [ref=e342]: Claude · AI/ML API
+          - emphasis [ref=e343]: ~756 kredi / 1K
+        - generic [ref=e344]: Hazır
+      - button "Claude Sonnet 4 Claude · AI/ML API ~756 kredi / 1K Hazır" [ref=e345] [cursor=pointer]:
+        - generic [ref=e347]:
+          - generic [ref=e348]: Claude Sonnet 4
+          - generic [ref=e349]: Claude · AI/ML API
+          - emphasis [ref=e350]: ~756 kredi / 1K
+        - generic [ref=e351]: Hazır
+      - button "Claude Sonnet 5 Claude · AI/ML API ~756 kredi / 1K Hazır" [ref=e352] [cursor=pointer]:
+        - generic [ref=e354]:
+          - generic [ref=e355]: Claude Sonnet 5
+          - generic [ref=e356]: Claude · AI/ML API
+          - emphasis [ref=e357]: ~756 kredi / 1K
+        - generic [ref=e358]: Hazır
+      - button "Claude Sonnet Latest Claude · AI/ML API ~756 kredi / 1K Hazır" [ref=e359] [cursor=pointer]:
+        - generic [ref=e361]:
+          - generic [ref=e362]: Claude Sonnet Latest
+          - generic [ref=e363]: Claude · AI/ML API
+          - emphasis [ref=e364]: ~756 kredi / 1K
+        - generic [ref=e365]: Hazır
+      - button "Codestral 2508 Mistral · AI/ML API ~756 kredi / 1K Hazır" [ref=e366] [cursor=pointer]:
+        - generic [ref=e368]:
+          - generic [ref=e369]: Codestral 2508
+          - generic [ref=e370]: Mistral · AI/ML API
+          - emphasis [ref=e371]: ~756 kredi / 1K
+        - generic [ref=e372]: Hazır
+      - button "community/chirag-gamer/gpt-oss-120b GPT · Pollinations ~756 kredi / 1K Hazır" [ref=e373] [cursor=pointer]:
+        - generic [ref=e375]:
+          - generic [ref=e376]: community/chirag-gamer/gpt-oss-120b
+          - generic [ref=e377]: GPT · Pollinations
+          - emphasis [ref=e378]: ~756 kredi / 1K
+        - generic [ref=e379]: Hazır
+      - button "community/gggff123/gpt-5-nano GPT · Pollinations ~756 kredi / 1K Hazır" [ref=e380] [cursor=pointer]:
+        - generic [ref=e382]:
+          - generic [ref=e383]: community/gggff123/gpt-5-nano
+          - generic [ref=e384]: GPT · Pollinations
+          - emphasis [ref=e385]: ~756 kredi / 1K
+        - generic [ref=e386]: Hazır
+      - button "community/iotserver24/deepseek-fast DeepSeek · Pollinations ~756 kredi / 1K Hazır" [ref=e387] [cursor=pointer]:
+        - generic [ref=e389]:
+          - generic [ref=e390]: community/iotserver24/deepseek-fast
+          - generic [ref=e391]: DeepSeek · Pollinations
+          - emphasis [ref=e392]: ~756 kredi / 1K
+        - generic [ref=e393]: Hazır
+      - button "community/iotserver24/deepseek-v4f DeepSeek · Pollinations ~756 kredi / 1K Hazır" [ref=e394] [cursor=pointer]:
+        - generic [ref=e396]:
+          - generic [ref=e397]: community/iotserver24/deepseek-v4f
+          - generic [ref=e398]: DeepSeek · Pollinations
+          - emphasis [ref=e399]: ~756 kredi / 1K
+        - generic [ref=e400]: Hazır
+      - button "community/JustScriptzz/deepseek-v4-flash-0731 DeepSeek · Pollinations ~756 kredi / 1K Hazır" [ref=e401] [cursor=pointer]:
+        - generic [ref=e403]:
+          - generic [ref=e404]: community/JustScriptzz/deepseek-v4-flash-0731
+          - generic [ref=e405]: DeepSeek · Pollinations
+          - emphasis [ref=e406]: ~756 kredi / 1K
+        - generic [ref=e407]: Hazır
+      - button "community/JustScriptzz/gpt-oss-120b GPT · Pollinations ~756 kredi / 1K Hazır" [ref=e408] [cursor=pointer]:
+        - generic [ref=e410]:
+          - generic [ref=e411]: community/JustScriptzz/gpt-oss-120b
+          - generic [ref=e412]: GPT · Pollinations
+          - emphasis [ref=e413]: ~756 kredi / 1K
+        - generic [ref=e414]: Hazır
+      - button "community/JustScriptzz/qwen-image-3.0-pro Qwen · Pollinations ~756 kredi / 1K Hazır" [ref=e415] [cursor=pointer]:
+        - generic [ref=e417]:
+          - generic [ref=e418]: community/JustScriptzz/qwen-image-3.0-pro
+          - generic [ref=e419]: Qwen · Pollinations
+          - emphasis [ref=e420]: ~756 kredi / 1K
+        - generic [ref=e421]: Hazır
+      - button "community/Lorodn4x/deepseek-v4-flash DeepSeek · Pollinations ~756 kredi / 1K Hazır" [ref=e422] [cursor=pointer]:
+        - generic [ref=e424]:
+          - generic [ref=e425]: community/Lorodn4x/deepseek-v4-flash
+          - generic [ref=e426]: DeepSeek · Pollinations
+          - emphasis [ref=e427]: ~756 kredi / 1K
+        - generic [ref=e428]: Hazır
+      - button "community/Lorodn4x/deepseek-v4-pro-0813 DeepSeek · Pollinations ~756 kredi / 1K Hazır" [ref=e429] [cursor=pointer]:
+        - generic [ref=e431]:
+          - generic [ref=e432]: community/Lorodn4x/deepseek-v4-pro-0813
+          - generic [ref=e433]: DeepSeek · Pollinations
+          - emphasis [ref=e434]: ~756 kredi / 1K
+        - generic [ref=e435]: Hazır
+      - button "community/MarcosFRG/deepseek-v4-flash-0731 DeepSeek · Pollinations ~756 kredi / 1K Hazır" [ref=e436] [cursor=pointer]:
+        - generic [ref=e438]:
+          - generic [ref=e439]: community/MarcosFRG/deepseek-v4-flash-0731
+          - generic [ref=e440]: DeepSeek · Pollinations
+          - emphasis [ref=e441]: ~756 kredi / 1K
+        - generic [ref=e442]: Hazır

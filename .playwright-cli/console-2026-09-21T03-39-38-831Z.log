@@ -1,0 +1,99 @@
+[    9328ms] [LOG] [Telegram.WebView] > postEvent web_app_set_header_color {color_key: bg_color} @ https://telegram.org/js/telegram-web-app.js:134
+[    9328ms] [LOG] [Telegram.WebView] > postEvent web_app_set_bottom_bar_color {color: #ffffff} @ https://telegram.org/js/telegram-web-app.js:134
+[    9329ms] [LOG] [Telegram.WebView] > postEvent web_app_request_theme  @ https://telegram.org/js/telegram-web-app.js:134
+[    9329ms] [LOG] [Telegram.WebView] > postEvent web_app_request_viewport  @ https://telegram.org/js/telegram-web-app.js:134
+[    9329ms] [LOG] [Telegram.WebView] > postEvent web_app_request_safe_area  @ https://telegram.org/js/telegram-web-app.js:134
+[    9329ms] [LOG] [Telegram.WebView] > postEvent web_app_request_content_safe_area  @ https://telegram.org/js/telegram-web-app.js:134
+[    9417ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:5174/node_modules/.vite/deps/react-dom_client.js?v=53377bc6:15804
+[    9487ms] [ERROR] %s must not return anything besides a function, which is used for clean-up.%s useEffect 
+
+It looks like you wrote useEffect(async () => ...) or returned a Promise. Instead, write the async function inside your effect and call it immediately:
+
+useEffect(() => {
+  async function fetchData() {
+    // You can await here
+    const response = await MyAPI.getData(someId);
+    // ...
+  }
+  fetchData();
+}, [someId]); // Or [] if effect doesn't need props or state
+
+Learn more about data fetching with Hooks: https://react.dev/link/hooks-data-fetching @ http://127.0.0.1:5174/@vite/client:298
+[    9488ms] [LOG] [Telegram.WebView] > postEvent web_app_ready  @ https://telegram.org/js/telegram-web-app.js:134
+[    9488ms] [LOG] [Telegram.WebView] > postEvent web_app_expand  @ https://telegram.org/js/telegram-web-app.js:134
+[    9493ms] [ERROR] %s must not return anything besides a function, which is used for clean-up.%s useEffect 
+
+It looks like you wrote useEffect(async () => ...) or returned a Promise. Instead, write the async function inside your effect and call it immediately:
+
+useEffect(() => {
+  async function fetchData() {
+    // You can await here
+    const response = await MyAPI.getData(someId);
+    // ...
+  }
+  fetchData();
+}, [someId]); // Or [] if effect doesn't need props or state
+
+Learn more about data fetching with Hooks: https://react.dev/link/hooks-data-fetching @ http://127.0.0.1:5174/@vite/client:298
+[    9493ms] [LOG] [Telegram.WebView] > postEvent web_app_ready  @ https://telegram.org/js/telegram-web-app.js:134
+[    9493ms] [LOG] [Telegram.WebView] > postEvent web_app_expand  @ https://telegram.org/js/telegram-web-app.js:134
+[    9496ms] TypeError: destroy is not a function
+    at Object.react_stack_bottom_frame (http://127.0.0.1:5174/node_modules/.vite/deps/react-dom_client.js?v=53377bc6:14182:5)
+    at runWithFiberInDEV (http://127.0.0.1:5174/node_modules/.vite/deps/react-dom_client.js?v=53377bc6:944:66)
+    at commitHookEffectListUnmount (http://127.0.0.1:5174/node_modules/.vite/deps/react-dom_client.js?v=53377bc6:6926:149)
+    at commitHookPassiveUnmountEffects (http://127.0.0.1:5174/node_modules/.vite/deps/react-dom_client.js?v=53377bc6:6939:55)
+    at disconnectPassiveEffect (http://127.0.0.1:5174/node_modules/.vite/deps/react-dom_client.js?v=53377bc6:8552:6)
+    at recursivelyTraverseDisconnectPassiveEffects (http://127.0.0.1:5174/node_modules/.vite/deps/react-dom_client.js?v=53377bc6:8544:65)
+    at disconnectPassiveEffect (http://127.0.0.1:5174/node_modules/.vite/deps/react-dom_client.js?v=53377bc6:8559:14)
+    at recursivelyTraverseDisconnectPassiveEffects (http://127.0.0.1:5174/node_modules/.vite/deps/react-dom_client.js?v=53377bc6:8544:65)
+    at disconnectPassiveEffect (http://127.0.0.1:5174/node_modules/.vite/deps/react-dom_client.js?v=53377bc6:8559:14)
+    at recursivelyTraverseDisconnectPassiveEffects (http://127.0.0.1:5174/node_modules/.vite/deps/react-dom_client.js?v=53377bc6:8544:65)
+[    9496ms] [WARNING] %s
+
+%s
+ An error occurred in the <ChatView> component. Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries. @ http://127.0.0.1:5174/@vite/client:298
+[    9501ms] TypeError: destroy is not a function
+    at Object.react_stack_bottom_frame (http://127.0.0.1:5174/node_modules/.vite/deps/react-dom_client.js?v=53377bc6:14182:5)
+    at runWithFiberInDEV (http://127.0.0.1:5174/node_modules/.vite/deps/react-dom_client.js?v=53377bc6:944:66)
+    at commitHookEffectListUnmount (http://127.0.0.1:5174/node_modules/.vite/deps/react-dom_client.js?v=53377bc6:6926:149)
+    at commitHookPassiveUnmountEffects (http://127.0.0.1:5174/node_modules/.vite/deps/react-dom_client.js?v=53377bc6:6939:55)
+    at commitPassiveUnmountEffectsInsideOfDeletedTree_begin (http://127.0.0.1:5174/node_modules/.vite/deps/react-dom_client.js?v=53377bc6:8574:7)
+    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:5174/node_modules/.vite/deps/react-dom_client.js?v=53377bc6:8493:6)
+    at commitPassiveUnmountOnFiber (http://127.0.0.1:5174/node_modules/.vite/deps/react-dom_client.js?v=53377bc6:8512:6)
+    at flushPassiveEffects (http://127.0.0.1:5174/node_modules/.vite/deps/react-dom_client.js?v=53377bc6:9579:5)
+    at flushPendingEffects (http://127.0.0.1:5174/node_modules/.vite/deps/react-dom_client.js?v=53377bc6:9544:11)
+    at flushSpawnedWork (http://127.0.0.1:5174/node_modules/.vite/deps/react-dom_client.js?v=53377bc6:9521:40)
+[    9498ms] [WARNING] %s
+
+%s
+ An error occurred in the <ChatView> component. Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries. @ http://127.0.0.1:5174/@vite/client:298
+[   26212ms] [LOG] [Telegram.WebView] > postEvent web_app_ready  @ https://telegram.org/js/telegram-web-app.js:134
+[   26213ms] [LOG] [Telegram.WebView] > postEvent web_app_expand  @ https://telegram.org/js/telegram-web-app.js:134
+[   26214ms] [LOG] [Telegram.WebView] > postEvent web_app_ready  @ https://telegram.org/js/telegram-web-app.js:134
+[   26214ms] [LOG] [Telegram.WebView] > postEvent web_app_expand  @ https://telegram.org/js/telegram-web-app.js:134
+[   35432ms] [LOG] [Telegram.WebView] > postEvent web_app_set_header_color {color_key: bg_color} @ https://telegram.org/js/telegram-web-app.js:134
+[   35433ms] [LOG] [Telegram.WebView] > postEvent web_app_set_bottom_bar_color {color: #ffffff} @ https://telegram.org/js/telegram-web-app.js:134
+[   35433ms] [LOG] [Telegram.WebView] > postEvent web_app_request_theme  @ https://telegram.org/js/telegram-web-app.js:134
+[   35433ms] [LOG] [Telegram.WebView] > postEvent web_app_request_viewport  @ https://telegram.org/js/telegram-web-app.js:134
+[   35433ms] [LOG] [Telegram.WebView] > postEvent web_app_request_safe_area  @ https://telegram.org/js/telegram-web-app.js:134
+[   35433ms] [LOG] [Telegram.WebView] > postEvent web_app_request_content_safe_area  @ https://telegram.org/js/telegram-web-app.js:134
+[   35449ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:5174/node_modules/.vite/deps/react-dom_client.js?v=53377bc6:15804
+[   35494ms] [LOG] [Telegram.WebView] > postEvent web_app_ready  @ https://telegram.org/js/telegram-web-app.js:134
+[   35494ms] [LOG] [Telegram.WebView] > postEvent web_app_expand  @ https://telegram.org/js/telegram-web-app.js:134
+[   35496ms] [LOG] [Telegram.WebView] > postEvent web_app_ready  @ https://telegram.org/js/telegram-web-app.js:134
+[   35496ms] [LOG] [Telegram.WebView] > postEvent web_app_expand  @ https://telegram.org/js/telegram-web-app.js:134
+[   48740ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://cdn.simpleicons.org/openai/FFFFFF:0
+[  457889ms] [LOG] [Telegram.WebView] > postEvent web_app_set_header_color {color_key: bg_color} @ https://telegram.org/js/telegram-web-app.js:134
+[  457889ms] [LOG] [Telegram.WebView] > postEvent web_app_set_bottom_bar_color {color: #ffffff} @ https://telegram.org/js/telegram-web-app.js:134
+[  457890ms] [LOG] [Telegram.WebView] > postEvent web_app_request_theme  @ https://telegram.org/js/telegram-web-app.js:134
+[  457890ms] [LOG] [Telegram.WebView] > postEvent web_app_request_viewport  @ https://telegram.org/js/telegram-web-app.js:134
+[  457890ms] [LOG] [Telegram.WebView] > postEvent web_app_request_safe_area  @ https://telegram.org/js/telegram-web-app.js:134
+[  457890ms] [LOG] [Telegram.WebView] > postEvent web_app_request_content_safe_area  @ https://telegram.org/js/telegram-web-app.js:134
+[  457899ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:5174/node_modules/.vite/deps/react-dom_client.js?v=53377bc6:15804
+[  457914ms] [LOG] [Telegram.WebView] > postEvent web_app_ready  @ https://telegram.org/js/telegram-web-app.js:134
+[  457914ms] [LOG] [Telegram.WebView] > postEvent web_app_expand  @ https://telegram.org/js/telegram-web-app.js:134
+[  457915ms] [LOG] [Telegram.WebView] > postEvent web_app_ready  @ https://telegram.org/js/telegram-web-app.js:134
+[  457916ms] [LOG] [Telegram.WebView] > postEvent web_app_expand  @ https://telegram.org/js/telegram-web-app.js:134
+[  581994ms] [LOG] [vite] server connection lost. Polling for restart... @ http://127.0.0.1:5174/@vite/client:1030

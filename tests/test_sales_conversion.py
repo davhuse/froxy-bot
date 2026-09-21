@@ -82,6 +82,39 @@ class SalesCatalogMatchingTests(unittest.TestCase):
                 self.assertTrue(matches)
                 self.assertIn(expected, matches[0]["title"].casefold())
 
+    def test_campaign_aliases_return_store_specific_prices(self):
+        expected = {
+            "keyvadi": {
+                "360/270": ("51024906", "45,00 TL"),
+                "positive": ("51024903", "30,00 TL"),
+                "gastroclub": ("51024902", "20,00 TL"),
+                "enterprise": ("51024899", "30,00 TL"),
+                "garenta": ("51024901", "20,00 TL"),
+                "enuygun %10": ("51024900", "20,00 TL"),
+                "trendyol 800/300": ("51024904", "50,00 TL"),
+                "trendyol 750/250": ("51024905", "50,00 TL"),
+                "gemini 18 ay kişiye özel": ("51025109", "149,90 TL"),
+            },
+            "lisansarena": {
+                "360/270": ("la_yemeksepeti_360", "55,00 TL"),
+                "positive": ("la_positive_110", "35,00 TL"),
+                "gastroclub": ("la_gastroclub_200", "25,00 TL"),
+                "enterprise": ("la_enterprise_40", "35,00 TL"),
+                "garenta": ("la_garenta_40", "30,00 TL"),
+                "enuygun %10": ("la_enuygun_plus_10", "30,00 TL"),
+                "trendyol 800/300": ("la_trendyol_market_800", "60,00 TL"),
+                "trendyol 750/250": ("la_trendyol_yemek_750", "60,00 TL"),
+            },
+        }
+        for brand, cases in expected.items():
+            catalog = load_sales_catalog(brand)
+            for query, (title_fragment, price) in cases.items():
+                with self.subTest(brand=brand, query=query):
+                    matches = match_sales_products(query, catalog)
+                    self.assertTrue(matches)
+                    self.assertEqual(matches[0]["id"], title_fragment)
+                    self.assertEqual(matches[0]["price"], price)
+
     def test_generic_queries_return_at_most_three_relevant_variants(self):
         for query in ("Netflix", "ChatGPT", "Gemini"):
             with self.subTest(query=query):

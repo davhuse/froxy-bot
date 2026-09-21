@@ -1,0 +1,295 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e5]:
+        - img "Froxy AI Logo" [ref=e7]
+        - generic [ref=e9]:
+          - generic [ref=e10]: FROXY.AI
+          - generic [ref=e11]: ⚡ Froxy Hızlı Aktif
+      - generic [ref=e12]:
+        - generic [ref=e13] [cursor=pointer]:
+          - generic [ref=e14]: 💳
+          - generic [ref=e15]: ₺0,00
+          - generic [ref=e16]: +
+        - generic "AI Kredisi" [ref=e17] [cursor=pointer]:
+          - generic [ref=e18]: 🪙
+          - generic [ref=e19]: "0"
+        - button "Günlük 3 sohbet · 1 görsel" [ref=e20] [cursor=pointer]:
+          - generic [ref=e21]: Günlük
+          - generic [ref=e22]: 3 sohbet · 1 görsel
+    - generic [ref=e24]:
+      - generic [ref=e25]:
+        - text: "Doğrulanmış katalog:"
+        - generic [ref=e27]: 5 aktif · 15 katalog
+      - generic [ref=e28]:
+        - text: "Froxy ücretsiz hak:"
+        - generic [ref=e30]: 3 mesaj + 1 görsel
+    - main [ref=e31]:
+      - generic [ref=e396]:
+        - generic [ref=e397]:
+          - generic [ref=e398]: ⚡ SHOPIER 3D & ŞEFFAF TESLİMAT SÜRECİ
+          - heading "Froxy Lisans & Kredi Mağazası" [level=2] [ref=e399]
+          - paragraph [ref=e400]: AI erişim ürünleri, Froxy kullanım kredileri ve stok durumuna göre açık teslimat bilgileri.
+          - generic [ref=e401]:
+            - button "Tümü 18" [ref=e402] [cursor=pointer]:
+              - text: Tümü
+              - generic [ref=e403]: "18"
+            - button "ChatGPT & Codex 4" [ref=e404] [cursor=pointer]:
+              - text: ChatGPT & Codex
+              - generic [ref=e405]: "4"
+            - button "Gemini 7" [ref=e406] [cursor=pointer]:
+              - text: Gemini
+              - generic [ref=e407]: "7"
+            - button "Perplexity 1" [ref=e408] [cursor=pointer]:
+              - text: Perplexity
+              - generic [ref=e409]: "1"
+            - button "AI Kredi 6" [ref=e410] [cursor=pointer]:
+              - text: AI Kredi
+              - generic [ref=e411]: "6"
+            - button "Diğer 0" [ref=e412] [cursor=pointer]:
+              - text: Diğer
+              - generic [ref=e413]: "0"
+        - textbox "Yapay zeka lisansı veya model ara..." [ref=e415]
+        - generic [ref=e416]:
+          - generic [ref=e417]:
+            - generic [ref=e418]:
+              - generic [ref=e419]:
+                - generic [ref=e420]: GOOGLE GEMINI
+                - generic [ref=e421]: Shopier ürünü
+              - img "Gemini Pro (18 Aylık İndirim Bağlantısı)" [ref=e423]
+              - generic [ref=e424]: Gemini Pro (18 Aylık İndirim Bağlantısı)
+              - generic [ref=e425]: Gemini Pro (18 Aylık İndirim Bağlantısı) — Shopier 3D Secure ödeme. Stok varsa otomatik, stok yoksa @FroxyDestekBOT üzerinden 1–3 iş günü içinde teslim edilir.
+            - generic [ref=e426]:
+              - generic [ref=e427]:
+                - generic [ref=e428]: FİYAT
+                - generic [ref=e429]: 199,90 TL
+              - button "💳 Bakiyeyle Satın Al" [ref=e430] [cursor=pointer]
+          - generic [ref=e432]:
+            - generic [ref=e433]:
+              - generic [ref=e434]:
+                - generic [ref=e435]: PERPLEXITY
+                - generic [ref=e436]: Shopier ürünü
+              - img "Perplexity Pro (1 Aylık Ortak)" [ref=e438]
+              - generic [ref=e439]: Perplexity Pro (1 Aylık Ortak)
+              - generic [ref=e440]: Perplexity Pro (1 Aylık Ortak) — Shopier 3D Secure ödeme. Stok varsa otomatik, stok yoksa @FroxyDestekBOT üzerinden 1–3 iş günü içinde teslim edilir.
+            - generic [ref=e441]:
+              - generic [ref=e442]:
+                - generic [ref=e443]: FİYAT
+                - generic [ref=e444]: 69,99 TL
+              - button "💳 Bakiyeyle Satın Al" [ref=e445] [cursor=pointer]
+          - generic [ref=e447]:
+            - generic [ref=e448]:
+              - generic [ref=e449]:
+                - generic [ref=e450]: GOOGLE GEMINI
+                - generic [ref=e451]: Shopier ürünü
+              - img "Gemini Ultra (1 Aylık 2500 Kredili)" [ref=e453]
+              - generic [ref=e454]: Gemini Ultra (1 Aylık 2500 Kredili)
+              - generic [ref=e455]: Gemini Ultra (1 Aylık 2500 Kredili) — Shopier 3D Secure ödeme. Stok varsa otomatik, stok yoksa @FroxyDestekBOT üzerinden 1–3 iş günü içinde teslim edilir.
+            - generic [ref=e456]:
+              - generic [ref=e457]:
+                - generic [ref=e458]: FİYAT
+                - generic [ref=e459]: 399,00 TL
+              - button "💳 Bakiyeyle Satın Al" [ref=e460] [cursor=pointer]
+          - generic [ref=e462]:
+            - generic [ref=e463]:
+              - generic [ref=e464]:
+                - generic [ref=e465]: GOOGLE GEMINI
+                - generic [ref=e466]: Shopier ürünü
+              - img "Gemini Ultra (1 Aylık Kredisiz)" [ref=e468]
+              - generic [ref=e469]: Gemini Ultra (1 Aylık Kredisiz)
+              - generic [ref=e470]: Gemini Ultra (1 Aylık Kredisiz) — Shopier 3D Secure ödeme. Stok varsa otomatik, stok yoksa @FroxyDestekBOT üzerinden 1–3 iş günü içinde teslim edilir.
+            - generic [ref=e471]:
+              - generic [ref=e472]:
+                - generic [ref=e473]: FİYAT
+                - generic [ref=e474]: 299,00 TL
+              - button "💳 Bakiyeyle Satın Al" [ref=e475] [cursor=pointer]
+          - generic [ref=e477]:
+            - generic [ref=e478]:
+              - generic [ref=e479]:
+                - generic [ref=e480]: OPENAI ÜRÜNÜ
+                - generic [ref=e481]: Shopier ürünü
+              - img "Codex SMS Doğrulama Kodu" [ref=e483]
+              - generic [ref=e484]: Codex SMS Doğrulama Kodu
+              - generic [ref=e485]: Codex SMS Doğrulama Kodu — Shopier 3D Secure ödeme. Stok varsa otomatik, stok yoksa @FroxyDestekBOT üzerinden 1–3 iş günü içinde teslim edilir.
+            - generic [ref=e486]:
+              - generic [ref=e487]:
+                - generic [ref=e488]: FİYAT
+                - generic [ref=e489]: 29,00 TL
+              - button "💳 Bakiyeyle Satın Al" [ref=e490] [cursor=pointer]
+          - generic [ref=e492]:
+            - generic [ref=e493]:
+              - generic [ref=e494]:
+                - generic [ref=e495]: OPENAI ÜRÜNÜ
+                - generic [ref=e496]: Shopier ürünü
+              - img "ChatGPT Plus + Codex (1 Aylık)" [ref=e498]
+              - generic [ref=e499]: ChatGPT Plus + Codex (1 Aylık)
+              - generic [ref=e500]: ChatGPT Plus + Codex (1 Aylık) — Shopier 3D Secure ödeme. Stok varsa otomatik, stok yoksa @FroxyDestekBOT üzerinden 1–3 iş günü içinde teslim edilir.
+            - generic [ref=e501]:
+              - generic [ref=e502]:
+                - generic [ref=e503]: FİYAT
+                - generic [ref=e504]: 599,90 TL
+              - button "💳 Bakiyeyle Satın Al" [ref=e505] [cursor=pointer]
+          - generic [ref=e507]:
+            - generic [ref=e508]:
+              - generic [ref=e509]:
+                - generic [ref=e510]: OPENAI ÜRÜNÜ
+                - generic [ref=e511]: Shopier ürünü
+              - img "ChatGPT Plus (1 Aylık Ortak)" [ref=e513]
+              - generic [ref=e514]: ChatGPT Plus (1 Aylık Ortak)
+              - generic [ref=e515]: ChatGPT Plus (1 Aylık Ortak) — Shopier 3D Secure ödeme. Stok varsa otomatik, stok yoksa @FroxyDestekBOT üzerinden 1–3 iş günü içinde teslim edilir.
+            - generic [ref=e516]:
+              - generic [ref=e517]:
+                - generic [ref=e518]: FİYAT
+                - generic [ref=e519]: 39,99 TL
+              - button "💳 Bakiyeyle Satın Al" [ref=e520] [cursor=pointer]
+          - generic [ref=e522]:
+            - generic [ref=e523]:
+              - generic [ref=e524]:
+                - generic [ref=e525]: OPENAI ÜRÜNÜ
+                - generic [ref=e526]: Shopier ürünü
+              - img "ChatGPT Plus 30 Gün - Kişisel" [ref=e528]
+              - generic [ref=e529]: ChatGPT Plus 30 Gün - Kişisel
+              - generic [ref=e530]: ChatGPT Plus 30 Gün - Kişisel — Shopier 3D Secure ödeme. Stok varsa otomatik, stok yoksa @FroxyDestekBOT üzerinden 1–3 iş günü içinde teslim edilir.
+            - generic [ref=e531]:
+              - generic [ref=e532]:
+                - generic [ref=e533]: FİYAT
+                - generic [ref=e534]: 499,90 TL
+              - button "💳 Bakiyeyle Satın Al" [ref=e535] [cursor=pointer]
+          - generic [ref=e537]:
+            - generic [ref=e538]:
+              - generic [ref=e539]:
+                - generic [ref=e540]: GOOGLE GEMINI
+                - generic [ref=e541]: Shopier ürünü
+              - img "Gemini Pro + Antigravity (18 Aylık)" [ref=e543]
+              - generic [ref=e544]: Gemini Pro + Antigravity (18 Aylık)
+              - generic [ref=e545]: Gemini Pro + Antigravity (18 Aylık) — Shopier 3D Secure ödeme. Stok varsa otomatik, stok yoksa @FroxyDestekBOT üzerinden 1–3 iş günü içinde teslim edilir.
+            - generic [ref=e546]:
+              - generic [ref=e547]:
+                - generic [ref=e548]: FİYAT
+                - generic [ref=e549]: 249,99 TL
+              - button "💳 Bakiyeyle Satın Al" [ref=e550] [cursor=pointer]
+          - generic [ref=e552]:
+            - generic [ref=e553]:
+              - generic [ref=e554]:
+                - generic [ref=e555]: GOOGLE GEMINI
+                - generic [ref=e556]: Shopier ürünü
+              - img "Gemini Pro + Antigravity (12 Aylık)" [ref=e558]
+              - generic [ref=e559]: Gemini Pro + Antigravity (12 Aylık)
+              - generic [ref=e560]: Gemini Pro + Antigravity (12 Aylık) — Shopier 3D Secure ödeme. Stok varsa otomatik, stok yoksa @FroxyDestekBOT üzerinden 1–3 iş günü içinde teslim edilir.
+            - generic [ref=e561]:
+              - generic [ref=e562]:
+                - generic [ref=e563]: FİYAT
+                - generic [ref=e564]: 169,99 TL
+              - button "💳 Bakiyeyle Satın Al" [ref=e565] [cursor=pointer]
+          - generic [ref=e567]:
+            - generic [ref=e568]:
+              - generic [ref=e569]:
+                - generic [ref=e570]: GOOGLE GEMINI
+                - generic [ref=e571]: Shopier ürünü
+              - img "Gemini Pro (18 Aylık Davet)" [ref=e573]
+              - generic [ref=e574]: Gemini Pro (18 Aylık Davet)
+              - generic [ref=e575]: Gemini Pro (18 Aylık Davet) — Shopier 3D Secure ödeme. Stok varsa otomatik, stok yoksa @FroxyDestekBOT üzerinden 1–3 iş günü içinde teslim edilir.
+            - generic [ref=e576]:
+              - generic [ref=e577]:
+                - generic [ref=e578]: FİYAT
+                - generic [ref=e579]: 99,99 TL
+              - button "💳 Bakiyeyle Satın Al" [ref=e580] [cursor=pointer]
+          - generic [ref=e582]:
+            - generic [ref=e583]:
+              - generic [ref=e584]:
+                - generic [ref=e585]: GOOGLE GEMINI
+                - generic [ref=e586]: Shopier ürünü
+              - img "Gemini Pro (12 Aylık Davet)" [ref=e588]
+              - generic [ref=e589]: Gemini Pro (12 Aylık Davet)
+              - generic [ref=e590]: Gemini Pro (12 Aylık Davet) — Shopier 3D Secure ödeme. Stok varsa otomatik, stok yoksa @FroxyDestekBOT üzerinden 1–3 iş günü içinde teslim edilir.
+            - generic [ref=e591]:
+              - generic [ref=e592]:
+                - generic [ref=e593]: FİYAT
+                - generic [ref=e594]: 59,99 TL
+              - button "💳 Bakiyeyle Satın Al" [ref=e595] [cursor=pointer]
+          - generic [ref=e597]:
+            - generic [ref=e598]:
+              - generic [ref=e599]:
+                - generic [ref=e600]: 🪙 1.499.990 AI Kredi
+                - generic [ref=e601]: Gerçek kullanıma göre
+              - img "Kurumsal Paket" [ref=e603]
+              - generic [ref=e604]: Kurumsal Paket
+              - generic [ref=e605]: Kurumsal Paket — ödeme onayından sonra hesabınıza 1.499.990 AI kredisi yüklenir. Kullanım, seçilen model ve gerçek token tüketimine göre hesaplanır.
+            - generic [ref=e606]:
+              - generic [ref=e607]:
+                - generic [ref=e608]: FİYAT
+                - generic [ref=e609]: 1.499,99 TL
+              - button "🪙 AI Kredisi Al" [ref=e610] [cursor=pointer]
+          - generic [ref=e612]:
+            - generic [ref=e613]:
+              - generic [ref=e614]:
+                - generic [ref=e615]: 🪙 799.990 AI Kredi
+                - generic [ref=e616]: Gerçek kullanıma göre
+              - img "İşletme Paketi" [ref=e618]
+              - generic [ref=e619]: İşletme Paketi
+              - generic [ref=e620]: İşletme Paketi — ödeme onayından sonra hesabınıza 799.990 AI kredisi yüklenir. Kullanım, seçilen model ve gerçek token tüketimine göre hesaplanır.
+            - generic [ref=e621]:
+              - generic [ref=e622]:
+                - generic [ref=e623]: FİYAT
+                - generic [ref=e624]: 799,99 TL
+              - button "🪙 AI Kredisi Al" [ref=e625] [cursor=pointer]
+          - generic [ref=e627]:
+            - generic [ref=e628]:
+              - generic [ref=e629]:
+                - generic [ref=e630]: 🪙 599.990 AI Kredi
+                - generic [ref=e631]: Gerçek kullanıma göre
+              - img "Geliştirici Paketi" [ref=e633]
+              - generic [ref=e634]: Geliştirici Paketi
+              - generic [ref=e635]: Geliştirici Paketi — ödeme onayından sonra hesabınıza 599.990 AI kredisi yüklenir. Kullanım, seçilen model ve gerçek token tüketimine göre hesaplanır.
+            - generic [ref=e636]:
+              - generic [ref=e637]:
+                - generic [ref=e638]: FİYAT
+                - generic [ref=e639]: 599,99 TL
+              - button "🪙 AI Kredisi Al" [ref=e640] [cursor=pointer]
+          - generic [ref=e642]:
+            - generic [ref=e643]:
+              - generic [ref=e644]:
+                - generic [ref=e645]: 🪙 449.990 AI Kredi
+                - generic [ref=e646]: Gerçek kullanıma göre
+              - img "Profesyonel Paket" [ref=e648]
+              - generic [ref=e649]: Profesyonel Paket
+              - generic [ref=e650]: Profesyonel Paket — ödeme onayından sonra hesabınıza 449.990 AI kredisi yüklenir. Kullanım, seçilen model ve gerçek token tüketimine göre hesaplanır.
+            - generic [ref=e651]:
+              - generic [ref=e652]:
+                - generic [ref=e653]: FİYAT
+                - generic [ref=e654]: 449,99 TL
+              - button "🪙 AI Kredisi Al" [ref=e655] [cursor=pointer]
+          - generic [ref=e657]:
+            - generic [ref=e658]:
+              - generic [ref=e659]:
+                - generic [ref=e660]: 🪙 249.990 AI Kredi
+                - generic [ref=e661]: Gerçek kullanıma göre
+              - img "Popüler Paket" [ref=e663]
+              - generic [ref=e664]: Popüler Paket
+              - generic [ref=e665]: Popüler Paket — ödeme onayından sonra hesabınıza 249.990 AI kredisi yüklenir. Kullanım, seçilen model ve gerçek token tüketimine göre hesaplanır.
+            - generic [ref=e666]:
+              - generic [ref=e667]:
+                - generic [ref=e668]: FİYAT
+                - generic [ref=e669]: 249,99 TL
+              - button "🪙 AI Kredisi Al" [ref=e670] [cursor=pointer]
+          - generic [ref=e672]:
+            - generic [ref=e673]:
+              - generic [ref=e674]:
+                - generic [ref=e675]: 🪙 129.990 AI Kredi
+                - generic [ref=e676]: Gerçek kullanıma göre
+              - img "Başlangıç Paketi" [ref=e678]
+              - generic [ref=e679]: Başlangıç Paketi
+              - generic [ref=e680]: Başlangıç Paketi — ödeme onayından sonra hesabınıza 129.990 AI kredisi yüklenir. Kullanım, seçilen model ve gerçek token tüketimine göre hesaplanır.
+            - generic [ref=e681]:
+              - generic [ref=e682]:
+                - generic [ref=e683]: FİYAT
+                - generic [ref=e684]: 129,99 TL
+              - button "🪙 AI Kredisi Al" [ref=e685] [cursor=pointer]
+    - navigation "Ana gezinme" [ref=e117]:
+      - button "AI" [ref=e118] [cursor=pointer]
+      - button "Görsel" [ref=e123] [cursor=pointer]
+      - button "Mağaza" [active] [ref=e130] [cursor=pointer]
+      - button "Hesap" [ref=e136] [cursor=pointer]
+  - generic:
+    - generic: ✓
+    - generic: Froxy Hızlı modeline geçildi!

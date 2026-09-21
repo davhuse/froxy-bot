@@ -29,8 +29,8 @@ USERS_FILE = os.path.join(DATA_DIR, "users.json")
 # ─── Brand & Links ───
 CHANNEL_USERNAME = "JarvisCraftDuyuru"
 CHANNEL_URL = "https://t.me/JarvisCraftDuyuru"
-SUPPORT_USERNAME = "JarvisCraft"
-SUPPORT_URL = "https://t.me/JarvisCraft"
+SUPPORT_USERNAME = "Geliştirici (ID: 32186)"
+SUPPORT_URL = "tg://user?id=32186"
 SHOPIER_URL = "https://www.shopier.com/JarvisStore"
 APP_URL = "https://bot-service-production-9d74.up.railway.app/jarvis/app"
 
@@ -167,25 +167,38 @@ async def start_handler(event):
         }
         save_data(users)
 
-    # 1. Check Channel Subscription (Gatekeeper)
-    is_subbed = await is_user_subscribed(sender.id)
-    if not is_subbed:
-        gate_msg = (
-            f"          ⚡ **JARVISCRAFT'A HOŞ GELDİNİZ** ⚡\n"
-            f"{LINE}\n\n"
-            f"Merhaba **{sender.first_name or 'Değerli Kullanıcı'}**,\n\n"
-            f"JarvisCraft bot ve yazılım ekosistemini kullanabilmek için\n"
-            f"resmi **Duyuru & Güncelleme Kanalımıza** katılmanız gerekmektedir.\n\n"
-            f"📢 **Kanalımızda Neler Var?**\n"
-            f"{DOT}  Satışa sunulan bot ve scriptlerin video demoları\n"
-            f"{DOT}  Açık kaynak Python kodları ve hazır kütüphaneler\n"
-            f"{DOT}  Özel indirim kuponları ve VIP çekilişler\n"
-            f"{DOT}  API ve sistem güncellemeleri\n\n"
-            f"{LINE}\n"
-            f"👇  Aşağıdaki butondan kanala katılın ve ardından **Doğrula**'ya tıklayın:"
-        )
-        await event.respond(gate_msg, buttons=get_gatekeeper_menu())
-        return
+    # 1. Her zaman Gatekeeper mesajini goster
+    gate_msg = (
+        f"          ⚡ **JARVISCRAFT\'A HOŞ GELDİNİZ** ⚡
+"
+        f"{LINE}
+
+"
+        f"Merhaba **{sender.first_name or \'Değerli Kullanıcı\'}**,
+
+"
+        f"JarvisCraft bot ve yazılım ekosistemini kullanabilmek için
+"
+        f"resmi **Duyuru & Güncelleme Kanalımıza** katılmanız gerekmektedir.
+
+"
+        f"📢 **Kanalımızda Neler Var?**
+"
+        f"{DOT}  Satışa sunulan bot ve scriptlerin video demoları
+"
+        f"{DOT}  Açık kaynak Python kodları ve hazır kütüphaneler
+"
+        f"{DOT}  Özel indirim kuponları ve VIP çekilişler
+"
+        f"{DOT}  API ve sistem güncellemeleri
+
+"
+        f"{LINE}
+"
+        f"👇  Aşağıdaki butondan kanala katılın ve ardından **Doğrula**\'ya tıklayın:"
+    )
+    await event.respond(gate_msg, buttons=get_gatekeeper_menu())
+    return
 
     name = sender.first_name or "Kullanıcı"
     welcome = (

@@ -1,0 +1,55 @@
+- generic [ref=f2e3]:
+  - banner [ref=f2e4]:
+    - button "Froxy Froxy Froxy Akıllı" [ref=f2e89] [cursor=pointer]:
+      - img "Froxy" [ref=f2e6]
+      - generic [ref=f2e7]:
+        - generic [ref=f2e8]: Froxy
+        - generic [ref=f2e9]: Froxy Akıllı
+    - button "₺0,00" [ref=f2e10] [cursor=pointer]
+  - main [ref=f2e14]:
+    - generic [ref=f2e92]:
+      - generic [ref=f2e93]:
+        - generic [ref=f2e94]:
+          - paragraph [ref=f2e95]: FROXY CREATIVE
+          - heading "Medya Stüdyosu" [level=1] [ref=f2e96]
+          - paragraph [ref=f2e97]: Üretim türünü seç, ayarları sade bir akışta tamamla.
+        - generic [ref=f2e98]: 1 ücretsiz üretim
+      - generic [ref=f2e99]:
+        - button "Üret" [ref=f2e100] [cursor=pointer]
+        - button "Düzenle" [ref=f2e101] [cursor=pointer]
+        - button "Varyasyon" [ref=f2e102] [cursor=pointer]
+        - button "Upscale" [ref=f2e103] [cursor=pointer]
+        - button "Arka plan" [ref=f2e104] [cursor=pointer]
+        - button "Video" [ref=f2e105] [cursor=pointer]
+        - button "Ses" [ref=f2e106] [cursor=pointer]
+      - generic [ref=f2e107]:
+        - generic [ref=f2e108]:
+          - generic [ref=f2e109]: Üretim modeli
+          - button "Black Forest Labs Runware Runware FLUX" [ref=f2e110] [cursor=pointer]:
+            - img "Black Forest Labs" [ref=f2e112]
+            - generic [ref=f2e113]:
+              - generic [ref=f2e114]: Runware
+              - generic [ref=f2e115]: Runware FLUX
+          - generic [ref=f2e118]: İstem
+          - textbox "Sahneyi, ışığı, kompozisyonu ve stili anlat…" [ref=f2e119]
+          - generic [ref=f2e120]:
+            - generic [ref=f2e121]: Oran
+            - generic [ref=f2e122]: 1:1
+          - generic [ref=f2e123]:
+            - button "1:1" [ref=f2e124] [cursor=pointer]
+            - button "4:5" [ref=f2e125] [cursor=pointer]
+            - button "9:16" [ref=f2e126] [cursor=pointer]
+            - button "16:9" [ref=f2e127] [cursor=pointer]
+          - button "Görseli üret" [ref=f2e128] [cursor=pointer]
+        - generic [ref=f2e129]:
+          - generic [ref=f2e130]:
+            - generic [ref=f2e131]: Önizleme
+            - emphasis [ref=f2e132]: Hazır
+          - generic [ref=f2e133]:
+            - generic [ref=f2e136]: Yeni bir şey üret
+            - generic [ref=f2e137]: Modeli seç, fikrini anlat ve sonucu burada gör.
+  - navigation [ref=f2e72]:
+    - button "AI" [ref=f2e73] [cursor=pointer]
+    - button "Stüdyo" [active] [ref=f2e77] [cursor=pointer]
+    - button "Mağaza" [ref=f2e81] [cursor=pointer]
+    - button "Hesap" [ref=f2e85] [cursor=pointer]

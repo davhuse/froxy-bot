@@ -1,0 +1,94 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - generic [ref=e5]:
+      - img "Froxy AI Logo" [ref=e7]
+      - generic [ref=e9]:
+        - generic [ref=e10]: FROXY.AI
+        - generic [ref=e11]: ⚡ Modeller doğrulanıyor
+    - generic [ref=e12]:
+      - generic [ref=e13] [cursor=pointer]:
+        - generic [ref=e14]: 💳
+        - generic [ref=e15]: ₺0.00
+        - generic [ref=e16]: +
+      - generic "AI Kredisi" [ref=e17] [cursor=pointer]:
+        - generic [ref=e18]: 🪙
+        - generic [ref=e19]: "0"
+      - button "Günlük 3 sohbet · 1 görsel" [ref=e20] [cursor=pointer]:
+        - generic [ref=e21]: Günlük
+        - generic [ref=e22]: 3 sohbet · 1 görsel
+  - generic [ref=e24]:
+    - generic [ref=e25]:
+      - text: "Doğrulanmış katalog:"
+      - generic [ref=e27]: Yükleniyor
+    - generic [ref=e28]:
+      - text: "Froxy ücretsiz hak:"
+      - generic [ref=e30]: 3 mesaj + 1 görsel
+  - main [ref=e31]:
+    - generic [ref=e32]:
+      - generic [ref=e33]:
+        - button "Sohbet geçmişini aç" [ref=e34] [cursor=pointer]:
+          - generic [ref=e35]: ◷
+          - generic [ref=e36]: Geçmiş
+          - generic [ref=e37]: "0"
+        - button "Yeni sohbet başlat" [ref=e38] [cursor=pointer]:
+          - generic [ref=e39]: ＋
+          - generic [ref=e40]: Yeni sohbet
+      - button "🤖 Seçili AI Modeli Modeller doğrulanıyor…" [ref=e42] [cursor=pointer]:
+        - generic [ref=e43]:
+          - generic [ref=e44]: 🤖
+          - generic [ref=e45]:
+            - generic [ref=e46]: Seçili AI Modeli
+            - generic [ref=e47]: Modeller doğrulanıyor…
+      - generic [ref=e51]:
+        - img "Froxy AI" [ref=e53]
+        - heading "Froxy AI Asistanına Hoş Geldin! 👋" [level=2] [ref=e54]
+        - paragraph [ref=e55]: Ben senin çok modlu Türkçe yapay zeka asistanınım. Kod yazabilir, metin üretebilir, pazar analizi yapabilir veya dilediğin soruyu yanıtlayabilirim.
+        - generic [ref=e56]:
+          - button "✍️ Satış & Reklam Metni" [ref=e57] [cursor=pointer]:
+            - generic [ref=e58]: ✍️
+            - generic [ref=e59]: Satış & Reklam Metni
+          - button "💻 Full-Stack Kodlama" [ref=e60] [cursor=pointer]:
+            - generic [ref=e61]: 💻
+            - generic [ref=e62]: Full-Stack Kodlama
+          - button "💡 AI İş Fikirleri" [ref=e63] [cursor=pointer]:
+            - generic [ref=e64]: 💡
+            - generic [ref=e65]: AI İş Fikirleri
+          - button "🔍 SEO Optimizasyonu" [ref=e66] [cursor=pointer]:
+            - generic [ref=e67]: 🔍
+            - generic [ref=e68]: SEO Optimizasyonu
+        - generic [ref=e69]:
+          - generic [ref=e70]:
+            - generic [ref=e71]:
+              - text: AI ARAÇLARI
+              - heading "Bir sonraki işi seç" [level=3] [ref=e72]
+            - generic [ref=e73]: 4 araç
+          - generic [ref=e74]:
+            - button "✍️ Satış metni Reklam ve ürün açıklaması" [ref=e75] [cursor=pointer]:
+              - generic [ref=e76]: ✍️
+              - generic [ref=e77]: Satış metni
+              - generic [ref=e78]: Reklam ve ürün açıklaması
+            - button "💻 Kod yardımcısı Debug ve geliştirme" [ref=e79] [cursor=pointer]:
+              - generic [ref=e80]: 💻
+              - generic [ref=e81]: Kod yardımcısı
+              - generic [ref=e82]: Debug ve geliştirme
+            - button "🔍 SEO planı Başlık ve içerik fikirleri" [ref=e83] [cursor=pointer]:
+              - generic [ref=e84]: 🔍
+              - generic [ref=e85]: SEO planı
+              - generic [ref=e86]: Başlık ve içerik fikirleri
+            - button "📊 Analiz Pazar ve finans özeti" [ref=e87] [cursor=pointer]:
+              - generic [ref=e88]: 📊
+              - generic [ref=e89]: Analiz
+              - generic [ref=e90]: Pazar ve finans özeti
+      - generic [ref=e91]:
+        - generic [ref=e92]:
+          - button "Canlı Web" [ref=e93] [cursor=pointer]
+          - button "Derin Akıl" [ref=e98] [cursor=pointer]
+          - button "Temizle" [ref=e105] [cursor=pointer]
+        - generic [ref=e110]:
+          - textbox "Froxy'ye dilediğini sor veya bir görev ver..." [ref=e111]
+          - button "Gönder" [ref=e112] [cursor=pointer]
+  - navigation "Ana gezinme" [ref=e116]:
+    - button "AI" [ref=e117] [cursor=pointer]
+    - button "Görsel" [ref=e122] [cursor=pointer]
+    - button "Mağaza" [ref=e129] [cursor=pointer]
+    - button "Hesap" [ref=e135] [cursor=pointer]

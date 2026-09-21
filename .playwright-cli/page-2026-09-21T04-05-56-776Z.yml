@@ -1,0 +1,137 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - button "Froxy Froxy Froxy Akıllı" [ref=e90] [cursor=pointer]:
+      - img "Froxy" [ref=e6]
+      - generic [ref=e7]:
+        - generic [ref=e8]: Froxy
+        - generic [ref=e9]: Froxy Akıllı
+    - button "₺0,00" [ref=e91] [cursor=pointer]
+  - main [ref=e15]:
+    - generic [ref=e16]:
+      - generic [ref=e17]:
+        - button "FR Model Froxy Akıllı" [ref=e92] [cursor=pointer]:
+          - generic [ref=e19]: FR
+          - generic [ref=e21]:
+            - generic [ref=e22]: Model
+            - generic [ref=e23]: Froxy Akıllı
+        - button "Yeni sohbet" [ref=e26] [cursor=pointer]
+      - generic [ref=e29]:
+        - button "Genel" [ref=e30] [cursor=pointer]
+        - button "Araştırma" [ref=e31] [cursor=pointer]
+        - button "Kod" [ref=e32] [cursor=pointer]
+        - button "Plan" [ref=e33] [cursor=pointer]
+      - generic [ref=e35]:
+        - paragraph [ref=e37]: FROXY AI WORKSPACE
+        - heading "Ne üzerinde çalışıyoruz?" [level=1] [ref=e38]
+        - paragraph [ref=e39]: Model seç, bir çalışma modu belirle ve doğal şekilde anlat.
+        - generic [ref=e40]:
+          - button "Bir konuyu güncel kaynaklarla araştır" [ref=e41] [cursor=pointer]
+          - button "Bu kodu analiz et ve iyileştir" [ref=e45] [cursor=pointer]
+          - button "Fikrim için uygulanabilir plan hazırla" [ref=e49] [cursor=pointer]
+          - button "Karmaşık bir şeyi sade anlat" [ref=e53] [cursor=pointer]
+      - generic [ref=e57]:
+        - generic [ref=e58]:
+          - generic [ref=e59]: Genel asistan
+          - button "Akıllı" [ref=e61] [cursor=pointer]
+        - generic [ref=e65]:
+          - button [ref=e66] [cursor=pointer]
+          - textbox "Froxy'ye mesaj yaz…" [ref=e69]
+          - button [disabled] [ref=e70] [cursor=pointer]
+  - navigation [ref=e73]:
+    - button "AI" [ref=e74] [cursor=pointer]
+    - button "Stüdyo" [ref=e78] [cursor=pointer]
+    - button "Mağaza" [ref=e82] [cursor=pointer]
+    - button "Hesap" [ref=e86] [cursor=pointer]
+  - generic [ref=e113]:
+    - generic [ref=e114]:
+      - generic [ref=e115]:
+        - paragraph [ref=e116]: MODEL KÜTÜPHANESİ
+        - heading "Ne yapmak istiyorsun?" [level=2] [ref=e117]
+        - paragraph [ref=e118]: Önce kullanım alanını seç, sonra modeli karşılaştır.
+      - button [ref=e119]
+    - textbox "Model, aile veya geliştirici ara" [active] [ref=e125]
+    - generic [ref=e126]:
+      - button "Önerilen" [ref=e127] [cursor=pointer]
+      - button "En iyi" [ref=e128] [cursor=pointer]
+      - button "Kodlama" [ref=e129] [cursor=pointer]
+      - button "Araştırma" [ref=e130] [cursor=pointer]
+      - button "Görsel anlayan" [ref=e131] [cursor=pointer]
+      - button "Hızlı" [ref=e132] [cursor=pointer]
+      - button "Ücretsiz" [ref=e133] [cursor=pointer]
+      - button "Tümü" [ref=e134] [cursor=pointer]
+    - generic [ref=e135]:
+      - generic [ref=e136]: Önerilen
+      - generic [ref=e137]: 8 model gösteriliyor
+    - generic [ref=e138]:
+      - button "FR Froxy Akıllı Froxy Modelleri via Froxy Modelleri 1 kredi / 1K token Seçili" [ref=e139] [cursor=pointer]:
+        - generic [ref=e140]: FR
+        - generic [ref=e142]:
+          - generic [ref=e143]: Froxy Akıllı
+          - generic [ref=e144]:
+            - text: Froxy Modelleri
+            - generic [ref=e145]: via Froxy Modelleri
+          - emphasis [ref=e146]: 1 kredi / 1K token
+        - generic [ref=e147]: Seçili
+      - button "FR Froxy Hızlı Froxy Modelleri via Froxy Modelleri 1 kredi / 1K token Hazır" [ref=e148] [cursor=pointer]:
+        - generic [ref=e149]: FR
+        - generic [ref=e151]:
+          - generic [ref=e152]: Froxy Hızlı
+          - generic [ref=e153]:
+            - text: Froxy Modelleri
+            - generic [ref=e154]: via Froxy Modelleri
+          - emphasis [ref=e155]: 1 kredi / 1K token
+        - generic [ref=e156]: Hazır
+      - button "OpenAI GPT OSS 20B GPT via Groq 14 kredi / 1K token Hazır" [ref=e157] [cursor=pointer]:
+        - img "OpenAI" [ref=e159]
+        - generic [ref=e161]:
+          - generic [ref=e162]: GPT OSS 20B
+          - generic [ref=e163]:
+            - text: GPT
+            - generic [ref=e164]: via Groq
+          - emphasis [ref=e165]: 14 kredi / 1K token
+        - generic [ref=e166]: Hazır
+      - button "OpenAI GPT OSS 120B GPT via Groq 28 kredi / 1K token Hazır" [ref=e167] [cursor=pointer]:
+        - img "OpenAI" [ref=e169]
+        - generic [ref=e171]:
+          - generic [ref=e172]: GPT OSS 120B
+          - generic [ref=e173]:
+            - text: GPT
+            - generic [ref=e174]: via Groq
+          - emphasis [ref=e175]: 28 kredi / 1K token
+        - generic [ref=e176]: Hazır
+      - button "QWen Qwen/Qwen3.8-27B Qwen via Groq 175 kredi / 1K token Hazır" [ref=e177] [cursor=pointer]:
+        - img "QWen" [ref=e179]
+        - generic [ref=e181]:
+          - generic [ref=e182]: Qwen/Qwen3.8-27B
+          - generic [ref=e183]:
+            - text: Qwen
+            - generic [ref=e184]: via Groq
+          - emphasis [ref=e185]: 175 kredi / 1K token
+        - generic [ref=e186]: Hazır
+      - button "OpenAI gpt-5.6-luna GPT via FreeModel 756 kredi / 1K token Hazır" [ref=e187] [cursor=pointer]:
+        - img "OpenAI" [ref=e189]
+        - generic [ref=e191]:
+          - generic [ref=e192]: gpt-5.6-luna
+          - generic [ref=e193]:
+            - text: GPT
+            - generic [ref=e194]: via FreeModel
+          - emphasis [ref=e195]: 756 kredi / 1K token
+        - generic [ref=e196]: Hazır
+      - button "OpenAI gpt-5.6-sol GPT via FreeModel 756 kredi / 1K token Hazır" [ref=e197] [cursor=pointer]:
+        - img "OpenAI" [ref=e199]
+        - generic [ref=e201]:
+          - generic [ref=e202]: gpt-5.6-sol
+          - generic [ref=e203]:
+            - text: GPT
+            - generic [ref=e204]: via FreeModel
+          - emphasis [ref=e205]: 756 kredi / 1K token
+        - generic [ref=e206]: Hazır
+      - button "OpenAI gpt-5.6-terra GPT via FreeModel 756 kredi / 1K token Hazır" [ref=e207] [cursor=pointer]:
+        - img "OpenAI" [ref=e209]
+        - generic [ref=e211]:
+          - generic [ref=e212]: gpt-5.6-terra
+          - generic [ref=e213]:
+            - text: GPT
+            - generic [ref=e214]: via FreeModel
+          - emphasis [ref=e215]: 756 kredi / 1K token
+        - generic [ref=e216]: Hazır

@@ -1,0 +1,245 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - button "Froxy Froxy Froxy Akıllı" [ref=e90] [cursor=pointer]:
+      - img "Froxy" [ref=e6]
+      - generic [ref=e7]:
+        - generic [ref=e8]: Froxy
+        - generic [ref=e9]: Froxy Akıllı
+    - button "₺0,00" [ref=e95] [cursor=pointer]
+  - main [ref=e15]:
+    - generic [ref=e96]:
+      - generic [ref=e97]:
+        - generic [ref=e98]:
+          - paragraph [ref=e99]: FROXY MARKET
+          - heading "Dijital araçlarını tek yerden yönet." [level=1] [ref=e100]
+          - paragraph [ref=e101]: Net teslimat bilgisi, güvenli ödeme ve sade satın alma deneyimi.
+        - generic [ref=e102]:
+          - generic [ref=e103]: Kullanılabilir bakiye
+          - generic [ref=e104]: ₺0,00
+          - generic [ref=e105]: Shopier 3D Secure
+      - generic [ref=e106]:
+        - textbox "Ürün ara" [ref=e110]
+        - generic [ref=e111]:
+          - button "Tümü" [ref=e112] [cursor=pointer]
+          - button "OpenAI" [ref=e113] [cursor=pointer]
+          - button "Gemini" [ref=e114] [cursor=pointer]
+          - button "Perplexity" [ref=e115] [cursor=pointer]
+          - button "Kredi" [ref=e116] [cursor=pointer]
+      - generic [ref=e117]:
+        - article [ref=e118]:
+          - button "Gemini Pro (18 Aylık İndirim Bağlantısı) GOOGLE GEMINI" [active] [ref=e119] [cursor=pointer]:
+            - generic [ref=e120]:
+              - img "Gemini Pro (18 Aylık İndirim Bağlantısı)" [ref=e121]
+              - generic [ref=e122]: GOOGLE GEMINI
+          - generic [ref=e123]:
+            - generic [ref=e124]: Stoktan otomatik veya 1–3 iş günü manuel
+            - heading "Gemini Pro (18 Aylık İndirim Bağlantısı)" [level=3] [ref=e125]
+            - generic [ref=e126]:
+              - generic [ref=e127]: ₺199,90
+              - button "Sepete ekle" [ref=e128] [cursor=pointer]
+        - article [ref=e131]:
+          - button "Perplexity Pro (1 Aylık Ortak) PERPLEXITY" [ref=e132] [cursor=pointer]:
+            - generic [ref=e133]:
+              - img "Perplexity Pro (1 Aylık Ortak)" [ref=e134]
+              - generic [ref=e135]: PERPLEXITY
+          - generic [ref=e136]:
+            - generic [ref=e137]: Stoktan otomatik veya 1–3 iş günü manuel
+            - heading "Perplexity Pro (1 Aylık Ortak)" [level=3] [ref=e138]
+            - generic [ref=e139]:
+              - generic [ref=e140]: ₺69,99
+              - button "Sepete ekle" [ref=e141] [cursor=pointer]
+        - article [ref=e144]:
+          - button "Gemini Ultra (1 Aylık 2500 Kredili) GOOGLE GEMINI" [ref=e145] [cursor=pointer]:
+            - generic [ref=e146]:
+              - img "Gemini Ultra (1 Aylık 2500 Kredili)" [ref=e147]
+              - generic [ref=e148]: GOOGLE GEMINI
+          - generic [ref=e149]:
+            - generic [ref=e150]: Stoktan otomatik veya 1–3 iş günü manuel
+            - heading "Gemini Ultra (1 Aylık 2500 Kredili)" [level=3] [ref=e151]
+            - generic [ref=e152]:
+              - generic [ref=e153]: ₺399,00
+              - button "Sepete ekle" [ref=e154] [cursor=pointer]
+        - article [ref=e157]:
+          - button "Gemini Ultra (1 Aylık Kredisiz) GOOGLE GEMINI" [ref=e158] [cursor=pointer]:
+            - generic [ref=e159]:
+              - img "Gemini Ultra (1 Aylık Kredisiz)" [ref=e160]
+              - generic [ref=e161]: GOOGLE GEMINI
+          - generic [ref=e162]:
+            - generic [ref=e163]: Stoktan otomatik veya 1–3 iş günü manuel
+            - heading "Gemini Ultra (1 Aylık Kredisiz)" [level=3] [ref=e164]
+            - generic [ref=e165]:
+              - generic [ref=e166]: ₺299,00
+              - button "Sepete ekle" [ref=e167] [cursor=pointer]
+        - article [ref=e170]:
+          - button "Codex SMS Doğrulama Kodu OPENAI ÜRÜNÜ" [ref=e171] [cursor=pointer]:
+            - generic [ref=e172]:
+              - img "Codex SMS Doğrulama Kodu" [ref=e173]
+              - generic [ref=e174]: OPENAI ÜRÜNÜ
+          - generic [ref=e175]:
+            - generic [ref=e176]: Stoktan otomatik veya 1–3 iş günü manuel
+            - heading "Codex SMS Doğrulama Kodu" [level=3] [ref=e177]
+            - generic [ref=e178]:
+              - generic [ref=e179]: ₺29,00
+              - button "Sepete ekle" [ref=e180] [cursor=pointer]
+        - article [ref=e183]:
+          - button "ChatGPT Plus + Codex (1 Aylık) OPENAI ÜRÜNÜ" [ref=e184] [cursor=pointer]:
+            - generic [ref=e185]:
+              - img "ChatGPT Plus + Codex (1 Aylık)" [ref=e186]
+              - generic [ref=e187]: OPENAI ÜRÜNÜ
+          - generic [ref=e188]:
+            - generic [ref=e189]: Stoktan otomatik veya 1–3 iş günü manuel
+            - heading "ChatGPT Plus + Codex (1 Aylık)" [level=3] [ref=e190]
+            - generic [ref=e191]:
+              - generic [ref=e192]: ₺599,90
+              - button "Sepete ekle" [ref=e193] [cursor=pointer]
+        - article [ref=e196]:
+          - button "ChatGPT Plus (1 Aylık Ortak) OPENAI ÜRÜNÜ" [ref=e197] [cursor=pointer]:
+            - generic [ref=e198]:
+              - img "ChatGPT Plus (1 Aylık Ortak)" [ref=e199]
+              - generic [ref=e200]: OPENAI ÜRÜNÜ
+          - generic [ref=e201]:
+            - generic [ref=e202]: Stoktan otomatik veya 1–3 iş günü manuel
+            - heading "ChatGPT Plus (1 Aylık Ortak)" [level=3] [ref=e203]
+            - generic [ref=e204]:
+              - generic [ref=e205]: ₺39,99
+              - button "Sepete ekle" [ref=e206] [cursor=pointer]
+        - article [ref=e209]:
+          - button "ChatGPT Plus 30 Gün - Kişisel OPENAI ÜRÜNÜ" [ref=e210] [cursor=pointer]:
+            - generic [ref=e211]:
+              - img "ChatGPT Plus 30 Gün - Kişisel" [ref=e212]
+              - generic [ref=e213]: OPENAI ÜRÜNÜ
+          - generic [ref=e214]:
+            - generic [ref=e215]: Stoktan otomatik veya 1–3 iş günü manuel
+            - heading "ChatGPT Plus 30 Gün - Kişisel" [level=3] [ref=e216]
+            - generic [ref=e217]:
+              - generic [ref=e218]: ₺499,90
+              - button "Sepete ekle" [ref=e219] [cursor=pointer]
+        - article [ref=e222]:
+          - button "Gemini Pro + Antigravity (18 Aylık) GOOGLE GEMINI" [ref=e223] [cursor=pointer]:
+            - generic [ref=e224]:
+              - img "Gemini Pro + Antigravity (18 Aylık)" [ref=e225]
+              - generic [ref=e226]: GOOGLE GEMINI
+          - generic [ref=e227]:
+            - generic [ref=e228]: Stoktan otomatik veya 1–3 iş günü manuel
+            - heading "Gemini Pro + Antigravity (18 Aylık)" [level=3] [ref=e229]
+            - generic [ref=e230]:
+              - generic [ref=e231]: ₺249,99
+              - button "Sepete ekle" [ref=e232] [cursor=pointer]
+        - article [ref=e235]:
+          - button "Gemini Pro + Antigravity (12 Aylık) GOOGLE GEMINI" [ref=e236] [cursor=pointer]:
+            - generic [ref=e237]:
+              - img "Gemini Pro + Antigravity (12 Aylık)" [ref=e238]
+              - generic [ref=e239]: GOOGLE GEMINI
+          - generic [ref=e240]:
+            - generic [ref=e241]: Stoktan otomatik veya 1–3 iş günü manuel
+            - heading "Gemini Pro + Antigravity (12 Aylık)" [level=3] [ref=e242]
+            - generic [ref=e243]:
+              - generic [ref=e244]: ₺169,99
+              - button "Sepete ekle" [ref=e245] [cursor=pointer]
+        - article [ref=e248]:
+          - button "Gemini Pro (18 Aylık Davet) GOOGLE GEMINI" [ref=e249] [cursor=pointer]:
+            - generic [ref=e250]:
+              - img "Gemini Pro (18 Aylık Davet)" [ref=e251]
+              - generic [ref=e252]: GOOGLE GEMINI
+          - generic [ref=e253]:
+            - generic [ref=e254]: Stoktan otomatik veya 1–3 iş günü manuel
+            - heading "Gemini Pro (18 Aylık Davet)" [level=3] [ref=e255]
+            - generic [ref=e256]:
+              - generic [ref=e257]: ₺99,99
+              - button "Sepete ekle" [ref=e258] [cursor=pointer]
+        - article [ref=e261]:
+          - button "Gemini Pro (12 Aylık Davet) GOOGLE GEMINI" [ref=e262] [cursor=pointer]:
+            - generic [ref=e263]:
+              - img "Gemini Pro (12 Aylık Davet)" [ref=e264]
+              - generic [ref=e265]: GOOGLE GEMINI
+          - generic [ref=e266]:
+            - generic [ref=e267]: Stoktan otomatik veya 1–3 iş günü manuel
+            - heading "Gemini Pro (12 Aylık Davet)" [level=3] [ref=e268]
+            - generic [ref=e269]:
+              - generic [ref=e270]: ₺59,99
+              - button "Sepete ekle" [ref=e271] [cursor=pointer]
+        - article [ref=e274]:
+          - button "Kurumsal Paket 🪙 1.499.990 AI Kredi" [ref=e275] [cursor=pointer]:
+            - generic [ref=e276]:
+              - img "Kurumsal Paket" [ref=e277]
+              - generic [ref=e278]: 🪙 1.499.990 AI Kredi
+          - generic [ref=e279]:
+            - generic [ref=e280]: ⚡ Ödeme sonrası anında AI kredisi
+            - heading "Kurumsal Paket" [level=3] [ref=e281]
+            - generic [ref=e282]:
+              - generic [ref=e283]: ₺1.499,99
+              - button "Sepete ekle" [ref=e284] [cursor=pointer]
+        - article [ref=e287]:
+          - button "İşletme Paketi 🪙 799.990 AI Kredi" [ref=e288] [cursor=pointer]:
+            - generic [ref=e289]:
+              - img "İşletme Paketi" [ref=e290]
+              - generic [ref=e291]: 🪙 799.990 AI Kredi
+          - generic [ref=e292]:
+            - generic [ref=e293]: ⚡ Ödeme sonrası anında AI kredisi
+            - heading "İşletme Paketi" [level=3] [ref=e294]
+            - generic [ref=e295]:
+              - generic [ref=e296]: ₺799,99
+              - button "Sepete ekle" [ref=e297] [cursor=pointer]
+        - article [ref=e300]:
+          - button "Geliştirici Paketi 🪙 599.990 AI Kredi" [ref=e301] [cursor=pointer]:
+            - generic [ref=e302]:
+              - img "Geliştirici Paketi" [ref=e303]
+              - generic [ref=e304]: 🪙 599.990 AI Kredi
+          - generic [ref=e305]:
+            - generic [ref=e306]: ⚡ Ödeme sonrası anında AI kredisi
+            - heading "Geliştirici Paketi" [level=3] [ref=e307]
+            - generic [ref=e308]:
+              - generic [ref=e309]: ₺599,99
+              - button "Sepete ekle" [ref=e310] [cursor=pointer]
+        - article [ref=e313]:
+          - button "Profesyonel Paket 🪙 449.990 AI Kredi" [ref=e314] [cursor=pointer]:
+            - generic [ref=e315]:
+              - img "Profesyonel Paket" [ref=e316]
+              - generic [ref=e317]: 🪙 449.990 AI Kredi
+          - generic [ref=e318]:
+            - generic [ref=e319]: ⚡ Ödeme sonrası anında AI kredisi
+            - heading "Profesyonel Paket" [level=3] [ref=e320]
+            - generic [ref=e321]:
+              - generic [ref=e322]: ₺449,99
+              - button "Sepete ekle" [ref=e323] [cursor=pointer]
+        - article [ref=e326]:
+          - button "Popüler Paket 🪙 249.990 AI Kredi" [ref=e327] [cursor=pointer]:
+            - generic [ref=e328]:
+              - img "Popüler Paket" [ref=e329]
+              - generic [ref=e330]: 🪙 249.990 AI Kredi
+          - generic [ref=e331]:
+            - generic [ref=e332]: ⚡ Ödeme sonrası anında AI kredisi
+            - heading "Popüler Paket" [level=3] [ref=e333]
+            - generic [ref=e334]:
+              - generic [ref=e335]: ₺249,99
+              - button "Sepete ekle" [ref=e336] [cursor=pointer]
+        - article [ref=e339]:
+          - button "Başlangıç Paketi 🪙 129.990 AI Kredi" [ref=e340] [cursor=pointer]:
+            - generic [ref=e341]:
+              - img "Başlangıç Paketi" [ref=e342]
+              - generic [ref=e343]: 🪙 129.990 AI Kredi
+          - generic [ref=e344]:
+            - generic [ref=e345]: ⚡ Ödeme sonrası anında AI kredisi
+            - heading "Başlangıç Paketi" [level=3] [ref=e346]
+            - generic [ref=e347]:
+              - generic [ref=e348]: ₺129,99
+              - button "Sepete ekle" [ref=e349] [cursor=pointer]
+      - generic [ref=e353]:
+        - generic [ref=e354]:
+          - generic [ref=e355]:
+            - paragraph [ref=e356]: ÜRÜN DETAYI
+            - heading "Gemini Pro (18 Aylık İndirim Bağlantısı)" [level=2] [ref=e357]
+          - button [ref=e358]
+        - generic [ref=e361]:
+          - img "Gemini Pro (18 Aylık İndirim Bağlantısı)" [ref=e362]
+          - generic [ref=e363]: GOOGLE GEMINI
+        - paragraph [ref=e364]: Gemini Pro (18 Aylık İndirim Bağlantısı) — Shopier 3D Secure ödeme. Stok varsa otomatik, stok yoksa @FroxyDestekBOT üzerinden 1–3 iş günü içinde teslim edilir.
+        - generic [ref=e365]:
+          - generic [ref=e366]: Fiyat
+          - generic [ref=e367]: ₺199,90
+        - button "Sepete ekle" [ref=e368] [cursor=pointer]
+  - navigation [ref=e73]:
+    - button "AI" [ref=e74] [cursor=pointer]
+    - button "Stüdyo" [ref=e78] [cursor=pointer]
+    - button "Mağaza" [ref=e82] [cursor=pointer]
+    - button "Hesap" [ref=e86] [cursor=pointer]

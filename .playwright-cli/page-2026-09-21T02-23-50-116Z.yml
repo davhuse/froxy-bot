@@ -1,0 +1,218 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e5]:
+        - img "Froxy AI Logo" [ref=e7]
+        - generic [ref=e9]:
+          - generic [ref=e10]: FROXY.AI
+          - generic [ref=e11]: ⚡ Froxy Hızlı Aktif
+      - generic [ref=e12]:
+        - generic [ref=e13] [cursor=pointer]:
+          - generic [ref=e14]: 💳
+          - generic [ref=e15]: ₺0,00
+          - generic [ref=e16]: +
+        - generic "AI Kredisi" [ref=e17] [cursor=pointer]:
+          - generic [ref=e18]: 🪙
+          - generic [ref=e19]: "0"
+        - button "Günlük 3 sohbet · 1 görsel" [ref=e20] [cursor=pointer]:
+          - generic [ref=e21]: Günlük
+          - generic [ref=e22]: 3 sohbet · 1 görsel
+    - generic [ref=e24]:
+      - generic [ref=e25]:
+        - text: "Doğrulanmış katalog:"
+        - generic [ref=e27]: 5 aktif · 15 katalog
+      - generic [ref=e28]:
+        - text: "Froxy ücretsiz hak:"
+        - generic [ref=e30]: 3 mesaj + 1 görsel
+    - main [ref=e31]:
+      - generic [ref=e254]:
+        - generic [ref=e255]:
+          - generic [ref=e256]:
+            - generic [ref=e257]: 🎨
+            - generic [ref=e258]:
+              - heading "Froxy Vision & Görsel Stüdyosu" [level=2] [ref=e259]
+              - paragraph [ref=e260]: Aktif sağlayıcılardan model seçerek yapay zekâ görselleri oluşturun.
+          - generic [ref=e261]:
+            - generic [ref=e262]: API ve model envanteri · 27 sağlayıcı
+            - generic [ref=e263]:
+              - generic [ref=e264]:
+                - generic [ref=e265]: aimlapi
+                - generic [ref=e266]: anahtar bekliyor · 2 model
+              - generic [ref=e267]:
+                - generic [ref=e268]: cerebras
+                - generic [ref=e269]: anahtar bekliyor
+              - generic [ref=e270]:
+                - generic [ref=e271]: ◇
+                - generic [ref=e272]: chutes
+                - generic [ref=e273]: anahtar bekliyor
+              - generic [ref=e274]:
+                - generic [ref=e275]: Cloudflare
+                - generic [ref=e276]: anahtar bekliyor · 4 model
+              - generic [ref=e277]:
+                - generic [ref=e278]: deepseek
+                - generic [ref=e279]: anahtar bekliyor
+              - generic [ref=e280]:
+                - generic [ref=e281]: ◇
+                - generic [ref=e282]: evolink
+                - generic [ref=e283]: anahtar bekliyor · 9 model
+              - generic [ref=e284]:
+                - generic [ref=e285]: ◇
+                - generic [ref=e286]: fireworks
+                - generic [ref=e287]: anahtar bekliyor
+              - generic [ref=e288]:
+                - generic [ref=e289]: ◇
+                - generic [ref=e290]: freemodel
+                - generic [ref=e291]: fiyat doğrulaması bekliyor · 3 model
+              - generic [ref=e292]:
+                - generic [ref=e293]: gemini
+                - generic [ref=e294]: anahtar bekliyor
+              - generic [ref=e295]:
+                - generic [ref=e296]: Google
+                - generic [ref=e297]: anahtar bekliyor · 6 model
+              - generic [ref=e298]:
+                - generic [ref=e299]: groq
+                - generic [ref=e300]: aktif · 6 model
+              - generic [ref=e301]:
+                - generic [ref=e302]: ◇
+                - generic [ref=e303]: guicore
+                - generic [ref=e304]: anahtar bekliyor
+              - generic [ref=e305]:
+                - generic [ref=e306]: ◇
+                - generic [ref=e307]: hcnsec
+                - generic [ref=e308]: anahtar bekliyor
+              - generic [ref=e309]:
+                - generic [ref=e310]: huggingface
+                - generic [ref=e311]: anahtar bekliyor
+              - generic [ref=e312]:
+                - generic [ref=e313]: ◇
+                - generic [ref=e314]: ImageGPT
+                - generic [ref=e315]: anahtar bekliyor · 1 model
+              - generic [ref=e316]:
+                - generic [ref=e317]: mistral
+                - generic [ref=e318]: anahtar bekliyor
+              - generic [ref=e319]:
+                - generic [ref=e320]: Modal
+                - generic [ref=e321]: anahtar bekliyor · 6 model
+              - generic [ref=e322]:
+                - generic [ref=e323]: nvidia
+                - generic [ref=e324]: anahtar bekliyor
+              - generic [ref=e325]:
+                - generic [ref=e326]: openai
+                - generic [ref=e327]: anahtar bekliyor · 2 model
+              - generic [ref=e328]:
+                - generic [ref=e329]: openrouter
+                - generic [ref=e330]: anahtar bekliyor
+              - generic [ref=e331]:
+                - generic [ref=e332]: pollinations
+                - generic [ref=e333]: anahtar bekliyor · 4 model
+              - generic [ref=e334]:
+                - generic [ref=e335]: Runware
+                - generic [ref=e336]: anahtar bekliyor · 2 model
+              - generic [ref=e337]:
+                - generic [ref=e338]: sambanova
+                - generic [ref=e339]: anahtar bekliyor
+              - generic [ref=e340]:
+                - generic [ref=e341]: ◇
+                - generic [ref=e342]: shenfeng
+                - generic [ref=e343]: anahtar bekliyor
+              - generic [ref=e344]:
+                - generic [ref=e345]: Stability
+                - generic [ref=e346]: anahtar bekliyor · 2 model
+              - generic [ref=e347]:
+                - generic [ref=e348]: together
+                - generic [ref=e349]: anahtar bekliyor · 10 model
+              - generic [ref=e350]:
+                - generic [ref=e351]: xai
+                - generic [ref=e352]: anahtar bekliyor
+        - generic [ref=e353]:
+          - generic [ref=e354]: Görsel Modeli
+          - generic [ref=e355]:
+            - img "Görsel modeli" [ref=e356]
+            - combobox "Görsel Modeli" [ref=e357]:
+              - option "⏳ OpenAI GPT Image · Sağlayıcı anahtarı bekleniyor" [disabled]
+              - option "⏳ OpenAI DALL-E 3 · Sağlayıcı anahtarı bekleniyor" [disabled]
+              - option "⏳ Together FLUX.1 Schnell · Sağlayıcı anahtarı bekleniyor" [disabled]
+              - option "⏳ Together Juggernaut FLUX · Sağlayıcı anahtarı bekleniyor" [disabled]
+              - option "⏳ Together Qwen Image · Sağlayıcı anahtarı bekleniyor" [disabled]
+              - option "⏳ Together FLUX.2 Dev · Sağlayıcı anahtarı bekleniyor" [disabled]
+              - option "⏳ Together Imagen 4 Fast · Sağlayıcı anahtarı bekleniyor" [disabled]
+              - option "⏳ Together FLUX.1 Kontext Pro · Sağlayıcı anahtarı bekleniyor" [disabled]
+              - option "⏳ Together FLUX.2 Pro · Sağlayıcı anahtarı bekleniyor" [disabled]
+              - option "⏳ Together Gemini Flash Image · Sağlayıcı anahtarı bekleniyor" [disabled]
+              - option "⏳ Together Qwen Image 2 Pro · Sağlayıcı anahtarı bekleniyor" [disabled]
+              - option "⏳ Together Gemini 3 Pro Image · Sağlayıcı anahtarı bekleniyor" [disabled]
+              - option "⏳ Cloudflare SDXL · Sağlayıcı anahtarı bekleniyor" [disabled]
+              - option "⏳ Cloudflare SDXL Lightning · Sağlayıcı anahtarı bekleniyor" [disabled]
+              - option "⏳ Cloudflare DreamShaper 8 LCM · Sağlayıcı anahtarı bekleniyor" [disabled]
+              - option "⏳ Cloudflare FLUX.2 Klein · Sağlayıcı anahtarı bekleniyor" [disabled]
+              - option "⏳ Runware FLUX · Sağlayıcı anahtarı bekleniyor" [disabled]
+              - option "⏳ Runware SDXL · Sağlayıcı anahtarı bekleniyor" [disabled]
+              - option "⏳ Pollinations Z-Image · Sağlayıcı anahtarı bekleniyor" [disabled]
+              - option "⏳ Pollinations FLUX · Sağlayıcı anahtarı bekleniyor" [disabled]
+              - option "⏳ Pollinations GPT Image · Sağlayıcı anahtarı bekleniyor" [disabled]
+              - option "⏳ Pollinations Nano Banana · Sağlayıcı anahtarı bekleniyor" [disabled]
+              - option "⏳ AI/ML API FLUX · Sağlayıcı anahtarı bekleniyor" [disabled]
+              - option "⏳ AI/ML API Nano Banana · Sağlayıcı anahtarı bekleniyor" [disabled]
+              - option "⏳ Stability Core · Sağlayıcı anahtarı bekleniyor" [disabled]
+              - option "⏳ Stability Ultra · Sağlayıcı anahtarı bekleniyor" [disabled]
+              - option "⏳ Gemini 2.5 Flash Image · Sağlayıcı anahtarı bekleniyor" [disabled]
+              - option "⏳ Gemini 3.1 Flash Image · Sağlayıcı anahtarı bekleniyor" [disabled]
+              - option "⏳ Gemini 3 Pro Image · Sağlayıcı anahtarı bekleniyor" [disabled]
+              - option "⏳ Google Imagen 4 Fast · Sağlayıcı anahtarı bekleniyor" [disabled]
+              - option "⏳ Google Imagen 4 · Sağlayıcı anahtarı bekleniyor" [disabled]
+              - option "⏳ Google Imagen 4 Ultra · Sağlayıcı anahtarı bekleniyor" [disabled]
+              - option "⏳ ImageGPT FLUX Schnell · Sağlayıcı anahtarı bekleniyor" [disabled]
+              - option "⏳ Modal GPU SDXL · Sağlayıcı anahtarı bekleniyor" [disabled]
+              - option "⏳ Modal Local SD · Sağlayıcı anahtarı bekleniyor" [disabled]
+              - option "⏳ Modal Cloud GPU · Sağlayıcı anahtarı bekleniyor" [disabled]
+              - option "⏳ Modal DreamShaper · Sağlayıcı anahtarı bekleniyor" [disabled]
+              - option "⏳ Modal Realistic Vision · Sağlayıcı anahtarı bekleniyor" [disabled]
+              - option "⏳ Modal A1111 Compatible · Sağlayıcı anahtarı bekleniyor" [disabled]
+              - option "⏳ EvoLink Z-Image Turbo · Sağlayıcı anahtarı bekleniyor" [disabled]
+              - option "⏳ EvoLink Wan 2.5 · Sağlayıcı anahtarı bekleniyor" [disabled]
+              - option "⏳ EvoLink Gemini 3.1 Flash Lite Image · Sağlayıcı anahtarı bekleniyor" [disabled]
+              - option "⏳ EvoLink Gemini 3.1 Flash Image · Sağlayıcı anahtarı bekleniyor" [disabled]
+              - option "⏳ EvoLink GPT Image 2 · Sağlayıcı anahtarı bekleniyor" [disabled]
+              - option "⏳ EvoLink GPT Image 1.5 · Sağlayıcı anahtarı bekleniyor" [disabled]
+              - option "⏳ EvoLink Seedream 5 Lite · Sağlayıcı anahtarı bekleniyor" [disabled]
+              - option "⏳ EvoLink Seedream 4.5 · Sağlayıcı anahtarı bekleniyor" [disabled]
+              - option "⏳ EvoLink Nano Banana 2 Lite · Sağlayıcı anahtarı bekleniyor" [disabled]
+          - status [ref=e358]:
+            - text: Görsel modelleri katalogda görünüyor; üretim için doğrulanmış bir görsel API anahtarı bekleniyor.
+            - button "Yenile" [ref=e359] [cursor=pointer]
+          - generic [ref=e360]: Görsel İstemi (Prompt)
+          - generic [ref=e361]:
+            - 'textbox "Örn: Fütüristik siberpunk şehirde neon ışıklar altında yürüyen yapay zeka robotu, 8k render, unreal engine 5..." [ref=e362]'
+            - button "✨ Sihirli İyileştir" [ref=e363] [cursor=pointer]
+          - generic [ref=e364]: Stil Seçimi
+          - generic [ref=e365]:
+            - button "📸 Ultra Realistik 8K" [ref=e366] [cursor=pointer]
+            - button "🌆 Siberpunk Neon" [ref=e367] [cursor=pointer]
+            - button "🎌 Anime 4K Master" [ref=e368] [cursor=pointer]
+            - button "🔮 3D Karakter / Pixar" [ref=e369] [cursor=pointer]
+            - button "🎨 Vektörel Logo & İllüstrasyon" [ref=e370] [cursor=pointer]
+          - generic [ref=e371]: Boyut Oranı (Aspect Ratio)
+          - generic [ref=e372]:
+            - button "1:1 (Kare - Post)" [ref=e373] [cursor=pointer]
+            - button "9:16 (Story / Reel)" [ref=e374] [cursor=pointer]
+            - button "16:9 (Yatay / Banner)" [ref=e375] [cursor=pointer]
+            - button "4:5 (Instagram)" [ref=e376] [cursor=pointer]
+          - button "⚡ Görseli Üret" [disabled] [ref=e377] [cursor=pointer]:
+            - generic [ref=e378]: ⚡
+            - generic [ref=e379]: Görseli Üret
+        - generic [ref=e380]:
+          - generic [ref=e381]:
+            - heading "Üretilen Görsel" [level=3] [ref=e382]
+            - generic [ref=e383]: 48 model katalogda · sağlayıcı bekleniyor
+          - img "Froxy AI tarafından üretilen görsel" [ref=e385]
+          - generic [ref=e386]:
+            - button "İndir (HD)" [ref=e387] [cursor=pointer]
+            - button "Tam Ekran" [ref=e392] [cursor=pointer]
+    - navigation "Ana gezinme" [ref=e117]:
+      - button "AI" [ref=e118] [cursor=pointer]
+      - button "Görsel" [active] [ref=e123] [cursor=pointer]
+      - button "Mağaza" [ref=e130] [cursor=pointer]
+      - button "Hesap" [ref=e136] [cursor=pointer]
+  - generic:
+    - generic: ✓
+    - generic: Froxy Hızlı modeline geçildi!

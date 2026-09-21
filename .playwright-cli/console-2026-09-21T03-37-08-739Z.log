@@ -1,0 +1,29 @@
+[    9338ms] [ERROR] Failed to load resource: net::ERR_SSL_PROTOCOL_ERROR @ https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap:0
+[    9343ms] [LOG] [Telegram.WebView] > postEvent web_app_set_header_color {color_key: bg_color} @ https://telegram.org/js/telegram-web-app.js:134
+[    9344ms] [LOG] [Telegram.WebView] > postEvent web_app_set_bottom_bar_color {color: #ffffff} @ https://telegram.org/js/telegram-web-app.js:134
+[    9344ms] [LOG] [Telegram.WebView] > postEvent web_app_request_theme  @ https://telegram.org/js/telegram-web-app.js:134
+[    9344ms] [LOG] [Telegram.WebView] > postEvent web_app_request_viewport  @ https://telegram.org/js/telegram-web-app.js:134
+[    9344ms] [LOG] [Telegram.WebView] > postEvent web_app_request_safe_area  @ https://telegram.org/js/telegram-web-app.js:134
+[    9344ms] [LOG] [Telegram.WebView] > postEvent web_app_request_content_safe_area  @ https://telegram.org/js/telegram-web-app.js:134
+[    9410ms] [LOG] [Telegram.WebView] > postEvent web_app_ready  @ https://telegram.org/js/telegram-web-app.js:134
+[    9410ms] [LOG] [Telegram.WebView] > postEvent web_app_expand  @ https://telegram.org/js/telegram-web-app.js:134
+[    9425ms] [ERROR] Failed to load resource: the server responded with a status of 404 (NOT FOUND) @ http://127.0.0.1:5055/favicon.ico:0
+[   75406ms] [LOG] [Telegram.WebView] > postEvent web_app_set_header_color {color_key: bg_color} @ https://telegram.org/js/telegram-web-app.js:134
+[   75407ms] [LOG] [Telegram.WebView] > postEvent web_app_set_bottom_bar_color {color: #ffffff} @ https://telegram.org/js/telegram-web-app.js:134
+[   75407ms] [LOG] [Telegram.WebView] > postEvent web_app_request_theme  @ https://telegram.org/js/telegram-web-app.js:134
+[   75407ms] [LOG] [Telegram.WebView] > postEvent web_app_request_viewport  @ https://telegram.org/js/telegram-web-app.js:134
+[   75407ms] [LOG] [Telegram.WebView] > postEvent web_app_request_safe_area  @ https://telegram.org/js/telegram-web-app.js:134
+[   75407ms] [LOG] [Telegram.WebView] > postEvent web_app_request_content_safe_area  @ https://telegram.org/js/telegram-web-app.js:134
+[   75448ms] [LOG] [Telegram.WebView] > postEvent web_app_ready  @ https://telegram.org/js/telegram-web-app.js:134
+[   75448ms] [LOG] [Telegram.WebView] > postEvent web_app_expand  @ https://telegram.org/js/telegram-web-app.js:134
+[   86025ms] TypeError: l is not a function
+    at El (http://127.0.0.1:5055/assets/index-DGNTDFnN.js:8:95249)
+    at $u (http://127.0.0.1:5055/assets/index-DGNTDFnN.js:8:121798)
+    at Xu (http://127.0.0.1:5055/assets/index-DGNTDFnN.js:8:121036)
+    at Zu (http://127.0.0.1:5055/assets/index-DGNTDFnN.js:8:121400)
+    at Xu (http://127.0.0.1:5055/assets/index-DGNTDFnN.js:8:121098)
+    at Zu (http://127.0.0.1:5055/assets/index-DGNTDFnN.js:8:121400)
+    at Xu (http://127.0.0.1:5055/assets/index-DGNTDFnN.js:8:121098)
+    at Zu (http://127.0.0.1:5055/assets/index-DGNTDFnN.js:8:121168)
+    at Xu (http://127.0.0.1:5055/assets/index-DGNTDFnN.js:8:121098)
+    at Zu (http://127.0.0.1:5055/assets/index-DGNTDFnN.js:8:121400)

@@ -3,28 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>JarvisCraft — Premium AI & Bot Ecosystem</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <title>JarvisCraft — Dijital Ekosistem</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --bg-base: #060913;
-            --bg-card: rgba(15, 22, 38, 0.78);
-            --bg-card-hover: rgba(22, 32, 56, 0.9);
-            --primary: #00f2fe;
-            --primary-gradient: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
-            --purple: #8b5cf6;
-            --purple-gradient: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
-            --gold: #fbbf24;
-            --gold-gradient: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
-            --success: #10b981;
+            --bg-base: #050505;
+            --bg-card: rgba(20, 20, 20, 0.7);
+            --bg-card-hover: rgba(30, 30, 30, 0.9);
+            --primary: #00e5ff;
+            --primary-glow: rgba(0, 229, 255, 0.4);
+            --secondary: #7000ff;
             --border: rgba(255, 255, 255, 0.08);
-            --border-hover: rgba(0, 242, 254, 0.35);
-            --text-main: #ffffff;
-            --text-muted: #94a3b8;
-            --glass-blur: blur(16px);
+            --border-hover: rgba(255, 255, 255, 0.15);
+            --text-main: #f5f5f7;
+            --text-muted: #a1a1a6;
+            --glass-blur: blur(20px);
+            --accent-gradient: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            --safe-area-bottom: env(safe-area-inset-bottom, 20px);
         }
 
         * {
@@ -35,180 +32,81 @@
         }
 
         body {
-            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: 'Plus Jakarta Sans', sans-serif;
             background-color: var(--bg-base);
             color: var(--text-main);
             overflow-x: hidden;
             overflow-y: auto;
             width: 100%;
             min-height: 100vh;
-            position: relative;
-            line-height: 1.5;
+            padding-bottom: calc(80px + var(--safe-area-bottom));
         }
 
-        /* Ambient Background */
+        /* Subtle Animated Background */
         .ambient-bg {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0; width: 100vw; height: 100vh;
             z-index: -1;
-            pointer-events: none;
-            overflow: hidden;
-            background: 
-                radial-gradient(circle at 50% 0%, rgba(14, 30, 72, 0.95) 0%, transparent 60%),
-                radial-gradient(circle at 90% 60%, rgba(37, 99, 235, 0.12) 0%, transparent 50%),
-                radial-gradient(circle at 10% 40%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
-                var(--bg-base);
+            background: radial-gradient(circle at 50% 0%, rgba(112, 0, 255, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 100% 100%, rgba(0, 229, 255, 0.05) 0%, transparent 40%);
         }
 
-        .particle {
-            position: absolute;
-            background: rgba(255, 255, 255, 0.45);
-            border-radius: 50%;
-            animation: float linear infinite;
-        }
-
-        @keyframes float {
-            0% { transform: translateY(105vh) scale(0); opacity: 0; }
-            30% { opacity: 0.6; }
-            70% { opacity: 0.6; }
-            100% { transform: translateY(-10vh) scale(1.3); opacity: 0; }
-        }
-
-        /* App Container */
-        .app-container {
-            max-width: 480px;
-            margin: 0 auto;
-            padding-bottom: calc(90px + env(safe-area-inset-bottom, 16px));
-            min-height: 100vh;
-            position: relative;
-        }
-
-        /* Header */
         header {
-            padding: 24px 18px 16px;
             text-align: center;
+            padding: 40px 20px 30px;
             position: relative;
-            z-index: 10;
         }
 
-        .logo-wrap {
-            width: 84px;
-            height: 84px;
-            margin: 0 auto 12px;
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .logo-container {
+            width: 90px;
+            height: 90px;
+            margin: 0 auto 15px;
+            border-radius: 24px;
+            padding: 3px;
+            background: var(--accent-gradient);
+            box-shadow: 0 10px 30px rgba(0, 229, 255, 0.2);
         }
 
-        .logo-glow {
-            position: absolute;
-            inset: -4px;
-            border-radius: 26px;
-            background: linear-gradient(135deg, var(--primary), var(--purple));
-            filter: blur(14px);
-            opacity: 0.75;
-            animation: pulse-glow 3s infinite alternate ease-in-out;
-            z-index: -1;
-        }
-
-        .logo-img {
+        .logo-container img {
             width: 100%;
             height: 100%;
-            border-radius: 22px;
+            border-radius: 21px;
             object-fit: cover;
-            border: 2px solid rgba(255, 255, 255, 0.18);
-            background: #0b1120;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+            background-color: #000;
         }
 
-        @keyframes pulse-glow {
-            0% { opacity: 0.45; transform: scale(0.96); }
-            100% { opacity: 0.95; transform: scale(1.05); }
-        }
-
-        .brand-title {
-            font-size: 26px;
+        h1 {
             font-weight: 800;
-            background: linear-gradient(135deg, #ffffff 15%, #38bdf8 55%, #818cf8 100%);
+            font-size: 28px;
+            letter-spacing: -0.5px;
+            background: var(--accent-gradient);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            letter-spacing: -0.5px;
-            margin-bottom: 4px;
+            margin-bottom: 5px;
         }
 
-        .brand-badge-bar {
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 16px;
             display: flex;
             align-items: center;
-            justify-content: center;
             gap: 8px;
-            margin-top: 6px;
-            flex-wrap: wrap;
         }
 
-        .status-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 4px 10px;
-            border-radius: 20px;
-            background: rgba(16, 185, 129, 0.12);
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            font-size: 11px;
-            font-weight: 700;
-            color: #34d399;
-        }
-
-        .status-dot {
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background: #10b981;
-            box-shadow: 0 0 8px #10b981;
-            animation: pulse-dot 2s infinite;
-        }
-
-        @keyframes pulse-dot {
-            0% { transform: scale(0.9); opacity: 0.7; }
-            50% { transform: scale(1.25); opacity: 1; }
-            100% { transform: scale(0.9); opacity: 0.7; }
-        }
-
-        .channel-pill-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            padding: 4px 12px;
-            border-radius: 20px;
-            background: rgba(0, 242, 254, 0.12);
-            border: 1px solid rgba(0, 242, 254, 0.35);
-            font-size: 11px;
-            font-weight: 700;
-            color: var(--primary);
-            text-decoration: none;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .channel-pill-btn:active {
-            transform: scale(0.96);
-            background: rgba(0, 242, 254, 0.2);
-        }
-
-        /* Tabs System */
-        .tab-content {
-            display: none;
-            padding: 10px 16px 0;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        /* Glass Cards */
+        /* Cards */
         .card {
             background: var(--bg-card);
             backdrop-filter: var(--glass-blur);
@@ -217,789 +115,338 @@
             border-radius: 20px;
             padding: 20px;
             margin-bottom: 16px;
+            transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
-            transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
-            animation: cardFade 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
         }
 
-        @keyframes cardFade {
-            from { opacity: 0; transform: translateY(12px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .card:hover {
-            border-color: var(--border-hover);
-            transform: translateY(-2px);
-            box-shadow: 0 12px 36px rgba(0, 242, 254, 0.12);
-        }
-
-        .card-highlight {
-            border: 1.5px solid rgba(139, 92, 246, 0.55);
-            background: linear-gradient(180deg, rgba(28, 20, 56, 0.85) 0%, rgba(15, 22, 38, 0.85) 100%);
-            box-shadow: 0 12px 40px rgba(139, 92, 246, 0.25);
-        }
-
-        /* Shimmer Effect */
-        .shimmer {
+        .card::before {
+            content: '';
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.04) 50%, transparent 100%);
-            transform: translateX(-100%);
-            animation: shimmer-anim 4s infinite;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%);
             pointer-events: none;
         }
 
-        @keyframes shimmer-anim {
-            100% { transform: translateX(100%); }
+        .card:active {
+            transform: scale(0.98);
         }
 
-        /* Product Card Elements */
-        .card-header-row {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            margin-bottom: 8px;
-            gap: 12px;
-        }
-
-        .tag-badge {
-            display: inline-block;
-            padding: 3px 9px;
-            border-radius: 12px;
+        .badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0, 229, 255, 0.15);
+            color: var(--primary);
             font-size: 10px;
-            font-weight: 800;
-            letter-spacing: 0.6px;
-            text-transform: uppercase;
-            margin-bottom: 6px;
-        }
-
-        .tag-popular { background: linear-gradient(135deg, #f59e0b, #ef4444); color: #fff; }
-        .tag-bestseller { background: linear-gradient(135deg, #ef4444, #b91c1c); color: #fff; }
-        .tag-new { background: linear-gradient(135deg, #00f2fe, #4facfe); color: #060913; }
-        .tag-value { background: linear-gradient(135deg, #10b981, #059669); color: #fff; }
-
-        .card-title {
-            font-size: 17px;
             font-weight: 700;
-            color: #ffffff;
-            line-height: 1.35;
-        }
-
-        .price-badge {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 18px;
-            font-weight: 700;
-            background: var(--gold-gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
             padding: 4px 10px;
             border-radius: 10px;
-            background-color: rgba(245, 158, 11, 0.1);
-            border: 1px solid rgba(245, 158, 11, 0.25);
-            white-space: nowrap;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: 1px solid rgba(0, 229, 255, 0.3);
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            padding-right: 60px;
         }
 
         .card-desc {
-            font-size: 13px;
             color: var(--text-muted);
-            margin-bottom: 14px;
-            line-height: 1.5;
+            font-size: 14px;
+            margin-bottom: 20px;
+            line-height: 1.6;
         }
 
-        .feature-bullets {
-            list-style: none;
+        .price {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
             margin-bottom: 16px;
             display: flex;
-            flex-direction: column;
+            align-items: center;
             gap: 6px;
         }
 
-        .feature-bullets li {
-            font-size: 12.5px;
-            color: #cbd5e1;
-            display: flex;
-            align-items: center;
-        }
-
-        .feature-bullets li::before {
-            content: '✓';
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 16px;
-            height: 16px;
-            background: rgba(0, 242, 254, 0.15);
-            color: var(--primary);
-            border-radius: 50%;
-            margin-right: 8px;
-            font-size: 10px;
-            font-weight: 800;
-            flex-shrink: 0;
-        }
-
-        /* Action Buttons */
-        .btn-group {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-        }
-
+        /* Buttons */
         .btn {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
-            padding: 12px 14px;
-            border-radius: 12px;
-            font-size: 13.5px;
-            font-weight: 700;
-            text-decoration: none;
-            border: none;
-            cursor: pointer;
-            transition: all 0.2s;
+            gap: 8px;
+            width: 100%;
+            padding: 14px;
+            border-radius: 14px;
             font-family: inherit;
-        }
-
-        .btn:active {
-            transform: scale(0.97);
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            border: none;
+            outline: none;
+            transition: all 0.2s ease;
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #2563eb 0%, #00f2fe 100%);
-            color: #ffffff;
-            box-shadow: 0 4px 18px rgba(37, 99, 235, 0.35);
+            background: #fff;
+            color: #000;
+        }
+
+        .btn-primary:active {
+            background: #e5e5ea;
         }
 
         .btn-secondary {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            color: #e2e8f0;
-        }
-
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.08);
-            border-color: rgba(255, 255, 255, 0.2);
-        }
-
-        .btn-purple {
-            background: linear-gradient(135deg, #7c3aed 0%, #ec4899 100%);
-            color: #ffffff;
-            box-shadow: 0 4px 18px rgba(124, 58, 237, 0.35);
-        }
-
-        .btn-full {
-            width: 100%;
-        }
-
-        /* Interactive Ad Engine Dashboard */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            margin-bottom: 18px;
-        }
-
-        .stat-box {
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 12px;
-            text-align: center;
-        }
-
-        .stat-num {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--primary);
-        }
-
-        .stat-text {
-            font-size: 11px;
-            color: var(--text-muted);
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-top: 2px;
-        }
-
-        .input-group {
-            margin-bottom: 14px;
-        }
-
-        .input-label {
-            font-size: 12px;
-            font-weight: 600;
-            color: #cbd5e1;
-            margin-bottom: 6px;
-            display: block;
-        }
-
-        .text-input, .textarea-input {
-            width: 100%;
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 12px;
-            padding: 12px;
-            color: #ffffff;
-            font-family: inherit;
-            font-size: 13px;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-
-        .text-input:focus, .textarea-input:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 12px rgba(0, 242, 254, 0.2);
-        }
-
-        .textarea-input {
-            resize: vertical;
-            min-height: 80px;
-        }
-
-        .preview-bubble {
-            background: rgba(14, 25, 48, 0.9);
-            border: 1px solid rgba(0, 242, 254, 0.3);
-            border-radius: 14px;
-            padding: 14px;
-            margin-bottom: 14px;
-            font-size: 12.5px;
-            color: #e2e8f0;
-            white-space: pre-wrap;
-            position: relative;
-        }
-
-        .preview-badge {
-            position: absolute;
-            top: -9px;
-            right: 12px;
-            background: var(--primary);
-            color: #060913;
-            font-size: 9px;
-            font-weight: 800;
-            padding: 2px 8px;
-            border-radius: 8px;
-            letter-spacing: 0.5px;
-        }
-
-        /* AI Interactive Output Box */
-        .ai-output-box {
-            background: rgba(0, 0, 0, 0.35);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 12px;
-            margin-top: 10px;
-            font-size: 12.5px;
-            line-height: 1.5;
-            position: relative;
-        }
-
-        .copy-btn {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            background: rgba(0, 242, 254, 0.15);
-            border: 1px solid rgba(0, 242, 254, 0.3);
-            color: var(--primary);
-            border-radius: 6px;
-            padding: 3px 8px;
-            font-size: 11px;
-            font-weight: 700;
-            cursor: pointer;
-        }
-
-        /* Support / Profile Box */
-        .support-contact-box {
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 14px;
-            margin-bottom: 14px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .support-avatar {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--primary), var(--purple));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            font-weight: 800;
+            background: rgba(255, 255, 255, 0.1);
             color: #fff;
-            flex-shrink: 0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
-        /* Comparison Table */
-        .table-wrap {
-            overflow-x: auto;
-            margin-top: 14px;
-            border-radius: 12px;
-            border: 1px solid var(--border);
+        .btn-secondary:active {
+            background: rgba(255, 255, 255, 0.15);
         }
 
-        .compare-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 12px;
-            background: rgba(0, 0, 0, 0.2);
-        }
-        
-        .compare-table th, .compare-table td {
-            padding: 10px 8px;
-            text-align: center;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-        }
-        
-        .compare-table th {
-            font-weight: 700;
-            color: var(--text-muted);
-            background: rgba(255, 255, 255, 0.03);
-            text-transform: uppercase;
-            font-size: 10px;
-            letter-spacing: 0.5px;
-        }
-        
-        .compare-table td:first-child, .compare-table th:first-child {
-            text-align: left;
-            padding-left: 12px;
-        }
-        
-        .check { color: var(--success); font-weight: 700; }
-        .cross { color: var(--text-muted); opacity: 0.45; }
-
-        /* Bottom Navigation Bar */
+        /* Bottom Nav */
         .bottom-nav {
             position: fixed;
             bottom: 0;
             left: 0;
             width: 100%;
-            background: rgba(6, 9, 19, 0.94);
+            background: rgba(10, 10, 10, 0.85);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            border-top: 1px solid var(--border);
             display: flex;
             justify-content: space-around;
-            padding: 8px 10px calc(12px + env(safe-area-inset-bottom, 12px));
+            padding: 10px 10px calc(10px + var(--safe-area-bottom));
             z-index: 100;
         }
 
-        .nav-tab-item {
+        .nav-item {
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            gap: 4px;
             color: var(--text-muted);
-            width: 25%;
+            padding: 8px 12px;
+            border-radius: 12px;
+            transition: all 0.3s ease;
             position: relative;
-            transition: all 0.2s ease;
-            cursor: pointer;
-            padding: 4px 0;
         }
 
-        .nav-tab-item.active {
-            color: var(--primary);
+        .nav-item.active {
+            color: #fff;
         }
 
-        .nav-tab-item.active::before {
+        .nav-item.active::before {
             content: '';
             position: absolute;
-            top: -8px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 32px;
+            top: -10px;
+            width: 20px;
             height: 3px;
-            background: linear-gradient(90deg, var(--primary), var(--purple));
+            background: var(--primary);
             border-radius: 0 0 4px 4px;
-            box-shadow: 0 0 12px var(--primary);
+            box-shadow: 0 2px 10px var(--primary-glow);
         }
 
-        .nav-icon {
-            width: 22px;
-            height: 22px;
-            margin-bottom: 3px;
-            fill: currentColor;
-            transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        .nav-tab-item.active .nav-icon {
-            transform: translateY(-2px) scale(1.12);
+        .nav-item i {
+            font-size: 20px;
         }
 
         .nav-label {
             font-size: 11px;
             font-weight: 600;
         }
+
+        /* Tabs */
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.4s ease forwards;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Features List */
+        .features-list {
+            list-style: none;
+            margin-bottom: 20px;
+        }
+
+        .features-list li {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .features-list li i {
+            color: var(--primary);
+            font-size: 14px;
+        }
+        
+        .cta-big {
+            margin-top: 10px;
+            margin-bottom: 30px;
+        }
     </style>
 </head>
 <body>
-    <!-- Ambient Background Particles -->
-    <div class="ambient-bg" id="ambient-particles"></div>
+    <div class="ambient-bg"></div>
 
-    <div class="app-container">
-        <!-- Header -->
-        <header>
-            <div class="logo-wrap">
-                <div class="logo-glow"></div>
-                <img src="/static/jarviscraft_logo_v2.jpg" onerror="this.src='/static/jarviscraft_logo.jpg'; this.onerror=null;" alt="JarvisCraft" class="logo-img">
-            </div>
-            <h1 class="brand-title">JarvisCraft</h1>
-            
-            <div class="brand-badge-bar">
-                <div class="status-pill">
-                    <span class="status-dot"></span>
-                    <span>AI Engine v2.4</span>
-                </div>
-                <div class="channel-pill-btn" onclick="handleTelegram('https://t.me/JarvisCraftDuyuru')">
-                    <span>📢 Duyuru Kanalı</span>
-                </div>
-            </div>
-        </header>
+    <header>
+        <div class="logo-container">
+            <img src="/static/jarviscraft_logo_v2.jpg" onerror="this.src='/static/jarviscraft_logo.jpg'" alt="JarvisCraft">
+        </div>
+        <h1>JarvisCraft</h1>
+        <div class="subtitle">Premium AI & Otomasyon Ekosistemi</div>
+    </header>
 
-        <!-- ════════════════════════════════════════════ -->
-        <!-- TAB 1: MAĞAZA (STORE)                        -->
-        <!-- ════════════════════════════════════════════ -->
+    <div class="container">
+        <!-- 🛒 MAĞAZA TAB -->
         <div id="tab-store" class="tab-content active">
-            <!-- Official Shopier Store Action Card -->
-            <div class="card" style="border: 1px solid rgba(0, 240, 255, 0.4); background: linear-gradient(135deg, rgba(0, 240, 255, 0.08), rgba(168, 85, 247, 0.08));">
-                <div class="card-header-row">
-                    <div>
-                        <span class="tag-badge tag-popular">🛍️ RESMİ MAĞAZA</span>
-                        <h3 class="card-title" style="margin-top: 4px;">Shopier Vitrini & Tüm İlanlar</h3>
-                    </div>
-                </div>
-                <p class="card-desc">Tüm hazır bot paketlerini, lisansları ve özel indirimli ilanlarımızı doğrudan Shopier mağazamızda inceleyin ve güvenle satın alın.</p>
-                <div class="btn-group">
-                    <button onclick="handleShopier('https://www.shopier.com/JarvisStore')" class="btn btn-primary btn-full" style="justify-content: center; font-weight: 700;">🛍️ Shopier Mağazasını Aç (Tüm İlanlar)</button>
-                </div>
+            <div class="section-title">
+                <i class="fa-solid fa-store"></i> Shopier Mağazası
+            </div>
+            
+            <div class="card cta-big" style="background: var(--accent-gradient); text-align: center; border: none; padding: 25px;">
+                <h3 style="margin-bottom: 10px; font-size: 20px;">Tüm Ürünleri İncele</h3>
+                <p style="font-size: 14px; opacity: 0.9; margin-bottom: 20px;">
+                    Otomasyon scriptleri, botlar ve premium yazılım çözümleri.
+                </p>
+                <button onclick="handleShopier('https://www.shopier.com/JarvisStore')" class="btn btn-primary" style="color: var(--secondary);">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Shopier'e Git
+                </button>
             </div>
 
-            <!-- Product 1 -->
             <div class="card">
-                <div class="shimmer"></div>
-                <div class="card-header-row">
-                    <div>
-                        <span class="tag-badge tag-popular">🔥 POPÜLER</span>
-                        <h3 class="card-title">🤖 Jarvis Core AI Asistan İskeleti</h3>
-                    </div>
-                    <div class="price-badge">350₺</div>
-                </div>
-                <p class="card-desc">Python + LLM destekli tam donanımlı yapay zeka asistan çekirdeği. Sesli ve yazılı komutlarla sistem otomasyonları kurun.</p>
-                <ul class="feature-bullets">
-                    <li>Python 3.10+ & AsyncIO Altyapısı</li>
-                    <li>Telegram & Masaüstü Entegrasyonu</li>
-                    <li>Tam açık kaynak kod + kurulum rehberi</li>
-                    <li>GPT / Claude / Gemini API desteği hazır</li>
+                <div class="badge">En Çok Satan</div>
+                <div class="card-title">Telegram Oto-Reklam Motoru</div>
+                <p class="card-desc">65+ ticari grupta 7/24 otomatik mesaj döngüsü. Ban korumalı gelişmiş altyapı.</p>
+                <ul class="features-list">
+                    <li><i class="fa-solid fa-check"></i> Sınırsız Mesaj Şablonu</li>
+                    <li><i class="fa-solid fa-check"></i> Anti-Flood ve Cooldown Sistemi</li>
+                    <li><i class="fa-solid fa-check"></i> Web Panel ve Detaylı Log</li>
                 </ul>
-                <div class="btn-group">
-                    <button onclick="handleShopier('https://www.shopier.com/JarvisStore')" class="btn btn-primary">🛒 Satın Al</button>
-                    <button onclick="handleTelegram('https://t.me/JarvisCraftDuyuru')" class="btn btn-secondary">📹 Demo İzle</button>
-                </div>
+                <div class="price">450 ₺</div>
+                <button onclick="handleShopier('https://www.shopier.com/JarvisStore')" class="btn btn-secondary">
+                    <i class="fa-solid fa-cart-shopping"></i> İncele & Satın Al
+                </button>
             </div>
 
-            <!-- Product 2 -->
             <div class="card">
-                <div class="shimmer"></div>
-                <div class="card-header-row">
-                    <div>
-                        <span class="tag-badge tag-bestseller">🏆 ÇOK SATAN</span>
-                        <h3 class="card-title">⚡ Telegram Oto-Reklam & Mesaj Botu</h3>
-                    </div>
-                    <div class="price-badge">450₺</div>
-                </div>
-                <p class="card-desc">Anti-flood özellikli, çoklu hesap destekli ve 65+ ticaret grubu rotasyon motorlu profesyonel reklam botu.</p>
-                <ul class="feature-bullets">
-                    <li>Telethon tabanlı, Anti-Ban & Replay Guard</li>
-                    <li>Gelişmiş Web Panel & Zamanlayıcı Entegre</li>
-                    <li>Sınırsız grup ekleme & rotasyon motoru</li>
-                    <li>Otomatik hesap rotasyonu ve proxy uyumu</li>
-                </ul>
-                <div class="btn-group">
-                    <button onclick="handleShopier('https://www.shopier.com/JarvisStore')" class="btn btn-primary">🛒 Satın Al</button>
-                    <button onclick="handleTelegram('https://t.me/JarvisCraftDuyuru')" class="btn btn-secondary">📹 Demo İzle</button>
-                </div>
+                <div class="badge" style="background: rgba(251, 191, 36, 0.15); color: var(--gold); border-color: rgba(251, 191, 36, 0.3);">Yeni</div>
+                <div class="card-title">Jarvis Core AI İskeleti</div>
+                <p class="card-desc">LLM destekli, sesli ve yazılı komut alabilen, geliştirilmeye açık asistan bot altyapısı.</p>
+                <div class="price">350 ₺</div>
+                <button onclick="handleShopier('https://www.shopier.com/JarvisStore')" class="btn btn-secondary">
+                    <i class="fa-solid fa-cart-shopping"></i> İncele & Satın Al
+                </button>
             </div>
-
-            <!-- Product 3 -->
+            
             <div class="card">
-                <div class="shimmer"></div>
-                <div class="card-header-row">
-                    <div>
-                        <span class="tag-badge tag-new">🆕 YENİ</span>
-                        <h3 class="card-title">🔍 E-Ticaret & Fiyat Takip Scraper</h3>
-                    </div>
-                    <div class="price-badge">300₺</div>
-                </div>
-                <p class="card-desc">Trendyol, Yemeksepeti ve e-ticaret sitelerinden anlık kupon, stok ve fiyat alarmı toplayan Python bot seti.</p>
-                <ul class="feature-bullets">
-                    <li>Playwright & Cloudflare Bypass altyapısı</li>
-                    <li>Anında Telegram Alarm Bildirimleri</li>
-                    <li>Otomatik kupon ve stok kontrol algoritması</li>
-                </ul>
-                <div class="btn-group">
-                    <button onclick="handleShopier('https://www.shopier.com/JarvisStore')" class="btn btn-primary">🛒 Satın Al</button>
-                    <button onclick="handleTelegram('https://t.me/JarvisCraftDuyuru')" class="btn btn-secondary">📹 Demo İzle</button>
-                </div>
-            </div>
-
-            <!-- Product 4 -->
-            <div class="card">
-                <div class="shimmer"></div>
-                <div class="card-header-row">
-                    <div>
-                        <span class="tag-badge tag-value">💎 EN İYİ DEĞER</span>
-                        <h3 class="card-title">🚀 Full-Stack Mini App + Shopier Kiti</h3>
-                    </div>
-                    <div class="price-badge">400₺</div>
-                </div>
-                <p class="card-desc">Kendi Telegram Mini App mağazanızı 10 dakikada kurun. Flask backend ve Shopier ödeme entegrasyonu hazır şablon.</p>
-                <ul class="feature-bullets">
-                    <li>Hazır Premium Tasarım & Webhooklar</li>
-                    <li>Render / Vercel Deploy'a Hazır</li>
-                    <li>Detaylı dokümantasyon ve örnek konfigürasyon</li>
-                </ul>
-                <div class="btn-group">
-                    <button onclick="handleShopier('https://www.shopier.com/JarvisStore')" class="btn btn-primary">🛒 Satın Al</button>
-                    <button onclick="handleTelegram('https://t.me/JarvisCraftDuyuru')" class="btn btn-secondary">📹 Demo İzle</button>
-                </div>
+                <div class="card-title">E-Ticaret & Fiyat Scraper</div>
+                <p class="card-desc">Belirlenen sitelerden anlık fiyat & stok verisi çeken ve Telegram'a bildiren sistem.</p>
+                <div class="price">300 ₺</div>
+                <button onclick="handleShopier('https://www.shopier.com/JarvisStore')" class="btn btn-secondary">
+                    <i class="fa-solid fa-cart-shopping"></i> İncele & Satın Al
+                </button>
             </div>
         </div>
 
-        <!-- ════════════════════════════════════════════ -->
-        <!-- TAB 2: OTO-MESAJ MOTORU (AD ENGINE)         -->
-        <!-- ════════════════════════════════════════════ -->
+        <!-- ⚡ MOTOR TAB -->
         <div id="tab-engine" class="tab-content">
+            <div class="section-title">
+                <i class="fa-solid fa-bolt"></i> Oto-Reklam Motoru
+            </div>
+            
             <div class="card">
-                <div class="shimmer"></div>
-                <h3 class="card-title" style="margin-bottom: 12px;">⚡ Oto-Reklam Motoru Kontrol Paneli</h3>
+                <div class="card-title" style="color: var(--primary);">Sistem Durumu</div>
+                <p class="card-desc">Oto-reklam motoru şu anda bot üzerinden kontrol edilmektedir.</p>
                 
-                <div class="stats-grid">
-                    <div class="stat-box">
-                        <div class="stat-num">65+</div>
-                        <div class="stat-text">Aktif Grup Havuzu</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+                    <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; text-align: center;">
+                        <i class="fa-solid fa-layer-group" style="font-size: 24px; color: var(--primary); margin-bottom: 8px;"></i>
+                        <div style="font-size: 18px; font-weight: 700;">65+</div>
+                        <div style="font-size: 12px; color: var(--text-muted);">Aktif Grup</div>
                     </div>
-                    <div class="stat-box">
-                        <div class="stat-num">30 dk</div>
-                        <div class="stat-text">Gönderim Aralığı</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-num">24/7</div>
-                        <div class="stat-text">Kesintisiz Döngü</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-num">Anti-Ban</div>
-                        <div class="stat-text">Akıllı Gecikme</div>
+                    <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; text-align: center;">
+                        <i class="fa-solid fa-clock-rotate-left" style="font-size: 24px; color: var(--gold); margin-bottom: 8px;"></i>
+                        <div style="font-size: 18px; font-weight: 700;">7/24</div>
+                        <div style="font-size: 12px; color: var(--text-muted);">Çalışma</div>
                     </div>
                 </div>
 
-                <!-- Interactive Ad Editor & Live Preview -->
-                <div class="input-group">
-                    <label class="input-label">📝 Reklam Metniniz (Canlı Düzenle):</label>
-                    <textarea id="liveAdInput" class="textarea-input" oninput="updatePreview()">🚀 JarvisCraft ile otomatik mesaj gönderimi aktif! En uygun fiyatlı bot paketleri ve yazılım çözümleri burada: @JarvisCraft</textarea>
-                </div>
-
-                <div class="preview-bubble">
-                    <span class="preview-badge">CANLI ÖNİZLEME</span>
-                    <div id="adPreviewText">🚀 JarvisCraft ile otomatik mesaj gönderimi aktif! En uygun fiyatlı bot paketleri ve yazılım çözümleri burada: @JarvisCraft</div>
-                </div>
-
-                <button onclick="handleTelegram('https://t.me/JarvisCraftsBot')" class="btn btn-primary btn-full" style="margin-top: 6px;">
-                    🤖 Telegram Botunda Döngüyü Başlat
+                <button onclick="handleTelegram('https://t.me/JarvisCraftsBot')" class="btn btn-primary">
+                    <i class="fa-brands fa-telegram"></i> Botta Yönet
                 </button>
             </div>
         </div>
 
-        <!-- ════════════════════════════════════════════ -->
-        <!-- TAB 3: JARVIS AI (LIVE IN-APP GENERATOR)     -->
-        <!-- ════════════════════════════════════════════ -->
-        <div id="tab-ai" class="tab-content">
-            <div class="card">
-                <div class="shimmer"></div>
-                <h3 class="card-title" style="margin-bottom: 8px;">🧠 Jarvis AI Reklam Sihirbazı</h3>
-                <p class="card-desc">Satmak istediğiniz ürünü yazın, yapay zeka en yüksek dönüşüm getiren 3 farklı reklam varyasyonu üretsin.</p>
-                
-                <div class="input-group">
-                    <label class="input-label">Ürününüz veya Hizmetiniz:</label>
-                    <input type="text" id="aiProductName" class="text-input" placeholder="Örn: Netflix ortak hesap 50 TL, garantili">
-                </div>
-
-                <button onclick="generateAiCopies()" class="btn btn-primary btn-full">
-                    ⚡ 3 Reklam Varyasyonu Üret
-                </button>
-
-                <div id="aiResultsContainer" style="display: none; margin-top: 14px;">
-                    <div class="ai-output-box">
-                        <button class="copy-btn" onclick="copyText('copyOpt1')">Kopyala</button>
-                        <strong>1️⃣ Dikkat Çekici & Fırsat:</strong>
-                        <p id="copyOpt1" style="margin-top: 4px;"></p>
-                    </div>
-
-                    <div class="ai-output-box">
-                        <button class="copy-btn" onclick="copyText('copyOpt2')">Kopyala</button>
-                        <strong>2️⃣ Profesyonel & Kurumsal:</strong>
-                        <p id="copyOpt2" style="margin-top: 4px;"></p>
-                    </div>
-
-                    <div class="ai-output-box">
-                        <button class="copy-btn" onclick="copyText('copyOpt3')">Kopyala</button>
-                        <strong>3️⃣ Kısa & Net:</strong>
-                        <p id="copyOpt3" style="margin-top: 4px;"></p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ════════════════════════════════════════════ -->
-        <!-- TAB 4: VIP & DESTEK                         -->
-        <!-- ════════════════════════════════════════════ -->
+        <!-- 💎 VIP TAB -->
         <div id="tab-vip" class="tab-content">
-            <!-- Weekly VIP -->
-            <div class="card">
-                <div class="shimmer"></div>
-                <div class="card-header-row">
-                    <div>
-                        <span class="tag-badge tag-popular">⭐ BAŞLANGIÇ</span>
-                        <h3 class="card-title">Haftalık VIP Slot</h3>
-                    </div>
-                    <div class="price-badge">150₺</div>
-                </div>
-                <p class="card-desc">Hızlı reklam kampanyaları ve kısa süreli yoğun tanıtımlar için ideal paket.</p>
-                <ul class="feature-bullets">
-                    <li>7 Gün Kesintisiz Reklam Döngüsü</li>
-                    <li>15 Dakika Gönderim Aralığı</li>
-                    <li>2 Gönderici Hesap Slotu</li>
-                    <li>Standart Destek</li>
+            <div class="section-title">
+                <i class="fa-solid fa-crown"></i> VIP Abonelikler
+            </div>
+            
+            <div class="card" style="border-color: rgba(251, 191, 36, 0.4); box-shadow: 0 10px 30px rgba(251, 191, 36, 0.1);">
+                <div class="badge" style="background: var(--gold); color: #000; border: none;">Önerilen</div>
+                <div class="card-title" style="color: var(--gold);">Aylık Sınırsız VIP</div>
+                <p class="card-desc">Tüm sistem özelliklerine tam erişim. Kesintisiz reklam ve öncelikli destek.</p>
+                <ul class="features-list">
+                    <li><i class="fa-solid fa-check" style="color: var(--gold);"></i> 5 Hesap Slotu</li>
+                    <li><i class="fa-solid fa-check" style="color: var(--gold);"></i> Sınırsız Mesaj Şablonu</li>
+                    <li><i class="fa-solid fa-check" style="color: var(--gold);"></i> 7/24 Öncelikli Geliştirici Desteği</li>
                 </ul>
-                <button onclick="handleShopier('https://www.shopier.com/JarvisStore')" class="btn btn-secondary btn-full">
-                    🛒 Haftalık VIP Satın Al (Shopier)
+                <div class="price">350 ₺ / Ay</div>
+                <button onclick="handleShopier('https://www.shopier.com/JarvisStore')" class="btn" style="background: var(--gold); color: #000;">
+                    <i class="fa-solid fa-crown"></i> VIP Satın Al
                 </button>
             </div>
-
-            <!-- Monthly VIP -->
-            <div class="card card-highlight">
-                <div class="shimmer"></div>
-                <div class="card-header-row">
-                    <div>
-                        <span class="tag-badge tag-popular" style="background: linear-gradient(135deg, #8b5cf6, #ec4899);">🌟 EN ÇOK TERCİH EDİLEN</span>
-                        <h3 class="card-title">Aylık Sınırsız VIP</h3>
-                    </div>
-                    <div class="price-badge">350₺</div>
-                </div>
-                <p class="card-desc">Profesyonel kullanıcılar için limitsiz gönderim, öncelikli sıra ve tam yetkili paket.</p>
-                <ul class="feature-bullets">
-                    <li>30 Gün Limitsiz Gönderim</li>
-                    <li>Özelleştirilebilir Gönderim Aralığı</li>
-                    <li>5 Gönderici Hesap Slotu</li>
-                    <li>7/24 VIP Öncelikli Destek (@JarvisCraft)</li>
+            
+            <div class="card">
+                <div class="card-title">Haftalık VIP</div>
+                <p class="card-desc">Sistemi denemek isteyenler için kısa süreli çözüm.</p>
+                <ul class="features-list">
+                    <li><i class="fa-solid fa-check"></i> 2 Hesap Slotu</li>
+                    <li><i class="fa-solid fa-check"></i> Standart Süre</li>
                 </ul>
-                <button onclick="handleShopier('https://www.shopier.com/JarvisStore')" class="btn btn-purple btn-full">
-                    💎 Aylık VIP Satın Al (Shopier)
+                <div class="price">150 ₺ / Hafta</div>
+                <button onclick="handleShopier('https://www.shopier.com/JarvisStore')" class="btn btn-secondary">
+                    İncele
                 </button>
-            </div>
-
-            <!-- Support & Contact Card -->
-            <div class="card">
-                <div class="shimmer"></div>
-                <h3 class="card-title" style="margin-bottom: 12px;">👨‍💻 Resmi Destek & İletişim</h3>
-                <div class="support-contact-box">
-                    <div class="support-avatar">J</div>
-                    <div>
-                        <div style="font-weight: 700; font-size: 14px;">Jarvis Destek</div>
-                        <div style="font-size: 12px; color: var(--text-muted);">@JarvisCraft (ID: 8387947754)</div>
-                        <div style="font-size: 11px; color: #34d399; margin-top: 2px;">🟢 7/24 Aktif Destek</div>
-                    </div>
-                </div>
-                <div class="btn-group">
-                    <button onclick="handleTelegram('https://t.me/JarvisCraft')" class="btn btn-primary">💬 Destek Al</button>
-                    <button onclick="handleTelegram('https://t.me/JarvisCraftDuyuru')" class="btn btn-secondary">📢 Kanal</button>
-                </div>
-            </div>
-
-            <!-- Table -->
-            <div class="card">
-                <h3 class="card-title" style="font-size: 14px; text-align: center; margin-bottom: 8px;">Paket Karşılaştırması</h3>
-                <div class="table-wrap">
-                    <table class="compare-table">
-                        <thead>
-                            <tr>
-                                <th>Özellik</th>
-                                <th>Free</th>
-                                <th>Haftalık</th>
-                                <th>Aylık VIP</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>Mesaj Aralığı</td>
-                                <td>30-60dk</td>
-                                <td>15dk</td>
-                                <td class="check">Limitsiz</td>
-                            </tr>
-                            <tr>
-                                <td>Hesap Slotu</td>
-                                <td>1</td>
-                                <td>2</td>
-                                <td class="check">5 Slot</td>
-                            </tr>
-                            <tr>
-                                <td>AI Araçları</td>
-                                <td>Limitli</td>
-                                <td class="check">Var</td>
-                                <td class="check">Sınırsız</td>
-                            </tr>
-                            <tr>
-                                <td>Öncelikli Sıra</td>
-                                <td class="cross">—</td>
-                                <td class="cross">—</td>
-                                <td class="check">✓ Aktif</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
             </div>
         </div>
     </div>
 
-    <!-- ════════════════════════════════════════════ -->
-    <!-- BOTTOM NAVIGATION (HIGH-END ICONS & TABS)    -->
-    <!-- ════════════════════════════════════════════ -->
+    <!-- BOTTOM NAVIGATION -->
     <nav class="bottom-nav">
-        <div class="nav-tab-item active" data-tab="tab-store" onclick="switchNavTab('tab-store')">
-            <svg class="nav-icon" viewBox="0 0 24 24">
-                <path d="M19 6h-2c0-2.76-2.24-5-5-5S7 3.24 7 6H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-7-3c1.66 0 3 1.34 3 3H9c0-1.66 1.34-3 3-3zm7 17H5V8h14v12zm-7-8c-1.66 0-3-1.34-3-3H7c0 2.76 2.24 5 5 5s5-2.24 5-5h-2c0 1.66-1.34 3-3 3z"/>
-            </svg>
+        <div class="nav-item active" data-tab="tab-store" onclick="switchNavTab('tab-store')">
+            <i class="fa-solid fa-store"></i>
             <span class="nav-label">Mağaza</span>
         </div>
-
-        <div class="nav-tab-item" data-tab="tab-engine" onclick="switchNavTab('tab-engine')">
-            <svg class="nav-icon" viewBox="0 0 24 24">
-                <path d="M11 21h-1l1-7H7.5c-.88 0-.33-.75-.31-.78C8.48 10.94 10.42 7.54 13.01 3h1l-1 7h3.51c.4 0 .62.19.4.66C12.97 17.55 11 21 11 21z"/>
-            </svg>
+        <div class="nav-item" data-tab="tab-engine" onclick="switchNavTab('tab-engine')">
+            <i class="fa-solid fa-bolt"></i>
             <span class="nav-label">Motor</span>
         </div>
-
-        <div class="nav-tab-item" data-tab="tab-ai" onclick="switchNavTab('tab-ai')">
-            <svg class="nav-icon" viewBox="0 0 24 24">
-                <path d="M21 10.12h-6.78l2.74-2.82c-2.73-2.7-7.15-2.8-9.88-.1-2.73 2.71-2.73 7.08 0 9.79s7.15 2.71 9.88 0C18.32 15.65 19 14.08 19 12.1h2c0 2.4-.94 4.7-2.76 6.53-3.64 3.64-9.54 3.64-13.18 0-3.64-3.64-3.64-9.54 0-13.19 3.64-3.64 9.54-3.64 13.18 0l2.76-2.82v7.5zM12.5 8H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
-            </svg>
-            <span class="nav-label">Jarvis AI</span>
-        </div>
-
-        <div class="nav-tab-item" data-tab="tab-vip" onclick="switchNavTab('tab-vip')">
-            <svg class="nav-icon" viewBox="0 0 24 24">
-                <path d="M18 2H6L2 8l10 14L22 8l-4-6zM4.29 9H8.6l3.4 8.61L4.29 9zm6.08 0h3.26l-1.63 8.06L10.37 9zm5.01 0h4.33l-7.71 8.61 3.38-8.61zM16.83 4l1.25 3H15.6l-1.25-3h2.48zM12 4.41L13.82 7H10.18L12 4.41zM7.17 4h2.48L8.4 7H5.92l1.25-3z"/>
-            </svg>
+        <div class="nav-item" data-tab="tab-vip" onclick="switchNavTab('tab-vip')">
+            <i class="fa-solid fa-crown"></i>
             <span class="nav-label">VIP</span>
+        </div>
+        <div class="nav-item" onclick="handleTelegram('tg://user?id=32186')">
+            <i class="fa-solid fa-headset"></i>
+            <span class="nav-label">Destek</span>
         </div>
     </nav>
 
@@ -1011,49 +458,31 @@
                     const tg = window.Telegram.WebApp;
                     tg.ready();
                     tg.expand();
-                    if (tg.setHeaderColor) tg.setHeaderColor('#060913');
-                    if (tg.setBackgroundColor) tg.setBackgroundColor('#060913');
+                    tg.setHeaderColor('#050505');
+                    tg.setBackgroundColor('#050505');
                 }
             } catch(e) {}
         })();
 
-        // Background Particles
-        (function initParticles() {
-            const bg = document.getElementById('ambient-particles');
-            if (!bg) return;
-            for (let i = 0; i < 20; i++) {
-                const p = document.createElement('div');
-                p.className = 'particle';
-                const size = Math.random() * 3 + 1.2;
-                const left = Math.random() * 100;
-                const animDuration = Math.random() * 12 + 10;
-                const delay = Math.random() * 8;
-                p.style.width = size + 'px';
-                p.style.height = size + 'px';
-                p.style.left = left + '%';
-                p.style.animationDuration = animDuration + 's';
-                p.style.animationDelay = delay + 's';
-                bg.appendChild(p);
-            }
-        })();
-
         // Tab Switching
         function switchNavTab(targetTabId) {
-            triggerHaptic('selection');
-            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.nav-tab-item').forEach(n => n.classList.remove('active'));
+            triggerHaptic('light');
+            
+            document.querySelectorAll('.tab-content').forEach(t => {
+                t.style.display = 'none';
+                t.classList.remove('active');
+            });
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
 
             const targetTab = document.getElementById(targetTabId);
             if (targetTab) {
+                targetTab.style.display = 'block';
+                // Trigger reflow for animation
+                void targetTab.offsetWidth;
                 targetTab.classList.add('active');
-                targetTab.querySelectorAll('.card').forEach(c => {
-                    c.style.animation = 'none';
-                    c.offsetHeight;
-                    c.style.animation = '';
-                });
             }
 
-            const activeNav = document.querySelector(`.nav-tab-item[data-tab="${targetTabId}"]`);
+            const activeNav = document.querySelector(`.nav-item[data-tab="${targetTabId}"]`);
             if (activeNav) activeNav.classList.add('active');
 
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1063,11 +492,7 @@
         function triggerHaptic(type = 'light') {
             try {
                 if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
-                    if (type === 'selection') {
-                        window.Telegram.WebApp.HapticFeedback.selectionChanged();
-                    } else {
-                        window.Telegram.WebApp.HapticFeedback.impactOccurred(type);
-                    }
+                    window.Telegram.WebApp.HapticFeedback.impactOccurred(type);
                 }
             } catch(e) {}
         }
@@ -1089,49 +514,6 @@
             } else {
                 window.open(url, '_blank');
             }
-        }
-
-        // Live Ad Preview Sync
-        function updatePreview() {
-            const input = document.getElementById('liveAdInput');
-            const preview = document.getElementById('adPreviewText');
-            if (input && preview) {
-                preview.textContent = input.value || 'Metin girilmedi...';
-            }
-        }
-
-        // In-App AI Copywriter
-        function generateAiCopies() {
-            triggerHaptic('medium');
-            const input = document.getElementById('aiProductName');
-            const val = (input && input.value.trim()) || 'Özel Yazılım & Bot Hizmeti';
-
-            const opt1 = `🔥 BÜYÜK FIRSAT!\n\n⚡ ${val} en uygun fiyat ve anında teslimatla satışta!\n✅ %100 Çalışma Garantisi\n🛒 Sipariş: @JarvisCraft\n📦 Mağaza: https://www.shopier.com/JarvisStore`;
-            const opt2 = `🚀 KALİTE ARAYANLAR İÇİN\n\n🎯 ${val}\n💎 Hızlı • Güvenilir • 7/24 Kesintisiz Destek\n👇 Hemen iletişime geçin: @JarvisCraft`;
-            const opt3 = `⭐ ÖZEL İNDİRİM\n\n${val}\n📦 Sınırlı stok — Kaçırmayın!\n💬 Satın Alım & Bilgi: @JarvisCraft`;
-
-            document.getElementById('copyOpt1').textContent = opt1;
-            document.getElementById('copyOpt2').textContent = opt2;
-            document.getElementById('copyOpt3').textContent = opt3;
-
-            const container = document.getElementById('aiResultsContainer');
-            container.style.display = 'block';
-            container.scrollIntoView({ behavior: 'smooth' });
-        }
-
-        // Copy Text Helper
-        function copyText(elementId) {
-            triggerHaptic('light');
-            const text = document.getElementById(elementId).textContent;
-            navigator.clipboard.writeText(text).then(() => {
-                if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.showAlert) {
-                    window.Telegram.WebApp.showAlert('✅ Reklam metni panoya kopyalandı!');
-                } else {
-                    alert('✅ Reklam metni panoya kopyalandı!');
-                }
-            }).catch(() => {
-                alert('Metin kopyalandı.');
-            });
         }
     </script>
 </body>

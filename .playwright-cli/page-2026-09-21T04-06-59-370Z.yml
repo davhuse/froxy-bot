@@ -1,0 +1,55 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - button "Froxy Froxy Froxy Akıllı" [ref=e90] [cursor=pointer]:
+      - img "Froxy" [ref=e6]
+      - generic [ref=e7]:
+        - generic [ref=e8]: Froxy
+        - generic [ref=e9]: Froxy Akıllı
+    - button "₺0,00" [ref=e91] [cursor=pointer]
+  - main [ref=e15]:
+    - generic [ref=e219]:
+      - generic [ref=e220]:
+        - generic [ref=e221]:
+          - paragraph [ref=e222]: FROXY CREATIVE
+          - heading "Medya Stüdyosu" [level=1] [ref=e223]
+          - paragraph [ref=e224]: Üretim türünü seç, ayarları sade bir akışta tamamla.
+        - generic [ref=e225]: 1 ücretsiz üretim
+      - generic [ref=e226]:
+        - button "Üret" [ref=e227] [cursor=pointer]
+        - button "Düzenle" [ref=e228] [cursor=pointer]
+        - button "Varyasyon" [ref=e229] [cursor=pointer]
+        - button "Upscale" [ref=e230] [cursor=pointer]
+        - button "Arka plan" [ref=e231] [cursor=pointer]
+        - button "Video" [ref=e232] [cursor=pointer]
+        - button "Ses" [ref=e233] [cursor=pointer]
+      - generic [ref=e234]:
+        - generic [ref=e235]:
+          - generic [ref=e236]: Üretim modeli
+          - button "AI Model kütüphanesi Kullanıma hazır model seç" [ref=e237] [cursor=pointer]:
+            - generic [ref=e238]: AI
+            - generic [ref=e240]:
+              - generic [ref=e241]: Model kütüphanesi
+              - generic [ref=e242]: Kullanıma hazır model seç
+          - generic [ref=e245]: İstem
+          - textbox "Sahneyi, ışığı, kompozisyonu ve stili anlat…" [ref=e246]
+          - generic [ref=e247]:
+            - generic [ref=e248]: Oran
+            - generic [ref=e249]: 1:1
+          - generic [ref=e250]:
+            - button "1:1" [ref=e251] [cursor=pointer]
+            - button "4:5" [ref=e252] [cursor=pointer]
+            - button "9:16" [ref=e253] [cursor=pointer]
+            - button "16:9" [ref=e254] [cursor=pointer]
+          - button "Görseli üret" [disabled] [ref=e255] [cursor=pointer]
+        - generic [ref=e256]:
+          - generic [ref=e257]:
+            - generic [ref=e258]: Önizleme
+            - emphasis [ref=e259]: Hazır
+          - generic [ref=e260]:
+            - generic [ref=e263]: Yeni bir şey üret
+            - generic [ref=e264]: Modeli seç, fikrini anlat ve sonucu burada gör.
+  - navigation [ref=e73]:
+    - button "AI" [ref=e74] [cursor=pointer]
+    - button "Stüdyo" [ref=e78] [cursor=pointer]
+    - button "Mağaza" [ref=e82] [cursor=pointer]
+    - button "Hesap" [ref=e86] [cursor=pointer]

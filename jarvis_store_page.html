@@ -1,0 +1,1380 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, user-scalable=yes, initial-scale=1.0, maximum-scale=5.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+<meta name="csrf-token" content="306f8526ba4043b0903e0843015a07a6441fea866e3dc6b95cb22433fa3ff101f3f23ba4bf367449b9ba5443a38758fd7304d9ae20a500cbf1e5692c8467ec3d">
+<meta name="description" content="Güvenli ödeme, pratik alışveriş.">
+<meta name="shopier-active-template" content="storev3">
+<base href="https://www.shopier.com/s/"/>
+<script type="text/javascript">
+    let clrshptrck = '';
+        if (clrshptrck !== ''){
+        (function(c,l,a,r,i,t,y){
+            c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+            t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+            y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+        })(window, document, "clarity", "script", clrshptrck);
+    }
+
+</script>
+<script>
+  const shopName = "JarvisStore";
+  window._AutofillCallbackHandler = window._AutofillCallbackHandler || function(){} // a fix for instagram browser
+</script>
+    <title>JarvisStore | Shopier</title>
+    <meta property="fb:app_id" content="1321130767979745"/>
+            <meta name='robots' content='noindex, follow'>
+        <meta property="og:url" content="https://www.shopier.com/s/store/JarvisStore"/>
+    <meta property="og:type" content="website"/>
+    <meta property="og:title" content="JarvisStore | Shopier"/>
+    <meta property="og:description" content="Güvenli ödeme, pratik alışveriş."/>
+            <meta property="og:image" content="https://cdn.shopier.app/logo_468/default-logo-438x438.png"/>
+        <!-- BEGIN STYLES -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link rel="stylesheet" href="templates/storev3/assets/css/index.css">
+<link rel="stylesheet" href="templates/storev3/assets/css/app.css">
+<link rel="stylesheet" href="templates/storev3/assets/css/custom.css">
+<link rel="preload" as="image" href="templates/storev3/assets/svgs/info-circle-store-menu-hover.svg">
+<script src="templates/storev3/assets/js/jquery-3.7.0.min.js"></script>
+<script src="templates/storev3/assets/js/index.js" defer="defer"></script>
+<script src="templates/storev3/assets/js/custom.js" defer="defer"></script>
+<script src="templates/storev3/assets/js/lottie.min.js" defer="defer"></script>
+
+<!-- END STYLES -->
+<style></style></head>
+<body>
+    <script>
+        (function () {
+            const ua = navigator.userAgent || '';
+            const isAndroid = /Android/i.test(ua);
+            const isiPhone = /iPhone/i.test(ua);
+
+            // Instagram in-app browser tespiti (genel + verdiğin sürümler)
+            const igVersions = [
+                'Instagram 398.1.0.53.77',
+                'Instagram 402.0.0.49.70',
+                'Instagram 403.0.0.0.41'
+            ];
+            const isInstagramUA = ua.includes('Instagram');
+            const isWebViewish = ua.includes(' wv') || ua.includes('IABMV');
+            const isTargetIgVersion = igVersions.some(v => ua.includes(v));
+
+            // TikTok in-app browser tespiti
+            const isTiktokWebView = ua.includes('TikTok')
+                || ua.includes('TTWebView')
+                || ua.includes('musical_ly')
+                || ua.includes('ByteLocale')
+                || ua.includes('ByteFullLocale')
+                || ua.includes('BytedanceWebview');
+
+            // Yalnızca Instagram in-app + Android + hedef sürümler
+            const shouldForceExternal =
+                (
+                    (isAndroid && (isInstagramUA || isTargetIgVersion || isTiktokWebView)) /*||
+                    (isiPhone && isTiktokWebView)*/
+                ) &&
+                // URL üzerinde ext=1 parametresi varsa tekrar etme
+                !/[?&]ext=(1|2)\b/.test(location.search);
+
+            if (!shouldForceExternal) return;
+
+            let extParam = '';
+            if (isInstagramUA || isTargetIgVersion) {
+                extParam = '1'; // Instagram için
+            } else if (isTiktokWebView) {
+                extParam = '2'; // TikTok için
+            }
+
+            // Mevcut URL’i ext=1 ya da ext=2 parametresiyle yeniden kur (geri gelirsek loop olmasın)
+            const url = new URL(window.location.href);
+            url.searchParams.set('ext', extParam);
+            const href = url.toString();
+
+            // 1) Chrome’a nişanlı intent
+            const intentChrome =
+                `intent://${href.replace(/^https?:\/\//, '')}` +
+                `#Intent;scheme=${location.protocol.replace(':','')};package=com.android.chrome;end`;
+
+            // 2) Genel chooser (Chrome yoksa/engellenirse)
+            const intentGeneric =
+                `intent://${href.replace(/^https?:\/\//, '')}` +
+                `#Intent;scheme=${location.protocol.replace(':','')};end`;
+
+            // Deneme sıralaması: Chrome intent -> generic intent -> _blank fallback
+            let triedGeneric = false;
+            const openFallbackBlank = () => {
+                try { window.open(href, '_blank', 'noopener,noreferrer'); } catch (e) {}
+            };
+
+            // Chrome intent
+            try {
+                try {
+                    window.location.href = intentChrome;
+                }
+                catch (e) {
+                    // bazı in-app browser’lar sessizce yoksayar; kısa timeout ile generic’e düş
+                    setTimeout(() => {
+                        if (triedGeneric) return;
+                        triedGeneric = true;
+                        try { window.location.href = intentGeneric; } catch (e) { openFallbackBlank(); }
+                        // generic de yoksanırsa son çare
+                        setTimeout(openFallbackBlank, 700);
+                    }, 700);
+                }
+
+            } catch (e) {
+                // doğrudan generic’e
+                try { window.location.href = intentGeneric; } catch (e2) { openFallbackBlank(); }
+                setTimeout(openFallbackBlank, 700);
+            }
+        })();
+    </script>
+
+
+<script>
+        let {
+        language: $language, product: $product, page: $page, shopier_app: $shopier_app, shop: $shop
+    } = {"page":"store","shop":{"username":"JarvisStore","default_product_count":24},"language":{"discount_text":"\u0130ndirim","out_of_stock":"T\u00fckendi","close":"Kapat","ok_text":"Tamam","copied":"Kopyaland\u0131","copy":"Kopyala","shop_announcement":"D\u00fckkan bildirisi","shop_is_in_vacation":"Bu d\u00fckkan, sat\u0131\u015flar\u0131na ge\u00e7ici bir s\u00fcre ara vermi\u015ftir. L\u00fctfen daha sonra tekrar deneyin.","cancel":"Vazge\u00e7","new":"Yeni","last_item":"Son \u00fcr\u00fcn","digital_product":"Dijital \u00fcr\u00fcn","products_lower":"\u00fcr\u00fcn","product_lower":"\u00fcr\u00fcn","filtered":"Filtrelenen","filter_advantageous_products":"Avantajl\u0131 \u00fcr\u00fcnler","filter_discounted_products":"\u0130ndirimli \u00fcr\u00fcnler","filter_auto_discounted_products":"Kampanyal\u0131 \u00fcr\u00fcnler","filter_best_products":"En \u00e7ok satanlar","filter_stock":"Stok","filter_only_in_stock":"Sadece stoktakiler","filter_are_you_sure_title":"Emin misiniz?","filter_are_you_sure_text":"Filtreleme kriterleri temizlenecek.","confirm":"Onayla","track_order":"Sipari\u015f takibi","text_seller":"Sat\u0131c\u0131","order_number":"Sipari\u015f No","order_status":"Sipari\u015f Durumu","order_status_message_cargo_tracking_email":"E-posta olarak g\u00f6nder","order_status_message_cargo_tracking_sms":"SMS olarak g\u00f6nder","footer_cargo_send_form_text":"\u00d6n Bilgilendirme Formu ve Mesafeli Sat\u0131\u015f S\u00f6zle\u015fmesini g\u00f6nder","send_text":"G\u00f6nder","order_id_empty_message":"L\u00fctfen ge\u00e7erli bir sipari\u015f numaras\u0131 giriniz.","client_error_message":"Ge\u00e7ersiz bir istek g\u00f6nderildi, l\u00fctfen bir s\u00fcre sonra tekrar deneyiniz.","order_complete":"Sipari\u015f al\u0131nd\u0131","order_status_message_complete":"Sipari\u015finiz sat\u0131c\u0131 taraf\u0131ndan kargoya verildi\u011finde, kargo takip bilgileri sipari\u015fte kay\u0131tl\u0131 e-posta adresinize g\u00f6nderilecektir.","order_status_message_digital":"Sipari\u015finiz sat\u0131c\u0131 taraf\u0131ndan dijital olarak teslim edilecektir.","order_cargo":"Kargoya verildi","order_status_message_cargo_tracking":"Kargo takip bilgilerini kay\u0131tl\u0131 e-posta adresinize veya telefon numaran\u0131za g\u00f6ndermemizi ister misiniz?","order_delivered":"Teslim edildi","order_status_message_delivered":"Sipari\u015finiz teslim edilmi\u015ftir. Sat\u0131n ald\u0131\u011f\u0131n\u0131z \u00fcr\u00fcn veya hizmetle ilgili sorular\u0131n\u0131z i\u00e7in l\u00fctfen sat\u0131c\u0131yla ileti\u015fime ge\u00e7iniz.","order_cancel":"\u0130ptal edildi","order_refund":"\u0130ade edildi","footer_cargo_tracking_email_sending":"E-posta g\u00f6nderiliyor...","footer_cargo_tracking_sms_sending":"Mesaj g\u00f6nderiliyor...","footer_cargo_tracking_email_result":"Kargo takip bilgileri sipari\u015fte kay\u0131tl\u0131 mail adresinize g\u00f6nderildi.","footer_cargo_tracking_sms_result":"Kargo takip bilgileri sipari\u015fte kay\u0131tl\u0131 telefon numaran\u0131za SMS olarak g\u00f6nderildi.","send_agreements_modal_email_result":"\u00d6n Bilgilendirme Formu ve Mesafeli Sat\u0131\u015f S\u00f6zle\u015fmesi sipari\u015fte kay\u0131tl\u0131 mail adresinize g\u00f6nderildi.","send_agreements_modal_sms_result":"\u00d6n Bilgilendirme Formu ve Mesafeli Sat\u0131\u015f S\u00f6zle\u015fmesi sipari\u015fte kay\u0131tl\u0131 telefon numaran\u0131za SMS olarak g\u00f6nderildi.","shopping_security":"Al\u0131\u015fveri\u015f G\u00fcvenli\u011fi","refund_terms":"\u0130ade Ko\u015fullar\u0131","pre_notification_form":"\u00d6n Bilgilendirme Formu ","distance_selling_contract":"Mesafeli Sat\u0131\u015f S\u00f6zle\u015fmesi","protection_of_personal_data":"Ki\u015fisel Verilerin Korunmas\u0131","server_error_message":"Sunucudan yan\u0131t al\u0131namad\u0131, l\u00fctfen bir s\u00fcre sonra tekrar deneyiniz.","unexpected_error_occurred":"Beklenmeyen bir hata olu\u015ftu, l\u00fctfen bir s\u00fcre sonra tekrar deneyiniz.","following":"Takiptesin","follow":"Takip et","follow_store_one_step_title":null,"follow_store_one_step_message":null,"shop_in_vacation_message":"Bu d\u00fckkan sat\u0131\u015flar\u0131na ara verdi\u011finden takip edilemez.","search_product":"\u00dcr\u00fcn","search_category":"Kategori","discount_not_applicable_warning_title":"\u0130ndirimin uygulanabilmesi i\u00e7in toplam sepet tutar\u0131, indirim tutar\u0131ndan y\u00fcksek olmal\u0131d\u0131r.","discount_not_applicable_warning_desc1":"Sepet tutar\u0131n\u0131z (kargo hari\u00e7)","discount_not_applicable_warning_desc2":"\u0130ndirim tutar\u0131","discount_not_applicable_warning_desc3":"Eklenmesi gereken min. tutar","cargo_not_applicable_warning_title":"\u00dccretsiz kargo uygulanabilmesi i\u00e7in indirim sonras\u0131 toplam sepet tutar\u0131, \u00fccretsiz kargo limitine e\u015fit veya y\u00fcksek olmal\u0131d\u0131r.","cargo_not_applicable_warning_desc1":"Sepet tutar\u0131n\u0131z (kargo hari\u00e7)","cargo_not_applicable_warning_desc2":"\u00dccretsiz kargo limiti","cargo_not_applicable_warning_desc3":"Eklenmesi gereken min. tutar"}};
+    
+    $coupon_code_canvas = "";
+
+    // globals
+    const $urls = {"hosted":"https:\/\/www.shopier.com\/","base_url":"https:\/\/www.shopier.com\/s\/","get_filter_matrix":"https:\/\/www.shopier.com\/s\/api\/v1\/get_filter_matrix","buyer":"https:\/\/www.shopier.com\/s\/api\/v1\/buyer\/JarvisStore","get_filter_sorting":"https:\/\/www.shopier.com\/s\/api\/v1\/get_filter_sorting\/JarvisStore","search_product":"https:\/\/www.shopier.com\/s\/api\/v1\/search_product\/JarvisStore","elastic_search":"https:\/\/www.shopier.com\/s\/api\/v1\/elasticsearch","add_item_basket":"https:\/\/www.shopier.com\/s\/api\/v1\/add_chart_item\/JarvisStore","remove_item_basket":"https:\/\/www.shopier.com\/s\/api\/v1\/remove_chart_item\/JarvisStore","update_quantity":"https:\/\/www.shopier.com\/s\/api\/v1\/update_quantity\/JarvisStore","get_policies":"https:\/\/www.shopier.com\/s\/api\/v1\/get_policies\/JarvisStore","get_masterpass_token":"https:\/\/www.shopier.com\/s\/api\/v1\/get_masterpass_token","unlink_masterpass":"https:\/\/www.shopier.com\/s\/api\/v1\/unlink_masterpass","masterpass_sdk_url":"https:\/\/mp-sdk.masterpassturkiye.com","check_payment_progress":"https:\/\/www.shopier.com\/s\/api\/v1\/check_payment_progress\/JarvisStore","cancel_ongoing_payment":"https:\/\/www.shopier.com\/s\/api\/v1\/cancel_ongoing_payment\/JarvisStore","check_sub_variation":"https:\/\/www.shopier.com\/s\/api\/v1\/check_sub_variation","get_cities":"https:\/\/www.shopier.com\/s\/api\/v1\/get_cities","token_calculator":"https:\/\/www.shopier.com\/s\/api\/v1\/token_calculator","shipment_form_process":"https:\/\/www.shopier.com\/s\/api\/v1\/shipment_form_process\/JarvisStore","checkout_form_process":"https:\/\/www.shopier.com\/s\/api\/v1\/checkout_form_process\/JarvisStore","shipping_redirect":"https:\/\/www.shopier.com\/s\/redirect\/shipping_redirect.php?username=JarvisStore","checkout_form_process_curl":"http:\/\/www.localhost\/s\/api\/v1\/checkout_form_process\/JarvisStore?l","cargo_company":"https:\/\/www.shopier.com\/s\/api\/v1\/cargo_company\/JarvisStore","change_shipping_details":"https:\/\/www.shopier.com\/s\/api\/v1\/change_shipping_details\/JarvisStore","control_bin_number":"https:\/\/www.shopier.com\/s\/api\/v1\/bin_number_control\/JarvisStore","coupon_code":"https:\/\/www.shopier.com\/s\/api\/v1\/coupon_code\/JarvisStore","track_order":"https:\/\/www.shopier.com\/s\/api\/v1\/track_order\/JarvisStore","check_order":"https:\/\/www.shopier.com\/s\/api\/v1\/check_order\/JarvisStore","discount":"https:\/\/www.shopier.com\/s\/api\/v1\/discount","app":"https:\/\/www.shopier.com\/s\/api\/v1\/app","log4UsnDeKdcDceTgs":"https:\/\/www.shopier.com\/s\/api\/v1\/log4UsnDeKdcDceTgs"};
+    const $error_message = null;
+
+    // filter_modal_widgets.js
+    const $image_endpoints = {"small":"https:\/\/cdn.shopier.app\/pictures_small\/","mid":"https:\/\/cdn.shopier.app\/pictures_mid\/","large":"https:\/\/cdn.shopier.app\/pictures_large\/","pictures":"https:\/\/s3.eu-central-1.amazonaws.com\/shopier1\/pictures\/","scaledoriginal":"https:\/\/cdn.shopier.app\/scaledoriginal\/","user_template_assets":"https:\/\/cdn.shopier.app\/user_template_assets\/","logo_234":"https:\/\/cdn.shopier.app\/logo_234\/","logo_468":"https:\/\/cdn.shopier.app\/logo_468\/","banner_wide_screen":"https:\/\/cdn.shopier.app\/banner\/desktop\/","banner_mobile":"https:\/\/cdn.shopier.app\/banner\/mobile\/"};
+    const $product_count = 1;
+    const $categories = [];
+
+    // footer.js
+    const $track_order_data = null;
+    const $contract_info = null;
+    const $shop_name = "JarvisStore";
+
+    
+    
+    
+    
+        $shop = Object.assign({},$shop,{"username":"JarvisStore","name":"","address":"mevlana halit 448. sok diyarbak\u0131r ibrahiim kaya\nibrahim kaya daire 1","motto":"","is_shop_has_a_phone":false,"phone":"","is_shop_has_a_email":false,"email":"","is_shop_has_a_announce":false,"announce":"","discount":{"is_shop_has_a_discount":false},"is_shop_in_vacation":false,"is_shop_free_shipping":true,"meta_no_index_enable":true,"show_basket":true,"show_filter":0,"show_mobile_filter":0,"is_shop_visible":1,"default_product_count":24,"banner_wide_screen":"","banner_mobile":"","logo":"default-logo-438x438.png","show_load_more":false,"store_column_count":2,"foreign_seller":0})
+    $shopier_app = Object.assign({},$shopier_app,null)
+    const $track_order_modal_details = {"show_track_order_modal":false}
+    const $is_in_app_user = false;
+    
+    
+</script>    <header class="header header-fixed ">
+        <nav class="navbar">
+            <div class="container-store">
+                <div>
+                                            <a class="search-back-btn" href="javascript:;">
+                            <i class="shopier-icon shopier-icon-arrow-left w-6 h-6"></i>
+                            <span>Geri git</span></a>
+                        <div class="logo logo-primary">
+                            <img src="templates/storev3/assets/svgs/shopier.svg" alt="shopier" width="110" height="32">
+                        </div>
+                                                <div class="store-title !hidden">
+                            <div>JarvisStore</div>
+                        </div>
+                                    </div>
+                                        <div class="header-search-area">
+        <div class="input-search-wrapper js-input-search-wrapper">
+            <div class="search-backdrop"></div>
+            <div class="input-search">
+                <button class="input-back-btn" type="button">
+                    <i class="shopier-icon shopier-icon-arrow-left w-6 h-6"></i>
+                </button>
+                <div class="dropdown input-box-wrapper shopier-es">
+                    <button class="dropdown-toggle" type="button" data-bs-toggle="dropdown"></button>
+                    <form class="input-box shopier-es--form searchForm" action="https://www.shopier.com/JarvisStore"
+                          method="post" autocomplete="off"
+                          id="shopier-es--form">
+                        <input id="shopier-es--input"
+                               class="search-modal-input js-input-search shopier-es--input shopier--search-input"
+                               type="text" name="search" placeholder=" "
+                               autocomplete="off" aria-label="Search">
+                        <div class="input-search-icon h-6" id="shopier-es--button" type="submit">
+                            <i class="shopier-icon shopier-icon-search-gray w-6 h-6"></i>
+                        </div>
+                        <button class="input-clear-btn shopier--search-clear-btn h-6" type="reset">
+                            <i class="shopier-icon shopier-icon-close-circle w-6 h-6"></i>
+                        </button>
+                        <div class="dropdown-menu search-group__result shopier-es--body" id="shopier-es--body"
+                             style="display: none">
+                            <ul class="js-input-search-results term-results shopier-es--results"
+                                id="shopier-es--results">
+                            </ul>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+                    <div>
+                                                    <button class="lg:hidden header-search outline-none" id="shopier-es--toggle-mobile"
+                                    data-bs-toggle="offcanvas" data-bs-target="#search-canvas"
+                                    aria-label="search-button">
+                                <div class="w-6 h-6">
+                                    <i class="shopier-icon shopier-icon-search w-6 h-6"></i>
+                                </div>
+                            </button>
+                                                                                                            <div id="trackOrderHead" class="header-user shopier-store--order-tracking-btn">
+                                    <div class="w-6 h-6">
+                                        <i class="shopier-icon shopier-icon-truck w-6 h-6"></i>
+                                    </div>
+                                </div>
+                                                                                                                                                            <a href="https://www.shopier.com/b/login?redirect=guest_to_account&shop=JarvisStore">                                    
+                                        <div class="w-6 h-6">
+                                            <i class="shopier-icon shopier-icon-person-large w-6 h-6"></i>  
+                                        </div>
+                                    </a>
+                                                                            <div class="header-basket">
+    <a href="basket/JarvisStore" class="header-cart-icon shopier-store--header-basket-btn-basket-link">
+        <div class="navbar-basket-content" id="product-count-div">
+            <i class="shopier-icon shopier-icon-basket w-6 h-6"></i>
+            <span id="product-count" class="header-cart__count shopier-store--header-cart-count">0</span>
+        </div>
+    </a>
+</div>
+                    </div>                    
+                            </div>
+        </nav>
+    </header>
+    <div class="header-hidden-effect !hidden">
+    </div>
+                        <div class="discount-main-layout discount xy-top-bar">
+                                    <div class="discount-main-layout-content">
+    <div class="free-shipping-bar">Ücretsiz kargo</div>
+</div>                                                <div class="discount-main-layout-content !hidden">
+                                <s-progress-notify class="!hidden"
+                                               amount="0"
+                                                           msg="" >
+            </s-progress-notify>
+    <script>
+      var $progress_bar = {"bar_text":null,"amount":0,"is_complete":false,"is_show":false,"icon":{"type":null,"visible":false,"threshold":0},"icon_2":{"type":null,"visible":false,"threshold":0},"result_type":"shipping_rules"}
+      var progressNotifyEl = document.querySelector("s-progress-notify");
+      var progressNotifyParentEl = progressNotifyEl?.closest(".discount-main-layout-content");
+      if (["store"].includes($page)) {
+        if ($progress_bar?.is_show === false) {
+          progressNotifyParentEl?.remove();
+        }
+      }
+    </script>
+    
+                    </div>
+            </div>
+            
+    <div class="offcanvas offcanvas-right discount-canvas" tabindex="-1" id="discountNotificationCanvas"
+     aria-labelledby="discountNotificationCanvasLabel" data-bs-backdrop="static">
+    <div class="offcanvas-header">
+        <div class="container-store lg:px-[73px]">
+            <button class="discount-canvas-close" type="button" data-bs-dismiss="offcanvas" aria-label="Close">
+                <i class="shopier-icon shopier-icon-arrow-left w-6 h-6"></i>
+                <span class="discount-back-text"></span></button>
+        </div>
+    </div>
+    <div class="offcanvas-body xy-discount-offcanvas-body">
+        <div class="flex justify-between">
+            <div class="container-store">
+                <div class="notification-bar notification-bar-secondary">
+                    <div class="notification-bar-header"></div>
+                    <div class="notification-bar-body">
+                        <p class="discount-information notification-bar-text shopier-store--discount-notification-bar-text">
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="flex justify-center mt-[19px] lg:mt-5">
+            <div class="container-store">
+                <ul class="discount-canvas-tab">
+                    <li class="tabs-bar-item discount-canvas-tab-item cursor-pointer">
+                        <div class="discount-canvas-tab-link active discount-add-text shopier-store--discount-addable-button"></div>
+                    </li>
+                    <li class="tabs-bar-item discount-canvas-tab-item cursor-pointer" id="discount-win-tab">
+                        <div class="discount-canvas-tab-link discount-win-text shopier-store--discount-earnable-button"></div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div id="section-bar-addable" class="tabs-bar-content ">
+            <div class="discount-canvas-categories discount-canvas-categories-addable">
+                <div class="container-store">
+                    <div class="tab-discount">
+                        <div class="swiper js-discount-tab-swiper">
+                            <div class="swiper-wrapper">
+                                <div class="swiper-slide discount-clone-addable-category !hidden">
+                                    <button class="discount-canvas-category js-discount-canvas-category addable-category-button " type="button">
+                                        <div></div>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="discount-addable-categories">
+                            <div class="swiper-button-prev-discount">
+                                <div><i class="shopier-icon shopier-icon-arrow-left w-6 h-6"></i></div>
+                            </div>
+                            <div class="swiper-button-next-discount">
+                                <div><i class="shopier-icon shopier-icon-arrow-right w-6 h-6"></i></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="flex justify-center addable_product_count-div">
+                <div class="container-store">
+                    <div class="discount-canvas-actions discount-canvas-actions-addable">
+                        <div class="relative h-[24px] lg:h-[17px] flex items-center">
+                            <span id="addable_product_count" class="text-14 font-medium text-[#9C9EAC] leading-[17px]"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="discount-canvas-products">
+                <div class="container-store">
+                    <div class="discount-canvas-products-grid addable-canvas-product">
+                        <div class="product-card placeholder addable-placeholder !hidden">
+                            <a href="#" title="Product Title" role="link" class="shopier-store--discount-product-card-product-link">
+                                <div class="product-card-header">
+                                    <div class="product-card-image-container"> </div>
+                                </div>
+                                <div class="product-card-body">
+                                    <div class="product-card-badges"><span class="sr-only"></span><span
+                                                class="sr-only"></span></div>
+                                    <div class="product-card-title">
+                                        <h3 class="sr-only shopier-store--discount-product-card-product-title"></h3>
+                                    </div>
+                                    <div class="product-card-price">
+                                        <div class="price price-current shopier-store--discount-product-card-price-current"><span class="sr-only"></span><span
+                                                    class="sr-only"></span><span class="sr-only"> </span></div>
+                                        <div class="price price-old shopier-store--discount-product-card-price-old"><span class="sr-only"></span><span
+                                                    class="sr-only"></span><span class="sr-only"></span></div>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="discount-canvas-products-grid addable-products"></div>
+                </div>
+            </div>
+        </div>
+        <div class="product-card product-card-discount product-card-clone !hidden">
+            <a href="" class="discount-product-link shopier-store--discount-product-card-product-link" role="link">
+                <div class="product-card-header">
+                    <div class="product-card-image-container">
+                        <picture>
+                            <img class="w-full discount-image-wrapper" src="" alt="" width="226" height="226">
+                        </picture>
+                        <div class="product-card-no-stock !hidden">
+                            <div class="badge-no-stock"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="product-card-body">
+                    <div class="product-card-badges">
+                        <div class="badge-left flex gap-x-1 items-start auto-badge !hidden">
+                            <i class="shopier-icon shopier-icon-discount w-[26px] h-[26px] mt-[-3px] purple-discount-badge"></i>
+                            <span class="badge-only-number badge-discount auto-discount-rate"></span>
+                        </div>
+                        <span class="badge badge-discount  discount-rate !hidden"></span>
+                        <span class="badge item-filter__badge !hidden"></span>
+                    </div>
+                    <div class="product-card-title">
+                        <h3 class="product-card-title-text discount-product-name shopier-store--discount-product-card-product-title"></h3>
+                    </div>
+                    <div class="product-card-price discount-container !hidden ">
+                        <div class="price price-current shopier-store--discount-product-card-price-current">
+                            <span class="price-value"></span>
+                            <span class="price-cent"></span>
+                            <span class="price-currency"></span>
+                        </div>
+                        <div class="price price-old shopier-store--discount-product-card-price-old">
+                            <span class="price-value"></span>
+                            <span class="price-cent"></span>
+                            <span class="price-currency"></span>
+                        </div>
+                    </div>
+                    <div class="product-card-price price-container !hidden">
+                        <div class="price price-current shopier-store--discount-product-card-price-current">
+                            <span class="price-value"></span>
+                            <span class="price-cent"></span>
+                            <span class="price-currency"></span>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div id="section-bar-earnable" class="tabs-bar-content !hidden">
+            <div class="discount-canvas-categories discount-canvas-categories-earnable">
+                <div class="container-store">
+                    <div class="tab-discount">
+                        <div class="swiper js-discount-tab-swiper2">
+                            <div class="swiper-wrapper">
+                                <div class="swiper-slide discount-clone-earnable-category !hidden">
+                                    <button class="discount-canvas-category js-discount-canvas-category earnable-category-button" type="button">
+                                        <div></div>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="discount-earnable-categories">
+                            <div class="swiper-button-prev-discount2">
+                                <div><i class="shopier-icon shopier-icon-arrow-left w-6 h-6"></i></div>
+                            </div>
+                            <div class="swiper-button-next-discount2">
+                                <div><i class="shopier-icon shopier-icon-arrow-right w-6 h-6"></i></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="flex justify-center earnable_product_count-div">
+                <div class="container-store">
+                    <div class="discount-canvas-actions discount-canvas-actions-earnable">
+                        <div class="relative h-[24px] lg:h-[17px] flex items-center">
+                            <span id="earnable_product_count" class="text-14 font-medium text-[#9C9EAC] leading-[17px]"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="discount-canvas-products">
+                <div class="container-store">
+                    <div class="discount-canvas-products-grid earnable-canvas-product">
+                        <div class="product-card placeholder earnable-placeholder !hidden">
+                            <a href="#" title="Product Title" role="link" class="shopier-store--discount-product-card-product-link">
+                                <div class="product-card-header">
+                                    <div class="product-card-image-container"> </div>
+                                </div>
+                                <div class="product-card-body">
+                                    <div class="product-card-badges"><span class="sr-only"></span><span
+                                                class="sr-only"></span></div>
+                                    <div class="product-card-title">
+                                        <h3 class="sr-only shopier-store--discount-product-card-product-title"></h3>
+                                    </div>
+                                    <div class="product-card-price">
+                                        <div class="price price-current shopier-store--discount-product-card-price-current"><span class="sr-only"></span><span
+                                                    class="sr-only"></span><span class="sr-only"> </span></div>
+                                        <div class="price price-old shopier-store--discount-product-card-price-old"><span class="sr-only"></span><span
+                                                    class="sr-only"></span><span class="sr-only"></span></div>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="discount-canvas-products-grid earnable-products"></div>
+                </div>
+            </div>
+        </div>
+        <div class="discount-footer"></div>
+    </div>
+</div><body class="store store-8">
+<main class="main-layout store store-0" data-shopier-main>
+    <div class="store-wrapper">
+        <div class="info-box info-box-basket info-box-deactivated-store !hidden" data-nosnippet>
+            <div class="info-box-icon">
+                <i class="shopier-icon shopier-icon-miscallenous w-6 h-6"></i>
+            </div>
+            <div class="info-box-content">
+                <div>Bu dükkan, satışlarına geçici bir süre ara vermiştir. Lütfen daha sonra tekrar deneyin.</div>
+            </div>
+        </div>
+        <section class="store-information
+    store-information-secondary
+
+ has-title ">
+        <div class="store-information-header" data-nosnippet>
+                <div class="container-store">
+            <div class="store-information-header-content">
+                                                    <div id="store-information-primary-follow-btn">
+                        <button id="btn-follow-store" class="btn-follow btn-follow-store shopier-store--store-follow-store-button">
+                            <span>Takip et</span>
+                        </button>
+                    </div>
+                            </div>
+        </div>
+    </div>
+        <div class="store-information-body">
+        <div class="container-store">
+            <div class="store-information-body-content">
+                <h3 class="store-information-title shopier-store--shop-name">
+                    JarvisStore                </h3>
+                                                                    <div class="store-information-follow-btn" id="store-information-secondary-follow-btn">
+                        <button id="btn-follow-store" class="btn-follow btn-follow-store shopier-store--store-follow-store-button">
+                            <span>Takip et</span>
+                        </button>
+                    </div>
+                            </div>
+        </div>
+    </div>
+</section>                                <section class="store-filter filter-store" data-nosnippet>
+                <div class="container-store">
+                    <div class="flex justify-between h-6">
+                        <div class="store-filter-result-wrapper">
+            <span class="store-filter-result flex items-center">
+        <span class="product-links-name catalog-text"></span>
+        <span class="store-filter-result shopier--store-filtering-result-count" id="products-count_box"><span
+                    id="products-count">1</span>  ürün  </span>
+        <button class="store-filter-clear-button block lg:hidden clear-filter-trigger !hidden h-6"
+                type="button"><i class="shopier-icon shopier-icon-close-circle-gray w-6 h-6"></i>
+            </button>
+        <button class="store-filter-clear-button hidden ms-2 lg:block clear-filter-trigger !hidden" type="button"><i class="shopier-icon shopier-icon-close-circle-gray w-6 h-6"></i></button>
+    </span>
+    </div>
+                    </div>
+                </div>
+            </section>
+            <section class="store-products ">
+                <div class="container-store">
+                    <div class="product-card product-card-store shopier--product-card !hidden"
+                         id="shopier--product-card-template">
+                        <a href="" role="link" class="product-card__link shopier-store--store-product-card-link product-image-link-store">
+                            <div class="product-card-header">
+                                <div class="product-card-image-container product-card__image-container">
+                                    <picture>
+                                        <img src="" width="226" height="226" srcset="" alt="" title=""
+                                             class="w-full product-card__image-thumbnail">
+                                    </picture>
+                                    <div class="product-card-no-stock !hidden">
+                                        <div class="badge-no-stock"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="product-card-body">
+                                <div class="product-card-badges right-badges product-card-badges-store">
+                                    <div class="flex gap-x-1 items-start auto-badge !hidden">
+                                        <i class="shopier-icon shopier-icon-discount w-[26px] h-[26px] mt-[-3px] purple-discount-badge !hidden"></i>
+                                        <span class="badge-only-number badge-discount discount-rate !hidden"></span>
+                                    </div>
+                                    <span class="badge   item-filter__badge !hidden"></span>
+                                </div>
+                                <div class="product-card-title">
+                                    <h3 class="product-card__title shopier-store--store-product-card-title"></h3>
+                                </div>
+                                <div class="product-card-price discount-container !hidden">
+                                    <div class="price price-current price-new shopier-store--store-product-card-price-current">
+                                        <span class="price-value"></span>
+                                        <span class="price-cent"></span>
+                                        <span class="price-currency"></span>
+                                    </div>
+                                    <div class="price price-old shopier-store--store-product-card-price-old">
+                                        <span class="price-value"></span>
+                                        <span class="price-cent"></span>
+                                        <span class="price-currency"></span>
+                                    </div>
+                                </div>
+                                <div class="product-card-price price-container !hidden">
+                                    <div class="price price-current shopier-store--store-product-card-price-current">
+                                        <span class="price-value"></span>
+                                        <span class="price-cent"></span>
+                                        <span class="price-currency"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </a></div>
+                    <div id="shopier--product-list-section" class="product-grid products-list store-products-list"
+                         style="--grid-size: 2  ">
+                                                    <div class="product-card shopier--product-card product-card-store">
+                                <a  href="https://www.shopier.com/JarvisStore/51056683"                                         class="product-image-link-store shopier-store--store-product-card-link" data-back-id="51056683" role="link">
+                                    <div class="product-card-header">
+                                        <div class="product-card-image-container">
+                                            <picture>
+                                                <img src="https://cdn.shopier.app/pictures_mid/JarvisStore_38167f12e33e9d8eb9074cbac9f8c78c.jpg"
+                                                     width="226" height="226"
+                                                     srcset="https://cdn.shopier.app/pictures_mid/JarvisStore_38167f12e33e9d8eb9074cbac9f8c78c.jpg 2x"
+                                                     alt="aaaaaaaaaaaaa" title="aaaaaaaaaaaaa">
+                                            </picture>
+                                                                                    </div>
+                                    </div>
+                                    <div class="product-card-body">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                <div class="product-card-badges product-card-badges-store " data-nosnippet>
+                                                                                        
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+                                                                                            <span class="badge">Yeni</span>
+                                                                                    </div>
+                                        <div class="product-card-title">
+                                            <h3 class="shopier-store--store-product-card-title">aaaaaaaaaaaaa</h3>
+                                        </div>
+
+                                        <div class="product-card-price">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <div class="price price-current price-new shopier-store--store-product-card-price-current" data-price="111.111,00 TL">
+                                                <span class="price-value">111.111</span>
+                                                <span class="price-cent"></span>
+                                                <span class="price-currency">TL</span>
+                                            </div>
+                                                                                    </div>
+                                    </div>
+                                </a></div>
+                                            </div>
+                    <div class="flex justify-center animation !hidden">
+                        <div id="lottie-animation" class="shopier-store--loading-animation" style="width: 120px; height: 120px;"></div>
+                    </div>
+                </div>
+            </section>
+            </div>
+    <div class="modal fade modal-store-contact" id="store-contact-modal" tabindex="-1" data-nosnippet>
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-body">
+                <div class="text-center text-black text-20 font-semibold">İletişim bilgileri</div>
+                <div class="mt-[33px]">
+                    <div class="flex flex-col gap-[17px]">
+                                                                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary w-full" type="button"
+                        data-bs-dismiss="modal"><span>Kapat</span></button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="offcanvas offcanvas-bottom action-sheet" tabindex="-1" id="store-contact-canvas"
+     aria-labelledby="store-contact-canvasLabel" data-nosnippet>
+    <div class="offcanvas-header">
+        <button class="hidden" type="button" data-bs-dismiss="offcanvas"
+                aria-label="Close"></button>
+        <div class="action-sheet-swipe-btn"></div>
+    </div>
+    <div class="offcanvas-body">
+        <div class="action-sheet-title" id="store-contact-canvasLabel">İletişim bilgileri</div>
+        <div class="action-sheet-desc">
+            <div class="flex flex-col gap-[17px]">
+                                            </div>
+        </div>
+    </div>
+    <div class="offcanvas-footer">
+        <div class="action-sheet-footer">
+            <button class="btn btn-primary w-full" type="button"
+                    data-bs-dismiss="offcanvas"><span>Kapat</span></button>
+        </div>
+    </div>
+</div>
+
+    <div id="shopier--search-empty-section" class="col-12 px-0 products-empty products-content !hidden">
+        <div class="not-found">
+            <div class="container">
+                <div class="not-found-head">
+                    <div class="not-found-icon">
+                        <i class="shopier-icon shopier-icon-miscallenous w-[72px] h-[72px]"></i>
+                    </div>
+                    <div class="not-found-title shopier-store--not-found-search-result-title">Ürün bulunamadı</div>
+                </div>
+                <div class="not-found-body">
+                    <div class="not-found-desc">
+                        <div>
+                            <span class="shopier-store--not-found-search-result-text">Filtreye uygun sonuç bulunamadı. Dükkandaki ürünlere geri dönmek için </span>
+                            <a href="https://www.shopier.com/JarvisStore"
+                               class="text-primary text-decoration-underline empty-filter_clear shopier-store--not-found-search-result-btn"> tıklayınız.</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="info-box info-box-basket !hidden" id="minumumOrderModal">
+        <div class="info-box-icon">
+            <i class="shopier-icon shopier-icon-tick-circle w-6 h-6"></i>
+        </div>
+        <div class="info-box-content">
+            <div class="info-box-text minumum-order-text"></div>
+        </div>
+    </div>
+</main>
+</body>
+    
+            <div class="offcanvas offcanvas-end action-sheet js-popup-inputs" tabindex="-1" id="search-canvas"
+     aria-labelledby="search-canvas">
+    <div class="offcanvas-body">
+        <div class="search-page">
+            <div class="container-store search-sticky">
+                <div class="search-page-head">
+                    <div class="title block lg:hidden">Ara</div>
+                    <div class="input-search-wrapper js-input-search-wrapper">
+                        <div class="search-backdrop"></div>
+                        <div class="input-search  with-filter">
+                            <button class="input-back-btn block lg:hidden h-6" type="button"
+                                    data-bs-dismiss="offcanvas">
+                                <i class="shopier-icon shopier-icon-arrow-left w-6 h-6"></i>
+                            </button>
+                            <button class="input-back-btn hidden lg:block h-6" type="button">
+                                <i class="shopier-icon shopier-icon-arrow-left w-6 h-6"></i>
+                            </button>
+                            <div class="dropdown input-box-wrapper">
+                                <button class="dropdown-toggle" type="button" data-bs-toggle="dropdown"></button>
+                                <form class="input-box shopier-es--form-mobile searchForm" id="shopier-es--form-mobile"
+                                      action="https://www.shopier.com/JarvisStore"                                      method="post" autocomplete="off">
+                                    <input class="js-input-search shopier-es--input shopier-es--input-canvas shopier--search-input"
+                                           id="shopier-es--input-mobile" type="text"
+                                           name="search"  placeholder=" "                                           autocomplete="off">
+                                    <div class="input-search-icon h-6" id="shopier-es--button-mobile">
+                                        <i class="shopier-icon shopier-icon-search-gray w-6 h-6"></i>
+                                    </div>
+                                    <button class="input-clear-btn shopier--search-clear-btn h-6" type="reset">
+                                        <i class="shopier-icon shopier-icon-close-circle w-6 h-6"></i>
+                                    </button>
+                                    <div class="dropdown-menu top-full rounded-tr-none" id="shopier-es--body-mobile"
+                                         style="display: none">
+                                        <ul class="js-input-search-results term-results"
+                                            id="shopier-es--results-mobile"></ul>
+                                    </div>
+                                </form>
+                                                            </div>
+                        </div>
+                    </div>
+                                    </div>
+            </div>
+            <div id="shopier--search-empty-section-canvas" class="container-store products-empty !hidden">
+                <div class="js-search-empty search-empty">
+                    <div class="search-empty-message">Bu arama için sonuç bulunmuyor.</div>
+                </div>
+            </div>
+            <div class="container-store canvas-filter-box">
+                <div class="js-search-results search-results">
+                    <span class="store-filter-result filter-store-canvas flex items-center">
+                        <div class="search-length shopier--store-filtering-result-count" id="products-count_box-canvas"><span
+                                    id="products-count-canvas"></span></div>
+                        <button class="block lg:hidden !hidden clear-filter-trigger-canvas store-filter-clear-button h-6"
+                                type="button" id="clear-canvas-trigger"><i
+                                    class="shopier-icon shopier-icon-close-circle-gray w-6 h-6"></i></button>
+                    </span>
+                    <div class="product-card shopier--product-card-canvas !hidden"
+                         id="shopier--product-card-template-canvas">
+                        <a href="" role="link" class="product-card__link shopier-store--store-product-card-link">
+                            <div class="product-card-header">
+                                <div class="product-card-image-container product-card__image-container">
+                                    <picture>
+                                        <img src="" width="226" height="226" srcset="" alt="" title=""
+                                             class="w-full product-card__image-thumbnail">
+                                    </picture>
+                                    <div class="product-card-no-stock !hidden">
+                                        <div class="badge-no-stock"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="product-card-body">
+                                <div class="product-card-badges right-badges product-card-badges-canvas">
+                                    <div class="flex gap-x-1 items-start auto-badge !hidden">
+                                        <i class="shopier-icon shopier-icon-discount w-[26px] h-[26px] mt-[-3px] purple-discount-badge !hidden"></i>
+                                        <span class="badge-only-number badge-discount discount-rate !hidden"></span>
+                                    </div>
+                                    <span class="badge item-filter__badge"></span>
+                                </div>
+                                <div class="product-card-title">
+                                    <h3 class="product-card__title shopier-store--store-product-card-title"></h3>
+                                </div>
+                                <div class="product-card-price discount-container !hidden">
+                                    <div class="price price-current price-new shopier-store--store-product-card-price-current">
+                                        <span class="price-value"></span>
+                                        <span class="price-cent"></span>
+                                        <span class="price-currency"></span>
+                                    </div>
+                                    <div class="price price-old shopier-store--store-product-card-price-old">
+                                        <span class="price-value"></span>
+                                        <span class="price-cent"></span>
+                                        <span class="price-currency"></span>
+                                    </div>
+                                </div>
+                                <div class="product-card-price price-container !hidden">
+                                    <div class="price price-current shopier-store--store-product-card-price-current">
+                                        <span class="price-value"></span>
+                                        <span class="price-cent"></span>
+                                        <span class="price-currency"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </a></div>
+                    <div class="product-grid products-list-canvas" id="shopier--product-list-section"></div>
+                    <div class="flex justify-center !hidden animation-canvas">
+                        <div id="lottie-animation-canvas" class="shopier-store--search-loading-animation"
+                             style="width: 120px; height: 120px;"></div>
+                    </div>
+                </div>
+                <div class="offcanvas offcanvas-bottom action-sheet action-sheet-multipos" tabindex="-1"
+                     id="search-filter-canvas" aria-labelledby="search-filter-canvasLabel">
+                    <div class="offcanvas-header px-[1.375rem]">
+                        <button type="button" class="h-6 hidden lg:block" data-bs-dismiss="offcanvas"
+                                aria-label="Close">
+                            <i class="shopier-icon shopier-icon-close-circle w-6 h-6"></i>
+                        </button>
+                        <div class="action-sheet-swipe-btn block lg:hidden"></div>
+                    </div>
+                    <div class="offcanvas-body js-action-sheet-filter-body">
+                        <div class="font-semibold action-sheet-title">Filtrele</div>
+                        <div class="flex justify-center !hidden filter-animation-canvas">
+                            <div id="filter-lottie-animation-canvas"
+                                 class="shopier-store--search-filter-loading-animation"
+                                 style="width: 120px; height: 120px;"></div>
+                        </div>
+                        <div class="action-sheet-desc store-filter-action-sheet">
+                                                        <div class="flex flex-col mt-[-2px] lg:mt-[1px] price-main-div filter-price-canvas">
+                                <div class="filter-price-title">Fiyat</div>
+                                <div class="mt-[15px] input-group price-range price-range--desktop">
+                                    <div class="input-text-currency">
+                                        <div class="input-box">
+                                            <input type="number" placeholder=" " name="min" min="0" value=""
+                                                   class="price-input-max shopier--filtering-checkbox-canvas shopier--filtering-min-price"
+                                                   id="min-price-canvas">
+                                            <div class="input-name">
+                                                <span>En düşük</span></div>
+                                                                                            <div class="input-currency"><span>TL</span></div>
+                                                                                    </div>
+                                    </div>
+                                    <div class="input-text-currency">
+                                        <div class="input-box">
+                                            <input type="number" placeholder=" " value=""
+                                                   class="price-input-max shopier--filtering-checkbox-canvas shopier--filtering-max-price"
+                                                   type="number" name="max" min="0" id="max-price-canvas">
+                                            <div class="input-name">
+                                                <span>En yüksek</span></div>
+                                                                                            <div class="input-currency"><span>TL</span></div>
+                                                                                    </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="offcanvas-footer filter-footer-canvas">
+                        <button class="btn-primary-outline border-none text-16 font-semibold p-2 pb-[14px] clear-all-btn-canvas shopier--filtering-clear-btn"
+                                id="clear-all-filter-canvas" type="button"><span>Tümünü temizle</span></button>
+                        <button class="btn btn-primary w-full shopier--filtering-apply-btn" id="apply-filter-canvas" type="button"
+                                data-bs-dismiss="offcanvas">
+                            <span>Uygula</span></button>
+                    </div>
+                </div>
+                <div class="offcanvas offcanvas-bottom action-sheet action-sheet-multipos" tabindex="-1"
+                     id="search-sorting-canvas" aria-labelledby="search-sorting-canvasLabel">
+                    <div class="offcanvas-header px-[1.375rem]">
+                        <button type="button" class="h-6 hidden lg:block" data-bs-dismiss="offcanvas" aria-label="Close">
+                            <i class="shopier-icon shopier-icon-close-circle w-6 h-6"></i>
+                        </button>
+                        <div class="action-sheet-swipe-btn block lg:hidden"></div>
+                    </div>
+                    <div class="offcanvas-body js-action-sheet-filter-body">
+                        <div class="font-semibold action-sheet-title">Sırala</div>
+                        <div class="action-sheet-desc flex flex-col gap-y-[5px]">
+                            <div class="filter-widget__item-canvas shopier--sorting-canvas">
+                                <label class="input-radio shopier--sorting-checkbox">
+                                    <div class="input-body">
+                                        <div class="input-name"> Fiyat, artan</div>
+                                    </div>
+                                    <input class="sorting shopier--sorting-price-date-radio-canvas" type="radio"
+                                           name="sort-input-canvas" id="price-low-canvas">
+                                </label>
+                            </div>
+                            <div class="filter-widget__item-canvas shopier--sorting-canvas">
+                                <label class="input-radio shopier--sorting-checkbox">
+                                    <div class="input-body">
+                                        <div class="input-name">Fiyat, azalan</div>
+                                    </div>
+                                    <input class="sorting shopier--sorting-price-date-radio-canvas" type="radio"
+                                           name="sort-input-canvas" id="price-high-canvas">
+                                </label>
+                            </div>
+                            <div class="filter-widget__item-canvas shopier--sorting-canvas">
+                                <label class="input-radio shopier--sorting-checkbox">
+                                    <div class="input-body">
+                                        <div class="input-name"> Listeleme tarihi, artan</div>
+                                    </div>
+                                    <input type="radio" class="sorting shopier--sorting-price-date-radio-canvas"
+                                           name="sort-input-canvas" id="date-older-canvas">
+                                </label>
+                            </div>
+                            <div class="filter-widget__item-canvas w-100 shopier--sorting-canvas">
+                                <label class="input-radio shopier--sorting-checkbox">
+                                    <div class="input-body">
+                                        <div class="input-name"> Listeleme tarihi, azalan</div>
+                                    </div>
+                                    <input class="sorting shopier--sorting-price-date-radio-canvas" type="radio"
+                                           name="sort-input-canvas" id="date-newer-canvas">
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="offcanvas-footer">
+                        <button class="btn-primary-outline border-none text-16 font-semibold p-2 pb-[14px] clear-all-btn-canvas shopier--sorting-clear-btn"
+                                id="clear-all-sorting-canvas" type="button"><span>Tümünü temizle</span>
+                        </button>
+                        <button class="btn btn-primary w-full shopier--sorting-apply-btn" id="apply-sorting-canvas" data-bs-dismiss="offcanvas"
+                                aria-label='Close' type="button">
+                            <span>Uygula</span></button>
+                    </div>
+                </div>
+                <div class="offcanvas offcanvas-bottom action-sheet confirmation-sheet" tabindex="-1"
+                     id="canvas-clear-canvas" aria-labelledby="canvas-clearLabel">
+                    <div class="offcanvas-header">
+                        <button class="hidden" type="button" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+                        <div class="action-sheet-swipe-btn"></div>
+                    </div>
+                    <div class="offcanvas-body">
+                        <div class="action-sheet-title">Emin misiniz?</div>
+                        <div class="text-center action-sheet-desc">Filtreleme kriterleri temizlenecek.</div>
+                    </div>
+                    <div class="offcanvas-footer">
+                        <button class="btn btn-primary w-full" id="clear-sorting-button-canvas" type="button"
+                                data-bs-dismiss="offcanvas"><span>Onayla</span></button>
+                        <button class="btn btn-primary-outline w-full" type="button" data-bs-dismiss="offcanvas">
+                            <span>Vazgeç</span></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="offcanvas-filter-footer footer-canvas" style="height: 40px;"></div>
+    </div>
+</div>    
+    <script src="templates/storev3/assets/js/custom_scripts.js"></script>
+        <footer class="footer footer-primary">
+        <div class="flex flex-col">
+                            <div class="order-track-btn-sheet flex justify-center items-center border-b border-[#E2E2E5] pt-[34px] pb-[29px] lg:hidden">
+                    <div class="flex justify-center items-center">
+                        <a href="https://www.shopier.com/b/login?redirect=redirect_to_order">
+                            <div class="text-14 font-medium text-[#0B0F34] text-center cursor-pointer">
+                                Sipariş takibi
+                            </div>
+                        </a>
+                    </div>
+                </div>
+                        <div class="flex justify-center">
+                <div class="container">
+                                            <div class="footer-content general-footer">
+                            <div class="footer-description">
+                                <div class="footer-title shopier-store--shop-name">
+                                                                            JarvisStore
+                                                                    </div>
+                                <p class="footer-message"></p>
+                                                                <a href="https://www.shopier.com/b/login?redirect=redirect_to_order"
+                                   class="btn-follow order-track-btn-modal download-app hidden lg:flex">
+                                    <span>Sipariş takibi </span>
+                                </a>
+                            </div>
+                            <div class="footer-links">
+                                <div class="footer-title">Koşullar</div>
+                                <ul class="footer-links-list">
+                                    <li class="footer-section__menu-item">
+                                        <div id="open-shopping-secure-modal"
+                                             class="footer-section__menu-link">Alışveriş Güvenliği</div>
+                                    </li>
+                                    <li class="footer-section__menu-item">
+                                        <div id="open-preliminary-information-form-modal"
+                                             class="footer-section__menu-link">Ön Bilgilendirme Formu </div>
+                                    </li>
+                                    <li class="footer-section__menu-item">
+                                        <div id="open-distance-selling-contract-modal"
+                                             class="footer-section__menu-link">Mesafeli Satış Sözleşmesi</div>
+                                    </li>
+                                    <li class="footer-section__menu-item">
+                                        <div id="open-protection-of-personal-data-modal"
+                                             class="footer-section__menu-link">Kişisel Verilerin Korunması</div>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    
+                    <div class="footer-content checkout-footer">
+                        <div class="footer-description">
+                            <div class="flex items-center justify-center gap-x-[15px]">
+                                <a href="https://www.instagram.com/shopiercom/">
+                                    <i class="shopier-icon shopier-icon-instagram w-[35px] h-[34px] footer-icon"></i>
+                                </a>
+                                <a href="https://www.linkedin.com/company/shopier">
+                                    <i class="shopier-icon shopier-icon-linkedin w-[35px] h-[34px] footer-icon"></i>
+                                </a>
+                            </div>
+                            <div class="footer-title cursor-pointer privacy-and-terms-content-modal-btn"
+                                 data-bs-toggle="modal"
+                                 data-bs-target="#privacy-and-terms-modal">Gizlilik ve Koşullar</div>
+                            <div class="footer-title cursor-pointer privacy-and-terms-content-sheet-btn"
+                                 data-bs-toggle="offcanvas"
+                                 data-bs-target="#privacy-and-terms-sheet">Gizlilik ve Koşullar</div>
+                            <p class="footer-message-checkout">Copyright &copy; 2026
+                                Shopier</p>
+                            <p class="footer-message-checkout">Tüm hakları saklıdır.</p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </footer>
+            <template id="track-order_desktop">
+    <div class="modal fade modal-stock-notify" id="orderTrackingModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-body">
+                    <div class="font-semibold text-center text-20 mt-10">Sipariş takibi</div>
+                    <div class="font-medium text-start text-16 mt-7.5">Siparişinizin güncel durumunu kontrol etmek için sipariş numarası girin.</div>
+                    <div class="mt-7.5 mb-[250px]">
+                        <div class="input-text">
+                            <div class="input-box">
+                                <input class="shopier-store--order-tracking-order-number-input" type="text" placeholder=" " id="orderTrackingInput" name="orderNumberModal"
+                                       autocomplete="orderNumberModal">
+                                <div class="input-name">
+                                    <span>Sipariş numarası</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="orderTrackingError" class="flex position-absolute mt-[10px] items-center error-color visibility-hidden">
+                            <div class="mr-1.5">
+                                <i class="shopier-icon shopier-icon-info-circle-red w-6 h-6"></i>
+                            </div>
+                            <div id="inputErrorText" class="text-12 shopier-store--order-tracking-error-text"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="w-full btn btn-primary shopier-store--order-tracking-continue-btn" type="button" id="orderTrackingBtn" disabled>
+                        <div class="relative">İlerle</div>
+                    </button>
+                    <button class="w-full btn btn-primary-outline shopier-store--order-tracking-cancel-btn" data-bs-dismiss="modal" type="button">
+                        <div class="relative">Vazgeç</div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade modal-stock-notify" id="orderTrackingStage2" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-body">
+                    <div class="loader mt-[85px] mx-auto">
+                        <div class="loader-circle-1"></div>
+                        <div class="loader-circle-2"></div>
+                    </div>
+                    <div id="notifyOrderCargoText" class="mt-[50px] mb-[41px] font-medium text-center shopier-store--order-tracking-notify-cargo-text"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade modal-stock-notify" id="orderTrackingForm" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-body">
+                    <div class="relative">                        
+                        <i class="shopier-icon shopier-icon-arrow-left w-6 h-6 absolute left-0 top-0 cursor-pointer shopier-store--order-tracking-back-btn" data-bs-toggle="modal" data-bs-target="#orderTrackingStage1" aria-controls="orderTrackingStage1"></i>
+                        <div class="font-semibold text-center text-20 mt-10">Sipariş takibi</div>
+                    </div>
+                    <div class="font-medium text-start text-16 mt-10 flex">
+                        <span class="font-bold w-[115px]">Satıcı</span>
+                        <span id="shop-name" class="ml-7 shopier-store--order-detail-seller-name"></span>
+                    </div>
+                    <div class="font-medium text-start text-16 mt-2.5 flex">
+                        <span class="font-bold w-[115px]">Sipariş No</span>
+                        <span id="order-id" class="ml-7 shopier-store--order-detail-order-number"></span>
+                    </div>
+                    <div class="my-10 font-medium text-16 shopier-store--order-tracking-send-form-title">
+                        Ön Bilgilendirme Formu ve Mesafeli Satış Sözleşmesi’ni hangi yolla göndermemizi istersiniz?
+                    </div>
+                    <div class="gap-y-[5px] flex flex-col mb-[70px]">
+                        <label class="input-radio shopier-store--order-tracking-send-form-via-email-btn">
+                            <div class="input-body">
+                                <div class="input-name">E-posta olarak gönder</div>
+                            </div>
+                            <input type="radio" name="agreements" value="email" checked
+                                   data-label="E-posta olarak gönder">
+                        </label>
+                        <label class="input-radio shopier-store--order-tracking-send-form-via-sms-btn">
+                            <div class="input-body">
+                                <div class="input-name">SMS olarak gönder</div>
+                            </div>
+                            <input type="radio" name="agreements" value="sms"
+                                   data-label="SMS olarak gönder">
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="w-full btn btn-primary shopier-store--order-tracking-send-form-btn" type="button" id="orderTrackingFormBtn2" data-bs-dismiss="modal">
+                        <div class="relative">Gönder</div>
+                    </button>
+                    <button class="w-full btn btn-primary-outline shopier-store--order-tracking-cancel-form-btn" data-bs-dismiss="modal" type="button">
+                        <div class="relative">Vazgeç</div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+<template id="track-order_mobile">
+    <div class="offcanvas offcanvas-bottom action-sheet" tabindex="-1" id="orderTrackingSheet"
+         aria-labelledby="orderTrackingSheetLabel">
+        <div class="offcanvas-header">
+            <button class="hidden" type="button" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            <div class="action-sheet-swipe-btn"></div>
+        </div>
+        <div class="offcanvas-body">
+            <div class="action-sheet-desc">
+                <div class="font-semibold text-center text-20">
+                    Sipariş takibi
+                    <div class="font-medium text-start text-16 mt-[29px] !leading-[19px]">Siparişinizin güncel durumunu kontrol etmek için sipariş numarası girin.</div>
+                    <div class="mt-[30px] mb-[233px]">
+                        <div class="input-text">
+                            <div class="input-box">
+                                <input type="text" placeholder=" " id="orderTrackingInput" name="orderNumberSheet"
+                                       autocomplete="orderNumberSheet">
+                                <div class="input-name">
+                                    <span>Sipariş numarası</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="orderTrackingError" class="flex mt-[10px] items-center error-color visibility-hidden">
+                            <div class="mr-1.5 h-6">
+                                <i class="shopier-icon shopier-icon-info-circle-red w-6 h-6"></i>
+                            </div>
+                            <div id="inputErrorText" class="text-12 shopier-store--order-tracking-error-text"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="offcanvas-footer">
+            <div class="flex flex-col gap-y-[5px]">
+                <button class="btn btn-primary w-full shopier-store--order-tracking-continue-btn" type="button" id="orderTrackingBtn" disabled>
+                    <span>İlerle</span>
+                </button>
+                <button class="w-full btn btn-primary-outline shopier-store--order-tracking-cancel-btn" data-bs-dismiss="offcanvas" type="button">
+                    <div class="relative">Vazgeç</div>
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="offcanvas offcanvas-bottom action-sheet" tabindex="-1" id="orderTrackingStage2"
+         aria-labelledby="orderTrackingStage2SheetLabel">
+        <div class="offcanvas-header">
+            <button class="hidden" type="button" data-bs-dismiss="offcanvas"
+                    aria-label="Close"></button>
+            <div class="action-sheet-swipe-btn"></div>
+        </div>
+        <div class="loader mt-[76px] mx-auto">
+            <div class="loader-circle-1"></div>
+            <div class="loader-circle-2"></div>
+        </div>
+        <div id="notifyOrderCargoText" class="mt-[50px] mb-[85px] font-medium text-center shopier-store--order-tracking-notify-cargo-text"></div>
+    </div>
+    <div class="offcanvas offcanvas-bottom action-sheet" tabindex="-1" id="orderTrackingForm"
+         aria-labelledby="orderTrackingFormSheetLabel">
+        <div class="offcanvas-header">
+            <button class="hidden" type="button" data-bs-dismiss="offcanvas"
+                    aria-label="Close"></button>
+            <div class="action-sheet-swipe-btn"></div>
+        </div>
+        <div class="offcanvas-body">
+            <div class="action-sheet-desc">
+                <div class="relative">
+                    <i class="shopier-icon shopier-icon-arrow-left w-6 h-6 absolute left-0 top-0 cursor-pointer shopier-store--order-tracking-back-btn" data-bs-toggle="offcanvas" data-bs-target="#orderTrackingStage1" aria-controls="orderTrackingStage1"></i>
+                    <div class="font-semibold text-center text-20">Sipariş takibi</div>
+                </div>
+                <div class="flex mt-10 font-medium text-start text-16">
+                    <span class="font-bold w-[115px]">Satıcı</span>
+                    <span id="shop-name" class="ml-7 shopier-store--order-detail-seller-name"></span>
+                </div>
+                <div class="font-medium text-start text-16 mt-2.5 flex">
+                    <span class="font-bold w-[115px]">Sipariş No</span>
+                    <span id="order-id" class="ml-7 shopier-store--order-detail-order-number"></span>
+                </div>
+                <div class="my-10 font-medium text-16 shopier-store--order-tracking-send-form-title">
+                    Ön Bilgilendirme Formu ve Mesafeli Satış Sözleşmesi’ni hangi yolla göndermemizi istersiniz?
+                </div>
+                <div class="gap-y-[5px] flex flex-col mb-[70px]">
+                    <label class="input-radio shopier-store--order-tracking-send-form-via-email-btn">
+                        <div class="input-body">
+                            <div class="input-name">E-posta olarak gönder</div>
+                        </div>
+                        <input type="radio" name="agreements" value="email" checked
+                               data-label="E-posta olarak gönder">
+                    </label>
+                    <label class="input-radio shopier-store--order-tracking-send-form-via-sms-btn">
+                        <div class="input-body">
+                            <div class="input-name">SMS olarak gönder</div>
+                        </div>
+                        <input type="radio" name="agreements" value="sms" data-label="SMS olarak gönder">
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div class="offcanvas-footer">
+            <div class="flex flex-col gap-y-[5px]">
+                <button class="btn btn-primary w-full shopier-store--order-tracking-send-form-btn" type="button" id="orderTrackingFormBtn2" data-bs-dismiss="offcanvas">
+                    <span>Gönder </span>
+                </button>
+                <button class="w-full btn btn-primary-outline shopier-store--order-tracking-cancel-form-btn" data-bs-dismiss="offcanvas" type="button">
+                    <div class="relative">Vazgeç</div>
+                </button>
+            </div>
+        </div>
+    </div>
+</template>
+<script>
+    document?.addEventListener("DOMContentLoaded", function () {
+        const input = document.getElementById('orderTrackingInput');
+        input?.addEventListener('input', function () {
+            this.value = this.value.replace(/[^0-9]/g, '');
+        });
+    })
+</script>
+    
+    <script src="templates/storev3/assets/js/discount.js"></script>
+
+
+  <script src="templates/storev3/assets/js/store_banner.js" defer="defer"></script>
+  <script src="templates/storev3/assets/js/store_modals.js" defer="defer"></script>
+  <script src="templates/storev3/assets/js/store.js" defer="defer"></script>
+
+
+    <script src="templates/storev3/assets/js/search_scripts.js" defer="defer"></script>
+    <script src="templates/storev3/assets/js/search_elasticsearch.js" defer="defer"></script>
+
+    <script src="templates/storev3/assets/js/filter_modal_widget.js" defer="defer"></script>
+<script src="templates/storev3/assets/js/footer.js"></script>    <script>
+    const $app_price = null || '';
+    const $app_has_cent = null || '';
+    const $diff_price = null || '';
+    const $diff_has_cent = null || '';
+    const $app_cent = $app_has_cent ? "" : '';
+    const $diff_cent = $diff_has_cent ? "" : '';
+    const $app_currency_code_default = "";
+    const $app_currency_symbol = $app_currency_code_default == "TL" ? '' : (null || '');
+    const $app_currency_code = $app_currency_code_default == "TL" ? $app_currency_code_default : '';
+</script>
+
+<shopier-popup slug="popup-progress-notify-warning" class-offcanvas="popup-progress-notify-warning">
+    <template>
+        <div>
+            <div class="flex justify-center mt-[21px]">
+                <i class="flex-shrink-0 w-12 h-12 shopier-icon shopier-icon-info-circle"></i>
+            </div>
+            <div class="mt-[47px] text-center">
+                <p class="font-medium"
+                   id="discount_not_applicable_warning_title">İndirimin uygulanabilmesi için toplam sepet tutarı, indirim tutarından yüksek olmalıdır.
+                </p>
+                <br/>
+                <p class="font-medium"
+                   id="discount_not_applicable_warning_desc1">Sepet tutarınız (kargo hariç)
+                    : </p>
+                <p class="font-medium"
+                   id="discount_not_applicable_warning_desc2">İndirim tutarı
+                    : </p>
+                <p class="font-medium"
+                   id="discount_not_applicable_warning_desc3">Eklenmesi gereken min. tutar
+                    : </p>
+            </div>
+            <div class="grid grid-cols-1 gap-y-3 mt-[45px]">
+                <button
+                        class="btn btn-primary"
+                        type="button"
+                        data-bs-dismiss="offcanvas"
+                >
+                    <span class="relative">Tamam</span>
+                </button>
+            </div>
+        </div>
+    </template>
+</shopier-popup>
+
+<shopier-popup slug="popup-progress-notify-cargo-warning" class-offcanvas="popup-progress-notify-warning">
+    <template>
+        <div>
+            <div class="flex justify-center mt-[21px]">
+                <i class="flex-shrink-0 w-12 h-12 shopier-icon shopier-icon-info-circle"></i>
+            </div>
+            <div class="mt-[47px] text-center">
+                <p class="font-medium"
+                   id="cargo_not_applicable_warning_title">Ücretsiz kargo uygulanabilmesi için indirim sonrası toplam sepet tutarı, ücretsiz kargo limitine eşit veya yüksek olmalıdır.
+                </p>
+                <br/>
+                <p class="font-medium"
+                   id="cargo_not_applicable_warning_desc1">Sepet tutarınız (kargo hariç)
+                    : </p>
+                <p class="font-medium"
+                   id="cargo_not_applicable_warning_desc2">Ücretsiz kargo limiti
+                    : </p>
+                <p class="font-medium"
+                   id="cargo_not_applicable_warning_desc3">Eklenmesi gereken min. tutar
+                    : </p>
+            </div>
+            <div class="grid grid-cols-1 gap-y-3 mt-[45px]">
+                <button
+                        class="btn btn-primary"
+                        type="button"
+                        data-bs-dismiss="offcanvas"
+                >
+                    <span class="relative">Tamam</span>
+                </button>
+            </div>
+        </div>
+    </template>
+</shopier-popup>
+
+
+
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+        new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+        j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+        'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+        })(window,document,'script','dataLayer','GTM-5FGVGWZ');
+</script>
+<script>
+    let images = document.getElementsByTagName("img");
+    let imageCount = images.length;
+    for(let i = 0; i < imageCount; i++) {
+        images[i].addEventListener('error', function(event){
+            if(!images[i]) return;
+            const source = images[i].previousElementSibling;
+            if(!source) return;
+            const isSource = source.tagName === "SOURCE";
+            if(isSource){
+                const isMinWith = source.media.includes("min-width");
+                const isMaxWith = source.media.includes("max-width");
+                if(isMinWith){
+                    const width = parseInt(source.media.split("min-width:")[1].trim().split("px")[0]);
+                    if(window.innerWidth < width){
+                        // add to image
+                        event.target.src = "https://cdn.shopier.app/pictures_mid/600icons-2.png";
+                        event.target.srcset = "https://cdn.shopier.app/pictures_mid/600icons-2.png";
+                        event.onerror = null;
+                    } else {
+                        // add to source
+                        source.srcset = "https://cdn.shopier.app/pictures_mid/600icons-2.png";
+                        event.onerror = null;
+                    }
+                } else if(isMaxWith) {
+                    const width = parseInt(source.media.split("max-width:")[1].trim().split("px")[0]);
+                    if(window.innerWidth > width){
+                        // add to image
+                        event.target.src = "https://cdn.shopier.app/pictures_mid/600icons-2.png";
+                        event.target.srcset = "https://cdn.shopier.app/pictures_mid/600icons-2.png";
+                        event.onerror = null;
+                    } else {
+                        // add to source
+                        source.srcset = "https://cdn.shopier.app/pictures_mid/600icons-2.png";
+                        event.onerror = null;
+                    }
+                }
+            } else {
+                event.target.src = "https://cdn.shopier.app/pictures_mid/600icons-2.png";
+                event.target.srcset = "https://cdn.shopier.app/pictures_mid/600icons-2.png";
+                event.onerror = null;
+            }
+        }, false);
+    }
+    document.addEventListener("DOMContentLoaded", () => {
+        let links = document.querySelectorAll("a");
+        links.forEach((link) => {
+            let href = link.getAttribute("href");
+            if(href === "" || href === "#"){
+                link.setAttribute("href", "javascript:void(0);")
+            }
+        });
+    });
+
+    /* Js ondalık sayılı stringlerde NaN döndürdüğü için bu method oluşturuldu. Tüm temalarda kullanıldı */
+    function parseFormattedNumber(val) {
+        if (typeof val === "string") {
+            val = val.replace(/\./g, "").replace(",", ".");
+        }
+        return Number(val);
+    }
+</script>
+
+</body>
+</html>

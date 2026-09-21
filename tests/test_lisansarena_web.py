@@ -43,8 +43,9 @@ class LisansArenaWebTests(unittest.TestCase):
         response = self.client.get("/api/la/health")
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.get_json()["ok"])
-        self.assertEqual(response.get_json()["product_count"], 69)
-        self.assertEqual(response.get_json()["storefront_count"], 69)
+        expected_count = len(self.store.storefront_catalog())
+        self.assertEqual(response.get_json()["product_count"], expected_count)
+        self.assertEqual(response.get_json()["storefront_count"], expected_count)
         self.assertEqual(response.get_json()["duplicate_records_hidden"], 0)
 
     def test_shopier_refresh_failure_degrades_system_health(self):
@@ -153,7 +154,7 @@ class LisansArenaWebTests(unittest.TestCase):
         self.assertTrue(auth_data["user"]["referral_code"].startswith("LA-"))
         catalog = self.client.get("/api/la/catalog")
         self.assertEqual(catalog.status_code, 200)
-        self.assertEqual(len(catalog.get_json()["products"]), 69)
+        self.assertEqual(len(catalog.get_json()["products"]), len(self.store.storefront_catalog()))
 
     def test_brand_asset_is_served(self):
         response = self.client.get("/la/assets/brand")

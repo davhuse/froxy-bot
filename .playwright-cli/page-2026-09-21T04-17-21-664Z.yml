@@ -1,0 +1,55 @@
+- generic [ref=f3e3]:
+  - banner [ref=f3e4]:
+    - button "Froxy Froxy Froxy Akıllı" [ref=f3e89] [cursor=pointer]:
+      - img "Froxy" [ref=f3e6]
+      - generic [ref=f3e7]:
+        - generic [ref=f3e8]: Froxy
+        - generic [ref=f3e9]: Froxy Akıllı
+    - button "₺0,00" [ref=f3e10] [cursor=pointer]
+  - main [ref=f3e14]:
+    - generic [ref=f3e92]:
+      - generic [ref=f3e93]:
+        - generic [ref=f3e94]:
+          - paragraph [ref=f3e95]: FROXY CREATIVE
+          - heading "Medya Stüdyosu" [level=1] [ref=f3e96]
+          - paragraph [ref=f3e97]: Üretim türünü seç, ayarları sade bir akışta tamamla.
+        - generic [ref=f3e98]: 1 ücretsiz üretim
+      - generic [ref=f3e99]:
+        - button "Üret" [ref=f3e100] [cursor=pointer]
+        - button "Düzenle" [ref=f3e101] [cursor=pointer]
+        - button "Varyasyon" [ref=f3e102] [cursor=pointer]
+        - button "Upscale" [ref=f3e103] [cursor=pointer]
+        - button "Arka plan" [ref=f3e104] [cursor=pointer]
+        - button "Video" [ref=f3e105] [cursor=pointer]
+        - button "Ses" [ref=f3e106] [cursor=pointer]
+      - generic [ref=f3e107]:
+        - generic [ref=f3e108]:
+          - generic [ref=f3e109]: Üretim modeli
+          - button "FL Runware Runware FLUX" [ref=f3e110] [cursor=pointer]:
+            - generic [ref=f3e111]: FL
+            - generic [ref=f3e113]:
+              - generic [ref=f3e114]: Runware
+              - generic [ref=f3e115]: Runware FLUX
+          - generic [ref=f3e118]: İstem
+          - textbox "Sahneyi, ışığı, kompozisyonu ve stili anlat…" [ref=f3e119]
+          - generic [ref=f3e120]:
+            - generic [ref=f3e121]: Oran
+            - generic [ref=f3e122]: 1:1
+          - generic [ref=f3e123]:
+            - button "1:1" [ref=f3e124] [cursor=pointer]
+            - button "4:5" [ref=f3e125] [cursor=pointer]
+            - button "9:16" [ref=f3e126] [cursor=pointer]
+            - button "16:9" [ref=f3e127] [cursor=pointer]
+          - button "Görseli üret" [ref=f3e128] [cursor=pointer]
+        - generic [ref=f3e129]:
+          - generic [ref=f3e130]:
+            - generic [ref=f3e131]: Önizleme
+            - emphasis [ref=f3e132]: Hazır
+          - generic [ref=f3e133]:
+            - generic [ref=f3e136]: Yeni bir şey üret
+            - generic [ref=f3e137]: Modeli seç, fikrini anlat ve sonucu burada gör.
+  - navigation [ref=f3e72]:
+    - button "AI" [ref=f3e73] [cursor=pointer]
+    - button "Stüdyo" [active] [ref=f3e77] [cursor=pointer]
+    - button "Mağaza" [ref=f3e81] [cursor=pointer]
+    - button "Hesap" [ref=f3e85] [cursor=pointer]

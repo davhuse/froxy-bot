@@ -1,0 +1,44 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - button "Froxy Froxy Froxy Akıllı" [ref=e90] [cursor=pointer]:
+      - img "Froxy" [ref=e6]
+      - generic [ref=e7]:
+        - generic [ref=e8]: Froxy
+        - generic [ref=e9]: Froxy Akıllı
+    - button "₺0,00" [ref=e91] [cursor=pointer]
+  - main [ref=e15]:
+    - generic [ref=e540]:
+      - generic [ref=e541]:
+        - button "Froxy Model Froxy Akıllı" [ref=e542] [cursor=pointer]:
+          - img "Froxy" [ref=e544]
+          - generic [ref=e545]:
+            - generic [ref=e546]: Model
+            - generic [ref=e547]: Froxy Akıllı
+        - button "Yeni sohbet" [ref=e550] [cursor=pointer]
+      - generic [ref=e553]:
+        - button "Genel" [ref=e554] [cursor=pointer]
+        - button "Araştırma" [ref=e555] [cursor=pointer]
+        - button "Kod" [ref=e556] [cursor=pointer]
+        - button "Plan" [ref=e557] [cursor=pointer]
+      - generic [ref=e559]:
+        - paragraph [ref=e561]: FROXY AI WORKSPACE
+        - heading "Ne üzerinde çalışıyoruz?" [level=1] [ref=e562]
+        - paragraph [ref=e563]: Model seç, bir çalışma modu belirle ve doğal şekilde anlat.
+        - generic [ref=e564]:
+          - button "Bir konuyu güncel kaynaklarla araştır" [ref=e565] [cursor=pointer]
+          - button "Bu kodu analiz et ve iyileştir" [ref=e569] [cursor=pointer]
+          - button "Fikrim için uygulanabilir plan hazırla" [ref=e573] [cursor=pointer]
+          - button "Karmaşık bir şeyi sade anlat" [ref=e577] [cursor=pointer]
+      - generic [ref=e581]:
+        - generic [ref=e582]:
+          - generic [ref=e583]: Genel asistan
+          - button "Akıllı" [ref=e585] [cursor=pointer]
+        - generic [ref=e589]:
+          - button [ref=e590] [cursor=pointer]
+          - textbox "Froxy'ye mesaj yaz…" [ref=e593]
+          - button [disabled] [ref=e594] [cursor=pointer]
+  - navigation [ref=e73]:
+    - button "AI" [active] [ref=e74] [cursor=pointer]
+    - button "Stüdyo" [ref=e78] [cursor=pointer]
+    - button "Mağaza" [ref=e82] [cursor=pointer]
+    - button "Hesap" [ref=e86] [cursor=pointer]

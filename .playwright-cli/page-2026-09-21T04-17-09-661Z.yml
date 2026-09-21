@@ -1,0 +1,44 @@
+- generic [ref=f3e3]:
+  - banner [ref=f3e4]:
+    - button "Froxy Froxy Modeller yükleniyor" [ref=f3e5] [cursor=pointer]:
+      - img "Froxy" [ref=f3e6]
+      - generic [ref=f3e7]:
+        - generic [ref=f3e8]: Froxy
+        - generic [ref=f3e9]: Modeller yükleniyor
+    - button "₺0,00" [ref=f3e10] [cursor=pointer]
+  - main [ref=f3e14]:
+    - generic [ref=f3e15]:
+      - generic [ref=f3e16]:
+        - button "AI Model Model seç" [ref=f3e17] [cursor=pointer]:
+          - generic [ref=f3e18]: AI
+          - generic [ref=f3e20]:
+            - generic [ref=f3e21]: Model
+            - generic [ref=f3e22]: Model seç
+        - button "Yeni sohbet" [ref=f3e25] [cursor=pointer]
+      - generic [ref=f3e28]:
+        - button "Genel" [ref=f3e29] [cursor=pointer]
+        - button "Araştırma" [ref=f3e30] [cursor=pointer]
+        - button "Kod" [ref=f3e31] [cursor=pointer]
+        - button "Plan" [ref=f3e32] [cursor=pointer]
+      - generic [ref=f3e34]:
+        - paragraph [ref=f3e36]: FROXY AI WORKSPACE
+        - heading "Ne üzerinde çalışıyoruz?" [level=1] [ref=f3e37]
+        - paragraph [ref=f3e38]: Model seç, bir çalışma modu belirle ve doğal şekilde anlat.
+        - generic [ref=f3e39]:
+          - button "Bir konuyu güncel kaynaklarla araştır" [ref=f3e40] [cursor=pointer]
+          - button "Bu kodu analiz et ve iyileştir" [ref=f3e44] [cursor=pointer]
+          - button "Fikrim için uygulanabilir plan hazırla" [ref=f3e48] [cursor=pointer]
+          - button "Karmaşık bir şeyi sade anlat" [ref=f3e52] [cursor=pointer]
+      - generic [ref=f3e56]:
+        - generic [ref=f3e57]:
+          - generic [ref=f3e58]: Genel asistan
+          - button "Akıllı" [ref=f3e60] [cursor=pointer]
+        - generic [ref=f3e64]:
+          - button [ref=f3e65] [cursor=pointer]
+          - textbox "Froxy'ye mesaj yaz…" [ref=f3e68]
+          - button [disabled] [ref=f3e69] [cursor=pointer]
+  - navigation [ref=f3e72]:
+    - button "AI" [ref=f3e73] [cursor=pointer]
+    - button "Stüdyo" [ref=f3e77] [cursor=pointer]
+    - button "Mağaza" [ref=f3e81] [cursor=pointer]
+    - button "Hesap" [ref=f3e85] [cursor=pointer]
