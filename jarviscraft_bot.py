@@ -5,7 +5,8 @@ import asyncio
 import sys
 import tempfile
 from telethon import TelegramClient, events, Button, functions
-from telethon.errors import UserNotParticipantError
+from telethon.errors import UserNotParticipantError, FloodWaitError
+from bot_runtime_status import write_bot_status, invalid_token_error
 
 if sys.platform.startswith('win'):
     sys.stdout.reconfigure(encoding='utf-8')
@@ -18,7 +19,9 @@ API_HASH = os.environ.get("TELEGRAM_API_HASH", "7ba4072dcf0a05a7ccf80e570866b6d8
 BOT_TOKEN = os.environ.get("JARVIS_BOT_TOKEN", "8940174381:AAF9lvAL0GHoA_azbNdbaDBZ_EcLb3KH2SI").strip()
 
 DATA_DIR = "jarvis_data"
+SESSION_DIR = "sessions"
 os.makedirs(DATA_DIR, exist_ok=True)
+os.makedirs(SESSION_DIR, exist_ok=True)
 USERS_FILE = os.path.join(DATA_DIR, "users.json")
 
 # ─── Brand & Links ───
@@ -757,14 +760,45 @@ async def message_handler(event):
 
 client_username = None
 
-async def main():
+async def start_with_retry():
     global client_username
-    logger.info("Starting JarvisCraftBot...")
-    await client.start(bot_token=BOT_TOKEN)
-    me = await client.get_me()
-    client_username = me.username
-    logger.info(f"✅ JarvisCraftBot is ONLINE! @{me.username} (ID: {me.id})")
-    await client.run_until_disconnected()
+    while True:
+        try:
+            logger.info("Starting JarvisCraftBot...")
+            await client.start(bot_token=BOT_TOKEN)
+            me = await client.get_me()
+            client_username = me.username
+            write_bot_status(
+                "jarvis",
+                state="ready",
+                telegram_ready=True,
+                bot_username=me.username,
+                connected=True,
+                token=BOT_TOKEN,
+            )
+            logger.info(f"✅ JarvisCraftBot is ONLINE! @{me.username} (ID: {me.id})")
+            await client.run_until_disconnected()
+        except FloodWaitError as e:
+            write_bot_status(
+                "jarvis", state="retrying", telegram_ready=False,
+                token=BOT_TOKEN, last_error=type(e).__name__,
+            )
+            logger.warning(f"FloodWait: Telegram requires waiting {e.seconds}s. Waiting...")
+            await asyncio.sleep(e.seconds + 5)
+        except Exception as e:
+            if invalid_token_error(e):
+                write_bot_status(
+                    "jarvis", state="invalid_token", telegram_ready=False,
+                    token=BOT_TOKEN, last_error=type(e).__name__,
+                )
+                logger.error("Bot token is invalid or expired.")
+                return
+            write_bot_status(
+                "jarvis", state="error", telegram_ready=False,
+                token=BOT_TOKEN, last_error=type(e).__name__,
+            )
+            logger.error(f"JarvisCraft bot runtime error: {e}")
+            await asyncio.sleep(15)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    client.loop.run_until_complete(start_with_retry())

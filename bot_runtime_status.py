@@ -12,7 +12,7 @@ from typing import Any
 
 
 BASE_DIR = Path(__file__).resolve().parent
-VALID_BRANDS = {"keyvadi", "froxy", "lisansarena"}
+VALID_BRANDS = {"keyvadi", "froxy", "lisansarena", "jarvis"}
 
 
 def token_fingerprint(token: str) -> str:

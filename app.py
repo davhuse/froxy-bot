@@ -208,12 +208,14 @@ support_process = None
 froxy_process = None
 lisansarena_process = None
 smm_process = None
+jarvis_process = None
 
 LOG_FILE = "bot_log.txt"
 SUPPORT_LOG_FILE = "froxy_bot_log.txt"
 FROXY_LOG_FILE = "froxy_destek_log.txt"
 LISANSARENA_LOG_FILE = "lisansarena_bot_log.txt"
 SMM_LOG_FILE = "smm_bot_log.txt"
+JARVIS_LOG_FILE = "jarviscraft_log.txt"
 MESSAGE_FILE = "message.txt"
 CONFIG_FILE = "bot_config.json"
 AD_STOP_FILE = "ad_worker.disabled"
@@ -228,6 +230,7 @@ SALES_BOT_SCRIPTS = {
     "keyvadi": "froxy_bot.py",
     "froxy": "froxy_destek_bot.py",
     "lisansarena": "lisansarena_bot.py",
+    "jarvis": "jarviscraft_bot.py",
 }
 
 
@@ -601,7 +604,7 @@ def monitor_controlled_smoke(process, expected_account, expected_group):
 
 # WATCHDOG SYSTEM: Keeps both bots running 24/7 unconditionally
 def bot_watchdog(lease_owner=None):
-    global ad_process, support_process, froxy_process, lisansarena_process, smm_process
+    global ad_process, support_process, froxy_process, lisansarena_process, smm_process, jarvis_process
     if not bot_runtime_enabled():
         print("[Watchdog] BOT_RUNTIME_ENABLED=false; Telegram processes will not be started.")
         return
@@ -616,7 +619,7 @@ def bot_watchdog(lease_owner=None):
                 print("[Watchdog] Distributed Telegram ownership was lost; stopping local children.")
                 for owned_script in (
                     "otomatik_katil.py", "froxy_bot.py",
-                    "froxy_destek_bot.py", "lisansarena_bot.py", "smm_worker.py",
+                    "froxy_destek_bot.py", "lisansarena_bot.py", "smm_worker.py", "jarviscraft_bot.py",
                 ):
                     kill_process_by_script(owned_script)
                 return
@@ -1017,6 +1020,7 @@ def status():
         'support_processes': len(get_processes_by_script('froxy_bot.py')),
         'froxy_support_processes': len(get_processes_by_script('froxy_destek_bot.py')),
         'lisansarena_processes': len(get_processes_by_script('lisansarena_bot.py')),
+        'jarvis_processes': len(get_processes_by_script('jarviscraft_bot.py')),
         'smm_processes': len(get_processes_by_script('smm_worker.py')),
         'smm_runtime_enabled': smm_runtime_enabled(),
         'sales_bots': sales_bots,
@@ -1071,6 +1075,9 @@ def system_checkup():
             runtime_cfg.get('lisansarena_bot_running')
             and (os.environ.get('LISANSARENA_BOT_TOKEN') or runtime_cfg.get('lisansarena_bot_token', '')).strip()
         ),
+        'jarvis_support': bool(
+            (os.environ.get('JARVIS_BOT_TOKEN') or '').strip()
+        ),
         'blast_worker': ad_runtime_enabled(),
         'smm_publisher': smm_runtime_enabled(),
     }
@@ -1078,6 +1085,7 @@ def system_checkup():
         'keyvadi_support': len(get_processes_by_script('froxy_bot.py')),
         'froxy_support': len(get_processes_by_script('froxy_destek_bot.py')),
         'lisansarena_support': len(get_processes_by_script('lisansarena_bot.py')),
+        'jarvis_support': len(get_processes_by_script('jarviscraft_bot.py')),
         'blast_worker': len(get_processes_by_script('otomatik_katil.py')),
     }
     if smm_runtime_enabled():
@@ -1093,6 +1101,7 @@ def system_checkup():
         'keyvadi_support': sales_bot_status('keyvadi'),
         'froxy_support': sales_bot_status('froxy'),
         'lisansarena_support': sales_bot_status('lisansarena'),
+        'jarvis_support': sales_bot_status('jarvis'),
     }
     for name, bot_state in sales_readiness.items():
         if processes_enabled.get(name):
@@ -2052,6 +2061,69 @@ def save_lisansarena_config():
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
+
+# ==========================================
+# JARVIS BOT (@JarvisCraftsBot) API ENDPOINTS
+# ==========================================
+
+@app.route('/api/jarvis/status', methods=['GET'])
+def jarvis_status():
+    proc = get_process_by_script('jarviscraft_bot.py')
+    status_info = sales_bot_status('jarvis')
+    return jsonify({
+        "process_running": proc is not None,
+        "pid": proc.pid if proc else None,
+        "bot": status_info
+    })
+
+@app.route('/api/jarvis/logs', methods=['GET'])
+def get_jarvis_logs():
+    if not os.path.exists(JARVIS_LOG_FILE):
+        return jsonify({"logs": []})
+    try:
+        with open(JARVIS_LOG_FILE, 'r', encoding="utf-8", errors="replace") as f:
+            lines = f.readlines()
+            return jsonify({"logs": lines[-100:]})
+    except Exception as e:
+        return jsonify({"logs": [f"Log okuma hatası: {str(e)}"]})
+
+@app.route('/api/jarvis/start', methods=['POST'])
+def start_jarvis():
+    if not bot_runtime_enabled():
+        return jsonify({"success": False, "message": "Bot runtime disabled"}), 400
+    token = (os.environ.get("JARVIS_BOT_TOKEN") or "").strip()
+    if not token or token == "YOUR_TELEGRAM_BOT_TOKEN":
+        return jsonify({"success": False, "message": "JARVIS_BOT_TOKEN ayarlanmamış."}), 400
+    proc = get_process_by_script('jarviscraft_bot.py')
+    if proc is None:
+        kill_process_by_script('jarviscraft_bot.py')
+        flags = subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
+        env = os.environ.copy()
+        env["PYTHONIOENCODING"] = "utf-8"
+        file_out = open(JARVIS_LOG_FILE, 'a', encoding="utf-8", buffering=1)
+        p = subprocess.Popen(
+            [sys.executable, '-u', 'jarviscraft_bot.py'],
+            stdout=file_out,
+            stderr=subprocess.STDOUT,
+            cwd=base_dir,
+            creationflags=flags,
+            env=env
+        )
+        try:
+            with open("jarviscraft_bot.py.pid", "w") as handle:
+                handle.write(str(p.pid))
+        except OSError:
+            pass
+    return jsonify({"success": True})
+
+@app.route('/api/jarvis/stop', methods=['POST'])
+def stop_jarvis():
+    kill_process_by_script('jarviscraft_bot.py')
+    try:
+        os.remove("jarviscraft_bot.py.pid")
+    except OSError:
+        pass
+    return jsonify({"success": True})
 
 # ==========================================
 # YAPILANDIRMA VE DİĞER YARDIMCI API'LER
