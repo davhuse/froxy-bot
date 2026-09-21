@@ -46,8 +46,9 @@ const brandIcons:Record<string,{path:string;hex:string;title:string}> = {
 function modelBrand(model?:Partial<Model>) {
   const value=`${model?.brand||''} ${model?.family||''} ${model?.developer||''} ${model?.name||''}`.toLocaleLowerCase('tr')
   if(value.includes('claude')||value.includes('anthropic'))return 'anthropic'
-  if(value.includes('gemini')||value.includes('gemma')||value.includes('google'))return 'google'
-  if(value.includes('openai')||value.includes('gpt')||/\bo[134]\b/.test(value))return 'openai'
+  if(value.includes('gemini')||value.includes('gemma')||value.includes('imagen')||value.includes('google'))return 'google'
+  if(value.includes('openai')||value.includes('gpt')||value.includes('dall-e')||/\bo[134]\b/.test(value))return 'openai'
+  if(value.includes('black forest')||value.includes('flux'))return 'blackforestlabs'
   if(value.includes('deepseek'))return 'deepseek'
   if(value.includes('qwen')||value.includes('alibaba'))return 'qwen'
   if(value.includes('mistral')||value.includes('mixtral')||value.includes('codestral'))return 'mistral'
@@ -61,7 +62,7 @@ function modelBrand(model?:Partial<Model>) {
 
 function Logo({model,size=38}:{model?:Partial<Model>,size?:number}) {
   const brand=modelBrand(model), icon=brandIcons[brand]
-  return <span className={`brand-mark brand-${brand||'ai'}`} style={{width:size,height:size}}>{model?.is_froxy||model?.provider==='froxy'?<img src={`${rootPrefix}/assets/froxy_logo.png`} alt="Froxy"/>:icon?<svg viewBox="0 0 24 24" role="img" aria-label={icon.title}><path fill={`#${icon.hex}`} d={icon.path}/></svg>:<b>{(model?.family||model?.name||'AI').slice(0,2).toUpperCase()}</b>}</span>
+  return <span className={`brand-mark brand-${brand||'ai'}`} style={{width:size,height:size}}>{model?.is_froxy||model?.provider==='froxy'?<img src={`${rootPrefix}/assets/froxy_logo.png`} alt="Froxy"/>:brand==='blackforestlabs'?<img src={`${rootPrefix}/assets/provider_blackforestlabs.svg`} alt="Black Forest Labs"/>:icon?<svg viewBox="0 0 24 24" role="img" aria-label={icon.title}><path fill={`#${icon.hex}`} d={icon.path}/></svg>:<b>{(model?.family||model?.name||'AI').slice(0,2).toUpperCase()}</b>}</span>
 }
 
 function ChoiceMenu({value,options,onChange,label}:{value:string;options:{value:string;label:string;hint?:string}[];onChange:(value:string)=>void;label:string}) {
