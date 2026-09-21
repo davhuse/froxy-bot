@@ -27,7 +27,7 @@ CHANNEL_URL = "https://t.me/JarvisCraftDuyuru"
 SUPPORT_USERNAME = "JarvisCraft"
 SUPPORT_URL = "https://t.me/JarvisCraft"
 SHOPIER_URL = "https://www.shopier.com/JarvisStore"
-APP_URL = "https://froxy-bot-1.onrender.com/jarvis/app"
+APP_URL = "https://bot-service-production-9d74.up.railway.app/jarvis/app"
 
 LINE = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 DOT = "◈"
