@@ -12,3 +12,34 @@
 .studio-form{padding:17px}.studio-model-trigger{width:100%;display:flex;align-items:center;gap:11px;padding:10px;border:1px solid #303a4c;border-radius:14px;background:#0c1119;text-align:left;cursor:pointer}.studio-model-trigger>span{min-width:0;display:grid;gap:2px;flex:1}.studio-model-trigger small{color:var(--muted);font-size:9px;text-transform:none;letter-spacing:0}.studio-model-trigger b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px}.ratio-label{display:flex;justify-content:space-between;align-items:center;margin-top:3px;color:var(--muted);font-size:9px}.ratio-label small{color:var(--accent)}.availability-toggle{display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:11px 0}.availability-toggle button{padding:9px;border:1px solid var(--line);border-radius:11px;background:transparent;color:var(--muted);font-size:10px}.availability-toggle button.active{border-color:rgba(142,231,220,.35);background:rgba(142,231,220,.08);color:var(--accent)}.availability-toggle b{margin-left:3px}.media-model-grid{display:grid;gap:7px;overflow:auto}.media-model-grid>button{display:flex;align-items:center;gap:10px;width:100%;padding:10px;border:1px solid transparent;border-radius:13px;background:transparent;text-align:left}.media-model-grid>button.selected,.media-model-grid>button:hover{border-color:var(--line);background:var(--surface)}.media-model-grid>button:disabled{opacity:.52}.media-model-grid>button>span{min-width:0;display:grid;gap:2px;flex:1}.media-model-grid b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px}.media-model-grid small,.media-model-grid em{color:var(--muted);font-size:9px;font-style:normal}.media-model-grid>button>i{padding:4px 7px;border-radius:999px;background:#202633;color:#7f8a9b;font-size:8px;font-style:normal}.media-model-grid>button>i.ready{background:rgba(142,231,220,.1);color:var(--accent)}
 .store-hero{background:radial-gradient(circle at 85% 15%,rgba(115,92,255,.16),transparent 34%),linear-gradient(145deg,#151d29,#10141d);border-color:#30394a}.product-grid{gap:12px}.product-card{background:#121823;border-color:#273142}.product-art{aspect-ratio:1.18;overflow:hidden}.product-art img{transition:transform .28s}.product-card:hover .product-art img{transform:scale(1.025)}.product-art span{font-size:8px}.product-info{padding:12px}.product-info>small{font-size:9px}.product-info h3{height:39px;font-size:12px}.product-info>div>b{font-size:13px}.product-info button{padding:8px 9px;font-size:9px}
 @media(min-width:720px){.model-sheet{border-radius:26px;height:min(86dvh,790px)}.media-model-grid{grid-template-columns:1fr 1fr}.choice-menu{bottom:auto;top:calc(100% + 8px)}.product-grid{gap:16px}}
+
+/* Motion layer: restrained aurora, depth and page choreography. */
+.app-shell{position:relative;isolation:isolate}
+.app-shell::before{content:"";position:fixed;z-index:-1;inset:-25%;pointer-events:none;background:radial-gradient(circle at 18% 20%,rgba(142,231,220,.11),transparent 22%),radial-gradient(circle at 78% 10%,rgba(167,139,250,.12),transparent 24%),radial-gradient(circle at 60% 85%,rgba(59,130,246,.07),transparent 25%);filter:blur(24px);animation:aurora-drift 18s ease-in-out infinite alternate}
+.app-header{box-shadow:0 1px 0 rgba(255,255,255,.02),0 14px 38px rgba(0,0,0,.12)}
+.app-header::after{content:"";position:absolute;left:12%;right:12%;bottom:-1px;height:1px;background:linear-gradient(90deg,transparent,var(--accent),var(--violet),transparent);opacity:.4;transform:scaleX(.35);transform-origin:center;animation:header-glow 6s ease-in-out infinite}
+.workspace>.page,.workspace>.chat-page{animation:page-rise .42s cubic-bezier(.2,.8,.2,1) both}
+.chat-toolbar{animation:toolbar-in .38s .04s both}
+.mode-row{animation:toolbar-in .38s .08s both}
+.composer-wrap{animation:composer-in .45s .12s both}
+.orb{animation:orb-float 5s ease-in-out infinite,orb-glow 3.5s ease-in-out infinite alternate}
+.starter-grid button{animation:card-in .4s both}
+.starter-grid button:nth-child(2){animation-delay:.05s}.starter-grid button:nth-child(3){animation-delay:.1s}.starter-grid button:nth-child(4){animation-delay:.15s}
+.starter-grid button:hover{box-shadow:0 12px 30px rgba(142,231,220,.08)}
+.product-card{animation:card-in .42s both;box-shadow:0 10px 30px rgba(0,0,0,.08)}
+.product-card:nth-child(2n){animation-delay:.06s}.product-card:nth-child(3n){animation-delay:.12s}.product-card:nth-child(4n){animation-delay:.18s}
+.product-card:hover{box-shadow:0 18px 38px rgba(142,231,220,.11)}
+.bottom-nav button.active{box-shadow:inset 0 0 0 1px rgba(142,231,220,.08),0 8px 22px rgba(142,231,220,.08)}
+.bottom-nav button.active::after{content:"";width:18px;height:2px;border-radius:9px;background:var(--accent);opacity:.7;animation:nav-pulse 2.4s ease-in-out infinite}
+.primary:not(:disabled),.composer .send:not(:disabled){background-size:180% 180%;animation:button-sheen 5s ease-in-out infinite}
+@keyframes aurora-drift{0%{transform:translate3d(-2%,0,0) scale(1)}50%{transform:translate3d(3%,2%,0) scale(1.06)}100%{transform:translate3d(-1%,-2%,0) scale(1.02)}}
+@keyframes header-glow{0%,100%{opacity:.18;transform:scaleX(.25)}50%{opacity:.65;transform:scaleX(1)}}
+@keyframes page-rise{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+@keyframes toolbar-in{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}
+@keyframes composer-in{from{opacity:.4;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes orb-float{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-5px) rotate(1deg)}}
+@keyframes orb-glow{from{box-shadow:0 16px 50px rgba(57,189,177,.08)}to{box-shadow:0 20px 72px rgba(167,139,250,.18)}}
+@keyframes card-in{from{opacity:0;transform:translateY(8px) scale(.99)}to{opacity:1;transform:none}}
+@keyframes nav-pulse{0%,100%{transform:scaleX(.7);opacity:.35}50%{transform:scaleX(1.15);opacity:.9}}
+@keyframes button-sheen{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+@media(prefers-reduced-motion:reduce){.app-shell::before,.app-header::after,.workspace>.page,.workspace>.chat-page,.chat-toolbar,.mode-row,.composer-wrap,.orb,.starter-grid button,.product-card,.bottom-nav button.active::after,.primary:not(:disabled),.composer .send:not(:disabled){animation:none!important;transform:none!important}.product-card img{transition:none!important}}
