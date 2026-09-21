@@ -281,11 +281,11 @@ def create_product_banner(product, output_path):
     f_badge = get_font(FONT_BOLD, 24)
     # Store Pill
     draw_rounded_rect(draw, [55, 50, 360, 105], radius=16, fill=(12, 16, 26), outline=accent, width=2)
-    draw.text((75, 62), "⚡ KEYVADI STORE", font=f_badge, fill=(255, 255, 255))
+    draw.text((75, 62), "KEYVADI STORE", font=f_badge, fill=(255, 255, 255))
 
     # Auto Delivery Pill
     draw_rounded_rect(draw, [W-390, 50, W-55, 105], radius=16, fill=(12, 16, 26), outline=(40, 210, 100), width=2)
-    draw.text((W-365, 62), "🚀 ANINDA TESLİMAT", font=f_badge, fill=(100, 255, 160))
+    draw.text((W-365, 62), "ANINDA TESLİMAT", font=f_badge, fill=(100, 255, 160))
 
     # 3. Main Product Title (Clean word wrapping with full Turkish support)
     f_title = get_font(FONT_TITLE, 46 if len(title) > 30 else 54)
@@ -313,7 +313,7 @@ def create_product_banner(product, output_path):
     # 4. Prominent Variation / Duration Pill
     var_y = start_y + len(lines[:2]) * 64 + 20
     f_var = get_font(FONT_BOLD, 32)
-    var_label = f"⭐  {variant}  ⭐"
+    var_label = f"•  {variant}  •"
     v_bbox = draw.textbbox((0, 0), var_label, font=f_var)
     v_w = v_bbox[2] - v_bbox[0] + 50
     draw_rounded_rect(draw, [60, var_y, 60 + v_w, var_y + 64], radius=16, fill=accent, outline=glow, width=3)
@@ -340,9 +340,9 @@ def create_product_banner(product, output_path):
 
     # Feature List inside Card
     features = [
-        "✔ %100 Orijinal & Güvenli Teslimat Garantisi",
-        "✔ Süre Boyunca KeyVadi Değişim & Telafi Güvencesi",
-        "✔ 7/24 Kesintisiz Canlı Telegram & WhatsApp Destek"
+        "- %100 Orijinal & Güvenli Teslimat Garantisi",
+        "- Süre Boyunca KeyVadi Değişim & Telafi Güvencesi",
+        "- 7/24 Kesintisiz Canlı Telegram & WhatsApp Destek"
     ]
     f_feat = get_font(FONT_BOLD, 26)
     for idx, feat in enumerate(features):
@@ -354,7 +354,7 @@ def create_product_banner(product, output_path):
 
     # Gold Warranty Seal (Left)
     draw_rounded_rect(draw, [60, bot_y, 450, bot_y + 115], radius=22, fill=(35, 28, 10), outline=(240, 195, 40), width=3)
-    draw.text((85, bot_y + 20), "🛡️ %100 GARANTİLİ", font=get_font(FONT_BOLD, 30), fill=(255, 225, 80))
+    draw.text((85, bot_y + 20), "%100 GARANTİLİ", font=get_font(FONT_BOLD, 30), fill=(255, 225, 80))
     draw.text((85, bot_y + 68), "GÜVENLİ PAZARYERİ ALIŞVERİŞİ", font=get_font(FONT_BOLD, 19), fill=(225, 205, 150))
 
     # Price Tag (Right)

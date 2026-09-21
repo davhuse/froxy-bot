@@ -170,11 +170,11 @@ def create_lisansarena_banner(product, output_path):
     
     # Left Brand Shield Pill
     draw_rounded_rect(draw, [55, 50, 440, 105], radius=14, fill=(18, 14, 6), outline=(245, 158, 11), width=2)
-    draw.text((75, 63), "🛡️ LISANSARENA ARENA", font=f_badge, fill=(255, 215, 0))
+    draw.text((75, 63), "LISANSARENA ARENA", font=f_badge, fill=(255, 215, 0))
 
     # Right Emerald Instant Delivery
     draw_rounded_rect(draw, [W-390, 50, W-55, 105], radius=14, fill=(6, 20, 14), outline=(16, 185, 129), width=2)
-    draw.text((W-365, 63), "⚡ ANINDA AKTİVASYON", font=f_badge, fill=(52, 211, 153))
+    draw.text((W-365, 63), "ANINDA AKTİVASYON", font=f_badge, fill=(52, 211, 153))
 
     # 3. Main Product Title (Clean Serif/San-Serif Headline)
     f_title = get_font(FONT_TITLE, 46 if len(title) > 30 else 52)
@@ -201,7 +201,7 @@ def create_lisansarena_banner(product, output_path):
     # 4. Gold Variant Ribbon
     var_y = start_y + len(lines[:2]) * 62 + 20
     f_var = get_font(FONT_BOLD, 30)
-    var_label = f"👑  {variant}  👑"
+    var_label = f"•  {variant}  •"
     v_bbox = draw.textbbox((0, 0), var_label, font=f_var)
     v_w = v_bbox[2] - v_bbox[0] + 50
     draw_rounded_rect(draw, [60, var_y, 60 + v_w, var_y + 60], radius=12, fill=(217, 119, 6), outline=(255, 215, 0), width=2)
@@ -223,9 +223,9 @@ def create_lisansarena_banner(product, output_path):
 
     # Features
     features = [
-        "◆ Birebir LisansArena Telafi & Değişim Güvencesi",
-        "◆ 7/24 Kesintisiz Canlı Telegram Destek (@LisansArena)",
-        "◆ Güvenli 3D Shopier Alışverişi & Anında Cüzdan Bakiyesi"
+        "- Birebir LisansArena Telafi & Değişim Güvencesi",
+        "- 7/24 Kesintisiz Canlı Telegram Destek (@LisansArena)",
+        "- Güvenli 3D Shopier Alışverişi & Anında Cüzdan Bakiyesi"
     ]
     f_feat = get_font(FONT_BOLD, 25)
     for idx, feat in enumerate(features):
@@ -237,7 +237,7 @@ def create_lisansarena_banner(product, output_path):
 
     # Gold Guarantee Shield (Left)
     draw_rounded_rect(draw, [60, bot_y, 460, bot_y + 115], radius=20, fill=(30, 22, 6), outline=(245, 158, 11), width=3)
-    draw.text((85, bot_y + 20), "🛡️ %100 ORİJİNAL", font=get_font(FONT_BOLD, 30), fill=(255, 215, 0))
+    draw.text((85, bot_y + 20), "%100 ORİJİNAL", font=get_font(FONT_BOLD, 30), fill=(255, 215, 0))
     draw.text((85, bot_y + 68), "LISANSARENA RESMİ GÜVENCE", font=get_font(FONT_BOLD, 18), fill=(217, 119, 6))
 
     # Emerald Price Tag (Right)
