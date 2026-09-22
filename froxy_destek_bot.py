@@ -207,16 +207,16 @@ def _is_froxy_admin(user_id: int) -> bool:
 def _stock_draft(raw_text: str):
     parsed = parse_stock_command(raw_text)
     if not parsed:
-        return None, "⚠️ Kullanım: `/stok <ürün> <adet> [fiyat]`"
+        return None, "Kullanim: /stok <urun> <adet> [fiyat]"
     query, count, custom_price = parsed
     product, matches = match_stock_product("froxy", query)
     if not product:
         suggestions = ", ".join(str(item.get("title")) for item in matches[:3])
-        suffix = f"\n\nBenzer ürünler: {suggestions}" if suggestions else ""
-        return None, f"❌ Ürün katalogda bulunamadı.{suffix}"
+        suffix = f"\n\nBenzer urunler: {suggestions}" if suggestions else ""
+        return None, f"Urun katalogda bulunamadi.{suffix}"
     product = dict(product)
     product["url"] = purchase_url(product, "froxy", "stock_announcement")
-    price = str(custom_price or product.get("price") or "Fiyat mağazada güncel")
+    price = str(custom_price or product.get("price") or "Fiyat magazade guncel")
     item = build_announcement_item(
         "froxy",
         product,
@@ -229,7 +229,7 @@ def _stock_draft(raw_text: str):
     return item, None
 
 
-def froxy_app_button(label="🚀 Froxy AI Uygulamasını Aç"):
+def froxy_app_button(label="Froxy AI Uygulamasini Ac"):
     """Launch the Mini App with Telegram initData instead of a bare web URL."""
     from telethon import Button
     return Button.url(text=label, url="https://t.me/FroxyDestekBOT/app")
@@ -261,7 +261,7 @@ def configure_bot_profile():
         ("setChatMenuButton", {
             "menu_button": {
                 "type": "web_app",
-                "text": "🛍️ Mağazayı Aç",
+                "text": "Magazayi Ac",
                 "web_app": {"url": FROXY_MINI_APP_URL},
             }
         }),
@@ -452,52 +452,52 @@ bot = TelegramClient("froxy_destek_bot_session", API_ID, API_HASH)
 TEXTS = {
     "tr": {
         "welcome": (
-            "⚡ **Froxy AI**\n\n"
-            "Telegram içinde sohbet, görsel üretimi ve güvenli Shopier mağazası.\n"
-            "🧠 **Model durumu:** {model_count}\n"
-            "🛍️ **Mağaza:** {product_count}\n\n"
-            "Uygulamayı açın; yalnızca o anda çalışan ve doğrulanan modeller gösterilir."
+            "**Froxy AI**\n\n"
+            "Telegram icinde sohbet, gorsel uretimi ve guvenli Shopier magazasi.\n"
+            "**Model durumu:** {model_count}\n"
+            "**Magaza:** {product_count}\n\n"
+            "Uygulamayi acin; yalnizca o anda calisan ve dogrulanan modeller gosterilir."
         ),
-        "packages_btn": "🛍️ Shopier Mağazasını Gör",
-        "ai_tools_btn": "🤖 Aktif Modelleri Gör",
-        "support_btn": "💬 Froxy Desteğe Yaz",
-        "web_btn": "🚀 Froxy AI'ı Aç",
-        "lang_btn": "🌐 Dil Seçimi / Language",
-        "main_menu": "↩️ Ana Menü",
+        "packages_btn": "Shopier Magazasini Gor",
+        "ai_tools_btn": "Aktif Modelleri Gor",
+        "support_btn": "Froxy Destege Yaz",
+        "web_btn": "Froxy AI'i Ac",
+        "lang_btn": "Dil Secimi / Language",
+        "main_menu": "<-- Ana Menu",
         "pkg_btn_list": [],
         "ai_btn_list": [],
-        "pkg_menu_title": "🛍️ **Froxy Shopier Mağazası**\n\n"
-                          "{product_count} güncel ürün ve fiyatı aşağıda görebilirsiniz.\n"
-                          "AI kredi paketleri ödeme onayından sonra tanımlanır; diğer ürünlerde stok yoksa teslimat 1–3 iş günüdür.\n\n"
-                          "İncelemek istediğiniz ürünü seçin:",
-        "back_to_pkgs": "↩️ Paketlere Dön",
-        "buy_shopier": "💳 Shopier ile Güvenli Satın Al",
-        "buy_web": "🛒 Shopier'den Satın Al",
-        "product_header": "🛍️ **{title}**\n\n💰 **Fiyat:** {price}\n🚚 **Teslimat:** {delivery}\n\n{desc}\n\nÖdeme ve güncel ürün bilgisi için Shopier bağlantısını kullanın.",
-        "support_title": "💬 **Froxy AI Desteği**",
-        "support_desc": "Ürün, ödeme, kredi veya uygulama sorununu tek mesajda yazın.\n\nSipariş numaranız varsa ekleyin; destek ekibi buradan dönüş yapar.",
-        "cancel": "↩️ Vazgeç ve İptal Et",
-        "support_success": "✅ Mesajınız Froxy AI ekibine iletildi. En kısa sürede yanıt alacaksınız.",
-        "support_fail": "⚠️ Mesajınız iletilemedi. Lütfen daha sonra tekrar deneyiniz.",
-        "support_inactive": "⚠️ Destek yapılandırması şu anda kullanılamıyor. Lütfen uygulamadaki destek bağlantısından yazın.",
-        "reply_prefix": "📨 **Froxy AI Destek Ekibinden Cevap:**\n\n",
-        "choose_lang": "Lütfen dilinizi seçin / Please choose your language:",
+        "pkg_menu_title": "**Froxy Shopier Magazasi**\n\n"
+                          "{product_count} guncel urun ve fiyati asagida gorebilirsiniz.\n"
+                          "AI kredi paketleri odeme onayindan sonra tanimlanir; diger urunlerde stok yoksa teslimat 1-3 is gunudur.\n\n"
+                          "Incelemek istediginiz urunu secin:",
+        "back_to_pkgs": "<-- Paketlere Don",
+        "buy_shopier": "Shopier ile Guvenli Satin Al",
+        "buy_web": "Shopier'den Satin Al",
+        "product_header": "**{title}**\n\n**Fiyat:** {price}\n**Teslimat:** {delivery}\n\n{desc}\n\nOdeme ve guncel urun bilgisi icin Shopier baglantisini kullanin.",
+        "support_title": "**Froxy AI Destegi**",
+        "support_desc": "Urun, odeme, kredi veya uygulama sorununu tek mesajda yazin.\n\nSiparis numaraniz varsa ekleyin; destek ekibi buradan donus yapar.",
+        "cancel": "Vazgec ve Iptal Et",
+        "support_success": "Mesajiniz Froxy AI ekibine iletildi. En kisa surede yanit alacaksiniz.",
+        "support_fail": "Mesajiniz iletilemedi. Lutfen daha sonra tekrar deneyiniz.",
+        "support_inactive": "Destek yapilandirmasi su anda kullanilamiyor. Lutfen uygulamadaki destek baglantisindan yazin.",
+        "reply_prefix": "**Froxy AI Destek Ekibinden Cevap:**\n\n",
+        "choose_lang": "Lutfen dilinizi secin / Please choose your language:",
         "products": {},
     },
     "en": {
         "welcome": (
-            "⚡ **Froxy AI**\n\n"
+            "**Froxy AI**\n\n"
             "Chat, image generation and the secure Shopier store in Telegram.\n"
-            "🧠 **Model status:** {model_count}\n"
-            "🛍️ **Store:** {product_count}\n\n"
+            "**Model status:** {model_count}\n"
+            "**Store:** {product_count}\n\n"
             "Open the app; only models that are currently healthy and verified are shown."
         ),
-        "packages_btn": "🛍️ View Shopier Store",
-        "ai_tools_btn": "🤖 View Active Models",
-        "support_btn": "💬 Contact Froxy Support",
-        "web_btn": "🚀 Open Froxy AI",
-        "lang_btn": "🌐 Language / Dil",
-        "main_menu": "↩️ Main Menu",
+        "packages_btn": "View Shopier Store",
+        "ai_tools_btn": "View Active Models",
+        "support_btn": "Contact Froxy Support",
+        "web_btn": "Open Froxy AI",
+        "lang_btn": "Language / Dil",
+        "main_menu": "<-- Main Menu",
         "pkg_btn_list": [],
         "ai_btn_list": [],
         "pkg_menu_title": "🛍️ **Froxy Shopier Store**\n\n"

@@ -63,7 +63,7 @@ class LisansArenaBotGuardTests(unittest.TestCase):
         self.assertIn('asyncio.create_task(', SOURCE)
 
     def test_mini_app_first_integration(self):
-        self.assertIn('Button.url("🛍️ Web Mağazasını Aç (Mini App)", MINI_APP_URL)', SOURCE)
+        self.assertIn('Web Magazasini Ac (Mini App)", MINI_APP_URL', SOURCE)
         self.assertIn('miniapp_lisansarena', SOURCE)
         self.assertIn('get_or_create_la_user', SOURCE)
         self.assertIn('load_la_users', SOURCE)

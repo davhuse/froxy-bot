@@ -302,23 +302,23 @@ async def send_product_card(event, matched_products: list[dict[str, Any]]) -> bo
     for product in claimed_products:
         product["_cta_id"] = os.urandom(8).hex()
     lines = [
-        "⚡ **LisansArena Ürün Seçenekleri**\n",
+        "**LisansArena Urun Secenekleri**\n",
     ]
     buttons = []
     for product in claimed_products:
-        price_txt = product.get("price") or "Fiyat için mağaza"
+        price_txt = product.get("price") or "Fiyat icin magaza"
         lines.append(f"• **{product['title']}** — `{price_txt}`")
         pid = product.get("id", "")
         bot_app_url = f"https://t.me/LisansArenaBot/app?startapp=p_{pid}"
         direct_url = purchase_url(product, "lisansarena", "support_bot_dm")
         buttons.append([
-            Button.url(f"💳 Satın Al ({price_txt})", direct_url),
-            Button.url("🛍️ Mağazada Aç", bot_app_url),
+            Button.url(f"Satin Al ({price_txt})", direct_url),
+            Button.url("Magazada Ac", bot_app_url),
         ])
-    buttons.append([Button.inline("💬 Canlı Destek", b"ticket_support"), Button.inline("🏠 Ana Menü", b"menu_main")])
+    buttons.append([Button.inline("Canli Destek", b"ticket_support"), Button.inline("Ana Menu", b"menu_main")])
     lines.extend([
         "",
-        "⚡ *7/24 Anında Otomatik Teslimat · Shopier 3D Secure Güvencesi*",
+        "*7/24 Aninda Otomatik Teslimat - Shopier 3D Secure Guvencesi*",
     ])
     try:
         await respond_with_floodwait(event, "\n".join(lines), buttons=buttons)
@@ -425,41 +425,41 @@ async def safe_edit(event, text, **kwargs):
 # ==================== MAIN MENUS & SCREENS ====================
 
 CATEGORIES_MAP = {
-    "ai": ("🌟 Yapay Zeka (AI)", "🤖 **Yapay Zeka Çözümleri**\n\nChatGPT Plus, Gemini Pro, Perplexity Pro ve en popüler yapay zeka abonelikleri:"),
-    "cinema": ("📺 Dizi, Film & Spor", "🎬 **Dizi, Film, Müzik & Canlı Spor**\n\nNetflix 4K UHD, S Sport Plus, Spotify Premium, YouTube Premium, Prime Video:"),
-    "design": ("🎨 Tasarım & Ofis", "🎨 **Tasarım, Video & Ofis Yazılımları**\n\nCanva Pro, CapCut Pro, Envato Elements, Freepik:"),
-    "software": ("🔑 Windows & Office", "🔑 **Orijinal Lisans & Keyler**\n\nWindows 10/11 Pro, Microsoft Office 365:"),
-    "coupons": ("🎟️ Kupon & Bakiye", "🎟️ **İndirim Kuponları & Bakiyeler**\n\nYemeksepeti, Migros, Coffy indirim kodları:"),
-    "gaming": ("🎮 Oyun & E-Pin", "🎮 **Oyun Dünyası & E-Pin**\n\nSteam VIP Random Key, FC 26, Minecraft:"),
-    "social": ("📱 Sosyal & Hesaplar", "📱 **Sosyal Medya, Discord & Hesaplar**\n\nDiscord Nitro, Instagram Takipçi, Eski Tarihli Telegram Hesapları:"),
+    "ai": ("Yapay Zeka (AI)", "**Yapay Zeka Cozumleri**\n\nChatGPT Plus, Gemini Pro, Perplexity Pro ve en populer yapay zeka abonelikleri:"),
+    "cinema": ("Dizi, Film & Spor", "**Dizi, Film, Muzik & Canli Spor**\n\nNetflix 4K UHD, S Sport Plus, Spotify Premium, YouTube Premium, Prime Video:"),
+    "design": ("Tasarim & Ofis", "**Tasarim, Video & Ofis Yazilimlari**\n\nCanva Pro, CapCut Pro, Envato Elements, Freepik:"),
+    "software": ("Windows & Office", "**Orijinal Lisans & Keyler**\n\nWindows 10/11 Pro, Microsoft Office 365:"),
+    "coupons": ("Kupon & Bakiye", "**Indirim Kuponlari & Bakiyeler**\n\nYemeksepeti, Migros, Coffy indirim kodlari:"),
+    "gaming": ("Oyun & E-Pin", "**Oyun Dunyasi & E-Pin**\n\nSteam VIP Random Key, FC 26, Minecraft:"),
+    "social": ("Sosyal & Hesaplar", "**Sosyal Medya, Discord & Hesaplar**\n\nDiscord Nitro, Instagram Takipci, Eski Tarihli Telegram Hesaplari:"),
 }
 
 
 def main_menu_buttons():
     return [
-        [Button.inline("🌟 Yapay Zeka (AI)", b"cat_ai"), Button.inline("📺 Dizi, Film & Spor", b"cat_cinema")],
-        [Button.inline("🎨 Tasarım & Ofis", b"cat_design"), Button.inline("🔑 Windows & Office", b"cat_software")],
-        [Button.inline("🎟️ Kupon & Bakiye", b"cat_coupons"), Button.inline("🎮 Oyun & E-Pin", b"cat_gaming")],
-        [Button.inline("📱 Sosyal & Hesaplar", b"cat_social")],
-        [Button.url("🤖 ChatGPT Plus Ortak (59.90₺)", "https://www.shopier.com/50889443")],
-        [Button.url("🛍️ Web Mağazasını Aç (Mini App)", MINI_APP_URL)],
-        [Button.inline("💳 Bakiye / Cüzdan", b"menu_balance"), Button.inline("📞 Canlı Destek", b"ticket_support")],
+        [Button.inline("Yapay Zeka (AI)", b"cat_ai"), Button.inline("Dizi, Film & Spor", b"cat_cinema")],
+        [Button.inline("Tasarim & Ofis", b"cat_design"), Button.inline("Windows & Office", b"cat_software")],
+        [Button.inline("Kupon & Bakiye", b"cat_coupons"), Button.inline("Oyun & E-Pin", b"cat_gaming")],
+        [Button.inline("Sosyal & Hesaplar", b"cat_social")],
+        [Button.url("ChatGPT Plus Ortak (59.90 TL)", "https://www.shopier.com/50889443")],
+        [Button.url("Web Magazasini Ac (Mini App)", MINI_APP_URL)],
+        [Button.inline("Bakiye / Cuzdan", b"menu_balance"), Button.inline("Canli Destek", b"ticket_support")],
     ]
 
 
 async def show_main_menu(event, *, edit=False):
     welcome = (
-        "🛡️ **LİSANSARENA — Dijital Ürün & Lisans Pazarı** 🏆\n"
+        "**LISANSARENA — Dijital Urun & Lisans Pazari**\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        "✨ **LisansArena Resmi Satış ve Destek Botuna Hoş Geldiniz!**\n\n"
-        "🔥 **Öne Çıkan Kampanya:** [ChatGPT Plus Ortak Hesap (30 Günlük) — 59.90 TL](https://www.shopier.com/50889443)\n\n"
-        "Netflix 4K UHD, S Sport Plus, ChatGPT Plus, Gemini Pro, Canva Pro, CapCut Pro, Windows 10/11 Pro, Office 365, Yemeksepeti ve Migros kuponları en uygun fiyatlarla anında teslim!\n\n"
-        "🌟 **LisansArena Güvenceleri:**\n"
-        "• 🛡️ Süresi Boyunca %100 Birebir Değişim & Telafi Garantisi\n"
-        "• ⚡ 7/24 Anında Otomatik Kod ve Hesap Teslimatı\n"
-        "• 🔒 Shopier 3D Secure / Kredi Kartı / Cüzdan Güvencesi\n"
+        "**LisansArena Resmi Satis ve Destek Botuna Hos Geldiniz!**\n\n"
+        "**One Cikan Kampanya:** [ChatGPT Plus Ortak Hesap (30 Gunluk) — 59.90 TL](https://www.shopier.com/50889443)\n\n"
+        "Netflix 4K UHD, S Sport Plus, ChatGPT Plus, Gemini Pro, Canva Pro, CapCut Pro, Windows 10/11 Pro, Office 365, Yemeksepeti ve Migros kuponlari en uygun fiyatlarla aninda teslim!\n\n"
+        "**LisansArena Guvenceleri:**\n"
+        "• Suresi Boyunca %100 Birebir Degisim & Telafi Garantisi\n"
+        "• 7/24 Aninda Otomatik Kod ve Hesap Teslimati\n"
+        "• Shopier 3D Secure / Kredi Karti / Cuzdan Guvencesi\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        "👇 **İncelemek ve satın almak istediğiniz kategoriyi seçin:**"
+        "**Incelemek ve satin almak istediginiz kategoriyi secin:**"
     )
     buttons = main_menu_buttons()
     if edit:
@@ -470,12 +470,12 @@ async def show_main_menu(event, *, edit=False):
 
 async def show_products(event, *, edit=False):
     text = (
-        "🛍️ **LİSANSARENA ÜRÜN VE LİSANS KATALOĞU**\n"
+        "**LISANSARENA URUN VE LISANS KATALOGU**\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        "Tüm yapay zeka, dizi-film, tasarım, orijinal lisans ve oyun ürünlerimiz kategorilere ayrılmıştır.\n\n"
-        "⚡ **7/24 Anında Otomatik Kod & Hesap Teslimatı**\n"
-        "🔒 **Shopier 3D Secure / Kart & Havale Güvencesi**\n\n"
-        "👇 İncelemek istediğiniz kategoriyi seçin:"
+        "Tum yapay zeka, dizi-film, tasarim, orijinal lisans ve oyun urunlerimiz kategorilere ayrilmistir.\n\n"
+        "• **7/24 Aninda Otomatik Kod & Hesap Teslimati**\n"
+        "• **Shopier 3D Secure / Kart & Havale Guvencesi**\n\n"
+        "Incelemek istediginiz kategoriyi secin:"
     )
     buttons = main_menu_buttons()
     if edit:

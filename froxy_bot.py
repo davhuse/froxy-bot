@@ -283,15 +283,15 @@ user_states = {}
 bot = TelegramClient(StringSession(), API_ID, API_HASH)
 
 BOT_COMMANDS = [
-    ("start", "KeyVadi ana menüyü aç"),
-    ("firsatlar", "🔥 Price Drop & Son Stok Fırsatları"),
-    ("magaza", "🛍️ KeyVadi mağazasını aç"),
-    ("urunler", "📦 Ürün kataloğunu görüntüle"),
-    ("bakiye", "💰 Cüzdan & Bakiye Yükle"),
-    ("siparisler", "📦 Sipariş geçmişini gör"),
-    ("destek", "📞 Canlı Destek ekibine bağlan"),
-    ("referans", "👥 Davet et & indirim kazan"),
-    ("stok", "Admin: stok duyurusu kartı oluştur"),
+    ("start", "KeyVadi ana menuyu ac"),
+    ("firsatlar", "Price Drop & Son Stok Firsatlari"),
+    ("magaza", "KeyVadi magazasini ac"),
+    ("urunler", "Urun katalogunu goruntule"),
+    ("bakiye", "Cuzdan & Bakiye Yukle"),
+    ("siparisler", "Siparis gecmisini gor"),
+    ("destek", "Canli Destek ekibine baglan"),
+    ("referans", "Davet et & indirim kazan"),
+    ("stok", "Admin: stok duyurusu karti olustur"),
 ]
 
 
@@ -323,31 +323,31 @@ def configure_bot_profile():
             # the persistent three-line Mini App entry point so wallet and
             # checkout requests can authenticate the customer.
             "type": "web_app",
-            "text": "🛍️ Mağazayı Aç",
+            "text": "Magazayi Ac",
             "web_app": {"url": KEYVADI_MINI_APP_URL},
         }
     })
     _bot_api_call("setMyName", {"name": "KeyVadi"})
     _bot_api_call("setMyDescription", {
-        "description": "Dijital ürünler, lisanslar, abonelikler ve güvenli Shopier alışverişi için KeyVadi mağazası."
+        "description": "Dijital urunler, lisanslar, abonelikler ve guvenli Shopier alisverisi icin KeyVadi magazasi."
     })
     _bot_api_call("setMyShortDescription", {
-        "short_description": "Dijital ürün mağazası · Shopier · Destek"
+        "short_description": "Dijital urun magazasi - Shopier - Destek"
     })
 
 
-def mini_app_markup(label="Mağazayı Aç"):
+def mini_app_markup(label="Magazayi Ac"):
     from telethon import Button
     # A plain HTTPS URL opens outside Telegram and therefore has no initData.
     # The bot deep link launches the same Mini App with a signed Telegram
     # context, while the persistent menu above remains the canonical entry.
     app_launch_url = "https://t.me/KeyVadiSatisBot/app"
     return [
-        [Button.url(f"🛍️ {label}", app_launch_url)],
-        [Button.inline("🔥 En Çok Satan Fırsatlar (Price Drop)", b"menu_top7")],
-        [Button.inline("📦 Kategoriler", b"menu_categories"), Button.inline("📞 Canlı Destek", b"menu_support")],
-        [Button.inline("👥 Davet & Kazan", b"menu_referral"), Button.inline("💰 Cüzdan / Bakiye", b"menu_topup")],
-        [Button.url("📢 KeyVadi Resmi Topluluk Grubu", KEYVADI_GROUP_LINK)]
+        [Button.url(label, app_launch_url)],
+        [Button.inline("En Cok Satan Firsatlar (Price Drop)", b"menu_top7")],
+        [Button.inline("Kategoriler", b"menu_categories"), Button.inline("Canli Destek", b"menu_support")],
+        [Button.inline("Davet & Kazan", b"menu_referral"), Button.inline("Cuzdan / Bakiye", b"menu_topup")],
+        [Button.url("KeyVadi Resmi Topluluk Grubu", KEYVADI_GROUP_LINK)]
     ]
 
 @bot.on(events.CallbackQuery())
@@ -910,46 +910,46 @@ def refresh_live_catalog():
 TEXTS = {
     "tr": {
         "welcome": (
-            "⚡ **KeyVadi Satış Paneline Hoş Geldiniz!**\n\n"
-            "Premium yapay zeka hesapları, lisanslar, onaylı mobil hesaplar ve özel fırsatlar en uygun fiyatlarla!\n\n"
-            "Lütfen yapmak istediğiniz işlemi seçin 👇"
+            "**KeyVadi Satis Paneline Hos Geldiniz!**\n\n"
+            "Premium yapay zeka hesaplari, lisanslar, onayli mobil hesaplar ve ozel firsatlar en uygun fiyatlarla!\n\n"
+            "Lutfen yapmak istediginiz islemi secin:"
         ),
-        "support_btn": "📞 Canlı Destek & İletişim",
-        "lang_btn": "🌐 Dil Seçimi / Language",
-        "main_menu": "↩️ Ana Menü",
+        "support_btn": "Canli Destek & Iletisim",
+        "lang_btn": "Dil Secimi / Language",
+        "main_menu": "<-- Ana Menu",
         "cat_title_mapping": {
-            "ai": "🌟 Yapay Zeka (AI) Çözümleri",
-            "streaming": "📺 Dizi, Film & Müzik",
-            "design": "🎨 Tasarım, Eğitim & Verimlilik",
-            "social": "💬 Discord & Sosyal Platformlar",
-            "coupons": "🎟️ Kupon, İndirim & Bakiye",
-            "games": "🎮 Oyun & Game Pass",
-            "accounts": "📱 Telegram, WhatsApp & Mobil Hesaplar",
-            "license": "🔑 Windows, Office & Diğer Lisanslar"
+            "ai": "Yapay Zeka (AI) Cozumleri",
+            "streaming": "Dizi, Film & Muzik",
+            "design": "Tasarim, Egitim & Verimlilik",
+            "social": "Discord & Sosyal Platformlar",
+            "coupons": "Kupon, Indirim & Bakiye",
+            "games": "Oyun & Game Pass",
+            "accounts": "Telegram, WhatsApp & Mobil Hesaplar",
+            "license": "Windows, Office & Diger Lisanslar"
         },
-        "select_product": "Detaylarını görmek ve satın almak istediğiniz ürünü seçin:",
+        "select_product": "Detaylarini gormek ve satin almak istediginiz urunu secin:",
         "price": "Fiyat",
-        "product_footer": "✅ Teslimat türü ürün detayında · 7/24 destek · Güvenli ödeme\n\nSatın almak için aşağıdaki butona tıklayın. Teslimat yöntemi ürün bilgisine göre uygulanır.",
-        "buy_btn": "💳 Shopier ile Güvenli Satın Al",
-        "support_title": "📞 **Destek Talebi & Sipariş Verme**",
-        "support_desc": "Satın almak istediğiniz ürün, sipariş sorunu veya destek talebinizi detaylıca yazıp bu sohbete gönderin.\n\nMesajınız doğrudan admin ekibimize iletilecektir. En kısa sürede yanıt alacaksınız.",
-        "cancel": "↩️ Vazgeç ve İptal Et",
-        "support_success": "✅ Mesajınız ekibimize iletildi. En kısa sürede yanıt alacaksınız.",
-        "support_fail": "⚠️ Mesajınız iletilemedi. Lütfen daha sonra tekrar deneyiniz.",
-        "support_inactive": "⚠️ Üzgünüz, şu anda destek sistemi aktif değil (Admin ID tanımlanmamış). Lütfen daha sonra deneyin.",
-        "reply_prefix": "📨 **KeyVadi Destek Ekibinden Cevap:**\n\n",
-        "choose_lang": "Lütfen dilinizi seçin / Please choose your language:"
+        "product_footer": "Teslimat turu urun detayinda - 7/24 destek - Guvenli odeme\n\nSatin almak icin asagidaki butona tiklayin.",
+        "buy_btn": "Shopier ile Guvenli Satin Al",
+        "support_title": "**Destek Talebi & Siparis Verme**",
+        "support_desc": "Satin almak istediginiz urun, siparis sorunu veya destek talebinizi detaylica yazip bu sohbete gonderin.\n\nMesajiniz dogrudan admin ekibimize iletilecektir. En kisa surede yanit alacaksiniz.",
+        "cancel": "Vazgec ve Iptal Et",
+        "support_success": "Mesajiniz ekibimize iletildi. En kisa surede yanit alacaksiniz.",
+        "support_fail": "Mesajiniz iletilemedi. Lutfen daha sonra tekrar deneyiniz.",
+        "support_inactive": "Uzgunuz, su anda destek sistemi aktif degil. Lutfen daha sonra deneyin.",
+        "reply_prefix": "**KeyVadi Destek Ekibinden Cevap:**\n\n",
+        "choose_lang": "Lutfen dilinizi secin / Please choose your language:"
     }
 }
 
 # Main Menu Helper — Streamlined Mini App First Experience
 async def show_lang_selection(event, is_callback=False):
     text = (
-        "🇹🇷 **Lütfen dil seçin:**\n"
-        "🇬🇧 **Please select your language:**"
+        "**Lutfen dil secin:**\n"
+        "**Please select your language:**"
     )
     buttons = [
-        [Button.inline("🇹🇷 Türkçe", b"lang_tr"), Button.inline("🇬🇧 English", b"lang_en")]
+        [Button.inline("Turkce", b"lang_tr"), Button.inline("English", b"lang_en")]
     ]
     if is_callback:
         await safe_event_edit(event, text, buttons=buttons)
@@ -958,17 +958,17 @@ async def show_lang_selection(event, is_callback=False):
 
 async def show_main_menu(event, user_id, is_callback=False):
     welcome = (
-        "🔥 **KEYVADI STORE — Dijital Lisans & E-Pin** ⚡\n"
+        "**KEYVADI STORE — Dijital Lisans & E-Pin**\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        "👋 **KeyVadi Dünyasına Hoş Geldiniz!**\n\n"
-        "Netflix 4K, Gemini AI Pro, CapCut Pro, Xbox Game Pass ve Minecraft gibi tüm popüler lisanslar **%70 indirimle** anında teslim!\n\n"
-        "⚡ **7/24 Anında Otomatik Kod & Lisans Teslimatı**\n"
-        "🎁 **Tam Süre Kesintisiz Değişim & Telafi Garantisi**\n"
-        "💳 **3D Secure Güvenli Kartla Satın Alma**\n"
+        "**KeyVadi Dunyasina Hos Geldiniz!**\n\n"
+        "Netflix 4K, Gemini AI Pro, CapCut Pro, Xbox Game Pass ve Minecraft gibi tum populer lisanslar **%70 indirimle** aninda teslim!\n\n"
+        "• **7/24 Aninda Otomatik Kod & Lisans Teslimati**\n"
+        "• **Tam Sure Kesintisiz Degisim & Telafi Garantisi**\n"
+        "• **3D Secure Guvenli Kartla Satin Alma**\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        "👉 *Alışverişe başlamak veya indirimli ürünleri incelemek için aşağıdaki yeşil butonlara dokunun:*"
+        "*Alisverise baslamak veya indirimli urunleri incelemek icin asagidaki butonlari kullanabilirsiniz:*"
     )
-    buttons = mini_app_markup("Mağazayı Aç")
+    buttons = mini_app_markup("Magazayi Ac")
     if is_callback:
         await safe_event_edit(event, welcome, buttons=buttons)
     else:
@@ -2322,18 +2322,18 @@ async def message_handler(event):
                     price = user_lang_helper.convert_price_to_usd(price)
                 
                 product_msg = (
-                    f"📌 **{matched_product['title']}**\n"
-                    f"💰 **{t['price']}:** {price}"
+                    f"**{matched_product['title']}**\n"
+                    f"**{t['price']}:** {price}"
                 )
                 pid = matched_product.get('id', '')
                 bot_app_url = f"https://t.me/KeyVadiSatisBot/app?startapp=p_{pid}"
                 direct_url = listing_url(matched_product)
                 buttons = [
-                    [Button.url("🛍️ Mağazada Aç", bot_app_url), Button.url("💳 Direkt Al", direct_url)],
+                    [Button.url("Magazada Ac", bot_app_url), Button.url("Direkt Al", direct_url)],
                     [Button.inline(t["support_btn"], b"menu_support")],
                 ]
             else:
-                product_msg = "🔍 **Uygun seçenekler:**\n"
+                product_msg = "**Uygun secenekler:**\n"
                 buttons = []
                 for i, p in enumerate(matched_products[:3]):
                     price = p['price']
@@ -2344,8 +2344,8 @@ async def message_handler(event):
                     p_app_url = f"https://t.me/KeyVadiSatisBot/app?startapp=p_{p_id}"
                     p_direct_url = listing_url(p)
                     buttons.append([
-                        Button.url(f"🛍️ {p['title'][:20]}", p_app_url),
-                        Button.url("💳 Direkt Al", p_direct_url)
+                        Button.url(p['title'][:25], p_app_url),
+                        Button.url("Direkt Al", p_direct_url)
                     ])
                 buttons.append([Button.inline(t["support_btn"], b"menu_support")])
                 
