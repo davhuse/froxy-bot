@@ -5,6 +5,7 @@ import asyncio
 import sys
 import time
 import re
+import uuid
 import tempfile
 import urllib.request
 import urllib.error
@@ -47,10 +48,14 @@ USERS_FILE = os.path.join(DATA_DIR, "users.json")
 # ─── Brand & Links ───
 CHANNEL_USERNAME = "JarvisCraftDuyuru"
 CHANNEL_URL = "https://t.me/JarvisCraftDuyuru"
-SUPPORT_USERNAME = "Geliştirici (ID: 32186)"
-SUPPORT_URL = "tg://user?id=32186"
+SUPPORT_USERNAME = "JarvisCraft"
+SUPPORT_URL = "https://t.me/JarvisCraft"
 SHOPIER_URL = "https://www.shopier.com/JarvisStore"
 APP_URL = "https://bot-service-production-9d74.up.railway.app/jarvis/app"
+ADMIN_IDS = {
+    int(os.environ.get("TELEGRAM_ADMIN_ID", 8791896048)),
+    8791896048, 6196006704, 8116518175, 8387947754
+}
 DEFAULT_TEST_SESSION = "1AZWarzQBuyWtsQgpjidYIjcpvAltCNtIcGqZKozRBwERfmfTokqlcs-7-Hzfui4OUwjNHGldD17naL63mHZwNHpezALDayddc9Oijpl-AraFkFhUIGduHoDFlT14Oi-l3rn2QF67SaRLo5heKlqIKNql43SSo9mJY92hz3SYwBp5RHcsRJRWi1m9ZBXLhI_4i0Ai9g5-a_TDGuk6hHnd_zosrZbH-Y6TuOLMSMO3aLloFuLjH6AoVBdx2T3sdrUhG93l7Igo53XSBBNpxDgs-cMn6r_av--OvXfy30J1dQYashtig2hv1RoVmfD9AT2sB_Dn2SvqKS66Nqr9BO3wRs7LneidBsY="
 
 LINE = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -157,9 +162,9 @@ def get_main_menu():
         [Button.url("🛍️  Shopier Mağazası (Tüm İlanlar)", SHOPIER_URL)],
         [Button.inline("⚡  Oto-Reklam Motoru", b"menu_ad_engine"),
          Button.inline("🏪  Kod Mağazası", b"menu_store")],
-        [Button.inline("🧠  Jarvis AI", b"menu_ai_tools"),
+        [Button.inline("📦  Siparişlerim & Üyeliklerim", b"menu_orders"),
          Button.inline("💎  VIP & Bakiye", b"menu_vip")],
-        [Button.inline("👤  Profilim", b"menu_profile"),
+        [Button.inline("👤  Hesabım & Profil", b"menu_profile"),
          Button.url("📱  Web Panel", APP_URL)],
         [Button.url("📢  Duyuru Kanalı", CHANNEL_URL),
          Button.inline("💬  Canlı Destek", b"menu_support")]
@@ -665,7 +670,7 @@ async def callback_handler(event):
                 "title": "Jarvis Core AI Asistan İskeleti",
                 "price": "350₺",
                 "badge": "🔥 POPÜLER",
-                "url": "https://www.shopier.com/51058105",
+                "url": "https://www.shopier.com/JarvisStore/51058105",
                 "desc": "Sesli/yazılı komut algılayan, Python + LLM mimarili,\nsistem görevlerini otomatikleştiren akıllı asistan çekirdeği.",
                 "features": [
                     "Python 3.10+ & AsyncIO altyapısı",
@@ -679,7 +684,7 @@ async def callback_handler(event):
                 "title": "Telegram Oto-Reklam Bot Scripti",
                 "price": "450₺",
                 "badge": "🏆 ÇOK SATAN",
-                "url": "https://www.shopier.com/51058117",
+                "url": "https://www.shopier.com/JarvisStore/51058117",
                 "desc": "Çoklu hesap yönetimi, anti-flood gecikme sistemi,\n65+ ticaret grubu entegrasyonu ve rotasyonlu mesaj motoru.",
                 "features": [
                     "Telethon tabanlı güçlü motor",
@@ -693,7 +698,7 @@ async def callback_handler(event):
                 "title": "E-Ticaret & Fiyat Takip Scraper",
                 "price": "300₺",
                 "badge": "🆕 YENİ",
-                "url": "https://www.shopier.com/51058118",
+                "url": "https://www.shopier.com/JarvisStore/51058118",
                 "desc": "Trendyol, Yemeksepeti ve e-ticaret sitelerinden\nanlık kupon ve fiyat alarmı toplayan bot seti.",
                 "features": [
                     "Playwright & Cloudflare Bypass",
@@ -706,7 +711,7 @@ async def callback_handler(event):
                 "title": "Full-Stack Mini App + Shopier Kiti",
                 "price": "400₺",
                 "badge": "💎 EN İYİ DEĞER",
-                "url": "https://www.shopier.com/51058119",
+                "url": "https://www.shopier.com/JarvisStore/51058119",
                 "desc": "Kendi Telegram Mini App mağazanızı 10 dakikada kurun.\nFlask backend + Vite frontend + Shopier ödeme entegrasyonu.",
                 "features": [
                     "Hazır tasarım & webhooklar",
@@ -803,7 +808,7 @@ async def callback_handler(event):
         buttons = [
             [Button.inline("📹  Kullanım Videosunu Gönder (Chat'e)", b"jarvis_send_video")],
             [Button.inline("📥  Ücretsiz PC Demo Paketi (.ZIP)", b"jarvis_send_demo")],
-            [Button.url("🛒  Shopier'dan Lisans Satın Al (350 ₺)", "https://www.shopier.com/51058105")],
+            [Button.url("🛒  Shopier'dan Lisans Satın Al (350 ₺)", "https://www.shopier.com/JarvisStore/51058105")],
             [Button.inline("📢  Duyuru Kanalına Paylaş (Video & Demo)", b"jarvis_broadcast_channel")],
             [Button.inline("◀️  Ana Menü", b"main_menu")]
         ]
@@ -819,7 +824,7 @@ async def callback_handler(event):
             "• Canlı web tarama ve akıllı görev yürütme\n"
             "• Sıfır kurulum: Windows portable EXE paketi\n\n"
             "📥 **Ücretsiz Demo:** https://bot-service-production-9d74.up.railway.app/static/JARVIS_MUSTERI_DEMO_PAKETI.zip\n"
-            "🛒 **Shopier Lisans:** https://www.shopier.com/51058105\n"
+            "🛒 **Shopier Lisans:** https://www.shopier.com/JarvisStore/51058105\n"
             "📢 **Duyuru Kanalı:** @JarvisCraftDuyuru"
         )
         try:
@@ -858,7 +863,7 @@ async def callback_handler(event):
         )
         buttons = [
             [Button.url("📥 Demo Paketini İndir (.ZIP)", "https://bot-service-production-9d74.up.railway.app/static/JARVIS_MUSTERI_DEMO_PAKETI.zip")],
-            [Button.url("🛒 Tam Sürüm Lisans Al (350 ₺)", "https://www.shopier.com/51058105")],
+            [Button.url("🛒 Tam Sürüm Lisans Al (350 ₺)", "https://www.shopier.com/JarvisStore/51058105")],
             [Button.inline("◀️ J.A.R.V.I.S. Menüsü", b"menu_ai_tools")]
         ]
         await event.respond(demo_msg, buttons=buttons)
@@ -876,9 +881,9 @@ async def callback_handler(event):
             "📥 **Ücretsiz Demo İndir:**\n"
             "https://bot-service-production-9d74.up.railway.app/static/JARVIS_MUSTERI_DEMO_PAKETI.zip\n\n"
             "🛒 **Shopier Güvenli Sipariş (350 ₺):**\n"
-            "https://www.shopier.com/51058105\n\n"
+            "https://www.shopier.com/JarvisStore/51058105\n\n"
             "🤖 **Bot:** @JarvisCraftsBot\n"
-            "💬 **Destek:** tg://user?id=32186"
+            f"💬 **Destek:** {SUPPORT_URL} (@{SUPPORT_USERNAME})"
         )
         video_path = os.path.join("static", "jarvis_demo_video.mp4")
         try:
@@ -898,7 +903,7 @@ async def callback_handler(event):
             await event.respond(f"⚠️ Kanala gönderilirken bir durum oluştu: {e}\n(Botun @{CHANNEL_USERNAME} kanalında yönetici yetkisi olduğundan emin olun.)")
 
     # ══════════════════════════════════
-    #  4.  VIP & BAKİYE
+    #  4.  VIP & PLAN YÖNETİMİ
     # ══════════════════════════════════
     elif data == "menu_vip":
         balance = user.get("balance", 0.0)
@@ -932,55 +937,153 @@ async def callback_handler(event):
             f"👇 **Paketinizi seçip hemen yükseltebilirsiniz:**"
         )
         buttons = [
-            [Button.url("⭐ Haftalık VIP Satın Al  ·  150₺", "https://www.shopier.com/51058120")],
-            [Button.url("🌟 Aylık Sınırsız VIP Satın Al  ·  350₺", "https://www.shopier.com/51058121")],
-            [Button.url("💬 Özel Kurumsal Paket İçin Yazın", SUPPORT_URL)],
+            [Button.url("⭐ Haftalık VIP Satın Al  ·  150₺", "https://www.shopier.com/JarvisStore/51058120")],
+            [Button.url("🌟 Aylık Sınırsız VIP Satın Al  ·  350₺", "https://www.shopier.com/JarvisStore/51058121")],
+            [Button.url("💬 Özel Kurumsal Paket İçin Yazın", "https://t.me/JarvisCraft")],
             [Button.inline("◀️  Ana Menü", b"main_menu")]
         ]
         await safe_edit_event(event, msg, buttons=buttons)
 
     # ══════════════════════════════════
-    #  5.  PROFİLİM
+    #  5.  HESABIM & PROFİLİM
     # ══════════════════════════════════
     elif data == "menu_profile":
+        vip_until = user.get("vip_until")
+        is_vip = bool(vip_until and vip_until > time.time())
+        if is_vip:
+            rem_days = int((vip_until - time.time()) // 86400)
+            rem_hours = int(((vip_until - time.time()) % 86400) // 3600)
+            vip_text = f"🟢 Aktif ({rem_days} gün {rem_hours} saat)"
+        else:
+            vip_text = "⚪ Standart (Ücretsiz)"
+
+        account_name = user.get("account_name", "Bağlı hesap yok")
+        account_phone = user.get("account_phone", "")
+        acc_display = f"{account_name} (+{account_phone})" if account_phone else account_name
+
+        today_str = time.strftime("%Y-%m-%d")
+        daily_sent = user.get("daily_sent", 0) if user.get("last_sent_day") == today_str else 0
+        quota_display = "Sınırsız (VIP)" if is_vip else f"{daily_sent} / 25 adet"
+
         username_display = f"@{user.get('username')}" if user.get('username') else "Belirlenmemiş"
         msg = (
-            f"           👤 **KULLANICI PROFİLİ**\n"
+            f"           👤 **HESABIM & KULLANICI BİLGİLERİ**\n"
             f"{LINE}\n\n"
-            f"  **İsim:**      {user.get('first_name', 'Bilinmiyor')}\n"
-            f"  **Kullanıcı:** {username_display}\n"
-            f"  **ID:**        `{uid}`\n\n"
+            f"  👤 **İsim:**      {user.get('first_name', 'Bilinmiyor')}\n"
+            f"  🔗 **Kullanıcı:** {username_display}\n"
+            f"  🆔 **Telegram ID:** `{uid}`\n"
+            f"  💰 **Bakiye:**    `{user.get('balance', 0.0):.2f} ₺`\n"
+            f"  💎 **Üyelik:**    {vip_text}\n\n"
             f"{LINE}\n\n"
-            f"  **Bakiye:**    `{user.get('balance', 0.0):.2f} ₺`\n"
-            f"  **VIP:**       {'🟢 Aktif' if user.get('vip_until') else '⚪ Standart'}\n"
-            f"  **Gönderim:** {'🟢 Çalışıyor' if user.get('is_running') else '🔴 Durduruldu'}\n"
-            f"  **Aralık:**    Her {user.get('ad_interval', 30)} dk\n\n"
+            f"  📱 **Gönderici:**  `{acc_display}`\n"
+            f"  ⚡ **Motor:**      {'🟢 Çalışıyor' if user.get('is_running') else '🔴 Durduruldu'}\n"
+            f"  ⏱ **Aralık:**     Her `{user.get('ad_interval', 60)}` dakikada bir\n"
+            f"  📊 **Bugün:**      `{quota_display}`\n"
+            f"  📦 **Toplam:**     `{user.get('total_sent', 0)}` başarılı gönderi\n\n"
             f"{LINE}"
         )
-        await safe_edit_event(event, msg, buttons=[
+        buttons = [
+            [Button.inline("📦  Siparişlerim & Üyeliklerim", b"menu_orders")],
+            [Button.inline("⚡  Oto-Reklam Motoru", b"menu_ad_engine"),
+             Button.inline("💎  VIP Paketler", b"menu_vip")],
+            [Button.url("📱  Web Panel & Mini App", APP_URL)],
             [Button.inline("◀️  Ana Menü", b"main_menu")]
-        ])
+        ]
+        await safe_edit_event(event, msg, buttons=buttons)
 
     # ══════════════════════════════════
-    #  6.  CANLI DESTEK
+    #  5.1.  SİPARİŞLERİM & ÜYELİKLERİM
+    # ══════════════════════════════════
+    elif data == "menu_orders":
+        vip_until = user.get("vip_until")
+        is_vip = bool(vip_until and vip_until > time.time())
+        orders = user.get("orders", [])
+
+        lines = [
+            f"           📦 **SİPARİŞLERİM & ÜYELİKLERİM**",
+            f"{LINE}\n"
+        ]
+
+        if is_vip:
+            rem_secs = vip_until - time.time()
+            rem_days = int(rem_secs // 86400)
+            rem_hours = int((rem_secs % 86400) // 3600)
+            plan_name = user.get("plan_name", "Aylık Sınırsız VIP" if rem_days > 7 else "Haftalık VIP")
+            slots = user.get("account_slots", 5 if rem_days > 7 else 2)
+            lines.append(f"💎 **Aktif VIP Üyeliğiniz:**")
+            lines.append(f"  • Paket: **{plan_name}**")
+            lines.append(f"  • Kalan Süre: `{rem_days} gün {rem_hours} saat`")
+            lines.append(f"  • Gönderici Slotu: `{slots} adet hesap`")
+            lines.append(f"  • Hız: `15-30 dk turbo rotasyon`")
+            lines.append(f"  • Durum: `🟢 Aktif & Kullanımda`\n")
+        else:
+            lines.append(f"⚪ **Mevcut Paket:** `Standart (Ücretsiz Plan)`\n")
+
+        if orders:
+            lines.append(f"📋 **Sipariş Geçmişi ({len(orders)} işlem):**")
+            for idx, o in enumerate(orders[-5:], 1):
+                title = o.get("title", "Yazılım / Üyelik")
+                price = o.get("price", "—")
+                date_str = o.get("date", "—")
+                status_str = o.get("status", "✅ Tamamlandı")
+                lines.append(f"  {idx}. **{title}** (`{price}`)\n     📅 Tarih: {date_str} | Durum: {status_str}")
+            lines.append("")
+        else:
+            if not is_vip:
+                lines.append(
+                    "ℹ️ Henüz tamamlanmış bir siparişiniz veya aktif VIP üyeliğiniz bulunmuyor.\n\n"
+                    "Shopier mağazamızdan veya bot üzerinden satın aldığınızda tüm üyelikler, "
+                    "lisans anahtarları ve indirme paketleri anında hesabınıza tanımlanır.\n"
+                )
+
+        lines.append(LINE)
+        msg = "\n".join(lines)
+        buttons = [
+            [Button.inline("🏪  Kod Mağazasını Aç", b"menu_store")],
+            [Button.inline("💎  VIP Satın Al / Yükselt", b"menu_vip")],
+            [Button.url("💬  Sipariş Bildirimi & Destek", "https://t.me/JarvisCraft")],
+            [Button.inline("◀️  Ana Menü", b"main_menu")]
+        ]
+        await safe_edit_event(event, msg, buttons=buttons)
+
+    # ══════════════════════════════════
+    #  6.  CANLI DESTEK & İLETİŞİM
     # ══════════════════════════════════
     elif data == "menu_support":
         msg = (
             f"           💬 **CANLI DESTEK & İLETİŞİM**\n"
             f"{LINE}\n\n"
-            f"Her türlü teknik soru, özel bot siparişi\n"
-            f"veya ödeme bildirimi için resmi hesabımıza yazın:\n\n"
-            f"👨‍💻  **Geliştirici & Destek:**  @{SUPPORT_USERNAME}\n"
-            f"🆔  **Destek Hesap ID:**     `8387947754`\n"
-            f"⚡  **Ortalama Yanıt:**       5-10 dakika\n"
-            f"🕐  **Çalışma:**              7/24 aktif destek\n\n"
+            f"Her türlü teknik soru, özel bot/web yazılım teklifi\n"
+            f"veya ödeme aktivasyonu için 7/24 hizmetinizdeyiz:\n\n"
+            f"👨‍💻  **Resmi Destek Hesabı:**  @JarvisCraft\n"
+            f"⚡  **Ortalama Yanıt Süresi:** 5-10 dakika\n"
+            f"🕐  **Çalışma Saatleri:**     7/24 kesintisiz destek\n\n"
+            f"💡 Dilerseniz doğrudan **@JarvisCraft** hesabına yazabilir,\n"
+            f"dilerseniz aşağıdaki butondan bu sohbet içinde anında destek talebi oluşturabilirsiniz.\n\n"
             f"{LINE}\n\n"
             f"🛒 **Resmi Shopier:**  {SHOPIER_URL}\n"
             f"📢 **Duyuru Kanalı:**  {CHANNEL_URL}"
         )
         buttons = [
-            [Button.url(f"👨‍💻  @{SUPPORT_USERNAME}'a Yaz", SUPPORT_URL)],
+            [Button.url("💬  @JarvisCraft Hesabına Yaz", "https://t.me/JarvisCraft")],
+            [Button.inline("✍️  Bu Sohbette Destek Talebi Aç", b"ticket_start")],
             [Button.inline("◀️  Ana Menü", b"main_menu")]
+        ]
+        await safe_edit_event(event, msg, buttons=buttons)
+
+    elif data == "ticket_start":
+        USER_STATES[uid] = "waiting_support_message"
+        msg = (
+            f"           ✍️ **YENİ DESTEK TALEBİ OLUŞTUR**\n"
+            f"{LINE}\n\n"
+            f"Lütfen iletmek istediğiniz teknik soruyu, sipariş/ödeme detayınızı "
+            f"veya proje talebinizi tek parça mesaj olarak yazıp gönderin.\n\n"
+            f"Mesajınız doğrudan geliştirici ekibimize iletilecek ve yanıtlandığında "
+            f"bu bot üzerinden anında bildirim alacaksınız.\n\n"
+            f"{LINE}"
+        )
+        buttons = [
+            [Button.inline("❌ Vazgeç", b"menu_support")]
         ]
         await safe_edit_event(event, msg, buttons=buttons)
 
@@ -998,7 +1101,56 @@ async def message_handler(event):
     uid = str(sender.id)
     state = USER_STATES.get(uid)
 
-    if state == "waiting_ad_message":
+    if state == "waiting_support_message":
+        USER_STATES.pop(uid, None)
+        users = load_data()
+        if uid not in users:
+            users[uid] = {"user_id": int(uid), "created_at": time.time()}
+        if "tickets" not in users[uid]:
+            users[uid]["tickets"] = []
+        ticket_id = str(uuid.uuid4())[:8]
+        users[uid]["tickets"].append({
+            "id": ticket_id,
+            "message": event.raw_text,
+            "date": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "status": "Beklemede"
+        })
+        save_data(users)
+
+        ack = (
+            f"           ✅ **DESTEK TALEBİNİZ ALINDI!**\n"
+            f"{LINE}\n\n"
+            f"İlettiğiniz mesaj doğrudan teknik destek ekibimize aktarılmıştır.\n"
+            f"En kısa sürede bu bot üzerinden yanıt alacaksınız.\n\n"
+            f"💬 **Resmi Destek:** @JarvisCraft\n"
+            f"{LINE}"
+        )
+        await event.respond(ack, buttons=[
+            [Button.inline("◀️  Ana Menü", b"main_menu")]
+        ])
+
+        # Notify admins
+        u_handle = f"@{sender.username}" if getattr(sender, "username", None) else "yok"
+        admin_alert = (
+            f"🔔 **[YENİ DESTEK TALEBİ — JarvisCraft]**\n"
+            f"{LINE}\n\n"
+            f"👤 **Kullanıcı:** {sender.first_name} ({u_handle})\n"
+            f"🆔 **ID:** `{uid}`\n"
+            f"🎫 **Talep ID:** `{ticket_id}`\n\n"
+            f"💬 **Mesaj:**\n"
+            f"```\n{event.raw_text}\n```\n\n"
+            f"✍️ **Yanıtlamak için:**\n"
+            f"`/cevap {uid} <yanıtınız>`\n"
+            f"{LINE}"
+        )
+        for a_id in ADMIN_IDS:
+            try:
+                await client.send_message(a_id, admin_alert)
+            except Exception:
+                pass
+        return
+
+    elif state == "waiting_ad_message":
         users = load_data()
         if uid in users:
             users[uid]["ad_messages"] = [event.raw_text]
@@ -1226,6 +1378,352 @@ async def cmd_link_test_account(event):
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  User Commands Shortcuts
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+@client.on(events.NewMessage(pattern=r"^/(?:siparisler|siparislerim|orders)$", func=lambda e: e.is_private))
+async def cmd_orders(event):
+    uid = str(event.sender_id)
+    users = load_data()
+    user = users.get(uid, {})
+    vip_until = user.get("vip_until")
+    is_vip = bool(vip_until and vip_until > time.time())
+    orders = user.get("orders", [])
+
+    lines = [
+        f"           📦 **SİPARİŞLERİM & ÜYELİKLERİM**",
+        f"{LINE}\n"
+    ]
+
+    if is_vip:
+        rem_secs = vip_until - time.time()
+        rem_days = int(rem_secs // 86400)
+        rem_hours = int((rem_secs % 86400) // 3600)
+        plan_name = user.get("plan_name", "Aylık Sınırsız VIP" if rem_days > 7 else "Haftalık VIP")
+        slots = user.get("account_slots", 5 if rem_days > 7 else 2)
+        lines.append(f"💎 **Aktif VIP Üyeliğiniz:**")
+        lines.append(f"  • Paket: **{plan_name}**")
+        lines.append(f"  • Kalan Süre: `{rem_days} gün {rem_hours} saat`")
+        lines.append(f"  • Gönderici Slotu: `{slots} adet hesap`")
+        lines.append(f"  • Hız: `15-30 dk turbo rotasyon`")
+        lines.append(f"  • Durum: `🟢 Aktif & Kullanımda`\n")
+    else:
+        lines.append(f"⚪ **Mevcut Paket:** `Standart (Ücretsiz Plan)`\n")
+
+    if orders:
+        lines.append(f"📋 **Sipariş Geçmişi ({len(orders)} işlem):**")
+        for idx, o in enumerate(orders[-5:], 1):
+            title = o.get("title", "Yazılım / Üyelik")
+            price = o.get("price", "—")
+            date_str = o.get("date", "—")
+            status_str = o.get("status", "✅ Tamamlandı")
+            lines.append(f"  {idx}. **{title}** (`{price}`)\n     📅 Tarih: {date_str} | Durum: {status_str}")
+        lines.append("")
+    else:
+        if not is_vip:
+            lines.append(
+                "ℹ️ Henüz tamamlanmış bir siparişiniz veya aktif VIP üyeliğiniz bulunmuyor.\n\n"
+                "Shopier mağazamızdan veya bot üzerinden satın aldığınızda tüm üyelikler, "
+                "lisans anahtarları ve indirme paketleri anında hesabınıza tanımlanır.\n"
+            )
+
+    lines.append(LINE)
+    msg = "\n".join(lines)
+    buttons = [
+        [Button.inline("🏪  Kod Mağazasını Aç", b"menu_store")],
+        [Button.inline("💎  VIP Satın Al / Yükselt", b"menu_vip")],
+        [Button.url("💬  Sipariş Bildirimi & Destek", "https://t.me/JarvisCraft")],
+        [Button.inline("◀️  Ana Menü", b"main_menu")]
+    ]
+    await event.respond(msg, buttons=buttons)
+
+@client.on(events.NewMessage(pattern=r"^/(?:hesap|hesabim|profil|profile)$", func=lambda e: e.is_private))
+async def cmd_profile(event):
+    sender = await event.get_sender()
+    uid = str(event.sender_id)
+    users = load_data()
+    user = users.get(uid, {})
+    vip_until = user.get("vip_until")
+    is_vip = bool(vip_until and vip_until > time.time())
+    if is_vip:
+        rem_days = int((vip_until - time.time()) // 86400)
+        rem_hours = int(((vip_until - time.time()) % 86400) // 3600)
+        vip_text = f"🟢 Aktif ({rem_days} gün {rem_hours} saat)"
+    else:
+        vip_text = "⚪ Standart (Ücretsiz)"
+
+    account_name = user.get("account_name", "Bağlı hesap yok")
+    account_phone = user.get("account_phone", "")
+    acc_display = f"{account_name} (+{account_phone})" if account_phone else account_name
+
+    today_str = time.strftime("%Y-%m-%d")
+    daily_sent = user.get("daily_sent", 0) if user.get("last_sent_day") == today_str else 0
+    quota_display = "Sınırsız (VIP)" if is_vip else f"{daily_sent} / 25 adet"
+    username_display = f"@{sender.username}" if getattr(sender, "username", None) else "Belirlenmemiş"
+
+    msg = (
+        f"           👤 **HESABIM & KULLANICI BİLGİLERİ**\n"
+        f"{LINE}\n\n"
+        f"  👤 **İsim:**      {sender.first_name or 'Bilinmiyor'}\n"
+        f"  🔗 **Kullanıcı:** {username_display}\n"
+        f"  🆔 **Telegram ID:** `{uid}`\n"
+        f"  💰 **Bakiye:**    `{user.get('balance', 0.0):.2f} ₺`\n"
+        f"  💎 **Üyelik:**    {vip_text}\n\n"
+        f"{LINE}\n\n"
+        f"  📱 **Gönderici:**  `{acc_display}`\n"
+        f"  ⚡ **Motor:**      {'🟢 Çalışıyor' if user.get('is_running') else '🔴 Durduruldu'}\n"
+        f"  ⏱ **Aralık:**     Her `{user.get('ad_interval', 60)}` dakikada bir\n"
+        f"  📊 **Bugün:**      `{quota_display}`\n"
+        f"  📦 **Toplam:**     `{user.get('total_sent', 0)}` başarılı gönderi\n\n"
+        f"{LINE}"
+    )
+    buttons = [
+        [Button.inline("📦  Siparişlerim & Üyeliklerim", b"menu_orders")],
+        [Button.inline("⚡  Oto-Reklam Motoru", b"menu_ad_engine"),
+         Button.inline("💎  VIP Paketler", b"menu_vip")],
+        [Button.url("📱  Web Panel & Mini App", APP_URL)],
+        [Button.inline("◀️  Ana Menü", b"main_menu")]
+    ]
+    await event.respond(msg, buttons=buttons)
+
+@client.on(events.NewMessage(pattern=r"^/(?:destek|yardim|support|help)$", func=lambda e: e.is_private))
+async def cmd_support(event):
+    msg = (
+        f"           💬 **CANLI DESTEK & İLETİŞİM**\n"
+        f"{LINE}\n\n"
+        f"Her türlü teknik soru, özel bot/web yazılım teklifi\n"
+        f"veya ödeme aktivasyonu için 7/24 hizmetinizdeyiz:\n\n"
+        f"👨‍💻  **Resmi Destek Hesabı:**  @JarvisCraft\n"
+        f"⚡  **Ortalama Yanıt Süresi:** 5-10 dakika\n"
+        f"🕐  **Çalışma Saatleri:**     7/24 kesintisiz destek\n\n"
+        f"💡 Dilerseniz doğrudan **@JarvisCraft** hesabına yazabilir,\n"
+        f"dilerseniz aşağıdaki butondan bu sohbet içinde anında destek talebi oluşturabilirsiniz.\n\n"
+        f"{LINE}\n\n"
+        f"🛒 **Resmi Shopier:**  {SHOPIER_URL}\n"
+        f"📢 **Duyuru Kanalı:**  {CHANNEL_URL}"
+    )
+    buttons = [
+        [Button.url("💬  @JarvisCraft Hesabına Yaz", "https://t.me/JarvisCraft")],
+        [Button.inline("✍️  Bu Sohbette Destek Talebi Aç", b"ticket_start")],
+        [Button.inline("◀️  Ana Menü", b"main_menu")]
+    ]
+    await event.respond(msg, buttons=buttons)
+
+@client.on(events.NewMessage(pattern=r"^/(?:vip|paketler)$", func=lambda e: e.is_private))
+async def cmd_vip(event):
+    uid = str(event.sender_id)
+    users = load_data()
+    user = users.get(uid, {})
+    balance = user.get("balance", 0.0)
+    vip_status = user.get("vip_until")
+    is_vip = bool(vip_status and vip_status > time.time())
+
+    msg = (
+        f"           💎 **VIP & PLAN YÖNETİMİ**\n"
+        f"{LINE}\n\n"
+        f"**Mevcut Paketiniz:** {'🟢 VIP Üyelik' if is_vip else '⚪ Standart (Ücretsiz)'}\n"
+        f"**Bakiye:**          `{balance:.2f} ₺`\n\n"
+        f"{LINE}\n\n"
+        f"📊 **HESAP & PLAN FARKLARI:**\n\n"
+        f"⚪ **Ücretsiz (Standart) Plan:**\n"
+        f"• 👤 1 Adet Gönderici Hesap\n"
+        f"• ⏱ 60 Dakika Aralık (Spam & Flood Korumalı)\n"
+        f"• 🎯 4 Hazır Kategori Havuzu (Ticaret, Sohbet, Borsa, Teknoloji)\n"
+        f"• 📈 Günlük 25 Gönderi Limiti\n\n"
+        f"⭐ **Haftalık VIP Paket (150 ₺):**\n"
+        f"• 👤 2 Adet Gönderici Hesap Ekleme\n"
+        f"• ⏱ 30 Dakika Hızlı Gönderim\n"
+        f"• ➕ Özel Grup & Kanal Ekleme Desteği\n"
+        f"• 🚀 7 Gün Kesintisiz Reklam & Gönderim\n\n"
+        f"🌟 **Aylık Sınırsız VIP Paket (350 ₺):**\n"
+        f"• 👤 5 Adet Gönderici Hesap (Rotasyonlu)\n"
+        f"• ⏱ 15 Dakika Turbo Gönderim\n"
+        f"• ♾️ Limitsiz Günlük Gönderi\n"
+        f"• ⚡ Öncelikli VIP Teknik Destek & Özel Bot Danışmanlığı\n"
+        f"• 🚀 30 Gün Kesintisiz Kullanım\n\n"
+        f"{LINE}\n"
+        f"👇 **Paketinizi seçip hemen yükseltebilirsiniz:**"
+    )
+    buttons = [
+        [Button.url("⭐ Haftalık VIP Satın Al  ·  150₺", "https://www.shopier.com/JarvisStore/51058120")],
+        [Button.url("🌟 Aylık Sınırsız VIP Satın Al  ·  350₺", "https://www.shopier.com/JarvisStore/51058121")],
+        [Button.url("💬 Özel Kurumsal Paket İçin Yazın", "https://t.me/JarvisCraft")],
+        [Button.inline("◀️  Ana Menü", b"main_menu")]
+    ]
+    await event.respond(msg, buttons=buttons)
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  Admin Management Commands
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+@client.on(events.NewMessage(pattern=r"^/cevap\s+(\d+)\s+(.+)$", func=lambda e: e.is_private))
+async def cmd_admin_reply(event):
+    if event.sender_id not in ADMIN_IDS:
+        return
+    target_uid = int(event.pattern_match.group(1))
+    reply_text = event.pattern_match.group(2).strip()
+
+    user_msg = (
+        f"📩 **[JarvisCraft Destek Ekibi Yanıtı]**\n"
+        f"{LINE}\n\n"
+        f"{reply_text}\n\n"
+        f"{LINE}\n"
+        f"Herhangi bir sorunuzda bu sohbetten /destek yazabilir veya "
+        f"@JarvisCraft hesabına ulaşabilirsiniz."
+    )
+    try:
+        await client.send_message(target_uid, user_msg)
+        await event.respond(f"✅ Yanıt başarıyla iletildi (Kullanıcı: `{target_uid}`).")
+    except Exception as e:
+        await event.respond(f"❌ Yanıt gönderilemedi: {e}")
+
+@client.on(events.NewMessage(pattern=r"^/(?:vip_ver|vip_yap)\s+(\d+)\s+(haftalik|aylik)$", func=lambda e: e.is_private))
+async def cmd_admin_grant_vip(event):
+    if event.sender_id not in ADMIN_IDS:
+        return
+    target_uid = str(event.pattern_match.group(1))
+    tier = event.pattern_match.group(2).lower()
+
+    users = load_data()
+    if target_uid not in users:
+        users[target_uid] = {"user_id": int(target_uid), "created_at": time.time()}
+
+    duration = 7 * 86400 if tier == "haftalik" else 30 * 86400
+    plan_title = "Haftalık VIP" if tier == "haftalik" else "Aylık Sınırsız VIP"
+    price = "150 ₺" if tier == "haftalik" else "350 ₺"
+    slots = 2 if tier == "haftalik" else 5
+
+    curr_until = max(time.time(), users[target_uid].get("vip_until") or 0)
+    users[target_uid]["vip_until"] = curr_until + duration
+    users[target_uid]["plan_name"] = plan_title
+    users[target_uid]["account_slots"] = slots
+
+    if "orders" not in users[target_uid]:
+        users[target_uid]["orders"] = []
+    users[target_uid]["orders"].append({
+        "id": str(uuid.uuid4())[:8],
+        "title": f"JarvisCraft {plan_title}",
+        "price": price,
+        "date": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "status": "✅ Aktif & Tanımlandı"
+    })
+    save_data(users)
+
+    await event.respond(f"✅ `{target_uid}` ID'li kullanıcıya **{plan_title}** ({duration//86400} gün) başarıyla tanımlandı!")
+
+    user_notify = (
+        f"🎉 **Tebrikler! VIP Paketiniz Aktif Edildi!**\n"
+        f"{LINE}\n\n"
+        f"💎 **Paket:** `{plan_title}`\n"
+        f"👤 **Hesap Slotu:** `{slots} adet hesap bağlama`\n"
+        f"⏱ **Hız:** `15-30 Dk Turbo Gönderim`\n"
+        f"♾️ **Günlük Limit:** `Sınırsız Gönderi`\n\n"
+        f"Paketinizin durumunu /siparislerim veya /hesabim üzerinden anlık takip edebilirsiniz.\n\n"
+        f"Keyifli kullanımlar dileriz! 🚀\n"
+        f"{LINE}"
+    )
+    try:
+        await client.send_message(int(target_uid), user_notify)
+    except Exception as notify_e:
+        logger.warning(f"Could not notify user {target_uid}: {notify_e}")
+
+@client.on(events.NewMessage(pattern=r"^/bakiye_ekle\s+(\d+)\s+([\d\.,]+)$", func=lambda e: e.is_private))
+async def cmd_admin_add_balance(event):
+    if event.sender_id not in ADMIN_IDS:
+        return
+    target_uid = str(event.pattern_match.group(1))
+    amount = float(event.pattern_match.group(2).replace(",", "."))
+
+    users = load_data()
+    if target_uid not in users:
+        users[target_uid] = {"user_id": int(target_uid), "created_at": time.time()}
+
+    users[target_uid]["balance"] = users[target_uid].get("balance", 0.0) + amount
+    save_data(users)
+
+    await event.respond(f"✅ `{target_uid}` hesabına `{amount:.2f} ₺` bakiye eklendi. Güncel bakiye: `{users[target_uid]['balance']:.2f} ₺`")
+
+    try:
+        await client.send_message(
+            int(target_uid),
+            f"💰 **Hesabınıza Bakiye Eklendi!**\n\n"
+            f"Yüklenen Tutar: `+{amount:.2f} ₺`\n"
+            f"Güncel Bakiyeniz: `{users[target_uid]['balance']:.2f} ₺`\n\n"
+            f"Mağazadan dilediğiniz yazılımı veya VIP paketi satın alabilirsiniz."
+        )
+    except Exception:
+        pass
+
+@client.on(events.NewMessage(pattern=r"^/siparis_ekle\s+(\d+)\s+(.+)\s+([\d\.,]+)$", func=lambda e: e.is_private))
+async def cmd_admin_add_order(event):
+    if event.sender_id not in ADMIN_IDS:
+        return
+    target_uid = str(event.pattern_match.group(1))
+    item_title = event.pattern_match.group(2).strip()
+    price = f"{float(event.pattern_match.group(3).replace(',', '.')):.2f} ₺"
+
+    users = load_data()
+    if target_uid not in users:
+        users[target_uid] = {"user_id": int(target_uid), "created_at": time.time()}
+    if "orders" not in users[target_uid]:
+        users[target_uid]["orders"] = []
+
+    order_id = str(uuid.uuid4())[:8]
+    users[target_uid]["orders"].append({
+        "id": order_id,
+        "title": item_title,
+        "price": price,
+        "date": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "status": "✅ Tamamlandı"
+    })
+    save_data(users)
+
+    await event.respond(f"✅ `{target_uid}` kullanıcısına **{item_title}** (`{price}`) siparişi eklendi.")
+
+    try:
+        await client.send_message(
+            int(target_uid),
+            f"📦 **Yeni Siparişiniz Tanımlandı!**\n\n"
+            f"Ürün: **{item_title}**\n"
+            f"Tutar: `{price}`\n"
+            f"Sipariş ID: `{order_id}`\n\n"
+            f"Siparişinizi /siparislerim üzerinden görüntüleyebilirsiniz."
+        )
+    except Exception:
+        pass
+
+@client.on(events.NewMessage(pattern=r"^/kullanici\s+(\d+)$", func=lambda e: e.is_private))
+async def cmd_admin_user_info(event):
+    if event.sender_id not in ADMIN_IDS:
+        return
+    target_uid = str(event.pattern_match.group(1))
+    users = load_data()
+    u = users.get(target_uid)
+    if not u:
+        await event.respond(f"❌ `{target_uid}` ID'li kullanıcı veritabanında bulunamadı.")
+        return
+
+    vip_u = u.get("vip_until")
+    is_vip = bool(vip_u and vip_u > time.time())
+    rem_days = int((vip_u - time.time()) // 86400) if is_vip else 0
+    ord_cnt = len(u.get("orders", []))
+    acc_name = u.get("account_name", "Yok")
+    phone = u.get("account_phone", "Yok")
+
+    info = (
+        f"👤 **Kullanıcı Bilgileri (`{target_uid}`):**\n"
+        f"{LINE}\n"
+        f"• İsim: {u.get('first_name', 'Bilinmiyor')} (@{u.get('username', 'yok')})\n"
+        f"• Bakiye: `{u.get('balance', 0.0):.2f} ₺`\n"
+        f"• VIP: {'🟢 Aktif (' + str(rem_days) + ' gün)' if is_vip else '⚪ Standart'}\n"
+        f"• Sipariş Sayısı: `{ord_cnt}`\n"
+        f"• Bağlı Hesap: `{acc_name}` (+{phone})\n"
+        f"• Motor Durumu: {'🟢 Çalışıyor' if u.get('is_running') else '🔴 Durduruldu'}\n"
+        f"• Aralık: `{u.get('ad_interval', 60)} dk`\n"
+        f"• Toplam Gönderi: `{u.get('total_sent', 0)}` adet\n"
+        f"{LINE}"
+    )
+    await event.respond(info)
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 #  Oto-Reklam & Mesaj Motoru Arka Plan Servisi
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 async def ad_engine_background_worker():
@@ -1243,6 +1741,37 @@ async def ad_engine_background_worker():
                 session_str = user.get("session_string")
                 if not session_str:
                     continue
+
+                # Daily quota reset check
+                today_str = time.strftime("%Y-%m-%d")
+                if user.get("last_sent_day") != today_str:
+                    user["last_sent_day"] = today_str
+                    user["daily_sent"] = 0
+                    changed = True
+
+                vip_status = user.get("vip_until")
+                is_vip = bool(vip_status and vip_status > now)
+
+                # Free plan daily limit: 25 messages
+                if not is_vip and user.get("daily_sent", 0) >= 25:
+                    if not user.get("quota_notified"):
+                        user["quota_notified"] = True
+                        changed = True
+                        try:
+                            await client.send_message(
+                                int(uid),
+                                f"ℹ️ **[Oto-Mesaj Motoru] Günlük Kota Bildirimi**\n{LINE}\n\n"
+                                f"Ücretsiz standart planda günlük 25 adetlik gönderi kotanıza ulaştınız.\n"
+                                f"Kotanız yarın saat 00:00'da sıfırlanacaktır.\n\n"
+                                f"Limitsiz gönderim ve turbo aralık için VIP pakete geçebilirsiniz.",
+                                buttons=[[Button.inline("💎 VIP Paketleri İncele", b"menu_vip")]]
+                            )
+                        except Exception:
+                            pass
+                    continue
+                elif is_vip and user.get("quota_notified"):
+                    user["quota_notified"] = False
+                    changed = True
 
                 interval_secs = max(15, user.get("ad_interval", 60)) * 60
                 last_sent = user.get("last_sent_at", 0)
