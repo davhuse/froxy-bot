@@ -1861,6 +1861,7 @@ async def ad_engine_background_worker():
                             await u_client.send_message(entity, msg_text)
                             user["last_sent_at"] = now
                             user["total_sent"] = user.get("total_sent", 0) + 1
+                            user["daily_sent"] = user.get("daily_sent", 0) + 1
                             user["last_sent_group"] = target_group
                             changed = True
                             send_success = True

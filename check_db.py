@@ -1,8 +1,12 @@
-import asyncio
-from firebase_companion import async_get_document
+import sqlite3
 
-async def main():
-    doc = await async_get_document("ad_health_alert_state")
-    print(doc)
-    
-asyncio.run(main())
+conn = sqlite3.connect('runtime_claims.db')
+c = conn.cursor()
+c.execute("SELECT name FROM sqlite_master WHERE type='table';")
+print('Tables:', c.fetchall())
+
+try:
+    for row in c.execute("SELECT * FROM runtime_claims LIMIT 20;"):
+        print(row)
+except Exception as e:
+    print('runtime_claims err:', e)
