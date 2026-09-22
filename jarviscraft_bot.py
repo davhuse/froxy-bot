@@ -10,8 +10,23 @@ import urllib.request
 import urllib.error
 from telethon import TelegramClient, events, Button, functions
 from telethon.sessions import StringSession
-from telethon.errors import UserNotParticipantError, FloodWaitError, RPCError
+from telethon.errors import (
+    UserNotParticipantError, FloodWaitError, RPCError,
+    MessageNotModifiedError, ChatWriteForbiddenError,
+    ChatSendPlainForbiddenError, InviteRequestSentError,
+    ChannelPrivateError, UserAlreadyParticipantError,
+    SlowModeWaitError
+)
 from bot_runtime_status import write_bot_status, invalid_token_error
+
+async def safe_edit_event(event, text, buttons=None):
+    """Safely edits a message, ignoring MessageNotModifiedError."""
+    try:
+        await event.edit(text, buttons=buttons)
+    except MessageNotModifiedError:
+        pass
+    except Exception as e:
+        logger.warning(f"safe_edit_event exception: {e}")
 
 if sys.platform.startswith('win'):
     sys.stdout.reconfigure(encoding='utf-8')
@@ -36,6 +51,7 @@ SUPPORT_USERNAME = "Geliştirici (ID: 32186)"
 SUPPORT_URL = "tg://user?id=32186"
 SHOPIER_URL = "https://www.shopier.com/JarvisStore"
 APP_URL = "https://bot-service-production-9d74.up.railway.app/jarvis/app"
+DEFAULT_TEST_SESSION = "1AZWarzQBuyWtsQgpjidYIjcpvAltCNtIcGqZKozRBwERfmfTokqlcs-7-Hzfui4OUwjNHGldD17naL63mHZwNHpezALDayddc9Oijpl-AraFkFhUIGduHoDFlT14Oi-l3rn2QF67SaRLo5heKlqIKNql43SSo9mJY92hz3SYwBp5RHcsRJRWi1m9ZBXLhI_4i0Ai9g5-a_TDGuk6hHnd_zosrZbH-Y6TuOLMSMO3aLloFuLjH6AoVBdx2T3sdrUhG93l7Igo53XSBBNpxDgs-cMn6r_av--OvXfy30J1dQYashtig2hv1RoVmfD9AT2sB_Dn2SvqKS66Nqr9BO3wRs7LneidBsY="
 
 LINE = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 DOT = "◈"
@@ -46,13 +62,12 @@ DEFAULT_CATEGORIES = {
         "title": "🛍️ Ticaret & Alım-Satım",
         "description": "65+ onaylı ticaret, kupon, bakiye ve alışveriş grubu",
         "groups": [
-            "satcek", "ceksat", "kupongrupta", "alimsatimmerkezii", "kuponhesapsatis",
-            "kuponsatisgrup", "tahaaslan11", "kodceksatismerkezi", "ticaretyapn",
-            "kuponcekkodsatis", "ticaretcanavari", "alsatticarettz", "kuponsat",
-            "TicHubTR", "kuponsatislari0", "kuponkodindirimilanlar", "Kuponcekm",
-            "kuponkodhesapilan", "kodkuponmarketi", "zeroticaret", "indirimkodusatis",
-            "kodindirimsatis", "kuponkodualsat", "mukyemek", "ceksatkupon",
-            "kuponindirimpazari", "indirim363", "ticaretgruptr", "kuponkodceksatis",
+            "kuponsat", "kuponindirimsatis", "ceksat", "satcek", "kupongrupta", "alimsatimmerkezii",
+            "kuponhesapsatis", "kuponsatisgrup", "tahaaslan11", "kodceksatismerkezi", "ticaretyapn",
+            "kuponcekkodsatis", "ticaretcanavari", "alsatticarettz", "TicHubTR", "kuponsatislari0",
+            "kuponkodindirimilanlar", "Kuponcekm", "kuponkodhesapilan", "kodkuponmarketi",
+            "zeroticaret", "indirimkodusatis", "kodindirimsatis", "kuponkodualsat", "mukyemek",
+            "ceksatkupon", "kuponindirimpazari", "indirim363", "ticaretgruptr", "kuponkodceksatis",
             "ceksatistakasgrup", "ticaretZ", "kuponvekodsatisgrubu", "ceksatkupon2",
             "kuponkodalimsatim", "kodmalf", "indirimruzgari1", "kuponindirimkodalisveris",
             "alisverisforumuguncel", "kuponindirimcek", "uygunkod", "kodalimsatim",
@@ -67,16 +82,14 @@ DEFAULT_CATEGORIES = {
         "title": "💬 Sohbet & Topluluk",
         "description": "Aktif, temiz başlıklı Türk sohbet ve arkadaşlık toplulukları",
         "groups": [
-            "TurkceSohbetler", "Kocaeli_sohbet_muhabbet", "sohbetimi",
-            "dostlarkahvesitr", "turkiyediyalogu", "turkcesohbetgrubuu"
+            "TurkceSohbetler", "CoinSohbetTR", "KriptoTurkiye", "sohbetmuhabbettr"
         ]
     },
     "borsa": {
         "title": "📈 Borsa & Kripto Finans",
         "description": "Binlerce üyeli aktif borsa, kripto ve finans tartışma grupları",
         "groups": [
-            "KriptoTurkiye", "CoinSohbetTR", "KriptoSozlukTVPiyasaMuhabbeti",
-            "bitgetturkiye"
+            "KriptoTurkiye", "CoinSohbetTR", "bitgetturkiye", "KriptoSozlukTVPiyasaMuhabbeti"
         ]
     },
     "haber": {
@@ -166,24 +179,26 @@ async def render_ad_engine(event, user):
     current_msg = user.get('ad_messages', ['—'])[0] if msg_count > 0 else "—"
     preview = current_msg[:70] + "..." if len(current_msg) > 70 else current_msg
 
-    cat_key = user.get("target_category", "ticaret")
+    cat_key = user.get("target_category", "sohbet")
     if cat_key == "custom":
         cnt = len(user.get("custom_groups", []))
         cat_title = f"✏️ Özel Liste ({cnt} grup)"
     else:
-        info = DEFAULT_CATEGORIES.get(cat_key, DEFAULT_CATEGORIES["ticaret"])
-        cat_title = f"{info['title']} ({len(info['groups'])} grup)"
+        info = DEFAULT_CATEGORIES.get(cat_key, DEFAULT_CATEGORIES.get("sohbet", {}))
+        cat_title = f"{info['title']} ({len(info.get('groups', []))} grup)"
 
     account_name = user.get("account_name")
+    has_session = bool(user.get("session_string"))
     if account_name:
         account_status = f"✅ {account_name}"
-    elif user.get("session_string"):
+    elif has_session:
         account_status = "✅ Session Kayıtlı"
     else:
         account_status = "❌ Bağlı Hesap Yok"
 
     total_sent = user.get("total_sent", 0)
     last_group = user.get("last_sent_group", "Henüz yok")
+    last_group_display = f"@{last_group}" if last_group != "Henüz yok" else "Henüz yok"
 
     msg = (
         f"           ⚡ **OTO-REKLAM & MESAJ MOTORU**\n"
@@ -193,7 +208,7 @@ async def render_ad_engine(event, user):
         f"**Aralık:**        Her `{interval}` dakikada bir\n"
         f"**Hedef Havuz:**   **{cat_title}**\n"
         f"**Toplam Gönderi:** `{total_sent}` adet\n"
-        f"**Son Hedef:**     `@{last_group}`\n\n"
+        f"**Son Hedef:**     `{last_group_display}`\n\n"
         f"📝 **Aktif Mesaj Metni:**\n"
         f"```\n{preview}\n```\n\n"
         f"{LINE}"
@@ -210,15 +225,20 @@ async def render_ad_engine(event, user):
         [Button.inline("📝 Metni Düzenle", b"ad_edit_msg"),
          Button.inline("⏱ Süre Ayarla", b"ad_set_interval")],
         [Button.inline("🎯 Hedef Kategori & Havuz", b"ad_show_groups"),
-         Button.inline("➕ Özel Grup Ekle", b"ad_add_custom_group")],
-        [Button.inline("👤 Gönderici Hesap Bağla", b"ad_add_account")],
-        [Button.inline("◀️  Ana Menü", b"main_menu")]
+         Button.inline("➕ Özel Grup Ekle", b"ad_add_custom_group")]
     ]
-    await event.edit(msg, buttons=buttons)
+    if not has_session:
+        buttons.append([Button.inline("⚡ Hızlı Test Hesabı Bağla (+1386)", b"bind_test_account")])
+        buttons.append([Button.inline("🔑 Kendi Hesabımı Bağla (Session)", b"input_session")])
+    else:
+        buttons.append([Button.inline("👤 Gönderici Hesap Yönetimi", b"ad_add_account")])
+    buttons.append([Button.inline("◀️  Ana Menü", b"main_menu")])
+
+    await safe_edit_event(event, msg, buttons=buttons)
 
 
 async def render_categories_menu(event, user):
-    curr_cat = user.get("target_category", "ticaret")
+    curr_cat = user.get("target_category", "sohbet")
     custom_cnt = len(user.get("custom_groups", []))
     
     t_chk = " (Seçili)" if curr_cat == "ticaret" else ""
@@ -234,31 +254,36 @@ async def render_categories_menu(event, user):
             sample += f" ve {len(user.get('custom_groups')) - 4} grup daha"
         custom_preview = f"\n\n📌 **Eklediğiniz Özel Gruplar:**\n`{sample}`"
 
+    ticaret_cnt = len(DEFAULT_CATEGORIES["ticaret"]["groups"])
+    sohbet_cnt = len(DEFAULT_CATEGORIES["sohbet"]["groups"])
+    borsa_cnt = len(DEFAULT_CATEGORIES["borsa"]["groups"])
+    haber_cnt = len(DEFAULT_CATEGORIES["haber"]["groups"])
+
     msg = (
         f"           🎯 **HEDEF GRUP & KATEGORİ HAVUZU**\n"
         f"{LINE}\n\n"
         f"Mesajlarınızın otomatik gönderileceği kategoriyi seçin\n"
         f"veya kendi istediğiniz grup/kanalları ekleyin:\n\n"
-        f"🛍️ **Ticaret & Alım-Satım:** 65+ aktif ticaret grubu\n"
-        f"💬 **Sohbet & Muhabbet:** 7 aktif Türk sohbet grubu\n"
-        f"📈 **Borsa & Kripto:** 4 finans & coin tartışma grubu\n"
-        f"📰 **Haber & Yazılım:** 2 yazılım & teknoloji grubu\n"
+        f"🛍️ **Ticaret & Alım-Satım:** {ticaret_cnt}+ aktif ticaret grubu\n"
+        f"💬 **Sohbet & Topluluk:** {sohbet_cnt} aktif Türk sohbet grubu\n"
+        f"📈 **Borsa & Kripto:** {borsa_cnt} finans & coin tartışma grubu\n"
+        f"📰 **Teknoloji & Yazılım:** {haber_cnt} yazılım & geliştirici grubu\n"
         f"✏️ **Özel Liste:** Kendi eklediğiniz {custom_cnt} grup{custom_preview}\n\n"
         f"{LINE}\n"
         f"👇 **Kategori seçin veya özel grup ekleyin:**"
     )
 
     buttons = [
-        [Button.inline(f"🛍️ Ticaret (65+){t_chk}", b"setcat_ticaret"),
-         Button.inline(f"💬 Sohbet (7){s_chk}", b"setcat_sohbet")],
-        [Button.inline(f"📈 Borsa & Kripto (4){b_chk}", b"setcat_borsa"),
-         Button.inline(f"📰 Haber & Yazılım (2){h_chk}", b"setcat_haber")],
+        [Button.inline(f"🛍️ Ticaret ({ticaret_cnt}+){t_chk}", b"setcat_ticaret"),
+         Button.inline(f"💬 Sohbet ({sohbet_cnt}){s_chk}", b"setcat_sohbet")],
+        [Button.inline(f"📈 Borsa & Kripto ({borsa_cnt}){b_chk}", b"setcat_borsa"),
+         Button.inline(f"📰 Teknoloji ({haber_cnt}){h_chk}", b"setcat_haber")],
         [Button.inline(f"✏️ Kendi Özel Listem ({custom_cnt}){c_chk}", b"setcat_custom")],
         [Button.inline("➕ Özel Grup Ekle", b"ad_add_custom_group"),
          Button.inline("🗑️ Özel Listeyi Sil", b"ad_clear_custom")],
         [Button.inline("◀️ Geri (Motor Paneli)", b"menu_ad_engine")]
     ]
-    await event.edit(msg, buttons=buttons)
+    await safe_edit_event(event, msg, buttons=buttons)
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -386,13 +411,54 @@ async def callback_handler(event):
 
     elif data == "ad_start":
         if not user.get("session_string"):
-            await event.answer("⚠️ Lütfen önce bir gönderici hesap bağlayın!", alert=True)
-            await render_ad_engine(event, user)
+            prompt_msg = (
+                f"           ⚠️ **GÖNDERİCİ HESAP GEREKLİ**\n"
+                f"{LINE}\n\n"
+                f"Otomatik mesaj gönderebilmek için bir gönderici hesap\n"
+                f"bağlamanız gerekmektedir.\n\n"
+                f"⚡ **Hazır Test Hesabı (+13869914668):**\n"
+                f"Aşağıdaki butona basarak hazır test hesabını profilinize\n"
+                f"tek tıkla bağlayıp gönderimi hemen başlatabilirsiniz.\n\n"
+                f"{LINE}"
+            )
+            buttons = [
+                [Button.inline("🚀 Test Hesabını Bağla ve Başlat", b"bind_and_start_test")],
+                [Button.inline("🔑 Kendi Session'ımı Gir", b"input_session")],
+                [Button.inline("◀️ Geri (Motor Paneli)", b"menu_ad_engine")]
+            ]
+            await safe_edit_event(event, prompt_msg, buttons=buttons)
             return
+
         user["is_running"] = True
+        user["last_sent_at"] = 0  # Trigger immediate first send!
         users[uid] = user
         save_data(users)
-        await event.answer("▶️  Otomatik gönderim başlatıldı!", alert=True)
+        await event.answer("▶️ Otomatik gönderim başlatıldı! İlk mesaj birkaç saniye içinde iletilecek.", alert=True)
+        await render_ad_engine(event, user)
+
+    elif data == "bind_and_start_test":
+        s_str = DEFAULT_TEST_SESSION
+        session_file = "test_account_session_string.txt"
+        if os.path.exists(session_file):
+            try:
+                with open(session_file, "r", encoding="utf-8") as f:
+                    content = f.read().strip()
+                    if content:
+                        s_str = content
+            except Exception:
+                pass
+        user["session_string"] = s_str
+        user["account_name"] = "User (@Userrrrrrrrrra)"
+        user["account_phone"] = "13869914668"
+        user["account_id"] = 8777291796
+        user["target_category"] = user.get("target_category", "sohbet")
+        user["ad_messages"] = user.get("ad_messages") or ["Selamlar herkese, iyi günler"]
+        user["ad_interval"] = user.get("ad_interval", 60)
+        user["is_running"] = True
+        user["last_sent_at"] = 0  # Immediate first send!
+        users[uid] = user
+        save_data(users)
+        await event.answer("🚀 Test hesabı bağlandı ve ilk gönderim başlatıldı!", alert=True)
         await render_ad_engine(event, user)
 
     elif data == "ad_stop":
@@ -405,7 +471,8 @@ async def callback_handler(event):
     elif data == "ad_edit_msg":
         USER_STATES[uid] = "waiting_ad_message"
         curr = user.get("ad_messages", ["Henüz belirlenmemiş"])[0] if user.get("ad_messages") else "Henüz belirlenmemiş"
-        await event.edit(
+        await safe_edit_event(
+            event,
             f"           📝 **MESAJ METNİNİ DÜZENLE**\n"
             f"{LINE}\n\n"
             f"**Mevcut metniniz:**\n"
@@ -425,7 +492,8 @@ async def callback_handler(event):
              Button.inline("⏱ 60 dk  ·  (Önerilen)", b"interval_60")],
             [Button.inline("◀️ Geri", b"menu_ad_engine")]
         ]
-        await event.edit(
+        await safe_edit_event(
+            event,
             f"           ⏱ **GÖNDERİM ARALIĞI**\n"
             f"{LINE}\n\n"
             f"Mesajlar arasındaki bekleme süresini seçin.\n\n"
@@ -453,9 +521,9 @@ async def callback_handler(event):
         save_data(users)
         cat_titles = {
             "ticaret": "🛍️ Ticaret & Alım-Satım",
-            "sohbet": "💬 Sohbet & Muhabbet",
+            "sohbet": "💬 Sohbet & Topluluk",
             "borsa": "📈 Borsa & Kripto Finans",
-            "haber": "📰 Haber & Teknoloji",
+            "haber": "📰 Teknoloji & Yazılım",
             "custom": "✏️ Özel Liste"
         }
         await event.answer(f"✅ Hedef havuz: {cat_titles.get(cat_key, cat_key)} seçildi!", alert=True)
@@ -463,7 +531,8 @@ async def callback_handler(event):
 
     elif data == "ad_add_custom_group":
         USER_STATES[uid] = "waiting_custom_groups"
-        await event.edit(
+        await safe_edit_event(
+            event,
             f"           ➕ **ÖZEL GRUP / KANAL EKLE**\n"
             f"{LINE}\n\n"
             f"Otomatik mesaj göndermek istediğiniz grup veya kanalları\n"
@@ -481,7 +550,7 @@ async def callback_handler(event):
     elif data == "ad_clear_custom":
         user["custom_groups"] = []
         if user.get("target_category") == "custom":
-            user["target_category"] = "ticaret"
+            user["target_category"] = "sohbet"
         users[uid] = user
         save_data(users)
         await event.answer("🗑️ Özel grup listeniz temizlendi.", alert=True)
@@ -501,34 +570,39 @@ async def callback_handler(event):
             f"💬 Destek & Kurulum: @{SUPPORT_USERNAME}\n\n"
             f"{LINE}"
         )
-        await event.edit(msg, buttons=[
+        await safe_edit_event(event, msg, buttons=[
             [Button.inline("⚡ Test Hesabını Bağla (+1386)", b"bind_test_account")],
             [Button.inline("🔑 StringSession Gir", b"input_session")],
             [Button.inline("◀️ Geri", b"menu_ad_engine")]
         ])
 
     elif data == "bind_test_account":
+        s_str = DEFAULT_TEST_SESSION
         session_file = "test_account_session_string.txt"
         if os.path.exists(session_file):
-            with open(session_file, "r", encoding="utf-8") as f:
-                s_str = f.read().strip()
-            user["session_string"] = s_str
-            user["account_name"] = "User (@Userrrrrrrrrra)"
-            user["account_phone"] = "13869914668"
-            user["account_id"] = 8777291796
-            user["target_category"] = "sohbet"
-            user["ad_messages"] = ["Selamlar herkese, iyi günler"]
-            user["ad_interval"] = 60
-            users[uid] = user
-            save_data(users)
-            await event.answer("✅ Test hesabı (+13869914668) başarıyla bağlandı!", alert=True)
-            await render_ad_engine(event, user)
-        else:
-            await event.answer("❌ Test hesabı oturum dosyası bulunamadı!", alert=True)
+            try:
+                with open(session_file, "r", encoding="utf-8") as f:
+                    content = f.read().strip()
+                    if content:
+                        s_str = content
+            except Exception:
+                pass
+        user["session_string"] = s_str
+        user["account_name"] = "User (@Userrrrrrrrrra)"
+        user["account_phone"] = "13869914668"
+        user["account_id"] = 8777291796
+        user["target_category"] = user.get("target_category", "sohbet")
+        user["ad_messages"] = user.get("ad_messages") or ["Selamlar herkese, iyi günler"]
+        user["ad_interval"] = user.get("ad_interval", 60)
+        users[uid] = user
+        save_data(users)
+        await event.answer("✅ Test hesabı (+13869914668) başarıyla bağlandı!", alert=True)
+        await render_ad_engine(event, user)
 
     elif data == "input_session":
         USER_STATES[uid] = "waiting_session_string"
-        await event.edit(
+        await safe_edit_event(
+            event,
             f"           🔑 **SESSION GİRİŞİ**\n"
             f"{LINE}\n\n"
             f"Telethon StringSession anahtarınızı\n"
@@ -1089,7 +1163,7 @@ async def cmd_link_test_account(event):
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 async def ad_engine_background_worker():
     logger.info("🚀 JarvisCraft Oto-Mesaj Arka Plan Motoru BAŞLATILDI!")
-    await asyncio.sleep(10)
+    await asyncio.sleep(5)
     while True:
         try:
             users = load_data()
@@ -1105,7 +1179,8 @@ async def ad_engine_background_worker():
 
                 interval_secs = max(15, user.get("ad_interval", 60)) * 60
                 last_sent = user.get("last_sent_at", 0)
-                if now - last_sent < interval_secs:
+                # If last_sent == 0, user just clicked start! Trigger immediately!
+                if last_sent > 0 and (now - last_sent < interval_secs):
                     continue
 
                 cat_key = user.get("target_category", "sohbet")
@@ -1119,17 +1194,11 @@ async def ad_engine_background_worker():
                     logger.warning(f"[AdEngine] Kullanıcı {uid} için '{cat_key}' kategorisinde grup bulunamadı.")
                     continue
 
-                # Round-robin grup seçimi
-                group_idx = user.get("current_group_idx", 0) % len(target_groups)
-                target_group = target_groups[group_idx]
-                user["current_group_idx"] = (group_idx + 1) % len(target_groups)
-
                 msg_list = user.get("ad_messages", [])
                 msg_text = msg_list[0] if msg_list else "Selamlar herkese, iyi günler"
 
                 u_client = None
                 try:
-                    logger.info(f"[AdEngine] Kullanıcı {uid} ({user.get('account_name')}) -> @{target_group} hedefine gönderiliyor...")
                     u_client = TelegramClient(StringSession(session_str), API_ID, API_HASH)
                     await u_client.connect()
 
@@ -1140,28 +1209,108 @@ async def ad_engine_background_worker():
                         changed = True
                         continue
 
-                    entity = await u_client.get_entity(target_group)
-                    # Gruba otomatik katılma denemesi
-                    try:
-                        await u_client(functions.channels.JoinChannelRequest(channel=entity))
-                    except Exception:
-                        pass
+                    # Attempt delivery to up to 3 groups in case some have restrictions
+                    send_success = False
+                    attempts = min(3, len(target_groups))
 
-                    await u_client.send_message(entity, msg_text)
-                    user["last_sent_at"] = now
-                    user["total_sent"] = user.get("total_sent", 0) + 1
-                    user["last_sent_group"] = target_group
-                    changed = True
-                    logger.info(f"✅ [AdEngine] Kullanıcı {uid} başarıyla mesaj gönderdi: @{target_group}")
+                    for _ in range(attempts):
+                        group_idx = user.get("current_group_idx", 0) % len(target_groups)
+                        raw_target = target_groups[group_idx]
+                        user["current_group_idx"] = (group_idx + 1) % len(target_groups)
+
+                        target_group = raw_target.replace("https://t.me/", "").replace("t.me/", "").replace("@", "").strip()
+                        if not target_group:
+                            continue
+
+                        logger.info(f"[AdEngine] Kullanıcı {uid} ({user.get('account_name')}) -> @{target_group} hedefine gönderiliyor...")
+
+                        try:
+                            entity = await u_client.get_entity(target_group)
+                        except Exception as get_err:
+                            logger.warning(f"⚠️ [AdEngine] @{target_group} bulunamadı/çözülemedi: {get_err}")
+                            continue
+
+                        # Check if broadcast channel (cannot write plain messages)
+                        if getattr(entity, "broadcast", False):
+                            logger.info(f"⚠️ [AdEngine] @{target_group} bir duyuru kanalıdır (yazı yazılamaz). Sıradakine geçiliyor.")
+                            continue
+
+                        # Check membership before attempting to join
+                        is_member = getattr(entity, "left", False) is False
+                        if not is_member:
+                            logger.info(f"[AdEngine] Kullanıcı {uid}, @{target_group} grubuna henüz üye değil. Otomatik katılım yapılıyor...")
+                            try:
+                                await u_client(functions.channels.JoinChannelRequest(channel=entity))
+                                logger.info(f"✅ [AdEngine] @{target_group} grubuna başarıyla katılındı.")
+                                await asyncio.sleep(2.0)  # Propagation delay for Telegram permissions
+                            except UserAlreadyParticipantError:
+                                pass
+                            except InviteRequestSentError:
+                                logger.info(f"ℹ️ [AdEngine] @{target_group} yönetici onayı gerektiriyor (istek iletildi). Sıradakine geçiliyor.")
+                                continue
+                            except (ChannelPrivateError, ChatWriteForbiddenError):
+                                logger.warning(f"⚠️ [AdEngine] @{target_group} özel veya katılım kapalı. Sıradakine geçiliyor.")
+                                continue
+                            except FloodWaitError as fwe:
+                                logger.warning(f"⚠️ [AdEngine] Katılım FloodWait ({fwe.seconds}s). Beklemeye alınıyor.")
+                                user["last_sent_at"] = now + fwe.seconds
+                                changed = True
+                                break
+                            except Exception as join_err:
+                                logger.warning(f"⚠️ [AdEngine] @{target_group} katılım hatası: {join_err}")
+                                continue
+
+                        # Attempt to dispatch message
+                        try:
+                            await u_client.send_message(entity, msg_text)
+                            user["last_sent_at"] = now
+                            user["total_sent"] = user.get("total_sent", 0) + 1
+                            user["last_sent_group"] = target_group
+                            changed = True
+                            send_success = True
+                            logger.info(f"✅ [AdEngine] Kullanıcı {uid} başarıyla mesaj gönderdi: @{target_group} (Toplam: {user['total_sent']})")
+
+                            # Send direct Telegram DM notification to user via main bot
+                            try:
+                                mins_interval = user.get("ad_interval", 60)
+                                notify_text = (
+                                    f"🔔 **[Oto-Mesaj Motoru] Mesaj Başarıyla İletildi!**\n"
+                                    f"{LINE}\n\n"
+                                    f"🎯 **Hedef Grup:** `@{target_group}`\n"
+                                    f"📊 **Toplam Gönderi:** `{user['total_sent']}` adet\n"
+                                    f"⏱ **Sonraki Gönderim:** `{mins_interval}` dakika sonra\n\n"
+                                    f"💬 **İletilen Mesaj:**\n"
+                                    f"```\n{msg_text}\n```\n\n"
+                                    f"{LINE}"
+                                )
+                                await client.send_message(int(uid), notify_text)
+                            except Exception as notify_err:
+                                logger.warning(f"Kullanıcıya bildirim gönderilemedi ({uid}): {notify_err}")
+
+                            break  # Success!
+
+                        except (ChatWriteForbiddenError, ChatSendPlainForbiddenError):
+                            logger.warning(f"⚠️ [AdEngine] @{target_group} grubunda yazma izni kısıtlı. Sıradaki grup deneniyor...")
+                            continue
+                        except SlowModeWaitError as smw:
+                            logger.warning(f"⚠️ [AdEngine] @{target_group} SlowMode aktif ({smw.seconds}s). Sıradaki deneniyor...")
+                            continue
+                        except FloodWaitError as fwe:
+                            logger.warning(f"⚠️ [AdEngine] Gönderim FloodWait ({fwe.seconds}s).")
+                            user["last_sent_at"] = now + fwe.seconds
+                            changed = True
+                            break
+
+                    if not send_success and not user.get("last_sent_at"):
+                        user["last_sent_at"] = now - interval_secs + 120
+                        changed = True
 
                 except FloodWaitError as fwe:
-                    logger.warning(f"⚠️ [AdEngine] Kullanıcı {uid} FloodWait aldı: {fwe.seconds}s bekleme gerekiyor (@{target_group})")
+                    logger.warning(f"⚠️ [AdEngine] Kullanıcı {uid} FloodWait: {fwe.seconds}s")
                     user["last_sent_at"] = now + fwe.seconds
                     changed = True
                 except Exception as err:
-                    logger.warning(f"⚠️ [AdEngine] Kullanıcı {uid} @{target_group} gönderim hatası: {type(err).__name__}: {err}")
-                    user["last_sent_at"] = now
-                    changed = True
+                    logger.warning(f"⚠️ [AdEngine] Kullanıcı {uid} gönderim döngüsü hatası: {type(err).__name__}: {err}")
                 finally:
                     if u_client:
                         try:
@@ -1169,15 +1318,15 @@ async def ad_engine_background_worker():
                         except Exception:
                             pass
 
-                await asyncio.sleep(5)  # Kullanıcılar arası kısa anti-flood beklemesi
+                await asyncio.sleep(4)  # Anti-flood spacing between users
 
             if changed:
                 save_data(users)
 
         except Exception as bg_err:
-            logger.error(f"[AdEngine] Motor döngü hatası: {bg_err}")
+            logger.error(f"[AdEngine] Motor ana döngü hatası: {bg_err}")
 
-        await asyncio.sleep(20)  # Her 20 saniyede bir kuyruğu tara
+        await asyncio.sleep(15)  # Scan queue every 15 seconds
 
 
 client_username = None
