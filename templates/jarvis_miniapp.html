@@ -527,6 +527,61 @@
 
         <!-- 🛒 2. KOD MAĞAZASI TAB -->
         <div id="tab-store" class="tab-content">
+            <!-- Özel Web Sitesi Kodlama -->
+            <div class="card" style="border-color: rgba(0, 240, 255, 0.35);">
+                <div class="card-header-row">
+                    <span class="badge">💻 ÖZEL PROJE</span>
+                    <span class="badge gold">799.90 ₺</span>
+                </div>
+                <div class="card-title">Özel Web Sitesi Geliştirme & Kodlama</div>
+                <p class="card-desc">Kurumsal tanıtım, e-ticaret, landing page veya özel web platformu tasarımı ve uçtan uca anahtar teslim kodlaması.</p>
+                <div style="background: rgba(255, 184, 0, 0.08); border-left: 3px solid var(--accent-gold); padding: 8px 12px; border-radius: 6px; font-size: 11.5px; color: #fde047; margin-bottom: 12px;">
+                    ⚠️ <strong>Bilgilendirme:</strong> 799.90 ₺ taban başlangıç fiyatıdır. Siteden siteye, sayfa adedine ve proje kapsamına göre fiyat değişebilir. Doğrudan destek hattımızdan teklif alabilirsiniz.
+                </div>
+                <ul class="features-list">
+                    <li><i class="fa-solid fa-check"></i> Modern Responsive Tasarım (Mobil & Masaüstü %100 Uyumlu)</li>
+                    <li><i class="fa-solid fa-check"></i> Python Flask / React / Next.js Yüksek Performanslı Mimari</li>
+                    <li><i class="fa-solid fa-check"></i> Shopier / iyzico 3D Güvenli Ödeme & API Entegrasyonu</li>
+                    <li><i class="fa-solid fa-check"></i> Hızlı Sunucu Kurulumu, SSL Sertifikası & 1 Yıl Teknik Destek</li>
+                </ul>
+                <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 14px;">
+                    <button onclick="handleShopier('https://www.shopier.com/3051522')" class="btn btn-primary">
+                        <i class="fa-solid fa-cart-shopping"></i> Shopier'dan Satın Al (799.90 ₺)
+                    </button>
+                    <button onclick="handleTelegram('tg://user?id=32186')" class="btn btn-secondary">
+                        <i class="fa-brands fa-telegram"></i> 💬 Projeyi Görüş & Teklif Al (@habil2121)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Özel Telegram Bot Kodlama -->
+            <div class="card" style="border-color: rgba(121, 40, 202, 0.35);">
+                <div class="card-header-row">
+                    <span class="badge purple">⚡ ÖZEL BOT</span>
+                    <span class="badge gold">499.90 ₺</span>
+                </div>
+                <div class="card-title">Özel Telegram Bot Yazılımı & Kodlama</div>
+                <p class="card-desc">İhtiyacınıza tam uygun özel Telegram bot geliştirme, grup/kanal otomasyonu, mağaza/ödeme botu veya veri toplama altyapısı.</p>
+                <div style="background: rgba(255, 184, 0, 0.08); border-left: 3px solid var(--accent-gold); padding: 8px 12px; border-radius: 6px; font-size: 11.5px; color: #fde047; margin-bottom: 12px;">
+                    ⚠️ <strong>Bilgilendirme:</strong> 499.90 ₺ taban başlangıç fiyatıdır. Botun özelliklerine, API entegrasyonlarına ve proje kapsamına göre fiyat değişebilir.
+                </div>
+                <ul class="features-list">
+                    <li><i class="fa-solid fa-check"></i> Telethon / Aiogram Tabanlı Ultra Hızlı Asenkron Altyapı</li>
+                    <li><i class="fa-solid fa-check"></i> Otomatik Grup & Kanal Yönetimi, Anti-Spam / Anti-Flood</li>
+                    <li><i class="fa-solid fa-check"></i> SQLite / PostgreSQL Veritabanı ve Webhook Desteği</li>
+                    <li><i class="fa-solid fa-check"></i> 7/24 Bulut Sunucu Kurulumu & Anahtar Teslim Teslimat</li>
+                </ul>
+                <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 14px;">
+                    <button onclick="handleShopier('https://www.shopier.com/3051522')" class="btn btn-primary">
+                        <i class="fa-solid fa-cart-shopping"></i> Shopier'dan Satın Al (499.90 ₺)
+                    </button>
+                    <button onclick="handleTelegram('tg://user?id=32186')" class="btn btn-secondary">
+                        <i class="fa-brands fa-telegram"></i> 💬 Botunu Anlat & Danış (@habil2121)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Standart Kod Paketleri -->
             <div class="card">
                 <div class="card-header-row">
                     <span class="badge">ÇOK SATAN</span>
@@ -622,36 +677,62 @@
 
         <!-- 💎 4. VIP TAB -->
         <div id="tab-vip" class="tab-content">
-            <div class="card" style="border-color: rgba(255, 184, 0, 0.4); box-shadow: 0 10px 30px rgba(255, 184, 0, 0.1);">
+            <!-- Free Plan -->
+            <div class="card" style="border-color: rgba(255, 255, 255, 0.1);">
                 <div class="card-header-row">
-                    <span class="badge gold">ÖNERİLEN VIP</span>
-                    <span class="price-value" style="font-size: 18px;">350 ₺ / Ay</span>
+                    <span class="badge" style="background: rgba(255, 255, 255, 0.08); color: #cbd5e1; border-color: rgba(255, 255, 255, 0.2);">STANDART HESAP</span>
+                    <span class="price-value" style="font-size: 18px; color: #94a3b8;">Ücretsiz</span>
                 </div>
-                <div class="card-title" style="color: var(--accent-gold);">Aylık Sınırsız VIP</div>
-                <p class="card-desc">Sınırsız mesaj döngüsü, 5 hesap slotu ve 7/24 öncelikli geliştirici teknik desteği.</p>
+                <div class="card-title">Ücretsiz (Standart) Plan</div>
+                <p class="card-desc">Telegram hesabını bağlayıp sistemi test etmek isteyen tüm kullanıcılarımıza süresiz ücretsizdir.</p>
                 <ul class="features-list">
-                    <li><i class="fa-solid fa-check" style="color: var(--accent-gold);"></i> 5 Hesap Slotu (Eşzamanlı Rotasyon)</li>
-                    <li><i class="fa-solid fa-check" style="color: var(--accent-gold);"></i> Sınırsız Reklam Şablonu</li>
-                    <li><i class="fa-solid fa-check" style="color: var(--accent-gold);"></i> Özel Telegram Destek Hattı</li>
+                    <li><i class="fa-solid fa-check"></i> 👤 <strong>1 Adet</strong> Gönderici Telegram Hesabı</li>
+                    <li><i class="fa-solid fa-check"></i> ⏱ <strong>60 Dakika</strong> Aralık (Hesap Güvenliği & Flood Koruması)</li>
+                    <li><i class="fa-solid fa-check"></i> 🎯 <strong>4 Hazır Kategori</strong> (Sohbet, Ticaret, Kripto, Alışveriş)</li>
+                    <li><i class="fa-solid fa-check"></i> 📊 Günlük 25 Mesaj Gönderim Kotası</li>
+                    <li><i class="fa-solid fa-check"></i> 🛡️ Akıllı Spambot ve Grup Doğrulama Koruması</li>
                 </ul>
-                <button onclick="handleShopier('https://www.shopier.com/51058121')" class="btn btn-gold">
-                    <i class="fa-solid fa-crown"></i> Aylık VIP Satın Al (350 ₺)
+                <button onclick="switchNavTab('tab-engine')" class="btn btn-secondary">
+                    <i class="fa-solid fa-play"></i> Ücretsiz Hemen Başlat
                 </button>
             </div>
 
+            <!-- Weekly VIP -->
             <div class="card">
                 <div class="card-header-row">
-                    <span class="badge">HAFTALIK</span>
+                    <span class="badge">HAFTALIK VIP</span>
                     <span class="price-value" style="font-size: 18px;">150 ₺ / Hafta</span>
                 </div>
                 <div class="card-title">Haftalık VIP Deneme</div>
-                <p class="card-desc">Sistemi kısa süreli denemek ve grupları test etmek isteyenler için ideal paket.</p>
+                <p class="card-desc">Sistemi yoğun tempoda denemek ve gruplarda daha sık görünmek isteyenler için ideal paket.</p>
                 <ul class="features-list">
-                    <li><i class="fa-solid fa-check"></i> 2 Hesap Slotu</li>
-                    <li><i class="fa-solid fa-check"></i> 15 Dk Gönderim Aralığı</li>
+                    <li><i class="fa-solid fa-check"></i> 👤 <strong>2 Adet</strong> Gönderici Hesap Slotu</li>
+                    <li><i class="fa-solid fa-check"></i> ⏱ <strong>30 Dakika</strong> Hızlı Gönderim Aralığı</li>
+                    <li><i class="fa-solid fa-check"></i> ➕ Özel Grup & Kanal Ekleme Desteği</li>
+                    <li><i class="fa-solid fa-check"></i> 🚀 7 Gün Kesintisiz 7/24 Reklam Rotasyonu</li>
                 </ul>
                 <button onclick="handleShopier('https://www.shopier.com/51058120')" class="btn btn-secondary">
-                    Haftalık VIP Satın Al (150 ₺)
+                    <i class="fa-solid fa-crown"></i> Haftalık VIP Satın Al (150 ₺)
+                </button>
+            </div>
+
+            <!-- Monthly Unlimited VIP -->
+            <div class="card" style="border-color: rgba(255, 184, 0, 0.4); box-shadow: 0 10px 30px rgba(255, 184, 0, 0.1);">
+                <div class="card-header-row">
+                    <span class="badge gold">EN ÇOK TERCİH EDİLEN</span>
+                    <span class="price-value" style="font-size: 18px; color: var(--accent-gold);">350 ₺ / Ay</span>
+                </div>
+                <div class="card-title" style="color: var(--accent-gold);">Aylık Sınırsız VIP</div>
+                <p class="card-desc">Maksimum verim, 5 hesap rotasyonu, turbo 15 dk gönderim ve 7/24 öncelikli geliştirici desteği.</p>
+                <ul class="features-list">
+                    <li><i class="fa-solid fa-check" style="color: var(--accent-gold);"></i> 👤 <strong>5 Adet</strong> Gönderici Hesap Slotu (Eşzamanlı)</li>
+                    <li><i class="fa-solid fa-check" style="color: var(--accent-gold);"></i> ⏱ <strong>15 Dakika</strong> Turbo Gönderim Aralığı</li>
+                    <li><i class="fa-solid fa-check" style="color: var(--accent-gold);"></i> ♾️ <strong>Limitsiz</strong> Günlük Gönderi & Tüm Gruplar</li>
+                    <li><i class="fa-solid fa-check" style="color: var(--accent-gold);"></i> ⚡ <strong>7/24 Öncelikli Geliştirici Teknik Desteği</strong></li>
+                    <li><i class="fa-solid fa-check" style="color: var(--accent-gold);"></i> 🚀 30 Gün Kesintisiz Reklam Motoru</li>
+                </ul>
+                <button onclick="handleShopier('https://www.shopier.com/51058121')" class="btn btn-gold">
+                    <i class="fa-solid fa-crown"></i> Aylık VIP Satın Al (350 ₺)
                 </button>
             </div>
         </div>

@@ -485,26 +485,42 @@ async def callback_handler(event):
         )
 
     elif data == "ad_set_interval":
+        vip_until = user.get("vip_until")
+        is_vip = bool(vip_until and vip_until > time.time())
+        status_note = "🟢 VIP Üyesiniz: Tüm aralıklar açık." if is_vip else "⚪ Ücretsiz Plan: 60 dk önerilen varsayılandır (15-30 dk için VIP pakete geçebilirsiniz)."
         buttons = [
-            [Button.inline("⏱ 15 dk  ·  💎 VIP", b"interval_15"),
-             Button.inline("⏱ 30 dk  ·  Standart", b"interval_30")],
-            [Button.inline("⏱ 45 dk", b"interval_45"),
-             Button.inline("⏱ 60 dk  ·  (Önerilen)", b"interval_60")],
+            [Button.inline("⏱ 15 dk  (🌟 Aylık VIP)", b"interval_15"),
+             Button.inline("⏱ 30 dk  (⭐ Haftalık VIP)", b"interval_30")],
+            [Button.inline("⏱ 45 dk  ·  VIP", b"interval_45"),
+             Button.inline("⏱ 60 dk  ·  (Ücretsiz Plan)", b"interval_60")],
+            [Button.inline("💎 VIP Paketlerini İncele", b"menu_vip")],
             [Button.inline("◀️ Geri", b"menu_ad_engine")]
         ]
         await safe_edit_event(
             event,
-            f"           ⏱ **GÖNDERİM ARALIĞI**\n"
+            f"           ⏱ **GÖNDERİM ARALIĞI SEÇİMİ**\n"
             f"{LINE}\n\n"
             f"Mesajlar arasındaki bekleme süresini seçin.\n\n"
-            f"• **60 dk (Saatte 1):** Hesap güvenliği ve organik test için en ideal aralık.\n"
-            f"• **15-30 dk:** VIP üyelik ve yoğun ticaret için.\n\n"
+            f"• **60 dk (Saatte 1):** Ücretsiz planda hesap sağlığı ve flood koruması için ideal aralık.\n"
+            f"• **30 dk:** Haftalık VIP ile 2 kat daha hızlı gönderim.\n"
+            f"• **15 dk:** Aylık VIP ile maksimum hız ve müşteri erişimi.\n\n"
+            f"💡 **Durum:** {status_note}\n\n"
             f"{LINE}",
             buttons=buttons
         )
 
     elif data.startswith("interval_"):
         mins = int(data.split("_")[1])
+        vip_until = user.get("vip_until")
+        is_vip = bool(vip_until and vip_until > time.time())
+        if mins < 60 and not is_vip:
+            await event.answer(f"💎 {mins} dakikalık turbo gönderim VIP üyelere özeldir! Ücretsiz planda 60 dk aktiftir.", alert=True)
+            user["ad_interval"] = 60
+            users[uid] = user
+            save_data(users)
+            await render_ad_engine(event, user)
+            return
+
         user["ad_interval"] = mins
         users[uid] = user
         save_data(users)
@@ -618,16 +634,16 @@ async def callback_handler(event):
     # ══════════════════════════════════
     elif data == "menu_store":
         msg = (
-            f"           🏪 **KOD & BOT MAĞAZASI**\n"
+            f"           🏪 **KOD & YAZILIM MAĞAZASI**\n"
             f"{LINE}\n\n"
-            f"Profesyonel geliştiriciler için hazırlanmış,\n"
-            f"**temiz kodlu** ve **kuruluma hazır** paketler.\n\n"
-            f"Her pakette açık kaynak kod, kurulum\n"
-            f"dokümanı ve örnek konfigürasyon dahildir.\n\n"
+            f"Profesyonel geliştiriciler ve girişimciler için hazırlanmış,\n"
+            f"**temiz kodlu**, **kuruluma hazır** paketler ve **özel yazılım** hizmetleri.\n\n"
+            f"Her pakette açık kaynak kod, kurulum dokümanı\n"
+            f"veya anahtar teslim geliştirme dahildir.\n\n"
             f"🔥  **Haftanın Çok Satanı:**\n"
-            f"     Oto-Reklam Bot Scripti\n\n"
+            f"     ⚡ Oto-Reklam Bot Scripti\n\n"
             f"{LINE}\n"
-            f"👇  Detay görmek için paketi seçin:"
+            f"👇  Detay görmek için paketi veya hizmeti seçin:"
         )
         buttons = [
             [Button.url("🛍️  Shopier Mağazasını Aç (Tüm İlanlar)", SHOPIER_URL)],
@@ -635,9 +651,11 @@ async def callback_handler(event):
             [Button.inline("⚡ Oto-Reklam Bot Scripti  ·  450₺", b"prod_2")],
             [Button.inline("🔍 Fiyat Takip Scraper  ·  300₺", b"prod_3")],
             [Button.inline("🚀 Full Mini App Kiti  ·  400₺", b"prod_4")],
+            [Button.inline("🌐 Özel Web Sitesi Kodlama  ·  799.90₺", b"prod_5")],
+            [Button.inline("🤖 Özel Bot Yazılımı Kodlama  ·  499.90₺", b"prod_6")],
             [Button.inline("◀️  Ana Menü", b"main_menu")]
         ]
-        await event.edit(msg, buttons=buttons)
+        await safe_edit_event(event, msg, buttons=buttons)
 
     elif data.startswith("prod_"):
         pid = data.split("_")[1]
@@ -695,6 +713,36 @@ async def callback_handler(event):
                     "Render/Vercel dağıtımına hazır",
                     "Shopier otomatik ödeme & teslimat"
                 ]
+            },
+            "5": {
+                "icon": "🌐",
+                "title": "Özel Web Sitesi Geliştirme & Kodlama",
+                "price": "799.90 ₺",
+                "badge": "💻 ÖZEL PROJE",
+                "url": SHOPIER_URL,
+                "desc": "Kurumsal firma, e-ticaret, landing page veya özel web platformu yazılım & tasarım hizmeti.\n\n⚠️ **Önemli Bilgilendirme:** Belirtilen 799.90 ₺ taban / başlangıç fiyatıdır. Siteden siteye, sayfa adedine ve projenin kapsamına / ek özelliklerine göre fiyatta değişiklik olabilir. Sipariş öncesinde veya sonrasında doğrudan destek hesabımıza yazarak projenizi detaylandırabilirsiniz.",
+                "features": [
+                    "Modern, %100 mobil uyumlu ve SEO dostu arayüz",
+                    "React / Next.js / Python Flask mimarisi",
+                    "Shopier / iyzico 3D güvenli ödeme altyapısı",
+                    "Hızlı sunucu kurulumu ve SSL sertifikası teslimi",
+                    "Geliştirici ile birebir analiz & kapsam görüşmesi"
+                ]
+            },
+            "6": {
+                "icon": "🤖",
+                "title": "Özel Telegram Bot Yazılımı & Kodlama",
+                "price": "499.90 ₺",
+                "badge": "⚡ ÖZEL BOT",
+                "url": SHOPIER_URL,
+                "desc": "İhtiyacınıza tam uygun özel Telegram bot geliştirme, otomasyon, mağaza/ödeme botu veya veri toplama sistemi.\n\n⚠️ **Önemli Bilgilendirme:** Belirtilen 499.90 ₺ taban / başlangıç fiyatıdır. Botun işlevlerine, API entegrasyonlarına ve proje karmaşıklığına göre fiyatta değişiklik olabilir. Sipariş öncesinde veya sonrasında doğrudan destek hesabımıza yazabilirsiniz.",
+                "features": [
+                    "Telethon / Aiogram tabanlı ultra hızlı asenkron motor",
+                    "Ödeme bildirim, mağaza veya otomatik yanıt modülleri",
+                    "Web paneli ve canlı log izleme entegrasyonu",
+                    "7/24 kesintisiz sunucu kurulumu ve teslimatı",
+                    "Doğrudan geliştirici ile proje planlama desteği"
+                ]
             }
         }
         p = products.get(pid)
@@ -708,20 +756,28 @@ async def callback_handler(event):
             f"{LINE}\n\n"
             f"  {p['badge']}      💰 **{p['price']}**\n\n"
             f"{p['desc']}\n\n"
-            f"**Paket İçeriği:**\n"
+            f"**Paket & Hizmet Detayları:**\n"
             f"{feat_text}\n\n"
             f"{LINE}\n\n"
-            f"✅ Açık kaynak kod teslimi\n"
-            f"✅ Kurulum dokümanı dahil\n"
+            f"✅ Açık kaynak kod / Anahtar teslim kurulum\n"
+            f"✅ Kurulum & kullanım dokümanı dahil\n"
             f"✅ Shopier 3D Secure güvenli ödeme\n"
-            f"⚡ Ödeme sonrası **anında** teslimat"
+            f"⚡ Ödeme sonrası doğrudan teslimat & destek"
         )
-        buttons = [
-            [Button.url(f"🛒  Shopier'dan Satın Al  ·  {p['price']}", p.get("url", SHOPIER_URL))],
-            [Button.url("📹  Demoyu Kanalda İncele", CHANNEL_URL)],
-            [Button.inline("◀️ Mağazaya Dön", b"menu_store")]
-        ]
-        await event.edit(msg, buttons=buttons)
+
+        if pid in ("5", "6"):
+            buttons = [
+                [Button.url(f"🛒  Shopier'dan Satın Al  ·  {p['price']}", p.get("url", SHOPIER_URL))],
+                [Button.url("💬  Projeyi Görüş & Teklif Al (Destek)", SUPPORT_URL)],
+                [Button.inline("◀️ Mağazaya Dön", b"menu_store")]
+            ]
+        else:
+            buttons = [
+                [Button.url(f"🛒  Shopier'dan Satın Al  ·  {p['price']}", p.get("url", SHOPIER_URL))],
+                [Button.url("📹  Demoyu Kanalda İncele", CHANNEL_URL)],
+                [Button.inline("◀️ Mağazaya Dön", b"menu_store")]
+            ]
+        await safe_edit_event(event, msg, buttons=buttons)
 
     # ══════════════════════════════════
     #  3.  J.A.R.V.I.S. MASAÜSTÜ AI PROJESİ
@@ -847,30 +903,41 @@ async def callback_handler(event):
     elif data == "menu_vip":
         balance = user.get("balance", 0.0)
         vip_status = user.get("vip_until")
+        is_vip = bool(vip_status and vip_status > time.time())
 
         msg = (
-            f"           💎 **VIP & BAKİYE SİSTEMİ**\n"
+            f"           💎 **VIP & PLAN YÖNETİMİ**\n"
             f"{LINE}\n\n"
-            f"**Bakiyeniz:**  `{balance:.2f} ₺`\n"
-            f"**VIP Durumu:** {'🟢 Aktif' if vip_status else '⚪ Standart (Ücretsiz)'}\n\n"
+            f"**Mevcut Paketiniz:** {'🟢 VIP Üyelik' if is_vip else '⚪ Standart (Ücretsiz)'}\n"
+            f"**Bakiye:**          `{balance:.2f} ₺`\n\n"
             f"{LINE}\n\n"
-            f"⭐ **Haftalık VIP**  ·  `150₺`\n"
-            f"   7 gün  ·  15 dk aralık  ·  2 hesap slotu\n\n"
-            f"🌟 **Aylık Sınırsız VIP**  ·  `350₺`\n"
-            f"   30 gün  ·  Limitsiz  ·  5 hesap slotu\n"
-            f"   ⚡ Öncelikli teknik destek\n\n"
-            f"{LINE}\n\n"
-            f"  ⚪ Ücretsiz     │  30dk  │  1 hesap  │  Standart\n"
-            f"  ⭐ Haftalık     │  15dk  │  2 hesap  │  Normal\n"
-            f"  🌟 Aylık          │  Sınırsız │  5 hesap  │  Öncelikli\n\n"
-            f"{LINE}"
+            f"📊 **HESAP & PLAN FARKLARI:**\n\n"
+            f"⚪ **Ücretsiz (Standart) Plan:**\n"
+            f"• 👤 1 Adet Gönderici Hesap\n"
+            f"• ⏱ 60 Dakika Aralık (Spam & Flood Korumalı)\n"
+            f"• 🎯 4 Hazır Kategori Havuzu (Ticaret, Sohbet, Borsa, Teknoloji)\n"
+            f"• 📈 Günlük 25 Gönderi Limiti\n\n"
+            f"⭐ **Haftalık VIP Paket (150 ₺):**\n"
+            f"• 👤 2 Adet Gönderici Hesap Ekleme\n"
+            f"• ⏱ 30 Dakika Hızlı Gönderim\n"
+            f"• ➕ Özel Grup & Kanal Ekleme Desteği\n"
+            f"• 🚀 7 Gün Kesintisiz Reklam & Gönderim\n\n"
+            f"🌟 **Aylık Sınırsız VIP Paket (350 ₺):**\n"
+            f"• 👤 5 Adet Gönderici Hesap (Rotasyonlu)\n"
+            f"• ⏱ 15 Dakika Turbo Gönderim\n"
+            f"• ♾️ Limitsiz Günlük Gönderi\n"
+            f"• ⚡ Öncelikli VIP Teknik Destek & Özel Bot Danışmanlığı\n"
+            f"• 🚀 30 Gün Kesintisiz Kullanım\n\n"
+            f"{LINE}\n"
+            f"👇 **Paketinizi seçip hemen yükseltebilirsiniz:**"
         )
         buttons = [
-            [Button.url("⭐  Haftalık VIP Satın Al  ·  150₺", "https://www.shopier.com/51058120")],
-            [Button.url("🌟  Aylık VIP Satın Al  ·  350₺", "https://www.shopier.com/51058121")],
+            [Button.url("⭐ Haftalık VIP Satın Al  ·  150₺", "https://www.shopier.com/51058120")],
+            [Button.url("🌟 Aylık Sınırsız VIP Satın Al  ·  350₺", "https://www.shopier.com/51058121")],
+            [Button.url("💬 Özel Kurumsal Paket İçin Yazın", SUPPORT_URL)],
             [Button.inline("◀️  Ana Menü", b"main_menu")]
         ]
-        await event.edit(msg, buttons=buttons)
+        await safe_edit_event(event, msg, buttons=buttons)
 
     # ══════════════════════════════════
     #  5.  PROFİLİM
@@ -890,7 +957,7 @@ async def callback_handler(event):
             f"  **Aralık:**    Her {user.get('ad_interval', 30)} dk\n\n"
             f"{LINE}"
         )
-        await event.edit(msg, buttons=[
+        await safe_edit_event(event, msg, buttons=[
             [Button.inline("◀️  Ana Menü", b"main_menu")]
         ])
 
@@ -915,7 +982,7 @@ async def callback_handler(event):
             [Button.url(f"👨‍💻  @{SUPPORT_USERNAME}'a Yaz", SUPPORT_URL)],
             [Button.inline("◀️  Ana Menü", b"main_menu")]
         ]
-        await event.edit(msg, buttons=buttons)
+        await safe_edit_event(event, msg, buttons=buttons)
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
