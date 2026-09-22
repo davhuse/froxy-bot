@@ -143,6 +143,7 @@ def reconcile_shopier_orders(brand: str) -> int:
         "keyvadi": "SHOPIER_KEYVADI_ACCESS_TOKEN",
         "froxy": "SHOPIER_FROXY_ACCESS_TOKEN",
         "lisansarena": "SHOPIER_LISANSARENA_ACCESS_TOKEN",
+        "jarvis": "SHOPIER_JARVIS_ACCESS_TOKEN",
     }
     token_key = token_keys.get(brand)
     if not token_key:
@@ -165,7 +166,7 @@ def reconcile_shopier_orders(brand: str) -> int:
 
 def reconcile_configured_orders() -> dict[str, int]:
     results = {}
-    for brand in ("keyvadi", "froxy", "lisansarena"):
+    for brand in ("keyvadi", "froxy", "lisansarena", "jarvis"):
         try:
             results[brand] = reconcile_shopier_orders(brand)
         except Exception:

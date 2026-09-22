@@ -1,0 +1,15 @@
+JARVIS SESLI YAPAY ZEKA ASISTANI — MASAUSTU SURUMU
+--------------------------------------------------
+Tony Stark tarzı sesli yapay zeka asistanı Windows bilgisayarınızda.
+Kurulum gerektirmeyen, taşınabilir tek tıkla çalışan (.exe) asistan paketi.
+
+One Cikan Ozellikler:
+* Ultra Gercekci Turkce Ses: Dogal konusma sentezi
+* 0 ms Aninda Susturma: Konusurken Esc tusuyla sesi aninda kesme
+* Canli Web Arama: Google ve guncel internet bilgilerini harmanlar
+* Sifir Kurulum: Python veya kutuphane gerektirmez, hemen calisir
+
+Ucretsiz Deneme Paketi (.ZIP): Botumuzdan hemen indirebilirsiniz.
+Lisans & Siparis: 350 TL (Omur boyu kullanim)
+Detayli Bilgi & Demo: @JarvisCraftsBot
+Iletisim & Destek: @JarvisCraft

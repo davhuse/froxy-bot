@@ -3,26 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>JarvisCraft — AI & Otomasyon Ekosistemi</title>
+    <title>JarvisCraft - AI ve Otomasyon Ekosistemi</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --bg-base: #060810;
-            --bg-card: rgba(13, 17, 30, 0.75);
-            --bg-card-hover: rgba(19, 26, 45, 0.9);
+            --bg-base: #070a13;
+            --bg-card: rgba(14, 20, 36, 0.72);
+            --bg-card-hover: rgba(20, 28, 52, 0.88);
             --primary: #00f0ff;
-            --primary-glow: rgba(0, 240, 255, 0.35);
-            --secondary: #7928ca;
-            --secondary-glow: rgba(121, 40, 202, 0.35);
-            --accent-gold: #ffb800;
-            --border: rgba(0, 240, 255, 0.12);
-            --border-hover: rgba(0, 240, 255, 0.3);
+            --primary-glow: rgba(0, 240, 255, 0.28);
+            --secondary: #8b5cf6;
+            --secondary-glow: rgba(139, 92, 246, 0.25);
+            --accent-gold: #f59e0b;
+            --gold-glow: rgba(245, 158, 11, 0.25);
+            --border: rgba(255, 255, 255, 0.08);
+            --border-hover: rgba(0, 240, 255, 0.35);
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
-            --accent-gradient: linear-gradient(135deg, #00f0ff 0%, #7928ca 100%);
-            --gold-gradient: linear-gradient(135deg, #ffb800 0%, #ff5e00 100%);
+            --accent-gradient: linear-gradient(135deg, #00f0ff 0%, #8b5cf6 100%);
+            --gold-gradient: linear-gradient(135deg, #fbbf24 0%, #ea580c 100%);
+            --card-gradient: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.01) 100%);
             --safe-area-bottom: env(safe-area-inset-bottom, 20px);
         }
 
@@ -41,35 +43,49 @@
             overflow-y: auto;
             width: 100%;
             min-height: 100vh;
-            padding-bottom: calc(90px + var(--safe-area-bottom));
+            padding-bottom: calc(95px + var(--safe-area-bottom));
         }
 
-        /* Ambient Cyber Mesh Background */
-        .ambient-bg {
+        /* Ambient Cyber Lighting */
+        .ambient-light-1 {
             position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            z-index: -1;
-            background: 
-                radial-gradient(circle at 50% 5%, rgba(0, 240, 255, 0.12) 0%, transparent 45%),
-                radial-gradient(circle at 90% 85%, rgba(121, 40, 202, 0.12) 0%, transparent 45%),
-                radial-gradient(circle at 10% 90%, rgba(0, 240, 255, 0.05) 0%, transparent 40%);
+            top: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 380px;
+            height: 380px;
+            background: radial-gradient(circle, rgba(0, 240, 255, 0.15) 0%, transparent 70%);
+            filter: blur(50px);
+            z-index: -2;
+            pointer-events: none;
         }
 
-        /* Cyber grid overlay */
+        .ambient-light-2 {
+            position: fixed;
+            bottom: 100px;
+            right: -100px;
+            width: 320px;
+            height: 320px;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.12) 0%, transparent 70%);
+            filter: blur(60px);
+            z-index: -2;
+            pointer-events: none;
+        }
+
         .cyber-grid {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background-size: 30px 30px;
+            background-size: 28px 28px;
             background-image: 
-                linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+                linear-gradient(to right, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
             z-index: -1;
             pointer-events: none;
         }
 
         header {
             text-align: center;
-            padding: 30px 20px 20px;
+            padding: 26px 20px 16px;
             position: relative;
         }
 
@@ -77,17 +93,16 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            background: rgba(0, 240, 255, 0.08);
-            border: 1px solid rgba(0, 240, 255, 0.25);
-            padding: 6px 14px;
+            background: rgba(0, 240, 255, 0.06);
+            border: 1px solid rgba(0, 240, 255, 0.2);
+            padding: 5px 14px;
             border-radius: 50px;
             font-size: 11px;
             font-weight: 700;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.8px;
             color: var(--primary);
             text-transform: uppercase;
-            margin-bottom: 16px;
-            box-shadow: 0 0 15px rgba(0, 240, 255, 0.15);
+            margin-bottom: 14px;
         }
 
         .status-dot {
@@ -95,7 +110,7 @@
             height: 7px;
             border-radius: 50%;
             background-color: var(--primary);
-            box-shadow: 0 0 10px var(--primary);
+            box-shadow: 0 0 8px var(--primary);
             animation: pulse-dot 1.8s infinite;
         }
 
@@ -104,54 +119,19 @@
             50% { opacity: 0.4; transform: scale(0.85); }
         }
 
-        .logo-wrap {
-            position: relative;
-            width: 86px;
-            height: 86px;
-            margin: 0 auto 14px;
-        }
-
-        .logo-wrap::after {
-            content: '';
-            position: absolute;
-            inset: -4px;
-            border-radius: 26px;
-            background: var(--accent-gradient);
-            z-index: 1;
-            opacity: 0.8;
-            filter: blur(8px);
-            animation: glow 4s ease-in-out infinite alternate;
-        }
-
-        @keyframes glow {
-            from { opacity: 0.5; filter: blur(6px); }
-            to { opacity: 0.9; filter: blur(12px); }
-        }
-
-        .logo-img {
-            position: relative;
-            z-index: 2;
-            width: 100%;
-            height: 100%;
-            border-radius: 22px;
-            object-fit: cover;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            background: #000;
-        }
-
-        h1 {
+        .brand-title {
             font-size: 26px;
             font-weight: 800;
             letter-spacing: -0.5px;
-            background: var(--accent-gradient);
+            background: linear-gradient(135deg, #ffffff 40%, #94a3b8 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
         }
 
-        .subtitle {
+        .brand-sub {
+            font-size: 12.5px;
             color: var(--text-muted);
-            font-size: 13px;
             font-weight: 500;
         }
 
@@ -161,93 +141,115 @@
             padding: 0 16px;
         }
 
-        /* Nav Pills inside top */
-        .top-pills {
+        /* Top Navigation Tabs */
+        .nav-pills {
             display: flex;
-            gap: 8px;
-            overflow-x: auto;
-            padding-bottom: 15px;
-            margin-bottom: 15px;
-            scrollbar-width: none;
+            background: rgba(14, 20, 36, 0.6);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 4px;
+            margin-bottom: 18px;
+            gap: 4px;
+            backdrop-filter: blur(12px);
         }
-        .top-pills::-webkit-scrollbar { display: none; }
 
         .pill-btn {
-            white-space: nowrap;
-            padding: 8px 14px;
+            flex: 1;
+            padding: 10px 8px;
             border-radius: 12px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
             font-size: 12px;
             font-weight: 700;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid var(--border);
-            color: var(--text-muted);
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             align-items: center;
+            justify-content: center;
             gap: 6px;
+        }
+
+        .pill-btn i {
+            font-size: 13px;
         }
 
         .pill-btn.active {
             background: rgba(0, 240, 255, 0.12);
-            border-color: var(--primary);
             color: var(--primary);
-            box-shadow: 0 0 12px var(--primary-glow);
+            box-shadow: 0 0 16px rgba(0, 240, 255, 0.15);
+            border: 1px solid rgba(0, 240, 255, 0.25);
         }
 
-        /* Glassmorphism Cards */
+        /* Card System */
         .card {
             background: var(--bg-card);
             border: 1px solid var(--border);
-            backdrop-filter: blur(25px);
-            -webkit-backdrop-filter: blur(25px);
             border-radius: 20px;
             padding: 20px;
             margin-bottom: 16px;
+            backdrop-filter: blur(16px);
+            transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
             position: relative;
             overflow: hidden;
-            transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
         }
 
         .card:hover {
             border-color: var(--border-hover);
             transform: translateY(-2px);
-            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
         }
 
         .card-header-row {
             display: flex;
-            align-items: center;
             justify-content: space-between;
+            align-items: center;
             margin-bottom: 12px;
+            gap: 8px;
         }
 
         .badge {
-            font-size: 10px;
-            font-weight: 800;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
             padding: 4px 10px;
             border-radius: 8px;
-            background: rgba(0, 240, 255, 0.12);
+            font-size: 10.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: rgba(0, 240, 255, 0.08);
+            border: 1px solid rgba(0, 240, 255, 0.22);
             color: var(--primary);
-            border: 1px solid rgba(0, 240, 255, 0.3);
-        }
-
-        .badge.gold {
-            background: rgba(255, 184, 0, 0.15);
-            color: var(--accent-gold);
-            border-color: rgba(255, 184, 0, 0.4);
         }
 
         .badge.purple {
-            background: rgba(121, 40, 202, 0.18);
+            background: rgba(139, 92, 246, 0.1);
+            border-color: rgba(139, 92, 246, 0.3);
             color: #c084fc;
-            border-color: rgba(121, 40, 202, 0.4);
+        }
+
+        .badge.gold {
+            background: rgba(245, 158, 11, 0.1);
+            border-color: rgba(245, 158, 11, 0.3);
+            color: #fbbf24;
+        }
+
+        .badge.emerald {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: rgba(16, 185, 129, 0.3);
+            color: #34d399;
         }
 
         .card-title {
-            font-size: 18px;
+            font-size: 17px;
             font-weight: 700;
             color: #fff;
             margin-bottom: 8px;
@@ -255,47 +257,44 @@
         }
 
         .card-desc {
-            font-size: 13px;
-            line-height: 1.5;
+            font-size: 12.5px;
             color: var(--text-muted);
-            margin-bottom: 16px;
+            line-height: 1.55;
+            margin-bottom: 14px;
         }
 
-        /* Features List */
+        .info-box {
+            background: rgba(245, 158, 11, 0.07);
+            border-left: 3px solid var(--accent-gold);
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 11.5px;
+            color: #fef08a;
+            line-height: 1.45;
+            margin-bottom: 14px;
+        }
+
         .features-list {
             list-style: none;
-            margin-bottom: 18px;
+            margin-bottom: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
         }
 
         .features-list li {
-            font-size: 12.5px;
+            font-size: 12px;
             color: #cbd5e1;
-            margin-bottom: 7px;
             display: flex;
-            align-items: center;
-            gap: 9px;
+            align-items: baseline;
+            gap: 8px;
+            line-height: 1.4;
         }
 
         .features-list li i {
             color: var(--primary);
-            font-size: 12px;
-        }
-
-        .price-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-top: 10px;
-            padding-top: 14px;
-            border-top: 1px solid rgba(255, 255, 255, 0.06);
-        }
-
-        .price-value {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 22px;
-            font-weight: 700;
-            color: var(--accent-gold);
-            letter-spacing: -0.5px;
+            font-size: 11px;
+            flex-shrink: 0;
         }
 
         /* Buttons */
@@ -307,7 +306,7 @@
             width: 100%;
             padding: 13px 18px;
             border-radius: 14px;
-            font-size: 13.5px;
+            font-size: 13px;
             font-weight: 700;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -323,7 +322,7 @@
         .btn-primary:active { transform: scale(0.98); }
 
         .btn-secondary {
-            background: rgba(255, 255, 255, 0.06);
+            background: rgba(255, 255, 255, 0.05);
             color: #fff;
             border: 1px solid var(--border);
         }
@@ -331,45 +330,93 @@
             background: rgba(0, 240, 255, 0.08);
             border-color: var(--primary);
         }
+        .btn-secondary:active { transform: scale(0.98); }
 
         .btn-gold {
             background: var(--gold-gradient);
-            color: #000;
-            box-shadow: 0 4px 20px rgba(255, 184, 0, 0.3);
+            color: #030712;
+            box-shadow: 0 4px 20px var(--gold-glow);
         }
+        .btn-gold:active { transform: scale(0.98); }
 
         .btn-download {
-            background: rgba(16, 185, 129, 0.15);
-            border: 1px solid rgba(16, 185, 129, 0.4);
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.35);
             color: #34d399;
         }
         .btn-download:hover {
-            background: rgba(16, 185, 129, 0.25);
+            background: rgba(16, 185, 129, 0.22);
         }
 
-        /* Video Player Container */
+        /* Video Wrapper */
         .video-wrapper {
             position: relative;
             border-radius: 16px;
             overflow: hidden;
             border: 1px solid var(--border);
-            margin-bottom: 16px;
+            margin-bottom: 14px;
             background: #000;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
         }
 
         .video-wrapper video {
             width: 100%;
             height: auto;
-            max-height: 240px;
+            max-height: 230px;
             display: block;
             object-fit: cover;
+        }
+
+        /* Stat Grid */
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .stat-tile {
+            background: rgba(255, 255, 255, 0.025);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .stat-val {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 19px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 3px;
+        }
+
+        .stat-lbl {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        /* Price Row */
+        .price-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 14px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .price-tag {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 19px;
+            font-weight: 700;
+            color: #fff;
         }
 
         /* Tab switching */
         .tab-content {
             display: none;
-            animation: fadeIn 0.3s ease forwards;
+            animation: fadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
         }
         .tab-content.active {
             display: block;
@@ -386,7 +433,7 @@
             bottom: 0;
             left: 0;
             width: 100%;
-            background: rgba(6, 8, 16, 0.88);
+            background: rgba(7, 10, 19, 0.92);
             backdrop-filter: blur(25px);
             -webkit-backdrop-filter: blur(25px);
             border-top: 1px solid var(--border);
@@ -410,7 +457,7 @@
         }
 
         .nav-item i {
-            font-size: 18px;
+            font-size: 17px;
             transition: all 0.2s;
         }
 
@@ -422,39 +469,11 @@
             transform: translateY(-2px);
             text-shadow: 0 0 12px var(--primary);
         }
-
-        /* Live Stat Tiles */
-        .stat-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 16px;
-        }
-
-        .stat-tile {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 14px;
-            text-align: center;
-        }
-
-        .stat-val {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 20px;
-            font-weight: 700;
-            color: #fff;
-            margin-bottom: 4px;
-        }
-
-        .stat-lbl {
-            font-size: 11px;
-            color: var(--text-muted);
-        }
     </style>
 </head>
 <body>
-    <div class="ambient-bg"></div>
+    <div class="ambient-light-1"></div>
+    <div class="ambient-light-2"></div>
     <div class="cyber-grid"></div>
 
     <header>
@@ -462,193 +481,190 @@
             <span class="status-dot"></span>
             JARVIS CORE V3.5 ONLINE
         </div>
-        <div class="logo-wrap">
-            <img src="/static/jarviscraft_logo_v2.jpg" onerror="this.src='/static/jarviscraft_logo.jpg'" alt="JarvisCraft" class="logo-img">
-        </div>
-        <h1>JarvisCraft</h1>
-        <div class="subtitle">AI & Otomasyon Ekosistemi</div>
+        <h1 class="brand-title">JarvisCraft</h1>
+        <div class="brand-sub">AI ve Otomasyon Ekosistemi</div>
     </header>
 
     <div class="container">
         <!-- TOP NAVIGATION PILLS -->
-        <div class="top-pills">
+        <div class="nav-pills">
             <button class="pill-btn active" onclick="switchNavTab('tab-jarvis')">
-                <i class="fa-solid fa-microchip"></i> J.A.R.V.I.S. AI
+                <i class="fa-solid fa-microchip"></i> Asistan
             </button>
             <button class="pill-btn" onclick="switchNavTab('tab-store')">
-                <i class="fa-solid fa-store"></i> Kod Mağazası
+                <i class="fa-solid fa-store"></i> Mağaza
             </button>
             <button class="pill-btn" onclick="switchNavTab('tab-engine')">
-                <i class="fa-solid fa-bolt"></i> Oto-Reklam Motoru
+                <i class="fa-solid fa-bolt"></i> Motor
             </button>
             <button class="pill-btn" onclick="switchNavTab('tab-vip')">
-                <i class="fa-solid fa-crown"></i> VIP Abonelikler
+                <i class="fa-solid fa-crown"></i> VIP
             </button>
         </div>
 
-        <!-- 🤖 1. J.A.R.V.I.S. DESKTOP AI SHOWCASE TAB -->
+        <!-- 1. J.A.R.V.I.S. DESKTOP AI ASİSTANI -->
         <div id="tab-jarvis" class="tab-content active">
-            <div class="card" style="border-color: rgba(0, 240, 255, 0.4); box-shadow: 0 10px 35px rgba(0, 240, 255, 0.12);">
+            <div class="card" style="border-color: rgba(0, 240, 255, 0.35); box-shadow: 0 10px 30px rgba(0, 240, 255, 0.08);">
                 <div class="card-header-row">
-                    <span class="badge">🔥 TONY STARK DESKTOP AI</span>
-                    <span class="badge gold">350 ₺</span>
+                    <span class="badge">MASAUSTU AI SURUMU</span>
+                    <span class="badge gold">350.00 TL</span>
                 </div>
                 
                 <div class="card-title">J.A.R.V.I.S. Sesli Masaüstü Asistanı</div>
                 <p class="card-desc">
-                    Windows için sıfır kurulumla çalışan, sesli komut algılayan, interneti canlı tarayıp Türkçe sesle yanıtlayan kişisel yapay zeka asistanı.
+                    Windows icin sifir kurulumla calisan, sesli komut algilayan, interneti canli tarayip Turkce sesle yanitlayan kisisel yapay zeka asistani.
                 </p>
 
                 <!-- VIDEO PLAYER -->
                 <div class="video-wrapper">
                     <video controls playsinline preload="metadata" poster="/static/jarviscraft_logo_v2.jpg">
                         <source src="/static/jarvis_demo_video.mp4" type="video/mp4">
-                        Tarayıcınız video etiketini desteklemiyor.
+                        Tarayiciniz video etiketini desteklemiyor.
                     </video>
                 </div>
 
                 <ul class="features-list">
-                    <li><i class="fa-solid fa-check"></i> 🎙️ <strong>Ultra Gerçekçi Türkçe Ses:</strong> İnsan doğallığında konuşma sentezi.</li>
-                    <li><i class="fa-solid fa-check"></i> ⚡ <strong>0 ms Anında Susturma:</strong> Konuşurken <code>Esc</code> tuşuyla sesi derhal kesme.</li>
-                    <li><i class="fa-solid fa-check"></i> 🌐 <strong>Canlı Web Arama:</strong> En güncel internet bilgilerini harmanlar.</li>
-                    <li><i class="fa-solid fa-check"></i> 💻 <strong>Sıfır Kurulum:</strong> Python kurmadan direkt çalıştırılabilir <code>.exe</code> paketi.</li>
+                    <li><i class="fa-solid fa-check"></i> Ultra Gercekci Turkce Ses: Dogal konusma sentezi</li>
+                    <li><i class="fa-solid fa-check"></i> 0 ms Aninda Susturma: Konusurken Esc tusuyla sesi kesme</li>
+                    <li><i class="fa-solid fa-check"></i> Canli Web Arama: Guncel internet bilgilerini harmanlar</li>
+                    <li><i class="fa-solid fa-check"></i> Sifir Kurulum: Python kurmadan tek tikla calisan .exe</li>
                 </ul>
 
-                <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div style="display: flex; flex-direction: column; gap: 9px;">
                     <a href="/static/JARVIS_MUSTERI_DEMO_PAKETI.zip" download class="btn btn-download">
-                        <i class="fa-solid fa-download"></i> 📥 Ücretsiz PC Demo Paketini İndir (.ZIP)
+                        <i class="fa-solid fa-download"></i> Ucretsiz PC Demo Paketini Indir (.ZIP)
                     </a>
                     <button onclick="handleShopier('https://www.shopier.com/JarvisStore/51058105')" class="btn btn-primary">
-                        <i class="fa-solid fa-cart-shopping"></i> 🛒 J.A.R.V.I.S. Lisansı Satın Al (350 ₺)
+                        <i class="fa-solid fa-cart-shopping"></i> Shopier ile Lisans Satin Al (350 TL)
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- 🛒 2. KOD MAĞAZASI TAB -->
+        <!-- 2. KOD VE YAZILIM MAĞAZASI -->
         <div id="tab-store" class="tab-content">
-            <!-- Özel Web Sitesi Kodlama -->
-            <div class="card" style="border-color: rgba(0, 240, 255, 0.35);">
+            <!-- Ozel Web Sitesi -->
+            <div class="card" style="border-color: rgba(0, 240, 255, 0.3);">
                 <div class="card-header-row">
-                    <span class="badge">💻 ÖZEL PROJE</span>
-                    <span class="badge gold">799.90 ₺</span>
+                    <span class="badge">OZEL PROJE</span>
+                    <span class="badge gold">799.90 TL</span>
                 </div>
-                <div class="card-title">Özel Web Sitesi Geliştirme & Kodlama</div>
-                <p class="card-desc">Kurumsal tanıtım, e-ticaret, landing page veya özel web platformu tasarımı ve uçtan uca anahtar teslim kodlaması.</p>
-                <div style="background: rgba(255, 184, 0, 0.08); border-left: 3px solid var(--accent-gold); padding: 8px 12px; border-radius: 6px; font-size: 11.5px; color: #fde047; margin-bottom: 12px;">
-                    ⚠️ <strong>Bilgilendirme:</strong> 799.90 ₺ taban başlangıç fiyatıdır. Siteden siteye, sayfa adedine ve proje kapsamına göre fiyat değişebilir. Doğrudan destek hattımızdan teklif alabilirsiniz.
+                <div class="card-title">Özel Web Sitesi Geliştirme ve Kodlama</div>
+                <p class="card-desc">Kurumsal tanitim, e-ticaret, landing page veya ozel web platformu tasarimi ve uctan uca anahtar teslim kodlamasi.</p>
+                <div class="info-box">
+                    Bilgilendirme: 799.90 TL taban baslangic fiyatidir. Siteden siteye, sayfa adedine ve proje kapsamina gore fiyat degisebilir. Dogrudan destek hattimizdan teklif alabilirsiniz.
                 </div>
                 <ul class="features-list">
-                    <li><i class="fa-solid fa-check"></i> Modern Responsive Tasarım (Mobil & Masaüstü %100 Uyumlu)</li>
-                    <li><i class="fa-solid fa-check"></i> Python Flask / React / Next.js Yüksek Performanslı Mimari</li>
-                    <li><i class="fa-solid fa-check"></i> Shopier / iyzico 3D Güvenli Ödeme & API Entegrasyonu</li>
-                    <li><i class="fa-solid fa-check"></i> Hızlı Sunucu Kurulumu, SSL Sertifikası & 1 Yıl Teknik Destek</li>
+                    <li><i class="fa-solid fa-check"></i> Modern Responsive Tasarim (Mobil ve Masastuu tam uyumlu)</li>
+                    <li><i class="fa-solid fa-check"></i> Python Flask / React / Next.js yuksek performansli mimari</li>
+                    <li><i class="fa-solid fa-check"></i> Shopier / iyzico 3D Guvenli Odeme Entegrasyonu</li>
+                    <li><i class="fa-solid fa-check"></i> Hizli Sunucu Kurulumu, SSL Sertifikasi ve 1 Yil Destek</li>
                 </ul>
-                <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 14px;">
+                <div style="display: flex; flex-direction: column; gap: 8px;">
                     <button onclick="handleShopier('https://www.shopier.com/JarvisStore')" class="btn btn-primary">
-                        <i class="fa-solid fa-cart-shopping"></i> Shopier'dan Satın Al (799.90 ₺)
+                        <i class="fa-solid fa-cart-shopping"></i> Shopier'dan Satin Al (799.90 TL)
                     </button>
                     <button onclick="handleTelegram('https://t.me/JarvisCraft')" class="btn btn-secondary">
-                        <i class="fa-brands fa-telegram"></i> 💬 Projeyi Görüş & Teklif Al (@JarvisCraft)
+                        <i class="fa-brands fa-telegram"></i> Projeyi Gorus ve Teklif Al (@JarvisCraft)
                     </button>
                 </div>
             </div>
 
-            <!-- Özel Telegram Bot Kodlama -->
-            <div class="card" style="border-color: rgba(121, 40, 202, 0.35);">
+            <!-- Ozel Telegram Botu -->
+            <div class="card" style="border-color: rgba(139, 92, 246, 0.3);">
                 <div class="card-header-row">
-                    <span class="badge purple">⚡ ÖZEL BOT</span>
-                    <span class="badge gold">499.90 ₺</span>
+                    <span class="badge purple">OZEL BOT</span>
+                    <span class="badge gold">499.90 TL</span>
                 </div>
-                <div class="card-title">Özel Telegram Bot Yazılımı & Kodlama</div>
-                <p class="card-desc">İhtiyacınıza tam uygun özel Telegram bot geliştirme, grup/kanal otomasyonu, mağaza/ödeme botu veya veri toplama altyapısı.</p>
-                <div style="background: rgba(255, 184, 0, 0.08); border-left: 3px solid var(--accent-gold); padding: 8px 12px; border-radius: 6px; font-size: 11.5px; color: #fde047; margin-bottom: 12px;">
-                    ⚠️ <strong>Bilgilendirme:</strong> 499.90 ₺ taban başlangıç fiyatıdır. Botun özelliklerine, API entegrasyonlarına ve proje kapsamına göre fiyat değişebilir.
+                <div class="card-title">Özel Telegram Bot Yazılımı ve Kodlama</div>
+                <p class="card-desc">Ihtiyaciniza tam uygun ozel Telegram bot gelistirme, grup/kanal otomasyonu, magaza/odeme botu veya veri toplama altyapisi.</p>
+                <div class="info-box">
+                    Bilgilendirme: 499.90 TL taban baslangic fiyatidir. Botun ozelliklerine, API entegrasyonlarina ve proje kapsamina gore fiyat degisebilir.
                 </div>
                 <ul class="features-list">
-                    <li><i class="fa-solid fa-check"></i> Telethon / Aiogram Tabanlı Ultra Hızlı Asenkron Altyapı</li>
-                    <li><i class="fa-solid fa-check"></i> Otomatik Grup & Kanal Yönetimi, Anti-Spam / Anti-Flood</li>
-                    <li><i class="fa-solid fa-check"></i> SQLite / PostgreSQL Veritabanı ve Webhook Desteği</li>
-                    <li><i class="fa-solid fa-check"></i> 7/24 Bulut Sunucu Kurulumu & Anahtar Teslim Teslimat</li>
+                    <li><i class="fa-solid fa-check"></i> Telethon / Aiogram tabanli asenkron ultra hizli altyapi</li>
+                    <li><i class="fa-solid fa-check"></i> Otomatik grup ve kanal yonetimi, Anti-Spam korumasi</li>
+                    <li><i class="fa-solid fa-check"></i> SQLite / PostgreSQL veritabani ve webhook destegi</li>
+                    <li><i class="fa-solid fa-check"></i> 7/24 Bulut Sunucu Kurulumu ve Anahtar Teslim Teslimat</li>
                 </ul>
-                <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 14px;">
+                <div style="display: flex; flex-direction: column; gap: 8px;">
                     <button onclick="handleShopier('https://www.shopier.com/JarvisStore')" class="btn btn-primary">
-                        <i class="fa-solid fa-cart-shopping"></i> Shopier'dan Satın Al (499.90 ₺)
+                        <i class="fa-solid fa-cart-shopping"></i> Shopier'dan Satin Al (499.90 TL)
                     </button>
                     <button onclick="handleTelegram('https://t.me/JarvisCraft')" class="btn btn-secondary">
-                        <i class="fa-brands fa-telegram"></i> 💬 Botunu Anlat & Danış (@JarvisCraft)
+                        <i class="fa-brands fa-telegram"></i> Botunu Anlat ve Danis (@JarvisCraft)
                     </button>
                 </div>
             </div>
 
-            <!-- Standart Kod Paketleri -->
+            <!-- Standart Paketler -->
             <div class="card">
                 <div class="card-header-row">
-                    <span class="badge">ÇOK SATAN</span>
-                    <span class="badge gold">450 ₺</span>
+                    <span class="badge emerald">COK SATAN</span>
+                    <span class="badge gold">450.00 TL</span>
                 </div>
-                <div class="card-title">Telegram Oto-Reklam & Mesaj Botu</div>
-                <p class="card-desc">65+ ticari grupta 7/24 döngülü mesaj motoru. Anti-flood, multi-session desteği ve web panel.</p>
+                <div class="card-title">Telegram Oto-Reklam ve Mesaj Botu</div>
+                <p class="card-desc">65+ ticari grupta 7/24 dongulu mesaj motoru. Anti-flood, multi-session destegi ve web panel.</p>
                 <ul class="features-list">
-                    <li><i class="fa-solid fa-check"></i> Çoklu Telegram Hesap / Session Desteği</li>
-                    <li><i class="fa-solid fa-check"></i> Anti-Flood & 300s Akıllı Cooldown Sistemi</li>
-                    <li><i class="fa-solid fa-check"></i> 65+ Ticaret Grubu Hazır Entegre</li>
+                    <li><i class="fa-solid fa-check"></i> Coklu Telegram Hesap / Session Destegi</li>
+                    <li><i class="fa-solid fa-check"></i> Anti-Flood ve Akilli Cooldown Sistemi</li>
+                    <li><i class="fa-solid fa-check"></i> 65+ Ticaret Grubu Hazir Entegre</li>
                 </ul>
                 <div class="price-row">
-                    <span class="price-value">450 ₺</span>
-                    <button onclick="handleShopier('https://www.shopier.com/JarvisStore/51058117')" class="btn btn-secondary" style="width: auto; padding: 10px 20px;">
-                        Satın Al
+                    <span class="price-tag">450.00 TL</span>
+                    <button onclick="handleShopier('https://www.shopier.com/JarvisStore/51058117')" class="btn btn-secondary" style="width: auto; padding: 10px 18px;">
+                        Satin Al
                     </button>
                 </div>
             </div>
 
             <div class="card">
                 <div class="card-header-row">
-                    <span class="badge purple">YENİ</span>
-                    <span class="badge gold">300 ₺</span>
+                    <span class="badge purple">YENI</span>
+                    <span class="badge gold">300.00 TL</span>
                 </div>
-                <div class="card-title">E-Ticaret & Fiyat Takip Scraper</div>
-                <p class="card-desc">Trendyol, Yemeksepeti ve e-ticaret sitelerinden kupon ve fiyat alarmı toplayan bot seti.</p>
+                <div class="card-title">E-Ticaret ve Fiyat Takip Scraper</div>
+                <p class="card-desc">Trendyol, Yemeksepeti ve e-ticaret sitelerinden kupon ve fiyat alarmi toplayan bot seti.</p>
                 <ul class="features-list">
-                    <li><i class="fa-solid fa-check"></i> Playwright & Cloudflare Bypass</li>
-                    <li><i class="fa-solid fa-check"></i> Anlık Telegram Alarm Bildirimi</li>
+                    <li><i class="fa-solid fa-check"></i> Playwright ve Cloudflare Korumasi Gecisi</li>
+                    <li><i class="fa-solid fa-check"></i> Anlik Telegram Alarm Bildirimi</li>
                 </ul>
                 <div class="price-row">
-                    <span class="price-value">300 ₺</span>
-                    <button onclick="handleShopier('https://www.shopier.com/JarvisStore/51058118')" class="btn btn-secondary" style="width: auto; padding: 10px 20px;">
-                        Satın Al
+                    <span class="price-tag">300.00 TL</span>
+                    <button onclick="handleShopier('https://www.shopier.com/JarvisStore/51058118')" class="btn btn-secondary" style="width: auto; padding: 10px 18px;">
+                        Satin Al
                     </button>
                 </div>
             </div>
 
             <div class="card">
                 <div class="card-header-row">
-                    <span class="badge purple">TAM KİT</span>
-                    <span class="badge gold">400 ₺</span>
+                    <span class="badge">TAM KIT</span>
+                    <span class="badge gold">400.00 TL</span>
                 </div>
                 <div class="card-title">Full-Stack Mini App + Shopier Kiti</div>
-                <p class="card-desc">Kendi Telegram Mini App mağazanızı hemen kurun. Flask backend + Vite frontend + Shopier ödeme.</p>
+                <p class="card-desc">Kendi Telegram Mini App magazanzizi hemen kurun. Flask backend, Vite frontend ve Shopier odeme.</p>
                 <div class="price-row">
-                    <span class="price-value">400 ₺</span>
-                    <button onclick="handleShopier('https://www.shopier.com/JarvisStore/51058119')" class="btn btn-secondary" style="width: auto; padding: 10px 20px;">
-                        Satın Al
+                    <span class="price-tag">400.00 TL</span>
+                    <button onclick="handleShopier('https://www.shopier.com/JarvisStore/51058119')" class="btn btn-secondary" style="width: auto; padding: 10px 18px;">
+                        Satin Al
                     </button>
                 </div>
             </div>
 
             <div class="card" style="text-align: center; border: 1px dashed var(--border);">
-                <div style="font-size: 14px; margin-bottom: 12px; color: var(--text-muted);">Tüm ilanları Shopier mağazasında inceleyebilirsiniz:</div>
+                <div style="font-size: 13px; margin-bottom: 12px; color: var(--text-muted);">Tum ilanlari Shopier magazinda inceleyin:</div>
                 <button onclick="handleShopier('https://www.shopier.com/JarvisStore')" class="btn btn-secondary">
-                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Shopier Mağazasını Aç (JarvisStore)
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Shopier Magazasini Ac (JarvisStore)
                 </button>
             </div>
         </div>
 
-        <!-- ⚡ 3. OTO-REKLAM MOTORU TAB -->
+        <!-- 3. OTO-REKLAM MOTORU TAB -->
         <div id="tab-engine" class="tab-content">
             <div class="card">
                 <div class="card-title" style="color: var(--primary);">Oto-Reklam Canlı Takip</div>
-                <p class="card-desc">Telegram ticaret gruplarına otomatik rotasyon sağlayan motor altyapısı.</p>
+                <p class="card-desc">Telegram ticaret gruplarina otomatik rotasyon saglayan profesyonel motor altyapisi.</p>
                 
                 <div class="stat-grid">
                     <div class="stat-tile">
@@ -657,11 +673,11 @@
                     </div>
                     <div class="stat-tile">
                         <div class="stat-val" style="color: var(--accent-gold);">7/24</div>
-                        <div class="stat-lbl">Kesintisiz Çalışma</div>
+                        <div class="stat-lbl">Kesintisiz Calisma</div>
                     </div>
                     <div class="stat-tile">
                         <div class="stat-val" style="color: #34d399;">FloodGuard</div>
-                        <div class="stat-lbl">Akıllı Koruma</div>
+                        <div class="stat-lbl">Akilli Koruma</div>
                     </div>
                     <div class="stat-tile">
                         <div class="stat-val" style="color: #c084fc;">Multi-Session</div>
@@ -670,30 +686,30 @@
                 </div>
 
                 <button onclick="handleTelegram('https://t.me/JarvisCraftsBot')" class="btn btn-primary">
-                    <i class="fa-brands fa-telegram"></i> Reklamları Botta Yönet
+                    <i class="fa-brands fa-telegram"></i> Reklamlari Bot Uzerinden Yonet
                 </button>
             </div>
         </div>
 
-        <!-- 💎 4. VIP TAB -->
+        <!-- 4. VIP TAB -->
         <div id="tab-vip" class="tab-content">
             <!-- Free Plan -->
-            <div class="card" style="border-color: rgba(255, 255, 255, 0.1);">
+            <div class="card">
                 <div class="card-header-row">
-                    <span class="badge" style="background: rgba(255, 255, 255, 0.08); color: #cbd5e1; border-color: rgba(255, 255, 255, 0.2);">STANDART HESAP</span>
-                    <span class="price-value" style="font-size: 18px; color: #94a3b8;">Ücretsiz</span>
+                    <span class="badge" style="background: rgba(255, 255, 255, 0.06); color: #cbd5e1; border-color: rgba(255, 255, 255, 0.15);">STANDART HESAP</span>
+                    <span class="price-tag" style="font-size: 16px; color: #94a3b8;">Ucretsiz</span>
                 </div>
                 <div class="card-title">Ücretsiz (Standart) Plan</div>
-                <p class="card-desc">Telegram hesabını bağlayıp sistemi test etmek isteyen tüm kullanıcılarımıza süresiz ücretsizdir.</p>
+                <p class="card-desc">Telegram hesabini baglayip sistemi test etmek isteyen tum kullanicilarimiza suresiz ucretsizdir.</p>
                 <ul class="features-list">
-                    <li><i class="fa-solid fa-check"></i> 👤 <strong>1 Adet</strong> Gönderici Telegram Hesabı</li>
-                    <li><i class="fa-solid fa-check"></i> ⏱ <strong>60 Dakika</strong> Aralık (Hesap Güvenliği & Flood Koruması)</li>
-                    <li><i class="fa-solid fa-check"></i> 🎯 <strong>4 Hazır Kategori</strong> (Sohbet, Ticaret, Kripto, Alışveriş)</li>
-                    <li><i class="fa-solid fa-check"></i> 📊 Günlük 25 Mesaj Gönderim Kotası</li>
-                    <li><i class="fa-solid fa-check"></i> 🛡️ Akıllı Spambot ve Grup Doğrulama Koruması</li>
+                    <li><i class="fa-solid fa-check"></i> 1 Adet Gonderici Telegram Hesabi</li>
+                    <li><i class="fa-solid fa-check"></i> 60 Dakika Standart Guvenli Dongu</li>
+                    <li><i class="fa-solid fa-check"></i> 4 Hazir Kategori Havuzu (Sohbet, Ticaret, Kripto, Alisveris)</li>
+                    <li><i class="fa-solid fa-check"></i> Gunluk 25 Mesaj Gonderim Kotasi</li>
+                    <li><i class="fa-solid fa-check"></i> Akilli Spambot ve Grup Dogrulama Korumasi</li>
                 </ul>
                 <button onclick="switchNavTab('tab-engine')" class="btn btn-secondary">
-                    <i class="fa-solid fa-play"></i> Ücretsiz Hemen Başlat
+                    <i class="fa-solid fa-play"></i> Ucretsiz Hemen Baslat
                 </button>
             </div>
 
@@ -701,49 +717,52 @@
             <div class="card">
                 <div class="card-header-row">
                     <span class="badge">HAFTALIK VIP</span>
-                    <span class="price-value" style="font-size: 18px;">150 ₺ / Hafta</span>
+                    <span class="price-tag" style="font-size: 16px;">150 TL / Hafta</span>
                 </div>
-                <div class="card-title">Haftalık VIP Deneme</div>
-                <p class="card-desc">Sistemi yoğun tempoda denemek ve gruplarda daha sık görünmek isteyenler için ideal paket.</p>
+                <div class="card-title">Haftalık VIP Paketi</div>
+                <p class="card-desc">Sistemi yogun tempoda kullanmak, ozel grup listelerini baglamak ve rotasyonlu reklam yapmak isteyenler icin ideal paket.</p>
                 <ul class="features-list">
-                    <li><i class="fa-solid fa-check"></i> 👤 <strong>2 Adet</strong> Gönderici Hesap Slotu</li>
-                    <li><i class="fa-solid fa-check"></i> ⏱ <strong>30 Dakika</strong> Hızlı Gönderim Aralığı</li>
-                    <li><i class="fa-solid fa-check"></i> ➕ Özel Grup & Kanal Ekleme Desteği</li>
-                    <li><i class="fa-solid fa-check"></i> 🚀 7 Gün Kesintisiz 7/24 Reklam Rotasyonu</li>
+                    <li><i class="fa-solid fa-check"></i> 2 Adet Gonderici Hesap Slotu (Otomatik Rotasyon)</li>
+                    <li><i class="fa-solid fa-check"></i> Esnek Aralik Secimi (30 - 45 dk Hizli Mod)</li>
+                    <li><i class="fa-solid fa-check"></i> Sinirsiz Ozel Grup ve Kanal Ekleme Destegi</li>
+                    <li><i class="fa-solid fa-check"></i> Anlik Iletim Bildirimi (Telegram DM Raporu)</li>
+                    <li><i class="fa-solid fa-check"></i> 7 Gun Kesintisiz 7/24 Bulut Otomasyonu</li>
                 </ul>
                 <button onclick="handleShopier('https://www.shopier.com/JarvisStore/51058120')" class="btn btn-secondary">
-                    <i class="fa-solid fa-crown"></i> Haftalık VIP Satın Al (150 ₺)
+                    <i class="fa-solid fa-crown"></i> Haftalik VIP Satin Al (150 TL)
                 </button>
             </div>
 
             <!-- Monthly Unlimited VIP -->
-            <div class="card" style="border-color: rgba(255, 184, 0, 0.4); box-shadow: 0 10px 30px rgba(255, 184, 0, 0.1);">
+            <div class="card" style="border-color: rgba(245, 158, 11, 0.4); box-shadow: 0 10px 30px rgba(245, 158, 11, 0.1);">
                 <div class="card-header-row">
-                    <span class="badge gold">EN ÇOK TERCİH EDİLEN</span>
-                    <span class="price-value" style="font-size: 18px; color: var(--accent-gold);">350 ₺ / Ay</span>
+                    <span class="badge gold">EN COK TERCIH EDILEN</span>
+                    <span class="price-tag" style="font-size: 16px; color: var(--accent-gold);">350 TL / Ay</span>
                 </div>
                 <div class="card-title" style="color: var(--accent-gold);">Aylık Sınırsız VIP</div>
-                <p class="card-desc">Maksimum verim, 5 hesap rotasyonu, turbo 15 dk gönderim ve 7/24 öncelikli geliştirici desteği.</p>
+                <p class="card-desc">Maksimum verim, 5 hesap rotasyonu, sifir ban riski icin akilli koruma, sinirsiz gonderi ve 7/24 oncelikli destek.</p>
                 <ul class="features-list">
-                    <li><i class="fa-solid fa-check" style="color: var(--accent-gold);"></i> 👤 <strong>5 Adet</strong> Gönderici Hesap Slotu (Eşzamanlı)</li>
-                    <li><i class="fa-solid fa-check" style="color: var(--accent-gold);"></i> ⏱ <strong>15 Dakika</strong> Turbo Gönderim Aralığı</li>
-                    <li><i class="fa-solid fa-check" style="color: var(--accent-gold);"></i> ♾️ <strong>Limitsiz</strong> Günlük Gönderi & Tüm Gruplar</li>
-                    <li><i class="fa-solid fa-check" style="color: var(--accent-gold);"></i> ⚡ <strong>7/24 Öncelikli Geliştirici Teknik Desteği</strong></li>
-                    <li><i class="fa-solid fa-check" style="color: var(--accent-gold);"></i> 🚀 30 Gün Kesintisiz Reklam Motoru</li>
+                    <li><i class="fa-solid fa-check" style="color: var(--accent-gold);"></i> 5 Adet Gonderici Hesap Slotu (Eszamanli Multi-Session)</li>
+                    <li><i class="fa-solid fa-check" style="color: var(--accent-gold);"></i> Tamamen Sinirsiz Gunluk Gonderi (Kota Yok)</li>
+                    <li><i class="fa-solid fa-check" style="color: var(--accent-gold);"></i> Gelismis Anti-Ban ve FloodGuard Pro (Dinamik Aralik)</li>
+                    <li><i class="fa-solid fa-check" style="color: var(--accent-gold);"></i> Tum Hazir Havuzlar + Sinirsiz Ozel Grup/Kanal Listesi</li>
+                    <li><i class="fa-solid fa-check" style="color: var(--accent-gold);"></i> Oncelikli Arka Plan Kuyrugu ve Canli Iletim Raporlari</li>
+                    <li><i class="fa-solid fa-check" style="color: var(--accent-gold);"></i> 7/24 Birebir Oncelikli Gelistirici Destegi</li>
+                    <li><i class="fa-solid fa-check" style="color: var(--accent-gold);"></i> 30 Gun Kesintisiz Reklam ve Tanitim Gucu</li>
                 </ul>
                 <button onclick="handleShopier('https://www.shopier.com/JarvisStore/51058121')" class="btn btn-gold">
-                    <i class="fa-solid fa-crown"></i> Aylık VIP Satın Al (350 ₺)
+                    <i class="fa-solid fa-crown"></i> Aylik VIP Satin Al (350 TL)
                 </button>
             </div>
 
             <!-- Orders & Membership Dashboard Card -->
             <div class="card" style="border-color: rgba(0, 240, 255, 0.35); background: rgba(0, 240, 255, 0.04);">
                 <div class="card-header-row">
-                    <span class="badge">📦 SİPARİŞ & ÜYELİK TAKİBİ</span>
-                    <span class="badge gold">OTOMATİK</span>
+                    <span class="badge">SIPARIS VE UYELIK TAKIBI</span>
+                    <span class="badge gold">OTOMATIK</span>
                 </div>
-                <div class="card-title">Siparişlerim & VIP Üyeliklerim</div>
-                <p class="card-desc">Satın aldığınız VIP üyelikleri, kalan sürelerinizi, hesap kotanızı ve sipariş geçmişinizi Telegram botu üzerinden anlık sorgulayın.</p>
+                <div class="card-title">Siparişlerim ve VIP Üyeliklerim</div>
+                <p class="card-desc">Satin aldiginiz VIP uyelikleri, kalan surelerinizi, hesap kotanizi ve siparis gecmisinizi Telegram botu uzerinden anlik sorgulayin.</p>
                 <div style="display: flex; gap: 8px; margin-top: 10px;">
                     <button onclick="handleTelegram('https://t.me/JarvisCraftsBot')" class="btn btn-secondary" style="flex: 1;">
                         <i class="fa-solid fa-box-open"></i> Siparişlerim
@@ -760,7 +779,7 @@
     <nav class="bottom-nav">
         <div class="nav-item active" data-tab="tab-jarvis" onclick="switchNavTab('tab-jarvis')">
             <i class="fa-solid fa-microchip"></i>
-            <span>J.A.R.V.I.S.</span>
+            <span>Asistan</span>
         </div>
         <div class="nav-item" data-tab="tab-store" onclick="switchNavTab('tab-store')">
             <i class="fa-solid fa-store"></i>
@@ -785,8 +804,8 @@
         if (tg) {
             tg.ready();
             tg.expand();
-            if (tg.setHeaderColor) tg.setHeaderColor('#060810');
-            if (tg.setBackgroundColor) tg.setBackgroundColor('#060810');
+            if (tg.setHeaderColor) tg.setHeaderColor('#070a13');
+            if (tg.setBackgroundColor) tg.setBackgroundColor('#070a13');
         }
 
         function switchNavTab(tabId) {
@@ -800,7 +819,6 @@
             const navItem = document.querySelector(`.nav-item[data-tab="${tabId}"]`);
             if (navItem) navItem.classList.add('active');
 
-            // Find matching pill button
             document.querySelectorAll('.pill-btn').forEach(btn => {
                 if (btn.getAttribute('onclick')?.includes(tabId)) {
                     btn.classList.add('active');

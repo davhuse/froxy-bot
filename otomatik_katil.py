@@ -595,6 +595,12 @@ TICARET_FORUM_FALLBACKS = {
         "Guvenli altyapi, bot kurulumu ve 7/24 destek.\n\n"
         "Detay ve fiyat icin: @FroxyDestekBOT"
     ),
+    'jarvis': (
+        "JARVISCRAFT // AI VE KOD OTOMASYONLARI\n"
+        "J.A.R.V.I.S. sesli masaustu AI, 65+ grup oto-reklam motoru, ozel bot ve web gelistirme.\n\n"
+        "One cikanlar: Sesli Asistan Lisansi | VIP Reklam Paketi | Scraper Bot | Ozel Bot ve Web Kodlama\n\n"
+        "Shopier Magazasi ve Demo: @JarvisCraftsBot | Destek: @JarvisCraft"
+    ),
 }
 
 
@@ -799,27 +805,32 @@ def account_brand(client_name):
 def is_join_only_account(client_name):
     """Accounts configured to only join groups and never send marketing messages."""
     cname = get_canonical_account_name(client_name)
-    if cname == 'JarvisCraftOnline':
-        return True
     configured = os.environ.get("JOIN_ONLY_ACCOUNTS", "").lower()
     return cname.lower() in configured
 
 
 def account_flags(client_name):
     brand = account_brand(client_name)
-    return brand == 'keyvadi', brand == 'lisansarena', brand == 'froxy'
+    return brand == 'keyvadi', brand == 'lisansarena', brand == 'froxy', brand == 'jarvis'
 
 
 def ad_worker_dm_replies_enabled(client_name):
-    """All three advertising accounts own their catalog DM sales flow."""
-    if account_brand(client_name) in {"froxy", "keyvadi", "lisansarena"}:
+    """All advertising accounts own their catalog DM sales flow."""
+    if account_brand(client_name) in {"froxy", "keyvadi", "lisansarena", "jarvis"}:
         return True
     override = os.environ.get("ENABLE_AD_WORKER_DM_REPLIES", "").strip().lower()
     return override in {"1", "true", "yes", "on"}
 
 
-def short_group_message(is_keyvadi, is_lisansarena, is_froxy=False, group_name=None):
-    brand = 'froxy' if is_froxy else ('lisansarena' if is_lisansarena else 'keyvadi')
+def short_group_message(is_keyvadi, is_lisansarena, is_froxy=False, group_name=None, is_jarvis=False):
+    if is_jarvis:
+        brand = 'jarvis'
+    elif is_froxy:
+        brand = 'froxy'
+    elif is_lisansarena:
+        brand = 'lisansarena'
+    else:
+        brand = 'keyvadi'
     # Short-policy groups must remain short, but they should not receive the
     # same copy forever.  Keep the existing file as the first option and add
     # optional numbered variants.  The normal message history/rotation is
@@ -2195,6 +2206,17 @@ LISANSARENA_MESSAGES = [
     os.path.join(MESSAGES_DIR, 'full_lisansarena_5.txt'),
 ]
 
+JARVIS_MESSAGES = [
+    os.path.join(MESSAGES_DIR, 'jarvis_1.txt'),
+    os.path.join(MESSAGES_DIR, 'jarvis_2.txt'),
+    os.path.join(MESSAGES_DIR, 'jarvis_3.txt'),
+    os.path.join(MESSAGES_DIR, 'jarvis_4.txt'),
+    os.path.join(MESSAGES_DIR, 'jarvis_5.txt'),
+    os.path.join(MESSAGES_DIR, 'full_jarvis_1.txt'),
+    os.path.join(MESSAGES_DIR, 'full_jarvis_2.txt'),
+    os.path.join(MESSAGES_DIR, 'full_jarvis_3.txt'),
+]
+
 # Single-product conversion templates stay behind a release flag until each
 # supplier passes a real delivery/code QA.  This prevents an unverified
 # no-stock offer from being advertised while still making the experiment ready
@@ -3545,8 +3567,8 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         if sender_id in our_user_ids:
             return
 
-        is_keyvadi, is_lisansarena, is_froxy = account_flags(client_name)
-        panel_brand = "Froxy AI" if is_froxy else ("KeyVadi" if is_keyvadi else "LisansArena")
+        is_keyvadi, is_lisansarena, is_froxy, is_jarvis = account_flags(client_name)
+        panel_brand = "JarvisCraft" if is_jarvis else ("Froxy AI" if is_froxy else ("KeyVadi" if is_keyvadi else "LisansArena"))
         print(f"📥 [{client_name}] ({panel_brand}) DM Alındı: GÖNDEREN={sender_id} (@{uname}) MESAJ='{event.raw_text}'", flush=True)
         try:
             save_ticket_record(
@@ -3849,11 +3871,13 @@ SLOT_RECOVERY_HINTS = {
     1: ("Froxy", "AD_STRING_SESSION_FROXY"),
     2: ("KeyVadi", "AD_STRING_SESSION_KEYVADI"),
     3: ("LisansArena", "AD_STRING_SESSION_LISANSARENA"),
+    4: ("JarvisCraft", "AD_STRING_SESSION_JARVIS"),
 }
 SLOT_ACCOUNT_NAMES = {
     1: "FroxyOnline",
     2: "KeyVadiOnline",
     3: "LisansArenaOnline",
+    4: "JarvisCraftOnline",
 }
 
 
@@ -5239,9 +5263,12 @@ async def main():
                     print(f"[{client_name}] 📤 TR saati {tr_time.strftime('%H:%M')} — normal saat, gönderim devam ediyor.")
                 
                 # Rotation updates: pick from variation templates if they exist
-                is_keyv, is_lisans, is_froxy = account_flags(client_name)
+                is_keyv, is_lisans, is_froxy, is_jarvis = account_flags(client_name)
                 
-                if is_lisans:
+                if is_jarvis:
+                    variations = JARVIS_MESSAGES
+                    available_files = [v for v in variations if os.path.exists(v)]
+                elif is_lisans:
                     variations = LISANSARENA_MESSAGES
                     available_files = [v for v in variations if os.path.exists(v)]
                 elif is_keyv:
@@ -5387,10 +5414,11 @@ async def main():
                     sent_message = None
                     try:
                         # Mesaj rotasyonu: bu grup için farklı mesaj seç
-                        is_keyvadi, is_lisansarena, is_froxy = account_flags(client_name)
+                        is_keyvadi, is_lisansarena, is_froxy, is_jarvis = account_flags(client_name)
                         brand_default_bot = (
-                            "@LisansArenaBot" if is_lisansarena
-                            else ("@KeyVadiSatisBot" if is_keyvadi else "@FroxyDestekBOT")
+                            "@JarvisCraftsBot" if is_jarvis
+                            else ("@LisansArenaBot" if is_lisansarena
+                            else ("@KeyVadiSatisBot" if is_keyvadi else "@FroxyDestekBOT"))
                         )
                         if available_files:
                             chosen_file = chosen_file_override or pick_message_for_group(
@@ -5402,15 +5430,15 @@ async def main():
                                 with open(chosen_file, 'r', encoding='utf-8') as fm:
                                     base_msg = fm.read()
                             except:
-                                base_msg = f"Merhaba! Detaylar için {brand_default_bot}"
+                                base_msg = f"Merhaba! Detaylar icin {brand_default_bot}"
                         else:
-                            base_msg = f"Merhaba! Detaylar için {brand_default_bot}"
+                            base_msg = f"Merhaba! Detaylar icin {brand_default_bot}"
 
                         msg = base_msg
                         is_short_group = is_short_ad_group(grup_name, entity)
                         if is_short_group:
                             msg = short_group_message(
-                                is_keyvadi, is_lisansarena, is_froxy, grup_name
+                                is_keyvadi, is_lisansarena, is_froxy, grup_name, is_jarvis=is_jarvis
                             )
                         elif grup_name.lower() == "kuponceking":
                             msg = msg.replace("bot", "sistem").replace("Bot", "Sistem") \

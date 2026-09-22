@@ -31,6 +31,9 @@
                 <button class="tab-btn" id="tabBtnLisansarena" onclick="switchTab('lisansarena')">
                     <i class="fa-solid fa-store"></i> LisansArena Botu
                 </button>
+                <button class="tab-btn" id="tabBtnJarvis" onclick="switchTab('jarvis')">
+                    <i class="fa-solid fa-microchip"></i> Jarvis Botu
+                </button>
                 <button class="tab-btn" id="tabBtnBlacklist" onclick="switchTab('blacklist')">
                     <i class="fa-solid fa-ban"></i> Kara Liste
                 </button>
@@ -113,6 +116,9 @@
                     </div>
                     <div class="ad-countdown-card" id="countdownLisansArenaOnline" style="border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:14px; background:rgba(255,255,255,0.035);">
                         <div style="font-weight:700;">LisansArena</div><div class="countdown-value" style="font-size:1.35rem; margin-top:8px;">Bekleniyor...</div><div class="countdown-meta" style="color:rgba(255,255,255,0.55); font-size:0.78rem; margin-top:5px;"></div>
+                    </div>
+                    <div class="ad-countdown-card" id="countdownJarvisCraftOnline" style="border:1px solid rgba(0,240,255,0.25); border-radius:12px; padding:14px; background:rgba(0,240,255,0.04);">
+                        <div style="font-weight:700; color:#00f0ff;">JarvisCraft</div><div class="countdown-value" style="font-size:1.35rem; margin-top:8px;">Bekleniyor...</div><div class="countdown-meta" style="color:rgba(255,255,255,0.55); font-size:0.78rem; margin-top:5px;"></div>
                     </div>
                 </div>
             </div>
@@ -343,6 +349,55 @@
                     <h2><i class="fa-solid fa-terminal"></i> Canlı LisansArena Bot Günlükleri</h2>
                     <div class="terminal" id="lisansarenaTerminalOutput">
                         <!-- Loglar buraya gelecek -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: JARVIS BOTU -->
+        <div id="tab-jarvis" class="tab-content">
+            <div class="controls-panel glass-panel">
+                <div class="bot-info-header">
+                    <h2><i class="fa-solid fa-microchip"></i> JarvisCraft AI & Bot Kontrolü</h2>
+                    <div class="status-badge running" id="jarvisBotStatus">
+                        <span class="status-dot"></span>
+                        <span id="jarvisBotStatusText">Aktif / Çalışıyor</span>
+                    </div>
+                </div>
+                <div class="control-actions">
+                    <button id="btnJarvisOpen" class="btn primary" onclick="window.open('https://t.me/JarvisCraftsBot', '_blank')">
+                        <i class="fa-brands fa-telegram"></i> Telegram'da Aç (@JarvisCraftsBot)
+                    </button>
+                    <button id="btnJarvisMiniApp" class="btn secondary" onclick="window.open('/jarvis/app', '_blank')">
+                        <i class="fa-solid fa-store"></i> Mini App Önizle
+                    </button>
+                </div>
+                <div class="info-note" style="margin-top: 15px; font-size: 0.85rem; color: var(--text-secondary);">
+                    <i class="fa-solid fa-circle-info"></i> Bu bot, JarvisCraft ekosisteminin sesli asistan, oto-reklam motoru ve kod satış altyapısını yönetir.
+                </div>
+            </div>
+
+            <div class="main-content">
+                <div class="config-section glass-panel">
+                    <h2><i class="fa-solid fa-gears"></i> JarvisCraft Yapılandırması</h2>
+                    <div class="config-group">
+                        <label>Resmi Telegram Botu</label>
+                        <input type="text" value="@JarvisCraftsBot" readonly style="opacity:0.8;">
+                    </div>
+                    <div class="config-group">
+                        <label>Resmi Destek Hesabı</label>
+                        <input type="text" value="@JarvisCraft" readonly style="opacity:0.8;">
+                    </div>
+                    <div class="config-group">
+                        <label>Resmi Shopier Mağazası</label>
+                        <input type="text" value="https://www.shopier.com/JarvisStore" readonly style="opacity:0.8;">
+                    </div>
+                </div>
+
+                <div class="logs-section glass-panel">
+                    <h2><i class="fa-solid fa-terminal"></i> JarvisCraft Günlükleri</h2>
+                    <div class="terminal" id="jarvisTerminalOutput">
+                        [JarvisCraft] Bot ve oto-reklam motoru aktif modda çalışmaktadır.
                     </div>
                 </div>
             </div>

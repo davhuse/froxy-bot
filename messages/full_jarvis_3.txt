@@ -1,0 +1,16 @@
++-- JARVISCRAFT // KURUMSAL YAZILIM VE BOT COZUMLERI --+
+| Ozel proje ihtiyaclariniza profesyonel yazilim cozumleri.
+|
+| * Ozel Web Sitesi Kodlama:
+|   - Modern Responsive Tasarim (Mobil ve Masastuu tam uyumlu)
+|   - Python Flask / React / Next.js yuksek hizli mimari
+|   - Shopier / iyzico 3D Guvenli Odeme Entegrasyonu
+|   - Taban Baslangic Fiyati: 799.90 TL (Siteden siteye degisebilir)
+|
+| * Ozel Telegram Bot Kodlama:
+|   - Telethon / Aiogram tabanli asenkron altyapi
+|   - Magaza, kanal/grup yonetimi ve yapay zeka entegrasyonu
+|   - Taban Baslangic Fiyati: 499.90 TL (Projeden projeye degisebilir)
+|
+| 7/24 Kesintisiz Calisma | 1 Yil Teknik Garanti | Aninda Teklif
++-- Teklif Almak Icin: @JarvisCraftsBot | Destek: @JarvisCraft --+

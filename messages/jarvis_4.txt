@@ -1,0 +1,13 @@
+E-TICARET VE FIYAT TAKIP SCRAPER BOT SETI
+--------------------------------------------------
+Trendyol, Yemeksepeti ve e-ticaret sitelerinden anlik indirim ve kupon yakalayin.
+
+Sistem Yetenekleri:
+* Cloudflare ve Bot Korumasini Atlama (Playwright motoru)
+* Fiyat Dususu ve Stok Bildirimlerinde Anlik Telegram Alarmi
+* Otomatik Kupon Toplama ve Siparis Botu Entegrasyonu
+* Acik Kaynak Python Kodu ve Kurulum Kilavuzu
+
+Fiyat: 300 TL (Omur Boyu Kullanim)
+Inceleme: @JarvisCraftsBot
+Siparis ve Destek: @JarvisCraft

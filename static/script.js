@@ -432,7 +432,7 @@ function renderAdCountdowns() {
 }
 
 function updateAdCountdowns(accounts, queue) {
-    ['FroxyOnline', 'KeyVadiOnline', 'LisansArenaOnline'].forEach(account => {
+    ['FroxyOnline', 'KeyVadiOnline', 'LisansArenaOnline', 'JarvisCraftOnline'].forEach(account => {
         const data = accounts && accounts[account];
         if (!data) return;
         const remaining = Number(data.remaining_seconds);
