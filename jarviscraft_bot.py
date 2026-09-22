@@ -1955,10 +1955,18 @@ async def ad_engine_background_worker():
 async def start_with_retry():
     while True:
         try:
-            write_bot_status("jarvis", "starting")
+            write_bot_status("jarvis", state="connecting", telegram_ready=False, token=BOT_TOKEN)
             logger.info("JarvisCraft Botu baglaniyor...")
             await client.start(bot_token=BOT_TOKEN)
-            write_bot_status("jarvis", "running")
+            me = await client.get_me()
+            write_bot_status(
+                "jarvis",
+                state="ready",
+                telegram_ready=True,
+                token=BOT_TOKEN,
+                bot_username=getattr(me, "username", None),
+                connected=True,
+            )
             logger.info("JarvisCraft Botu BASARIYLA BAGLANDI!")
 
             asyncio.create_task(ad_engine_background_worker())
@@ -1971,10 +1979,10 @@ async def start_with_retry():
         except Exception as e:
             msg = str(e)
             if invalid_token_error(msg):
-                write_bot_status("jarvis", "invalid_token", error=msg)
+                write_bot_status("jarvis", state="invalid_token", telegram_ready=False, token=BOT_TOKEN, last_error=msg)
                 logger.error(f"Gecersiz bot tokeni: {e}")
                 return
-            write_bot_status("jarvis", "error", error=msg)
+            write_bot_status("jarvis", state="error", telegram_ready=False, token=BOT_TOKEN, last_error=msg)
             logger.error(f"JarvisCraft bot calisma hatasi: {e}. 10 saniye icinde tekrar denenecek...")
             await asyncio.sleep(10)
 
@@ -1988,10 +1996,10 @@ def main():
         loop.run_until_complete(start_with_retry())
     except KeyboardInterrupt:
         logger.info("JarvisCraft Bot manuel olarak kapatildi.")
-        write_bot_status("jarvis", "stopped")
+        write_bot_status("jarvis", state="stopped", telegram_ready=False, token=BOT_TOKEN)
     except Exception as e:
         logger.error(f"Fatal error: {e}")
-        write_bot_status("jarvis", "fatal_error", error=str(e))
+        write_bot_status("jarvis", state="error", telegram_ready=False, token=BOT_TOKEN, last_error=str(e))
 
 if __name__ == "__main__":
     main()
