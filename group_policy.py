@@ -19,9 +19,11 @@ MODERATION_FILE = os.environ.get("GROUP_MODERATION_FILE", "group_moderation.json
 PLAIN_KEYVADI_CTA = "Sipariş için Telegram aramasına KeyVadiSatisBot yazabilirsiniz."
 PLAIN_FROXY_CTA = "Detaylar için Telegram aramasına FroxyDestekBOT yazabilirsiniz."
 PLAIN_LISANSARENA_CTA = "LisansArena ürün ve teslimat bilgisi için Telegram aramasında LisansArenaBot yazabilirsiniz."
+PLAIN_JARVIS_CTA = "Detaylar ve demo icin Telegram aramasina JarvisCraftsBot yazabilirsiniz."
 VISIBLE_KEYVADI_CTA = "Sipariş ve güncel fiyat: @KeyVadiSatisBot"
 VISIBLE_FROXY_CTA = "Detay ve destek: @FroxyDestekBOT"
-VISIBLE_LISANSARENA_CTA = "🛒 7/24 Anında Otomatik Kod & Sipariş: @LisansArenaBot"
+VISIBLE_LISANSARENA_CTA = "7/24 Anında Otomatik Kod & Sipariş: @LisansArenaBot"
+VISIBLE_JARVIS_CTA = "Demo ve siparis icin: @JarvisCraftsBot | Destek: @JarvisCraft"
 
 DEFAULT_POLICY = {
     "allow_urls": True,
@@ -358,6 +360,7 @@ def _brand_cta(brand: str, *, visible: bool) -> str:
         "keyvadi": VISIBLE_KEYVADI_CTA if visible else PLAIN_KEYVADI_CTA,
         "froxy": VISIBLE_FROXY_CTA if visible else PLAIN_FROXY_CTA,
         "lisansarena": VISIBLE_LISANSARENA_CTA if visible else PLAIN_LISANSARENA_CTA,
+        "jarvis": VISIBLE_JARVIS_CTA if visible else PLAIN_JARVIS_CTA,
     }
     return ctas.get(brand.casefold(), "")
 
@@ -381,6 +384,10 @@ def _remove_brand_cta_lines(text: str, brand: str) -> str:
             "lisansarenabot", "lisansarenadestek", "sipariş ve destek", "siparis ve destek",
             "stok, teslimat", "ürünü yaz", "urunu yaz", "telegram aramas", "hızlı sipariş",
             "anında otomatik", "aninda otomatik", "otomatik kod", "otomatik sipariş", "otomatik siparis",
+        ),
+        "jarvis": (
+            "jarviscraftsbot", "jarviscraft", "demo ve siparis", "demo ve sipariş",
+            "telegram aramas", "destek:", "sesli masaustu ai", "sesli masaüstü ai",
         ),
     }.get(brand.casefold(), ())
     return "\n".join(

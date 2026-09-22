@@ -968,7 +968,7 @@ async def show_main_menu(event, user_id, is_callback=False):
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
         "*Alisverise baslamak veya indirimli urunleri incelemek icin asagidaki butonlari kullanabilirsiniz:*"
     )
-    buttons = mini_app_markup("Magazayi Ac")
+    buttons = mini_app_markup("Mağazayı Aç")
     if is_callback:
         await safe_event_edit(event, welcome, buttons=buttons)
     else:

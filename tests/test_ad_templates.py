@@ -77,6 +77,40 @@ class AdTemplateTests(unittest.TestCase):
             bodies.append(text)
         self.assertEqual(len(set(bodies)), 6)
 
+    def test_jarvis_templates_have_distinct_brand_identity(self):
+        paths = sorted((ROOT / "messages").glob("jarvis_*.txt"))
+        self.assertGreaterEqual(len(paths), 3)
+        for path in paths:
+            text = path.read_text(encoding="utf-8")
+            self.assertIn("@JarvisCraftsBot", text, path.name)
+            self.assertNotIn("@FroxyDestekBOT", text, path.name)
+            self.assertNotIn("@KeyVadiSatisBot", text, path.name)
+            self.assertNotIn("@LisansArenaBot", text, path.name)
+            self.assertIn("jarvis", text.lower(), path.name)
+
+    def test_strict_market_message_isolates_all_brands(self):
+        from otomatik_katil import sanitize_strict_market_message
+        import group_policy
+
+        cases = [
+            ("keyvadi", (True, False, False, False), "@KeyVadiSatisBot", "KeyVadi"),
+            ("froxy", (False, False, True, False), "@FroxyDestekBOT", "Froxy"),
+            ("lisansarena", (False, True, False, False), "@LisansArenaBot", "LisansArena"),
+            ("jarvis", (False, False, False, True), "@JarvisCraftsBot", "JarvisCraft"),
+        ]
+        _, policy = group_policy.resolve_group_policy("kupongrupta")
+
+        for brand, (is_kv, is_la, is_fx, is_jv), expected_bot, expected_brand in cases:
+            msg = sanitize_strict_market_message("orijinal", "kupongrupta", is_kv, is_la, is_fx, is_jarvis=is_jv)
+            final, _ = group_policy.make_policy_compliant(msg, policy, brand)
+            self.assertIn(expected_brand.lower(), final.lower(), f"Brand {brand} missing {expected_brand}")
+            bot_handle = expected_bot.lstrip("@")
+            self.assertIn(bot_handle.lower(), final.lower(), f"Brand {brand} missing handle {expected_bot}")
+            for other_brand, _, other_bot, _ in cases:
+                if other_brand != brand:
+                    other_handle = other_bot.lstrip("@")
+                    self.assertNotIn(other_handle.lower(), final.lower(), f"Brand {brand} leaked {other_handle}")
+
 
 if __name__ == "__main__":
     unittest.main()

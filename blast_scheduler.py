@@ -302,6 +302,12 @@ class BlastCoordinator:
             if record.get("run_id") and any(
                 item.get("state") not in TERMINAL_TARGET_STATES for item in existing
             ):
+                available_set = set(str(item) for item in templates if item)
+                if available_set:
+                    for target in existing:
+                        tmpl = target.get("template")
+                        if tmpl and tmpl not in available_set:
+                            target["template"] = templates[target.get("index", 0) % len(templates)]
                 record["status"] = "sending"
                 self._persist()
                 return deepcopy(record)

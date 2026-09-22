@@ -664,9 +664,22 @@ STRICT_GROUP_FORBIDDEN = {
 }
 
 
-def strict_group_safe_copy(group_key, is_keyvadi, is_lisansarena, is_froxy):
+def strict_group_safe_copy(group_key, is_keyvadi, is_lisansarena, is_froxy, is_jarvis=False):
     """Normal ilanlardan kisaltilmis, kurala uygun marka metni."""
     is_satcek = group_key == "satcek"
+    if is_jarvis:
+        lines = [
+            "JarvisCraft dijital urun ve yazilim",
+            "J.A.R.V.I.S. sesli masaustu AI asistani 350 TL",
+            "Telegram 65+ grup oto-reklam botu 450 TL",
+            "E-Ticaret ve kupon scraper botu 300 TL",
+            "Full-Stack Mini App ve Shopier entegrasyonu 400 TL",
+            "Haftalik VIP reklam 150 TL | Aylik VIP reklam 350 TL",
+            "Ozel bot ve web yazilim gelistirme",
+            "+50'den fazla basarili teslimat | 7/24 kesintisiz calisma",
+            "Siparis ve demo icin: JarvisCraftsBot | Destek: JarvisCraft",
+        ]
+        return "\n".join(lines)
     if is_keyvadi:
         lines = [
             "KeyVadi dijital ürünler",
@@ -720,7 +733,7 @@ def strict_group_safe_copy(group_key, is_keyvadi, is_lisansarena, is_froxy):
     ])
 
 
-def sanitize_strict_market_message(msg, grup_name, is_keyvadi, is_lisansarena, is_froxy):
+def sanitize_strict_market_message(msg, grup_name, is_keyvadi, is_lisansarena, is_froxy, is_jarvis=False):
     """Katı kupon gruplarının ilan kurallarına uygun kısa metin üretir."""
     group_key = _normalize_group_identifier(grup_name)
     max_lines = STRICT_MARKET_GROUPS.get(group_key)
@@ -731,14 +744,14 @@ def sanitize_strict_market_message(msg, grup_name, is_keyvadi, is_lisansarena, i
     # Normal sablonlar emoji/link/uzun katalog icerdigi icin bu gruplarda
     # moderasyona takiliyordu. Her marka kendi kisa ve kurala uygun ilaniyla
     # gider; uc hesap ayni anlamsiz metni gondermez.
-    msg = strict_group_safe_copy(group_key, is_keyvadi, is_lisansarena, is_froxy)
+    msg = strict_group_safe_copy(group_key, is_keyvadi, is_lisansarena, is_froxy, is_jarvis=is_jarvis)
 
     folded = _ascii_fold(msg)
     forbidden = STRICT_GROUP_FORBIDDEN.get(group_key, ())
     if any(term in folded for term in forbidden):
         # Yasakli urunu kelime oyunu ile gizlemek yerine ilani gonderme;
         # urun adi/icerigi belirsiz bir ilana donusmesin.
-        brand = "KeyVadi" if is_keyvadi else ("LisansArena" if is_lisansarena else "Froxy AI")
+        brand = "KeyVadi" if is_keyvadi else ("LisansArena" if is_lisansarena else ("JarvisCraft" if is_jarvis else "Froxy AI"))
         msg = (
             f"{brand} dijital urun ve lisans ilanı\n"
             "Güncel ürün ve fiyat bilgisi için özel mesaj."
@@ -5101,7 +5114,7 @@ async def main():
                         values.remove(normalized)
                 group_states[state_name].append(normalized)
 
-            if account_brand(client_name) in {'froxy', 'keyvadi', 'lisansarena'}:
+            if account_brand(client_name) in {'froxy', 'keyvadi', 'lisansarena', 'jarvis'}:
                 classified_dialogs = set()
                 for dialog_key, dialog_entity in joined_dialogs.items():
                     if dialog_key == 'id' or dialog_entity is None:
@@ -5506,11 +5519,28 @@ async def main():
                             else ("@KeyVadiSatisBot" if is_keyvadi else "@FroxyDestekBOT"))
                         )
                         if available_files:
+                            if chosen_file_override and chosen_file_override not in available_files:
+                                print(f"[{client_name}] Uyari: chosen_file_override ({chosen_file_override}) hesap sablon havuzunda yok! Kendi havuzundan seciliyor.")
+                                chosen_file_override = None
+
                             chosen_file = chosen_file_override or pick_message_for_group(
                                 grup_name, available_files, msg_history
                             )
-                            if chosen_file_override:
-                                msg_history[grup_name.lower()] = chosen_file_override
+                            chosen_lower = chosen_file.lower()
+                            if is_jarvis and 'jarvis' not in chosen_lower:
+                                print(f"[{client_name}] Uyari: Jarvis icin gecersiz sablon ({chosen_file}), Jarvis havuzundan yeniden seciliyor.")
+                                chosen_file = pick_message_for_group(grup_name, available_files, msg_history)
+                            elif is_froxy and 'froxy' not in chosen_lower:
+                                print(f"[{client_name}] Uyari: Froxy icin gecersiz sablon ({chosen_file}), Froxy havuzundan yeniden seciliyor.")
+                                chosen_file = pick_message_for_group(grup_name, available_files, msg_history)
+                            elif is_keyvadi and not any(k in chosen_lower for k in ('keyvadi', 'duolingo', 'capcut', 'netflix_youtube')):
+                                print(f"[{client_name}] Uyari: KeyVadi icin gecersiz sablon ({chosen_file}), KeyVadi havuzundan yeniden seciliyor.")
+                                chosen_file = pick_message_for_group(grup_name, available_files, msg_history)
+                            elif is_lisansarena and 'lisansarena' not in chosen_lower:
+                                print(f"[{client_name}] Uyari: LisansArena icin gecersiz sablon ({chosen_file}), LisansArena havuzundan yeniden seciliyor.")
+                                chosen_file = pick_message_for_group(grup_name, available_files, msg_history)
+
+                            msg_history[grup_name.lower()] = chosen_file
                             try:
                                 with open(chosen_file, 'r', encoding='utf-8') as fm:
                                     base_msg = fm.read()
@@ -5544,7 +5574,7 @@ async def main():
                             msg = re.sub(r'(?i)\bAdobe\s+CC\b', 'Adobe', msg)
                         msg = sanitize_global_ad_message(msg)
                         msg = sanitize_strict_market_message(
-                            msg, grup_name, is_keyvadi, is_lisansarena, is_froxy
+                            msg, grup_name, is_keyvadi, is_lisansarena, is_froxy, is_jarvis=is_jarvis
                         )
                         experiment_brand = current_brand
                         # Deep-link A/B attribution is disabled. Clean groups
@@ -5580,6 +5610,8 @@ async def main():
                             banner_file = "keyvadi_banner.png"
                         elif is_lisansarena:
                             banner_file = "lisansarena_banner.jpeg"
+                        elif is_jarvis:
+                            banner_file = "jarviscraft_logo_v2.jpg"
                         else:
                             banner_file = "froxy_banner.png"
                         allows_media = False
