@@ -2157,121 +2157,32 @@ async def message_handler(event):
         logger.info(f"User {user_id} is banned, ignoring.")
         return
 
-    if user_states.get(user_id) == "AWAITING_VERIFY_PAYMENT_INFO":
+    from order_fulfillment import extract_order_id, extract_email, fulfill_order_request
+    order_num = extract_order_id(event.text)
+    email_addr = extract_email(event.text)
+    is_awaiting = user_states.get(user_id) == "AWAITING_VERIFY_PAYMENT_INFO"
+    has_order_words = any(w in (event.text or "").lower() for w in (
+        "sipariş", "siparis", "kod", "satın aldım", "satin aldim", "aldım", "aldim", "fatura"
+    ))
+
+    if is_awaiting or order_num or (has_order_words and (order_num or email_addr)):
         if event.text.startswith('/'):
             user_states[user_id] = None
             return
-            
-        input_val = event.text.strip().lower()
-        if "@" in input_val:
-            doc_id = "order_email_" + input_val.replace("@", "_").replace(".", "_")
-        else:
-            doc_id = "order_phone_" + input_val.replace("+", "").replace(" ", "")
-            
-        orders_doc = await async_get_document(doc_id)
-        if not orders_doc or not orders_doc.get("orders"):
-            await event.respond("❌ **Sipariş bulunamadı!** Girdiğiniz bilgiyi kontrol edip tekrar deneyin veya desteğe yazın. (Ödeme sonrası 1-2 dakika gecikme olabilir).")
-            user_states[user_id] = None
-            return
-            
-        orders = orders_doc.get("orders", [])
-        unclaimed_order = None
-        unclaimed_idx = -1
-        for i, o in enumerate(orders):
-            if not o.get("claimed", False):
-                unclaimed_order = o
-                unclaimed_idx = i
-                break
-                
-        if not unclaimed_order:
-            await event.respond("⚠️ **Bu bilgilere ait tüm siparişler zaten tanımlanmış!** Yardım isterseniz canlı destekten bize yazabilirsiniz.")
-            user_states[user_id] = None
-            return
-            
-        prod_name = unclaimed_order.get("product_name", "").lower()
-        
-        # Use global license delivery system
-        alloc = allocate_license(prod_name, brand="keyvadi")
-        license_key = alloc.get("license_key")
-        
-        # Mark order as claimed in local shopier email doc
-        orders[unclaimed_idx]["claimed"] = True
-        await async_set_document(doc_id, orders_doc)
 
-        # Save order to keyvadi_users_data so it shows in /siparisler
-        user_orders_doc = await async_get_document("keyvadi_users_data")
-        u_data = user_orders_doc.get("users", {}) if user_orders_doc else {}
-        str_uid = str(user_id)
-        if str_uid not in u_data:
-            u_data[str_uid] = {
-                "id": user_id, "username": getattr(event.sender, "username", ""),
-                "first_name": getattr(event.sender, "first_name", "Musteri"),
-                "balance": 0.0, "orders": []
-            }
-        u_data[str_uid].setdefault("orders", []).append({
-            "order_id": unclaimed_order.get("order_id"),
-            "product_name": unclaimed_order.get("product_name"),
-            "title": unclaimed_order.get("product_name"),
-            "price": unclaimed_order.get("amount"),
-            "status": alloc.get("status", "delivered" if license_key else "pending_delivery"),
-            "license_key": license_key,
-            "created_at": unclaimed_order.get("timestamp")
-        })
-        await async_set_document("keyvadi_users_data", {"users": u_data})
-        
-        if license_key:
-            await event.respond(
-                f"✅ **Ödemeniz Başarıyla Doğrulandı!**\n\n"
-                f"📦 **Satın Alınan Ürün:** {unclaimed_order.get('product_name')}\n"
-                f"🔑 **Lisans Anahtarınız:**\n"
-                f"`{license_key}`\n\n"
-                f"*(Lisans anahtarını kopyalamak için üzerine tıklayabilirsiniz.)*\n\n"
-                f"KeyVadi'yi tercih ettiğiniz için teşekkür ederiz! 😊"
-            )
-            
-            # Notify admin
-            try:
-                config = load_config() or {}
-                admin_chat_id = config.get("admin_id", ADMIN_ID)
-                support_chat_id = config.get("support_chat_id", admin_chat_id)
-                if support_chat_id:
-                    await bot.send_message(
-                        support_chat_id, 
-                        f"🎉 **KeyVadi Otomatik Satış Bildirimi!**\n"
-                        f"👤 **Kullanıcı:** `{user_id}`\n"
-                        f"📦 **Ürün:** {unclaimed_order.get('product_name')}\n"
-                        f"🔑 **Lisans Kodu:** `{license_key}` (Otomatik teslim edildi)\n"
-                        f"💰 **Tutar:** {unclaimed_order.get('amount')} ₺\n"
-                        f"🛍️ **Shopier Sipariş ID:** `{unclaimed_order.get('order_id')}`\n\n"
-                        f"*(Kullanıcıya lisans teslimat bilgileri bot üzerinden iletilmiştir.)*"
-                    )
-            except Exception:
-                pass
-        else:
-            await event.respond(
-                f"✅ **Ödemeniz Başarıyla Doğrulandı!**\n\n"
-                f"📦 **Satın Alınan Ürün:** {unclaimed_order.get('product_name')}\n\n"
-                f"⚠️ **Stok Uyarısı:** Satın aldığınız ürünün lisans anahtarı stokta kalmamıştır. "
-                f"Yöneticiye bildirim gönderildi, en kısa sürede lisansınız Telegram üzerinden size iletilecektir."
-            )
-            
-            # Notify admin about stock warning
-            try:
-                config = load_config() or {}
-                admin_chat_id = config.get("admin_id", ADMIN_ID)
-                if admin_chat_id:
-                    await bot.send_message(
-                        admin_chat_id, 
-                        f"⚠️ **ACİL STOK UYARISI!**\n"
-                        f"Kullanıcı `{user_id}` Shopier'den **{unclaimed_order.get('product_name')}** satın aldı ancak stokta lisans kodu yok!\n"
-                        f"Lütfen en kısa sürede manuel teslimat yapın.\n"
-                        f"📧 **Müşteri E-posta/Telefon:** {input_val}"
-                    )
-            except Exception:
-                pass
-                
+        query = order_num or email_addr or event.text.strip()
+        fulfillment = await fulfill_order_request(
+            query,
+            tg_user_id=user_id,
+            tg_username=getattr(event.sender, "username", ""),
+            brand_hint="keyvadi",
+            user_email=email_addr,
+            client_or_bot=bot,
+        )
         user_states[user_id] = None
-        return
+        if fulfillment and fulfillment.get("message"):
+            await event.respond(fulfillment["message"])
+            return
 
     # The support bot is the only customer-DM owner.  Forward every customer
     # message, but greet a customer only once across restarts/deploys.

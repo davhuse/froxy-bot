@@ -3396,12 +3396,12 @@ def keyvadi_product_reply(product, source="ad_account_dm", arm=""):
     target = listing_url(product)
     
     reply = (
-        f"📌 **{product['title']}**\n"
-        f"💰 Fiyat: {product.get('price') or 'Ürün sayfasında'}\n"
-        f"⚡ 7/24 Anında Teslimat · 3D Secure Güvencesi"
+        f"**{product['title']}**\n"
+        f"Fiyat: {product.get('price') or 'Urun sayfasinda'}\n"
+        f"7/24 Aninda Teslimat - 3D Secure Guvencesi"
     )
     if target:
-        reply += f"\n🛒 [Shopier Ürününü Aç]({target})"
+        reply += f"\n[Shopier Urununu Ac]({target})"
     return reply
 
 
@@ -3411,35 +3411,51 @@ def froxy_product_reply(product, source="ad_account_dm", arm=""):
     target = listing_url(product)
     
     reply = (
-        f"📌 **{product['title']}**\n"
-        f"💰 Fiyat: {product.get('price', 'Ürün sayfasında')}"
+        f"**{product['title']}**\n"
+        f"Fiyat: {product.get('price', 'Urun sayfasinda')}\n"
+        f"7/24 Aninda Teslimat - 3D Secure Guvencesi"
     )
     if target:
-        reply += f"\n🛒 [Hemen Satın Al]({target})"
+        reply += f"\n[Hemen Satin Al]({target})"
     return reply
 
 
 def lisansarena_product_reply(product, source="ad_account_dm", arm=""):
     """Clean product info with a product-specific Telegram Mini App action."""
-    price = product.get("price") or "Ürün sayfasında"
+    price = product.get("price") or "Urun sayfasinda"
     product_id = str(product.get("id") or "").strip()
     target = (
         f"https://t.me/LisansArenaBot/app?startapp=p_{product_id}"
         if product_id else "https://t.me/LisansArenaBot/app"
     )
     reply = (
-        f"📦 **{product['title']}**\n"
-        f"💳 Fiyat: **{price}**\n"
-        f"⚡ 7/24 Anında Otomatik Teslimat · 3D Güvenli Ödeme\n\n"
-        f"🛍️ [Ürünü Mini App'te Aç]({target})"
+        f"**{product['title']}**\n"
+        f"Fiyat: **{price}**\n"
+        f"7/24 Aninda Otomatik Teslimat - 3D Guvenli Odeme\n\n"
+        f"[Urunu Mini App'te Ac]({target})"
+    )
+    return reply
+
+
+def jarvis_product_reply(product, source="ad_account_dm", arm=""):
+    """JarvisCraft official product listing."""
+    target = listing_url(product) or product.get("url") or "https://t.me/JarvisCraftsBot"
+    price = product.get("price", "150.00")
+    reply = (
+        f"[JARVIS GELISTIRICI VE OTOMASYON PAKETI]\n"
+        f"Urun: {product['title']}\n"
+        f"Fiyat: {price} TL\n"
+        f"7/24 Aninda Teslimat - Shopier 3D Secure Guvencesi\n\n"
+        f"[Hemen Satin Al]({target})\n"
+        f"Bot Yonetimi: @JarvisCraftsBot"
     )
     return reply
 
 
 def duplicate_product_reply(product):
     return (
-        f"📌 **{product.get('title', 'Bu ürün')}** için satın alma bağlantısı "
-        "bu sohbette daha önce paylaşıldı. Farklı bir ürünün adını yazabilirsiniz."
+        f"**{product.get('title', 'Bu urun')}** icin satin alma baglantisi "
+        "bu sohbette daha once paylasildi. Farkli bir urunun adini yazabilirsiniz."
     )
 
 def sales_followup_reply(context, text, brand="keyvadi"):
@@ -3569,7 +3585,7 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
 
         is_keyvadi, is_lisansarena, is_froxy, is_jarvis = account_flags(client_name)
         panel_brand = "JarvisCraft" if is_jarvis else ("Froxy AI" if is_froxy else ("KeyVadi" if is_keyvadi else "LisansArena"))
-        print(f"📥 [{client_name}] ({panel_brand}) DM Alındı: GÖNDEREN={sender_id} (@{uname}) MESAJ='{event.raw_text}'", flush=True)
+        print(f"[{client_name}] ({panel_brand}) DM Alindi: GONDEREN={sender_id} (@{uname}) MESAJ='{event.raw_text}'", flush=True)
         try:
             save_ticket_record(
                 panel_brand,
@@ -3580,19 +3596,26 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                 event.raw_text or '',
             )
         except Exception as exc:
-            print(f"[{client_name}] Panel DM kaydı yazılamadı: {type(exc).__name__}")
+            print(f"[{client_name}] Panel DM kaydi yazilamadi: {type(exc).__name__}")
 
-        # Claim the update before product matching or AI work. Previously the
-        # message was added to PROCESSED_DM_MSG_IDS only after event.reply(). If
-        # Telethon delivered the same update twice while the first handler was
-        # still working (or two Render workers briefly overlapped), both paths
-        # could send the same Shopier link. The in-memory claim closes the local
-        # race; Firestore's create-only claim closes the cross-process race.
+        try:
+            from order_fulfillment import send_admin_push_alert
+            admin_dm_msg = (
+                f"[MUSTERI DM] {panel_brand}\n"
+                f"Kullanici: @{uname} (ID: `{sender_id}`)\n"
+                f"Isim: {fname}\n"
+                f"Mesaj: {event.raw_text}"
+            )
+            asyncio.create_task(send_admin_push_alert(client, admin_dm_msg))
+        except Exception:
+            pass
+
+        # Claim the update before product matching or AI work.
         dm_event_claim_id = await claim_dm_reply_event(client_name, event.chat_id, msg_id)
         if not dm_event_claim_id:
             print(
-                f"⏭️ [{client_name}] Aynı DM olayı daha önce işlendi; "
-                f"mükerrer ürün linki engellendi ({event.chat_id}/{msg_id})."
+                f"[{client_name}] Ayni DM olayi daha once islendi; "
+                f"mukerrer urun linki engellendi ({event.chat_id}/{msg_id})."
             )
             return
 
@@ -3608,7 +3631,6 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         if previous_time and now - previous_time < 90 and normalized_text == previous_text:
             return
 
-        print(f"📥 [{client_name}] DM Alındı: GÖNDEREN={sender_id} (@{getattr(sender, 'username', '')}) MESAJ='{event.raw_text}'")
         dm_intent = record_dm_event(
             client_name, sender_id, event.raw_text or "",
             message_id=getattr(event.message, "id", None),
@@ -3618,6 +3640,48 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         msg_text = (event.raw_text or "").strip().lower()
         if not msg_text:
             return
+
+        # 1. Order Inquiry & Fulfillment Dispatcher
+        from order_fulfillment import extract_order_id, extract_email, fulfill_order_request
+        order_num = extract_order_id(event.raw_text)
+        email_addr = extract_email(event.raw_text)
+        has_order_words = any(w in msg_text for w in (
+            "sipariş", "siparis", "kod", "satın aldım", "satin aldim", "aldım", "aldim",
+            "fatura", "teslim", "ödedim", "odedim", "dekont"
+        ))
+
+        if order_num or (has_order_words and (order_num or email_addr)):
+            fulfillment = await fulfill_order_request(
+                order_num or event.raw_text,
+                tg_user_id=sender_id,
+                tg_username=uname,
+                brand_hint=panel_brand,
+                user_email=email_addr,
+                client_or_bot=client,
+            )
+            if fulfillment and fulfillment.get("message"):
+                await send_dm_reply_with_floodwait(event, fulfillment["message"], client_name)
+                record_event("order_fulfillment_reply", client_name, source="telegram_private")
+                USER_DM_LAST_REPLY_TIME[user_key] = now
+                USER_DM_LAST_REPLY_TEXT[user_key] = normalized_text
+                return
+
+        if email_addr and ("@" in event.raw_text):
+            fulfillment = await fulfill_order_request(
+                email_addr,
+                tg_user_id=sender_id,
+                tg_username=uname,
+                brand_hint=panel_brand,
+                user_email=email_addr,
+                client_or_bot=client,
+            )
+            if fulfillment and fulfillment.get("success") and fulfillment.get("message"):
+                await send_dm_reply_with_floodwait(event, fulfillment["message"], client_name)
+                record_event("order_email_reply", client_name, source="telegram_private")
+                USER_DM_LAST_REPLY_TIME[user_key] = now
+                USER_DM_LAST_REPLY_TEXT[user_key] = normalized_text
+                return
+
         has_keyword = any(kw in msg_text for kw in (
             "adobe", "youtube", "canva", "netflix", "spotify", "gpt", "chatgpt", "gemini",
             "claude", "windows", "office", "duolingo", "capcut", "express", "lisans",
@@ -3625,7 +3689,7 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
             "trendyol", "yemek", "market", "disney", "exxen", "hbo", "nitro", "discord",
             "fc", "fifa", "zula", "hesap", "fiyat", "link", "almak", "satın", "kod", "ücret", "bot", "store", "var mi", "ne kadar",
             "s sport", "ssport", "yemeksepeti", "turna",
-            "coffy", "cofy", "migros", "kupon", "kahve", "3 ay", "1 ay", "aylık", "yıllık", "ortak", "kişisel"
+            "coffy", "cofy", "migros", "kupon", "kahve", "3 ay", "1 ay", "aylık", "yıllık", "ortak", "kişisel", "jarvis", "scraper", "oto-reklam"
         ))
         if not has_keyword and not sales_context and is_obviously_non_sales_dm(event.raw_text):
             print(f"[{client_name}] DM satış dışı görünüyor, otomatik yanıt atlandı.")
@@ -3667,12 +3731,14 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
             return
         
         products = []
-        if is_lisansarena:
+        if is_jarvis:
+            products = load_sales_catalog("jarvis")
+        elif is_lisansarena:
             products = load_sales_catalog("lisansarena")
         elif is_keyvadi or is_froxy:
             products = load_sales_catalog("froxy" if is_froxy else "keyvadi")
 
-        brand_name = "froxy" if is_froxy else ("keyvadi" if is_keyvadi else "lisansarena")
+        brand_name = "jarvis" if is_jarvis else ("froxy" if is_froxy else ("keyvadi" if is_keyvadi else "lisansarena"))
         roadmap_reply = resolve_smart_roadmap_reply(event.raw_text, brand_name)
 
         reply_text = None
@@ -3682,7 +3748,7 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         reserved_product_keys = []
         if roadmap_reply:
             reply_text = roadmap_reply
-            matched_desc = "Smart Yol Çizelgesi (Roadmap)"
+            matched_desc = "Smart Yol Cizelgesi (Roadmap)"
 
         elif products and dm_intent == INTENT_SALES_LEAD:
             candidate_products = match_sales_products(event.raw_text, products, limit=3)
@@ -3692,8 +3758,8 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                 )
                 if not matched_products:
                     print(
-                        f"⏳ [{client_name}] @{getattr(sender, 'username', sender_id)} için "
-                        "ürün bağlantısı bu sohbette daha önce gönderilmiş."
+                        f"[{client_name}] @{getattr(sender, 'username', sender_id)} icin "
+                        "urun baglantisi bu sohbette daha once gonderilmis."
                     )
             
         reply_text = reply_text or None
@@ -3709,55 +3775,66 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                 product["_cta_id"] = os.urandom(8).hex()
             if len(matched_products) == 1:
                 reply_text = (
-                    froxy_product_reply(matched_products[0]) if is_froxy
+                    jarvis_product_reply(matched_products[0]) if is_jarvis
+                    else froxy_product_reply(matched_products[0]) if is_froxy
                     else keyvadi_product_reply(matched_products[0]) if is_keyvadi
                     else lisansarena_product_reply(matched_products[0])
                 )
                 matched_desc = matched_products[0]['title']
             elif is_lisansarena:
-                lines = ["🔍 **LisansArena Güncel Seçenekler ve Fiyatlar:**\n"]
+                lines = ["**LisansArena Guncel Secenekler ve Fiyatlar:**\n"]
                 for p in matched_products[:3]:
                     target = purchase_url(p, "lisansarena", "ad_account_dm")
                     lines.append(
                         f"• **{p['title']}** — **{p.get('price', '')}**\n"
-                        f"  [Mini App'te Aç]({target})"
+                        f"  [Mini App'te Ac]({target})"
                     )
                 reply_text = "\n".join(lines)
                 matched_desc = ", ".join(p['title'] for p in matched_products)
             else:
-                lines = ["🔍 **Mevcut Seçenekler ve Fiyatlar:**\n"]
+                lines = ["**Mevcut Secenekler ve Fiyatlar:**\n"]
                 for i, p in enumerate(matched_products[:3], 1):
                     p = apply_froxy_price_overrides(p) if is_froxy else p
                     target = listing_url(p)
-                    badge_num = ["1️⃣", "2️⃣", "3️⃣"][i - 1]
                     lines.append(
-                        f"{badge_num} **{p['title']}**\n"
-                        f"   💰 Fiyat: **{p['price']}**\n"
-                        f"   👉 [Hemen Satın Al]({target})\n"
+                        f"[{i}] **{p['title']}**\n"
+                        f"   Fiyat: **{p['price']}**\n"
+                        f"   [Hemen Satin Al]({target})\n"
                     )
-                lines.append("⚡ Anında 7/24 teslim edilir. Süre boyunca telafi garantilidir.")
+                lines.append("Aninda 7/24 teslim edilir. Sure boyunca telafi garantilidir.")
                 reply_text = "\n".join(lines)
                 matched_desc = ", ".join(p['title'] for p in matched_products)
         elif candidate_products:
-            # A repeated product is already visible in the conversation. Do
-            # not send a second card or a replacement sentence; the incoming
-            # message was already saved to the panel for human follow-up.
             print(
-                f"⏭️ [{client_name}] @{getattr(sender, 'username', sender_id)} için "
-                "aynı ürün daha önce gönderildi; otomatik yanıt atlandı."
+                f"[{client_name}] @{getattr(sender, 'username', sender_id)} icin "
+                "ayni urun daha once gonderildi; otomatik yanit atlandi."
             )
             return
         elif sales_context or dm_intent != INTENT_SALES_LEAD:
-            # Follow-up, delivery, payment and bargaining questions are handed
-            # to the panel only. This branch used to create the repeated
-            # 'Satış takip sorusu' loop.
+            faq_reply = None
+            if any(w in msg_text for w in ("yıllık", "yillik", "aylık", "aylik", "sure", "süre")):
+                faq_reply = "Paketlerimiz tercihinize gore 1 aylik veya 1 yillik seceneklerle sunulmaktadir. Belirtilen sure boyunca kesintisiz garanti ve telafi mevcuttur."
+            elif any(w in msg_text for w in ("referans", "kanıt", "kanit", "guvenilir", "güvenilir")):
+                faq_reply = "+50'den fazla basarili musteri teslimatimiz mevcuttur. Tum alisverisleriniz Shopier 3D Secure guvencesiyle yapilir ve aninda teslim edilir."
+            elif any(w in msg_text for w in ("hesaba mı", "hesaba mi", "tanımla", "tanimla", "nasıl çalışır", "nasil calisir")):
+                faq_reply = "Urunlerimiz sahsi hesabiniza davet seklinde veya sifir adiniza teslim edilir, sifrenizi paylasmaniza gerek yoktur."
+            elif any(w in msg_text for w in ("stok", "var mı", "var mi")):
+                faq_reply = "Stoklarimiz guncel ve 7/24 aktiftir, Shopier uzerinden aninda siparis verebilirsiniz."
+
+            if faq_reply:
+                await send_dm_reply_with_floodwait(event, faq_reply, client_name)
+                record_event("faq_reply_sent", client_name, source="telegram_private")
+                USER_DM_LAST_REPLY_TIME[user_key] = now
+                USER_DM_LAST_REPLY_TEXT[user_key] = normalized_text
+                return
+
             record_event(
                 "human_handoff", client_name, source="telegram_private",
                 product=context_product_title(sales_context),
                 reason=("followup_after_product" if sales_context else dm_intent),
                 conversation_key=dm_conversation_key,
             )
-            print(f"⏭️ [{client_name}] Ürün sonrası takip mesajı yalnızca panele aktarıldı.")
+            print(f"[{client_name}] Takip mesaji yalnizca panele aktarildi.")
             return
         elif is_lisansarena and has_explicit_sales_intent(event.raw_text):
             if await customer_has_claimed_product(client_name, sender_id, products):
@@ -3766,39 +3843,47 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                     reason="followup_after_product_restart",
                     conversation_key=dm_conversation_key,
                 )
-                print(f"⏭️ [{client_name}] Önceki ürün kartı bulundu; takip mesajı panele bırakıldı.")
+                print(f"[{client_name}] Onceki urun karti bulundu; takip mesaji panele birakildi.")
                 return
             reply_text = (
-                "Merhaba 👋 LisansArena dijital lisans ve ürün mağazamıza hoş geldiniz!\n\n"
-                "Tüm güncel lisans, hesap ve üyelik fiyatlarımızı botumuz üzerinden inceleyebilir ve 7/24 anında satın alabilirsiniz:\n\n"
-                "🤖 Sipariş ve Satın Alma Botu: @LisansArenaBot\n\n"
-                "Aradığınız ürünün adını yazarsanız güncel fiyatını hemen iletebilirim (Örn: Netflix, Spotify, Canva, Windows, CapCut)."
+                "Merhaba, LisansArena dijital lisans ve urun magazamiza hos geldiniz!\n\n"
+                "Tum guncel lisans, hesap ve uyelik fiyatlarimizi botumuz uzerinden inceleyebilir ve 7/24 aninda satin alabilirsiniz:\n\n"
+                "Siparis ve Satin Alma Botu: @LisansArenaBot\n\n"
+                "Aradiginiz urunun adini yazarsaniz guncel fiyatini hemen iletebilirim (Orn: Netflix, Spotify, Canva, Windows, CapCut)."
             )
-            matched_desc = "LisansArena bot yönlendirmesi"
+            matched_desc = "LisansArena bot yonlendirmesi"
         else:
             if not has_explicit_sales_intent(event.raw_text):
-                print(f"[{client_name}] DM satış niyeti içermiyor, AI yanıtı atlandı.")
+                print(f"[{client_name}] DM satis niyeti icermiyor, AI yaniti atlandi.")
                 return
-            if is_keyvadi:
+            if is_jarvis:
                 reply_text = (
-                    "Merhaba 👋 KeyVadi dijital lisans mağazamıza hoş geldiniz!\n\n"
-                    "Tüm güncel ürün ve fiyatlarımızı incelemek için:\n"
-                    "🛍️ [KeyVadi Mağazasını Aç](https://t.me/KeyVadiSatisBot)\n\n"
-                    "Aradığınız ürünün adını yazabilirsiniz (Örn: Canva, Office, Windows, YouTube)."
+                    "Merhaba, JarvisCraft magazamiza hos geldiniz!\n\n"
+                    "Gelistirici paketlerimiz, Telegram Oto-Reklam botumuz ve scraper sistemlerimiz icin:\n"
+                    "Bot: @JarvisCraftsBot\n"
+                    "Magaza: https://www.shopier.com/3051522\n\n"
+                    "Ihtiyaciniz olan bot veya sistemi iletirseniz hemen yardimci olabilirim."
+                )
+            elif is_keyvadi:
+                reply_text = (
+                    "Merhaba, KeyVadi dijital lisans magazamiza hos geldiniz!\n\n"
+                    "Tum guncel urun ve fiyatlarimizi incelemek icin:\n"
+                    "[KeyVadi Magazasini Ac](https://t.me/KeyVadiSatisBot)\n\n"
+                    "Aradiginiz urunun adini yazabilirsiniz (Orn: Canva, Office, Windows, YouTube)."
                 )
             elif is_froxy:
                 reply_text = (
-                    "Merhaba 👋 Froxy AI paneline hoş geldiniz!\n\n"
-                    "Tüm paket ve modelleri Shopier mağazamızdan inceleyebilirsiniz:\n"
-                    "🛒 [Froxy Shopier Mağazasını Aç](https://www.shopier.com/froxyai)\n"
-                    "Aradığınız ürün veya model adını yazabilirsiniz."
+                    "Merhaba, Froxy AI paneline hos geldiniz!\n\n"
+                    "Tum paket ve modelleri Shopier magazamizdan inceleyebilirsiniz:\n"
+                    "[Froxy Shopier Magazasini Ac](https://www.shopier.com/froxyai)\n\n"
+                    "Aradiginiz urun veya model adini yazabilirsiniz."
                 )
             else:
                 reply_text = (
-                    "Aradığınız ürünü doğru bulabilmem için ürün adını ve varsa "
-                    "kişisel/ortak ya da süre tercihinizi yazar mısınız?"
+                    "Aradiginiz urunu dogru bulabilmem icin urun adini ve varsa "
+                    "kisisel/ortak ya da sure tercihinizi yazar misiniz?"
                 )
-            matched_desc = "İnsan desteği gerekli"
+            matched_desc = "Insan destegi gerekli"
             record_event(
                 "human_handoff", client_name, source="telegram_private",
                 reason="no_product_match", conversation_key=dm_conversation_key,

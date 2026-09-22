@@ -1267,6 +1267,28 @@ async def private_message_handler(event):
         await save_ticket_from_message(event, pending)
         return
 
+    # 1b. Check for Shopier Order or Email fulfillment
+    from order_fulfillment import extract_order_id, extract_email, fulfill_order_request
+    order_num = extract_order_id(event.raw_text)
+    email_addr = extract_email(event.raw_text)
+    has_order_words = any(w in (event.raw_text or "").lower() for w in (
+        "sipariş", "siparis", "kod", "satın aldım", "satin aldim", "aldım", "aldim", "fatura"
+    ))
+
+    if order_num or (has_order_words and (order_num or email_addr)):
+        query = order_num or email_addr or event.raw_text.strip()
+        fulfillment = await fulfill_order_request(
+            query,
+            tg_user_id=sender_id,
+            tg_username=uname,
+            brand_hint="lisansarena",
+            user_email=email_addr,
+            client_or_bot=bot,
+        )
+        if fulfillment and fulfillment.get("message"):
+            await event.respond(fulfillment["message"])
+            return
+
     incoming_event_id = getattr(event.message, "id", None)
     dm_intent = record_dm_event(
         "LisansArena", event.sender_id, event.raw_text or "",
@@ -1285,11 +1307,11 @@ async def private_message_handler(event):
     # Acknowledge the customer before support persistence/network work so a
     # generic question never looks unanswered.
     await event.respond(
-        "👋 **LisansArena Müşteri Hizmetlerine Hoş Geldiniz!**\n\n"
-        "Mesajınız destek ekibimize iletildi. Ürünleri hemen inceleyebilir veya canlı destek talebi oluşturabilirsiniz.",
+        "**LisansArena Musteri Hizmetlerine Hos Geldiniz!**\n\n"
+        "Mesajiniz destek ekibimize iletildi. Urunleri hemen inceleyebilir veya canli destek talebi olusturabilirsiniz.",
         buttons=[
-            [Button.url("🛍️ LisansArena Mağazasını Aç", MINI_APP_URL)],
-            [Button.inline("💬 Canlı Destek", b"ticket_support")],
+            [Button.url("LisansArena Magazasini Ac", MINI_APP_URL)],
+            [Button.inline("Canli Destek", b"ticket_support")],
         ],
     )
     asyncio.create_task(

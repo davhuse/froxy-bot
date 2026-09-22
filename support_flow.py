@@ -263,14 +263,14 @@ async def forward_customer_message(bot, event, support_chat_id, brand: str, butt
         last_name = getattr(user, "last_name", "") or ""
         language = "TR"
         message = (
-            f"📩 **[{brand}] Yeni Destek Talebi**\n"
-            f"👤 **Kullanıcı ID:** `{event.sender_id}`\n"
-            f"👤 **Adı Soyadı:** {first_name} {last_name}\n"
-            f"💬 **Kullanıcı Adı:** {username}\n"
-            f"🌐 **Dil/Lang:** {language}\n"
+            f"[{brand}] Yeni Destek Talebi\n"
+            f"Kullanici ID: `{event.sender_id}`\n"
+            f"Adi Soyadi: {first_name} {last_name}\n"
+            f"Kullanici Adi: {username}\n"
+            f"Dil/Lang: {language}\n"
             "--------------------------------------\n\n"
             f"{event.text}\n\n"
-            "*(Bu mesajı yanıtlayarak (Reply) doğrudan kullanıcıya cevap gönderebilirsiniz.)*"
+            "*(Bu mesaji yanitlayarak (Reply) dogrudan kullaniciya cevap gonderebilirsiniz.)*"
         )
         await bot.send_message(support_chat_id, message, buttons=buttons)
         return True
@@ -282,25 +282,32 @@ def greeting_for(brand: str) -> str:
     brand_lower = brand.lower()
     if brand_lower == "keyvadi":
         return (
-            "👋 **KeyVadi Destek Hattına Hoş Geldiniz!**\n\n"
+            "**KeyVadi Destek Hattina Hos Geldiniz!**\n\n"
             "Steam Random Keyler, FC26, Xbox Game Pass, Minecraft Koleksiyon Pelerinleri, "
-            "Netflix 4K ve dijital e-pinler hakkında sormak istediğiniz her şeyi yazabilirsiniz.\n\n"
-            "Mesajınız ekibimize iletildi, en kısa sürede dönüş yapılacaktır."
+            "Netflix 4K ve dijital e-pinler hakkinda sormak istediginiz her seyi yazabilirsiniz.\n\n"
+            "Mesajiniz ekibimize iletildi, en kisa surede donus yapilacaktir."
         )
     if brand_lower in ("lisansarena", "lisans arena"):
         return (
-            "👋 **LisansArena Müşteri Hizmetlerine Hoş Geldiniz!**\n\n"
+            "**LisansArena Musteri Hizmetlerine Hos Geldiniz!**\n\n"
             "Canva Pro, Microsoft Office 365, Windows 10/11 Pro, CapCut Pro ve yapay "
-            "zeka araçlarımız 7/24 otomatik teslimat ve değişim garantimiz altındadır.\n\n"
-            "Talebiniz müşteri temsilcimize başarıyla aktarıldı, en kısa sürede size dönülecektir."
+            "zeka araclarimiz 7/24 otomatik teslimat ve degisim garantimiz altindadir.\n\n"
+            "Talebiniz musteri temsilcimize basariyla aktarildi, en kisa surede size donulecektir."
         )
-    if brand_lower == "froxy ai":
+    if brand_lower in ("froxy", "froxy ai"):
         return (
-            "👋 **Froxy AI Destek Merkezine Hoş Geldiniz!**\n\n"
-            "Froxy AI paketleri, kredi yüklemeleri veya teknik destek talebinizi "
-            "yazın; ekibimiz en kısa sürede size dönüş yapacaktır."
+            "**Froxy AI Destek Merkezine Hos Geldiniz!**\n\n"
+            "Froxy AI paketleri, kredi yuklemeleri veya teknik destek talebinizi "
+            "yazin; ekibimiz en kisa surede size donus yapacaktir."
+        )
+    if brand_lower in ("jarvis", "jarviscraft"):
+        return (
+            "**JarvisCraft Destek Hattina Hos Geldiniz!**\n\n"
+            "Telegram Oto-Reklam & Mesaj Botu, Scraper Botlari, Mini App & Shopier Entegrasyon "
+            "paketleri veya VIP uyelikler hakkinda sormak istediginiz her seyi yazabilirsiniz.\n\n"
+            "Mesajiniz ekibimize iletildi, en kisa surede donus yapilacaktir."
         )
     return (
-        "👋 **Merhaba, Destek Hattımıza Hoş Geldiniz!**\n\n"
-        "İstediğiniz paket ya da ürünü yazın; ekibimiz en kısa sürede size dönüş yapacaktır."
+        "**Merhaba, Destek Hattimiza Hos Geldiniz!**\n\n"
+        "Istediginiz paket ya da urunu yazin; ekibimiz en kisa surede size donus yapacaktir."
     )

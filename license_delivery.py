@@ -231,9 +231,9 @@ def allocate_license(product_title_or_id: str, brand: str = "keyvadi") -> dict[s
         license_key = None
 
     if license_key:
-        delivery_note = "⚡ 7/24 Anında Otomatik Teslim Edildi"
+        delivery_note = "7/24 Aninda Otomatik Teslim Edildi"
         if activation_guide:
-            delivery_note += f"\n📌 {activation_guide}"
+            delivery_note += f"\nRehber: {activation_guide}"
         return {
             "allocated": True,
             "category": cat,

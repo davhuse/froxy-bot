@@ -367,7 +367,7 @@ def claim_document(doc_id, fields_dict=None, quiet=False):
 def claim_remote_document(doc_id, fields_dict=None, quiet=False):
     """Atomically claim a document, falling back to local SQLite when remote is unreachable."""
     if not remote_credentials_configured():
-        return _local_claim(doc_id, fields_dict or {})
+        return None
     res = _commit({
         "update": {
             "name": f"{DOCUMENT_PREFIX}/{doc_id}",

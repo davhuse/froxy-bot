@@ -1103,6 +1103,28 @@ async def message_handler(event):
         user_states[user_id] = None
         return
 
+    # Check for Shopier Order or Email fulfillment
+    from order_fulfillment import extract_order_id, extract_email, fulfill_order_request
+    order_num = extract_order_id(event.text)
+    email_addr = extract_email(event.text)
+    has_order_words = any(w in (event.text or "").lower() for w in (
+        "sipariş", "siparis", "kod", "satın aldım", "satin aldim", "aldım", "aldim", "fatura"
+    ))
+
+    if order_num or (has_order_words and (order_num or email_addr)):
+        query = order_num or email_addr or event.text.strip()
+        fulfillment = await fulfill_order_request(
+            query,
+            tg_user_id=user_id,
+            tg_username=getattr(event.sender, "username", ""),
+            brand_hint="froxy",
+            user_email=email_addr,
+            client_or_bot=bot,
+        )
+        if fulfillment and fulfillment.get("message"):
+            await event.respond(fulfillment["message"])
+            return
+
     if (
         not is_admin_context
         and event.text
@@ -1114,7 +1136,7 @@ async def message_handler(event):
             await event.respond(
                 greeting_for("Froxy AI"),
                 buttons=[
-                    [froxy_app_button("🚀 Froxy AI Uygulamasını Aç")],
+                    [froxy_app_button("Froxy AI Uygulamasini Ac")],
                     [Button.inline(t["support_btn"], b"menu_support")],
                 ],
             )
@@ -1124,7 +1146,7 @@ async def message_handler(event):
                     event,
                     support_chat_id,
                     "Froxy AI",
-                    [[Button.inline("🚫 Kullanıcıyı Engelle (Ban)", f"adm_ban_{user_id}".encode())]],
+                    [[Button.inline("Kullaniciyi Engelle", f"adm_ban_{user_id}".encode())]],
                 )
             )
             record_event(

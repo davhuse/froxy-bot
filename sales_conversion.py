@@ -20,6 +20,7 @@ CATALOG_FILES = {
     "keyvadi": ROOT / "keyvadi_shopier_links.json",
     "froxy": ROOT / "froxy_shopier_links.json",
     "lisansarena": ROOT / "miniapp_lisansarena" / "products_db.json",
+    "jarvis": ROOT / "jarvis_shopier_products.json",
 }
 AUXILIARY_CATALOG_FILES = {}
 SHOPIER_HOSTS = {"shopier.com", "www.shopier.com"}
