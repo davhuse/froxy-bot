@@ -577,8 +577,10 @@ def has_sales_query(message: str) -> bool:
     return bool(_brand_phrases_in(query) or set(query.split()) & {"fiyat", "urun", "satin", "link"})
 
 
-def match_sales_products(message: str, products: list[dict], limit: int = 3) -> list[dict]:
+def match_sales_products(message: str, products: list[dict] | str, limit: int = 3) -> list[dict]:
     """Return one specific match or at most three variants for a query."""
+    if isinstance(products, str):
+        products = load_sales_catalog(products)
     query = normalize_sales_text(message)
     if not query:
         return []

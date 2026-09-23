@@ -682,26 +682,23 @@ def strict_group_safe_copy(group_key, is_keyvadi, is_lisansarena, is_froxy, is_j
         return "\n".join(lines)
     if is_keyvadi:
         lines = [
-            "KeyVadi dijital ürünler",
-            "Canva Pro 1 yıl 49,90 TL",
-            "Gemini Pro 3 ay 59,90 TL | 18 ay 149,90 TL",
-            "ChatGPT Plus kişisel 499,90 TL | ortak 39,90 TL",
-            "S Sport Plus 1 ay 70 TL | Turna 600 TL bilet 100 TL",
-            "Adobe 1 hafta 49,99 TL | 1 ay 119,99 TL",
-            "Windows 10/11 Pro 70 TL | Office 365 1 yıl 70 TL",
-            "YouTube Premium 1 ay 30 TL | Spotify 4 ay 34,99 TL",
-            "Steam oyun & key 60 TL | Minecraft 49,90 TL",
-            "Duolingo Super 12 ay kişisel aktivasyon 199,90 TL | Adobe Express 12 ay kişisel aktivasyon 499,90 TL",
+            "KeyVadi dijital urunler ve lisans",
+            "Canva Pro 1 yil 49,90 TL",
+            "Gemini Pro 18 ay 149,90 TL",
+            "ChatGPT Plus ortak 39,90 TL",
+            "CapCut Pro 30 gun ortak hesap 40,00 TL",
+            "Windows 10/11 Pro 70,00 TL | Office 365 1 yil 70,00 TL",
+            "YouTube Premium 1 ay 30,00 TL | Spotify 4 ay 34,99 TL",
+            "Steam oyun ve VIP key 60,00 TL",
+            "Duolingo Super 12 ay 199,90 TL | Adobe Express 12 ay 499,90 TL",
         ]
         if not is_satcek:
-            lines.insert(4, "Netflix 4K kişisel profil 79,90 TL")
-            lines.insert(5, "Yemeksepeti 360/270 45 TL | 450/350 50 TL")
-            lines.insert(6, "Trendyol Market 800/300 50 TL | Yemek 750/250 50 TL")
-            lines.insert(7, "Positive 110 TL 30 TL | GastroClub %20 20 TL")
-            lines.insert(8, "Garenta %40 20 TL | Enterprise %40 30 TL | ENUYGUN %10 20 TL")
-            lines.insert(9, "Gemini 18 ay kişiye özel | 5 davet alana 1 adet Canva Pro hediye | 149,90 TL")
-        lines.append("+100'den fazla başarılı işlem | Süre boyunca telafi garantisi")
-        lines.append("Kuponlarınız nakit alınır | Sipariş: KeyVadiSatisBot")
+            lines.insert(3, "Netflix 4K kisisel profil 79,90 TL")
+            lines.insert(6, "Yemeksepeti 360/270 45,00 TL | 450/350 50,00 TL")
+            lines.insert(7, "Trendyol Market 800/300 50,00 TL")
+            lines.insert(8, "Turna 600 TL ucak bileti 80,00 TL | Garenta %40 20,00 TL")
+        lines.append("Sure boyunca garanti ve aninda teslimat.")
+        lines.append("Siparis ve tum urunler: KeyVadiSatisBot")
         return "\n".join(lines)
     if is_lisansarena:
         lines = [
@@ -867,7 +864,7 @@ def short_group_message(is_keyvadi, is_lisansarena, is_froxy=False, group_name=N
         except Exception as exc:
             logging.debug("short message rotation unavailable: %s", exc)
     try:
-        with open(filename, 'r', encoding='utf-8') as template_file:
+        with open(filename, 'r', encoding='utf-8-sig') as template_file:
             message = template_file.read().strip()
     except OSError:
         message = TICARET_FORUM_FALLBACKS[brand]
@@ -878,7 +875,8 @@ def short_group_message(is_keyvadi, is_lisansarena, is_froxy=False, group_name=N
 
 
 def process_marketing_features(msg, is_keyvadi, is_lisansarena, is_short=False):
-    # CTA ve mention yönetimi make_policy_compliant tarafından grup politikasına göre güvenle eklenir.
+    if not msg:
+        return ""
     return msg.strip()
 
 
@@ -2196,11 +2194,6 @@ KEYVADI_MESSAGES = [
     os.path.join(MESSAGES_DIR, 'keyvadi_6.txt'),
     os.path.join(MESSAGES_DIR, 'keyvadi_7.txt'),
     os.path.join(MESSAGES_DIR, 'keyvadi_8.txt'),
-    os.path.join(MESSAGES_DIR, 'full_keyvadi_1.txt'),
-    os.path.join(MESSAGES_DIR, 'full_keyvadi_2.txt'),
-    os.path.join(MESSAGES_DIR, 'full_keyvadi_3.txt'),
-    os.path.join(MESSAGES_DIR, 'full_keyvadi_4.txt'),
-    os.path.join(MESSAGES_DIR, 'full_keyvadi_5.txt'),
 ]
 
 LISANSARENA_MESSAGES = [
@@ -2277,6 +2270,25 @@ def pick_message_for_group(grup_name, msg_files, history):
         filtered = [f for f in available if f != last_global]
         if filtered:
             available = filtered
+
+    # Zamana duyarlı dinamik hedefleme (Gündüz üretkenlik/eğitim, Akşam eğlence/oyun)
+    try:
+        from datetime import datetime, timezone, timedelta
+        tr_hour = datetime.now(timezone(timedelta(hours=3))).hour
+        is_keyvadi_pool = any('keyvadi_' in f for f in available)
+        if is_keyvadi_pool:
+            # 09:00 - 18:00 (Mesai/Okul saatleri): Vitrin (1-4) + Egitim/AI (5) + Tasarim (7)
+            if 9 <= tr_hour < 18:
+                preferred = [f for f in available if any(k in f for k in ('keyvadi_1', 'keyvadi_2', 'keyvadi_3', 'keyvadi_4', 'keyvadi_5', 'keyvadi_7'))]
+                if preferred:
+                    available = preferred
+            # 18:00 - 02:00 (Aksam/Gece saatleri): Vitrin (1-4) + Eglence/Oyun (6) + Kupon (8)
+            elif tr_hour >= 18 or tr_hour < 2:
+                preferred = [f for f in available if any(k in f for k in ('keyvadi_1', 'keyvadi_2', 'keyvadi_3', 'keyvadi_4', 'keyvadi_6', 'keyvadi_8'))]
+                if preferred:
+                    available = preferred
+    except Exception:
+        pass
             
     chosen = random.choice(available)
     history[grup_name.lower()] = chosen
@@ -3405,71 +3417,48 @@ async def customer_has_claimed_product(client_name, sender_id, products):
     return False
 
 def keyvadi_product_reply(product, source="ad_account_dm", arm=""):
-    """Send the official Shopier listing without a first-party redirect."""
+    """Send direct product link and price without unnecessary text."""
     target = listing_url(product)
-    
-    reply = (
-        f"**{product['title']}**\n"
-        f"Fiyat: {product.get('price') or 'Urun sayfasinda'}\n"
-        f"7/24 Aninda Teslimat - 3D Secure Guvencesi"
-    )
-    if target:
-        reply += f"\n[Shopier Urununu Ac]({target})"
-    return reply
+    price = product.get('price') or ''
+    price_line = f"\nFiyat: {price}" if price else ""
+    link_line = f"\nSatın Alma Linki: {target}" if target else f"\nSipariş: @KeyVadiSatisBot"
+    return f"{product['title']}{price_line}{link_line}"
 
 
 def froxy_product_reply(product, source="ad_account_dm", arm=""):
     """Return the exact Froxy Shopier product listing."""
     product = apply_froxy_price_overrides(product)
     target = listing_url(product)
-    
-    reply = (
-        f"**{product['title']}**\n"
-        f"Fiyat: {product.get('price', 'Urun sayfasinda')}\n"
-        f"7/24 Aninda Teslimat - 3D Secure Guvencesi"
-    )
-    if target:
-        reply += f"\n[Hemen Satin Al]({target})"
-    return reply
+    price = product.get('price') or ''
+    price_line = f"\nFiyat: {price}" if price else ""
+    link_line = f"\nSatın Alma Linki: {target}" if target else f"\nDetay: @FroxyDestekBOT"
+    return f"{product['title']}{price_line}{link_line}"
 
 
 def lisansarena_product_reply(product, source="ad_account_dm", arm=""):
     """Clean product info with a product-specific Telegram Mini App action."""
-    price = product.get("price") or "Urun sayfasinda"
+    price = product.get("price") or ""
+    price_line = f"\nFiyat: {price}" if price else ""
     product_id = str(product.get("id") or "").strip()
     target = (
         f"https://t.me/LisansArenaBot/app?startapp=p_{product_id}"
         if product_id else "https://t.me/LisansArenaBot/app"
     )
-    reply = (
-        f"**{product['title']}**\n"
-        f"Fiyat: **{price}**\n"
-        f"7/24 Aninda Otomatik Teslimat - 3D Guvenli Odeme\n\n"
-        f"[Urunu Mini App'te Ac]({target})"
-    )
-    return reply
+    return f"{product['title']}{price_line}\nSipariş Linki: {target}"
 
 
 def jarvis_product_reply(product, source="ad_account_dm", arm=""):
     """JarvisCraft official product listing."""
     target = listing_url(product) or product.get("url") or "https://t.me/JarvisCraftsBot"
     price = product.get("price", "150.00")
-    reply = (
-        f"[JARVIS GELISTIRICI VE OTOMASYON PAKETI]\n"
-        f"Urun: {product['title']}\n"
-        f"Fiyat: {price} TL\n"
-        f"7/24 Aninda Teslimat - Shopier 3D Secure Guvencesi\n\n"
-        f"[Hemen Satin Al]({target})\n"
-        f"Bot Yonetimi: @JarvisCraftsBot"
-    )
-    return reply
+    return f"{product['title']}\nFiyat: {price} TL\nSatın Alma Linki: {target}"
 
 
 def duplicate_product_reply(product):
-    return (
-        f"**{product.get('title', 'Bu urun')}** icin satin alma baglantisi "
-        "bu sohbette daha once paylasildi. Farkli bir urunun adini yazabilirsiniz."
-    )
+    target = listing_url(product)
+    if target:
+        return f"{product.get('title', 'Ürün')} Satın Alma Linki:\n{target}"
+    return f"{product.get('title', 'Ürün')} için sipariş adresi: @KeyVadiSatisBot"
 
 def sales_followup_reply(context, text, brand="keyvadi"):
     """Do not recycle an old product card for an ambiguous follow-up."""
@@ -3805,17 +3794,17 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                 reply_text = "\n".join(lines)
                 matched_desc = ", ".join(p['title'] for p in matched_products)
             else:
-                lines = ["**Mevcut Secenekler ve Fiyatlar:**\n"]
-                for i, p in enumerate(matched_products[:3], 1):
+                lines = []
+                for p in matched_products[:3]:
                     p = apply_froxy_price_overrides(p) if is_froxy else p
                     target = listing_url(p)
-                    lines.append(
-                        f"[{i}] **{p['title']}**\n"
-                        f"   Fiyat: **{p['price']}**\n"
-                        f"   [Hemen Satin Al]({target})\n"
-                    )
-                lines.append("Aninda 7/24 teslim edilir. Sure boyunca telafi garantilidir.")
-                reply_text = "\n".join(lines)
+                    price = p.get('price') or ''
+                    price_line = f" ({price})" if price else ""
+                    if target:
+                        lines.append(f"{p['title']}{price_line}\nSatın alma linki: {target}")
+                    else:
+                        lines.append(f"{p['title']}{price_line}")
+                reply_text = "\n\n".join(lines)
                 matched_desc = ", ".join(p['title'] for p in matched_products)
         elif candidate_products:
             print(
@@ -5542,7 +5531,7 @@ async def main():
 
                             msg_history[grup_name.lower()] = chosen_file
                             try:
-                                with open(chosen_file, 'r', encoding='utf-8') as fm:
+                                with open(chosen_file, 'r', encoding='utf-8-sig') as fm:
                                     base_msg = fm.read()
                             except:
                                 base_msg = f"Merhaba! Detaylar icin {brand_default_bot}"

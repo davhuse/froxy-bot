@@ -19,11 +19,11 @@ MODERATION_FILE = os.environ.get("GROUP_MODERATION_FILE", "group_moderation.json
 PLAIN_KEYVADI_CTA = "Sipariş için Telegram aramasına KeyVadiSatisBot yazabilirsiniz."
 PLAIN_FROXY_CTA = "Detaylar için Telegram aramasına FroxyDestekBOT yazabilirsiniz."
 PLAIN_LISANSARENA_CTA = "LisansArena ürün ve teslimat bilgisi için Telegram aramasında LisansArenaBot yazabilirsiniz."
-PLAIN_JARVIS_CTA = "Detaylar ve demo icin Telegram aramasina JarvisCraftsBot yazabilirsiniz."
-VISIBLE_KEYVADI_CTA = "Sipariş ve güncel fiyat: @KeyVadiSatisBot"
-VISIBLE_FROXY_CTA = "Detay ve destek: @FroxyDestekBOT"
+PLAIN_JARVIS_CTA = "Detaylar ve demo için Telegram aramasına JarvisCraftsBot yazabilirsiniz."
+VISIBLE_KEYVADI_CTA = "Sipariş ve Güncel Fiyatlar: @KeyVadiSatisBot"
+VISIBLE_FROXY_CTA = "Detay ve Destek: @FroxyDestekBOT"
 VISIBLE_LISANSARENA_CTA = "7/24 Anında Otomatik Kod & Sipariş: @LisansArenaBot"
-VISIBLE_JARVIS_CTA = "Demo ve siparis icin: @JarvisCraftsBot | Destek: @JarvisCraft"
+VISIBLE_JARVIS_CTA = "Demo ve Sipariş: @JarvisCraftsBot | Destek: @JarvisCraft"
 
 DEFAULT_POLICY = {
     "allow_urls": True,
@@ -412,7 +412,8 @@ def make_policy_compliant(message: str, policy: dict, brand: str) -> tuple[str, 
     # All outbound ads use raw text. This removes legacy deep-links and any
     # TextUrl/Markdown syntax before the visible CTA is added.
     text = re.sub(r"\[([^\]]+)\]\((?:https?://|tg://)[^)]+\)", r"\1", text)
-    text = re.sub(r"(?i)(?:https?://|tg://|t\.me/)\S+", "", text)
+    if not policy.get("allow_urls", True):
+        text = re.sub(r"(?i)(?:https?://|tg://|t\.me/)\S+", "", text)
     text = re.sub(r"(?i)\?start=[A-Za-z0-9_-]+", "", text)
     text = re.sub(r"[*_`~]", "", text)
 

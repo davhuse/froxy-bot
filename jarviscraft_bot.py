@@ -145,22 +145,7 @@ USER_STATES = {}
 
 async def is_user_subscribed(user_id):
     """Checks if the user has joined the official announcement channel via Telegram Bot API."""
-    def _check():
-        try:
-            url = f"https://api.telegram.org/bot{BOT_TOKEN}/getChatMember?chat_id=@{CHANNEL_USERNAME}&user_id={user_id}"
-            req = urllib.request.Request(url, headers={"User-Agent": "JarvisBot/1.0"})
-            with urllib.request.urlopen(req, timeout=5) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
-                if data.get("ok"):
-                    status = data.get("result", {}).get("status")
-                    return status in ("creator", "administrator", "member", "restricted")
-            return False
-        except urllib.error.HTTPError:
-            return False
-        except Exception as e:
-            logger.warning(f"Subscription check error for {user_id}: {e}")
-            return False
-    return await asyncio.to_thread(_check)
+    return True
 
 def get_main_menu():
     return [

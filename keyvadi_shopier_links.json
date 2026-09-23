@@ -1,205 +1,15 @@
 [
   {
-    "id": "51051022",
-    "title": "Adobe Express 12 Ay - Kendi Hesabına Aktivasyon",
-    "price": "499,90 TL",
-    "price_num": 499.9,
-    "url": "https://www.shopier.com/51051022"
-  },
-  {
-    "id": "51051020",
-    "title": "Duolingo Super 12 Ay - Kendi Hesabına Aktivasyon",
-    "price": "199,90 TL",
-    "price_num": 199.9,
-    "url": "https://www.shopier.com/51051020"
-  },
-  {
-    "id": "51024905",
-    "title": "Trendyol Yemek 750/250 İndirim Kodu",
-    "price": "50,00 TL",
-    "price_num": 50.0,
-    "url": "https://www.shopier.com/51024905"
-  },
-  {
-    "id": "51024900",
-    "title": "ENUYGUN Trendyol Plus %10 İndirim",
-    "price": "20,00 TL",
-    "price_num": 20.0,
-    "url": "https://www.shopier.com/51024900"
-  },
-  {
-    "id": "51024901",
-    "title": "Garenta %40 Araç Kiralama İndirimi",
-    "price": "20,00 TL",
-    "price_num": 20.0,
-    "url": "https://www.shopier.com/51024901"
-  },
-  {
-    "id": "51024899",
-    "title": "Enterprise %40 Araç Kiralama İndirimi",
-    "price": "30,00 TL",
-    "price_num": 30.0,
-    "url": "https://www.shopier.com/51024899"
-  },
-  {
-    "id": "51024902",
-    "title": "GastroClub 200 TL Hediye + %20 Puan",
-    "price": "20,00 TL",
-    "price_num": 20.0,
-    "url": "https://www.shopier.com/51024902"
-  },
-  {
-    "id": "51024903",
-    "title": "Positive 2.000 TL Alışverişe 110 TL Puan",
-    "price": "30,00 TL",
-    "price_num": 30.0,
-    "url": "https://www.shopier.com/51024903"
-  },
-  {
-    "id": "51024906",
-    "title": "Yemeksepeti İlk Sipariş 360₺'ye 270₺ İndirim Kodu",
-    "price": "45,00 TL",
-    "price_num": 45.0,
-    "url": "https://www.shopier.com/51024906"
-  },
-  {
-    "id": "50857983",
-    "title": "GPT GO 3 Aylık İndirim Kodu",
-    "price": "150.00 TL",
-    "url": "https://www.shopier.com/50857983"
-  },
-  {
-    "id": "50857984",
-    "title": "Yemeksepeti 500 TL'ye 250 TL İndirim Kodu",
-    "price": "100.00 TL",
-    "url": "https://www.shopier.com/50857984"
-  },
-  {
-    "id": "50857985",
-    "title": "Yemeksepeti 550 TL'ye 200 TL İndirim Kodu",
-    "price": "75.00 TL",
-    "url": "https://www.shopier.com/50857985"
-  },
-  {
-    "id": "50857986",
-    "title": "Trendyol Yemek Alt Limitsiz 200 TL Yemek Kodu",
-    "price": "60.00 TL",
-    "url": "https://www.shopier.com/50857986"
-  },
-  {
-    "id": "50857987",
-    "title": "Uber İlk 2 Yolculuğa %70 İndirim Kodu",
-    "price": "125.00 TL",
-    "url": "https://www.shopier.com/50857987"
-  },
-  {
-    "id": "50857988",
-    "title": "TOD TV Haftalık Taraftar Paketi",
-    "price": "100.00 TL",
-    "url": "https://www.shopier.com/50857988"
-  },
-  {
-    "id": "50857990",
-    "title": "Uber 500+500 TL Alt Limitsiz İndirim Kodu",
-    "price": "85.00 TL",
-    "url": "https://www.shopier.com/50857990"
-  },
-  {
-    "id": "50858094",
-    "title": "Tıkla Gelsin 400 TL'ye 200 TL İndirim Kuponu",
-    "price": "80.00 TL",
-    "url": "https://www.shopier.com/50858094"
-  },
-  {
-    "id": "kv_turna_600",
-    "title": "Turna 600 TL Uçak Bileti İndirim Kuponu",
-    "price": "80.00 TL",
-    "url": "https://www.shopier.com/keyvadi"
-  },
-  {
-    "id": "50641700",
-    "title": "TikTak 1.000 TL Araç Kiralama İndirim Kodu",
-    "price": "30.00 TL",
-    "url": "https://www.shopier.com/50641700"
-  },
-  {
-    "id": "50641701",
-    "title": "FLO 3.000 TL'ye 800 TL İndirim Çeki",
-    "price": "20.00 TL",
-    "url": "https://www.shopier.com/50641701"
-  },
-  {
-    "id": "50641702",
-    "title": "Lumberjack 3.000 TL'ye 800 TL İndirim Çeki",
-    "price": "20.00 TL",
-    "url": "https://www.shopier.com/50641702"
-  },
-  {
-    "id": "50641703",
-    "title": "In Street 4.500 TL'ye 1.250 TL İndirim Çeki",
-    "price": "20.00 TL",
-    "url": "https://www.shopier.com/50641703"
-  },
-  {
-    "id": "50641704",
-    "title": "Enuygun Otobüs Biletinde 200 TL'ye Varan İndirim Kuponu",
-    "price": "20.00 TL",
-    "url": "https://www.shopier.com/50641704"
-  },
-  {
-    "id": "50665156",
-    "title": "Netflix 4K UHD Ortak Profil",
-    "price": "39,99 TL",
-    "url": "https://www.shopier.com/50665156"
-  },
-  {
-    "id": "51025109",
-    "title": "Gemini Pro 18 Ay Kişiye Özel - 5 Davet Alana 1 Adet Canva Pro Hediye",
-    "price": "149.90 TL",
-    "url": "https://www.shopier.com/51025109"
-  },
-  {
-    "id": "50594322",
-    "title": "Coffy 2 Al 1 Öde Kupon Kodu",
-    "price": "45.00 TL",
-    "url": "https://www.shopier.com/50594322"
-  },
-  {
-    "id": "50594323",
-    "title": "Migros 100 TL Alışveriş Bakiye Kodu",
-    "price": "50.00 TL",
-    "url": "https://www.shopier.com/50594323"
-  },
-  {
-    "id": "50576029",
-    "title": "S Sport Plus (1 Aylık)",
-    "price": "70.00 TL",
-    "url": "https://www.shopier.com/50576029"
-  },
-  {
-    "id": "51024908",
-    "title": "Yemeksepeti İlk Sipariş 450₺'ye 350₺ İndirim Kodu",
-    "price": "50,00 TL",
-    "price_num": 50.0,
-    "url": "https://www.shopier.com/51024908"
-  },
-  {
     "id": "47669117",
-    "title": "Netflix 4K Ultra HD (Kişisel Profil)",
+    "title": "Netflix 4K Ultra HD (Kişisel Profil",
     "price": "79,90 TL",
     "url": "https://www.shopier.com/keyvadi/47669117"
   },
   {
-    "id": "50460191",
-    "title": "Minecraft Java & Bedrock + Xbox Ultimate (1 Aylık Ortak)",
-    "price": "49,90 TL",
-    "url": "https://www.shopier.com/50460191"
-  },
-  {
-    "id": "50460265",
-    "title": "Minecraft Java & Bedrock + Xbox Ultimate (3 Aylık Ortak Hesap)",
-    "price": "119,90 TL",
-    "url": "https://www.shopier.com/50460265"
+    "id": "47669105",
+    "title": "YouTube Premium (3 Aylık Kod)",
+    "price": "19,99 TL",
+    "url": "https://www.shopier.com/keyvadi/47669105"
   },
   {
     "id": "47669154",
@@ -214,10 +24,10 @@
     "url": "https://www.shopier.com/keyvadi/47669164"
   },
   {
-    "id": "50460466",
-    "title": "Steam 200$ Değerinde VIP Random Key",
+    "id": "49099013",
+    "title": "Steam 200 Dolar Random Key",
     "price": "24,90 TL",
-    "url": "https://www.shopier.com/50460466"
+    "url": "https://www.shopier.com/keyvadi/49099013"
   },
   {
     "id": "47669109",
@@ -244,10 +54,10 @@
     "url": "https://www.shopier.com/keyvadi/49467632"
   },
   {
-    "id": "50460458",
-    "title": "CapCut Pro 1 Aylık (Kişisel Hesap)",
+    "id": "49467620",
+    "title": "CapCut Pro (1 Aylık Kişisel)",
     "price": "149,90 TL",
-    "url": "https://www.shopier.com/50460458"
+    "url": "https://www.shopier.com/keyvadi/49467620"
   },
   {
     "id": "49362885",
@@ -272,6 +82,12 @@
     "title": "Discord Nitro Server Boost (1 Aylık 14X Takviye Paket)",
     "price": "224,99 TL",
     "url": "https://www.shopier.com/keyvadi/49362807"
+  },
+  {
+    "id": "49362708",
+    "title": "Google Gemini Advanced Pro (3 Aylık Davet Bağlantısı) — İlk Kullanım Garantili",
+    "price": "59,90 TL",
+    "url": "https://www.shopier.com/keyvadi/49362708"
   },
   {
     "id": "49099017",
@@ -370,10 +186,16 @@
     "url": "https://www.shopier.com/keyvadi/48943133"
   },
   {
-    "id": "50460461",
+    "id": "48114807",
+    "title": "XBOX Game Pass Ultimate (3 Aylık Üyelik)",
+    "price": "69,90 TL",
+    "url": "https://www.shopier.com/keyvadi/48114807"
+  },
+  {
+    "id": "48114802",
     "title": "Steam İstediğiniz Oyun (Ortak Hesap)",
     "price": "30,00 TL",
-    "url": "https://www.shopier.com/50460461"
+    "url": "https://www.shopier.com/keyvadi/48114802"
   },
   {
     "id": "48114795",
@@ -400,17 +222,16 @@
     "url": "https://www.shopier.com/keyvadi/47669496"
   },
   {
-    "id": "51024904",
-    "title": "Trendyol Market 800/300 İndirim Kodu",
-    "price": "50,00 TL",
-    "price_num": 50.0,
-    "url": "https://www.shopier.com/51024904"
-  },
-  {
     "id": "47669482",
     "title": "Trendyol Yemek Kuponu (700₺/250₺ İndirim)",
     "price": "49,99 TL",
     "url": "https://www.shopier.com/keyvadi/47669482"
+  },
+  {
+    "id": "47669406",
+    "title": "Scribd Premium (3 Aylık)",
+    "price": "99,99 TL",
+    "url": "https://www.shopier.com/keyvadi/47669406"
   },
   {
     "id": "47669390",
@@ -449,6 +270,12 @@
     "url": "https://www.shopier.com/keyvadi/47669295"
   },
   {
+    "id": "47669271",
+    "title": "Super Grok (3 Aylık Hesap)",
+    "price": "949,99 TL",
+    "url": "https://www.shopier.com/keyvadi/47669271"
+  },
+  {
     "id": "47669248",
     "title": "Super Grok (1 Aylık Hesap)",
     "price": "449,99 TL",
@@ -473,6 +300,288 @@
     "url": "https://www.shopier.com/keyvadi/47669159"
   },
   {
+    "id": "47669136",
+    "title": "Crunchyroll Premium (3 Aylık)",
+    "price": "99,90 TL",
+    "url": "https://www.shopier.com/keyvadi/47669136"
+  },
+  {
+    "id": "47669125",
+    "title": "Exxen Reklamsız (3 Aylık)",
+    "price": "34,99 TL",
+    "url": "https://www.shopier.com/keyvadi/47669125"
+  },
+  {
+    "id": "51051022",
+    "title": "Adobe Express 12 Ay - Kendi Hesabına Aktivasyon",
+    "price": "499,90 TL",
+    "url": "https://www.shopier.com/keyvadi/51051022"
+  },
+  {
+    "id": "51051020",
+    "title": "Duolingo Super 12 Ay - Kendi Hesabına Aktivasyon",
+    "price": "199,90 TL",
+    "url": "https://www.shopier.com/keyvadi/51051020"
+  },
+  {
+    "id": "51025109",
+    "title": "Gemini Pro 18 Ay Kişiye Özel - 5 Davet Alana 1 Adet Canva Pro Hediye",
+    "price": "149,90 TL",
+    "url": "https://www.shopier.com/keyvadi/51025109"
+  },
+  {
+    "id": "51024908",
+    "title": "Yemeksepeti İlk Sipariş 450₺'ye 350₺ İndirim Kodu",
+    "price": "50,00 TL",
+    "url": "https://www.shopier.com/keyvadi/51024908"
+  },
+  {
+    "id": "51024906",
+    "title": "Yemeksepeti İlk Sipariş 360₺'ye 270₺ İndirim Kodu",
+    "price": "45,00 TL",
+    "url": "https://www.shopier.com/keyvadi/51024906"
+  },
+  {
+    "id": "51024905",
+    "title": "Trendyol Yemek 750/250 İndirim Kodu",
+    "price": "50,00 TL",
+    "url": "https://www.shopier.com/keyvadi/51024905"
+  },
+  {
+    "id": "51024904",
+    "title": "Trendyol Market 800/300 İndirim Kodu",
+    "price": "50,00 TL",
+    "url": "https://www.shopier.com/keyvadi/51024904"
+  },
+  {
+    "id": "51024903",
+    "title": "Positive 2.000 TL Alışverişe 110 TL Puan",
+    "price": "30,00 TL",
+    "url": "https://www.shopier.com/keyvadi/51024903"
+  },
+  {
+    "id": "51024902",
+    "title": "GastroClub 200 TL Hediye + %20 Puan",
+    "price": "20,00 TL",
+    "url": "https://www.shopier.com/keyvadi/51024902"
+  },
+  {
+    "id": "51024901",
+    "title": "Garenta %40 Araç Kiralama İndirimi",
+    "price": "20,00 TL",
+    "url": "https://www.shopier.com/keyvadi/51024901"
+  },
+  {
+    "id": "51024900",
+    "title": "ENUYGUN Trendyol Plus %10 İndirim",
+    "price": "20,00 TL",
+    "url": "https://www.shopier.com/keyvadi/51024900"
+  },
+  {
+    "id": "51024899",
+    "title": "Enterprise %40 Araç Kiralama İndirimi",
+    "price": "30,00 TL",
+    "url": "https://www.shopier.com/keyvadi/51024899"
+  },
+  {
+    "id": "50858094",
+    "title": "Tıkla Gelsin 400₺'ye 200₺ İndirim Kuponu",
+    "price": "80,00 TL",
+    "url": "https://www.shopier.com/keyvadi/50858094"
+  },
+  {
+    "id": "50857990",
+    "title": "Uber 500+500 TL Alt Limitsiz İndirim Kodu",
+    "price": "85,00 TL",
+    "url": "https://www.shopier.com/keyvadi/50857990"
+  },
+  {
+    "id": "50857988",
+    "title": "TOD TV Haftalık Taraftar Paketi",
+    "price": "100,00 TL",
+    "url": "https://www.shopier.com/keyvadi/50857988"
+  },
+  {
+    "id": "50857987",
+    "title": "Uber İlk 2 Yolculuğa %70 İndirim Kodu",
+    "price": "125,00 TL",
+    "url": "https://www.shopier.com/keyvadi/50857987"
+  },
+  {
+    "id": "50857986",
+    "title": "Trendyol Yemek Alt Limitsiz 200 TL Yemek Kodu",
+    "price": "60,00 TL",
+    "url": "https://www.shopier.com/keyvadi/50857986"
+  },
+  {
+    "id": "50857985",
+    "title": "Yemeksepeti 550 TL'ye 200 TL İndirim Kodu",
+    "price": "75,00 TL",
+    "url": "https://www.shopier.com/keyvadi/50857985"
+  },
+  {
+    "id": "50857984",
+    "title": "Yemeksepeti 500 TL'ye 250 TL İndirim Kodu",
+    "price": "100,00 TL",
+    "url": "https://www.shopier.com/keyvadi/50857984"
+  },
+  {
+    "id": "50857983",
+    "title": "GPT GO 3 Aylık İndirim Kodu",
+    "price": "150,00 TL",
+    "url": "https://www.shopier.com/keyvadi/50857983"
+  },
+  {
+    "id": "50665156",
+    "title": "Netflix 4K UHD Ortak Profil",
+    "price": "39,99 TL",
+    "url": "https://www.shopier.com/keyvadi/50665156"
+  },
+  {
+    "id": "50641704",
+    "title": "Enuygun Otobüs Biletinde 200 TL'ye Varan İndirim Kuponu",
+    "price": "20,00 TL",
+    "url": "https://www.shopier.com/keyvadi/50641704"
+  },
+  {
+    "id": "50641703",
+    "title": "In Street 4.500 TL'ye 1.250 TL İndirim Çeki",
+    "price": "20,00 TL",
+    "url": "https://www.shopier.com/keyvadi/50641703"
+  },
+  {
+    "id": "50641702",
+    "title": "Lumberjack 3.000 TL'ye 800 TL İndirim Çeki",
+    "price": "20,00 TL",
+    "url": "https://www.shopier.com/keyvadi/50641702"
+  },
+  {
+    "id": "50641701",
+    "title": "FLO 3.000 TL'ye 800 TL İndirim Çeki",
+    "price": "20,00 TL",
+    "url": "https://www.shopier.com/keyvadi/50641701"
+  },
+  {
+    "id": "50641700",
+    "title": "TikTak 1.000 TL Araç Kiralama İndirim Kodu",
+    "price": "30,00 TL",
+    "url": "https://www.shopier.com/keyvadi/50641700"
+  },
+  {
+    "id": "50594323",
+    "title": "Migros 100 TL Alışveriş Bakiye Kodu",
+    "price": "50,00 TL",
+    "url": "https://www.shopier.com/keyvadi/50594323"
+  },
+  {
+    "id": "50594322",
+    "title": "Coffy 2 Kahve Alana 1'i Bedava Kupon Kodu",
+    "price": "45,00 TL",
+    "url": "https://www.shopier.com/keyvadi/50594322"
+  },
+  {
+    "id": "50576029",
+    "title": "S Sport Plus (1 Aylık)",
+    "price": "70,00 TL",
+    "url": "https://www.shopier.com/keyvadi/50576029"
+  },
+  {
+    "id": "50462018",
+    "title": "KeyVadi Cüzdan Bakiye Yükleme (50.00 TL) - KeyVadi",
+    "price": "50,00 TL",
+    "url": "https://www.shopier.com/keyvadi/50462018"
+  },
+  {
+    "id": "50462014",
+    "title": "Froxy Mağaza Cüzdanı (100.00 TL) - KeyVadi",
+    "price": "100,00 TL",
+    "url": "https://www.shopier.com/keyvadi/50462014"
+  },
+  {
+    "id": "50461761",
+    "title": "KeyVadi Cüzdan Bakiye Yükleme (25.00 TL) - Sosyal",
+    "price": "25,00 TL",
+    "url": "https://www.shopier.com/keyvadi/50461761"
+  },
+  {
+    "id": "50460540",
+    "title": "KeyVadi Cüzdan Bakiye Yükleme (27.00 TL) - Ahmet",
+    "price": "27,00 TL",
+    "url": "https://www.shopier.com/keyvadi/50460540"
+  },
+  {
+    "id": "50460466",
+    "title": "Steam 200$ Değerinde VIP Random Key",
+    "price": "24,90 TL",
+    "url": "https://www.shopier.com/keyvadi/50460466"
+  },
+  {
+    "id": "50460461",
+    "title": "Steam İstediğiniz Oyun (Ortak Hesap)",
+    "price": "30,00 TL",
+    "url": "https://www.shopier.com/keyvadi/50460461"
+  },
+  {
+    "id": "50460458",
+    "title": "CapCut Pro (1 Aylık Kişisel)",
+    "price": "149,90 TL",
+    "url": "https://www.shopier.com/keyvadi/50460458"
+  },
+  {
+    "id": "50460265",
+    "title": "Minecraft Java &amp; Bedrock + Xbox Ultimate (3 Aylık Ortak Hesap)",
+    "price": "119,90 TL",
+    "url": "https://www.shopier.com/keyvadi/50460265"
+  },
+  {
+    "id": "50460197",
+    "title": "Minecraft Java &amp; Bedrock + Xbox Ultimate (3 Aylik Ortak)",
+    "price": "119,90 TL",
+    "url": "https://www.shopier.com/keyvadi/50460197"
+  },
+  {
+    "id": "50460191",
+    "title": "Minecraft Java &amp; Bedrock + Xbox Ultimate (1 Aylık)",
+    "price": "49,90 TL",
+    "url": "https://www.shopier.com/keyvadi/50460191"
+  },
+  {
+    "id": "50339605",
+    "title": "KeyVadi Cüzdan Bakiye Yükleme (40.00 TL) - charles",
+    "price": "40,00 TL",
+    "url": "https://www.shopier.com/keyvadi/50339605"
+  },
+  {
+    "id": "50338163",
+    "title": "KeyVadi Cüzdan Bakiye Yükleme (19.90 TL) - KeyVadi",
+    "price": "19,90 TL",
+    "url": "https://www.shopier.com/keyvadi/50338163"
+  },
+  {
+    "id": "50308970",
+    "title": "KeyVadi Cüzdan Bakiye Yükleme (70.00 TL) - Emir~",
+    "price": "70,00 TL",
+    "url": "https://www.shopier.com/keyvadi/50308970"
+  },
+  {
+    "id": "50134499",
+    "title": "KeyVadi Cüzdan Bakiye Yükleme (1000.00 TL) - Sanal Kart Satışı (CC)",
+    "price": "1.000,00 TL",
+    "url": "https://www.shopier.com/keyvadi/50134499"
+  },
+  {
+    "id": "50120340",
+    "title": "KeyVadi Cüzdan Bakiye Yükleme (49.90 TL) - KeyVadi",
+    "price": "49,90 TL",
+    "url": "https://www.shopier.com/keyvadi/50120340"
+  },
+  {
+    "id": "50120233",
+    "title": "KeyVadi Cüzdan Bakiye Yükleme (49.90 TL) - KeyVadi",
+    "price": "49,90 TL",
+    "url": "https://www.shopier.com/keyvadi/50120233"
+  },
+  {
     "id": "50048730",
     "title": "KeyVadi Cüzdan Yükleme (₺50.00) - Test",
     "price": "50,00 TL",
@@ -489,47 +598,5 @@
     "title": "Gemini Pro 18 Aylık Davet (Giriş Garantili)",
     "price": "99,90 TL",
     "url": "https://www.shopier.com/keyvadi/49682367"
-  },
-  {
-    "id": "47669105",
-    "title": "YouTube Premium (3 Aylık Kod)",
-    "price": "19,90 TL",
-    "url": "https://www.shopier.com/keyvadi/47669105"
-  },
-  {
-    "id": "49362708",
-    "title": "Google Gemini Advanced Pro (3 Aylık Davet Bağlantısı) – İlk Kullanım Garantili",
-    "price": "59,90 TL",
-    "url": "https://www.shopier.com/keyvadi/49362708"
-  },
-  {
-    "id": "48114807",
-    "title": "XBOX Game Pass Ultimate (3 Aylık Üyelik)",
-    "price": "69,90 TL",
-    "url": "https://www.shopier.com/keyvadi/48114807"
-  },
-  {
-    "id": "47669125",
-    "title": "Exxen Reklamsız (3 Aylık)",
-    "price": "34,99 TL",
-    "url": "https://www.shopier.com/keyvadi/47669125"
-  },
-  {
-    "id": "47669406",
-    "title": "Scribd Premium (3 Aylık)",
-    "price": "99,99 TL",
-    "url": "https://www.shopier.com/keyvadi/47669406"
-  },
-  {
-    "id": "47669271",
-    "title": "Super Grok (3 Aylık Hesap)",
-    "price": "949,99 TL",
-    "url": "https://www.shopier.com/keyvadi/47669271"
-  },
-  {
-    "id": "47669136",
-    "title": "Crunchyroll Premium (3 Aylık)",
-    "price": "99,90 TL",
-    "url": "https://www.shopier.com/keyvadi/47669136"
   }
 ]

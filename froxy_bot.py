@@ -45,6 +45,7 @@ from announcement_delivery import (
     stock_card_text,
 )
 from bot_runtime_status import invalid_token_error, write_bot_status
+from lead_retargeting import record_lead_interaction, run_retargeting_loop
 
 # Async wrappers for firestore_helper to prevent event loop deadlocks/freezes
 async def async_get_document(doc_id):
@@ -338,14 +339,13 @@ def configure_bot_profile():
 
 def mini_app_markup(label="Magazayi Ac"):
     from telethon import Button
-    # A plain HTTPS URL opens outside Telegram and therefore has no initData.
-    # The bot deep link launches the same Mini App with a signed Telegram
-    # context, while the persistent menu above remains the canonical entry.
     app_launch_url = "https://t.me/KeyVadiSatisBot/app"
     return [
         [Button.url(label, app_launch_url)],
-        [Button.inline("En Cok Satan Firsatlar (Price Drop)", b"menu_top7")],
-        [Button.inline("Kategoriler", b"menu_categories"), Button.inline("Canli Destek", b"menu_support")],
+        [Button.inline("En Cok Satan Firsatlar", b"menu_top7")],
+        [Button.inline("Kategoriler", b"menu_categories"), Button.inline("Urun Ara", b"menu_search_prompt")],
+        [Button.inline("Gunluk Sans Kasasi", b"menu_daily_box"), Button.inline("Garanti ve Guvenlik", b"menu_faq")],
+        [Button.inline("Siparis Sorgula", b"menu_order_status"), Button.inline("Canli Destek", b"menu_support")],
         [Button.inline("Davet & Kazan", b"menu_referral"), Button.inline("Cuzdan / Bakiye", b"menu_topup")],
         [Button.url("KeyVadi Resmi Topluluk Grubu", KEYVADI_GROUP_LINK)]
     ]
@@ -1085,14 +1085,18 @@ async def start_handler(event):
         return
         
     user_states[user_id] = None
+    record_lead_interaction(user_id)
     
     message_text = event.message.message or ""
     ref_id = None
+    prod_key_to_show = None
     if " " in message_text:
         parts = message_text.split(" ", 1)
         param = parts[1].strip()
         if param.startswith("ref_"):
             ref_id = param.replace("ref_", "")
+        elif param.startswith("p_"):
+            prod_key_to_show = param.replace("p_", "")
         cta_data = parse_cta_start_parameter(param)
         if cta_data and cta_data["brand"] == "keyvadi":
             USER_CTA_ATTRIBUTION[user_id] = {
@@ -1137,9 +1141,39 @@ async def start_handler(event):
 
     lang = user_lang_helper.get_user_lang(user_id)
     if not lang:
-        await show_lang_selection(event)
-    else:
-        await show_main_menu(event, user_id)
+        user_lang_helper.set_user_lang(user_id, 'tr')
+        lang = 'tr'
+
+    if prod_key_to_show:
+        product = None
+        cat_key_found = None
+        for ck, cat in CATEGORIES.items():
+            if prod_key_to_show in cat["products"]:
+                product = cat["products"][prod_key_to_show]
+                cat_key_found = ck
+                break
+        
+        if product:
+            t = TEXTS[lang]
+            config = load_config() or {}
+            links = config.get("shopier_links", SHOPIER_LINKS)
+            shopier_url = links.get(prod_key_to_show, product.get("url", "https://www.shopier.com/keyvadi"))
+            price = product['price']
+            desc_text = (
+                f"**{product['title']}**\n\n"
+                f"**{t['price']}:** {price}\n\n"
+                f"{t['product_footer']}"
+            )
+            cat_title = t["cat_title_mapping"].get(cat_key_found, CATEGORIES[cat_key_found]['title'])
+            buttons = [
+                [Button.url(t["buy_btn"], shopier_url)],
+                [Button.inline(f"Geri: {cat_title}", f"cat_{cat_key_found}".encode())],
+                [Button.inline(t["main_menu"], b"menu_main")]
+            ]
+            await event.respond(desc_text, buttons=buttons)
+            return
+
+    await show_main_menu(event, user_id)
 
 @bot.on(events.NewMessage(pattern=r'/lang|/dil'))
 @once_per_command("lang")
@@ -1305,34 +1339,264 @@ async def menu_top7_handler(event):
         pass
     
     text = (
-        "🔥 **Price Drop & Selling Fast Fırsatları!** 🔥\n"
+        "**EN COK SATAN FIRSAT URUNLERI**\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        "En popüler dijital abonelik ve oyun lisansları indirimli fiyatlarla hemen teslim!\n\n"
-        "🍿 **1. Netflix 4K UHD** — 39,99 ₺ (Ortak) / 79,90 ₺ (Kişisel)\n"
-        "🤖 **2. Google Gemini Pro (AI)** — 59,90 ₺ (3 Ay) / 99,90 ₺ (18 Ay)\n"
-        "🎮 **3. Xbox Game Pass Ultimate** — 49,90 ₺ (1 Ay) / 69,90 ₺ (3 Ay)\n"
-        "⛏️ **4. Minecraft Java & Bedrock** — 49,90 ₺ (1 Ay) / 119,90 ₺ (3 Ay)\n"
-        "🎬 **5. CapCut Pro** — 49,90 ₺ (1 Ay Ortak) / 149,90 ₺ (Kişisel)\n"
-        "🦉 **6. Duolingo Super Sınırsız** — 49,90 ₺ (Sınırsız Can & Reklamsız)\n"
-        "📦 **7. Amazon Prime Video** — 9,99 ₺ (Ortak) / 29,90 ₺ (Özel Profil)\n\n"
-        "⚡ *Tüm ürünlerde 7/24 anında otomatik teslimat ve tam süre garantisi mevcuttur.*\n"
-        "👉 *Satın almak istediğiniz ürüne tıklayın:*"
+        "KeyVadi guvencesiyle en cok tercih edilen dijital abonelik ve lisanslar:\n\n"
+        "1. **Netflix 4K UHD** — 39,90 TL (Ortak) / 79,90 TL (Kisisel)\n"
+        "2. **ChatGPT Plus** — 39,90 TL (Ortak Hesap)\n"
+        "3. **Google Gemini Pro** — 59,90 TL (3 Ay) / 149,90 TL (18 Ay)\n"
+        "4. **Canva Pro 1 Yil** — 49,90 TL (Kendi Hesabiniza)\n"
+        "5. **CapCut Pro 30 Gun** — 40,00 TL (Ortak Hesap)\n"
+        "6. **Duolingo Super 12 Ay** — 199,90 TL (Kisisel Aktivasyon)\n"
+        "7. **Xbox Game Pass Ultimate** — 49,90 TL\n\n"
+        "• 7/24 Aninda otomatik teslimat ve kesintisiz garanti.\n"
+        "• Satin almak istediginiz urune asagidan tiklayabilirsiniz:"
     )
     buttons = [
-        [Button.url("🍿 Netflix 4K Satın Al (39,99₺)", "https://www.shopier.com/50665156")],
-        [Button.url("🤖 Gemini Pro Satın Al (59,90₺)", "https://www.shopier.com/keyvadi/49362708")],
-        [Button.url("🎮 Xbox Game Pass Satın Al (49,90₺)", "https://www.shopier.com/keyvadi/49467735")],
-        [Button.url("⛏️ Minecraft Satın Al (49,90₺)", "https://www.shopier.com/50460191")],
-        [Button.url("🎬 CapCut Pro Satın Al (49,90₺)", "https://www.shopier.com/keyvadi/49467632")],
-        [Button.url("🦉 Duolingo Super Satın Al (49,90₺)", "https://www.shopier.com/keyvadi/47669390")],
-        [Button.url("📦 Prime Video Satın Al (9,99₺)", "https://www.shopier.com/keyvadi/49002145")],
-        [Button.url("🛍️ Mağazayı Aç (Mini App)", KEYVADI_MINI_APP_URL)],
-        [Button.inline("↩️ Ana Menü", b"menu_main")]
+        [Button.url("Netflix 4K Satin Al (79,90 TL)", "https://www.shopier.com/50665156")],
+        [Button.url("Gemini Pro 18 Ay (149,90 TL)", "https://www.shopier.com/keyvadi/49362708")],
+        [Button.url("ChatGPT Plus (39,90 TL)", "https://www.shopier.com/keyvadi/49467632")],
+        [Button.url("Canva Pro 1 Yil (49,90 TL)", "https://www.shopier.com/keyvadi/49002145")],
+        [Button.url("CapCut Pro 30 Gun (40,00 TL)", "https://www.shopier.com/keyvadi/49467632")],
+        [Button.url("Magazayi Ac (Tum Urunler)", KEYVADI_MINI_APP_URL)],
+        [Button.inline("Ana Menu", b"menu_main")]
     ]
     if isinstance(event, events.CallbackQuery.Event):
         await safe_event_edit(event, text, buttons=buttons)
     else:
         await event.respond(text, buttons=buttons)
+
+
+@bot.on(events.CallbackQuery(data=b'menu_daily_box'))
+async def menu_daily_box_handler(event):
+    try:
+        await event.answer()
+    except Exception:
+        pass
+    user_id = event.sender_id
+    from daily_rewards import claim_daily_reward
+    result = claim_daily_reward(user_id)
+    
+    if not result["eligible"]:
+        rem_text = result["remaining_text"]
+        last_code = result.get("last_code", "")
+        code_info = f"\nSon kazandiginiz kod: `{last_code}`" if last_code else ""
+        msg = (
+            "**KEYVADI GUNLUK SANS KASASI**\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            "Bugunku sans kasanizi zaten actiniz.\n\n"
+            f"Yeni kasa acilisi icin kalan sure: **{rem_text}**{code_info}\n\n"
+            "Kasanizi her 24 saatte bir acarak surpriz indirim kodlari kazanabilirsiniz."
+        )
+        buttons = [
+            [Button.url("Magazaya Git", KEYVADI_MINI_APP_URL)],
+            [Button.inline("Ana Menu", b"menu_main")]
+        ]
+    else:
+        reward = result["reward"]
+        if reward["win"]:
+            code = reward["code"]
+            msg = (
+                "**KEYVADI GUNLUK SANS KASASI**\n"
+                "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                "**TEBRIKLER! KASADAN ODUL KAZANDINIZ!**\n\n"
+                f"Kazanilan Odul: **{reward['title']}**\n"
+                f"Indirim Kodunuz: `{code}`\n\n"
+                f"{reward['message']}\n\n"
+                "Kodunuzu Shopier sepetinde uygulayarak aninda indirimli satin alabilirsiniz."
+            )
+            buttons = [
+                [Button.url("Indirimle Alisveris Yap", KEYVADI_MINI_APP_URL)],
+                [Button.inline("Kategorileri Gor", b"menu_categories")],
+                [Button.inline("Ana Menu", b"menu_main")]
+            ]
+        else:
+            msg = (
+                "**KEYVADI GUNLUK SANS KASASI**\n"
+                "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                "Bugun kasanizdan sansli kod cikmadi.\n\n"
+                "Uzulmeyin! 24 saat sonra kasaniz yeniden acilacak. Sansinizi yarin tekrar deneyin.\n\n"
+                "Mevcut indirimli urunlerimizi asagidaki butonlardan inceleyebilirsiniz."
+            )
+            buttons = [
+                [Button.url("Magazayi Ac", KEYVADI_MINI_APP_URL)],
+                [Button.inline("Ana Menu", b"menu_main")]
+            ]
+    await safe_event_edit(event, msg, buttons=buttons)
+
+
+@bot.on(events.CallbackQuery(data=b'menu_faq'))
+async def menu_faq_handler(event):
+    try:
+        await event.answer()
+    except Exception:
+        pass
+    msg = (
+        "**KEYVADI GUVENLIK VE GARANTI REHBERI**\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "Musterilerimizin en cok merak ettigi konular:\n\n"
+        "1. **Nasil ve Ne Zaman Teslim Alirim?**\n"
+        "Shopier uzerinden 3D Secure ile odemenizi tamamladiginiz anda lisans bilgileriniz ve kurulum rehberiniz otomatik olarak teslim edilir.\n\n"
+        "2. **Garanti Sartlari Nelerdir?**\n"
+        "Satin aldiginiz tum urunler taahhut edilen sure boyunca tam garanti kapsamindadir. Olası bir teknik sorunda aninda birebir telafi ve degisim yapilir.\n\n"
+        "3. **Ortak ve Kisisel Hesap Farki Nedir?**\n"
+        "Kisisel hesaplar yalnizca size ozel tanimlanir. Ortak hesaplar ise yuksek maliyetli premium servisleri (ChatGPT Plus, CapCut Pro) en uygun fiyatla kullanabilmeniz icin hazirlanmis profillerdir.\n\n"
+        "4. **Sorun Yasarsam Kime Ulasabilirim?**\n"
+        "Canli Destek butonuna basarak 7/24 yoneticilerimize dogrudan mesaj iletebilirsiniz."
+    )
+    buttons = [
+        [Button.inline("Canli Destek Talebi", b"menu_support")],
+        [Button.url("Shopier Magazamiz", "https://www.shopier.com/keyvadi")],
+        [Button.inline("Ana Menu", b"menu_main")]
+    ]
+    await safe_event_edit(event, msg, buttons=buttons)
+
+
+@bot.on(events.CallbackQuery(data=b'menu_search_prompt'))
+async def menu_search_prompt_handler(event):
+    try:
+        await event.answer()
+    except Exception:
+        pass
+    msg = (
+        "**KEYVADI AKILLI URUN ARAMA**\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "Aradiginiz urune aninda ulasmak icin sohbet alanina istediginiz urunun adini yazabilirsiniz.\n\n"
+        "Ornekler:\n"
+        "• `/ara netflix`\n"
+        "• `/ara chatgpt`\n"
+        "• `/ara gemini`\n"
+        "• `/ara canva`\n"
+        "• veya dogrudan `netflix` yazip gonderebilirsiniz.\n\n"
+        "Bot aninda urun kartini ve satin alma baglantisini karsiniza getirecektir."
+    )
+    buttons = [
+        [Button.inline("Kategorileri Gor", b"menu_categories")],
+        [Button.inline("Ana Menu", b"menu_main")]
+    ]
+    await safe_event_edit(event, msg, buttons=buttons)
+
+
+@bot.on(events.CallbackQuery(data=b'menu_order_status'))
+async def menu_order_status_handler(event):
+    try:
+        await event.answer()
+    except Exception:
+        pass
+    user_id = event.sender_id
+    user_states[user_id] = "AWAITING_VERIFY_PAYMENT_INFO"
+    msg = (
+        "**SIPARIS VE LISANS SORGULAMA**\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "Shopier uzerinden verdiginiz siparisin durumunu ogrenmek veya lisans bilgilerinizi almak icin:\n\n"
+        "Lutfen Shopier **Siparis Numaranizi** (ornek: `987654321`) veya satin alirken kullandiginiz **E-posta Adresinizi** bu sohbete yazin.\n\n"
+        "Alternatif olarak `/siparis <siparis_no>` seklinde de yazabilirsiniz.\n\n"
+        "*(Iptal etmek icin /start yazabilirsiniz)*"
+    )
+    buttons = [
+        [Button.inline("Canli Destek", b"menu_support")],
+        [Button.inline("Ana Menu", b"menu_main")]
+    ]
+    await safe_event_edit(event, msg, buttons=buttons)
+
+
+@bot.on(events.NewMessage(pattern=r"(?i)^/(?:ara|search|bul)(?:\s+(.+))?$"))
+async def ara_cmd_handler(event):
+    if not await async_claim_event(event, "keyvadi_sales"):
+        return
+    query = (event.pattern_match.group(1) or "").strip()
+    if not query:
+        msg = (
+            "**KEYVADI URUN ARAMA**\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            "Lutfen aramak istediginiz urun adini belirtin.\n\n"
+            "Kullanim: `/ara <urun adi>`\n"
+            "Ornek: `/ara netflix` veya `/ara canva`"
+        )
+        await event.respond(msg, buttons=[[Button.inline("Kategoriler", b"menu_categories")], [Button.inline("Ana Menu", b"menu_main")]])
+        return
+
+    full_catalog = load_sales_catalog("keyvadi")
+    matched = match_sales_products(query, full_catalog, limit=4)
+    if not matched:
+        msg = (
+            f"**Arama Sonucu: '{query}'**\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            "Aradiginiz kriterlere uygun urun bulunamadi.\n\n"
+            "Tum urunlerimizi gormek icin asagidaki butonlari kullanabilirsiniz:"
+        )
+        buttons = [
+            [Button.url("Magazayi Ac (Mini App)", KEYVADI_MINI_APP_URL)],
+            [Button.inline("Kategoriler", b"menu_categories")],
+            [Button.inline("Canli Destek", b"menu_support")]
+        ]
+        await event.respond(msg, buttons=buttons)
+        return
+
+    if len(matched) == 1:
+        p = matched[0]
+        pid = p.get('id', '')
+        bot_app_url = f"https://t.me/KeyVadiSatisBot/app?startapp=p_{pid}"
+        direct_url = listing_url(p)
+        msg = (
+            f"**{p['title']}**\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"Fiyat: **{p['price']}**\n\n"
+            "• 7/24 Aninda otomatik teslimat\n"
+            "• Tam sure kesintisiz telafi garantisi\n"
+            "• 3D Secure guvenli Shopier odemesi"
+        )
+        buttons = [
+            [Button.url("Shopier ile Guvenle Satin Al", direct_url)],
+            [Button.url("Magazada Ac (Mini App)", bot_app_url)],
+            [Button.inline("Ana Menu", b"menu_main")]
+        ]
+        await event.respond(msg, buttons=buttons)
+    else:
+        msg = f"**'{query}' icin bulunan urunler:**\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        buttons = []
+        for i, p in enumerate(matched[:4]):
+            msg += f"{i+1}. **{p['title']}** — {p['price']}\n"
+            buttons.append([
+                Button.url(f"Satin Al: {p['title'][:22]}", listing_url(p))
+            ])
+        buttons.append([Button.inline("Ana Menu", b"menu_main")])
+        await event.respond(msg, buttons=buttons)
+
+
+@bot.on(events.NewMessage(pattern=r"(?i)^/(?:siparis|order|sorgula)(?:\s+(.+))?$"))
+async def siparis_cmd_handler(event):
+    if not await async_claim_event(event, "keyvadi_sales"):
+        return
+    query = (event.pattern_match.group(1) or "").strip()
+    if not query:
+        user_id = event.sender_id
+        user_states[user_id] = "AWAITING_VERIFY_PAYMENT_INFO"
+        msg = (
+            "**SIPARIS VE LISANS SORGULAMA**\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            "Lutfen Shopier siparis numaranizi veya e-posta adresinizi girin.\n\n"
+            "Kullanim: `/siparis <siparis_no>`\n"
+            "Ornek: `/siparis 987654321`"
+        )
+        await event.respond(msg, buttons=[[Button.inline("Ana Menu", b"menu_main")]])
+        return
+
+    from order_fulfillment import fulfill_order_request
+    fulfillment = await fulfill_order_request(
+        query,
+        tg_user_id=event.sender_id,
+        tg_username=getattr(event.sender, "username", ""),
+        brand_hint="keyvadi",
+        client_or_bot=bot,
+    )
+    if fulfillment and fulfillment.get("message"):
+        await event.respond(fulfillment["message"])
+    else:
+        await event.respond(
+            "Girdiginiz siparis bilgisi sistemde eslesmedi. Lutfen bilgilerinizi kontrol edip tekrar deneyin veya Canli Destek ile iletisime gecin.",
+            buttons=[[Button.inline("Canli Destek", b"menu_support")], [Button.inline("Ana Menu", b"menu_main")]]
+        )
 
 
 @bot.on(events.NewMessage(pattern=r"(?i)^/(?:firsat|firsatlar|deals)(?:@\w+)?$"))
@@ -2074,6 +2338,8 @@ async def product_handler(event):
         await event.answer(err_msg, alert=True)
         return
 
+    record_lead_interaction(user_id, product.get('title'))
+
     config = load_config() or {}
     links = config.get("shopier_links", SHOPIER_LINKS)
     shopier_url = links.get(prod_key, product.get("url", "https://www.shopier.com/keyvadi"))
@@ -2247,6 +2513,43 @@ async def message_handler(event):
     # ── Smart Product Matching for free-text messages ──
     # If user is NOT in any special state and NOT admin, try to match a product
     if event.text and not event.text.startswith('/'):
+        # Hizli urun esleme (kullanici dogrudan netflix, canva, chatgpt gibi urun aradiginda)
+        full_catalog = load_sales_catalog("keyvadi")
+        quick_matches = match_sales_products(event.text.strip(), full_catalog, limit=3)
+        if quick_matches and len(event.text.strip().split()) <= 4:
+            if len(quick_matches) == 1:
+                p = quick_matches[0]
+                pid = p.get('id', '')
+                bot_app_url = f"https://t.me/KeyVadiSatisBot/app?startapp=p_{pid}"
+                direct_url = listing_url(p)
+                p_msg = (
+                    f"**{p['title']}**\n"
+                    "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                    f"Fiyat: **{p['price']}**\n\n"
+                    "• 7/24 Aninda otomatik teslimat\n"
+                    "• Tam sure kesintisiz garanti\n"
+                    "• 3D Secure guvenli Shopier odemesi\n\n"
+                    "Satin almak icin asagidaki baglantiya tiklayabilirsiniz:"
+                )
+                p_buttons = [
+                    [Button.url("Shopier ile Guvenle Satin Al", direct_url)],
+                    [Button.url("Magazada Ac (Mini App)", bot_app_url)],
+                    [Button.inline("Ana Menu", b"menu_main")]
+                ]
+                await event.respond(p_msg, buttons=p_buttons)
+                return
+            else:
+                p_msg = f"**'{event.text.strip()}' ile ilgili urunler:**\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                p_buttons = []
+                for i, p_item in enumerate(quick_matches):
+                    p_msg += f"{i+1}. **{p_item['title']}** — {p_item['price']}\n"
+                    p_buttons.append([
+                        Button.url(f"Satin Al: {p_item['title'][:22]}", listing_url(p_item))
+                    ])
+                p_buttons.append([Button.inline("Ana Menu", b"menu_main")])
+                await event.respond(p_msg, buttons=p_buttons)
+                return
+
         if (
             not is_admin_context
             and user_states.get(user_id) != "AWAITING_SUPPORT"
@@ -2254,7 +2557,7 @@ async def message_handler(event):
         ):
             await event.respond(
                 greeting_for("KeyVadi"),
-                buttons=mini_app_markup("KeyVadi Mağazasını Aç"),
+                buttons=mini_app_markup("KeyVadi Magazasini Ac"),
             )
             asyncio.create_task(
                 forward_customer_message(
@@ -2512,6 +2815,7 @@ if __name__ == '__main__':
                     AnnouncementQueue("keyvadi", "stock"),
                     _send_pending_stock,
                 )
+                asyncio.create_task(run_retargeting_loop(bot))
                 await bot.run_until_disconnected()
             except FloodWaitError as e:
                 write_bot_status(
