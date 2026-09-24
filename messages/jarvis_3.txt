@@ -10,6 +10,5 @@ Hizmetlerimiz:
 * Yuksek Performansli Asenkron Python / Node.js Mimarisi
 
 Bilgilendirme: Siteden siteye ve proje kapsamina gore fiyat degisebilir.
-Shopier Magazasi: https://www.shopier.com/JarvisStore
 Inceleme ve Teklif: @JarvisCraftsBot
 Dogrudan Iletisim: @JarvisCraft

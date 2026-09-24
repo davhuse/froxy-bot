@@ -1,8 +1,8 @@
 [ KEYVADİ | GÜNCEL ÜRÜNLER ] [ 7/24 ]
 KATEGORİ / GÜNCEL STOK VE FİYATLAR
 ────────────────────────────────
-✓ Kod, davet, ortak ve kişisel seçenekler
-✓ Ürün adını yazarak doğru ilanı açtırabilirsiniz
+- Kod, davet, ortak ve kişisel seçenekler
+- Ürün adını yazarak doğru ilanı açtırabilirsiniz
 • Gemini Pro (Davet Linki) | 69,99₺
 • Gemini Pro (1 Yıllık Hesap) | 299,99₺
 • Gemini Pro 18 Ay - Davet Bağlantısı | 99,90₺
@@ -19,8 +19,8 @@ KATEGORİ / GÜNCEL STOK VE FİYATLAR
 • Discord Nitro Server Boost (1 Aylık 14X TakviÜye Paket) | 224,99₺
 • Windows 10/11 Pro Lisans Anahtarı (Key) | 70,00₺
 ────────────────────────────────
-✓ Fiyatlar mağazadaki güncel satış seçenekleridir
-✓ Anlık stok, hızlı teslimat ve canlı destek
+- Fiyatlar mağazadaki güncel satış seçenekleridir
+- Anlık stok, hızlı teslimat ve canlı destek
 Mağaza, anlık stok ve güvenli ödeme: @KeyVadiSatisBot
 • Yemeksepeti İlk Sipariş 360/270: 45₺ | 450/350: 50₺
 • Trendyol Market 800/300: 50₺ | Trendyol Yemek 750/250: 50₺

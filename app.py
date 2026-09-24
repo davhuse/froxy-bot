@@ -252,10 +252,12 @@ def sales_bot_status(brand):
     process = get_process_by_script(script_name)
     process_running = process is not None
     runtime = read_bot_status(brand)
+    process_pid = getattr(process, "pid", None)
     process_matches_status = bool(
         process_running
         and runtime.get("pid")
-        and str(runtime["pid"]) == str(process.pid)
+        and process_pid is not None
+        and str(runtime["pid"]) == str(process_pid)
     )
     telegram_ready = bool(process_matches_status and runtime.get("telegram_ready"))
     state = runtime.get("state") or ("starting" if process_running else "stopped")
