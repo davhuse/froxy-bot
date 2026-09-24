@@ -370,10 +370,10 @@ JOIN_DELAY_MAX_SECONDS = max(
     _safe_join_setting("JOIN_DELAY_MAX_SECONDS", 360, minimum=JOIN_DELAY_MIN_SECONDS),
 )
 MAX_JOINS_PER_CYCLE = _safe_join_setting("MAX_JOINS_PER_CYCLE", 3, minimum=1)
-GROUP_DELAY_MIN_SECONDS = _safe_join_setting("GROUP_DELAY_MIN_SECONDS", 30, minimum=10)
+GROUP_DELAY_MIN_SECONDS = _safe_join_setting("GROUP_DELAY_MIN_SECONDS", 2, minimum=1)
 GROUP_DELAY_MAX_SECONDS = max(
     GROUP_DELAY_MIN_SECONDS,
-    _safe_join_setting("GROUP_DELAY_MAX_SECONDS", 45, minimum=GROUP_DELAY_MIN_SECONDS),
+    _safe_join_setting("GROUP_DELAY_MAX_SECONDS", 5, minimum=GROUP_DELAY_MIN_SECONDS),
 )
 
 # Uyeliginden cikilacak gruplar.  Ban yedigimiz bir grupta uye kalmaya devam
@@ -5839,8 +5839,8 @@ async def main():
                             blast_coordinator.next_target, client_name
                         )
                         if upcoming:
-                            delay = random.randint(15, 25)
-                            print(f"[{client_name}] ⏳ Sonraki grup için {delay} saniye bekleniyor...")
+                            delay = random.randint(1, 3)
+                            print(f"[{client_name}] Sonraki grup icin {delay} saniye bekleniyor...")
                             await asyncio.sleep(delay)
                         continue
 
@@ -5903,7 +5903,7 @@ async def main():
                     )
                     if upcoming:
                         delay = random.randint(GROUP_DELAY_MIN_SECONDS, GROUP_DELAY_MAX_SECONDS)
-                        print(f"[{client_name}] ⏳ Sonraki grup için {delay} saniye bekleniyor...")
+                        print(f"[{client_name}] Sonraki grup icin {delay} saniye bekleniyor...")
                         await asyncio.sleep(delay)
                 
                 # Mesaj geçmişini kaydet
