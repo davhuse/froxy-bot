@@ -72,6 +72,10 @@ TEXT_ALIASES = {
     "chat gpt": "chatgpt",
     "chatgbt": "chatgpt",
     "chat gbt": "chatgpt",
+    "mini app": "miniapp",
+    "miniapp": "miniapp",
+    "reklam botu": "oto reklam",
+    "mesaj botu": "oto reklam",
     "plas": "plus",
     "pluss": "plus",
     "gpt": "chatgpt",
@@ -153,8 +157,8 @@ BRAND_PHRASES = (
     "positive", "gastroclub", "tıkla gelsin", "tikla gelsin",
     "uber", "tod", "gpt go",
     "yemeksepeti 200", "yemeksepeti 360", "yemeksepeti 450", "positive", "gastroclub",
-    "garenta", "enterprise", "enuygun plus", "trendyol market 800", "trendyol yemek 750",
-    "baslangic", "populer", "profesyonel", "gelistirici", "isletme", "kurumsal"
+    "baslangic", "populer", "profesyonel", "gelistirici", "isletme", "kurumsal",
+    "jarvis", "jarviscraft", "scraper", "miniapp", "oto reklam", "vip"
 )
 
 VARIANT_TERMS = {
