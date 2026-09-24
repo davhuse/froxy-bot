@@ -370,11 +370,16 @@ JOIN_DELAY_MAX_SECONDS = max(
     _safe_join_setting("JOIN_DELAY_MAX_SECONDS", 360, minimum=JOIN_DELAY_MIN_SECONDS),
 )
 MAX_JOINS_PER_CYCLE = _safe_join_setting("MAX_JOINS_PER_CYCLE", 3, minimum=1)
-GROUP_DELAY_MIN_SECONDS = _safe_join_setting("GROUP_DELAY_MIN_SECONDS", 2, minimum=1)
+GROUP_DELAY_MIN_SECONDS = _safe_join_setting("GROUP_DELAY_MIN_SECONDS", 12, minimum=1)
 GROUP_DELAY_MAX_SECONDS = max(
     GROUP_DELAY_MIN_SECONDS,
-    _safe_join_setting("GROUP_DELAY_MAX_SECONDS", 5, minimum=GROUP_DELAY_MIN_SECONDS),
+    _safe_join_setting("GROUP_DELAY_MAX_SECONDS", 18, minimum=GROUP_DELAY_MIN_SECONDS),
 )
+
+def get_group_delay():
+    min_d = _safe_join_setting("GROUP_DELAY_MIN_SECONDS", 12, minimum=1)
+    max_d = max(min_d, _safe_join_setting("GROUP_DELAY_MAX_SECONDS", 18, minimum=min_d))
+    return random.randint(min_d, max_d)
 
 # Uyeliginden cikilacak gruplar.  Ban yedigimiz bir grupta uye kalmaya devam
 # etmek, yoneticiler hesabi tekrar fark ettiginde ikinci bir bana yol aciyor.
@@ -5902,7 +5907,7 @@ async def main():
                         blast_coordinator.next_target, client_name
                     )
                     if upcoming:
-                        delay = random.randint(GROUP_DELAY_MIN_SECONDS, GROUP_DELAY_MAX_SECONDS)
+                        delay = get_group_delay()
                         print(f"[{client_name}] Sonraki grup icin {delay} saniye bekleniyor...")
                         await asyncio.sleep(delay)
                 
