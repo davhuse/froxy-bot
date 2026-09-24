@@ -2,7 +2,7 @@
 | Ozel proje ihtiyaclariniza profesyonel yazilim cozumleri.
 |
 | * Ozel Web Sitesi Kodlama:
-|   - Modern Responsive Tasarim (Mobil ve Masastuu tam uyumlu)
+|   - Modern Responsive Tasarim (Mobil ve Masaustu tam uyumlu)
 |   - Python Flask / React / Next.js yuksek hizli mimari
 |   - Shopier / iyzico 3D Guvenli Odeme Entegrasyonu
 |   - Taban Baslangic Fiyati: 799.90 TL (Siteden siteye degisebilir)

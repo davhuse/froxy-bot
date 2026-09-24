@@ -77,7 +77,7 @@
         <div class="vault-hero-banner">
           <div class="hero-shine"></div>
           <div class="hero-content">
-            <span class="hero-tag">⚡ LİSANSARENA RESMİ APP</span>
+            <span class="hero-tag"> LİSANSARENA RESMİ APP</span>
             <h1 class="hero-headline">Yapay Zeka & Lisans Arenası</h1>
             <p class="hero-sub">Güncel Ürünler • 3D Secure Shopier • Ürüne Göre Otomatik veya Manuel Teslimat</p>
             <div class="hero-stats">
@@ -94,13 +94,13 @@
         <div class="search-capsule">
           <svg class="s-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input type="text" id="searchInput" placeholder="Yapay zeka, lisans veya oyun ara..." oninput="handleSearch(this.value)">
-          <button id="clearSearchBtn" class="clear-btn" style="display:none;" onclick="clearSearch()">✕</button>
+          <button id="clearSearchBtn" class="clear-btn" style="display:none;" onclick="clearSearch()"></button>
         </div>
 
         <!-- CATEGORIES BAR -->
         <div class="cyber-tabs-bar">
           <button class="cyber-tab active" data-cat="all" onclick="filterCategory('all', this)">
-            <span class="tab-icon">🔥</span>
+            <span class="tab-icon"></span>
             <span>Tümü</span>
           </button>
           <button class="cyber-tab" data-cat="vitrin" onclick="filterCategory('vitrin', this)">
@@ -108,31 +108,31 @@
             <span>Vitrin</span>
           </button>
           <button class="cyber-tab" data-cat="ai" onclick="filterCategory('ai', this)">
-            <span class="tab-icon">🤖</span>
+            <span class="tab-icon"></span>
             <span>Yapay Zeka</span>
           </button>
           <button class="cyber-tab" data-cat="gaming" onclick="filterCategory('gaming', this)">
-            <span class="tab-icon">🎮</span>
+            <span class="tab-icon"></span>
             <span>Oyun & E-Pin</span>
           </button>
           <button class="cyber-tab" data-cat="design" onclick="filterCategory('design', this)">
-            <span class="tab-icon">🎨</span>
+            <span class="tab-icon"></span>
             <span>Tasarım</span>
           </button>
           <button class="cyber-tab" data-cat="software" onclick="filterCategory('software', this)">
-            <span class="tab-icon">💻</span>
+            <span class="tab-icon"></span>
             <span>Yazılım & Key</span>
           </button>
           <button class="cyber-tab" data-cat="cinema" onclick="filterCategory('cinema', this)">
-            <span class="tab-icon">🎬</span>
+            <span class="tab-icon"></span>
             <span>Sinema & Dizi</span>
           </button>
           <button class="cyber-tab" data-cat="social" onclick="filterCategory('social', this)">
-            <span class="tab-icon">💬</span>
+            <span class="tab-icon"></span>
             <span>Hesap & Sosyal</span>
           </button>
           <button class="cyber-tab" data-cat="coupons" onclick="filterCategory('coupons', this)">
-            <span class="tab-icon">🎟️</span>
+            <span class="tab-icon"></span>
             <span>Kupon & Yakıt</span>
           </button>
         </div>
@@ -166,12 +166,12 @@
               </div>
             </div>
             <button type="button" onclick="manualRefreshData()" style="background: rgba(121,40,202,0.2); border: 1px solid var(--neon-violet); color: #fff; border-radius: 8px; padding: 6px 12px; font-size: 0.76rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px; white-space: nowrap;">
-              🔄 Yenile
+               Yenile
             </button>
           </div>
 
           <div style="background: rgba(121, 40, 202, 0.1); border: 1px solid rgba(121, 40, 202, 0.3); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 0.76rem; color: var(--text-muted); line-height: 1.45; margin-top: 10px;">
-            ⚡ <strong>Anında Teslimat:</strong> Kart veya cüzdanla yapılan satın alımlarda lisans kodunuz saniyeler içinde otomatik olarak bu ekrana tanımlanır. Sayfayı yenilemek için <strong>'🔄 Yenile'</strong> butonuna dokunabilirsiniz.
+             <strong>Anında Teslimat:</strong> Kart veya cüzdanla yapılan satın alımlarda lisans kodunuz saniyeler içinde otomatik olarak bu ekrana tanımlanır. Sayfayı yenilemek için <strong>' Yenile'</strong> butonuna dokunabilirsiniz.
           </div>
 
           <div id="dedicatedOrdersList" class="orders-list-cyber">
@@ -180,7 +180,7 @@
 
           <div class="warranty-card m-top-15">
             <div class="w-head">
-              <span class="w-icon">🛡️</span>
+              <span class="w-icon"></span>
               <strong>Garanti & Telafi Güvencesi</strong>
             </div>
             <p>LisansArena üzerinden satın alınan tüm orijinal lisans ve abonelikler süresi boyunca telafi ve değişim garantimiz altındadır. Kodunuzla ilgili 7/24 canlı destek ekibimize yazabilirsiniz.</p>
@@ -218,16 +218,16 @@
 
             <div class="cart-actions-stack">
               <button class="btn-vault-action" onclick="checkoutCartWithWallet()">
-                <span>💰 Cüzdan Bakiyesiyle Satın Al</span>
+                <span> Cüzdan Bakiyesiyle Satın Al</span>
               </button>
               <button class="btn-secondary" onclick="clearFullCart()">
-                <span>🗑️ Sepeti Temizle</span>
+                <span> Sepeti Temizle</span>
               </button>
             </div>
           </div>
 
           <div id="cartEmptyState" class="cart-empty-state">
-            <div class="empty-icon">🛒</div>
+            <div class="empty-icon"></div>
             <h3>Sepetiniz Henüz Boş</h3>
             <p>Mağazadaki lisansları sepetinize ekleyerek toplu veya tekli sipariş verebilirsiniz.</p>
             <button class="btn-vault-action m-top-15" onclick="switchVaultTab('store')">
@@ -254,7 +254,7 @@
           <div class="wallet-balance-vault">
             <div class="wb-meta">
               <span>MEVCUT ARENA BAKİYENİZ</span>
-              <span class="wb-secure-tag">🛡️ 3D Güvenli</span>
+              <span class="wb-secure-tag"> 3D Güvenli</span>
             </div>
             <div class="wb-sum" id="walletTabBalance">₺0.00</div>
             <div class="wb-footer">
@@ -290,9 +290,9 @@
             <p class="topup-timing-note">Ödemeler doğrulamaya bağlı olarak en geç 10 dakika içinde bakiyenize yansır.</p>
 
             <div class="topup-perks">
-              <div class="perk-item">✔ 3D Secure ile Kredi / Banka Kartı</div>
-              <div class="perk-item">✔ Bakiye ödeme sonrasında anında cüzdana yansır</div>
-              <div class="perk-item">✔ Komisyonsuz ve 7/24 kesintisiz yükleme</div>
+              <div class="perk-item"> 3D Secure ile Kredi / Banka Kartı</div>
+              <div class="perk-item"> Bakiye ödeme sonrasında anında cüzdana yansır</div>
+              <div class="perk-item"> Komisyonsuz ve 7/24 kesintisiz yükleme</div>
             </div>
           </div>
         </div>
@@ -355,27 +355,27 @@
 
           <div class="support-channels-grid">
             <a href="https://t.me/LisansArenaOnline" target="_blank" class="channel-card tg-card">
-              <div class="cc-icon">💬</div>
+              <div class="cc-icon"></div>
               <div class="cc-info">
                 <strong>Canlı Telegram Destek</strong>
                 <span>@LisansArenaOnline • 7/24 Aktif</span>
               </div>
-              <div class="cc-arrow">➔</div>
+              <div class="cc-arrow"></div>
             </a>
 
             <a href="https://www.shopier.com/lisansarena" target="_blank" class="channel-card shopier-card">
-              <div class="cc-icon">🛍️</div>
+              <div class="cc-icon"></div>
               <div class="cc-info">
                 <strong>LisansArena Shopier Mağazası</strong>
                 <span>Resmi 3D Secure Web Mağazası</span>
               </div>
-              <div class="cc-arrow">➔</div>
+              <div class="cc-arrow"></div>
             </a>
           </div>
 
           <div class="warranty-card">
             <div class="w-head">
-              <span class="w-icon">🛡️</span>
+              <span class="w-icon"></span>
               <strong>Ürün Koşulları & Destek</strong>
             </div>
             <p>Teslim türü, hesap uygunluğu ve varsa garanti süresi her ürünün açıklamasında ayrıca belirtilir. Açıklamada bulunmayan bir teslimat veya garanti vaadi verilmez.</p>
@@ -422,7 +422,7 @@
     <div id="productModal" class="cyber-modal">
       <div class="modal-overlay" onclick="closeProductModal()"></div>
       <div class="modal-card">
-        <button class="m-close-btn" onclick="closeProductModal()">✕</button>
+        <button class="m-close-btn" onclick="closeProductModal()"></button>
         <div class="m-img-wrapper">
           <img id="modalImg" src="" alt="Ürün Görseli">
           <span class="m-badge" id="modalBadge">VIP Lisans</span>
@@ -436,9 +436,9 @@
           <p class="m-desc" id="modalDesc">Ürün açıklaması</p>
           
           <div class="m-perks-box">
-            <div class="m-perk">⚡ Teslim türü ürün açıklamasında belirtilir</div>
-            <div class="m-perk">🛡️ Garanti yalnız ürün koşullarında yazan süre için geçerlidir</div>
-            <div class="m-perk">🔒 3D Secure Güvenli Shopier Ödemesi</div>
+            <div class="m-perk"> Teslim türü ürün açıklamasında belirtilir</div>
+            <div class="m-perk"> Garanti yalnız ürün koşullarında yazan süre için geçerlidir</div>
+            <div class="m-perk"> 3D Secure Güvenli Shopier Ödemesi</div>
           </div>
 
           <div class="m-action-buttons">
@@ -448,13 +448,13 @@
             </button>
             <button id="modalShopierBuyBtn" class="btn-buy-shopier" onclick="buyWithDirectShopier()">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-              <span>💳 Kartla Direkt Satın Al</span>
+              <span>Kartla Direkt Satin Al</span>
             </button>
             <button id="modalWalletBuyBtn" class="btn-buy-wallet" onclick="buyWithWalletBalance()">
-              <span>💰 Cüzdan Bakiyesiyle Al (₺0.00)</span>
+              <span>Cuzdan Bakiyesiyle Al (₺0.00)</span>
             </button>
             <a id="modalShopierLink" href="https://www.shopier.com/LisansArena" target="_blank" class="btn-shopier-link" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 9px; font-size: 0.78rem; color: var(--text-muted); text-decoration: none; border-radius: var(--radius-sm); border: 1px dashed rgba(255,255,255,0.18); margin-top: 4px; transition: var(--transition);">
-              <span>🌐 Shopier Ürün Sayfasını Aç ↗</span>
+              <span>Shopier Urun Sayfasini Ac</span>
             </a>
           </div>
         </div>
@@ -469,7 +469,7 @@
         <div class="redirect-radar-container">
           <div class="redirect-radar-ring"></div>
           <div class="redirect-radar-ring-delayed"></div>
-          <div class="redirect-radar-icon">💳</div>
+          <div class="redirect-radar-icon"></div>
         </div>
 
         <div class="redirect-badge-live">
@@ -503,14 +503,14 @@
         </div>
         
         <a id="topupRedirectBtn" href="#" target="_blank" class="btn-buy-shopier">
-          <span>🚀 Ödeme Sayfasına Git / Tekrar Aç</span>
+          <span> Ödeme Sayfasına Git / Tekrar Aç</span>
         </a>
 
         <button class="btn-check-payment-now" onclick="manualCheckPayment()">
-          <span>🔄 Ödemeyi Kontrol Et</span>
+          <span> Ödemeyi Kontrol Et</span>
         </button>
 
-        <button class="btn-secondary m-top-10" onclick="closeTopupRedirectModal()">✕ Arka Planda Bekle / Kapat</button>
+        <button class="btn-secondary m-top-10" onclick="closeTopupRedirectModal()"> Arka Planda Bekle / Kapat</button>
       </div>
     </div>
 
@@ -518,7 +518,7 @@
     <div id="purchaseSuccessModal" class="cyber-modal">
       <div class="modal-overlay" onclick="closePurchaseSuccessModal()"></div>
       <div class="modal-card modal-compact text-center">
-        <div class="success-glow-badge">🎉</div>
+        <div class="success-glow-badge"></div>
         <h2 id="successModalTitle">Siparişiniz Başarıyla Alındı!</h2>
         <p id="successModalDesc">Ödemeniz onaylandı. Lisans anahtarınız ve teslimat bilgileriniz Siparişlerim alanına işlendi.</p>
         
@@ -535,10 +535,10 @@
 
         <div class="success-actions-stack">
           <button class="btn-vault-action" onclick="goToOrdersFromSuccess()">
-            <span>📦 Siparişlerime Git</span>
+            <span> Siparişlerime Git</span>
           </button>
           <button class="btn-secondary m-top-10" onclick="closePurchaseSuccessModal()">
-            <span>🛍️ Alışverişe Devam Et</span>
+            <span> Alışverişe Devam Et</span>
           </button>
         </div>
       </div>

@@ -158,7 +158,8 @@ BRAND_PHRASES = (
     "uber", "tod", "gpt go",
     "yemeksepeti 200", "yemeksepeti 360", "yemeksepeti 450", "positive", "gastroclub",
     "baslangic", "populer", "profesyonel", "gelistirici", "isletme", "kurumsal",
-    "jarvis", "jarviscraft", "scraper", "miniapp", "oto reklam", "vip"
+    "jarvis", "jarviscraft", "scraper", "miniapp", "oto reklam", "vip",
+    "asistan", "sesli asistan"
 )
 
 VARIANT_TERMS = {
@@ -207,7 +208,6 @@ BRAND_PRICE_OVERRIDES = {
     ("froxy", "49489721"): "599,90 TL",
     ("lisansarena", "la_netflix_ozel"): "84,90 TL",
     ("lisansarena", "49002144"): "84,90 TL",
-    ("lisansarena", "la_tiklagelsin_400"): "95,00 TL",
     ("lisansarena", "la_yemeksepeti_500"): "120,00 TL",
     ("lisansarena", "la_yemeksepeti_550"): "90,00 TL",
     ("lisansarena", "la_yemeksepeti_360"): "55,00 TL",
@@ -221,23 +221,6 @@ BRAND_PRICE_OVERRIDES = {
     ("lisansarena", "la_trendyol_yemek_750"): "60,00 TL",
     ("lisansarena", "la_duolingo_super_12_personal"): "249,90 TL",
     ("lisansarena", "la_adobe_express_12_personal"): "599,90 TL",
-    ("lisansarena", "la_trendyol_yemek_200"): "75,00 TL",
-    ("lisansarena", "la_uber_70"): "150,00 TL",
-    ("lisansarena", "la_uber_1000"): "100,00 TL",
-    ("lisansarena", "la_tod_taraftar"): "120,00 TL",
-    ("lisansarena", "la_gpt_go"): "180,00 TL",
-    ("lisansarena", "la_tiktak_1000"): "40,00 TL",
-    ("lisansarena", "la_flo_800"): "30,00 TL",
-    ("lisansarena", "50821443"): "95,00 TL",
-    ("lisansarena", "50821444"): "120,00 TL",
-    ("lisansarena", "50821445"): "90,00 TL",
-    ("lisansarena", "50821446"): "75,00 TL",
-    ("lisansarena", "50821447"): "150,00 TL",
-    ("lisansarena", "50821448"): "100,00 TL",
-    ("lisansarena", "50821449"): "120,00 TL",
-    ("lisansarena", "50821450"): "180,00 TL",
-    ("lisansarena", "50821451"): "40,00 TL",
-    ("lisansarena", "50821452"): "30,00 TL",
 }
 
 STOP_WORDS = {
@@ -535,40 +518,105 @@ def is_allowed_internal_purchase_url(url: str) -> bool:
         return False
 
 
-def is_lisansarena_shopier_url(url: str) -> bool:
-    """Accept only listings owned by the LisansArena Shopier storefront.
+VERIFIED_STORE_SLUGS = {
+    "keyvadi": {"keyvadi", "2509493"},
+    "froxy": {"froxyai", "2943488"},
+    "lisansarena": {"lisansarena", "2988050"},
+    "jarvis": {"jarvisstore", "3051522"},
+}
 
-    Legacy catalog rows used bare Shopier product URLs.  Those IDs are not
-    enough to prove seller ownership and can point at KeyVadi or another
-    account, so LisansArena falls back to its own Mini App until a canonical
-    ``/lisansarena/<id>`` listing is present.
-    """
+
+DISALLOWED_SHOPIER_IDS = {
+    "lisansarena": {
+        "50821443", "50821446", "50821447", "50821448",
+        "50821449", "50821450", "50821451", "50821452"
+    }
+}
+
+FOREIGN_STORE_MARKERS = {
+    "lisansarena": ("/keyvadi/", "/froxyai/", "/jarvisstore/"),
+    "keyvadi": ("/lisansarena/", "/froxyai/", "/jarvisstore/"),
+    "froxy": ("/keyvadi/", "/lisansarena/", "/jarvisstore/"),
+    "jarvis": ("/keyvadi/", "/froxyai/", "/lisansarena/"),
+}
+
+
+def is_brand_verified_shopier_url(brand: str, url: str, product: dict | None = None) -> bool:
+    brand = str(brand).lower()
     try:
         parsed = urlparse(str(url))
-        path = (parsed.path or "").rstrip("/").lower()
-        return (
-            parsed.scheme == "https"
-            and (parsed.hostname or "").lower() in SHOPIER_HOSTS
-            and path.startswith("/lisansarena/")
-            and path.rsplit("/", 1)[-1].isdigit()
-        )
+        if parsed.scheme != "https" or (parsed.hostname or "").lower() not in SHOPIER_HOSTS:
+            return False
+        path = (parsed.path or "").strip("/").lower()
+        if any(marker in f"/{path}/" for marker in FOREIGN_STORE_MARKERS.get(brand, ())):
+            return False
+        parts = path.split("/")
+        if not parts or not parts[0]:
+            return False
+        allowed_slugs = VERIFIED_STORE_SLUGS.get(brand, set())
+        if parts[0] in allowed_slugs:
+            return True
+        prod_id = ""
+        if len(parts) == 1 and parts[0].isdigit():
+            prod_id = parts[0]
+        elif parts[0] == "showproductnew.php":
+            from urllib.parse import parse_qs
+            qs = parse_qs(parsed.query)
+            prod_id = (qs.get("id") or [""])[0]
+        if prod_id and prod_id in DISALLOWED_SHOPIER_IDS.get(brand, set()):
+            return False
+        if prod_id:
+            catalog = load_sales_catalog(brand)
+            for item in catalog:
+                item_shopier_id = str(item.get("shopier_product_id") or item.get("id") or "")
+                item_url = str(item.get("shopier_url") or item.get("url") or "")
+                if prod_id == item_shopier_id or prod_id in item_url:
+                    return True
+        if product and isinstance(product, dict):
+            pid = str(product.get("id") or "")
+            catalog = load_sales_catalog(brand)
+            known_pids = {str(item.get("id") or "") for item in catalog}
+            if pid in known_pids:
+                return True
+        return False
     except Exception:
         return False
 
 
+def is_lisansarena_shopier_url(url: str) -> bool:
+    """Accept only listings verified to belong to LisansArena storefront."""
+    return is_brand_verified_shopier_url("lisansarena", url)
+
+
 def purchase_target_url(brand: str, product: dict) -> str:
     """Return the product-specific Shopier or Mini App purchase target."""
+    brand_key = str(brand).lower()
     target = str(product.get("shopier_url") or product.get("url") or "")
-    if str(brand).lower() == "lisansarena" and any(
-        marker in target.casefold() for marker in ("/keyvadi/", "/froxyai/")
-    ):
-        pid = product.get("id", "")
-        return f"https://t.me/LisansArenaBot/app?startapp=p_{pid}" if pid else "https://t.me/LisansArenaBot/app"
+    pid = product.get("id", "")
+
+    # LisansArena guard: Never send foreign seller links
+    if brand_key == "lisansarena":
+        if target and is_brand_verified_shopier_url("lisansarena", target, product):
+            return target
+        if pid:
+            return f"https://t.me/LisansArenaBot/app?startapp=p_{pid}"
+        return "https://www.shopier.com/lisansarena"
+
+    # Jarvis guard: Ensure JarvisStore link
+    if brand_key == "jarvis":
+        if target and is_brand_verified_shopier_url("jarvis", target):
+            return target
+        return "https://www.shopier.com/JarvisStore"
+
+    # KeyVadi and Froxy
+    if target and is_brand_verified_shopier_url(brand_key, target):
+        return target
     if target and (is_allowed_shopier_url(target) or is_allowed_internal_purchase_url(target)):
         return target
-    if str(brand).lower() == "lisansarena":
-        pid = product.get("id", "")
-        return f"https://t.me/LisansArenaBot/app?startapp=p_{pid}" if pid else "https://t.me/LisansArenaBot/app"
+    if brand_key == "keyvadi":
+        return "https://www.shopier.com/keyvadi"
+    if brand_key == "froxy":
+        return "https://www.shopier.com/froxyai"
     return target
 
 

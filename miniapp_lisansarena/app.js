@@ -744,12 +744,16 @@
     if (modalImg) modalImg.src = `${product.image}?v=8.0`;
     if (modalTitle) modalTitle.textContent = product.title;
     if (modalPrice) modalPrice.textContent = product.price;
-    if (modalDesc) modalDesc.textContent = product.description || product.desc || `${product.title} - LisansArena güvencesiyle anında teslimat.`;
-    if (modalBadge) modalBadge.textContent = (product.showcase || product.is_vitrin) ? "💎 VIP Lisans" : "⚡ Orijinal";
-    if (modalShopierLink) modalShopierLink.href = product.url || product.shopier_url || "https://www.shopier.com/LisansArena";
+    if (modalDesc) modalDesc.textContent = product.description || product.desc || `${product.title} - LisansArena guvencesiyle aninda teslimat.`;
+    if (modalBadge) modalBadge.textContent = (product.showcase || product.is_vitrin) ? "VIP Lisans" : "Orijinal";
+    let targetLink = product.url || product.shopier_url || "https://www.shopier.com/LisansArena";
+    if (targetLink.includes("/keyvadi/") || targetLink.includes("/froxyai/") || targetLink.includes("/JarvisStore/")) {
+      targetLink = "https://www.shopier.com/LisansArena";
+    }
+    if (modalShopierLink) modalShopierLink.href = targetLink;
 
     if (modalWalletBuyBtn) {
-      modalWalletBuyBtn.innerHTML = `<span>💰 Cüzdan Bakiyesiyle Al (₺${Number(product.price_num || 0).toFixed(2)})</span>`;
+      modalWalletBuyBtn.innerHTML = `<span>Cuzdan Bakiyesiyle Al (₺${Number(product.price_num || 0).toFixed(2)})</span>`;
     }
 
     productModal.classList.add('active');
@@ -758,6 +762,18 @@
   window.closeProductModal = function () {
     if (productModal) productModal.classList.remove('active');
   };
+
+  if (modalShopierLink) {
+    modalShopierLink.addEventListener('click', function (e) {
+      e.preventDefault();
+      const targetUrl = modalShopierLink.href || 'https://www.shopier.com/LisansArena';
+      if (tg?.openLink) {
+        tg.openLink(targetUrl);
+      } else {
+        window.open(targetUrl, '_blank');
+      }
+    });
+  }
 
   // Buy Single with Wallet
   window.buyWithWalletBalance = async function () {

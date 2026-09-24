@@ -1390,6 +1390,48 @@ async def message_handler(event):
                     [Button.inline("<-- Geri", b"ad_add_account")]
                 ]
             )
+    else:
+        # DM Auto-Reply & Sales Product Matching
+        try:
+            from sales_conversion import load_sales_catalog, match_sales_products
+            catalog = load_sales_catalog("jarvis")
+            matches = match_sales_products(event.raw_text, catalog, limit=2)
+            if matches:
+                p = matches[0]
+                price_str = p.get("price", "350.00")
+                if not str(price_str).endswith("TL"):
+                    price_str = f"{price_str} TL"
+                msg_text = (
+                    f"**{p.get('title')}**\n"
+                    f"{LINE}\n\n"
+                    f"Fiyat: **{price_str}**\n\n"
+                    f"Detayli bilgi ve aninda teslimat icin Shopier magazamizi kullanabilir veya Mini App uzerinden inceleyebilirsiniz.\n"
+                    f"{LINE}"
+                )
+                buttons = [
+                    [Button.url("Shopier ile Satin Al", p.get("url", "https://www.shopier.com/JarvisStore"))],
+                    [Button.url("Mini App Magazayi Ac", "https://t.me/JarvisCraftsBot/app")],
+                    [Button.url("Canli Destek (@JarvisCraft)", "https://t.me/JarvisCraft")]
+                ]
+                await event.respond(msg_text, buttons=buttons)
+                return
+        except Exception as e:
+            logger.warning(f"Jarvis DM match error: {e}")
+
+        # General greeting / inquiry fallback
+        fallback_text = (
+            f"**JarvisCraft Yapay Zeka & Bot Ekosistemi**\n"
+            f"{LINE}\n\n"
+            f"Mesajiniz alindi. Sesli yapay zeka asistanimiz, Telegram 7/24 oto-reklam motorumuz ve tum ozel yazilim cozumlerimizi incelemek icin asagidaki butonlari kullanabilirsiniz.\n\n"
+            f"Resmi Destek: @JarvisCraft\n"
+            f"{LINE}"
+        )
+        buttons = [
+            [Button.url("Mini App Magazayi Ac", "https://t.me/JarvisCraftsBot/app")],
+            [Button.inline("Oto-Reklam Motoru", b"menu_ad_engine")],
+            [Button.url("Canli Destek (@JarvisCraft)", "https://t.me/JarvisCraft")]
+        ]
+        await event.respond(fallback_text, buttons=buttons)
 
 # -------------------------------------------------------------
 # User Commands Shortcuts
