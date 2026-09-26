@@ -1,14 +1,14 @@
-OZEL YAZILIM, WEB SITESI VE TELEGRAM BOT GELISTIRME
+ÖZEL YAZILIM, WEB SİTESİ VE TELEGRAM BOT GELİŞTİRME
 --------------------------------------------------
 Projenizi anahtar teslim profesyonel mimariyle kodluyoruz.
-Kurumsal web sitesi, e-ticaret, Telegram magaza botu ve ozel otomasyonlar.
+Kurumsal web sitesi, e-ticaret, Telegram mağaza botu ve özel otomasyonlar.
 
 Hizmetlerimiz:
-* Ozel Web Sitesi Kodlama: React, Next.js, Flask, Shopier 3D odeme (Taban Fiyat: 799.90 TL)
-* Ozel Telegram Botu: Magaza, uyelik, grup yonetimi, yapay zeka (Taban Fiyat: 499.90 TL)
-* 7/24 Kesintisiz Bulut Kurulumu ve 1 Yil Teknik Destek
-* Yuksek Performansli Asenkron Python / Node.js Mimarisi
+* Özel Web Sitesi Kodlama: React, Next.js, Flask, Shopier 3D ödeme (Taban Fiyat: 799.90 TL)
+* Özel Telegram Botu: Mağaza, üyelik, grup yönetimi, yapay zekâ (Taban Fiyat: 499.90 TL)
+* 7/24 Kesintisiz Bulut Kurulumu ve 1 Yıl Teknik Destek
+* Yüksek Performanslı Asenkron Python / Node.js Mimarisi
 
-Bilgilendirme: Siteden siteye ve proje kapsamina gore fiyat degisebilir.
-Inceleme ve Teklif: @JarvisCraftsBot
-Dogrudan Iletisim: @JarvisCraft
+Bilgilendirme: Siteden siteye ve proje kapsamına göre fiyat değişebilir.
+İnceleme ve Teklif: @JarvisCraftsBot
+Doğrudan İletişim: @habil2121

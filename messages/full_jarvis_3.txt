@@ -1,16 +1,16 @@
-+-- JARVISCRAFT // KURUMSAL YAZILIM VE BOT COZUMLERI --+
-| Ozel proje ihtiyaclariniza profesyonel yazilim cozumleri.
++-- JARVISCRAFT // KURUMSAL YAZILIM VE BOT ÇÖZÜMLERİ --+
+| Özel proje ihtiyaçlarınıza profesyonel yazılım çözümleri.
 |
-| * Ozel Web Sitesi Kodlama:
-|   - Modern Responsive Tasarim (Mobil ve Masaustu tam uyumlu)
-|   - Python Flask / React / Next.js yuksek hizli mimari
-|   - Shopier / iyzico 3D Guvenli Odeme Entegrasyonu
-|   - Taban Baslangic Fiyati: 799.90 TL (Siteden siteye degisebilir)
+| * Özel Web Sitesi Kodlama:
+|   - Modern Responsive Tasarım (Mobil ve Masaüstü tam uyumlu)
+|   - Python Flask / React / Next.js yüksek hızlı mimari
+|   - Shopier / iyzico 3D Güvenli Ödeme Entegrasyonu
+|   - Taban Başlangıç Fiyatı: 799.90 TL (Siteden siteye değişebilir)
 |
-| * Ozel Telegram Bot Kodlama:
-|   - Telethon / Aiogram tabanli asenkron altyapi
-|   - Magaza, kanal/grup yonetimi ve yapay zeka entegrasyonu
-|   - Taban Baslangic Fiyati: 499.90 TL (Projeden projeye degisebilir)
+| * Özel Telegram Bot Kodlama:
+|   - Telethon / Aiogram tabanlı asenkron altyapı
+|   - Mağaza, kanal/grup yönetimi ve yapay zekâ entegrasyonu
+|   - Taban Başlangıç Fiyatı: 499.90 TL (Projeden projeye değişebilir)
 |
-| 7/24 Kesintisiz Calisma | 1 Yil Teknik Garanti | Aninda Teklif
-+-- Teklif Almak Icin: @JarvisCraftsBot | Destek: @JarvisCraft --+
+| 7/24 Kesintisiz Çalışma | 1 Yıl Teknik Garanti | Anında Teklif
++-- Teklif Almak İçin: @JarvisCraftsBot | Destek: @habil2121 --+

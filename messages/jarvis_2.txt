@@ -1,15 +1,15 @@
-TELEGRAM OTO-REKLAM VE MESAJ MOTORU // 7/24 KESINTISIZ TANITIM
+TELEGRAM OTO-REKLAM VE MESAJ MOTORU // 7/24 KESİNTİSİZ TANITIM
 --------------------------------------------------
-Turkiye'nin en aktif 65+ ticaret ve alim-satim grubuna otomatik rotasyon.
-Urunlerinizi, hizmetlerinizi veya kanallarinizi 7/24 kesintisiz tanitin.
+Türkiye'nin en aktif 65+ ticaret ve alım-satım grubuna otomatik rotasyon.
+Ürünlerinizi, hizmetlerinizi veya kanallarınızı 7/24 kesintisiz tanıtın.
 
-Gelismis Sistem Ozellikleri:
-* Coklu Hesap (Multi-Session): Hesaplar arasi otomatik rotasyon
-* Akilli Anti-Ban ve Jitter: Spam ve floodwait korumali calisma
-* Kategori Secimi: Ticaret, Sohbet, Borsa, Teknoloji ve Ozel Grup havuzu
-* Anlik Iletim Raporu: Basarili gonderimlerde anlik Telegram bildirimi
+Gelişmiş Sistem Özellikleri:
+* Çoklu Hesap (Multi-Session): Hesaplar arası otomatik rotasyon
+* Akıllı Anti-Ban ve Jitter: Spam ve floodwait korumalı çalışma
+* Kategori Seçimi: Ticaret, Sohbet, Borsa, Teknoloji ve Özel Grup havuzu
+* Anlık İletim Raporu: Başarılı gönderimlerde anlık Telegram bildirimi
 
-Ucretsiz Standart Plan: Gunde 25 mesaja kadar suresiz ucretsiz.
-VIP Sinirsiz Planlar: 150 TL'den baslayan fiyatlarla.
-Bot Uzerinden Baslatin: @JarvisCraftsBot
-Gelistirici ve Destek: @JarvisCraft
+Ücretsiz Standart Plan: Günde 25 mesaja kadar süresiz ücretsiz.
+VIP Sınırsız Planlar: 150 TL'den başlayan fiyatlarla.
+Bot Üzerinden Başlatın: @JarvisCraftsBot
+Geliştirici ve Destek: @habil2121

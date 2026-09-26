@@ -1,24 +1,24 @@
-+-- JARVISCRAFT // YAZILIM VE OTOMASYON KATALOGU --+
-| Tum yazilim paketleri, botlar ve otomasyon cozumleri
++-- JARVISCRAFT // YAZILIM VE OTOMASYON KATALOĞU --+
+| Tüm yazılım paketleri, botlar ve otomasyon çözümleri
 |
-| 1. J.A.R.V.I.S. Sesli Masaustu AI Asistani ..... 350,00 TL
-|    - Windows portable tek tikla calisan .exe
-|    - Ultra gercekci Turkce ses ve 0 ms Esc ile susturma
-|    - Canli web arama ve gorev yonetimi
+| 1. J.A.R.V.I.S. Sesli Masaüstü AI Asistanı ..... 350,00 TL
+|    - Windows portable tek tıkla çalışan .exe
+|    - Ultra gerçekçi Türkçe ses ve 0 ms Esc ile susturma
+|    - Canlı web arama ve görev yönetimi
 |
 | 2. Telegram Oto-Reklam ve Mesaj Motoru .......... 450,00 TL
 |    - 65+ ticaret grubuna 7/24 kesintisiz otomatik rotasyon
-|    - Coklu hesap baglama ve anti-flood korumasi
+|    - Çoklu hesap bağlama ve anti-flood koruması
 |
 | 3. E-Ticaret ve Fiyat Takip Scraper ............. 300,00 TL
-|    - Trendyol / Yemeksepeti kupon ve fiyat alarmlari
-|    - Playwright Cloudflare koruma gecisi
+|    - Trendyol / Yemeksepeti kupon ve fiyat alarmları
+|    - Playwright Cloudflare koruma geçişi
 |
 | 4. Full-Stack Mini App + Shopier Kiti .......... 400,00 TL
 |    - Flask backend, modern frontend ve otomatik teslimat
 |
-| 5. Ozel Web Sitesi Gelistirme .................. 799,90 TL'den baslar
-| 6. Ozel Telegram Bot Gelistirme ................ 499,90 TL'den baslar
+| 5. Özel Web Sitesi Geliştirme .................. 799,90 TL'den başlar
+| 6. Özel Telegram Bot Geliştirme ................ 499,90 TL'den başlar
 |
-| Guvenli Shopier Altyapisi | Aninda Teslimat | 7/24 Destek
-+-- Shopier Magazasi ve Demo: @JarvisCraftsBot | Destek: @JarvisCraft --+
+| Güvenli Shopier Altyapısı | Anında Teslimat | 7/24 Destek
++-- Shopier Mağazası ve Demo: @JarvisCraftsBot | Destek: @habil2121 --+

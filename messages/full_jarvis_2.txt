@@ -1,25 +1,25 @@
-+-- JARVISCRAFT // VIP ABONELIKLER VE OTO-MESAJ MOTORU --+
-| Reklamlarinizi 65+ aktif ticaret grubunda 7/24 otomatik yayinlayin.
++-- JARVISCRAFT // VIP ABONELİKLER VE OTO-MESAJ MOTORU --+
+| Reklamlarınızı 65+ aktif ticaret grubunda 7/24 otomatik yayınlayın.
 |
 | Planlar ve Avantajlar:
 |
-| * Standart Plan (Ucretsiz):
-|   - 1 Adet Gonderici Hesap
-|   - 60 Dakika Standart Guvenli Dongu
-|   - 4 Hazir Kategori Havuzu
-|   - Gunluk 25 Adet Gonderi Limiti
+| * Standart Plan (Ücretsiz):
+|   - 1 Adet Gönderici Hesap
+|   - 60 Dakika Standart Güvenli Döngü
+|   - 4 Hazır Kategori Havuzu
+|   - Günlük 25 Adet Gönderi Limiti
 |
-| * Haftalik VIP Plan (150 TL / Hafta):
-|   - 2 Adet Gonderici Hesap Slotu (Otomatik Rotasyon)
-|   - 30-45 Dk Esnek Hizli Mod
-|   - Sinirsiz Ozel Grup ve Kanal Baglama
-|   - Anlik Telegram DM Bildirimleri
+| * Haftalık VIP Plan (150 TL / Hafta):
+|   - 2 Adet Gönderici Hesap Slotu (Otomatik Rotasyon)
+|   - 30-45 Dk Esnek Hızlı Mod
+|   - Sınırsız Özel Grup ve Kanal Bağlama
+|   - Anlık Telegram DM Bildirimleri
 |
-| * Aylik Sinirsiz VIP Plan (350 TL / Ay):
-|   - 5 Adet Eszamanli Gonderici Hesap (Multi-Session)
-|   - Tamamen Sinirsiz Gunluk Gonderim (Kota Yok)
-|   - Gelismis Anti-Ban ve FloodGuard Pro
-|   - Tum Hazir Havuzlar + Sinirsiz Ozel Gruplar
-|   - Oncelikli Sunucu Kuyrugu ve 7/24 Birebir Destek
+| * Aylık Sınırsız VIP Plan (350 TL / Ay):
+|   - 5 Adet Eşzamanlı Gönderici Hesap (Multi-Session)
+|   - Tamamen Sınırsız Günlük Gönderim (Kota Yok)
+|   - Gelişmiş Anti-Ban ve FloodGuard Pro
+|   - Tüm Hazır Havuzlar + Sınırsız Özel Gruplar
+|   - Öncelikli Sunucu Kuyruğu ve 7/24 Birebir Destek
 |
-+-- Bilgi ve Siparis: @JarvisCraftsBot | Destek: @JarvisCraft --+
++-- Bilgi ve Sipariş: @JarvisCraftsBot | Destek: @habil2121 --+

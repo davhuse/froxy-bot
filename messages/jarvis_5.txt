@@ -1,13 +1,13 @@
-FULL-STACK TELEGRAM MINI APP VE SHOPIER KITI
+FULL-STACK TELEGRAM MINI APP VE SHOPIER KİTİ
 --------------------------------------------------
-Kendi Telegram Mini App magazanizi dakikalar icinde kurun ve calistirin.
+Kendi Telegram Mini App mağazanızı dakikalar içinde kurun ve çalıştırın.
 
-Paket Icerigi:
-* Flask Backend + Modern Vite Frontend Altyapisi
-* Shopier 3D Guvenli Odeme ve Otomatik Urun Teslimat Webhook'lari
-* Render / Railway / Vercel Tek Tikla Calisan Dagitim Yapisi
-* Mobil Uyumlu Cyber Arayuz Tasarimi
+Paket İçeriği:
+* Flask Backend + Modern Vite Frontend Altyapısı
+* Shopier 3D Güvenli Ödeme ve Otomatik Ürün Teslimat Webhook'ları
+* Render / Railway / Vercel Tek Tıkla Çalışan Dağıtım Yapısı
+* Mobil Uyumlu Cyber Arayüz Tasarımı
 
 Fiyat: 400 TL (Tam Kaynak Kod)
-Bot Uzerinden Inceleyin: @JarvisCraftsBot
-Gelistirici Iletisim: @JarvisCraft
+Bot Üzerinden İnceleyin: @JarvisCraftsBot
+Geliştirici İletişim: @habil2121

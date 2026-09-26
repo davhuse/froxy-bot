@@ -16,7 +16,13 @@ import logging
 class _TelethonNoiseFilter(logging.Filter):
     def filter(self, record):
         msg = record.getMessage()
-        if "TypeNotFoundError" in msg or "Unhandled error while processing msgs" in msg:
+        if any(noise in msg for noise in (
+            "TypeNotFoundError",
+            "Unhandled error while processing msgs",
+            "PersistentTimestampOutdatedError",
+            "Persistent timestamp outdated",
+            "GetChannelDifferenceRequest",
+        )):
             return False
         if record.exc_info and record.exc_info[0]:
             if record.exc_info[0].__name__ in ("TypeNotFoundError", "PersistentTimestampOutdatedError"):
@@ -24,10 +30,13 @@ class _TelethonNoiseFilter(logging.Filter):
         return True
 
 _noise_filter = _TelethonNoiseFilter()
+logging.getLogger('telethon').addFilter(_noise_filter)
 logging.getLogger('telethon.client.updates').setLevel(logging.ERROR)
 logging.getLogger('telethon.client.updates').addFilter(_noise_filter)
 logging.getLogger('telethon.network.mtprotosender').setLevel(logging.ERROR)
 logging.getLogger('telethon.network.mtprotosender').addFilter(_noise_filter)
+logging.getLogger('telethon.client.telegrambaseclient').setLevel(logging.ERROR)
+logging.getLogger('telethon.client.telegrambaseclient').addFilter(_noise_filter)
 
 
 from blast_scheduler import BlastCoordinator, is_recent_message_from_account
@@ -902,24 +911,12 @@ ACCOUNT_GROUP_BLOCKS_FILE = 'account_group_blocks.json'
 # seed in code makes the decision survive Render's ephemeral filesystem while
 # leaving KeyVadi/LisansArena free to be evaluated independently.
 SEEDED_ACCOUNT_GROUP_BLOCKS = {
-    ('FroxyOnline', 'ceksatkupon'): 'UserBannedInChannel',
-    ('FroxyOnline', 'kuponceking'): 'ChatWriteForbidden',
-    ('FroxyOnline', 'kod_kupon_alsat'): 'UserBannedInChannel',
-    ('FroxyOnline', 'kodkuponcek'): 'UserBannedInChannel',
-    ('FroxyOnline', 'kupongrupta'): 'ChatWriteForbidden',
     ('KeyVadiOnline', 'ceksat'): 'UserBannedInChannel',
+    ('FroxyOnline', 'kod_kupon_alsat'): 'UserBannedInChannel',
     ('KeyVadiOnline', 'kod_kupon_alsat'): 'UserBannedInChannel',
-    ('KeyVadiOnline', 'kodkuponcek'): 'UserBannedInChannel',
-    ('KeyVadiOnline', 'kuponindirimsatis'): 'UserBannedInChannel',
-    ('KeyVadiOnline', 'kuponsatimalim'): 'UserBannedInChannel',
     ('KeyVadiOnline', 'guvenliticaret'): 'ChatWriteForbidden',
-    ('KeyVadiOnline', 'kuponindirimpazari'): 'ChatWriteForbidden',
     ('KeyVadiOnline', 'ticaretguvenilir'): 'ChatWriteForbidden',
-    ('KeyVadiOnline', 'yucekuponsatis'): 'ModerationDeleted',
     ('KeyVadiOnline', 'dijitalpazarlamatr'): 'BadRequestError',
-    ('KeyVadiOnline', 'herkesibeklerimm'): 'invalid_invite',
-    ('KeyVadiOnline', 'kuponkodceksatis'): 'invalid_invite',
-    ('KeyVadiOnline', 'kuponcekkodsatis'): 'invalid_invite',
     ('KeyVadiOnline', 'referanslinkpaylasimigrup'): 'UsernameInvalidError',
     ('KeyVadiOnline', 'sosyalmedyaalimsatimticaret'): 'UsernameInvalidError',
     ('FroxyOnline', 'yemeksepetikuponu'): 'UserBannedInChannel',
@@ -2276,20 +2273,58 @@ def pick_message_for_group(grup_name, msg_files, history):
         if filtered:
             available = filtered
 
-    # Zamana duyarlı dinamik hedefleme (Gündüz üretkenlik/eğitim, Akşam eğlence/oyun)
+    # Zamana duyarlı dinamik hedefleme (Gündüz üretkenlik/eğitim/iş, Akşam eğlence/dizi/oyun/kupon/otomasyon)
     try:
         from datetime import datetime, timezone, timedelta
         tr_hour = datetime.now(timezone(timedelta(hours=3))).hour
         is_keyvadi_pool = any('keyvadi_' in f for f in available)
+        is_lisans_pool = any('lisansarena_' in f for f in available)
+        is_jarvis_pool = any('jarvis_' in f for f in available)
+        is_froxy_pool = any('froxy' in f for f in available)
+
         if is_keyvadi_pool:
-            # 09:00 - 18:00 (Mesai/Okul saatleri): Vitrin (1-4) + Egitim/AI (5) + Tasarim (7)
-            if 9 <= tr_hour < 18:
-                preferred = [f for f in available if any(k in f for k in ('keyvadi_1', 'keyvadi_2', 'keyvadi_3', 'keyvadi_4', 'keyvadi_5', 'keyvadi_7'))]
+            # 08:00 - 17:00 (Gündüz / Mesai saatleri): Vitrin (1, 2) + Eğitim/AI (3, 5) + Tasarım (7) + Tam Liste (full_1, full_3)
+            if 8 <= tr_hour < 17:
+                preferred = [f for f in available if any(k in f for k in ('keyvadi_1', 'keyvadi_2', 'keyvadi_3', 'keyvadi_5', 'keyvadi_7', 'full_keyvadi_1', 'full_keyvadi_3', 'keyvadi_ai', 'keyvadi_adobe', 'keyvadi_ogrenci'))]
                 if preferred:
                     available = preferred
-            # 18:00 - 02:00 (Aksam/Gece saatleri): Vitrin (1-4) + Eglence/Oyun (6) + Kupon (8)
-            elif tr_hour >= 18 or tr_hour < 2:
-                preferred = [f for f in available if any(k in f for k in ('keyvadi_1', 'keyvadi_2', 'keyvadi_3', 'keyvadi_4', 'keyvadi_6', 'keyvadi_8'))]
+            # 17:00 - 02:00 (Akşam / Gece saatleri): Vitrin (1, 2) + Eğlence/Oyun (4, 6) + Kupon/Yemek (8, kupon, deal) + Tam Liste (full_2, full_5)
+            elif tr_hour >= 17 or tr_hour < 2:
+                preferred = [f for f in available if any(k in f for k in ('keyvadi_1', 'keyvadi_2', 'keyvadi_4', 'keyvadi_6', 'keyvadi_8', 'full_keyvadi_2', 'full_keyvadi_5', 'keyvadi_deal', 'keyvadi_kupon', 'keyvadi_genel'))]
+                if preferred:
+                    available = preferred
+
+        elif is_lisans_pool:
+            # 08:00 - 17:00 (Gündüz): Ofis/AI/Tasarım ağırlıklı lisanslar
+            if 8 <= tr_hour < 17:
+                preferred = [f for f in available if any(k in f for k in ('lisansarena_1', 'lisansarena_2', 'lisansarena_4', 'lisansarena_5', 'full_lisansarena_1', 'full_lisansarena_3'))]
+                if preferred:
+                    available = preferred
+            # 17:00 - 02:00 (Akşam): Dizi-film, eğlence, kupon ve oyun ağırlıklı
+            elif tr_hour >= 17 or tr_hour < 2:
+                preferred = [f for f in available if any(k in f for k in ('lisansarena_1', 'lisansarena_3', 'lisansarena_6', 'lisansarena_7', 'lisansarena_8', 'full_lisansarena_2', 'full_lisansarena_5'))]
+                if preferred:
+                    available = preferred
+
+        elif is_jarvis_pool:
+            # 08:00 - 17:00 (Gündüz): Yazılım, Scraper, Masaüstü Asistanı, Mini App Kiti (İş & Proje)
+            if 8 <= tr_hour < 17:
+                preferred = [f for f in available if any(k in f for k in ('jarvis_1', 'jarvis_3', 'jarvis_4', 'jarvis_5', 'full_jarvis_1', 'full_jarvis_3'))]
+                if preferred:
+                    available = preferred
+            # 17:00 - 02:00 (Akşam): 7/24 Oto-Reklam Motoru, VIP Paketler, Asistan (Gece otomasyonu)
+            elif tr_hour >= 17 or tr_hour < 2:
+                preferred = [f for f in available if any(k in f for k in ('jarvis_2', 'jarvis_1', 'jarvis_4', 'full_jarvis_2'))]
+                if preferred:
+                    available = preferred
+
+        elif is_froxy_pool:
+            if 8 <= tr_hour < 17:
+                preferred = [f for f in available if any(k in f for k in ('sales_froxy_7', 'froxy_price', 'froxy_compare', 'full_froxy_1'))]
+                if preferred:
+                    available = preferred
+            elif tr_hour >= 17 or tr_hour < 2:
+                preferred = [f for f in available if any(k in f for k in ('sales_froxy_8', 'froxy_social', 'froxy_hook', 'full_froxy_2'))]
                 if preferred:
                     available = preferred
     except Exception:
@@ -4955,11 +4990,12 @@ async def main():
                 # gruba katılmadan sonsuza kadar kuyrukta kalıyordu. Burada yalnızca
                 # onaylı hedeflerden kaçının gerçekten bu hesaba ait olduğunu sayıyoruz.
                 # Güvenli katılım limiti korunur: en fazla 1 grup / 10 dakika.
+                all_targets = get_all_protected_groups()
                 protected_target_count = sum(
-                    1 for target in get_all_protected_groups()
+                    1 for target in all_targets
                     if joined_entity_for_target(joined_dialogs, target) is not None
                 )
-                if protected_target_count < 30 and (now_ts - last_queue_join_attempt) >= 600:
+                if protected_target_count < len(all_targets) and (now_ts - last_queue_join_attempt) >= 600:
                     last_queue_join_attempt = now_ts
                     await try_join_missing_groups(max_joins=1)
                 await asyncio.sleep(min(15, max(3, queue_wait or 5)))
