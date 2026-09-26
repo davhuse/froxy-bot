@@ -4879,8 +4879,7 @@ async def main():
                     else:
                         record_group_failure(hedef_grup, client_name, err_type, 60 * 60)
                         print(f"[{client_name}] ⚠️ @{hedef_grup} -> {err_type} (Hata: {err_msg})")
-                    # Tek bir hata alındığında peş peşe diğer gruplara zorlama yapma; dur.
-                    break
+                    await asyncio.sleep(2)
             return joined_in_step
 
         # Başlangıçta diyalogları önbelleğe al
