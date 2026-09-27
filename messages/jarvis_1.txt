@@ -12,4 +12,4 @@ Kurulum gerektirmeyen, taşınabilir tek tıkla çalışan (.exe) asistan paketi
 Ücretsiz Deneme Paketi (.ZIP): Botumuzdan hemen indirebilirsiniz.
 Lisans & Sipariş: 350 TL (Ömür boyu kullanım)
 Detaylı Bilgi & Demo: @JarvisCraftsBot
-İletişim & Destek: @habil2121
+İletişim & Destek: @JarvisCraft

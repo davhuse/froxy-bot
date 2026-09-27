@@ -12,4 +12,4 @@ Gelişmiş Sistem Özellikleri:
 Ücretsiz Standart Plan: Günde 25 mesaja kadar süresiz ücretsiz.
 VIP Sınırsız Planlar: 150 TL'den başlayan fiyatlarla.
 Bot Üzerinden Başlatın: @JarvisCraftsBot
-Geliştirici ve Destek: @habil2121
+Geliştirici ve Destek: @JarvisCraft

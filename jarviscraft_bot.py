@@ -1441,7 +1441,7 @@ async def message_handler(event):
                 buttons = [
                     [Button.url("Shopier ile Satın Al", p.get("url", "https://www.shopier.com/JarvisStore"))],
                     [Button.url("Mini App Mağazayı Aç", "https://t.me/JarvisCraftsBot/app")],
-                    [Button.url("Canlı Destek (@habil2121)", "https://t.me/habil2121")]
+                    [Button.url("Canlı Destek (@JarvisCraft)", "https://t.me/JarvisCraft")]
                 ]
                 await event.respond(msg_text, buttons=buttons)
                 return

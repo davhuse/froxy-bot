@@ -691,7 +691,7 @@ def strict_group_safe_copy(group_key, is_keyvadi, is_lisansarena, is_froxy, is_j
             "Haftalık VIP reklam 150 TL | Aylık VIP reklam 350 TL",
             "Özel bot ve web yazılım geliştirme",
             "+50'den fazla başarılı teslimat | 7/24 kesintisiz çalışma",
-            "Sipariş ve demo için: @JarvisCraftsBot | Destek: @habil2121",
+            "Sipariş ve demo için: @JarvisCraftsBot | Destek: @JarvisCraft",
         ]
         return "\n".join(lines)
     if is_keyvadi:
@@ -915,17 +915,12 @@ def get_admin_id():
 
 
 async def send_admin_alert(client, message):
-    admin_id = get_admin_id()
     try:
-        await client.send_message(admin_id, message)
+        await client.send_message('me', message)
         return True
-    except Exception:
-        try:
-            await client.send_message("habil2121", message)
-            return True
-        except Exception as e:
-            print(f"send_admin_alert hatasi: {e}")
-            return False
+    except Exception as e:
+        print(f"send_admin_alert hatasi: {e}")
+        return False
 
 
 
@@ -2635,27 +2630,21 @@ async def auto_scrape_groups(client, client_name, joined_usernames=None):
                 keyword_found += 1
                 print(f"  🆕 KALİTELİ GRUP KEŞFEDİLDİ (Onay Bekleniyor): @{chat.username} (Üye: {member_count or '?'}, Başlık: '{chat.title}')")
                 
-                # Admin'e onay için bireysel bildirim gönder (Otomatik katılım iptal edildi)
+                # Onay bildirimini Saved Messages ('me') alanına kaydet
                 try:
-                    admin_id = None
-                    if os.path.exists("bot_config.json"):
-                        with open("bot_config.json", "r", encoding="utf-8") as f_cfg:
-                            cfg = json.load(f_cfg)
-                            admin_id = cfg.get("admin_id")
-                    if admin_id:
-                        bildirim = (
-                            f"🔍 **Yeni Kaliteli Grup Keşfedildi!**\n"
-                            f"━━━━━━━━━━━━━━━━━\n"
-                            f"• Kullanıcı Adı: @{chat.username}\n"
-                            f"• Üye Sayısı: {member_count or '?'}\n"
-                            f"• Başlık: {chat.title or '?'}\n"
-                            f"━━━━━━━━━━━━━━━━━\n"
-                            f"ℹ️ Eklemek için bu mesaja **reply (yanıtla)** yaparak **ekle** veya **ok** yazabilirsin."
-                        )
-                        await client.send_message(int(admin_id), bildirim)
-                        print(f"📩 [{client_name}] Admin'e @{chat.username} için onay bildirimi gönderildi.")
+                    bildirim = (
+                        f"🔍 **Yeni Kaliteli Grup Keşfedildi!**\n"
+                        f"━━━━━━━━━━━━━━━━━\n"
+                        f"• Kullanıcı Adı: @{chat.username}\n"
+                        f"• Üye Sayısı: {member_count or '?'}\n"
+                        f"• Başlık: {chat.title or '?'}\n"
+                        f"━━━━━━━━━━━━━━━━━\n"
+                        f"ℹ️ Onay için Saved Messages alanına kaydedildi."
+                    )
+                    await client.send_message('me', bildirim)
+                    print(f"📩 [{client_name}] Saved Messages ('me') alanına @{chat.username} için onay bildirimi kaydedildi.")
                 except Exception as ne:
-                    print(f"⚠️ Bireysel admin bildirim hatası: {ne}")
+                    print(f"⚠️ Saved Messages bildirim hatası: {ne}")
                 
             summary = f"'{keyword}': +{keyword_found} yeni"
             if keyword_blacklisted > 0:
@@ -4282,8 +4271,8 @@ async def uyar_eksik_hesap(ayakta, active_clients):
                     key=lambda c: 0 if 'KeyVadi' in (c[1] or '') else 1)
     for client, name, _ in sirali:
         try:
-            await client.send_message(int(admin_id), mesaj)
-            print(f"📩 Eksik hesap bildirimi {name} hesabından gönderildi.")
+            await client.send_message('me', mesaj)
+            print(f"📩 Eksik hesap bildirimi {name} hesabından Saved Messages ('me') alanına kaydedildi.")
             return
         except Exception:
             continue
@@ -4331,19 +4320,17 @@ async def update_persistent_account_health_alerts(alive_names, active_clients):
             f"• Yetkili hesaplar: {', '.join(sorted(alive_names))}"
         )
 
-    delivered = not admin_id
-    if admin_id:
-        for client, name, _ in sorted(
-            active_clients,
-            key=lambda item: 0 if item[1] == 'KeyVadiOnline' else 1,
-        ):
-            try:
-                await client.send_message(int(admin_id), message)
-                print(f"[HealthAlert] transition notification sent by {name}.")
-                delivered = True
-                break
-            except Exception as exc:
-                print(f"[HealthAlert] {name} could not send: {type(exc).__name__}")
+    delivered = True
+    for client, name, _ in sorted(
+        active_clients,
+        key=lambda item: 0 if item[1] == 'KeyVadiOnline' else 1,
+    ):
+        try:
+            await client.send_message('me', message)
+            print(f"[HealthAlert] transition notification recorded in Saved Messages by {name}.")
+            break
+        except Exception as exc:
+            print(f"[HealthAlert] {name} could not send: {type(exc).__name__}")
 
     if delivered:
         await async_set_document('ad_health_alert_state', {

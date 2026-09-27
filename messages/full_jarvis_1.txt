@@ -21,4 +21,4 @@
 | 6. Özel Telegram Bot Geliştirme ................ 499,90 TL'den başlar
 |
 | Güvenli Shopier Altyapısı | Anında Teslimat | 7/24 Destek
-+-- Shopier Mağazası ve Demo: @JarvisCraftsBot | Destek: @habil2121 --+
++-- Shopier Mağazası ve Demo: @JarvisCraftsBot | Destek: @JarvisCraft --+

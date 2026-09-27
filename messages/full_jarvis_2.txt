@@ -22,4 +22,4 @@
 |   - Tüm Hazır Havuzlar + Sınırsız Özel Gruplar
 |   - Öncelikli Sunucu Kuyruğu ve 7/24 Birebir Destek
 |
-+-- Bilgi ve Sipariş: @JarvisCraftsBot | Destek: @habil2121 --+
++-- Bilgi ve Sipariş: @JarvisCraftsBot | Destek: @JarvisCraft --+
