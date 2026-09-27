@@ -206,28 +206,12 @@ def fetch_shopier_order(order_id: str, brand_hint: str = None) -> dict[str, Any]
 
 
 async def send_admin_push_alert(client_or_bot, message: str) -> None:
-    """Send alert to all configured administrators."""
-    admin_ids = [8791896048, 6196006704, 5359327143, 8116518175]
+    """Send alert to Saved Messages ('me') instead of spamming admins."""
     try:
-        with open("bot_config.json", "r", encoding="utf-8-sig") as f:
-            cfg = json.load(f)
-            if cfg.get("admin_id"):
-                admin_ids.insert(0, int(cfg["admin_id"]))
-            for a in cfg.get("admin_ids", []):
-                admin_ids.append(int(a))
-    except Exception:
-        pass
-
-    seen = set()
-    for a_id in admin_ids:
-        if a_id in seen:
-            continue
-        seen.add(a_id)
-        try:
-            if hasattr(client_or_bot, "send_message"):
-                await client_or_bot.send_message(a_id, message)
-        except Exception:
-            pass
+        if hasattr(client_or_bot, "send_message"):
+            await client_or_bot.send_message('me', message)
+    except Exception as e:
+        print(f"Push alert error: {e}")
 
 
 async def fulfill_order_request(

