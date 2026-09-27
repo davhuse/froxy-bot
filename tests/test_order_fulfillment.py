@@ -70,7 +70,7 @@ class TestOrderFulfillment(unittest.TestCase):
             res = asyncio.run(fulfill_order_request("999888777", tg_user_id=123456))
             self.assertTrue(res["success"])
             self.assertEqual(res["status"], "delivered")
-            self.assertIn("SIPARIS ONAYLANDI - OTO TESLIMAT", res["message"])
+            self.assertIn("SİPARİŞ ONAYLANDI - OTOMATİK TESLİMAT", res["message"])
             self.assertIn("STEAM-TEST-KEY-12345", res["message"])
             self.assertIn("999888777", res["message"])
 
@@ -109,7 +109,7 @@ class TestOrderFulfillment(unittest.TestCase):
             res = asyncio.run(fulfill_order_request("720325449", tg_user_id=123456))
             self.assertTrue(res["success"])
             self.assertEqual(res["status"], "email_needed")
-            self.assertIn("kayitli E-Posta adresinizi buraya yaziniz", res["message"])
+            self.assertIn("kayıtlı e-posta adresinizi buraya yazınız", res["message"])
 
 
 if __name__ == "__main__":

@@ -2461,9 +2461,21 @@ async def auto_scrape_groups(client, client_name, joined_usernames=None):
                 member_count = getattr(chat, 'participants_count', None)
                 title = (chat.title or "").lower()
                 
-                # === FİLTRE 1: Üye sayısı (500'den az = zaman kaybı) ===
-                if member_count is not None and member_count < 500:
+                # === FİLTRE 1: Üye sayısı (80'den az = yetersiz kitle) ===
+                if member_count is not None and member_count < 80:
                     print(f"  ⏭️ @{chat.username} → Üye az ({member_count}), bu taramada atlandı")
+                    continue
+                
+                # === FİLTRE 1.5: Yazma izni kontrolü (Normal üyeler mesaj atabilmeli) ===
+                banned = getattr(chat, 'default_banned_rights', None)
+                if banned and banned.send_messages:
+                    print(f"  ⏭️ @{chat.username} → Yazma kısıtlı (send_messages=True), atlandı")
+                    continue
+
+                # === FİLTRE 1.6: Yavaş mod (Slowmode) kontrolü ===
+                slowmode = getattr(chat, 'slowmode_seconds', 0) or 0
+                if slowmode > 300:
+                    print(f"  ⏭️ @{chat.username} → Yüksek slowmode ({slowmode}s), atlandı")
                     continue
                 
                 # === FİLTRE 2: Başlık dil/alaka/negatif kontrolü ===
@@ -2479,9 +2491,9 @@ async def auto_scrape_groups(client, client_name, joined_usernames=None):
                     print(f"  ⏭️ @{chat.username} → Katılım isteği gerekiyor, admin onayı bekleniyor")
                     continue
                 
-                # === FİLTRE 3: Derin kalite taraması (son 5 mesaj) ===
+                # === FİLTRE 3: Derin kalite taraması (son 10 mesaj) ===
                 try:
-                    recent_msgs = await client.get_messages(chat, limit=5)
+                    recent_msgs = await client.get_messages(chat, limit=10)
                     
                     if not recent_msgs or len(recent_msgs) == 0:
                         print(f"  ⏭️ @{chat.username} → Boş grup, bu taramada atlandı")
@@ -2496,9 +2508,15 @@ async def auto_scrape_groups(client, client_name, joined_usernames=None):
                         print(f"  ⏭️ @{chat.username} → İnaktif ({delta_days} gün), bu taramada atlandı")
                         continue
                     
-                    # Spam çöplüğü tespiti
+                    # Spam ve yasaklı içerik tespiti
                     bot_mention_count = 0
                     unique_senders = set()
+                    negative_found = False
+                    toxic_terms = (
+                        "bahis", "casino", "slot", "rulet", "iddaa", "porn", "ifsa", "ifşa",
+                        "escort", "papara", "yasadisi", "yasadışı", "hack", "warez", "cc",
+                        "dolandirici", "dolandırıcı", "kumar"
+                    )
                     
                     for m in recent_msgs:
                         msg_text = (getattr(m, 'raw_text', '') or '').lower()
@@ -2506,20 +2524,28 @@ async def auto_scrape_groups(client, client_name, joined_usernames=None):
                         if sender_id:
                             unique_senders.add(sender_id)
                         
+                        if any(term in msg_text for term in toxic_terms):
+                            negative_found = True
+                            break
+                        
                         # @...Bot mention'ları say
                         bot_mentions = re.findall(r'@\w+bot\b', msg_text, re.IGNORECASE)
                         if bot_mentions:
                             bot_mention_count += 1
                     
-                    # Son 5 mesajın 3+'ü bot reklamı → spam çöplüğü
-                    if bot_mention_count >= 3:
+                    if negative_found:
+                        print(f"  ⏭️ @{chat.username} → Mesajlarda yasaklı/bahis kelimesi tespit edildi, atlandı")
+                        continue
+
+                    # Son mesajların %60+'ı bot reklamı → spam çöplüğü
+                    if bot_mention_count >= max(3, int(len(recent_msgs) * 0.6)):
                         if username not in blacklist_lower:
                             keyword_blacklisted += 1
-                            print(f"  🗑️ @{chat.username} → Spam çöplüğü ({bot_mention_count}/5 bot reklamı), kara liste")
+                            print(f"  🗑️ @{chat.username} → Spam çöplüğü ({bot_mention_count} bot reklamı), kara liste")
                         continue
                     
-                    # Son 5 mesajda sadece 1-2 unique gönderen → ölü grup
-                    if len(recent_msgs) >= 5 and len(unique_senders) <= 2:
+                    # Mesajlarda sadece 1 unique gönderen → ölü grup
+                    if len(recent_msgs) >= 5 and len(unique_senders) <= 1:
                         print(f"  ⏭️ @{chat.username} → Ölü grup ({len(unique_senders)} kişi aktif), bu taramada atlandı")
                         continue
                     
@@ -3005,6 +3031,11 @@ async def ensure_telegram_connection(client, client_name, force=False):
                     await client.disconnect()
                 await client.connect()
                 if client.is_connected() and await client.is_user_authorized():
+                    try:
+                        from telethon.tl.functions.account import UpdateStatusRequest
+                        await client(UpdateStatusRequest(offline=True))
+                    except Exception:
+                        pass
                     now = time.monotonic()
                     last_logged = _LAST_RECONNECT_LOG.get(client_name, 0)
                     if attempt > 1 or (now - last_logged) > 600:
@@ -3724,6 +3755,35 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                 USER_DM_LAST_REPLY_TEXT[user_key] = normalized_text
                 return
 
+        # 1.5 Order Status Inquiry (When user asks about order/code but hasn't provided order number or email yet)
+        order_inquiry_triggers = (
+            "sipariş nerede", "siparis nerede", "siparişim nerede", "siparisim nerede",
+            "sipariş durumu", "siparis durumu", "sipariş durumu nedir", "siparişi sorgula",
+            "kod gelmedi", "kodum gelmedi", "kod nerede", "kodum nerede", "kod ulaşmadı", "kod ulasmadi",
+            "teslim edilmedi", "teslimat nerede", "teslimat yapılmadı", "teslimat yapilmadi",
+            "satın aldım gelmedi", "satin aldim gelmedi", "ödedim gelmedi", "odedim gelmedi",
+            "sipariş sorgula", "siparis sorgula", "nerede kaldı", "nerede kaldi", "gelmedi hala",
+            "kod ne zaman", "teslimat ne zaman", "siparişim ne zaman", "siparisim ne zaman"
+        )
+        is_order_inquiry = any(t in msg_text for t in order_inquiry_triggers) or (
+            any(w in msg_text for w in ("sipariş", "siparis", "kodum", "teslimat")) and
+            any(q in msg_text for q in ("nerede", "gelmedi", "ne zaman", "durum", "ulaşmadı", "ulasmadi", "bekliyorum"))
+        )
+
+        if is_order_inquiry and not order_num and not email_addr:
+            inquiry_reply = (
+                "Merhaba, siparişinizi kontrol edebilmemiz için lütfen 9 haneli Shopier sipariş numaranızı "
+                "veya satın alırken kullandığınız e-posta adresinizi buraya yazınız.\n\n"
+                "Bilgilendirme: Şu anda canlı destek ekibimiz aktif değildir (mesai dışındadır). "
+                "Sipariş numaranızı veya e-posta adresinizi ilettiğinizde talebiniz sıraya kaydedilecek ve "
+                "destek ekibimiz aktif olduğunda sırayla kontrol edilerek tarafınıza dönüş sağlanacaktır."
+            )
+            await send_dm_reply_with_floodwait(event, inquiry_reply, client_name)
+            record_event("order_inquiry_asked_credentials", client_name, source="telegram_private")
+            USER_DM_LAST_REPLY_TIME[user_key] = now
+            USER_DM_LAST_REPLY_TEXT[user_key] = normalized_text
+            return
+
         has_keyword = any(kw in msg_text for kw in (
             "adobe", "youtube", "canva", "netflix", "spotify", "gpt", "chatgpt", "gemini",
             "claude", "windows", "office", "duolingo", "capcut", "express", "lisans",
@@ -3824,12 +3884,12 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                 )
                 matched_desc = matched_products[0]['title']
             elif is_lisansarena:
-                lines = ["**LisansArena Guncel Secenekler ve Fiyatlar:**\n"]
+                lines = ["**LisansArena Güncel Seçenekler ve Fiyatlar:**\n"]
                 for p in matched_products[:3]:
                     target = purchase_url(p, "lisansarena", "ad_account_dm")
                     lines.append(
                         f"• **{p['title']}** — **{p.get('price', '')}**\n"
-                        f"  [Mini App'te Ac]({target})"
+                        f"  [Mini App'te Aç]({target})"
                     )
                 reply_text = "\n".join(lines)
                 matched_desc = ", ".join(p['title'] for p in matched_products)
@@ -3855,13 +3915,13 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         elif sales_context or dm_intent != INTENT_SALES_LEAD:
             faq_reply = None
             if any(w in msg_text for w in ("yıllık", "yillik", "aylık", "aylik", "sure", "süre")):
-                faq_reply = "Paketlerimiz tercihinize gore 1 aylik veya 1 yillik seceneklerle sunulmaktadir. Belirtilen sure boyunca kesintisiz garanti ve telafi mevcuttur."
+                faq_reply = "Paketlerimiz tercihinize göre 1 aylık veya 1 yıllık seçeneklerle sunulmaktadır. Belirtilen süre boyunca kesintisiz garanti ve telafi mevcuttur."
             elif any(w in msg_text for w in ("referans", "kanıt", "kanit", "guvenilir", "güvenilir")):
-                faq_reply = "+50'den fazla basarili musteri teslimatimiz mevcuttur. Tum alisverisleriniz Shopier 3D Secure guvencesiyle yapilir ve aninda teslim edilir."
+                faq_reply = "+50'den fazla başarılı müşteri teslimatımız mevcuttur. Tüm alışverişleriniz Shopier 3D Secure güvencesiyle yapılır ve anında teslim edilir."
             elif any(w in msg_text for w in ("hesaba mı", "hesaba mi", "tanımla", "tanimla", "nasıl çalışır", "nasil calisir")):
-                faq_reply = "Urunlerimiz sahsi hesabiniza davet seklinde veya sifir adiniza teslim edilir, sifrenizi paylasmaniza gerek yoktur."
+                faq_reply = "Ürünlerimiz şahsi hesabınıza davet şeklinde veya sıfır adınıza teslim edilir, şifrenizi paylaşmanıza gerek yoktur."
             elif any(w in msg_text for w in ("stok", "var mı", "var mi")):
-                faq_reply = "Stoklarimiz guncel ve 7/24 aktiftir, Shopier uzerinden aninda siparis verebilirsiniz."
+                faq_reply = "Stoklarımız güncel ve 7/24 aktiftir, Shopier üzerinden anında sipariş verebilirsiniz."
 
             if faq_reply:
                 await send_dm_reply_with_floodwait(event, faq_reply, client_name)
@@ -3888,44 +3948,44 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                 print(f"[{client_name}] Onceki urun karti bulundu; takip mesaji panele birakildi.")
                 return
             reply_text = (
-                "Merhaba, LisansArena dijital lisans ve urun magazamiza hos geldiniz!\n\n"
-                "Tum guncel lisans, hesap ve uyelik fiyatlarimizi botumuz uzerinden inceleyebilir ve 7/24 aninda satin alabilirsiniz:\n\n"
-                "Siparis ve Satin Alma Botu: @LisansArenaBot\n\n"
-                "Aradiginiz urunun adini yazarsaniz guncel fiyatini hemen iletebilirim (Orn: Netflix, Spotify, Canva, Windows, CapCut)."
+                "Merhaba, LisansArena dijital lisans ve ürün mağazamıza hoş geldiniz!\n\n"
+                "Tüm güncel lisans, hesap ve üyelik fiyatlarımızı botumuz üzerinden inceleyebilir ve 7/24 anında satın alabilirsiniz:\n\n"
+                "Sipariş ve Satın Alma Botu: @LisansArenaBot\n\n"
+                "Aradığınız ürünün adını yazarsanız güncel fiyatını hemen iletebilirim (Örn: Netflix, Spotify, Canva, Windows, CapCut)."
             )
-            matched_desc = "LisansArena bot yonlendirmesi"
+            matched_desc = "LisansArena bot yönlendirmesi"
         else:
             if not has_explicit_sales_intent(event.raw_text):
                 print(f"[{client_name}] DM satis niyeti icermiyor, AI yaniti atlandi.")
                 return
             if is_jarvis:
                 reply_text = (
-                    "Merhaba, JarvisCraft magazamiza hos geldiniz!\n\n"
-                    "Gelistirici paketlerimiz, Telegram Oto-Reklam botumuz ve scraper sistemlerimiz icin:\n"
+                    "Merhaba, JarvisCraft mağazamıza hoş geldiniz!\n\n"
+                    "Geliştirici paketlerimiz, Telegram Oto-Reklam botumuz ve scraper sistemlerimiz için:\n"
                     "Bot: @JarvisCraftsBot\n"
-                    "Magaza: https://www.shopier.com/3051522\n\n"
-                    "Ihtiyaciniz olan bot veya sistemi iletirseniz hemen yardimci olabilirim."
+                    "Mağaza: https://www.shopier.com/3051522\n\n"
+                    "İhtiyacınız olan bot veya sistemi iletirseniz hemen yardımcı olabilirim."
                 )
             elif is_keyvadi:
                 reply_text = (
-                    "Merhaba, KeyVadi dijital lisans magazamiza hos geldiniz!\n\n"
-                    "Tum guncel urun ve fiyatlarimizi incelemek icin:\n"
-                    "[KeyVadi Magazasini Ac](https://t.me/KeyVadiSatisBot)\n\n"
-                    "Aradiginiz urunun adini yazabilirsiniz (Orn: Canva, Office, Windows, YouTube)."
+                    "Merhaba, KeyVadi dijital lisans mağazamıza hoş geldiniz!\n\n"
+                    "Tüm güncel ürün ve fiyatlarımızı incelemek için:\n"
+                    "[KeyVadi Mağazasını Aç](https://t.me/KeyVadiSatisBot)\n\n"
+                    "Aradığınız ürünün adını yazabilirsiniz (Örn: Canva, Office, Windows, YouTube)."
                 )
             elif is_froxy:
                 reply_text = (
-                    "Merhaba, Froxy AI paneline hos geldiniz!\n\n"
-                    "Tum paket ve modelleri Shopier magazamizdan inceleyebilirsiniz:\n"
-                    "[Froxy Shopier Magazasini Ac](https://www.shopier.com/froxyai)\n\n"
-                    "Aradiginiz urun veya model adini yazabilirsiniz."
+                    "Merhaba, Froxy AI paneline hoş geldiniz!\n\n"
+                    "Tüm paket ve modelleri Shopier mağazamızdan inceleyebilirsiniz:\n"
+                    "[Froxy Shopier Mağazasını Aç](https://www.shopier.com/froxyai)\n\n"
+                    "Aradığınız ürün veya model adını yazabilirsiniz."
                 )
             else:
                 reply_text = (
-                    "Aradiginiz urunu dogru bulabilmem icin urun adini ve varsa "
-                    "kisisel/ortak ya da sure tercihinizi yazar misiniz?"
+                    "Aradığınız ürünü doğru bulabilmem için ürün adını ve varsa "
+                    "kişisel/ortak ya da süre tercihinizi yazar mısınız?"
                 )
-            matched_desc = "Insan destegi gerekli"
+            matched_desc = "İnsan desteği gerekli"
             record_event(
                 "human_handoff", client_name, source="telegram_private",
                 reason="no_product_match", conversation_key=dm_conversation_key,
@@ -4467,6 +4527,18 @@ async def main():
                 session_error=None,
             )
             print(f"🔒 @{username} kimliği doğrulandı ve {stable_name} hesabına kilitlendi.")
+            # Telegram online privacy and offline enforcement
+            try:
+                from telethon.tl.functions.account import SetPrivacyRequest, UpdateStatusRequest
+                from telethon.tl.types import InputPrivacyKeyStatusTimestamp, InputPrivacyValueDisallowAll
+                await active_client(SetPrivacyRequest(
+                    key=InputPrivacyKeyStatusTimestamp(),
+                    rules=[InputPrivacyValueDisallowAll()]
+                ))
+                await active_client(UpdateStatusRequest(offline=True))
+                print(f"[{stable_name}] Gizlilik 'Hiç Kimse' yapıldı ve offline durum bildirildi.")
+            except Exception as e_priv:
+                print(f"[{stable_name}] Gizlilik/offline ayarı uygulanamadı: {e_priv}")
         except Exception as e:
             print(f"⚠️ Aktif hesap doğrulanamadı, bağlantı kapatılıyor: {e}")
             try:

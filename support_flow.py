@@ -282,32 +282,39 @@ def greeting_for(brand: str) -> str:
     brand_lower = brand.lower()
     if brand_lower == "keyvadi":
         return (
-            "**KeyVadi Destek Hattina Hos Geldiniz!**\n\n"
+            "**KeyVadi Destek Hattına Hoş Geldiniz!**\n\n"
             "Steam Random Keyler, FC26, Xbox Game Pass, Minecraft Koleksiyon Pelerinleri, "
-            "Netflix 4K ve dijital e-pinler hakkinda sormak istediginiz her seyi yazabilirsiniz.\n\n"
-            "Mesajiniz ekibimize iletildi, en kisa surede donus yapilacaktir."
+            "Netflix 4K ve dijital e-pinler hakkında sormak istediğiniz her şeyi yazabilirsiniz.\n\n"
+            "Not: Canlı destek ekibimiz şu anda aktif değildir (mesai dışındadır). "
+            "Mesajınız ve talebiniz sıraya alınmıştır, ekibimiz aktif olduğunda en kısa sürede dönüş yapılacaktır."
         )
     if brand_lower in ("lisansarena", "lisans arena"):
         return (
-            "**LisansArena Musteri Hizmetlerine Hos Geldiniz!**\n\n"
+            "**LisansArena Müşteri Hizmetlerine Hoş Geldiniz!**\n\n"
             "Canva Pro, Microsoft Office 365, Windows 10/11 Pro, CapCut Pro ve yapay "
-            "zeka araclarimiz 7/24 otomatik teslimat ve degisim garantimiz altindadir.\n\n"
-            "Talebiniz musteri temsilcimize basariyla aktarildi, en kisa surede size donulecektir."
+            "zekâ araçlarımız 7/24 otomatik teslimat ve değişim garantimiz altındadır.\n\n"
+            "Not: Canlı destek ekibimiz şu anda aktif değildir (mesai dışındadır). "
+            "Talebiniz sıraya başarıyla aktarılmıştır, ekibimiz aktif olduğunda en kısa sürede dönüş sağlanacaktır."
         )
     if brand_lower in ("froxy", "froxy ai"):
         return (
-            "**Froxy AI Destek Merkezine Hos Geldiniz!**\n\n"
-            "Froxy AI paketleri, kredi yuklemeleri veya teknik destek talebinizi "
-            "yazin; ekibimiz en kisa surede size donus yapacaktir."
+            "**Froxy AI Destek Merkezine Hoş Geldiniz!**\n\n"
+            "Froxy AI paketleri, kredi yüklemeleri veya teknik destek talebinizi "
+            "yazabilirsiniz.\n\n"
+            "Not: Canlı destek ekibimiz şu anda aktif değildir (mesai dışındadır). "
+            "Talebiniz sıraya alınmıştır, ekibimiz aktif olduğunda en kısa sürede dönüş yapılacaktır."
         )
     if brand_lower in ("jarvis", "jarviscraft"):
         return (
-            "**JarvisCraft Destek Hattina Hos Geldiniz!**\n\n"
-            "Telegram Oto-Reklam & Mesaj Botu, Scraper Botlari, Mini App & Shopier Entegrasyon "
-            "paketleri veya VIP uyelikler hakkinda sormak istediginiz her seyi yazabilirsiniz.\n\n"
-            "Mesajiniz ekibimize iletildi, en kisa surede donus yapilacaktir."
+            "**JarvisCraft Destek Hattına Hoş Geldiniz!**\n\n"
+            "Telegram Oto-Reklam & Mesaj Botu, Scraper Botları, Mini App & Shopier Entegrasyon "
+            "paketleri veya VIP üyelikler hakkında sormak istediğiniz her şeyi yazabilirsiniz.\n\n"
+            "Not: Canlı destek ekibimiz şu anda aktif değildir (mesai dışındadır). "
+            "Mesajınız sıraya alınmıştır, ekibimiz aktif olduğunda en kısa sürede dönüş yapılacaktır."
         )
     return (
-        "**Merhaba, Destek Hattimiza Hos Geldiniz!**\n\n"
-        "Istediginiz paket ya da urunu yazin; ekibimiz en kisa surede size donus yapacaktir."
+        "**Merhaba, Destek Hattımıza Hoş Geldiniz!**\n\n"
+        "İstediğiniz paket ya da ürünü yazabilirsiniz.\n\n"
+        "Not: Canlı destek ekibimiz şu anda aktif değildir (mesai dışındadır). "
+        "Mesajınız sıraya alınmıştır, ekibimiz aktif olduğunda en kısa sürede dönüş yapılacaktır."
     )

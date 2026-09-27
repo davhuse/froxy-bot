@@ -211,7 +211,7 @@ async def fulfill_order_request(
         return {
             "success": False,
             "status": "invalid_query",
-            "message": "Gecerli bir siparis numarasi (orn: 720325449) bulunamadi.",
+            "message": "Geçerli bir sipariş numarası (örn: 720325449) bulunamadı.",
         }
 
     order = fetch_shopier_order(order_id, brand_hint=brand_hint)
@@ -220,10 +220,12 @@ async def fulfill_order_request(
             "success": False,
             "status": "not_found",
             "message": (
-                f"Siparis No: {order_id}\n\n"
-                "Shopier sistemi uzerinde henuz kayitli bir odeme bulunamadi.\n"
-                "Odemenizi henuz yaptiysaniz banka ve sistem onayi 1-2 dakika surebilir. "
-                "Birazdan tekrar kontrol edebilir veya dekontunuz ile destek ekibimize yazabilirsiniz."
+                f"Sipariş No: {order_id}\n\n"
+                "Shopier sistemi üzerinde henüz kayıtlı bir ödeme bulunamadı.\n"
+                "Ödemenizi yeni yaptıysanız banka ve sistem onayı 1-2 dakika sürebilir.\n"
+                "Birazdan tekrar kontrol edebilir veya dekontunuz ile destek ekibimize yazabilirsiniz.\n\n"
+                "Not: Canlı destek ekibimiz şu anda aktif değildir (mesai dışındadır). "
+                "Talebiniz sıraya kaydedilmiş olup, ekibimiz aktif olduğunda sırayla kontrol edilecektir."
             ),
         }
 
@@ -232,11 +234,11 @@ async def fulfill_order_request(
             "success": False,
             "status": "payment_pending",
             "message": (
-                f"Siparis No: {order_id}\n"
-                f"Urun: {order['product_name']}\n"
+                f"Sipariş No: {order_id}\n"
+                f"Ürün: {order['product_name']}\n"
                 f"Tutar: {order['amount']} TL\n\n"
-                "Odeme durumu henuz tamamlanmamis veya onay bekliyor. "
-                "Odemeniz bankanizdan cekildiyse 1-2 dakika icinde otomatik onaylanacaktir."
+                "Ödeme durumu henüz tamamlanmamış veya onay bekliyor.\n"
+                "Ödemeniz bankanızdan çekildiyse 1-2 dakika içinde otomatik onaylanacaktır."
             ),
         }
 
@@ -244,7 +246,7 @@ async def fulfill_order_request(
     product_name = order["product_name"]
     amount = order["amount"]
     buyer_email = user_email or order.get("buyer_email") or ""
-    uname = f"@{tg_username}" if tg_username else (f"ID:{tg_user_id}" if tg_user_id else "Musteri")
+    uname = f"@{tg_username}" if tg_username else (f"ID:{tg_user_id}" if tg_user_id else "Müşteri")
 
     # Check if this order is AUTO-DELIVERY
     if is_auto_delivery_product(product_name):
@@ -256,36 +258,36 @@ async def fulfill_order_request(
             "vip" in lowered or "haftalık" in lowered or "haftalik" in lowered or "aylık" in lowered or "aylik" in lowered
         )
         if is_jarvis_vip:
-            benefit = "VIP uyeliginiz hesabiniz icin tanimlandi."
+            benefit = "VIP üyeliğiniz hesabınız için tanımlandı."
             msg = (
-                f"[SIPARIS ONAYLANDI - OTO TESLIMAT]\n"
-                f"Siparis No: {order_id}\n"
-                f"Urun: {product_name}\n"
+                f"[SİPARİŞ ONAYLANDI - OTOMATİK TESLİMAT]\n"
+                f"Sipariş No: {order_id}\n"
+                f"Ürün: {product_name}\n"
                 f"Tutar: {amount} TL\n\n"
                 f"Aktivasyon: {benefit}\n"
-                f"Hemen kullanmaya baslayabilirsiniz."
+                f"Hemen kullanmaya başlayabilirsiniz."
             )
             if client_or_bot:
                 await send_admin_push_alert(
                     client_or_bot,
-                    f"[OTO TESLIMAT - VIP]\nSiparis No: {order_id}\nUrun: {product_name}\nTutar: {amount} TL\nMusteri: {uname}"
+                    f"[OTO TESLİMAT - VIP]\nSipariş No: {order_id}\nÜrün: {product_name}\nTutar: {amount} TL\nMüşteri: {uname}"
                 )
             return {"success": True, "status": "delivered", "message": msg}
 
         if "jarvis core" in lowered or "asistan" in lowered:
             msg = (
-                f"[SIPARIS ONAYLANDI - OTO TESLIMAT]\n"
-                f"Siparis No: {order_id}\n"
-                f"Urun: {product_name}\n"
+                f"[SİPARİŞ ONAYLANDI - OTOMATİK TESLİMAT]\n"
+                f"Sipariş No: {order_id}\n"
+                f"Ürün: {product_name}\n"
                 f"Tutar: {amount} TL\n\n"
-                f"Kurulum ve Indirme Paketi Linki:\n"
+                f"Kurulum ve İndirme Paketi Linki:\n"
                 f"https://bot-service-production-9d74.up.railway.app/static/JARVIS_MUSTERI_DEMO_PAKETI.zip\n\n"
-                f"Zip icerisindeki calistiriciyi baslatarak hemen kullanabilirsiniz."
+                f"Zip içerisindeki çalıştırıcıyı başlatıp talimatları izleyerek hemen kullanabilirsiniz."
             )
             if client_or_bot:
                 await send_admin_push_alert(
                     client_or_bot,
-                    f"[OTO TESLIMAT - JARVIS CORE]\nSiparis No: {order_id}\nUrun: {product_name}\nTutar: {amount} TL\nMusteri: {uname}"
+                    f"[OTO TESLİMAT - JARVIS CORE]\nSipariş No: {order_id}\nÜrün: {product_name}\nTutar: {amount} TL\nMüşteri: {uname}"
                 )
             return {"success": True, "status": "delivered", "message": msg}
 
@@ -293,41 +295,42 @@ async def fulfill_order_request(
         alloc = allocate_license(product_name, brand=brand)
         if alloc.get("allocated") and alloc.get("license_key"):
             key = alloc["license_key"]
-            guide = alloc.get("activation_guide") or "Ilgili platform uzerinde lisans/kod alanina giriniz."
+            guide = alloc.get("activation_guide") or "İlgili platform üzerinde lisans/kod alanına giriniz."
             redeem_url = alloc.get("redeem_url")
-            link_line = f"\nKullanim Linki: {redeem_url}" if redeem_url else ""
+            link_line = f"\nKullanım Linki: {redeem_url}" if redeem_url else ""
             msg = (
-                f"[SIPARIS ONAYLANDI - OTO TESLIMAT]\n"
-                f"Siparis No: {order_id}\n"
-                f"Urun: {product_name}\n"
+                f"[SİPARİŞ ONAYLANDI - OTOMATİK TESLİMAT]\n"
+                f"Sipariş No: {order_id}\n"
+                f"Ürün: {product_name}\n"
                 f"Tutar: {amount} TL\n\n"
-                f"Lisans Kodu / Giris Bilgisi:\n"
+                f"Lisans Kodu / Giriş Bilgisi:\n"
                 f"{key}\n"
                 f"{link_line}\n"
                 f"Aktivasyon Rehberi:\n"
                 f"{guide}\n\n"
-                f"Iyi gunlerde kullaniniz."
+                f"İyi günlerde kullanınız."
             )
             if client_or_bot:
                 await send_admin_push_alert(
                     client_or_bot,
-                    f"[OTO TESLIMAT BASARILI]\nSiparis No: {order_id}\nUrun: {product_name}\nTutar: {amount} TL\nKod: {key}\nMusteri: {uname}"
+                    f"[OTO TESLİMAT BAŞARILI]\nSipariş No: {order_id}\nÜrün: {product_name}\nTutar: {amount} TL\nKod: {key}\nMüşteri: {uname}"
                 )
             return {"success": True, "status": "delivered", "message": msg}
 
         # Auto product, but stock pool currently empty
         msg = (
-            f"[SIPARIS ONAYLANDI]\n"
-            f"Siparis No: {order_id}\n"
-            f"Urun: {product_name}\n"
+            f"[SİPARİŞ ONAYLANDI]\n"
+            f"Sipariş No: {order_id}\n"
+            f"Ürün: {product_name}\n"
             f"Tutar: {amount} TL\n\n"
-            f"Odemeniz basariyla alindi. Lisans kodunuz guvenlik kontrolunden sonra "
-            f"en kisa surede temsilcimiz tarafindan buradan iletilecektir."
+            f"Ödemeniz başarıyla alındı. Talebiniz ve sipariş bilgileriniz sıraya kaydedilmiştir.\n\n"
+            f"Şu anda canlı destek ekibimiz aktif değildir (mesai dışındadır). "
+            f"Ekibimiz aktif olduğunda lisans kodunuz güvenlik kontrolünün ardından sırayla buradan iletilecektir."
         )
         if client_or_bot:
             await send_admin_push_alert(
                 client_or_bot,
-                f"[ACIL - STOK BEKLEYEN SIPARIS]\nSiparis No: {order_id}\nUrun: {product_name}\nTutar: {amount} TL\nMusteri: {uname}\nLutfen musterinin kodunu iletiniz."
+                f"[ACİL - STOK BEKLEYEN SİPARİŞ]\nSipariş No: {order_id}\nÜrün: {product_name}\nTutar: {amount} TL\nMüşteri: {uname}\nLütfen müşterinin kodunu iletiniz."
             )
         return {"success": True, "status": "stock_pending", "message": msg}
 
@@ -335,34 +338,36 @@ async def fulfill_order_request(
     # Check if we already have the customer's email
     if buyer_email:
         msg = (
-            f"[SIPARIS ONAYLANDI - HESAP TANIMLAMA]\n"
-            f"Siparis No: {order_id}\n"
-            f"Urun: {product_name}\n"
+            f"[SİPARİŞ ONAYLANDI - HESAP TANIMLAMA]\n"
+            f"Sipariş No: {order_id}\n"
+            f"Ürün: {product_name}\n"
             f"Tutar: {amount} TL\n\n"
-            f"Tanimlanacak E-Posta Adresi: {buyer_email}\n\n"
-            f"Talebiniz yetkili ekibimize iletilmistir. Davet/yetki isleminiz "
-            f"5-15 dakika icinde e-posta adresinize tanimlanacaktir."
+            f"Tanımlanacak E-Posta Adresi: {buyer_email}\n\n"
+            f"Talebiniz yetkili ekibimize iletilmiştir ve sıraya alınmıştır.\n\n"
+            f"Şu anda canlı destek ekibimiz aktif değildir (mesai dışındadır). "
+            f"Ekibimiz aktif olduğunda davet ve yetki işleminiz belirtilen e-posta adresinize sırayla tanımlanacaktır."
         )
         if client_or_bot:
             await send_admin_push_alert(
                 client_or_bot,
-                f"[YENI SIPARIS - MAIL TANIMLAMA BEKLIYOR]\nMarka: {brand.upper()}\nSiparis No: {order_id}\nUrun: {product_name}\nTutar: {amount} TL\nMusteri: {uname}\nE-Posta: {buyer_email}\nLutfen daveti/yetkiyi gonderiniz."
+                f"[YENİ SİPARİŞ - MAİL TANIMLAMA BEKLİYOR]\nMarka: {brand.upper()}\nSipariş No: {order_id}\nÜrün: {product_name}\nTutar: {amount} TL\nMüşteri: {uname}\nE-Posta: {buyer_email}\nLütfen daveti/yetkiyi gönderiniz."
             )
         return {"success": True, "status": "email_confirmed", "message": msg}
 
     # Customer email is not yet provided
     msg = (
-        f"[SIPARIS ONAYLANDI]\n"
-        f"Siparis No: {order_id}\n"
-        f"Urun: {product_name}\n"
+        f"[SİPARİŞ ONAYLANDI]\n"
+        f"Sipariş No: {order_id}\n"
+        f"Ürün: {product_name}\n"
         f"Tutar: {amount} TL\n\n"
-        f"Bu urun sahsi hesabiniza yetki/davet seklinde tanimlanmaktadir.\n"
-        f"Aktivasyonun tamamlanabilmesi icin lutfen {product_name} hesabiniza "
-        f"kayitli E-Posta adresinizi buraya yaziniz."
+        f"Bu ürün şahsi hesabınıza yetki ve davet şeklinde tanımlanmaktadır.\n"
+        f"Aktivasyonun tamamlanabilmesi için lütfen {product_name} hesabınıza kayıtlı e-posta adresinizi buraya yazınız.\n\n"
+        f"Not: Canlı destek ekibimiz şu anda aktif değildir (mesai dışındadır). "
+        f"E-posta adresinizi ilettiğinizde talebiniz sıraya alınacak ve ekibimiz aktif olduğunda işlem tamamlanacaktır."
     )
     if client_or_bot:
         await send_admin_push_alert(
             client_or_bot,
-            f"[SIPARIS - MAIL BEKLENIYOR]\nMarka: {brand.upper()}\nSiparis No: {order_id}\nUrun: {product_name}\nTutar: {amount} TL\nMusteri: {uname}"
+            f"[SİPARİŞ - MAİL BEKLENİYOR]\nMarka: {brand.upper()}\nSipariş No: {order_id}\nÜrün: {product_name}\nTutar: {amount} TL\nMüşteri: {uname}"
         )
     return {"success": True, "status": "email_needed", "message": msg}
