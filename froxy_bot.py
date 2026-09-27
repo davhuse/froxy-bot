@@ -337,16 +337,16 @@ def configure_bot_profile():
     })
 
 
-def mini_app_markup(label="Magazayi Ac"):
+def mini_app_markup(label="Mağazayı Aç"):
     from telethon import Button
     app_launch_url = "https://t.me/KeyVadiSatisBot/app"
     return [
         [Button.url(label, app_launch_url)],
-        [Button.inline("En Cok Satan Firsatlar", b"menu_top7")],
-        [Button.inline("Kategoriler", b"menu_categories"), Button.inline("Urun Ara", b"menu_search_prompt")],
-        [Button.inline("Gunluk Sans Kasasi", b"menu_daily_box"), Button.inline("Garanti ve Guvenlik", b"menu_faq")],
-        [Button.inline("Siparis Sorgula", b"menu_order_status"), Button.inline("Canli Destek", b"menu_support")],
-        [Button.inline("Davet & Kazan", b"menu_referral"), Button.inline("Cuzdan / Bakiye", b"menu_topup")],
+        [Button.inline("En Çok Satan Fırsatlar", b"menu_top7")],
+        [Button.inline("Kategoriler", b"menu_categories"), Button.inline("Ürün Ara", b"menu_search_prompt")],
+        [Button.inline("Günlük Şans Kasası", b"menu_daily_box"), Button.inline("Garanti ve Güvenlik", b"menu_faq")],
+        [Button.inline("Sipariş Sorgula", b"menu_order_status"), Button.inline("Canlı Destek", b"menu_support")],
+        [Button.inline("Davet & Kazan", b"menu_referral"), Button.inline("Cüzdan / Bakiye", b"menu_topup")],
         [Button.url("KeyVadi Resmi Topluluk Grubu", KEYVADI_GROUP_LINK)]
     ]
 
@@ -1486,16 +1486,16 @@ async def menu_order_status_handler(event):
     user_id = event.sender_id
     user_states[user_id] = "AWAITING_VERIFY_PAYMENT_INFO"
     msg = (
-        "**SIPARIS VE LISANS SORGULAMA**\n"
+        "**SİPARİŞ VE LİSANS SORGULAMA**\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        "Shopier uzerinden verdiginiz siparisin durumunu ogrenmek veya lisans bilgilerinizi almak icin:\n\n"
-        "Lutfen Shopier **Siparis Numaranizi** (ornek: `987654321`) veya satin alirken kullandiginiz **E-posta Adresinizi** bu sohbete yazin.\n\n"
-        "Alternatif olarak `/siparis <siparis_no>` seklinde de yazabilirsiniz.\n\n"
-        "*(Iptal etmek icin /start yazabilirsiniz)*"
+        "Shopier üzerinden verdiğiniz siparişin durumunu öğrenmek veya lisans bilgilerinizi almak için:\n\n"
+        "Lütfen 9 haneli Shopier **Sipariş Numaranızı** (örnek: `987654321`) veya satın alırken kullandığınız **E-posta Adresinizi** bu sohbete yazınız.\n\n"
+        "Bilgilendirme: Canlı destek ekibimiz şu an mesai dışındadır. Sipariş numaranızı veya e-posta adresinizi yazdığınızda sistem otomatik olarak teslimatınızı kontrol edip teslim edecektir.\n\n"
+        "*(İptal etmek için /start yazabilirsiniz)*"
     )
     buttons = [
-        [Button.inline("Canli Destek", b"menu_support")],
-        [Button.inline("Ana Menu", b"menu_main")]
+        [Button.inline("Canlı Destek", b"menu_support")],
+        [Button.inline("Ana Menü", b"menu_main")]
     ]
     await safe_event_edit(event, msg, buttons=buttons)
 
@@ -2423,13 +2423,18 @@ async def message_handler(event):
         logger.info(f"User {user_id} is banned, ignoring.")
         return
 
-    from order_fulfillment import extract_order_id, extract_email, fulfill_order_request
+    from order_fulfillment import extract_order_id, extract_email, fulfill_order_request, is_order_status_inquiry, get_order_inquiry_reply
     order_num = extract_order_id(event.text)
     email_addr = extract_email(event.text)
     is_awaiting = user_states.get(user_id) == "AWAITING_VERIFY_PAYMENT_INFO"
     has_order_words = any(w in (event.text or "").lower() for w in (
         "sipariş", "siparis", "kod", "satın aldım", "satin aldim", "aldım", "aldim", "fatura"
     ))
+
+    if is_order_status_inquiry(event.text) and not order_num and not email_addr:
+        user_states[user_id] = "AWAITING_VERIFY_PAYMENT_INFO"
+        await event.respond(get_order_inquiry_reply("keyvadi"))
+        return
 
     if is_awaiting or order_num or (has_order_words and (order_num or email_addr)):
         if event.text.startswith('/'):

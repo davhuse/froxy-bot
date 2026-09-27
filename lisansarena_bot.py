@@ -1268,12 +1268,16 @@ async def private_message_handler(event):
         return
 
     # 1b. Check for Shopier Order or Email fulfillment
-    from order_fulfillment import extract_order_id, extract_email, fulfill_order_request
+    from order_fulfillment import extract_order_id, extract_email, fulfill_order_request, is_order_status_inquiry, get_order_inquiry_reply
     order_num = extract_order_id(event.raw_text)
     email_addr = extract_email(event.raw_text)
     has_order_words = any(w in (event.raw_text or "").lower() for w in (
         "sipariş", "siparis", "kod", "satın aldım", "satin aldim", "aldım", "aldim", "fatura"
     ))
+
+    if is_order_status_inquiry(event.raw_text) and not order_num and not email_addr:
+        await event.respond(get_order_inquiry_reply("lisansarena"))
+        return
 
     if order_num or (has_order_words and (order_num or email_addr)):
         query = order_num or email_addr or event.raw_text.strip()

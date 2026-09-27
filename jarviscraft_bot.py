@@ -1391,6 +1391,35 @@ async def message_handler(event):
                 ]
             )
     else:
+        # Check for Shopier Order or Email fulfillment
+        try:
+            from order_fulfillment import extract_order_id, extract_email, fulfill_order_request, is_order_status_inquiry, get_order_inquiry_reply
+            order_num = extract_order_id(event.raw_text)
+            email_addr = extract_email(event.raw_text)
+            has_order_words = any(w in (event.raw_text or "").lower() for w in (
+                "sipariş", "siparis", "kod", "satın aldım", "satin aldim", "aldım", "aldim", "fatura"
+            ))
+
+            if is_order_status_inquiry(event.raw_text) and not order_num and not email_addr:
+                await event.respond(get_order_inquiry_reply("jarvis"))
+                return
+
+            if order_num or (has_order_words and (order_num or email_addr)):
+                query = order_num or email_addr or event.raw_text.strip()
+                fulfillment = await fulfill_order_request(
+                    query,
+                    tg_user_id=int(uid),
+                    tg_username=getattr(sender, "username", ""),
+                    brand_hint="jarvis",
+                    user_email=email_addr,
+                    client_or_bot=client,
+                )
+                if fulfillment and fulfillment.get("message"):
+                    await event.respond(fulfillment["message"])
+                    return
+        except Exception as o_err:
+            logger.warning(f"Jarvis order fulfill error: {o_err}")
+
         # DM Auto-Reply & Sales Product Matching
         try:
             from sales_conversion import load_sales_catalog, match_sales_products
@@ -1405,13 +1434,13 @@ async def message_handler(event):
                     f"**{p.get('title')}**\n"
                     f"{LINE}\n\n"
                     f"Fiyat: **{price_str}**\n\n"
-                    f"Detayli bilgi ve aninda teslimat icin Shopier magazamizi kullanabilir veya Mini App uzerinden inceleyebilirsiniz.\n"
+                    f"Detaylı bilgi ve anında teslimat için Shopier mağazamızı kullanabilir veya Mini App üzerinden inceleyebilirsiniz.\n"
                     f"{LINE}"
                 )
                 buttons = [
-                    [Button.url("Shopier ile Satin Al", p.get("url", "https://www.shopier.com/JarvisStore"))],
-                    [Button.url("Mini App Magazayi Ac", "https://t.me/JarvisCraftsBot/app")],
-                    [Button.url("Canli Destek (@JarvisCraft)", "https://t.me/JarvisCraft")]
+                    [Button.url("Shopier ile Satın Al", p.get("url", "https://www.shopier.com/JarvisStore"))],
+                    [Button.url("Mini App Mağazayı Aç", "https://t.me/JarvisCraftsBot/app")],
+                    [Button.url("Canlı Destek (@habil2121)", "https://t.me/habil2121")]
                 ]
                 await event.respond(msg_text, buttons=buttons)
                 return

@@ -679,40 +679,40 @@ STRICT_GROUP_FORBIDDEN = {
 
 
 def strict_group_safe_copy(group_key, is_keyvadi, is_lisansarena, is_froxy, is_jarvis=False):
-    """Normal ilanlardan kisaltilmis, kurala uygun marka metni."""
+    """Normal ilanlardan kısaltılmış, kurala uygun marka metni."""
     is_satcek = group_key == "satcek"
     if is_jarvis:
         lines = [
-            "JarvisCraft dijital urun ve yazilim",
-            "J.A.R.V.I.S. sesli masaustu AI asistani 350 TL",
+            "JarvisCraft dijital ürün ve yazılım",
+            "J.A.R.V.I.S. sesli masaüstü AI asistanı 350 TL",
             "Telegram 65+ grup oto-reklam botu 450 TL",
             "E-Ticaret ve kupon scraper botu 300 TL",
             "Full-Stack Mini App ve Shopier entegrasyonu 400 TL",
-            "Haftalik VIP reklam 150 TL | Aylik VIP reklam 350 TL",
-            "Ozel bot ve web yazilim gelistirme",
-            "+50'den fazla basarili teslimat | 7/24 kesintisiz calisma",
-            "Siparis ve demo icin: JarvisCraftsBot | Destek: JarvisCraft",
+            "Haftalık VIP reklam 150 TL | Aylık VIP reklam 350 TL",
+            "Özel bot ve web yazılım geliştirme",
+            "+50'den fazla başarılı teslimat | 7/24 kesintisiz çalışma",
+            "Sipariş ve demo için: @JarvisCraftsBot | Destek: @habil2121",
         ]
         return "\n".join(lines)
     if is_keyvadi:
         lines = [
-            "KeyVadi dijital urunler ve lisans",
-            "Canva Pro 1 yil 49,90 TL",
+            "KeyVadi dijital ürünler ve lisans",
+            "Canva Pro 1 yıl 49,90 TL",
             "Gemini Pro 18 ay 149,90 TL",
             "ChatGPT Plus ortak 39,90 TL",
-            "CapCut Pro 30 gun ortak hesap 40,00 TL",
-            "Windows 10/11 Pro 70,00 TL | Office 365 1 yil 70,00 TL",
+            "CapCut Pro 30 gün ortak hesap 40,00 TL",
+            "Windows 10/11 Pro 70,00 TL | Office 365 1 yıl 70,00 TL",
             "YouTube Premium 1 ay 30,00 TL | Spotify 4 ay 34,99 TL",
             "Steam oyun ve VIP key 60,00 TL",
             "Duolingo Super 12 ay 199,90 TL | Adobe Express 12 ay 499,90 TL",
         ]
         if not is_satcek:
-            lines.insert(3, "Netflix 4K kisisel profil 79,90 TL")
+            lines.insert(3, "Netflix 4K kişisel profil 79,90 TL")
             lines.insert(6, "Yemeksepeti 360/270 45,00 TL | 450/350 50,00 TL")
             lines.insert(7, "Trendyol Market 800/300 50,00 TL")
-            lines.insert(8, "Turna 600 TL ucak bileti 80,00 TL | Garenta %40 20,00 TL")
-        lines.append("Sure boyunca garanti ve aninda teslimat.")
-        lines.append("Siparis ve tum urunler: KeyVadiSatisBot")
+            lines.insert(8, "Turna 600 TL uçak bileti 80,00 TL | Garenta %40 20,00 TL")
+        lines.append("Süre boyunca garanti ve anında teslimat.")
+        lines.append("Sipariş ve tüm ürünler: @KeyVadiSatisBot")
         return "\n".join(lines)
     if is_lisansarena:
         lines = [
@@ -720,7 +720,7 @@ def strict_group_safe_copy(group_key, is_keyvadi, is_lisansarena, is_froxy, is_j
             "Gemini Pro 18 ay 165 TL | ChatGPT Plus 520 TL",
             "Canva Pro 1 yıl 85 TL | Adobe 1 ay 160 TL",
             "S Sport Plus 1 ay 80 TL | Turna 600 TL bilet 80 TL",
-            "Coffy 2 al 1 ode 55 TL | Migros 100 TL bakiye 60 TL",
+            "Coffy 2 al 1 öde 55 TL | Migros 100 TL bakiye 60 TL",
             "Windows 10/11 Pro 55 TL | Office 365 1 yıl 75 TL",
             "YouTube Premium 3 ay 45 TL | Spotify 4 ay 40 TL",
             "Steam 200$ VIP key 45 TL | Steam oyun 70 TL",
@@ -732,7 +732,7 @@ def strict_group_safe_copy(group_key, is_keyvadi, is_lisansarena, is_froxy, is_j
             lines.insert(5, "Positive 110 TL 35 TL | GastroClub %20 25 TL")
             lines.insert(6, "Garenta %40 30 TL | Enterprise %40 35 TL | ENUYGUN %10 30 TL")
         lines.append("+100'den fazla başarılı işlem | 7/24 otomatik teslimat")
-        lines.append("Sipariş ve detaylar: LisansArenaBot")
+        lines.append("Sipariş ve detaylar: @LisansArenaBot")
         return "\n".join(lines)
     return "\n".join([
         "Froxy dijital ürün mağazası",
@@ -740,7 +740,7 @@ def strict_group_safe_copy(group_key, is_keyvadi, is_lisansarena, is_froxy, is_j
         "ChatGPT Plus ve Codex 599,90 TL",
         "Gemini Pro 12 ay 59,99 TL | 18 ay 199,90 TL",
         "+20'den fazla başarılı işlem | Shopier güvencesi",
-        "Destek ve sipariş için: FroxyDestekBOT",
+        "Destek ve sipariş için: @FroxyDestekBOT",
     ])
 
 
@@ -764,7 +764,7 @@ def sanitize_strict_market_message(msg, grup_name, is_keyvadi, is_lisansarena, i
         # urun adi/icerigi belirsiz bir ilana donusmesin.
         brand = "KeyVadi" if is_keyvadi else ("LisansArena" if is_lisansarena else ("JarvisCraft" if is_jarvis else "Froxy AI"))
         msg = (
-            f"{brand} dijital urun ve lisans ilanı\n"
+            f"{brand} dijital ürün ve lisans ilanı\n"
             "Güncel ürün ve fiyat bilgisi için özel mesaj."
         )
 
@@ -891,7 +891,29 @@ def short_group_message(is_keyvadi, is_lisansarena, is_froxy=False, group_name=N
 def process_marketing_features(msg, is_keyvadi, is_lisansarena, is_short=False):
     if not msg:
         return ""
+    if is_short:
+        return msg.strip()
+
+    try:
+        from datetime import datetime, timezone, timedelta
+        tr_hour = datetime.now(timezone(timedelta(hours=3))).hour
+        if 6 <= tr_hour < 12:
+            greeting = "Herkese günaydın, hayırlı işler ve bereketli kazançlar."
+        elif 12 <= tr_hour < 18:
+            greeting = "Hayırlı işler, bereketli satışlar dileriz."
+        elif 18 <= tr_hour <= 23:
+            greeting = "Herkese iyi akşamlar, hayırlı işler ve bereketli kazançlar."
+        else:
+            greeting = "Hayırlı geceler, iyi çalışmalar dileriz."
+
+        cleaned = msg.strip()
+        first_line_lower = cleaned.splitlines()[0].lower() if cleaned.splitlines() else ""
+        if not any(g in first_line_lower for g in ("günaydın", "gunaydin", "iyi günler", "iyi aksamlar", "iyi akşamlar", "hayırlı", "hayirli", "selam")):
+            return f"{greeting}\n\n{cleaned}"
+    except Exception:
+        pass
     return msg.strip()
+
 
 
 
@@ -2196,7 +2218,19 @@ KEYVADI_MESSAGES = [
     os.path.join(MESSAGES_DIR, 'keyvadi_6.txt'),
     os.path.join(MESSAGES_DIR, 'keyvadi_7.txt'),
     os.path.join(MESSAGES_DIR, 'keyvadi_8.txt'),
+    os.path.join(MESSAGES_DIR, 'full_keyvadi_1.txt'),
+    os.path.join(MESSAGES_DIR, 'full_keyvadi_2.txt'),
+    os.path.join(MESSAGES_DIR, 'full_keyvadi_3.txt'),
+    os.path.join(MESSAGES_DIR, 'full_keyvadi_4.txt'),
+    os.path.join(MESSAGES_DIR, 'full_keyvadi_5.txt'),
+    os.path.join(MESSAGES_DIR, 'keyvadi_adobe.txt'),
+    os.path.join(MESSAGES_DIR, 'keyvadi_ai.txt'),
+    os.path.join(MESSAGES_DIR, 'keyvadi_deal.txt'),
+    os.path.join(MESSAGES_DIR, 'keyvadi_genel.txt'),
+    os.path.join(MESSAGES_DIR, 'keyvadi_kupon.txt'),
+    os.path.join(MESSAGES_DIR, 'keyvadi_ogrenci.txt'),
 ]
+
 
 LISANSARENA_MESSAGES = [
     os.path.join(MESSAGES_DIR, 'lisansarena_1.txt'),
@@ -2293,6 +2327,10 @@ def pick_message_for_group(grup_name, msg_files, history):
                 preferred = [f for f in available if any(k in f for k in ('keyvadi_1', 'keyvadi_2', 'keyvadi_4', 'keyvadi_6', 'keyvadi_8', 'full_keyvadi_2', 'full_keyvadi_5', 'keyvadi_deal', 'keyvadi_kupon', 'keyvadi_genel'))]
                 if preferred:
                     available = preferred
+            else:
+                preferred = [f for f in available if any(k in f for k in ('full_keyvadi_1', 'full_keyvadi_2', 'keyvadi_1', 'keyvadi_2', 'keyvadi_deal'))]
+                if preferred:
+                    available = preferred
 
         elif is_lisans_pool:
             # 08:00 - 17:00 (Gündüz): Ofis/AI/Tasarım ağırlıklı lisanslar
@@ -2303,6 +2341,10 @@ def pick_message_for_group(grup_name, msg_files, history):
             # 17:00 - 02:00 (Akşam): Dizi-film, eğlence, kupon ve oyun ağırlıklı
             elif tr_hour >= 17 or tr_hour < 2:
                 preferred = [f for f in available if any(k in f for k in ('lisansarena_1', 'lisansarena_3', 'lisansarena_6', 'lisansarena_7', 'lisansarena_8', 'full_lisansarena_2', 'full_lisansarena_5'))]
+                if preferred:
+                    available = preferred
+            else:
+                preferred = [f for f in available if any(k in f for k in ('full_lisansarena_1', 'full_lisansarena_2', 'lisansarena_1', 'lisansarena_3'))]
                 if preferred:
                     available = preferred
 
@@ -2317,6 +2359,10 @@ def pick_message_for_group(grup_name, msg_files, history):
                 preferred = [f for f in available if any(k in f for k in ('jarvis_2', 'jarvis_1', 'jarvis_4', 'full_jarvis_2'))]
                 if preferred:
                     available = preferred
+            else:
+                preferred = [f for f in available if any(k in f for k in ('full_jarvis_1', 'jarvis_1', 'jarvis_2'))]
+                if preferred:
+                    available = preferred
 
         elif is_froxy_pool:
             if 8 <= tr_hour < 17:
@@ -2325,6 +2371,10 @@ def pick_message_for_group(grup_name, msg_files, history):
                     available = preferred
             elif tr_hour >= 17 or tr_hour < 2:
                 preferred = [f for f in available if any(k in f for k in ('sales_froxy_8', 'froxy_social', 'froxy_hook', 'full_froxy_2'))]
+                if preferred:
+                    available = preferred
+            else:
+                preferred = [f for f in available if any(k in f for k in ('full_froxy_1', 'sales_froxy_7', 'froxy_price'))]
                 if preferred:
                     available = preferred
     except Exception:

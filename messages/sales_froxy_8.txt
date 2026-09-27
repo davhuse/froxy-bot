@@ -16,6 +16,5 @@
 │ ChatGPT ile metin ve kod, Gemini ile araştırma ve doküman, Perplexity ile kaynaklı
 │ arama; görsel, PDF, analiz ve içerik işlerinde ihtiyacınıza uygun modeli seçin.
 │ Kod yazma, PDF/dosya inceleme, veri analizi, görsel ve metin üretimi için
-│ modeli ihtiyacınıza göre seçin. Paket detayları ve Shopier mağazası:
-│ @FroxyDestekBOT
-╰─ Shopier mağazası ─╯
+│ modeli ihtiyacınıza göre seçin.
+╰─ Paket detayları ve Shopier mağazası: @FroxyDestekBOT ─╯

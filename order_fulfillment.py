@@ -57,6 +57,39 @@ def extract_email(text: str) -> str | None:
     return match.group(0).lower() if match else None
 
 
+ORDER_INQUIRY_TRIGGERS = (
+    "sipariş nerede", "siparis nerede", "siparişim nerede", "siparisim nerede",
+    "sipariş durumu", "siparis durumu", "sipariş durumu nedir", "siparişi sorgula",
+    "kod gelmedi", "kodum gelmedi", "kod nerede", "kodum nerede", "kod ulaşmadı", "kod ulasmadi",
+    "teslim edilmedi", "teslimat nerede", "teslimat yapılmadı", "teslimat yapilmadi",
+    "satın aldım gelmedi", "satin aldim gelmedi", "ödedim gelmedi", "odedim gelmedi",
+    "sipariş sorgula", "siparis sorgula", "nerede kaldı", "nerede kaldi", "gelmedi hala",
+    "kod ne zaman", "teslimat ne zaman", "siparişim ne zaman", "siparisim ne zaman"
+)
+
+
+def is_order_status_inquiry(text: str) -> bool:
+    if not text:
+        return False
+    lower = str(text).lower().strip()
+    if any(t in lower for t in ORDER_INQUIRY_TRIGGERS):
+        return True
+    words = ("sipariş", "siparis", "kodum", "teslimat", "satın aldım", "satin aldim", "ürünüm", "urunum")
+    queries = ("nerede", "gelmedi", "ne zaman", "durum", "ulaşmadı", "ulasmadi", "bekliyorum", "çıkmadı", "cikmadi")
+    return any(w in lower for w in words) and any(q in lower for q in queries)
+
+
+def get_order_inquiry_reply(brand: str = "") -> str:
+    return (
+        "Merhaba, siparişinizi kontrol edebilmemiz için lütfen 9 haneli Shopier sipariş numaranızı "
+        "veya satın alırken kullandığınız e-posta adresinizi buraya yazınız.\n\n"
+        "Bilgilendirme: Şu anda canlı destek ekibimiz aktif değildir (mesai dışındadır). "
+        "Sipariş numaranızı veya e-posta adresinizi ilettiğinizde talebiniz sıraya kaydedilecek ve "
+        "destek ekibimiz aktif olduğunda sırayla kontrol edilerek tarafınıza dönüş sağlanacaktır."
+    )
+
+
+
 def get_brand_shopier_token(brand: str) -> str:
     brand = str(brand or "").lower().strip()
     env_keys = {
