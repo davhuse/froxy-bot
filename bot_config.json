@@ -1,18 +1,16 @@
 {
-  "admin_id": 6196006704,
+  "admin_id": 7499698483,
   "admin_ids": [
-    6196006704,
-    5359327143,
-    8116518175
+    7499698483
   ],
-  "froxy_admin_id": 6196006704,
+  "froxy_admin_id": 7499698483,
   "keyvadi_bot_token": "8712009642:AAE2jKKUwjhVpRC38dpFQkbSt2srjdUDuuc",
   "keyvadi_group_link": "https://t.me/keyvadipazar",
   "keyvadi_group_id": -1004392139775,
   "froxy_bot_token": "8845484139:AAE7NeZdo4kSurKMNFctA08GhMQrbSQPvjg",
   "support_bot_token": "8845484139:AAE7NeZdo4kSurKMNFctA08GhMQrbSQPvjg",
-  "lisansarena_bot_token": "8272543860:AAGESmDOiIXFoK7FYCh0UfP3IplBcvMhTEA",
-  "froxy_bot_running": true,
+  "lisansarena_bot_token": "8971644915:AAESpHgQS5WtAGpCdSI8ACulN9Be9hZ-Dsw",
+  "froxy_bot_running": false,
   "ad_bot_running": true,
   "support_bot_running": true,
   "lisansarena_bot_running": true,

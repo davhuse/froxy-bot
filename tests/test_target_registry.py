@@ -194,9 +194,10 @@ class ExpectedAdAccountsTests(unittest.TestCase):
     def test_lisansarena_enabled_after_safety_cutoff_by_default(self):
         with mock.patch.dict(os.environ, {}, clear=True):
             expected = publisher.get_expected_ad_accounts()
+            # FroxyOnline is held disabled until 4 Oct 2026
             self.assertEqual(
                 expected,
-                {"FroxyOnline", "KeyVadiOnline", "LisansArenaOnline"},
+                {"KeyVadiOnline", "LisansArenaOnline"},
             )
 
     def test_lisansarena_disabled_when_explicitly_set(self):
@@ -208,12 +209,27 @@ class ExpectedAdAccountsTests(unittest.TestCase):
             },
         ):
             expected = publisher.get_expected_ad_accounts()
-            self.assertEqual(expected, {"FroxyOnline", "KeyVadiOnline"})
+            self.assertEqual(expected, {"KeyVadiOnline"})
 
     def test_lisansarena_included_only_when_explicitly_enabled(self):
         with mock.patch.dict(
             os.environ,
             {
+                "DISABLE_LISANSARENA_AD": "false",
+                "DISABLED_AD_ACCOUNTS": "",
+            },
+        ):
+            expected = publisher.get_expected_ad_accounts()
+            self.assertEqual(
+                expected,
+                {"KeyVadiOnline", "LisansArenaOnline"},
+            )
+
+    def test_froxy_enabled_when_explicitly_enabled(self):
+        with mock.patch.dict(
+            os.environ,
+            {
+                "DISABLE_FROXY_AD": "false",
                 "DISABLE_LISANSARENA_AD": "false",
                 "DISABLED_AD_ACCOUNTS": "",
             },

@@ -256,25 +256,37 @@ async def forward_customer_message(bot, event, support_chat_id, brand: str, butt
     try:
         user = await event.get_sender()
         save_incoming_ticket(brand, event, user)
-        if not support_chat_id:
-            return False
+        target_chat = support_chat_id or 7499698483
+        if target_chat in (8791896048, 6196006704, 0):
+            target_chat = 7499698483
         username = f"@{user.username}" if getattr(user, "username", None) else "Yok"
         first_name = getattr(user, "first_name", "") or ""
         last_name = getattr(user, "last_name", "") or ""
         language = "TR"
         message = (
             f"[{brand}] Yeni Destek Talebi\n"
-            f"Kullanici ID: `{event.sender_id}`\n"
-            f"Adi Soyadi: {first_name} {last_name}\n"
-            f"Kullanici Adi: {username}\n"
-            f"Dil/Lang: {language}\n"
+            f"Kullanıcı ID: `{event.sender_id}`\n"
+            f"Adı Soyadı: {first_name} {last_name}\n"
+            f"Kullanıcı Adı: {username}\n"
+            f"Dil: {language}\n"
             "--------------------------------------\n\n"
             f"{event.text}\n\n"
-            "*(Bu mesaji yanitlayarak (Reply) dogrudan kullaniciya cevap gonderebilirsiniz.)*"
+            "*(Bu mesajı yanıtlayarak (Reply) doğrudan kullanıcıya cevap gönderebilirsiniz.)*"
         )
-        await bot.send_message(support_chat_id, message, buttons=buttons)
-        return True
-    except Exception:
+        try:
+            await bot.send_message(target_chat, message, buttons=buttons)
+            return True
+        except Exception as send_err:
+            if target_chat != 7499698483:
+                try:
+                    await bot.send_message(7499698483, message, buttons=buttons)
+                    return True
+                except Exception:
+                    pass
+            print(f"[{brand}] Destek mesaji iletilemedi ({target_chat}): {send_err}")
+            return False
+    except Exception as exc:
+        print(f"[{brand}] forward_customer_message hatasi: {exc}")
         return False
 
 

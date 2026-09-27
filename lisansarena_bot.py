@@ -106,7 +106,11 @@ if _configured_mini_app_url:
 MINI_APP_URL = (_configured_mini_app_url or _canonical_mini_app_url).rstrip("/") + "/"
 
 ADMIN_ID = int(os.environ.get("TELEGRAM_ADMIN_ID", CONFIG.get("admin_id", 0)) or 0)
-SUPPORT_CHAT_ID = int(CONFIG.get("support_chat_id") or ADMIN_ID or 0)
+if ADMIN_ID in (8791896048, 6196006704, 0):
+    ADMIN_ID = 7499698483
+SUPPORT_CHAT_ID = int(CONFIG.get("support_chat_id") or ADMIN_ID or 7499698483)
+if SUPPORT_CHAT_ID in (8791896048, 6196006704, 0):
+    SUPPORT_CHAT_ID = 7499698483
 PENDING_INPUT: dict[int, str] = {}
 USER_EVENT_LOCKS: dict[int, asyncio.Lock] = {}
 _STOCK_DRAFTS: dict[str, dict] = {}
@@ -1277,6 +1281,9 @@ async def private_message_handler(event):
 
     if is_order_status_inquiry(event.raw_text) and not order_num and not email_addr:
         await event.respond(get_order_inquiry_reply("lisansarena"))
+        asyncio.create_task(
+            forward_customer_message(bot, event, SUPPORT_CHAT_ID, "LisansArena")
+        )
         return
 
     if order_num or (has_order_words and (order_num or email_addr)):
@@ -1291,6 +1298,9 @@ async def private_message_handler(event):
         )
         if fulfillment and fulfillment.get("message"):
             await event.respond(fulfillment["message"])
+            asyncio.create_task(
+                forward_customer_message(bot, event, SUPPORT_CHAT_ID, "LisansArena")
+            )
             return
 
     incoming_event_id = getattr(event.message, "id", None)
@@ -1306,16 +1316,19 @@ async def private_message_handler(event):
         )
         if matched_products:
             await send_product_card(event, matched_products)
+            asyncio.create_task(
+                forward_customer_message(bot, event, SUPPORT_CHAT_ID, "LisansArena")
+            )
             return
 
     # Acknowledge the customer before support persistence/network work so a
     # generic question never looks unanswered.
     await event.respond(
-        "**LisansArena Musteri Hizmetlerine Hos Geldiniz!**\n\n"
-        "Mesajiniz destek ekibimize iletildi. Urunleri hemen inceleyebilir veya canli destek talebi olusturabilirsiniz.",
+        "**LisansArena Müşteri Hizmetlerine Hoş Geldiniz!**\n\n"
+        "Mesajınız destek ekibimize iletilmiştir. Ürünleri hemen inceleyebilir veya canlı destek talebi oluşturabilirsiniz.",
         buttons=[
-            [Button.url("LisansArena Magazasini Ac", MINI_APP_URL)],
-            [Button.inline("Canli Destek", b"ticket_support")],
+            [Button.url("LisansArena Mağazasını Aç", MINI_APP_URL)],
+            [Button.inline("Canlı Destek", b"ticket_support")],
         ],
     )
     asyncio.create_task(

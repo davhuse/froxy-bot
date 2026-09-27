@@ -64,7 +64,13 @@ ORDER_INQUIRY_TRIGGERS = (
     "teslim edilmedi", "teslimat nerede", "teslimat yapılmadı", "teslimat yapilmadi",
     "satın aldım gelmedi", "satin aldim gelmedi", "ödedim gelmedi", "odedim gelmedi",
     "sipariş sorgula", "siparis sorgula", "nerede kaldı", "nerede kaldi", "gelmedi hala",
-    "kod ne zaman", "teslimat ne zaman", "siparişim ne zaman", "siparisim ne zaman"
+    "kod ne zaman", "teslimat ne zaman", "siparişim ne zaman", "siparisim ne zaman",
+    "ödeme yaptım", "odeme yaptim", "ödemeyi yaptım", "odemeyi yaptim",
+    "shoppierden aldım", "shopierden aldım", "shopier aldım", "shoppier aldım",
+    "aldım gelmedi", "aldim gelmedi", "gelmedi valla", "yoo gelmedi", "gelmedi",
+    "buradan mı vereceksiniz", "burdan mı vereceksiniz", "bilgileri buradan mı", "bilgileri nerden",
+    "hesap bilgileri", "şifre nerede", "sifre nerede", "parayı attım", "parayi attim",
+    "parayı gönderdim", "parayi gonderdim", "dekont", "havale yaptım", "havale yaptim"
 )
 
 
@@ -74,8 +80,8 @@ def is_order_status_inquiry(text: str) -> bool:
     lower = str(text).lower().strip()
     if any(t in lower for t in ORDER_INQUIRY_TRIGGERS):
         return True
-    words = ("sipariş", "siparis", "kodum", "teslimat", "satın aldım", "satin aldim", "ürünüm", "urunum")
-    queries = ("nerede", "gelmedi", "ne zaman", "durum", "ulaşmadı", "ulasmadi", "bekliyorum", "çıkmadı", "cikmadi")
+    words = ("sipariş", "siparis", "kodum", "teslimat", "satın aldım", "satin aldim", "ürünüm", "urunum", "ödeme", "odeme", "aldım", "aldim", "shopier", "shoppier")
+    queries = ("nerede", "gelmedi", "ne zaman", "durum", "ulaşmadı", "ulasmadi", "bekliyorum", "çıkmadı", "cikmadi", "yaptım", "yaptim", "bilgi", "verir misiniz", "verir misin")
     return any(w in lower for w in words) and any(q in lower for q in queries)
 
 

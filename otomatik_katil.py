@@ -894,6 +894,41 @@ def process_marketing_features(msg, is_keyvadi, is_lisansarena, is_short=False):
     return msg.strip()
 
 
+def get_admin_id():
+    env_id = os.environ.get("TELEGRAM_ADMIN_ID")
+    if env_id:
+        try:
+            val = int(env_id.strip())
+            if val not in (8791896048, 6196006704):
+                return val
+        except Exception:
+            pass
+    try:
+        if os.path.exists("bot_config.json"):
+            with open("bot_config.json", "r", encoding="utf-8-sig") as f:
+                cfg_id = json.load(f).get("admin_id")
+                if cfg_id and int(cfg_id) not in (8791896048, 6196006704):
+                    return int(cfg_id)
+    except Exception:
+        pass
+    return 7499698483
+
+
+async def send_admin_alert(client, message):
+    admin_id = get_admin_id()
+    try:
+        await client.send_message(admin_id, message)
+        return True
+    except Exception:
+        try:
+            await client.send_message("habil2121", message)
+            return True
+        except Exception as e:
+            print(f"send_admin_alert hatasi: {e}")
+            return False
+
+
+
 
 
 PROGRESS_FILE = 'progress.txt'
@@ -3826,39 +3861,36 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
             print(f"[{client_name}] DM satış dışı görünüyor, otomatik yanıt atlandı.")
             return
 
-        # LisansArena odeme/IBAN sorularini Shopier'e cevirmeden destek ekibine
-        # aktar. Tekrarlanan mesajlarda hem musteriye hem admin'e dalga halinde
-        # mesaj gitmesini engellemek icin 15 dakikalik yerel bildirim kilidi var.
+        # LisansArena odeme/IBAN ve destek sorulari
         if is_lisansarena and is_lisansarena_support_message(event.raw_text):
             support_notice_key = (client_name, sender_id)
             last_notice = LISANSARENA_SUPPORT_NOTICE_TIME.get(support_notice_key, 0)
-            if now - last_notice >= SALES_FOLLOWUP_TTL_SECONDS:
-                admin_id = None
-                try:
-                    with open("bot_config.json", "r", encoding="utf-8-sig") as f_cfg:
-                        admin_id = json.load(f_cfg).get("admin_id")
-                except Exception:
-                    pass
-                if admin_id:
-                    admin_message = (
-                        "📩 **LisansArena ödeme/destek talebi**\n\n"
-                        f"Müşteri: @{getattr(sender, 'username', '') or sender_id}\n"
-                        f"ID: `{sender_id}`\n"
-                        f"Mesaj: {event.raw_text}\n\n"
-                        "Shopier kullanılmadan IBAN/dekont desteği gerekiyor."
-                    )
-                    try:
-                        await client.send_message(int(admin_id), admin_message)
-                        LISANSARENA_SUPPORT_NOTICE_TIME[support_notice_key] = now
-                    except Exception as exc:
-                        print(f"[{client_name}] LisansArena destek bildirimi gönderilemedi: {exc}")
-            # The customer-facing Shopier/IBAN handoff was explicitly disabled.
-            # Keep the optional internal admin notice above, but never send the
-            # old "@LisansArenaAdmin" reply back to the customer.
-            print(
-                f"[{client_name}] LisansArena ödeme/destek otomatik müşteri yanıtı kapalı; "
-                f"yanıt gönderilmedi (@{getattr(sender, 'username', sender_id)})."
+
+            # 1. Musteriye aninda yanit ver
+            inquiry_reply = (
+                "Merhaba, siparişinizi kontrol edebilmemiz için lütfen 9 haneli Shopier sipariş numaranızı "
+                "veya satın alırken kullandığınız e-posta adresinizi buraya yazınız.\n\n"
+                "Havale/EFT ile ödeme yaptıysanız dekont bilginizi veya sipariş açıklamasını iletiniz.\n\n"
+                "Bilgilendirme: Şu anda canlı destek ekibimiz aktif değildir (mesai dışındadır). "
+                "Bilgilerinizi ilettiğinizde talebiniz sıraya kaydedilecek ve destek ekibimiz aktif olduğunda "
+                "sırayla kontrol edilerek tarafınıza dönüş sağlanacaktır."
             )
+            await send_dm_reply_with_floodwait(event, inquiry_reply, client_name)
+            USER_DM_LAST_REPLY_TIME[user_key] = now
+            USER_DM_LAST_REPLY_TEXT[user_key] = normalized_text
+
+            # 2. Admine aninda bildirim ilet
+            if now - last_notice >= SALES_FOLLOWUP_TTL_SECONDS:
+                admin_message = (
+                    f"LisansArena ödeme/destek talebi\n\n"
+                    f"Müşteri: @{getattr(sender, 'username', '') or sender_id}\n"
+                    f"ID: {sender_id}\n"
+                    f"Mesaj: {event.raw_text}\n"
+                )
+                sent_ok = await send_admin_alert(client, admin_message)
+                if sent_ok:
+                    LISANSARENA_SUPPORT_NOTICE_TIME[support_notice_key] = now
+                    print(f"[{client_name}] LisansArena destek bildirimi admine iletildi.")
             return
         
         products = []
@@ -3965,7 +3997,23 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                 reason=("followup_after_product" if sales_context else dm_intent),
                 conversation_key=dm_conversation_key,
             )
-            print(f"[{client_name}] Takip mesaji yalnizca panele aktarildi.")
+            if now - USER_DM_LAST_REPLY_TIME.get(user_key, 0) > 30:
+                followup_reply = (
+                    "Mesajınız destek ekibimize iletilmiştir. Canlı destek ekibimiz şu anda mesai dışındadır, "
+                    "siparişiniz veya sorunuz en kısa sürede kontrol edilerek tarafınıza dönüş sağlanacaktır."
+                )
+                await send_dm_reply_with_floodwait(event, followup_reply, client_name)
+                USER_DM_LAST_REPLY_TIME[user_key] = now
+                USER_DM_LAST_REPLY_TEXT[user_key] = normalized_text
+
+            admin_message = (
+                f"Müşteri Mesajı [{client_name}]\n\n"
+                f"Müşteri: @{getattr(sender, 'username', '') or sender_id}\n"
+                f"ID: {sender_id}\n"
+                f"Mesaj: {event.raw_text}\n"
+            )
+            await send_admin_alert(client, admin_message)
+            print(f"[{client_name}] Takip mesaji admin ve musteriye iletildi.")
             return
         elif is_lisansarena and has_explicit_sales_intent(event.raw_text):
             if await customer_has_claimed_product(client_name, sender_id, products):
@@ -4149,16 +4197,37 @@ def mark_dead_ad_session(client_name, exc):
     )
 
 
+def is_froxy_ad_disabled() -> bool:
+    """Froxy reklam hesabi kullanici talimatiyla 4 Ekim 2026 23:59:59 tarihine kadar kapali tutulur."""
+    configured = os.environ.get("DISABLE_FROXY_AD")
+    if configured is not None and configured.strip():
+        if configured.strip().casefold() in {"1", "true", "yes", "on"}:
+            return True
+        if configured.strip().casefold() in {"0", "false", "no", "off"}:
+            return False
+    from datetime import datetime, timezone, timedelta
+    tz_tr = timezone(timedelta(hours=3))
+    unlock_time = datetime(2026, 10, 4, 23, 59, 59, tzinfo=tz_tr)
+    return datetime.now(timezone.utc) < unlock_time
+
+
 def disabled_ad_accounts():
     """Return advertising accounts held out of joins/blasts by configuration."""
     raw = os.environ.get("DISABLED_AD_ACCOUNTS", "")
-    return {item.strip().casefold() for item in raw.split(",") if item.strip()}
+    res = {item.strip().casefold() for item in raw.split(",") if item.strip()}
+    if is_froxy_ad_disabled():
+        res.add("froxyonline")
+        res.add("froxy")
+        res.add("hesap #1")
+    if is_lisansarena_ad_disabled():
+        res.add("lisansarenaonline")
+        res.add("lisansarena")
+        res.add("hesap #3")
+    return res
 
 
 def is_lisansarena_ad_disabled() -> bool:
     """Honor explicit holds, otherwise use the temporary safety cutoff."""
-    if "lisansarenaonline" in disabled_ad_accounts():
-        return True
     configured = os.environ.get("DISABLE_LISANSARENA_AD")
     if configured is not None and configured.strip():
         return configured.strip().casefold() in {"1", "true", "yes", "on"}
@@ -4170,7 +4239,9 @@ def is_lisansarena_ad_disabled() -> bool:
 
 def get_expected_ad_accounts():
     """Return the set of ad accounts actively expected to connect."""
-    expected = {'FroxyOnline', 'KeyVadiOnline'}
+    expected = {'KeyVadiOnline'}
+    if not is_froxy_ad_disabled():
+        expected.add('FroxyOnline')
     if not is_lisansarena_ad_disabled():
         expected.add('LisansArenaOnline')
     if os.environ.get("AD_STRING_SESSION_JARVIS"):
@@ -4178,7 +4249,7 @@ def get_expected_ad_accounts():
     return expected
 
 
-BEKLENEN_HESAPLAR = {'FroxyOnline', 'KeyVadiOnline', 'LisansArenaOnline', 'JarvisCraftOnline'}
+BEKLENEN_HESAPLAR = {'KeyVadiOnline', 'LisansArenaOnline', 'JarvisCraftOnline'}
 
 
 _last_eksik_alert_time = 0
@@ -4395,9 +4466,9 @@ async def main():
 
     active_clients = []
     
-    # Client 1
-    if string_session_key:
-        print("🔑 1. Hesap: StringSession kullanılarak bağlanılıyor...")
+    # Client 1 (Froxy - 4 Ekim 2026 tarihine kadar kapali tutulur)
+    if string_session_key and not is_froxy_ad_disabled():
+        print("1. Hesap (Froxy): StringSession kullanilarak baglaniliyor...")
         try:
             from telethon.sessions import StringSession
             client1 = TelegramClient(StringSession(string_session_key), api_id, api_hash, timeout=20, connection_retries=-1, auto_reconnect=True, flood_sleep_threshold=5)
@@ -4405,16 +4476,27 @@ async def main():
             if await client1.is_user_authorized():
                 me = await client1.get_me()
                 active_clients.append((client1, "Hesap #1", {"id": me.id, "slot": 1}))
-                print(f"✅ 1. Hesap yetkilendirildi ve aktif edildi. ID: {me.id}")
+                print(f"1. Hesap yetkilendirildi ve aktif edildi. ID: {me.id}")
                 client1.loop.create_task(presence_watchdog(client1))
             else:
-                print("❌ HATA: 1. Hesap yetkilendirilmemiş!")
+                print("HATA: 1. Hesap yetkilendirilmemis!")
         except Exception as e:
             report_client_error(1, e)
             try:
                 await client1.disconnect()
             except Exception:
                 pass
+    else:
+        print("1. Hesap (Froxy): 4 Ekim 2026 saat 23:59'a kadar KAPALI tutuluyor (otomatik acilacak).")
+        update_ad_account_status(
+            'FroxyOnline',
+            process_running=True,
+            telegram_connected=False,
+            telegram_authorized=False,
+            phase='disabled_by_config',
+            last_error='Froxy reklam hesabi 4 Ekim 2026 saat 23:59:59 tarihine kadar kapali tutuluyor.',
+            next_blast_at=None,
+        )
             
     # Client 2
     if string_session_key_2:
