@@ -891,27 +891,6 @@ def short_group_message(is_keyvadi, is_lisansarena, is_froxy=False, group_name=N
 def process_marketing_features(msg, is_keyvadi, is_lisansarena, is_short=False):
     if not msg:
         return ""
-    if is_short:
-        return msg.strip()
-
-    try:
-        from datetime import datetime, timezone, timedelta
-        tr_hour = datetime.now(timezone(timedelta(hours=3))).hour
-        if 6 <= tr_hour < 12:
-            greeting = "Herkese günaydın, hayırlı işler ve bereketli kazançlar."
-        elif 12 <= tr_hour < 18:
-            greeting = "Hayırlı işler, bereketli satışlar dileriz."
-        elif 18 <= tr_hour <= 23:
-            greeting = "Herkese iyi akşamlar, hayırlı işler ve bereketli kazançlar."
-        else:
-            greeting = "Hayırlı geceler, iyi çalışmalar dileriz."
-
-        cleaned = msg.strip()
-        first_line_lower = cleaned.splitlines()[0].lower() if cleaned.splitlines() else ""
-        if not any(g in first_line_lower for g in ("günaydın", "gunaydin", "iyi günler", "iyi aksamlar", "iyi akşamlar", "hayırlı", "hayirli", "selam")):
-            return f"{greeting}\n\n{cleaned}"
-    except Exception:
-        pass
     return msg.strip()
 
 
