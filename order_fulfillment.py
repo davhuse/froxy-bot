@@ -88,10 +88,7 @@ def is_order_status_inquiry(text: str) -> bool:
 def get_order_inquiry_reply(brand: str = "") -> str:
     return (
         "Merhaba, siparişinizi kontrol edebilmemiz için lütfen 9 haneli Shopier sipariş numaranızı "
-        "veya satın alırken kullandığınız e-posta adresinizi buraya yazınız.\n\n"
-        "Bilgilendirme: Şu anda canlı destek ekibimiz aktif değildir (mesai dışındadır). "
-        "Sipariş numaranızı veya e-posta adresinizi ilettiğinizde talebiniz sıraya kaydedilecek ve "
-        "destek ekibimiz aktif olduğunda sırayla kontrol edilerek tarafınıza dönüş sağlanacaktır."
+        "veya satın alırken kullandığınız e-posta adresinizi iletiniz."
     )
 
 
@@ -362,9 +359,7 @@ async def fulfill_order_request(
             f"Sipariş No: {order_id}\n"
             f"Ürün: {product_name}\n"
             f"Tutar: {amount} TL\n\n"
-            f"Ödemeniz başarıyla alındı. Talebiniz ve sipariş bilgileriniz sıraya kaydedilmiştir.\n\n"
-            f"Şu anda canlı destek ekibimiz aktif değildir (mesai dışındadır). "
-            f"Ekibimiz aktif olduğunda lisans kodunuz güvenlik kontrolünün ardından sırayla buradan iletilecektir."
+            f"Ödemeniz başarıyla alındı. Lisans kodunuz kontrol edilerek buradan tarafınıza iletilecektir."
         )
         if client_or_bot:
             await send_admin_push_alert(
@@ -382,9 +377,7 @@ async def fulfill_order_request(
             f"Ürün: {product_name}\n"
             f"Tutar: {amount} TL\n\n"
             f"Tanımlanacak E-Posta Adresi: {buyer_email}\n\n"
-            f"Talebiniz yetkili ekibimize iletilmiştir ve sıraya alınmıştır.\n\n"
-            f"Şu anda canlı destek ekibimiz aktif değildir (mesai dışındadır). "
-            f"Ekibimiz aktif olduğunda davet ve yetki işleminiz belirtilen e-posta adresinize sırayla tanımlanacaktır."
+            f"Ödemeniz başarıyla alındı. Davet işleminiz belirtilen e-posta adresinize tanımlanacaktır."
         )
         if client_or_bot:
             await send_admin_push_alert(
@@ -399,10 +392,8 @@ async def fulfill_order_request(
         f"Sipariş No: {order_id}\n"
         f"Ürün: {product_name}\n"
         f"Tutar: {amount} TL\n\n"
-        f"Bu ürün şahsi hesabınıza yetki ve davet şeklinde tanımlanmaktadır.\n"
-        f"Aktivasyonun tamamlanabilmesi için lütfen {product_name} hesabınıza kayıtlı e-posta adresinizi buraya yazınız.\n\n"
-        f"Not: Canlı destek ekibimiz şu anda aktif değildir (mesai dışındadır). "
-        f"E-posta adresinizi ilettiğinizde talebiniz sıraya alınacak ve ekibimiz aktif olduğunda işlem tamamlanacaktır."
+        f"Bu ürün şahsi hesabınıza davet şeklinde tanımlanmaktadır.\n"
+        f"Aktivasyon için lütfen {product_name} hesabınıza kayıtlı e-posta adresinizi buraya yazınız."
     )
     if client_or_bot:
         await send_admin_push_alert(

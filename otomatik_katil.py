@@ -3835,17 +3835,22 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         )
 
         if is_order_inquiry and not order_num and not email_addr:
-            inquiry_reply = (
-                "Merhaba, siparişinizi kontrol edebilmemiz için lütfen 9 haneli Shopier sipariş numaranızı "
-                "veya satın alırken kullandığınız e-posta adresinizi buraya yazınız.\n\n"
-                "Bilgilendirme: Şu anda canlı destek ekibimiz aktif değildir (mesai dışındadır). "
-                "Sipariş numaranızı veya e-posta adresinizi ilettiğinizde talebiniz sıraya kaydedilecek ve "
-                "destek ekibimiz aktif olduğunda sırayla kontrol edilerek tarafınıza dönüş sağlanacaktır."
+            if now - USER_DM_LAST_REPLY_TIME.get(user_key, 0) > 300:
+                inquiry_reply = (
+                    "Merhaba, siparişinizi kontrol edebilmemiz için lütfen 9 haneli Shopier sipariş numaranızı "
+                    "veya satın alırken kullandığınız e-posta adresinizi iletiniz."
+                )
+                await send_dm_reply_with_floodwait(event, inquiry_reply, client_name)
+                record_event("order_inquiry_asked_credentials", client_name, source="telegram_private")
+                USER_DM_LAST_REPLY_TIME[user_key] = now
+                USER_DM_LAST_REPLY_TEXT[user_key] = normalized_text
+            admin_message = (
+                f"Sipariş Sorgusu [{client_name}]\n\n"
+                f"Müşteri: @{getattr(sender, 'username', '') or sender_id}\n"
+                f"ID: {sender_id}\n"
+                f"Mesaj: {event.raw_text}\n"
             )
-            await send_dm_reply_with_floodwait(event, inquiry_reply, client_name)
-            record_event("order_inquiry_asked_credentials", client_name, source="telegram_private")
-            USER_DM_LAST_REPLY_TIME[user_key] = now
-            USER_DM_LAST_REPLY_TEXT[user_key] = normalized_text
+            await send_admin_alert(client, admin_message)
             return
 
         has_keyword = any(kw in msg_text for kw in (
@@ -3866,31 +3871,27 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
             support_notice_key = (client_name, sender_id)
             last_notice = LISANSARENA_SUPPORT_NOTICE_TIME.get(support_notice_key, 0)
 
-            # 1. Musteriye aninda yanit ver
-            inquiry_reply = (
-                "Merhaba, siparişinizi kontrol edebilmemiz için lütfen 9 haneli Shopier sipariş numaranızı "
-                "veya satın alırken kullandığınız e-posta adresinizi buraya yazınız.\n\n"
-                "Havale/EFT ile ödeme yaptıysanız dekont bilginizi veya sipariş açıklamasını iletiniz.\n\n"
-                "Bilgilendirme: Şu anda canlı destek ekibimiz aktif değildir (mesai dışındadır). "
-                "Bilgilerinizi ilettiğinizde talebiniz sıraya kaydedilecek ve destek ekibimiz aktif olduğunda "
-                "sırayla kontrol edilerek tarafınıza dönüş sağlanacaktır."
-            )
-            await send_dm_reply_with_floodwait(event, inquiry_reply, client_name)
-            USER_DM_LAST_REPLY_TIME[user_key] = now
-            USER_DM_LAST_REPLY_TEXT[user_key] = normalized_text
+            # 1. Musteriye yalnizca ilk sorusunda tek seferlik kisa siparis no sorusu ilet
+            if now - last_notice >= SALES_FOLLOWUP_TTL_SECONDS:
+                inquiry_reply = (
+                    "Merhaba, siparişinizi kontrol edebilmemiz için lütfen 9 haneli Shopier sipariş numaranızı "
+                    "veya satın alırken kullandığınız e-posta adresinizi iletiniz."
+                )
+                await send_dm_reply_with_floodwait(event, inquiry_reply, client_name)
+                USER_DM_LAST_REPLY_TIME[user_key] = now
+                USER_DM_LAST_REPLY_TEXT[user_key] = normalized_text
 
             # 2. Admine aninda bildirim ilet
-            if now - last_notice >= SALES_FOLLOWUP_TTL_SECONDS:
-                admin_message = (
-                    f"LisansArena ödeme/destek talebi\n\n"
-                    f"Müşteri: @{getattr(sender, 'username', '') or sender_id}\n"
-                    f"ID: {sender_id}\n"
-                    f"Mesaj: {event.raw_text}\n"
-                )
-                sent_ok = await send_admin_alert(client, admin_message)
-                if sent_ok:
-                    LISANSARENA_SUPPORT_NOTICE_TIME[support_notice_key] = now
-                    print(f"[{client_name}] LisansArena destek bildirimi admine iletildi.")
+            admin_message = (
+                f"LisansArena ödeme/destek talebi\n\n"
+                f"Müşteri: @{getattr(sender, 'username', '') or sender_id}\n"
+                f"ID: {sender_id}\n"
+                f"Mesaj: {event.raw_text}\n"
+            )
+            sent_ok = await send_admin_alert(client, admin_message)
+            if sent_ok:
+                LISANSARENA_SUPPORT_NOTICE_TIME[support_notice_key] = now
+                print(f"[{client_name}] LisansArena destek bildirimi admine iletildi.")
             return
         
         products = []
@@ -3997,15 +3998,6 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                 reason=("followup_after_product" if sales_context else dm_intent),
                 conversation_key=dm_conversation_key,
             )
-            if now - USER_DM_LAST_REPLY_TIME.get(user_key, 0) > 30:
-                followup_reply = (
-                    "Mesajınız destek ekibimize iletilmiştir. Canlı destek ekibimiz şu anda mesai dışındadır, "
-                    "siparişiniz veya sorunuz en kısa sürede kontrol edilerek tarafınıza dönüş sağlanacaktır."
-                )
-                await send_dm_reply_with_floodwait(event, followup_reply, client_name)
-                USER_DM_LAST_REPLY_TIME[user_key] = now
-                USER_DM_LAST_REPLY_TEXT[user_key] = normalized_text
-
             admin_message = (
                 f"Müşteri Mesajı [{client_name}]\n\n"
                 f"Müşteri: @{getattr(sender, 'username', '') or sender_id}\n"
@@ -4013,7 +4005,7 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                 f"Mesaj: {event.raw_text}\n"
             )
             await send_admin_alert(client, admin_message)
-            print(f"[{client_name}] Takip mesaji admin ve musteriye iletildi.")
+            print(f"[{client_name}] Takip mesaji admine iletildi.")
             return
         elif is_lisansarena and has_explicit_sales_intent(event.raw_text):
             if await customer_has_claimed_product(client_name, sender_id, products):

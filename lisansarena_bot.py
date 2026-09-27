@@ -60,6 +60,7 @@ MINIAPP_DIR = BASE_DIR / "miniapp_lisansarena"
 LA_USER_DATA_PATH = MINIAPP_DIR / "users_data.json"
 LA_PRODUCTS_DB_PATH = MINIAPP_DIR / "products_db.json"
 DATA_LOCK = threading.RLock()
+USER_LAST_GREETING_TIME: dict[int, float] = {}
 
 API_ID = int(os.environ.get("TELEGRAM_API_ID", "0") or 0)
 API_HASH = os.environ.get("TELEGRAM_API_HASH", "").strip()
@@ -1321,16 +1322,7 @@ async def private_message_handler(event):
             )
             return
 
-    # Acknowledge the customer before support persistence/network work so a
-    # generic question never looks unanswered.
-    await event.respond(
-        "**LisansArena Müşteri Hizmetlerine Hoş Geldiniz!**\n\n"
-        "Mesajınız destek ekibimize iletilmiştir. Ürünleri hemen inceleyebilir veya canlı destek talebi oluşturabilirsiniz.",
-        buttons=[
-            [Button.url("LisansArena Mağazasını Aç", MINI_APP_URL)],
-            [Button.inline("Canlı Destek", b"ticket_support")],
-        ],
-    )
+    # Musteri mesajini her zaman canli destek kanalina ilet
     asyncio.create_task(
         forward_customer_message(bot, event, SUPPORT_CHAT_ID, "LisansArena")
     )
@@ -1338,10 +1330,25 @@ async def private_message_handler(event):
         "human_handoff", "LisansArena", source="telegram_private",
         reason=dm_intent,
     )
-    record_event(
-        "dm_reply_sent", "LisansArena", source="telegram_private",
-        product="generic_menu",
-    )
+
+    # Musteriye her mesajinda spam karsilama mesaji atilmasini engelle.
+    # Yalnizca ilk temasta tek sefer magaza ve canli destek secenekleri sunulur.
+    last_greeted = USER_LAST_GREETING_TIME.get(sender_id, 0)
+    current_time = time.time()
+    if current_time - last_greeted >= 6 * 3600 and await claim_first_greeting("LisansArena", sender_id):
+        USER_LAST_GREETING_TIME[sender_id] = current_time
+        await event.respond(
+            "**LisansArena Mağazasına Hoş Geldiniz!**\n\n"
+            "Tüm lisans ve ürünlerimizi aşağıdaki butondan inceleyebilir veya sorunuzu doğrudan buraya yazabilirsiniz.",
+            buttons=[
+                [Button.url("LisansArena Mağazasını Aç", MINI_APP_URL)],
+                [Button.inline("Canlı Destek", b"ticket_support")],
+            ],
+        )
+        record_event(
+            "dm_reply_sent", "LisansArena", source="telegram_private",
+            product="generic_menu",
+        )
 
 
 # ==================== MAIN LOOP ====================

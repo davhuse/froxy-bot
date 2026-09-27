@@ -141,6 +141,7 @@ AUTO_REPLY_COOLDOWN_SECONDS = 300
 LAST_AUTO_REPLY_TIME = {}
 SUPPORT_SALES_CONTEXT = {}
 USER_CTA_ATTRIBUTION = {}
+USER_LAST_GREETING_TIME = {}
 def _product_reply_key(user_id, product=None, fallback_key=None):
     if product:
         product_key = str(product.get('id') or product.get('url') or product.get('title') or '').lower()
@@ -2560,10 +2561,6 @@ async def message_handler(event):
             and user_states.get(user_id) != "AWAITING_SUPPORT"
             and dm_intent != INTENT_SALES_LEAD
         ):
-            await event.respond(
-                greeting_for("KeyVadi"),
-                buttons=mini_app_markup("KeyVadi Magazasini Ac"),
-            )
             asyncio.create_task(
                 forward_customer_message(
                     bot,
@@ -2577,7 +2574,15 @@ async def message_handler(event):
                 "human_handoff", "KeyVadi", source="telegram_private",
                 reason=dm_intent,
             )
-            record_event("dm_reply_sent", "KeyVadi", source="telegram_private", product="generic_menu")
+            last_greeted = USER_LAST_GREETING_TIME.get(user_id, 0)
+            now_time = time.time()
+            if now_time - last_greeted >= 6 * 3600 and await claim_first_greeting("KeyVadi", user_id):
+                USER_LAST_GREETING_TIME[user_id] = now_time
+                await event.respond(
+                    greeting_for("KeyVadi"),
+                    buttons=mini_app_markup("KeyVadi Magazasini Ac"),
+                )
+                record_event("dm_reply_sent", "KeyVadi", source="telegram_private", product="generic_menu")
             return
         roadmap_reply = resolve_smart_roadmap_reply(event.text, "keyvadi")
         if roadmap_reply:

@@ -296,37 +296,27 @@ def greeting_for(brand: str) -> str:
         return (
             "**KeyVadi Destek Hattına Hoş Geldiniz!**\n\n"
             "Steam Random Keyler, FC26, Xbox Game Pass, Minecraft Koleksiyon Pelerinleri, "
-            "Netflix 4K ve dijital e-pinler hakkında sormak istediğiniz her şeyi yazabilirsiniz.\n\n"
-            "Not: Canlı destek ekibimiz şu anda aktif değildir (mesai dışındadır). "
-            "Mesajınız ve talebiniz sıraya alınmıştır, ekibimiz aktif olduğunda en kısa sürede dönüş yapılacaktır."
+            "Netflix 4K ve dijital e-pinler hakkında sormak istediğiniz her şeyi yazabilirsiniz."
         )
     if brand_lower in ("lisansarena", "lisans arena"):
         return (
             "**LisansArena Müşteri Hizmetlerine Hoş Geldiniz!**\n\n"
             "Canva Pro, Microsoft Office 365, Windows 10/11 Pro, CapCut Pro ve yapay "
-            "zekâ araçlarımız 7/24 otomatik teslimat ve değişim garantimiz altındadır.\n\n"
-            "Not: Canlı destek ekibimiz şu anda aktif değildir (mesai dışındadır). "
-            "Talebiniz sıraya başarıyla aktarılmıştır, ekibimiz aktif olduğunda en kısa sürede dönüş sağlanacaktır."
+            "zekâ araçlarımız 7/24 otomatik teslimat ve değişim garantimiz altındadır."
         )
     if brand_lower in ("froxy", "froxy ai"):
         return (
             "**Froxy AI Destek Merkezine Hoş Geldiniz!**\n\n"
             "Froxy AI paketleri, kredi yüklemeleri veya teknik destek talebinizi "
-            "yazabilirsiniz.\n\n"
-            "Not: Canlı destek ekibimiz şu anda aktif değildir (mesai dışındadır). "
-            "Talebiniz sıraya alınmıştır, ekibimiz aktif olduğunda en kısa sürede dönüş yapılacaktır."
+            "yazabilirsiniz."
         )
     if brand_lower in ("jarvis", "jarviscraft"):
         return (
             "**JarvisCraft Destek Hattına Hoş Geldiniz!**\n\n"
             "Telegram Oto-Reklam & Mesaj Botu, Scraper Botları, Mini App & Shopier Entegrasyon "
-            "paketleri veya VIP üyelikler hakkında sormak istediğiniz her şeyi yazabilirsiniz.\n\n"
-            "Not: Canlı destek ekibimiz şu anda aktif değildir (mesai dışındadır). "
-            "Mesajınız sıraya alınmıştır, ekibimiz aktif olduğunda en kısa sürede dönüş yapılacaktır."
+            "paketleri veya VIP üyelikler hakkında sormak istediğiniz her şeyi yazabilirsiniz."
         )
     return (
         "**Merhaba, Destek Hattımıza Hoş Geldiniz!**\n\n"
-        "İstediğiniz paket ya da ürünü yazabilirsiniz.\n\n"
-        "Not: Canlı destek ekibimiz şu anda aktif değildir (mesai dışındadır). "
-        "Mesajınız sıraya alınmıştır, ekibimiz aktif olduğunda en kısa sürede dönüş yapılacaktır."
+        "İstediğiniz paket ya da ürün hakkında sormak istediğiniz her şeyi yazabilirsiniz."
     )

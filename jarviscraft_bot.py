@@ -142,6 +142,7 @@ def save_data(data):
 client = TelegramClient("sessions/jarviscraft_bot", API_ID, API_HASH)
 
 USER_STATES = {}
+USER_LAST_GREETING_TIME = {}
 
 async def is_user_subscribed(user_id):
     """Checks if the user has joined the official announcement channel via Telegram Bot API."""
@@ -1447,20 +1448,43 @@ async def message_handler(event):
         except Exception as e:
             logger.warning(f"Jarvis DM match error: {e}")
 
-        # General greeting / inquiry fallback
-        fallback_text = (
-            f"**JarvisCraft Yapay Zeka & Bot Ekosistemi**\n"
+        # General greeting / inquiry fallback - Yalnizca ilk temasta tek sefer goster
+        now_time = time.time()
+        last_greeted = USER_LAST_GREETING_TIME.get(uid, 0)
+        if now_time - last_greeted >= 6 * 3600:
+            USER_LAST_GREETING_TIME[uid] = now_time
+            fallback_text = (
+                f"**JarvisCraft Yapay Zeka & Bot Ekosistemi**\n"
+                f"{LINE}\n\n"
+                f"Sesli yapay zeka asistanimiz, Telegram 7/24 oto-reklam motorumuz ve tum ozel yazilim cozumlerimizi incelemek icin asagidaki butonlari kullanabilirsiniz.\n\n"
+                f"Resmi Destek: @JarvisCraft\n"
+                f"{LINE}"
+            )
+            buttons = [
+                [Button.url("Mini App Magazayi Ac", "https://t.me/JarvisCraftsBot/app")],
+                [Button.inline("Oto-Reklam Motoru", b"menu_ad_engine")],
+                [Button.url("Canli Destek (@JarvisCraft)", "https://t.me/JarvisCraft")]
+            ]
+            await event.respond(fallback_text, buttons=buttons)
+
+        # Mesaji her zaman admine ilet
+        u_handle = f"@{sender.username}" if getattr(sender, "username", None) else "yok"
+        admin_alert = (
+            f"[YENI MUSTERI MESAJI - JarvisCraft]\n"
             f"{LINE}\n\n"
-            f"Mesajiniz alindi. Sesli yapay zeka asistanimiz, Telegram 7/24 oto-reklam motorumuz ve tum ozel yazilim cozumlerimizi incelemek icin asagidaki butonlari kullanabilirsiniz.\n\n"
-            f"Resmi Destek: @JarvisCraft\n"
+            f"Kullanici: {sender.first_name} ({u_handle})\n"
+            f"ID: `{uid}`\n\n"
+            f"Mesaj:\n"
+            f"```\n{event.raw_text}\n```\n\n"
+            f"Yanitlamak icin:\n"
+            f"`/cevap {uid} <yanitiniz>`\n"
             f"{LINE}"
         )
-        buttons = [
-            [Button.url("Mini App Magazayi Ac", "https://t.me/JarvisCraftsBot/app")],
-            [Button.inline("Oto-Reklam Motoru", b"menu_ad_engine")],
-            [Button.url("Canli Destek (@JarvisCraft)", "https://t.me/JarvisCraft")]
-        ]
-        await event.respond(fallback_text, buttons=buttons)
+        for a_id in ADMIN_IDS:
+            try:
+                await client.send_message(a_id, admin_alert)
+            except Exception:
+                pass
 
 # -------------------------------------------------------------
 # User Commands Shortcuts
