@@ -6579,8 +6579,15 @@ async def main():
                 await asyncio.sleep(60)
 
     async def update_account_bios(client, name):
-        # Intentionally disabled: profile bios must remain under manual control.
-        return
+        if account_brand(name) == 'keyvadi' or 'keyvadi' in name.lower() or '2' in name:
+            try:
+                from telethon.tl.functions.account import UpdateProfileRequest
+                await client(UpdateProfileRequest(
+                    about="Siparişler: @KeyVadiSatisBot"
+                ))
+                print(f"[{name}] KeyVadi biografisi guncellendi: Siparisler: @KeyVadiSatisBot")
+            except Exception as e:
+                print(f"[{name}] Bio guncelleme uyarisi: {e}")
 
     # Workers ve arka plan görevlerini başlat
     tasks = []
@@ -6625,6 +6632,7 @@ async def main():
                 telegram_authorized=True,
             )
         tasks.append(connection_watchdog(client, name))
+        tasks.append(update_account_bios(client, name))
     
     async def lisansarena_unlock_watcher():
         """13 Eylul saat 12:00 (TR saati) geldiginde LisansArena hesabini devreye almak icin tetikler."""
