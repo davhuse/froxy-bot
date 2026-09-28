@@ -3419,6 +3419,11 @@ USER_DM_LAST_REPLY_TIME = {}
 USER_DM_LAST_REPLY_TEXT = {}
 USER_DM_SALES_CONTEXT = {}
 USER_DM_PRODUCT_REPLY_TIME = {}
+USER_DM_REPLY_COUNT = {}
+HUMAN_ACTIVE_CONVERSATIONS = {}
+USER_DM_GLOBAL_COOLDOWN_SECONDS = int(os.environ.get("USER_DM_COOLDOWN_SECONDS", "300"))
+HUMAN_SILENCE_WINDOW_SECONDS = int(os.environ.get("HUMAN_SILENCE_SECONDS", "7200"))
+MAX_AUTO_REPLIES_PER_USER = int(os.environ.get("MAX_AUTO_REPLIES_PER_USER", "2"))
 LISANSARENA_SUPPORT_NOTICE_TIME = {}
 SALES_FOLLOWUP_TTL_SECONDS = 15 * 60
 PRODUCT_DM_REPLY_COOLDOWN_SECONDS = 15 * 60
@@ -3680,6 +3685,14 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         )
         print(f"[{client_name}] Moderasyon uyarısı algılandı; @{group_name} 24 saat durduruldu.")
 
+    @client.on(events.NewMessage(outgoing=True))
+    async def handle_outgoing_private_message(event):
+        if not getattr(event, 'is_private', False):
+            return
+        chat_id = event.chat_id
+        if chat_id:
+            HUMAN_ACTIVE_CONVERSATIONS[(client_name, chat_id)] = time.time()
+
     @client.on(events.NewMessage(incoming=True))
     async def handle_private_message(event):
         if not event.is_private or getattr(event, 'out', False):
@@ -3751,9 +3764,27 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         now = time.time()
         sales_context = active_sales_context(user_key, now)
 
+        # 3. Yonetici / Insan mudahalesi korumasi: Hesap sahibi bu kisiye manuel mesaj attiysa otomatik yanitlar susturulur
+        last_human = HUMAN_ACTIVE_CONVERSATIONS.get((client_name, event.chat_id), 0)
+        if last_human and (now - last_human < HUMAN_SILENCE_WINDOW_SECONDS):
+            print(f"[{client_name}] Bu sohbette yonetici/insan aktif ({int((now - last_human)/60)} dk once), otomatik yanit atlandi: {sender_id}")
+            return
+
         normalized_text = (event.raw_text or '').strip().lower()
         previous_time = USER_DM_LAST_REPLY_TIME.get(user_key)
         previous_text = USER_DM_LAST_REPLY_TEXT.get(user_key, '')
+
+        # 4. Kullanici basina genel bekleme suresi (minimum 5 dakika)
+        if previous_time and (now - previous_time < USER_DM_GLOBAL_COOLDOWN_SECONDS):
+            print(f"[{client_name}] @{uname or sender_id} icin bekleme suresi aktif ({int(USER_DM_GLOBAL_COOLDOWN_SECONDS - (now - previous_time))} sn kaldi), otomatik yanit atlandi.")
+            return
+
+        # 5. Kullanici basina maksimum otomatik yanit siniri (maksimum 2 otomatik yanit)
+        user_replies = USER_DM_REPLY_COUNT.get(user_key, 0)
+        if user_replies >= MAX_AUTO_REPLIES_PER_USER:
+            print(f"[{client_name}] @{uname or sender_id} icin maksimum otomatik yanit sinirina ({MAX_AUTO_REPLIES_PER_USER}) ulasildi, otomatik yanit atlandi.")
+            return
+
         if previous_time and now - previous_time < 90 and normalized_text == previous_text:
             return
 
@@ -4090,6 +4121,7 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                     )
             USER_DM_LAST_REPLY_TIME[user_key] = now
             USER_DM_LAST_REPLY_TEXT[user_key] = normalized_text
+            USER_DM_REPLY_COUNT[user_key] = USER_DM_REPLY_COUNT.get(user_key, 0) + 1
             if matched_products:
                 remember_sales_context(user_key, matched_products, now)
                 await confirm_product_dm_replies(reserved_product_keys, now)

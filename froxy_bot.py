@@ -142,6 +142,7 @@ LAST_AUTO_REPLY_TIME = {}
 SUPPORT_SALES_CONTEXT = {}
 USER_CTA_ATTRIBUTION = {}
 USER_LAST_GREETING_TIME = {}
+USER_QUICK_MATCH_LAST_TIME = {}
 def _product_reply_key(user_id, product=None, fallback_key=None):
     if product:
         product_key = str(product.get('id') or product.get('url') or product.get('title') or '').lower()
@@ -2523,6 +2524,9 @@ async def message_handler(event):
         full_catalog = load_sales_catalog("keyvadi")
         quick_matches = match_sales_products(event.text.strip(), full_catalog, limit=3)
         if quick_matches and len(event.text.strip().split()) <= 4:
+            if time.time() - USER_QUICK_MATCH_LAST_TIME.get(user_id, 0) < 180:
+                return
+            USER_QUICK_MATCH_LAST_TIME[user_id] = time.time()
             if len(quick_matches) == 1:
                 p = quick_matches[0]
                 pid = p.get('id', '')
@@ -2576,7 +2580,7 @@ async def message_handler(event):
             )
             last_greeted = USER_LAST_GREETING_TIME.get(user_id, 0)
             now_time = time.time()
-            if now_time - last_greeted >= 6 * 3600 and await claim_first_greeting("KeyVadi", user_id):
+            if now_time - last_greeted >= 24 * 3600 and await claim_first_greeting("KeyVadi", user_id):
                 USER_LAST_GREETING_TIME[user_id] = now_time
                 await event.respond(
                     greeting_for("KeyVadi"),

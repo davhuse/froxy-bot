@@ -114,6 +114,18 @@ class AdAccountDmTests(unittest.IsolatedAsyncioTestCase):
             )
             self.assertNotIn("shopier.com", reply)
 
+    def test_human_active_conversation_tracked(self):
+        publisher.HUMAN_ACTIVE_CONVERSATIONS.clear()
+        client_name = "KeyVadiOnline"
+        chat_id = 987654
+        publisher.HUMAN_ACTIVE_CONVERSATIONS[(client_name, chat_id)] = 1000.0
+        self.assertEqual(publisher.HUMAN_ACTIVE_CONVERSATIONS.get((client_name, chat_id)), 1000.0)
+
+    def test_dm_global_cooldown_and_limits_configured(self):
+        self.assertGreaterEqual(publisher.USER_DM_GLOBAL_COOLDOWN_SECONDS, 60)
+        self.assertGreaterEqual(publisher.HUMAN_SILENCE_WINDOW_SECONDS, 1800)
+        self.assertGreaterEqual(publisher.MAX_AUTO_REPLIES_PER_USER, 1)
+
 
 if __name__ == "__main__":
     unittest.main()
