@@ -1,0 +1,22 @@
+{
+  "sohbet": [],
+  "borsa": [
+    {
+      "username": "kriptoturkiye",
+      "title": "Kripto Türkiye",
+      "members": 1121
+    },
+    {
+      "username": "coinsohbettr",
+      "title": "Coin Sohbet 🇹🇷",
+      "members": 209
+    }
+  ],
+  "haber": [
+    {
+      "username": "yazilimtoplulugu",
+      "title": "Yazılım Topluluğu",
+      "members": 7221
+    }
+  ]
+}

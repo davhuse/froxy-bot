@@ -1,0 +1,38 @@
+{
+  "sohbet": [
+    {
+      "username": "universite_sohbet",
+      "title": "Üniversiteliler Sohbet Grubu 🕊 Arkadaşlık Tanışma eğlence",
+      "members": 2922
+    }
+  ],
+  "borsa": [
+    {
+      "username": "kriptoturkiye",
+      "title": "Kripto Türkiye",
+      "members": 1121
+    },
+    {
+      "username": "coinsohbettr",
+      "title": "Coin Sohbet 🇹🇷",
+      "members": 209
+    },
+    {
+      "username": "bitgetturkiye",
+      "title": "Bitget Global Türkiye Topluluğu",
+      "members": 20556
+    }
+  ],
+  "haber": [
+    {
+      "username": "yazilimtoplulugu",
+      "title": "Yazılım Topluluğu",
+      "members": 7221
+    },
+    {
+      "username": "linux_tr",
+      "title": "Linux Türkiye",
+      "members": 680
+    }
+  ]
+}
