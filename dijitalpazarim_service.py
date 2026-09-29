@@ -248,14 +248,132 @@ def send_bot_message(chat_id: int | str, text: str, reply_markup: dict = None):
         print(f"[DijitalPazarimBot] sendMessage hatası: {e}")
 
 # ─────────────────────────────────────────────────────────────
-# 3. SERVICE RUNNER
+# 3. USER ACCOUNT RUNNER (+18595173039 / @DijitalPazarimm)
+# ─────────────────────────────────────────────────────────────
+
+API_ID = int(os.environ.get("TELEGRAM_API_ID", "31076280"))
+API_HASH = os.environ.get("TELEGRAM_API_HASH", "7ba4072dcf0a05a7ccf80e570866b6d8")
+ACCOUNT_SESSION = os.environ.get("AD_STRING_SESSION_DIJITALPAZARIM", "").strip()
+
+def load_ad_templates() -> list[str]:
+    templates = []
+    for i in range(1, 5):
+        tpl_path = MESSAGES_DIR / f"dijitalpazarim_{i}.txt"
+        if tpl_path.exists():
+            content = tpl_path.read_text(encoding="utf-8").strip()
+            if content:
+                templates.append(content)
+    return templates
+
+async def run_telethon_account():
+    from telethon import TelegramClient, events
+    from telethon.sessions import StringSession
+    from telethon.errors import FloodWaitError
+
+    session_to_use = ACCOUNT_SESSION
+    if not session_to_use:
+        session_file = BASE_DIR / "dijitalpazarim_session_string.txt"
+        if session_file.exists():
+            session_to_use = session_file.read_text(encoding="utf-8").strip()
+
+    if not session_to_use:
+        print("[DijitalPazarimAccount] Oturum anahtarı bulunamadı, kullanıcı hesabı başlatılamadı.")
+        return
+
+    print("[DijitalPazarimAccount] Telethon kullanıcı hesabı başlatılıyor...")
+    client = TelegramClient(StringSession(session_to_use), API_ID, API_HASH)
+    await client.connect()
+
+    if not await client.is_user_authorized():
+        print("[DijitalPazarimAccount] Oturum yetkisiz, iptal edildi.")
+        await client.disconnect()
+        return
+
+    me = await client.get_me()
+    print(f"[DijitalPazarimAccount] Aktif Hesap: {me.first_name} (@{me.username}) - {me.phone}")
+
+    # Auto DM Reply: Directs private inquiries to @DijitalPazarimBot
+    dm_replied_users = set()
+
+    @client.on(events.NewMessage(incoming=True, func=lambda e: e.is_private))
+    async def handle_private_dm(event):
+        sender_id = event.sender_id
+        if sender_id == me.id or sender_id == 777000 or sender_id in dm_replied_users:
+            return
+        dm_replied_users.add(sender_id)
+        reply_text = (
+            "Merhaba,\n\n"
+            "İndirim kuponları, market & yemek kodları ve hesap alımları için "
+            "doğrudan resmi mağaza botumuz @DijitalPazarimBot üzerinden anında sipariş verebilirsiniz.\n\n"
+            "Referanslarımız mevcuttur. Keyifli alışverişler dileriz."
+        )
+        try:
+            await event.reply(reply_text)
+            print(f"[DijitalPazarimAccount] DM yönlendirmesi gönderildi -> Kullanıcı ID: {sender_id}")
+        except Exception as e:
+            print(f"[DijitalPazarimAccount] DM yanıt hatası: {e}")
+
+    # Background Ad Broadcast loop
+    async def ad_broadcast_loop():
+        await asyncio.sleep(20) # Initial startup buffer
+        templates = load_ad_templates()
+        template_idx = 0
+
+        while True:
+            try:
+                if not templates:
+                    templates = load_ad_templates()
+                
+                if templates:
+                    current_ad = templates[template_idx % len(templates)]
+                    template_idx += 1
+
+                    # Get active trade dialogs
+                    dialogs = await client.get_dialogs(limit=50)
+                    target_groups = [d for d in dialogs if d.is_group]
+
+                    for group in target_groups:
+                        try:
+                            await client.send_message(group.id, current_ad)
+                            print(f"[DijitalPazarimAccount] Reklam paylaşıldı -> {group.name}")
+                            await asyncio.sleep(30) # Delay between groups
+                        except FloodWaitError as fwe:
+                            print(f"[DijitalPazarimAccount] FloodWait: {fwe.seconds} saniye bekleniyor...")
+                            await asyncio.sleep(fwe.seconds + 5)
+                        except Exception as e:
+                            print(f"[DijitalPazarimAccount] Grup gönderim hatası ({group.name}): {e}")
+
+                # Interval between broadcast rounds (60 minutes)
+                await asyncio.sleep(3600)
+
+            except Exception as e:
+                print(f"[DijitalPazarimAccount] Döngü hatası: {e}")
+                await asyncio.sleep(60)
+
+    asyncio.create_task(ad_broadcast_loop())
+    await client.run_until_disconnected()
+
+def start_telethon_thread():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        loop.run_until_complete(run_telethon_account())
+    except Exception as e:
+        print(f"[DijitalPazarimAccount] Thread hatası: {e}")
+
+# ─────────────────────────────────────────────────────────────
+# 4. SERVICE RUNNER
 # ─────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    # Start bot polling in background thread
-    t = threading.Thread(target=telegram_bot_worker, daemon=True, name="dp-bot-worker")
-    t.start()
-    
+    # 1. Start Bot Polling Thread (@DijitalPazarimBot)
+    t_bot = threading.Thread(target=telegram_bot_worker, daemon=True, name="dp-bot-worker")
+    t_bot.start()
+
+    # 2. Start User Account Ad Worker Thread (+18595173039)
+    t_acc = threading.Thread(target=start_telethon_thread, daemon=True, name="dp-account-worker")
+    t_acc.start()
+
     port = int(os.environ.get("PORT", 5000))
     print(f"[DijitalPazarim] Web servisi {port} portunda başlatılıyor (Yalnızca Dijital Pazarım)...")
     app.run(host="0.0.0.0", port=port, debug=False)
