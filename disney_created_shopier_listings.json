@@ -1,0 +1,46 @@
+{
+  "kv_disney_ortak": {
+    "id": "51358329",
+    "url": "https://www.shopier.com/51358329",
+    "title": "Disney+ 1 Aylık Ortak Hesap",
+    "price": 49.9,
+    "brand": "keyvadi",
+    "desc": "Disney+ 1 Aylık Ortak Hesap. 4K Ultra HD kalitesinde kesintisiz erişim. 30 gün boyunca telafi ve destek garantilidir. Otomatik teslimat.",
+    "local_img": "assets/products/disney_ortak_49.jpg",
+    "category": "streaming",
+    "category_label": "DİZİ & FİLM"
+  },
+  "kv_disney_ozel": {
+    "id": "51358330",
+    "url": "https://www.shopier.com/51358330",
+    "title": "Disney+ 1 Aylık Özel Profil",
+    "price": 99.9,
+    "brand": "keyvadi",
+    "desc": "Disney+ 1 Aylık Kişisel Özel Profil. Size özel PIN korumalı profil, 4K Ultra HD kalitesinde kesintisiz erişim. 30 gün boyunca tam lisans ve destek garantilidir. Otomatik teslimat.",
+    "local_img": "assets/products/disney_ozel_99.jpg",
+    "category": "streaming",
+    "category_label": "DİZİ & FİLM"
+  },
+  "la_disney_ortak": {
+    "id": "51358331",
+    "url": "https://www.shopier.com/51358331",
+    "title": "Disney+ 1 Aylık Ortak Profil",
+    "price": 69.9,
+    "brand": "lisansarena",
+    "desc": "Disney+ 1 Aylık Ortak Profil Kullanımı. 4K Ultra HD, sınırsız dizi ve film keyfi. 30 gün kesintisiz telafi ve destek garantili. Otomatik anında teslimat.",
+    "local_img": "assets/products/disney_ortak_49.jpg",
+    "category": "streaming",
+    "category_label": "DİZİ & FİLM"
+  },
+  "la_disney_ozel": {
+    "id": "51358332",
+    "url": "https://www.shopier.com/51358332",
+    "title": "Disney+ 1 Aylık Özel Profil",
+    "price": 119.9,
+    "brand": "lisansarena",
+    "desc": "Disney+ 1 Aylık Size Özel Profil. Size özel PIN korumalı profil, 4K Ultra HD kalitesi. 30 gün tam lisans ve destek güvencesi. Otomatik anında teslimat.",
+    "local_img": "assets/products/disney_ozel_99.jpg",
+    "category": "streaming",
+    "category_label": "DİZİ & FİLM"
+  }
+}

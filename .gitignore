@@ -58,6 +58,8 @@ blacklist_legacy_backup_*.txt
 /test_froxy_shopier_token.py
 /test_no_media.py
 /upload_shopier_api_direct.py
+/temp_shopier_tokens.json
+/temp_jarvis_auth.json
 
 # Seven-day sales funnel runtime journal
 sales_metrics.jsonl

@@ -41,14 +41,16 @@
     "category": "entertainment",
     "image": "assets/products/disney_ortak_49.jpg",
     "badge": "Fırsat Ürünü",
-    "url": "https://www.shopier.com/keyvadi/51052001",
+    "url": "https://www.shopier.com/51358329",
     "description": "Disney+ 1 Aylık Ortak Hesap. 4K Ultra HD kalitesinde, 30 gün kesintisiz telafi garantilidir. Satın alım sonrası anında teslim edilir.",
     "showcase": true,
     "is_vitrin": true,
     "category_label": "EĞLENCE",
     "delivery_type": "manual",
     "delivery_label": "Anında 7/24 Teslimat",
-    "max_qty": 5
+    "max_qty": 5,
+    "shopier_url": "https://www.shopier.com/51358329",
+    "shopier_product_id": "51358329"
   },
   {
     "id": "kv_disney_ozel_99",
@@ -58,14 +60,16 @@
     "category": "entertainment",
     "image": "assets/products/disney_ozel_99.jpg",
     "badge": "VIP Özel Profil",
-    "url": "https://www.shopier.com/keyvadi/49682386",
+    "url": "https://www.shopier.com/51358330",
     "description": "Disney+ 1 Aylık Kişisel Özel Profil. Size özel PIN korumalı profil, 4K Ultra HD, 30 gün kesintisiz garanti.",
     "showcase": true,
     "is_vitrin": true,
     "category_label": "EĞLENCE",
     "delivery_type": "manual",
     "delivery_label": "Anında 7/24 Teslimat",
-    "max_qty": 5
+    "max_qty": 5,
+    "shopier_url": "https://www.shopier.com/51358330",
+    "shopier_product_id": "51358330"
   },
   {
     "id": "51024905",

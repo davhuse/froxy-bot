@@ -5,7 +5,8 @@
     "title": "Disney+ 1 Aylık Ortak Hesap",
     "display_title": "Disney+ 1 Aylık Ortak Hesap",
     "price": "49.90",
-    "product_id": "kv_disney_ortak_49",
+    "product_id": "51358329",
+    "shopier_url": "https://www.shopier.com/51358329",
     "image": "assets/products/disney_ortak_49.jpg",
     "description": "Disney+ 1 aylık ortak profil erişimi. 4K UHD, 30 gün kesintisiz telafi garantili."
   },
@@ -15,7 +16,8 @@
     "title": "Disney+ 1 Aylık Özel Profil",
     "display_title": "Disney+ 1 Aylık Özel Profil",
     "price": "99.90",
-    "product_id": "kv_disney_ozel_99",
+    "product_id": "51358330",
+    "shopier_url": "https://www.shopier.com/51358330",
     "image": "assets/products/disney_ozel_99.jpg",
     "description": "Disney+ 1 aylık kişisel özel profil. Size özel PIN korumalı, 4K UHD, 30 gün garantili."
   },
@@ -25,8 +27,9 @@
     "title": "Disney+ 1 Aylık Ortak Profil",
     "display_title": "Disney+ 1 Aylık Ortak Profil",
     "price": "69.90",
-    "product_id": "la_disney_ortak_69",
-    "image": "assets/products/disney_ortak_69.jpg",
+    "product_id": "51358331",
+    "shopier_url": "https://www.shopier.com/51358331",
+    "image": "assets/products/disney_ortak_49.jpg",
     "description": "Disney+ 1 aylık ortak profil erişimi. 30 gün telafi garantili."
   },
   {
@@ -35,8 +38,9 @@
     "title": "Disney+ 1 Aylık Özel Profil",
     "display_title": "Disney+ 1 Aylık Özel Profil",
     "price": "119.90",
-    "product_id": "la_disney_ozel_119",
-    "image": "assets/products/disney_ozel_119.jpg",
+    "product_id": "51358332",
+    "shopier_url": "https://www.shopier.com/51358332",
+    "image": "assets/products/disney_ozel_99.jpg",
     "description": "Disney+ 1 aylık özel profil erişimi. PIN korumalı, 30 gün garantili."
   }
 ]
