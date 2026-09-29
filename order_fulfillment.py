@@ -206,12 +206,17 @@ def fetch_shopier_order(order_id: str, brand_hint: str = None) -> dict[str, Any]
 
 
 async def send_admin_push_alert(client_or_bot, message: str) -> None:
-    """Send alert to Saved Messages ('me') instead of spamming admins."""
+    """Send alert to Saved Messages ('me') and route to KeyVadi/admin."""
     try:
         if hasattr(client_or_bot, "send_message"):
             await client_or_bot.send_message('me', message)
     except Exception as e:
         print(f"Push alert error: {e}")
+    try:
+        from otomatik_katil import send_admin_alert
+        await send_admin_alert(client_or_bot, message)
+    except Exception:
+        pass
 
 
 async def fulfill_order_request(

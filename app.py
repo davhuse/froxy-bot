@@ -878,30 +878,43 @@ def bot_watchdog(lease_owner=None):
                     pass
                 smm_process = None
 
-            # 6. Check JarvisCraft Bot
-            jarvis_token = (os.environ.get("JARVIS_BOT_TOKEN") or "").strip()
-            if jarvis_token and jarvis_token != "YOUR_TELEGRAM_BOT_TOKEN":
-                jarvis_proc_os = get_process_by_script('jarviscraft_bot.py')
-                if jarvis_proc_os is None:
-                    print("🤖 [Watchdog] JarvisCraft botu aktif değil veya durmuş. Başlatılıyor...")
-                    kill_process_by_script('jarviscraft_bot.py')
-                    file_out = open("jarviscraft_log.txt", 'a', encoding="utf-8", buffering=1)
-                    jarvis_process = subprocess.Popen(
-                        [sys.executable, '-u', 'jarviscraft_bot.py'],
-                        stdout=file_out,
-                        stderr=subprocess.STDOUT,
-                        cwd=base_dir,
-                        creationflags=flags,
-                        env=env,
-                    )
-                    try:
-                        with open("jarviscraft_bot.py.pid", "w") as handle:
-                            handle.write(str(jarvis_process.pid))
-                    except OSError:
-                        pass
-                    time.sleep(1)
-                else:
-                    jarvis_process = jarvis_proc_os
+            # 6. Check JarvisCraft Bot - Permanently decommissioned per user request (spam status)
+            jarvis_disabled = (
+                os.environ.get("DISABLE_JARVIS_BOT", "1").strip().lower() in {'1', 'true', 'yes', 'on'}
+                or os.environ.get("DISABLE_JARVIS_AD", "1").strip().lower() in {'1', 'true', 'yes', 'on'}
+            )
+            if not jarvis_disabled:
+                jarvis_token = (os.environ.get("JARVIS_BOT_TOKEN") or "").strip()
+                if jarvis_token and jarvis_token != "YOUR_TELEGRAM_BOT_TOKEN":
+                    jarvis_proc_os = get_process_by_script('jarviscraft_bot.py')
+                    if jarvis_proc_os is None:
+                        print("🤖 [Watchdog] JarvisCraft botu aktif değil veya durmuş. Başlatılıyor...")
+                        kill_process_by_script('jarviscraft_bot.py')
+                        file_out = open("jarviscraft_log.txt", 'a', encoding="utf-8", buffering=1)
+                        jarvis_process = subprocess.Popen(
+                            [sys.executable, '-u', 'jarviscraft_bot.py'],
+                            stdout=file_out,
+                            stderr=subprocess.STDOUT,
+                            cwd=base_dir,
+                            creationflags=flags,
+                            env=env,
+                        )
+                        try:
+                            with open("jarviscraft_bot.py.pid", "w") as handle:
+                                handle.write(str(jarvis_process.pid))
+                        except OSError:
+                            pass
+                        time.sleep(1)
+                    else:
+                        jarvis_process = jarvis_proc_os
+            else:
+                kill_process_by_script('jarviscraft_bot.py')
+                try:
+                    if os.path.exists("jarviscraft_bot.py.pid"):
+                        os.remove("jarviscraft_bot.py.pid")
+                except OSError:
+                    pass
+                jarvis_process = None
 
         except Exception as e:
             print(f"⚠️ [Watchdog] Genel denetleme hatası: {e}")
@@ -955,7 +968,8 @@ def status():
         ad_accounts = {}
 
     process_running = bool(ad_processes)
-    expected_accounts = ('FroxyOnline', 'KeyVadiOnline', 'LisansArenaOnline', 'JarvisCraftOnline')
+    expected_accounts = ('FroxyOnline', 'KeyVadiOnline', 'LisansArenaOnline')
+    ad_accounts.pop('JarvisCraftOnline', None)
     for account_name in expected_accounts:
         account = ad_accounts.setdefault(account_name, {})
         account['process_running'] = process_running
@@ -991,6 +1005,8 @@ def status():
         'accounts': {},
     }
     for name, queue_state in (checkpoint.get('accounts') or {}).items():
+        if name == 'JarvisCraftOnline':
+            continue
         targets = queue_state.get('targets') or []
         cursor = int(queue_state.get('cursor', 0) or 0)
         public_queue['accounts'][name] = {

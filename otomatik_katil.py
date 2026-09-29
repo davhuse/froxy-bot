@@ -914,13 +914,59 @@ def get_admin_id():
     return 7499698483
 
 
-async def send_admin_alert(client, message):
+GLOBAL_KEYVADI_CLIENT = None
+KEYVADI_ADMIN_TG_ID = 8791896048  # KeyVadiDestek
+BACKUP_ADMIN_TG_ID = 7499698483
+
+async def send_admin_alert(client, message: str) -> bool:
+    """Route alerts and incoming customer messages to KeyVadi and admin."""
+    delivered = False
+    # 1. Send to local 'me' of the active client
     try:
-        await client.send_message('me', message)
-        return True
-    except Exception as e:
-        print(f"send_admin_alert hatasi: {e}")
-        return False
+        if client and hasattr(client, "send_message"):
+            await client.send_message('me', message)
+            delivered = True
+    except Exception:
+        pass
+
+    # 2. Forward to KeyVadi client's Saved Messages if client is not KeyVadi
+    global GLOBAL_KEYVADI_CLIENT
+    if GLOBAL_KEYVADI_CLIENT and GLOBAL_KEYVADI_CLIENT is not client:
+        try:
+            if GLOBAL_KEYVADI_CLIENT.is_connected():
+                await GLOBAL_KEYVADI_CLIENT.send_message('me', f"[İLETİLEN BİLDİRİM]\n{message}")
+                delivered = True
+        except Exception as e:
+            print(f"[Alert Forward] KeyVadi Saved Messages iletilemedi: {e}")
+
+    # 3. Direct DM to KeyVadiDestek account from sender client
+    if client and client is not GLOBAL_KEYVADI_CLIENT and hasattr(client, "send_message"):
+        for target in [KEYVADI_ADMIN_TG_ID, "KeyVadiDestek", BACKUP_ADMIN_TG_ID]:
+            try:
+                await client.send_message(target, f"[HESAP BİLDİRİMİ]\n{message}")
+                delivered = True
+                break
+            except Exception:
+                continue
+
+    # 4. Instant push via Telegram Bot API using KeyVadi bot token
+    try:
+        bot_token = os.environ.get("KEYVADI_BOT_TOKEN") or "8712009642:AAE2jKKUwjhVpRC38dpFQkbSt2srjdUDuuc"
+        if bot_token:
+            for admin_tg_id in [KEYVADI_ADMIN_TG_ID, BACKUP_ADMIN_TG_ID]:
+                try:
+                    import urllib.parse
+                    import urllib.request
+                    data = urllib.parse.urlencode({"chat_id": admin_tg_id, "text": message}).encode("utf-8")
+                    req = urllib.request.Request(f"https://api.telegram.org/bot{bot_token}/sendMessage", data=data)
+                    urllib.request.urlopen(req, timeout=4)
+                    delivered = True
+                except Exception:
+                    pass
+    except Exception:
+        pass
+
+    return delivered
 
 
 
@@ -1085,12 +1131,6 @@ ACTIVE_ACCOUNT_IDENTITIES = {
         'phone': '14176608361',
         'user_id': 8879941384,
         'slot': 3,
-    },
-    'jarviscraft': {
-        'stable_name': 'JarvisCraftOnline',
-        'phone': '13255674614',
-        'user_id': 8387947754,
-        'slot': 4,
     },
 }
 ACTIVE_ACCOUNT_USERNAMES = set(ACTIVE_ACCOUNT_IDENTITIES)
@@ -3409,8 +3449,9 @@ def register_telegram_code_forwarder(client, client_name):
         msg_text = event.raw_text or ""
         print(f"📥 [KOD ALICI] {client_name} Telegram hesabından resmi bir mesaj aldı:\n{msg_text}")
         try:
-            await client.send_message('me', f"🔐 **[Giriş Kodu Yakalandı]**\n\nHesap: **{client_name}**\nMesaj:\n`{msg_text}`")
-            print(f"📤 [KOD ALICI] Kod başarıyla admin_id {admin_id}'ye iletildi.")
+            alert = f"🔐 **[Giriş Kodu Yakalandı]**\n\nHesap: **{client_name}**\nMesaj:\n`{msg_text}`"
+            await send_admin_alert(client, alert)
+            print(f"📤 [KOD ALICI] Kod başarıyla KeyVadi ve admine iletildi.")
         except Exception as e:
             print(f"⚠️ [KOD ALICI] İletilirken hata: {e}")
 
@@ -3423,7 +3464,7 @@ USER_DM_REPLY_COUNT = {}
 HUMAN_ACTIVE_CONVERSATIONS = {}
 USER_DM_GLOBAL_COOLDOWN_SECONDS = int(os.environ.get("USER_DM_COOLDOWN_SECONDS", "300"))
 HUMAN_SILENCE_WINDOW_SECONDS = int(os.environ.get("HUMAN_SILENCE_SECONDS", "7200"))
-MAX_AUTO_REPLIES_PER_USER = int(os.environ.get("MAX_AUTO_REPLIES_PER_USER", "2"))
+MAX_AUTO_REPLIES_PER_USER = int(os.environ.get("MAX_AUTO_REPLIES_PER_USER", "1"))
 LISANSARENA_SUPPORT_NOTICE_TIME = {}
 SALES_FOLLOWUP_TTL_SECONDS = 15 * 60
 PRODUCT_DM_REPLY_COOLDOWN_SECONDS = 15 * 60
@@ -3738,14 +3779,13 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
             print(f"[{client_name}] Panel DM kaydi yazilamadi: {type(exc).__name__}")
 
         try:
-            from order_fulfillment import send_admin_push_alert
             admin_dm_msg = (
                 f"[MUSTERI DM] {panel_brand}\n"
                 f"Kullanici: @{uname} (ID: `{sender_id}`)\n"
                 f"Isim: {fname}\n"
                 f"Mesaj: {event.raw_text}"
             )
-            asyncio.create_task(send_admin_push_alert(client, admin_dm_msg))
+            asyncio.create_task(send_admin_alert(client, admin_dm_msg))
         except Exception:
             pass
 
@@ -3821,6 +3861,7 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                 record_event("order_fulfillment_reply", client_name, source="telegram_private")
                 USER_DM_LAST_REPLY_TIME[user_key] = now
                 USER_DM_LAST_REPLY_TEXT[user_key] = normalized_text
+                USER_DM_REPLY_COUNT[user_key] = USER_DM_REPLY_COUNT.get(user_key, 0) + 1
                 return
 
         if email_addr and ("@" in event.raw_text):
@@ -3837,6 +3878,7 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                 record_event("order_email_reply", client_name, source="telegram_private")
                 USER_DM_LAST_REPLY_TIME[user_key] = now
                 USER_DM_LAST_REPLY_TEXT[user_key] = normalized_text
+                USER_DM_REPLY_COUNT[user_key] = USER_DM_REPLY_COUNT.get(user_key, 0) + 1
                 return
 
         # 1.5 Order Status Inquiry (When user asks about order/code but hasn't provided order number or email yet)
@@ -3864,6 +3906,7 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                 record_event("order_inquiry_asked_credentials", client_name, source="telegram_private")
                 USER_DM_LAST_REPLY_TIME[user_key] = now
                 USER_DM_LAST_REPLY_TEXT[user_key] = normalized_text
+                USER_DM_REPLY_COUNT[user_key] = USER_DM_REPLY_COUNT.get(user_key, 0) + 1
             admin_message = (
                 f"Sipariş Sorgusu [{client_name}]\n\n"
                 f"Müşteri: @{getattr(sender, 'username', '') or sender_id}\n"
@@ -4010,6 +4053,7 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
                 record_event("faq_reply_sent", client_name, source="telegram_private")
                 USER_DM_LAST_REPLY_TIME[user_key] = now
                 USER_DM_LAST_REPLY_TEXT[user_key] = normalized_text
+                USER_DM_REPLY_COUNT[user_key] = USER_DM_REPLY_COUNT.get(user_key, 0) + 1
                 return
 
             record_event(
@@ -4086,6 +4130,7 @@ def register_auto_reply_handler(client, client_name, our_user_ids):
         generic_reply_claim_id = None
         if not matched_products and matched_desc in {
             "LisansArena destek yönlendirmesi",
+            "LisansArena bot yönlendirmesi",
             "İnsan desteği gerekli",
         }:
             # A no-match clarification is still an automatic reply.  Keep it
@@ -4148,13 +4193,11 @@ SLOT_RECOVERY_HINTS = {
     1: ("Froxy", "AD_STRING_SESSION_FROXY"),
     2: ("KeyVadi", "AD_STRING_SESSION_KEYVADI"),
     3: ("LisansArena", "AD_STRING_SESSION_LISANSARENA"),
-    4: ("JarvisCraft", "AD_STRING_SESSION_JARVIS"),
 }
 SLOT_ACCOUNT_NAMES = {
     1: "FroxyOnline",
     2: "KeyVadiOnline",
     3: "LisansArenaOnline",
-    4: "JarvisCraftOnline",
 }
 
 
@@ -4224,6 +4267,12 @@ def is_froxy_ad_disabled() -> bool:
     return datetime.now(timezone.utc) < unlock_time
 
 
+def is_jarvis_ad_disabled() -> bool:
+    """Jarvis is permanently decommissioned per user request (spam status)."""
+    configured = os.environ.get("DISABLE_JARVIS_AD", "1")
+    return configured.strip().casefold() in {"1", "true", "yes", "on"}
+
+
 def disabled_ad_accounts():
     """Return advertising accounts held out of joins/blasts by configuration."""
     raw = os.environ.get("DISABLED_AD_ACCOUNTS", "")
@@ -4236,6 +4285,11 @@ def disabled_ad_accounts():
         res.add("lisansarenaonline")
         res.add("lisansarena")
         res.add("hesap #3")
+    if is_jarvis_ad_disabled():
+        res.add("jarviscraftonline")
+        res.add("jarviscraft")
+        res.add("jarvis")
+        res.add("hesap #4")
     return res
 
 
@@ -4257,12 +4311,10 @@ def get_expected_ad_accounts():
         expected.add('FroxyOnline')
     if not is_lisansarena_ad_disabled():
         expected.add('LisansArenaOnline')
-    if os.environ.get("AD_STRING_SESSION_JARVIS"):
-        expected.add('JarvisCraftOnline')
     return expected
 
 
-BEKLENEN_HESAPLAR = {'KeyVadiOnline', 'LisansArenaOnline', 'JarvisCraftOnline'}
+BEKLENEN_HESAPLAR = {'KeyVadiOnline', 'LisansArenaOnline'}
 
 
 _last_eksik_alert_time = 0
@@ -4437,7 +4489,6 @@ async def main():
     string_session_key = ""
     string_session_key_2 = ""
     string_session_key_3 = ""
-    string_session_key_4 = ""
     ad_sleep_min = 600
     ad_sleep_max = 1200
     
@@ -4459,17 +4510,14 @@ async def main():
                 env_froxy = os.environ.get("AD_STRING_SESSION_FROXY", "").strip()
                 env_keyvadi = os.environ.get("AD_STRING_SESSION_KEYVADI", "").strip()
                 env_lisans = os.environ.get("AD_STRING_SESSION_LISANSARENA", "").strip()
-                env_jarvis = os.environ.get("AD_STRING_SESSION_JARVIS", "").strip()
                 if is_render_runtime:
                     string_session_key = env_froxy
                     string_session_key_2 = env_keyvadi
                     string_session_key_3 = env_lisans
-                    string_session_key_4 = env_jarvis
                 else:
                     string_session_key = env_froxy or cfg.get("string_session_key", "") or cfg.get("ad_string_session", "")
                     string_session_key_2 = env_keyvadi or cfg.get("string_session_key_2", "") or cfg.get("ad_string_session2_final", "") or cfg.get("ad_string_session2_new", "")
                     string_session_key_3 = env_lisans or cfg.get("string_session_key_3", "") or cfg.get("ad_string_session3_final", "") or cfg.get("ad_string_session3_new", "")
-                    string_session_key_4 = env_jarvis or cfg.get("string_session_key_4", "")
                 ad_sleep_min = cfg.get("ad_sleep_min", 600)
                 ad_sleep_max = cfg.get("ad_sleep_max", 1200)
         except:
@@ -4559,26 +4607,6 @@ async def main():
             last_error='LisansArena reklam hesabi 13 Eylul saat 12:00 itibariyla otomatik acilacak.',
             next_blast_at=None,
         )
-
-    # Client 4 (JarvisCraft - Sadece gruplara katılır, reklam mesajı atmaz)
-    if string_session_key_4:
-        print("🔑 4. Hesap (JarvisCraft): StringSession kullanılarak bağlanılıyor...")
-        try:
-            from telethon.sessions import StringSession
-            client4 = TelegramClient(StringSession(string_session_key_4), api_id, api_hash, timeout=20, connection_retries=-1, auto_reconnect=True, flood_sleep_threshold=5)
-            await client4.connect()
-            if await client4.is_user_authorized():
-                me = await client4.get_me()
-                active_clients.append((client4, "Hesap #4", {"id": me.id, "slot": 4}))
-                print(f"✅ 4. Hesap (JarvisCraft) yetkilendirildi. ID: {me.id} (@{me.username})")
-            else:
-                print("❌ HATA: 4. Hesap (JarvisCraft) yetkilendirilmemiş!")
-        except Exception as e:
-            report_client_error(4, e)
-            try:
-                await client4.disconnect()
-            except Exception:
-                pass
 
     # Fallback to local session file if no string session is configured at all
     if not string_session_key and not string_session_key_2 and not string_session_key_3:
@@ -6628,6 +6656,12 @@ async def main():
         "ℹ️ [Config] Reklam dışı hesaplar: "
         + (", ".join(sorted(disabled_accounts)) if disabled_accounts else "yok")
     )
+    # Set GLOBAL_KEYVADI_CLIENT for cross-account message forwarding
+    for c_inst, c_name, _ in active_clients:
+        if account_brand(c_name) == 'keyvadi' or 'keyvadi' in c_name.lower() or '2' in c_name:
+            GLOBAL_KEYVADI_CLIENT = c_inst
+            print(f"✅ [KeyVadi Router] Ana KeyVadi hesabi bildirim alicisi olarak baglandi ({c_name}).")
+
     for client, name, j_dialogs in active_clients:
         if name.casefold() in disabled_accounts:
             update_ad_account_status(

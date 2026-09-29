@@ -504,15 +504,21 @@
     "url": "https://www.shopier.com/keyvadi/50460191"
   },
   {
-    "id": "49682386",
-    "title": "Disney+ UHD Reklamsız (1 Aylık)",
-    "price": "99,90 TL",
-    "url": "https://www.shopier.com/keyvadi/49682386"
-  },
-  {
     "id": "49682367",
     "title": "Gemini Pro 18 Aylık Davet (Giriş Garantili)",
     "price": "99,90 TL",
     "url": "https://www.shopier.com/keyvadi/49682367"
+  },
+  {
+    "id": "kv_disney_ortak_49",
+    "title": "Disney+ 1 Aylık Ortak Hesap",
+    "price": "49,90 TL",
+    "url": "https://www.shopier.com/keyvadi/51052001"
+  },
+  {
+    "id": "kv_disney_ozel_99",
+    "title": "Disney+ 1 Aylık Özel Profil",
+    "price": "99,90 TL",
+    "url": "https://www.shopier.com/keyvadi/49682386"
   }
 ]

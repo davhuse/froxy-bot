@@ -1,35 +1,24 @@
-[ KEYVADİ | MAĞAZA REHBERİ ]
+[ KEYVADİ | TÜM KATEGORİLER VE NET FİYATLAR ]
 
-Kodu, daveti, ortak hesabı ve kendi hesabına aktivasyonu birbirine karıştırmadan alışveriş yapın. Her üründe fiyat, teslimat ve kullanım koşulları için ilan detayını açın.
+Dizi, müzik, yapay zekâ, tasarım ve kupon ürünlerinde güncel katalog.
 
-Ürün türünü karşılaştırın; davet, ortak hesap, kod ve kendi hesabına aktivasyon birbirinden farklıdır.
+VİTRİN LİSTESİ:
+• Disney+ 1 Aylık Ortak Hesap — 49,90 TL
+• Disney+ 1 Aylık Özel Profil — 99,90 TL
+• Netflix 4K Ultra HD Kişisel Profil — 79,90 TL
+• ChatGPT Plus 30 Gün Ortak — 69,90 TL
+• Gemini Pro 18 Ay Kişiye Özel — 149,90 TL
+• Canva Pro 1 Yıl Kendi Hesabınıza — 49,90 TL
+• Duolingo Super 12 Ay Kendi Hesabınıza — 199,90 TL
+• CapCut Pro 1 Aylık Ortak — 49,90 TL
+• Microsoft Office 365 1 Yıllık — 70,00 TL
+• Windows 10/11 Pro Lisans Anahtarı — 70,00 TL
+• Yemeksepeti 500/250 TL İndirim — 100,00 TL
+• Trendyol Yemek Alt Limitsiz 200 TL — 60,00 TL
+• Uber İlk 2 Yolculuk %70 İndirim — 125,00 TL
+• Spotify Premium 4 Aylık Kod — 34,99 TL
+• Prime Video 1 Aylık Ortak — 9,99 TL
+• Minecraft Java & Bedrock 1 Aylık — 49,90 TL
 
-SEÇİLİ ÜRÜNLER:
-• Duolingo Super 12 Ay - Kendi Hesabına Aktivasyon — 199,90 TL
-• ChatGPT Plus 30 Gün - Ortak Hesap — 69,90 TL
-• Gemini Pro 18 Ay Kişiye Özel - 5 Davet Alana 1 Adet Canva Pro Hediye — 149,90 TL
-• Adobe Express 12 Ay - Kendi Hesabına Aktivasyon — 499,90 TL
-• Canva Pro 1 Yıl - Kendi Hesabına Davet — 49,90 TL
-• CapCut Pro (1 Aylık Ortak Hesap) — 49,90 TL
-• GPT GO 3 Aylık İndirim Kodu — 150,00 TL
-• Perplexity Pro (1 Aylık Hesap) — 119,90 TL
-• Netflix 4K Ultra HD (Kişisel Profil) — 79,90 TL
-• Yemeksepeti 500 TL'ye 250 TL İndirim Kodu — 100,00 TL
-• Yemeksepeti 550 TL'ye 200 TL İndirim Kodu — 75,00 TL
-• Trendyol Yemek Alt Limitsiz 200 TL Yemek Kodu — 60,00 TL
-• Uber İlk 2 Yolculuğa %70 İndirim Kodu — 125,00 TL
-• TOD TV Haftalık Taraftar Paketi — 100,00 TL
-• Uber 500+500 TL Alt Limitsiz İndirim Kodu — 85,00 TL
-• Tıkla Gelsin 400₺'ye 200₺ İndirim Kuponu — 80,00 TL
-• S Sport Plus (1 Aylık) — 70,00 TL
-• Minecraft Java & Bedrock + Xbox Ultimate (1 Aylık) — 49,90 TL
-• Canva Pro Öğretmen (1 Yıllık) — 79,90 TL
-• Microsoft Office 365 (1 Yıllık Hesap) — 70,00 TL
-• Windows 10/11 Pro Lisans Anahtarı (Key) — 70,00 TL
-• Xbox Game Pass Ultimate (1 Aylık Ortak) — 49,90 TL
-
-Teslimat yöntemi ve varsa garanti süresi, ilgili ürün ilanında yazılıdır.
-Ödeme öncesinde ürün türünü ve kullanım koşullarını kontrol edin.
-
-Öne çıkan ilan: https://www.shopier.com/51051020
-Mağaza ve destek: @KeyVadiSatisBot
+Tüm alışverişlerinizde 30 gün garanti mevcuttur.
+Sipariş ve detaylar için: @KeyVadiSatisBot\n

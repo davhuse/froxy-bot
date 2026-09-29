@@ -428,5 +428,17 @@
       "title": "Disney+",
       "package": "UHD · reklamsız · 1 aylık"
     }
+  },
+  "kv_disney_ortak_49": {
+    "image": "assets/products/disney_ortak_49.jpg",
+    "family": "disney",
+    "title": "Disney+ Ortak",
+    "package": "1 Aylık · Ortak Hesap"
+  },
+  "kv_disney_ozel_99": {
+    "image": "assets/products/disney_ozel_99.jpg",
+    "family": "disney",
+    "title": "Disney+ Özel",
+    "package": "1 Aylık · Kişisel Profil"
   }
 }
