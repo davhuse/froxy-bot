@@ -1,0 +1,123 @@
+[
+  {
+    "key": "gemini_1m_invite",
+    "title": "Gemini Pro 1 Ay Davet",
+    "price": "49.90",
+    "family": "Gemini Pro",
+    "duration": "1 AY",
+    "variant": "DAVET BAĞLANTISI",
+    "delivery": "Manuel teslimat",
+    "warranty": "",
+    "description": "Gemini Pro 1 aylık davet bağlantısı. Ödeme sonrasında davet bağlantısı destek ekibi tarafından manuel olarak iletilir. Daveti kullanacağınız hesabın uygunluğu ve aktivasyon adımları teslimat sırasında paylaşılır."
+  },
+  {
+    "key": "gemini_18m_promo",
+    "title": "Gemini Pro 18 Ay Promosyon Bağlantısı",
+    "price": "124.99",
+    "family": "Gemini Pro",
+    "duration": "18 AY",
+    "variant": "PROMOSYON BAĞLANTISI",
+    "delivery": "Manuel teslimat",
+    "warranty": "1 ay",
+    "description": "Gemini Pro 18 aylık promosyon bağlantısı. Ödeme sonrasında bağlantı destek ekibi tarafından manuel olarak iletilir. Hesap uygunluğu ve aktivasyon adımları teslimat sırasında paylaşılır. Garanti süresi, teslim tarihinden itibaren 1 aydır."
+  },
+  {
+    "key": "gemini_18m_invite",
+    "title": "Gemini Pro 18 Ay Davet",
+    "price": "74.99",
+    "family": "Gemini Pro",
+    "duration": "18 AY",
+    "variant": "DAVET BAĞLANTISI",
+    "delivery": "Manuel teslimat",
+    "warranty": "1 ay",
+    "description": "Gemini Pro 18 aylık davet bağlantısı. Ödeme sonrasında davet bağlantısı destek ekibi tarafından manuel olarak iletilir. Hesap uygunluğu ve aktivasyon adımları teslimat sırasında paylaşılır. Garanti süresi, teslim tarihinden itibaren 1 aydır."
+  },
+  {
+    "key": "gemini_12m_invite",
+    "title": "Gemini Pro 12 Ay Davet",
+    "price": "99.99",
+    "family": "Gemini Pro",
+    "duration": "12 AY",
+    "variant": "DAVET BAĞLANTISI",
+    "delivery": "Manuel teslimat",
+    "warranty": "1 ay",
+    "description": "Gemini Pro 12 aylık davet bağlantısı. Ödeme sonrasında davet bağlantısı destek ekibi tarafından manuel olarak iletilir. Hesap uygunluğu ve aktivasyon adımları teslimat sırasında paylaşılır. Garanti süresi, teslim tarihinden itibaren 1 aydır."
+  },
+  {
+    "key": "chatgpt_shared_1m",
+    "title": "ChatGPT Plus 1 Ay Ortak Kullanım Hesabı",
+    "price": "39.90",
+    "family": "ChatGPT Plus",
+    "duration": "1 AY",
+    "variant": "ORTAK KULLANIM HESABI",
+    "delivery": "Manuel teslimat",
+    "warranty": "10 gün",
+    "description": "ChatGPT Plus için 1 aylık ortak kullanım hesabı. Bu ürün kişisel hesap veya kendi hesabınıza aktivasyon değildir. Giriş bilgileri ödeme sonrasında destek ekibi tarafından manuel olarak iletilir. Garanti süresi, teslim tarihinden itibaren 10 gündür."
+  },
+  {
+    "key": "perplexity_shared_1m",
+    "title": "Perplexity Pro 1 Ay Ortak Hesap",
+    "price": "69.90",
+    "family": "Perplexity Pro",
+    "duration": "1 AY",
+    "variant": "ORTAK HESAP",
+    "delivery": "Manuel teslimat",
+    "warranty": "30 gün",
+    "description": "Perplexity Pro için 1 aylık ortak kullanım hesabı. Bu ürün kişisel hesap veya kendi hesabınıza aktivasyon değildir. Giriş bilgileri ödeme sonrasında destek ekibi tarafından manuel olarak iletilir. Garanti süresi, teslim tarihinden itibaren 30 gündür."
+  },
+  {
+    "key": "adobe_cc_4m_personal",
+    "title": "Adobe Creative Cloud 4 Ay - Kendi Hesabınıza",
+    "price": "299.90",
+    "family": "Adobe Creative Cloud",
+    "duration": "4 AY",
+    "variant": "KENDİ HESABINIZA",
+    "delivery": "Manuel teslimat",
+    "warranty": "",
+    "description": "Adobe Creative Cloud 4 aylık kendi hesabınıza aktivasyon. Ortak hesap verilmez. Ödeme sonrasında aktivasyon için gerekli hesap bilgileri destek ekibi tarafından istenir ve işlem manuel olarak yürütülür."
+  },
+  {
+    "key": "adobe_cc_3m_personal",
+    "title": "Adobe Creative Cloud 3 Ay - Kendi Hesabınıza",
+    "price": "199.90",
+    "family": "Adobe Creative Cloud",
+    "duration": "3 AY",
+    "variant": "KENDİ HESABINIZA",
+    "delivery": "Manuel teslimat",
+    "warranty": "",
+    "description": "Adobe Creative Cloud 3 aylık kendi hesabınıza aktivasyon. Ortak hesap verilmez. Ödeme sonrasında aktivasyon için gerekli hesap bilgileri destek ekibi tarafından istenir ve işlem manuel olarak yürütülür."
+  },
+  {
+    "key": "adobe_cc_2m_personal",
+    "title": "Adobe Creative Cloud 2 Ay - Kendi Hesabınıza",
+    "price": "99.90",
+    "family": "Adobe Creative Cloud",
+    "duration": "2 AY",
+    "variant": "KENDİ HESABINIZA",
+    "delivery": "Manuel teslimat",
+    "warranty": "",
+    "description": "Adobe Creative Cloud 2 aylık kendi hesabınıza aktivasyon. Ortak hesap verilmez. Ödeme sonrasında aktivasyon için gerekli hesap bilgileri destek ekibi tarafından istenir ve işlem manuel olarak yürütülür."
+  },
+  {
+    "key": "adobe_express_12m_personal",
+    "title": "Adobe Express 12 Ay - Kendi Hesabınıza",
+    "price": "399.90",
+    "family": "Adobe Express",
+    "duration": "12 AY",
+    "variant": "KENDİ HESABINIZA",
+    "delivery": "Manuel teslimat",
+    "warranty": "",
+    "description": "Adobe Express 12 aylık kendi hesabınıza aktivasyon. Ortak hesap verilmez. Ödeme sonrasında aktivasyon için gerekli hesap bilgileri destek ekibi tarafından istenir ve işlem manuel olarak yürütülür."
+  },
+  {
+    "key": "duolingo_super_12m_personal",
+    "title": "Duolingo Super 12 Ay - Kendi Hesabınıza",
+    "price": "199.90",
+    "family": "Duolingo Super",
+    "duration": "12 AY",
+    "variant": "KENDİ HESABINIZA",
+    "delivery": "Manuel teslimat",
+    "warranty": "",
+    "description": "Duolingo Super 12 aylık kendi hesabınıza aktivasyon. Ortak hesap verilmez. Ödeme sonrasında aktivasyon için gerekli hesap bilgileri destek ekibi tarafından istenir ve işlem manuel olarak yürütülür."
+  }
+]

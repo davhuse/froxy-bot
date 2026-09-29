@@ -1,13 +1,14 @@
-FULL-STACK TELEGRAM MINI APP VE SHOPIER KİTİ
---------------------------------------------------
-Kendi Telegram Mini App mağazanızı dakikalar içinde kurun ve çalıştırın.
+[ JARVISCRAFT | DİJİTAL ÜYELİKLER ]
 
-Paket İçeriği:
-* Flask Backend + Modern Vite Frontend Altyapısı
-* Shopier 3D Güvenli Ödeme ve Otomatik Ürün Teslimat Webhook'ları
-* Render / Railway / Vercel Tek Tıkla Çalışan Dağıtım Yapısı
-* Mobil Uyumlu Cyber Arayüz Tasarımı
+Yazılım paketlerinin yanında yapay zekâ, tasarım ve eğitim üyelikleri de JarvisCraft mağazasında.
 
-Fiyat: 400 TL (Tam Kaynak Kod)
-Bot Üzerinden İnceleyin: @JarvisCraftsBot
-Geliştirici İletişim: @JarvisCraft
+• Gemini Pro 1 Ay Davet — 49,90 TL
+• Perplexity Pro 1 Ay Ortak Hesap — 69,90 TL | 30 gün garanti
+• Adobe Creative Cloud 2 Ay - Kendi Hesabınıza — 99,90 TL
+
+Dijital üyeliklerin tamamı destek ekibi tarafından manuel teslim edilir.
+Davet, promosyon bağlantısı, ortak hesap ve kendi hesabına aktivasyon farklı ürünlerdir.
+Garanti süresi yalnızca ilgili ürün ilanında belirtilen seçenekler için geçerlidir.
+
+Ürün detayı ve sipariş: @JarvisCraftsBot → Dijital Üyelikler
+Destek: @JarvisCraft

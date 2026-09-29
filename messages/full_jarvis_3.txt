@@ -1,16 +1,16 @@
-+-- JARVISCRAFT // KURUMSAL YAZILIM VE BOT ÇÖZÜMLERİ --+
-| Özel proje ihtiyaçlarınıza profesyonel yazılım çözümleri.
-|
-| * Özel Web Sitesi Kodlama:
-|   - Modern Responsive Tasarım (Mobil ve Masaüstü tam uyumlu)
-|   - Python Flask / React / Next.js yüksek hızlı mimari
-|   - Shopier / iyzico 3D Güvenli Ödeme Entegrasyonu
-|   - Taban Başlangıç Fiyatı: 799.90 TL (Siteden siteye değişebilir)
-|
-| * Özel Telegram Bot Kodlama:
-|   - Telethon / Aiogram tabanlı asenkron altyapı
-|   - Mağaza, kanal/grup yönetimi ve yapay zekâ entegrasyonu
-|   - Taban Başlangıç Fiyatı: 499.90 TL (Projeden projeye değişebilir)
-|
-| 7/24 Kesintisiz Çalışma | 1 Yıl Teknik Garanti | Anında Teklif
-+-- Teklif Almak İçin: @JarvisCraftsBot | Destek: @JarvisCraft --+
+[ JARVISCRAFT | DİJİTAL EĞİTİM VE ÜYELİK ]
+
+JarvisCraft yazılım ürünlerine ek olarak dijital üyelikler. Kendi hesabınıza aktivasyon ve ortak hesap seçenekleri birbirinden ayrıdır.
+
+• Duolingo Super 12 Ay - Kendi Hesabınıza — 199,90 TL
+• Adobe Express 12 Ay - Kendi Hesabınıza — 399,90 TL
+• Adobe Creative Cloud 4 Ay - Kendi Hesabınıza — 299,90 TL
+• Gemini Pro 1 Ay Davet — 49,90 TL
+• ChatGPT Plus 1 Ay Ortak Kullanım Hesabı — 39,90 TL | 10 gün garanti
+
+Dijital üyeliklerin tamamı destek ekibi tarafından manuel teslim edilir.
+Davet, promosyon bağlantısı, ortak hesap ve kendi hesabına aktivasyon farklı ürünlerdir.
+Garanti süresi yalnızca ilgili ürün ilanında belirtilen seçenekler için geçerlidir.
+
+Ürün detayı ve sipariş: @JarvisCraftsBot → Dijital Üyelikler
+Destek: @JarvisCraft

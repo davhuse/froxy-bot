@@ -1,13 +1,13 @@
-E-TİCARET VE FİYAT TAKİP SCRAPER BOT SETİ
---------------------------------------------------
-Trendyol, Yemeksepeti ve e-ticaret sitelerinden anlık indirim ve kupon yakalayın.
+[ JARVISCRAFT | DİL ÖĞRENİMİ ]
 
-Sistem Yetenekleri:
-* Cloudflare ve Bot Korumasını Atlama (Playwright motoru)
-* Fiyat Düşüşü ve Stok Bildirimlerinde Anlık Telegram Alarmı
-* Otomatik Kupon Toplama ve Sipariş Botu Entegrasyonu
-* Açık Kaynak Python Kodu ve Kurulum Kılavuzu
+Duolingo Super 12 ay kendi hesabınıza aktivasyon seçeneği. Ürün bilgisi ve teslimat adımlarını bot kartında inceleyin.
 
-Fiyat: 300 TL (Ömür Boyu Kullanım)
-İnceleme: @JarvisCraftsBot
-Sipariş ve Destek: @JarvisCraft
+• Duolingo Super 12 Ay - Kendi Hesabınıza — 199,90 TL
+• ChatGPT Plus 1 Ay Ortak Kullanım Hesabı — 39,90 TL | 10 gün garanti
+
+Dijital üyeliklerin tamamı destek ekibi tarafından manuel teslim edilir.
+Davet, promosyon bağlantısı, ortak hesap ve kendi hesabına aktivasyon farklı ürünlerdir.
+Garanti süresi yalnızca ilgili ürün ilanında belirtilen seçenekler için geçerlidir.
+
+Ürün detayı ve sipariş: @JarvisCraftsBot → Dijital Üyelikler
+Destek: @JarvisCraft

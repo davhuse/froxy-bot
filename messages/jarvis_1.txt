@@ -1,15 +1,15 @@
-JARVIS SESLİ YAPAY ZEKÂ ASİSTANI — MASAÜSTÜ SÜRÜMÜ
---------------------------------------------------
-Tony Stark tarzı sesli yapay zekâ asistanı Windows bilgisayarınızda.
-Kurulum gerektirmeyen, taşınabilir tek tıkla çalışan (.exe) asistan paketi.
+[ JARVISCRAFT | YAPAY ZEKÂ ÜYELİKLERİ ]
 
-Öne Çıkan Özellikler:
-* Ultra Gerçekçi Türkçe Ses: Doğal konuşma sentezi
-* 0 ms Anında Susturma: Konuşurken Esc tuşuyla sesi anında kesme
-* Canlı Web Arama: Google ve güncel internet bilgilerini harmanlar
-* Sıfır Kurulum: Python veya kütüphane gerektirmez, hemen çalışır
+Gemini Pro seçenekleri aynı ürün değildir: davet ve promosyon bağlantısını ayrı inceleyin. Uzun süreli seçeneklerin Shopier açıklamasında 1 ay garanti belirtilir.
 
-Ücretsiz Deneme Paketi (.ZIP): Botumuzdan hemen indirebilirsiniz.
-Lisans & Sipariş: 350 TL (Ömür boyu kullanım)
-Detaylı Bilgi & Demo: @JarvisCraftsBot
-İletişim & Destek: @JarvisCraft
+• Gemini Pro 1 Ay Davet — 49,90 TL
+• Gemini Pro 18 Ay Promosyon Bağlantısı — 124,99 TL | 1 ay garanti
+• Gemini Pro 18 Ay Davet — 74,99 TL | 1 ay garanti
+• Gemini Pro 12 Ay Davet — 99,99 TL | 1 ay garanti
+
+Dijital üyeliklerin tamamı destek ekibi tarafından manuel teslim edilir.
+Davet, promosyon bağlantısı, ortak hesap ve kendi hesabına aktivasyon farklı ürünlerdir.
+Garanti süresi yalnızca ilgili ürün ilanında belirtilen seçenekler için geçerlidir.
+
+Ürün detayı ve sipariş: @JarvisCraftsBot → Dijital Üyelikler
+Destek: @JarvisCraft

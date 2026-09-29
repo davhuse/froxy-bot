@@ -181,6 +181,30 @@
             border: 1px solid rgba(0, 240, 255, 0.25);
         }
 
+        .subscription-cover {
+            display: block;
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+            border-radius: 16px;
+            margin-bottom: 14px;
+        }
+
+        .subscription-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 12px 0 16px;
+        }
+
+        .subscription-meta span {
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            padding: 7px 10px;
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+
         /* Card System */
         .card {
             background: var(--bg-card);
@@ -494,6 +518,9 @@
             <button class="pill-btn" onclick="switchNavTab('tab-store')">
                 <i class="fa-solid fa-store"></i> Mağaza
             </button>
+            <button class="pill-btn" onclick="switchNavTab('tab-subscriptions')">
+                <i class="fa-solid fa-sparkles"></i> Üyelikler
+            </button>
             <button class="pill-btn" onclick="switchNavTab('tab-engine')">
                 <i class="fa-solid fa-bolt"></i> Motor
             </button>
@@ -660,6 +687,34 @@
             </div>
         </div>
 
+        <!-- DIGITAL SUBSCRIPTIONS -->
+        <div id="tab-subscriptions" class="tab-content">
+            <div class="card">
+                <div class="card-title">Dijital Üyelikler</div>
+                <p class="card-desc">Teslimat destek ekibimiz tarafından manuel yapılır. Ürün türünü ve varsa garanti süresini kartta inceleyin.</p>
+            </div>
+            {% for p in subscriptions %}
+            <div class="card" id="subscription-{{ p.key }}">
+                <img class="subscription-cover" src="{{ p.image }}" alt="{{ p.title }} ilan kapağı" loading="lazy">
+                <div class="card-header-row">
+                    <span class="badge">{{ p.duration }} · {{ p.variant }}</span>
+                    <span class="badge gold">{{ p.price_display }}</span>
+                </div>
+                <div class="card-title">{{ p.title }}</div>
+                <p class="card-desc">{{ p.description }}</p>
+                <div class="subscription-meta">
+                    <span>{{ p.delivery }}</span>
+                    {% if p.warranty %}<span>{{ p.warranty }} garanti</span>{% endif %}
+                </div>
+                {% if p.shopier_url %}
+                <button onclick="handleShopier('{{ p.shopier_url }}')" class="btn btn-primary">Shopier ile Satın Al · {{ p.price_display }}</button>
+                {% else %}
+                <button onclick="handleTelegram('https://t.me/JarvisCraft')" class="btn btn-secondary">Ürün için destek al</button>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
         <!-- 3. OTO-REKLAM MOTORU TAB -->
         <div id="tab-engine" class="tab-content">
             <div class="card">
@@ -784,6 +839,10 @@
         <div class="nav-item" data-tab="tab-store" onclick="switchNavTab('tab-store')">
             <i class="fa-solid fa-store"></i>
             <span>Mağaza</span>
+        </div>
+        <div class="nav-item" data-tab="tab-subscriptions" onclick="switchNavTab('tab-subscriptions')">
+            <i class="fa-solid fa-sparkles"></i>
+            <span>Üyelikler</span>
         </div>
         <div class="nav-item" data-tab="tab-engine" onclick="switchNavTab('tab-engine')">
             <i class="fa-solid fa-bolt"></i>

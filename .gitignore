@@ -88,3 +88,7 @@ miniapp_froxy/frontend/node_modules/
 miniapp_froxy/dist/
 miniapp_froxy/frontend/*.tsbuildinfo
 miniapp_froxy/frontend/.pytest_cache/
+
+# Local preview browser artifacts and superseded cover drafts.
+.playwright-cli/
+static/jarvis_subscriptions/*.jpg

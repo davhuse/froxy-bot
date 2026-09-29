@@ -3014,7 +3014,8 @@ class _MountedRootMiddleware:
 @app.route('/jarvis/')
 @app.route('/jarvis/app')
 def jarvis_miniapp_view():
-    return render_template('jarvis_miniapp.html')
+    from jarvis_subscriptions import load_subscriptions
+    return render_template('jarvis_miniapp.html', subscriptions=load_subscriptions())
 
 try:
     from miniapp.server import app as keyvadi_miniapp

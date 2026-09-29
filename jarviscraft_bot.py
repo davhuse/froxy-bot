@@ -153,6 +153,7 @@ def get_main_menu():
         [Button.url("Shopier Magazasi (Tum Ilanlar)", SHOPIER_URL)],
         [Button.inline("Oto-Reklam Motoru", b"menu_ad_engine"),
          Button.inline("Kod & Yazilim Magazasi", b"menu_store")],
+        [Button.inline("Dijital Uyelikler", b"menu_subscriptions")],
         [Button.inline("Siparislerim & Uyeliklerim", b"menu_orders"),
          Button.inline("VIP & Bakiye", b"menu_vip")],
         [Button.inline("Hesabim & Profil", b"menu_profile"),
@@ -591,6 +592,49 @@ async def callback_handler(event):
             [Button.inline("Ozel Bot Yazilimi Kodlama - 499.90 TL", b"prod_6")],
             [Button.inline("<-- Ana Menu", b"main_menu")]
         ]
+        await safe_edit_event(event, msg, buttons=buttons)
+
+    elif data == "menu_subscriptions":
+        from jarvis_subscriptions import load_subscriptions
+        subscriptions = load_subscriptions()
+        lines = [
+            "**JARVISCRAFT | DIJITAL UYELIKLER**",
+            LINE,
+            "Suresi, teslim turu ve garanti bilgisi her urun kartinda acikca yazilir.",
+            "Tum uyelikler destek ekibi tarafindan manuel teslim edilir.",
+            "",
+        ]
+        for item in subscriptions:
+            lines.append(f"• {item['title']} — {item['price_display']}")
+        buttons = [
+            [Button.inline(f"{item['family']} {item['duration']} - {item['price_display']}",
+                           f"subscription_{item['key']}".encode("utf-8"))]
+            for item in subscriptions
+        ]
+        buttons.append([Button.inline("<-- Ana Menu", b"main_menu")])
+        await safe_edit_event(event, "\n".join(lines), buttons=buttons)
+
+    elif data.startswith("subscription_"):
+        from jarvis_subscriptions import load_subscriptions
+        key = data[len("subscription_"):]
+        item = next((row for row in load_subscriptions() if row["key"] == key), None)
+        if not item:
+            await event.answer("Urun bulunamadi.", alert=True)
+            return
+        warranty = f"\nGaranti: **{item['warranty']}**" if item["warranty"] else ""
+        msg = (
+            f"**{item['title']}**\n{LINE}\n\n"
+            f"Fiyat: **{item['price_display']}**\n"
+            f"Teslimat: **{item['delivery']}**{warranty}\n\n"
+            f"{item['description']}\n\n"
+            "Siparis ve teslimat icin asagidaki baglantiyi kullanin."
+        )
+        buttons = []
+        if item["shopier_url"]:
+            buttons.append([Button.url("Shopier'dan Satin Al", item["shopier_url"])])
+        else:
+            buttons.append([Button.url("Urun Icin Destek Al", SUPPORT_URL)])
+        buttons.append([Button.inline("<-- Uyeliklere Don", b"menu_subscriptions")])
         await safe_edit_event(event, msg, buttons=buttons)
 
     elif data.startswith("prod_"):

@@ -1,24 +1,22 @@
-+-- JARVISCRAFT // YAZILIM VE OTOMASYON KATALOĞU --+
-| Tüm yazılım paketleri, botlar ve otomasyon çözümleri
-|
-| 1. J.A.R.V.I.S. Sesli Masaüstü AI Asistanı ..... 350,00 TL
-|    - Windows portable tek tıkla çalışan .exe
-|    - Ultra gerçekçi Türkçe ses ve 0 ms Esc ile susturma
-|    - Canlı web arama ve görev yönetimi
-|
-| 2. Telegram Oto-Reklam ve Mesaj Motoru .......... 450,00 TL
-|    - 65+ ticaret grubuna 7/24 kesintisiz otomatik rotasyon
-|    - Çoklu hesap bağlama ve anti-flood koruması
-|
-| 3. E-Ticaret ve Fiyat Takip Scraper ............. 300,00 TL
-|    - Trendyol / Yemeksepeti kupon ve fiyat alarmları
-|    - Playwright Cloudflare koruma geçişi
-|
-| 4. Full-Stack Mini App + Shopier Kiti .......... 400,00 TL
-|    - Flask backend, modern frontend ve otomatik teslimat
-|
-| 5. Özel Web Sitesi Geliştirme .................. 799,90 TL'den başlar
-| 6. Özel Telegram Bot Geliştirme ................ 499,90 TL'den başlar
-|
-| Güvenli Shopier Altyapısı | Anında Teslimat | 7/24 Destek
-+-- Shopier Mağazası ve Demo: @JarvisCraftsBot | Destek: @JarvisCraft --+
+[ JARVISCRAFT | YENİ ÜYELİK KATALOĞU ]
+
+Gemini davet ve promosyon bağlantıları, ortak AI hesapları ve kendi hesabınıza aktivasyonlar. Her varyant ayrı ilandır; fiyat ve garantiyi doğru varyantla eşleştirin.
+
+• Gemini Pro 1 Ay Davet — 49,90 TL
+• Gemini Pro 18 Ay Promosyon Bağlantısı — 124,99 TL | 1 ay garanti
+• Gemini Pro 18 Ay Davet — 74,99 TL | 1 ay garanti
+• Gemini Pro 12 Ay Davet — 99,99 TL | 1 ay garanti
+• ChatGPT Plus 1 Ay Ortak Kullanım Hesabı — 39,90 TL | 10 gün garanti
+• Perplexity Pro 1 Ay Ortak Hesap — 69,90 TL | 30 gün garanti
+• Adobe Creative Cloud 2 Ay - Kendi Hesabınıza — 99,90 TL
+• Adobe Creative Cloud 3 Ay - Kendi Hesabınıza — 199,90 TL
+• Adobe Creative Cloud 4 Ay - Kendi Hesabınıza — 299,90 TL
+• Adobe Express 12 Ay - Kendi Hesabınıza — 399,90 TL
+• Duolingo Super 12 Ay - Kendi Hesabınıza — 199,90 TL
+
+Dijital üyeliklerin tamamı destek ekibi tarafından manuel teslim edilir.
+Davet, promosyon bağlantısı, ortak hesap ve kendi hesabına aktivasyon farklı ürünlerdir.
+Garanti süresi yalnızca ilgili ürün ilanında belirtilen seçenekler için geçerlidir.
+
+Ürün detayı ve sipariş: @JarvisCraftsBot → Dijital Üyelikler
+Destek: @JarvisCraft

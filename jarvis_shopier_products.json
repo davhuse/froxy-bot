@@ -40,5 +40,126 @@
     "price": "350.00",
     "id": "51058121",
     "url": "https://www.shopier.com/JarvisStore/51058121"
+  },
+  {
+    "key": "gemini_1m_invite",
+    "id": "51354814",
+    "title": "Gemini Pro 1 Ay Davet",
+    "price": "49,90 TL",
+    "url": "https://www.shopier.com/51354814",
+    "description": "Gemini Pro 1 aylık davet bağlantısı. Ödeme sonrasında davet bağlantısı destek ekibi tarafından manuel olarak iletilir. Daveti kullanacağınız hesabın uygunluğu ve aktivasyon adımları teslimat sırasında paylaşılır.",
+    "image": "/static/jarvis_subscriptions/gemini_1m_invite-ai.png",
+    "delivery": "Manuel teslimat",
+    "warranty": ""
+  },
+  {
+    "key": "gemini_18m_promo",
+    "id": "51354864",
+    "title": "Gemini Pro 18 Ay Promosyon Bağlantısı",
+    "price": "124,99 TL",
+    "url": "https://www.shopier.com/51354864",
+    "description": "Gemini Pro 18 aylık promosyon bağlantısı. Ödeme sonrasında bağlantı destek ekibi tarafından manuel olarak iletilir. Hesap uygunluğu ve aktivasyon adımları teslimat sırasında paylaşılır. Garanti süresi, teslim tarihinden itibaren 1 aydır.",
+    "image": "/static/jarvis_subscriptions/gemini_18m_promo-ai.png",
+    "delivery": "Manuel teslimat",
+    "warranty": "1 ay"
+  },
+  {
+    "key": "gemini_18m_invite",
+    "id": "51354873",
+    "title": "Gemini Pro 18 Ay Davet",
+    "price": "74,99 TL",
+    "url": "https://www.shopier.com/51354873",
+    "description": "Gemini Pro 18 aylık davet bağlantısı. Ödeme sonrasında davet bağlantısı destek ekibi tarafından manuel olarak iletilir. Hesap uygunluğu ve aktivasyon adımları teslimat sırasında paylaşılır. Garanti süresi, teslim tarihinden itibaren 1 aydır.",
+    "image": "/static/jarvis_subscriptions/gemini_18m_invite-ai.png",
+    "delivery": "Manuel teslimat",
+    "warranty": "1 ay"
+  },
+  {
+    "key": "gemini_12m_invite",
+    "id": "51354877",
+    "title": "Gemini Pro 12 Ay Davet",
+    "price": "99,99 TL",
+    "url": "https://www.shopier.com/51354877",
+    "description": "Gemini Pro 12 aylık davet bağlantısı. Ödeme sonrasında davet bağlantısı destek ekibi tarafından manuel olarak iletilir. Hesap uygunluğu ve aktivasyon adımları teslimat sırasında paylaşılır. Garanti süresi, teslim tarihinden itibaren 1 aydır.",
+    "image": "/static/jarvis_subscriptions/gemini_12m_invite-ai.png",
+    "delivery": "Manuel teslimat",
+    "warranty": "1 ay"
+  },
+  {
+    "key": "chatgpt_shared_1m",
+    "id": "51354878",
+    "title": "ChatGPT Plus 1 Ay Ortak Kullanım Hesabı",
+    "price": "39,90 TL",
+    "url": "https://www.shopier.com/51354878",
+    "description": "ChatGPT Plus için 1 aylık ortak kullanım hesabı. Bu ürün kişisel hesap veya kendi hesabınıza aktivasyon değildir. Giriş bilgileri ödeme sonrasında destek ekibi tarafından manuel olarak iletilir. Garanti süresi, teslim tarihinden itibaren 10 gündür.",
+    "image": "/static/jarvis_subscriptions/chatgpt_shared_1m-ai.png",
+    "delivery": "Manuel teslimat",
+    "warranty": "10 gün"
+  },
+  {
+    "key": "perplexity_shared_1m",
+    "id": "51354882",
+    "title": "Perplexity Pro 1 Ay Ortak Hesap",
+    "price": "69,90 TL",
+    "url": "https://www.shopier.com/51354882",
+    "description": "Perplexity Pro için 1 aylık ortak kullanım hesabı. Bu ürün kişisel hesap veya kendi hesabınıza aktivasyon değildir. Giriş bilgileri ödeme sonrasında destek ekibi tarafından manuel olarak iletilir. Garanti süresi, teslim tarihinden itibaren 30 gündür.",
+    "image": "/static/jarvis_subscriptions/perplexity_shared_1m-ai.png",
+    "delivery": "Manuel teslimat",
+    "warranty": "30 gün"
+  },
+  {
+    "key": "adobe_cc_4m_personal",
+    "id": "51354885",
+    "title": "Adobe Creative Cloud 4 Ay - Kendi Hesabınıza",
+    "price": "299,90 TL",
+    "url": "https://www.shopier.com/51354885",
+    "description": "Adobe Creative Cloud 4 aylık kendi hesabınıza aktivasyon. Ortak hesap verilmez. Ödeme sonrasında aktivasyon için gerekli hesap bilgileri destek ekibi tarafından istenir ve işlem manuel olarak yürütülür.",
+    "image": "/static/jarvis_subscriptions/adobe_cc_4m_personal-ai.png",
+    "delivery": "Manuel teslimat",
+    "warranty": ""
+  },
+  {
+    "key": "adobe_cc_3m_personal",
+    "id": "51354886",
+    "title": "Adobe Creative Cloud 3 Ay - Kendi Hesabınıza",
+    "price": "199,90 TL",
+    "url": "https://www.shopier.com/51354886",
+    "description": "Adobe Creative Cloud 3 aylık kendi hesabınıza aktivasyon. Ortak hesap verilmez. Ödeme sonrasında aktivasyon için gerekli hesap bilgileri destek ekibi tarafından istenir ve işlem manuel olarak yürütülür.",
+    "image": "/static/jarvis_subscriptions/adobe_cc_3m_personal-ai.png",
+    "delivery": "Manuel teslimat",
+    "warranty": ""
+  },
+  {
+    "key": "adobe_cc_2m_personal",
+    "id": "51354888",
+    "title": "Adobe Creative Cloud 2 Ay - Kendi Hesabınıza",
+    "price": "99,90 TL",
+    "url": "https://www.shopier.com/51354888",
+    "description": "Adobe Creative Cloud 2 aylık kendi hesabınıza aktivasyon. Ortak hesap verilmez. Ödeme sonrasında aktivasyon için gerekli hesap bilgileri destek ekibi tarafından istenir ve işlem manuel olarak yürütülür.",
+    "image": "/static/jarvis_subscriptions/adobe_cc_2m_personal-ai.png",
+    "delivery": "Manuel teslimat",
+    "warranty": ""
+  },
+  {
+    "key": "adobe_express_12m_personal",
+    "id": "51354891",
+    "title": "Adobe Express 12 Ay - Kendi Hesabınıza",
+    "price": "399,90 TL",
+    "url": "https://www.shopier.com/51354891",
+    "description": "Adobe Express 12 aylık kendi hesabınıza aktivasyon. Ortak hesap verilmez. Ödeme sonrasında aktivasyon için gerekli hesap bilgileri destek ekibi tarafından istenir ve işlem manuel olarak yürütülür.",
+    "image": "/static/jarvis_subscriptions/adobe_express_12m_personal-ai.png",
+    "delivery": "Manuel teslimat",
+    "warranty": ""
+  },
+  {
+    "key": "duolingo_super_12m_personal",
+    "id": "51354892",
+    "title": "Duolingo Super 12 Ay - Kendi Hesabınıza",
+    "price": "199,90 TL",
+    "url": "https://www.shopier.com/51354892",
+    "description": "Duolingo Super 12 aylık kendi hesabınıza aktivasyon. Ortak hesap verilmez. Ödeme sonrasında aktivasyon için gerekli hesap bilgileri destek ekibi tarafından istenir ve işlem manuel olarak yürütülür.",
+    "image": "/static/jarvis_subscriptions/duolingo_super_12m_personal-ai.png",
+    "delivery": "Manuel teslimat",
+    "warranty": ""
   }
 ]

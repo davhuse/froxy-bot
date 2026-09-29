@@ -1,25 +1,18 @@
-+-- JARVISCRAFT // VIP ABONELİKLER VE OTO-MESAJ MOTORU --+
-| Reklamlarınızı 65+ aktif ticaret grubunda 7/24 otomatik yayınlayın.
-|
-| Planlar ve Avantajlar:
-|
-| * Standart Plan (Ücretsiz):
-|   - 1 Adet Gönderici Hesap
-|   - 60 Dakika Standart Güvenli Döngü
-|   - 4 Hazır Kategori Havuzu
-|   - Günlük 25 Adet Gönderi Limiti
-|
-| * Haftalık VIP Plan (150 TL / Hafta):
-|   - 2 Adet Gönderici Hesap Slotu (Otomatik Rotasyon)
-|   - 30-45 Dk Esnek Hızlı Mod
-|   - Sınırsız Özel Grup ve Kanal Bağlama
-|   - Anlık Telegram DM Bildirimleri
-|
-| * Aylık Sınırsız VIP Plan (350 TL / Ay):
-|   - 5 Adet Eşzamanlı Gönderici Hesap (Multi-Session)
-|   - Tamamen Sınırsız Günlük Gönderim (Kota Yok)
-|   - Gelişmiş Anti-Ban ve FloodGuard Pro
-|   - Tüm Hazır Havuzlar + Sınırsız Özel Gruplar
-|   - Öncelikli Sunucu Kuyruğu ve 7/24 Birebir Destek
-|
-+-- Bilgi ve Sipariş: @JarvisCraftsBot | Destek: @JarvisCraft --+
+[ JARVISCRAFT | YAPAY ZEKÂ VE TASARIM ]
+
+Bir aylık ortak hesap, uzun süreli Gemini daveti ve kendi hesabınıza Adobe aktivasyonu arasında ihtiyacınıza uygun seçeneği bulun.
+
+• ChatGPT Plus 1 Ay Ortak Kullanım Hesabı — 39,90 TL | 10 gün garanti
+• Perplexity Pro 1 Ay Ortak Hesap — 69,90 TL | 30 gün garanti
+• Gemini Pro 18 Ay Promosyon Bağlantısı — 124,99 TL | 1 ay garanti
+• Gemini Pro 18 Ay Davet — 74,99 TL | 1 ay garanti
+• Gemini Pro 12 Ay Davet — 99,99 TL | 1 ay garanti
+• Adobe Creative Cloud 2 Ay - Kendi Hesabınıza — 99,90 TL
+• Adobe Creative Cloud 3 Ay - Kendi Hesabınıza — 199,90 TL
+
+Dijital üyeliklerin tamamı destek ekibi tarafından manuel teslim edilir.
+Davet, promosyon bağlantısı, ortak hesap ve kendi hesabına aktivasyon farklı ürünlerdir.
+Garanti süresi yalnızca ilgili ürün ilanında belirtilen seçenekler için geçerlidir.
+
+Ürün detayı ve sipariş: @JarvisCraftsBot → Dijital Üyelikler
+Destek: @JarvisCraft

@@ -1,14 +1,15 @@
-ÖZEL YAZILIM, WEB SİTESİ VE TELEGRAM BOT GELİŞTİRME
---------------------------------------------------
-Projenizi anahtar teslim profesyonel mimariyle kodluyoruz.
-Kurumsal web sitesi, e-ticaret, Telegram mağaza botu ve özel otomasyonlar.
+[ JARVISCRAFT | TASARIM VE ÜRETKENLİK ]
 
-Hizmetlerimiz:
-* Özel Web Sitesi Kodlama: React, Next.js, Flask, Shopier 3D ödeme (Taban Fiyat: 799.90 TL)
-* Özel Telegram Botu: Mağaza, üyelik, grup yönetimi, yapay zekâ (Taban Fiyat: 499.90 TL)
-* 7/24 Kesintisiz Bulut Kurulumu ve 1 Yıl Teknik Destek
-* Yüksek Performanslı Asenkron Python / Node.js Mimarisi
+Adobe Creative Cloud ve Adobe Express üyelikleri kendi hesabınıza aktivasyon olarak hazırlanır. Süreyi ve ürün adını karşılaştırarak seçim yapın.
 
-Bilgilendirme: Siteden siteye ve proje kapsamına göre fiyat değişebilir.
-İnceleme ve Teklif: @JarvisCraftsBot
-Doğrudan İletişim: @JarvisCraft
+• Adobe Creative Cloud 2 Ay - Kendi Hesabınıza — 99,90 TL
+• Adobe Creative Cloud 3 Ay - Kendi Hesabınıza — 199,90 TL
+• Adobe Creative Cloud 4 Ay - Kendi Hesabınıza — 299,90 TL
+• Adobe Express 12 Ay - Kendi Hesabınıza — 399,90 TL
+
+Dijital üyeliklerin tamamı destek ekibi tarafından manuel teslim edilir.
+Davet, promosyon bağlantısı, ortak hesap ve kendi hesabına aktivasyon farklı ürünlerdir.
+Garanti süresi yalnızca ilgili ürün ilanında belirtilen seçenekler için geçerlidir.
+
+Ürün detayı ve sipariş: @JarvisCraftsBot → Dijital Üyelikler
+Destek: @JarvisCraft
