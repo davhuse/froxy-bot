@@ -3056,6 +3056,15 @@ try:
 except Exception as exc:
     print(f'[App] Froxy Mini App mount unavailable: {exc}')
 
+try:
+    from miniapp_dijitalpazarim.server import app as dijitalpazarim_miniapp
+    mounts['/dp'] = _MountedRootMiddleware(dijitalpazarim_miniapp)
+    mounts['/dp/app'] = _MountedRootMiddleware(dijitalpazarim_miniapp)
+    mounts['/dijitalpazarim'] = _MountedRootMiddleware(dijitalpazarim_miniapp)
+    print('[App] Dijital Pazarim Mini App mounted at /dp and /dijitalpazarim')
+except Exception as exc:
+    print(f'[App] Dijital Pazarim Mini App mount unavailable: {exc}')
+
 if mounts:
     app.wsgi_app = DispatcherMiddleware(app.wsgi_app, mounts)
 
