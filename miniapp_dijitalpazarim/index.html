@@ -4,17 +4,18 @@
   <meta charset="UTF-8">
   <meta http-equiv="Content-Language" content="tr">
   <meta name="google" content="notranslate">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Dijital Pazarım - Kod, Kupon & Dijital Lisans</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Dijital Pazarım — Kod, Kupon & Dijital Lisans</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     :root {
-      --bg-dark: #080511;
-      --bg-card: rgba(18, 12, 33, 0.75);
-      --bg-card-hover: rgba(28, 18, 52, 0.85);
+      --bg-dark: #07040e;
+      --bg-card: rgba(18, 12, 33, 0.78);
+      --bg-card-hover: rgba(28, 18, 52, 0.9);
       --purple-primary: #a855f7;
       --purple-light: #c084fc;
       --purple-dark: #7e22ce;
@@ -25,7 +26,12 @@
       --text-main: #f8fafc;
       --text-muted: #94a3b8;
       --text-dim: #64748b;
+      --success: #22c55e;
+      --danger: #ef4444;
       --price-gold: #facc15;
+      --radius-sm: 12px;
+      --radius-md: 18px;
+      --radius-lg: 24px;
     }
 
     * {
@@ -39,7 +45,7 @@
     body {
       background-color: var(--bg-dark);
       background-image: 
-        radial-gradient(circle at 50% 0%, rgba(168, 85, 247, 0.18) 0%, transparent 60%),
+        radial-gradient(circle at 50% 0%, rgba(168, 85, 247, 0.18) 0%, transparent 55%),
         radial-gradient(circle at 100% 100%, rgba(236, 72, 153, 0.12) 0%, transparent 50%),
         radial-gradient(circle at 0% 50%, rgba(126, 34, 206, 0.12) 0%, transparent 50%);
       background-attachment: fixed;
@@ -48,16 +54,16 @@
       min-height: 100vh;
       display: flex;
       justify-content: center;
-      padding-bottom: 70px;
+      padding-bottom: 84px;
     }
 
     .app-container {
       width: 100%;
       max-width: 480px;
-      padding: 16px 16px 30px;
+      padding: 14px 14px 20px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 14px;
     }
 
     /* Header */
@@ -65,32 +71,32 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 12px 14px;
+      padding: 10px 14px;
       background: var(--bg-card);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
       border: 1px solid var(--border-subtle);
-      border-radius: 20px;
+      border-radius: var(--radius-md);
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
     }
 
     .brand-info {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
     }
 
     .brand-avatar {
-      width: 46px;
-      height: 46px;
+      width: 42px;
+      height: 42px;
       border-radius: 50%;
       object-fit: cover;
       border: 2px solid var(--purple-light);
-      box-shadow: 0 0 16px var(--purple-glow);
+      box-shadow: 0 0 14px var(--purple-glow);
     }
 
     .brand-title {
-      font-size: 17px;
+      font-size: 16px;
       font-weight: 800;
       letter-spacing: -0.3px;
       background: linear-gradient(135deg, #ffffff 40%, var(--purple-light) 100%);
@@ -102,99 +108,127 @@
       font-size: 11px;
       font-weight: 600;
       color: var(--purple-light);
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
     }
 
     .header-right {
       display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 6px;
+      align-items: center;
+      gap: 8px;
     }
 
-    /* Language Switcher */
-    .lang-switch {
+    .header-balance-pill {
       display: flex;
-      background: rgba(255, 255, 255, 0.06);
+      align-items: center;
+      gap: 6px;
+      background: rgba(168, 85, 247, 0.15);
       border: 1px solid var(--border-subtle);
       border-radius: 20px;
-      padding: 2px;
-      gap: 2px;
-    }
-
-    .lang-btn {
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      font-size: 11px;
-      font-weight: 700;
-      padding: 3px 8px;
-      border-radius: 14px;
+      padding: 6px 12px;
       cursor: pointer;
       transition: all 0.2s ease;
     }
 
-    .lang-btn.active {
-      background: var(--purple-primary);
-      color: #ffffff;
-      box-shadow: 0 2px 8px var(--purple-glow);
+    .header-balance-pill:hover {
+      border-color: var(--purple-light);
+      background: rgba(168, 85, 247, 0.25);
     }
 
-    .live-status {
+    .header-balance-amount {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--price-gold);
+    }
+
+    /* Tabs Container */
+    .tab-content {
+      display: none;
+      flex-direction: column;
+      gap: 14px;
+      animation: fadeIn 0.25s ease;
+    }
+
+    .tab-content.active {
       display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 8px;
-      background: rgba(34, 197, 94, 0.12);
-      border: 1px solid rgba(34, 197, 94, 0.3);
-      border-radius: 20px;
-      font-size: 10px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Highlights / Stories */
+    .stories-section {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      scrollbar-width: none;
+    }
+
+    .stories-section::-webkit-scrollbar {
+      display: none;
+    }
+
+    .story-card {
+      flex: 0 0 140px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .story-card:hover {
+      border-color: var(--border-glow);
+      transform: translateY(-2px);
+    }
+
+    .story-badge {
+      font-size: 9px;
+      font-weight: 800;
+      color: var(--pink-accent);
+      text-transform: uppercase;
+    }
+
+    .story-title {
+      font-size: 13px;
       font-weight: 700;
-      color: #4ade80;
+      color: #ffffff;
     }
 
-    .status-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #22c55e;
-      box-shadow: 0 0 8px #22c55e;
-      animation: pulse 1.8s infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.3); opacity: 0.6; }
+    .story-sub {
+      font-size: 11px;
+      color: var(--text-dim);
     }
 
     /* Search Bar */
-    .search-wrapper {
+    .search-box {
       position: relative;
       width: 100%;
     }
 
     .search-input {
       width: 100%;
-      padding: 12px 16px 12px 42px;
+      height: 44px;
       background: var(--bg-card);
       border: 1px solid var(--border-subtle);
-      border-radius: 16px;
-      color: var(--text-main);
-      font-size: 13px;
+      border-radius: var(--radius-sm);
+      padding: 0 16px 0 42px;
       font-family: inherit;
+      font-size: 13px;
+      color: #ffffff;
       outline: none;
       transition: all 0.2s ease;
-      backdrop-filter: blur(12px);
     }
 
     .search-input:focus {
       border-color: var(--purple-light);
-      box-shadow: 0 0 18px var(--purple-glow);
-    }
-
-    .search-input::placeholder {
-      color: var(--text-dim);
+      box-shadow: 0 0 16px var(--purple-glow);
     }
 
     .search-icon {
@@ -202,83 +236,53 @@
       left: 14px;
       top: 50%;
       transform: translateY(-50%);
-      width: 16px;
-      height: 16px;
-      fill: none;
-      stroke: var(--purple-light);
-      stroke-width: 2;
+      color: var(--text-muted);
+      font-size: 14px;
     }
 
-    /* Category Filter Tabs */
-    .filter-scroll {
+    /* Categories */
+    .categories-bar {
       display: flex;
       gap: 8px;
       overflow-x: auto;
+      padding-bottom: 2px;
       scrollbar-width: none;
-      padding: 2px 2px 6px;
     }
 
-    .filter-scroll::-webkit-scrollbar {
+    .categories-bar::-webkit-scrollbar {
       display: none;
     }
 
     .filter-btn {
-      flex: 0 0 auto;
+      flex-shrink: 0;
       padding: 8px 14px;
       background: var(--bg-card);
       border: 1px solid var(--border-subtle);
-      border-radius: 24px;
-      font-size: 12px;
-      font-weight: 600;
+      border-radius: 20px;
       color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 700;
       cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
       transition: all 0.2s ease;
-      backdrop-filter: blur(10px);
+    }
+
+    .filter-btn:hover {
+      color: #ffffff;
+      border-color: var(--purple-light);
     }
 
     .filter-btn.active {
-      background: linear-gradient(135deg, var(--purple-dark), var(--purple-primary));
-      border-color: var(--purple-light);
+      background: linear-gradient(135deg, var(--purple-primary), var(--pink-accent));
       color: #ffffff;
+      border-color: transparent;
       box-shadow: 0 4px 14px var(--purple-glow);
     }
 
-    /* Trust Banner */
-    .trust-banner {
-      background: linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(236, 72, 153, 0.1));
-      border: 1px solid rgba(192, 132, 252, 0.35);
-      border-radius: 16px;
-      padding: 12px 14px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-    }
-
-    .trust-text {
-      font-size: 12px;
-      color: #e2e8f0;
-      line-height: 1.4;
-    }
-
-    .trust-text strong {
-      color: var(--purple-light);
-    }
-
-    .support-pill {
-      flex-shrink: 0;
-      padding: 6px 12px;
-      background: var(--purple-primary);
-      border-radius: 20px;
-      font-size: 11px;
-      font-weight: 700;
-      color: #ffffff;
-      text-decoration: none;
-      box-shadow: 0 2px 10px var(--purple-glow);
-    }
-
-    /* Product Grid */
-    .products-grid {
+    /* Product Cards */
+    .products-list {
       display: flex;
       flex-direction: column;
       gap: 12px;
@@ -288,23 +292,30 @@
       display: flex;
       background: var(--bg-card);
       border: 1px solid var(--border-subtle);
-      border-radius: 18px;
+      border-radius: var(--radius-md);
+      padding: 12px;
+      gap: 12px;
+      position: relative;
       overflow: hidden;
-      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-      backdrop-filter: blur(14px);
+      transition: all 0.25s ease;
+      cursor: pointer;
     }
 
-    .product-card:active {
-      transform: scale(0.985);
+    .product-card:hover {
       border-color: var(--border-glow);
+      background: var(--bg-card-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(168, 85, 247, 0.15);
     }
 
     .product-thumb-wrap {
-      width: 105px;
-      min-width: 105px;
-      position: relative;
-      background: #0f0a1c;
+      width: 86px;
+      height: 86px;
+      flex-shrink: 0;
+      border-radius: var(--radius-sm);
       overflow: hidden;
+      position: relative;
+      background: #140d25;
     }
 
     .product-thumb {
@@ -315,49 +326,53 @@
 
     .product-badge-corner {
       position: absolute;
-      top: 6px;
-      left: 6px;
-      background: rgba(0, 0, 0, 0.7);
-      backdrop-filter: blur(4px);
-      border: 1px solid var(--purple-light);
-      border-radius: 6px;
-      padding: 2px 6px;
-      font-size: 9px;
-      font-weight: 700;
+      top: 4px;
+      left: 4px;
+      background: rgba(236, 72, 153, 0.9);
       color: #ffffff;
+      font-size: 8px;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 6px;
       text-transform: uppercase;
+      letter-spacing: 0.3px;
     }
 
     .product-details {
-      flex: 1;
-      padding: 12px 14px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      gap: 8px;
+      flex: 1;
+      min-width: 0;
     }
 
     .product-cat-tag {
       font-size: 10px;
-      font-weight: 700;
       color: var(--purple-light);
+      font-weight: 700;
+      letter-spacing: 0.4px;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      margin-bottom: 2px;
     }
 
     .product-title {
-      font-size: 14px;
+      font-size: 13.5px;
       font-weight: 700;
       color: #ffffff;
-      line-height: 1.25;
+      line-height: 1.35;
+      margin-bottom: 4px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
 
     .product-desc {
       font-size: 11px;
-      color: var(--text-muted);
+      color: var(--text-dim);
       line-height: 1.35;
       display: -webkit-box;
-      -webkit-line-clamp: 2;
+      -webkit-line-clamp: 1;
       -webkit-box-orient: vertical;
       overflow: hidden;
     }
@@ -366,304 +381,1040 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-top: 4px;
+      margin-top: 8px;
     }
 
     .product-price {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 16px;
-      font-weight: 700;
+      font-size: 15px;
+      font-weight: 800;
       color: var(--price-gold);
-      letter-spacing: -0.5px;
     }
 
     .buy-btn {
-      padding: 8px 14px;
+      padding: 6px 14px;
       background: linear-gradient(135deg, var(--purple-primary), var(--purple-dark));
       border: 1px solid var(--purple-light);
-      border-radius: 12px;
+      border-radius: 10px;
       color: #ffffff;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 700;
       cursor: pointer;
       text-decoration: none;
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      box-shadow: 0 2px 12px var(--purple-glow);
+      gap: 5px;
       transition: all 0.2s ease;
     }
 
-    .buy-btn:active {
-      transform: scale(0.95);
-      background: linear-gradient(135deg, var(--purple-dark), var(--purple-primary));
+    .buy-btn:hover {
+      background: var(--pink-accent);
+      box-shadow: 0 0 12px var(--purple-glow);
     }
 
-    /* Empty state */
-    .empty-state {
-      text-align: center;
-      padding: 40px 20px;
-      color: var(--text-dim);
+    /* WALLET VIEW */
+    .wallet-hero-card {
+      background: linear-gradient(135deg, rgba(168, 85, 247, 0.35) 0%, rgba(236, 72, 153, 0.25) 100%);
+      border: 1px solid var(--border-glow);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: 0 12px 36px rgba(168, 85, 247, 0.2);
+    }
+
+    .wallet-hero-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .wallet-label {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--purple-light);
+      letter-spacing: 0.8px;
+    }
+
+    .wallet-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 8px;
+      background: rgba(34, 197, 94, 0.15);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      border-radius: 12px;
+      font-size: 10px;
+      font-weight: 700;
+      color: #4ade80;
+    }
+
+    .wallet-amount-big {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 32px;
+      font-weight: 900;
+      color: #ffffff;
+      letter-spacing: -0.5px;
+    }
+
+    .wallet-footer-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: var(--text-muted);
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding-top: 10px;
+    }
+
+    .topup-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .topup-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .topup-btn {
+      height: 40px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      color: #ffffff;
+      font-family: 'JetBrains Mono', monospace;
       font-size: 13px;
-      display: none;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
     }
 
-    /* Trust Footer */
-    .trust-footer {
-      text-align: center;
+    .topup-btn:hover, .topup-btn.active {
+      background: var(--purple-primary);
+      border-color: var(--purple-light);
+      box-shadow: 0 0 12px var(--purple-glow);
+    }
+
+    .custom-amount-input {
+      width: 100%;
+      height: 44px;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 0 14px;
+      color: #ffffff;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      font-weight: 700;
+      outline: none;
+    }
+
+    .custom-amount-input:focus {
+      border-color: var(--purple-light);
+    }
+
+    .btn-action-primary {
+      width: 100%;
+      height: 46px;
+      background: linear-gradient(135deg, var(--purple-primary), var(--pink-accent));
+      border: none;
+      border-radius: var(--radius-sm);
+      color: #ffffff;
+      font-size: 13.5px;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 18px var(--purple-glow);
+      transition: all 0.2s ease;
+    }
+
+    .btn-action-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 24px var(--purple-glow);
+    }
+
+    .trust-bullets {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
       font-size: 11px;
       color: var(--text-dim);
-      padding: 16px 0;
-      line-height: 1.6;
     }
 
-    .trust-footer span {
+    .trust-bullets div {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ORDERS VIEW */
+    .orders-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .orders-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .order-item {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .order-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .order-item-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .order-item-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 6px;
+      background: rgba(34, 197, 94, 0.15);
+      color: #4ade80;
+    }
+
+    .order-code-box {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #040208;
+      border: 1px dashed var(--purple-light);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--purple-light);
+    }
+
+    .copy-btn {
+      background: var(--purple-primary);
+      border: none;
+      border-radius: 6px;
+      color: #ffffff;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 4px 8px;
+      cursor: pointer;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 30px 10px;
+      color: var(--text-dim);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .empty-icon {
+      font-size: 36px;
+      color: var(--purple-light);
+      opacity: 0.5;
+    }
+
+    /* ACCOUNT VIEW */
+    .profile-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 18px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .profile-avatar {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--purple-light);
+      box-shadow: 0 0 16px var(--purple-glow);
+    }
+
+    .profile-info {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .profile-name {
+      font-size: 16px;
+      font-weight: 800;
+      color: #ffffff;
+    }
+
+    .profile-username {
+      font-size: 12px;
       color: var(--purple-light);
       font-weight: 600;
+    }
+
+    .profile-id {
+      font-size: 10px;
+      color: var(--text-dim);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .metric-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .metric-label {
+      font-size: 10px;
+      color: var(--text-dim);
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .metric-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 16px;
+      font-weight: 800;
+      color: #ffffff;
+    }
+
+    .menu-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .menu-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      color: #ffffff;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .menu-item:hover {
+      border-color: var(--purple-light);
+      background: var(--bg-card-hover);
+    }
+
+    .menu-item-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .menu-item-icon {
+      color: var(--purple-light);
+      font-size: 14px;
+      width: 20px;
+      text-align: center;
+    }
+
+    /* Bottom Navigation Bar */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 480px;
+      height: 64px;
+      background: rgba(10, 6, 20, 0.92);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      padding: 0 10px;
+      z-index: 100;
+    }
+
+    .nav-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      font-size: 10.5px;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 6px 12px;
+      border-radius: 12px;
+      transition: all 0.2s ease;
+    }
+
+    .nav-btn i {
+      font-size: 16px;
+      transition: transform 0.2s ease;
+    }
+
+    .nav-btn.active {
+      color: #ffffff;
+    }
+
+    .nav-btn.active i {
+      color: var(--purple-light);
+      transform: scale(1.15);
+      filter: drop-shadow(0 0 8px var(--purple-glow));
+    }
+
+    /* Modal / Details */
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      z-index: 200;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal-sheet {
+      width: 100%;
+      max-width: 480px;
+      background: #0f0a1c;
+      border: 1px solid var(--border-subtle);
+      border-radius: 24px 24px 0 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      animation: slideUp 0.25s ease;
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-close {
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      color: #ffffff;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    /* Toast */
+    .toast-msg {
+      position: fixed;
+      bottom: 74px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--purple-dark);
+      border: 1px solid var(--purple-light);
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 8px 16px;
+      border-radius: 20px;
+      box-shadow: 0 4px 16px var(--purple-glow);
+      display: none;
+      z-index: 300;
+      animation: fadeIn 0.2s ease;
     }
   </style>
 </head>
 <body>
   <div class="app-container">
-    <!-- Brand Header -->
+    
+    <!-- Top Header -->
     <header class="brand-header">
       <div class="brand-info">
-        <img class="brand-avatar" src="assets/logo.jpg" alt="Dijital Pazarım Logo" onerror="this.src='/static/dijitalpazarim_logo.jpg'">
+        <img class="brand-avatar" id="headerAvatar" src="/static/dijitalpazarim_logo.jpg" alt="Logo" onerror="this.src='/static/dijitalpazarim_logo.jpg'">
         <div>
           <div class="brand-title" id="tBrandTitle">Dijital Pazarım</div>
           <div class="brand-sub" id="tBrandSub">Kod • Kupon • Üyelik</div>
         </div>
       </div>
       <div class="header-right">
-        <!-- Language Switcher -->
-        <div class="lang-switch">
-          <button class="lang-btn active" id="btnLangTR" onclick="switchLanguage('tr')">TR</button>
-          <button class="lang-btn" id="btnLangEN" onclick="switchLanguage('en')">EN</button>
-        </div>
-        <div class="live-status">
-          <div class="status-dot"></div>
-          <span id="tStockStatus">Aktif Stok</span>
+        <!-- Balance Pill (switches to Wallet tab) -->
+        <div class="header-balance-pill" onclick="switchMainTab('tab-wallet')">
+          <i class="fa-solid fa-wallet" style="color: var(--purple-light); font-size: 12px;"></i>
+          <span class="header-balance-amount" id="headerBalanceDisplay">₺0.00</span>
         </div>
       </div>
     </header>
 
-    <!-- Search Input -->
-    <div class="search-wrapper">
-      <svg class="search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-      <input type="text" id="searchInput" class="search-input" placeholder="Ürün, kupon veya hesap ara...">
-    </div>
-
-    <!-- Category Filter Tabs -->
-    <div class="filter-scroll">
-      <button class="filter-btn active" data-cat="tumu" id="tabAll">Tüm Ürünler</button>
-      <button class="filter-btn" data-cat="market" id="tabMarket">Kupon & Market</button>
-      <button class="filter-btn" data-cat="dizi" id="tabStreaming">Dizi & Film</button>
-      <button class="filter-btn" data-cat="ai" id="tabAI">Yapay Zeka</button>
-      <button class="filter-btn" data-cat="muzik" id="tabMusic">Müzik & Video</button>
-    </div>
-
-    <!-- Trust Banner -->
-    <div class="trust-banner">
-      <div class="trust-text" id="tTrustBanner">
-        <strong>Referanslarımız mevcuttur.</strong> Tüm indirim kuponları ve hesaplar anında teslim edilmektedir.
+    <!-- ───────────────────────────────────────────────────────────── -->
+    <!-- TAB 1: MAĞAZA (STORE) -->
+    <!-- ───────────────────────────────────────────────────────────── -->
+    <div id="tab-store" class="tab-content active">
+      
+      <!-- Highlights Carousel -->
+      <div class="stories-section">
+        <div class="story-card" onclick="filterCategory('kupon')">
+          <span class="story-badge">YEMEK & MARKET</span>
+          <span class="story-title">İndirim Kuponları</span>
+          <span class="story-sub">Trendyol, Uber, Shell</span>
+        </div>
+        <div class="story-card" onclick="filterCategory('dizi')">
+          <span class="story-badge">DİZİ & FİLM</span>
+          <span class="story-title">Premium Hesaplar</span>
+          <span class="story-sub">Netflix, Disney+ 4K</span>
+        </div>
+        <div class="story-card" onclick="filterCategory('ai')">
+          <span class="story-badge">YAPAY ZEKA</span>
+          <span class="story-title">Gemini Pro</span>
+          <span class="story-sub">18 Ay & 12 Ay Davet</span>
+        </div>
+        <div class="story-card" onclick="filterCategory('muzik')">
+          <span class="story-badge">MÜZİK & VİDEO</span>
+          <span class="story-title">Spotify & YouTube</span>
+          <span class="story-sub">Bireysel Premium</span>
+        </div>
       </div>
-      <a href="https://t.me/DijitalPazarimBot" target="_blank" class="support-pill" id="tSupportBtn">Destek</a>
+
+      <!-- Search Bar -->
+      <div class="search-box">
+        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+        <input type="text" id="searchInput" class="search-input" placeholder="Ürün, kupon veya hesap ara..." autocomplete="off">
+      </div>
+
+      <!-- Categories Filter -->
+      <div class="categories-bar">
+        <button class="filter-btn active" data-cat="tumu" id="tabAll">Tüm Ürünler</button>
+        <button class="filter-btn" data-cat="kupon" id="tabMarket">Kupon & Market</button>
+        <button class="filter-btn" data-cat="dizi" id="tabStreaming">Dizi & Film</button>
+        <button class="filter-btn" data-cat="ai" id="tabAI">Yapay Zeka</button>
+        <button class="filter-btn" data-cat="muzik" id="tabMusic">Müzik & Video</button>
+      </div>
+
+      <!-- Products List -->
+      <div class="products-list" id="productsList">
+        <!-- Rendered via JS -->
+      </div>
+      <div id="emptyState" class="empty-state" style="display: none;">
+        <i class="fa-solid fa-box-open empty-icon"></i>
+        <span id="tEmptyMsg">Aradığınız kriterlere uygun ürün bulunamadı.</span>
+      </div>
     </div>
 
-    <!-- Products Container -->
-    <div class="products-grid" id="productsList">
-      <!-- Injected via JavaScript -->
+    <!-- ───────────────────────────────────────────────────────────── -->
+    <!-- TAB 2: CÜZDAN & BAKİYE (WALLET) -->
+    <!-- ───────────────────────────────────────────────────────────── -->
+    <div id="tab-wallet" class="tab-content">
+      <div class="wallet-hero-card">
+        <div class="wallet-hero-top">
+          <span class="wallet-label" id="tWalletLabel">MEVCUT BAKİYENİZ</span>
+          <span class="wallet-status-badge"><i class="fa-solid fa-circle" style="font-size: 6px;"></i> Aktif Cüzdan</span>
+        </div>
+        <div class="wallet-amount-big" id="walletBalanceBig">₺0.00</div>
+        <div class="wallet-footer-info">
+          <span id="walletUserId">ID: Yükleniyor...</span>
+          <span><i class="fa-solid fa-shield-halved" style="color: var(--purple-light);"></i> 3D Secure Güvencesi</span>
+        </div>
+      </div>
+
+      <div class="topup-card">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-credit-card" style="color: var(--purple-light); font-size: 16px;"></i>
+          <div>
+            <h3 style="font-size: 14px; font-weight: 700; color: #fff;" id="tTopupTitle">Bakiye Yükleme Tutarı Seçin</h3>
+            <span style="font-size: 11px; color: var(--text-dim);" id="tTopupSub">Yüklenen bakiye anında cüzdana aktarılır</span>
+          </div>
+        </div>
+
+        <div class="topup-grid">
+          <button class="topup-btn" onclick="selectTopup(25)">₺25</button>
+          <button class="topup-btn active" onclick="selectTopup(50)">₺50</button>
+          <button class="topup-btn" onclick="selectTopup(100)">₺100</button>
+          <button class="topup-btn" onclick="selectTopup(250)">₺250</button>
+          <button class="topup-btn" onclick="selectTopup(500)">₺500</button>
+          <button class="topup-btn" onclick="selectTopup(1000)">₺1000</button>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <label style="font-size: 11px; color: var(--text-dim); font-weight: 600;" id="tCustomAmountLabel">Veya Özel Tutar Girin (₺)</label>
+          <input type="number" id="customAmountInput" class="custom-amount-input" placeholder="Örn: 75" min="10" max="5000" oninput="onCustomAmountChange(this.value)">
+        </div>
+
+        <button class="btn-action-primary" onclick="proceedTopup()">
+          <i class="fa-solid fa-bolt"></i>
+          <span id="tTopupBtn">Shopier ile Güvenli Yükle</span>
+        </button>
+
+        <div class="trust-bullets">
+          <div><i class="fa-solid fa-check" style="color: var(--success);"></i> <span>Kredi kartı ve banka kartı ile 3D Secure güvenli ödeme</span></div>
+          <div><i class="fa-solid fa-check" style="color: var(--success);"></i> <span>Komisyonsuz ve 7/24 anında teslimat</span></div>
+          <div><i class="fa-solid fa-check" style="color: var(--success);"></i> <span>Resmi Shopier altyapısı ile güvence altındadır</span></div>
+        </div>
+      </div>
     </div>
 
-    <div class="empty-state" id="emptyState">
-      Aradığınız kriterlere uygun ürün bulunamadı.
+    <!-- ───────────────────────────────────────────────────────────── -->
+    <!-- TAB 3: SİPARİŞLERİM (ORDERS) -->
+    <!-- ───────────────────────────────────────────────────────────── -->
+    <div id="tab-orders" class="tab-content">
+      <div class="orders-card">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-box" style="color: var(--purple-light); font-size: 15px;"></i>
+            <div>
+              <h3 style="font-size: 14px; font-weight: 700; color: #fff;" id="tOrdersTitle">Sipariş Geçmişim</h3>
+              <span style="font-size: 11px; color: var(--text-dim);" id="tOrdersSub">Satın aldığınız lisans anahtarları ve kodlar</span>
+            </div>
+          </div>
+          <button onclick="renderOrders()" style="background: rgba(168, 85, 247, 0.15); border: 1px solid var(--border-subtle); color: #fff; padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer;">
+            <i class="fa-solid fa-rotate"></i> Yenile
+          </button>
+        </div>
+
+        <div class="orders-list" id="ordersListContainer">
+          <!-- Rendered via JS -->
+        </div>
+
+        <div id="ordersEmptyState" class="empty-state" style="display: none;">
+          <i class="fa-solid fa-receipt empty-icon"></i>
+          <span style="font-weight: 700; color: #fff;" id="tNoOrdersTitle">Henüz Siparişiniz Bulunmuyor</span>
+          <span style="font-size: 12px;" id="tNoOrdersDesc">Mağazamızdan ürün satın aldığınızda lisans kodlarınız anında burada görüntülenecektir.</span>
+          <button class="buy-btn" onclick="switchMainTab('tab-store')" style="margin-top: 8px;">
+            <i class="fa-solid fa-store"></i> Mağazayı Keşfet
+          </button>
+        </div>
+      </div>
+
+      <!-- Telafi & Destek Bilgisi -->
+      <div class="orders-card">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-shield-heart" style="color: var(--purple-light); font-size: 16px;"></i>
+          <div>
+            <h4 style="font-size: 13px; font-weight: 700; color: #fff;">Garanti & Telafi Güvencesi</h4>
+            <span style="font-size: 11px; color: var(--text-dim);">Tüm kupon ve üyelikler süre boyunca telafi garantilidir.</span>
+          </div>
+        </div>
+        <button class="buy-btn" onclick="openTelegramSupport()" style="width: 100%; justify-content: center; height: 38px;">
+          <i class="fa-brands fa-telegram"></i> Canlı Desteğe Yaz (@DijitalPazarimBot)
+        </button>
+      </div>
     </div>
 
-    <!-- Trust Footer -->
-    <footer class="trust-footer" id="tFooter">
-      <div>Güvenli Alışveriş • <span>Shopier Güvencesi</span> • Anında Teslimat</div>
-      <div>© 2026 Dijital Pazarım Tüm Hakları Saklıdır.</div>
-    </footer>
+    <!-- ───────────────────────────────────────────────────────────── -->
+    <!-- TAB 4: HESABIM (MY ACCOUNT) -->
+    <!-- ───────────────────────────────────────────────────────────── -->
+    <div id="tab-account" class="tab-content">
+      <div class="profile-card">
+        <img class="profile-avatar" id="profileAvatar" src="/static/dijitalpazarim_logo.jpg" alt="Profile" onerror="this.src='/static/dijitalpazarim_logo.jpg'">
+        <div class="profile-info">
+          <div class="profile-name" id="profileName">Değerli Müşterimiz</div>
+          <div class="profile-username" id="profileUsername">@DijitalPazarimMusterisi</div>
+          <div class="profile-id" id="profileUserId">ID: #---</div>
+        </div>
+      </div>
+
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <span class="metric-label" id="tStatBalance">CÜZDAN BAKİYESİ</span>
+          <span class="metric-val" id="profileBalanceDisplay" style="color: var(--price-gold);">₺0.00</span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-label" id="tStatOrders">TOPLAM SİPARİŞ</span>
+          <span class="metric-val" id="profileOrderCountDisplay">0 Adet</span>
+        </div>
+      </div>
+
+      <div class="menu-list">
+        <div class="menu-item" onclick="switchMainTab('tab-wallet')">
+          <div class="menu-item-left">
+            <i class="fa-solid fa-wallet menu-item-icon"></i>
+            <span id="tMenuTopup">Bakiye Yükle</span>
+          </div>
+          <i class="fa-solid fa-chevron-right" style="font-size: 11px; color: var(--text-dim);"></i>
+        </div>
+
+        <div class="menu-item" onclick="switchMainTab('tab-orders')">
+          <div class="menu-item-left">
+            <i class="fa-solid fa-receipt menu-item-icon"></i>
+            <span id="tMenuOrders">Siparişlerim & Kodlarım</span>
+          </div>
+          <i class="fa-solid fa-chevron-right" style="font-size: 11px; color: var(--text-dim);"></i>
+        </div>
+
+        <div class="menu-item" onclick="openTelegramSupport()">
+          <div class="menu-item-left">
+            <i class="fa-brands fa-telegram menu-item-icon"></i>
+            <span id="tMenuSupport">Canlı Destek (@DijitalPazarimBot)</span>
+          </div>
+          <i class="fa-solid fa-chevron-right" style="font-size: 11px; color: var(--text-dim);"></i>
+        </div>
+
+        <!-- Language Switcher Row -->
+        <div class="menu-item" style="cursor: default;">
+          <div class="menu-item-left">
+            <i class="fa-solid fa-globe menu-item-icon"></i>
+            <span id="tMenuLang">Dil Seçeneği / Language</span>
+          </div>
+          <div style="display: flex; gap: 4px;">
+            <button id="btnLangTR" class="buy-btn" style="padding: 4px 10px; font-size: 11px;" onclick="switchLanguage('tr')">TR</button>
+            <button id="btnLangEN" class="buy-btn" style="padding: 4px 10px; font-size: 11px; opacity: 0.6;" onclick="switchLanguage('en')">EN</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Trust Footer -->
+      <div style="text-align: center; font-size: 11px; color: var(--text-dim); margin-top: 10px; line-height: 1.6;" id="tFooterText">
+        Güvenli Alışveriş • Shopier Güvencesi • Anında Teslimat<br>
+        © 2026 Dijital Pazarım Tüm Hakları Saklıdır.
+      </div>
+    </div>
+
   </div>
 
+  <!-- Bottom Navigation Bar -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" id="navStore" onclick="switchMainTab('tab-store')">
+      <i class="fa-solid fa-store"></i>
+      <span id="tNavStore">Mağaza</span>
+    </button>
+    <button class="nav-btn" id="navWallet" onclick="switchMainTab('tab-wallet')">
+      <i class="fa-solid fa-wallet"></i>
+      <span id="tNavWallet">Bakiye</span>
+    </button>
+    <button class="nav-btn" id="navOrders" onclick="switchMainTab('tab-orders')">
+      <i class="fa-solid fa-box-open"></i>
+      <span id="tNavOrders">Siparişlerim</span>
+    </button>
+    <button class="nav-btn" id="navAccount" onclick="switchMainTab('tab-account')">
+      <i class="fa-solid fa-user"></i>
+      <span id="tNavAccount">Hesabım</span>
+    </button>
+  </nav>
+
+  <!-- Product Detail Modal -->
+  <div id="productDetailModal" class="modal-backdrop" onclick="closeProductModal(event)">
+    <div class="modal-sheet" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <span id="modalCatTag" class="product-cat-tag">KATEGORİ</span>
+        <button class="modal-close" onclick="closeProductModal()">✕</button>
+      </div>
+      <div style="display: flex; gap: 12px; align-items: center;">
+        <img id="modalImg" src="/static/dijitalpazarim_logo.jpg" alt="Ürün" style="width: 72px; height: 72px; border-radius: 12px; object-fit: cover;">
+        <div>
+          <h3 id="modalTitle" style="font-size: 15px; font-weight: 800; color: #fff; line-height: 1.3;">Ürün Adı</h3>
+          <div id="modalPrice" style="font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 900; color: var(--price-gold); margin-top: 4px;">₺0.00</div>
+        </div>
+      </div>
+      <p id="modalDesc" style="font-size: 12.5px; color: var(--text-muted); line-height: 1.5; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 10px; border: 1px solid var(--border-subtle);">
+        Ürün açıklaması...
+      </p>
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <button id="modalShopierBtn" class="btn-action-primary" onclick="buyViaShopier()">
+          <i class="fa-solid fa-cart-shopping"></i>
+          <span>Shopier ile Hemen Satın Al</span>
+        </button>
+        <button class="buy-btn" style="justify-content: center; height: 42px; background: rgba(168, 85, 247, 0.2);" onclick="buyViaWallet()">
+          <i class="fa-solid fa-wallet"></i>
+          <span>Cüzdan Bakiyesiyle Al</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast-msg"></div>
+
   <script>
-    // Initialize Telegram WebApp
+    // ─────────────────────────────────────────────────────────────
+    // TELEGRAM WEBAPP INIT & USER BINDING
+    // ─────────────────────────────────────────────────────────────
+    let tgUser = {
+      id: "777000",
+      first_name: "Değerli Müşterimiz",
+      username: "DijitalPazarimMusterisi",
+      photo_url: "/static/dijitalpazarim_logo.jpg"
+    };
+
     if (window.Telegram && window.Telegram.WebApp) {
-      window.Telegram.WebApp.ready();
-      window.Telegram.WebApp.expand();
       try {
-        window.Telegram.WebApp.setHeaderColor('#080511');
-        window.Telegram.WebApp.setBackgroundColor('#080511');
-      } catch (e) {}
+        Telegram.WebApp.ready();
+        Telegram.WebApp.expand();
+        if (Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) {
+          const u = Telegram.WebApp.initDataUnsafe.user;
+          tgUser.id = u.id ? String(u.id) : tgUser.id;
+          tgUser.first_name = u.first_name || tgUser.first_name;
+          tgUser.username = u.username || tgUser.username;
+          if (u.photo_url) tgUser.photo_url = u.photo_url;
+        }
+      } catch (e) {
+        console.error("Telegram init error:", e);
+      }
     }
 
-    // Language Dictionary
+    // Populate user profile info
+    document.getElementById('profileName').textContent = tgUser.first_name;
+    document.getElementById('profileUsername').textContent = '@' + tgUser.username;
+    document.getElementById('profileUserId').textContent = 'ID: #' + tgUser.id;
+    document.getElementById('walletUserId').textContent = 'ID: #' + tgUser.id;
+    if (tgUser.photo_url) {
+      document.getElementById('profileAvatar').src = tgUser.photo_url;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // STATE & LOCAL STORAGE
+    // ─────────────────────────────────────────────────────────────
+    let currentBalance = parseFloat(localStorage.getItem('dp_user_balance') || '0.00');
+    let userOrders = JSON.parse(localStorage.getItem('dp_user_orders') || '[]');
+    let selectedTopupAmount = 50;
+    let selectedProductForModal = null;
+    let currentCategory = 'tumu';
+    let searchQuery = '';
+    let products = [];
+
+    function updateBalanceUI() {
+      const formatted = '₺' + currentBalance.toFixed(2);
+      document.getElementById('headerBalanceDisplay').textContent = formatted;
+      document.getElementById('walletBalanceBig').textContent = formatted;
+      document.getElementById('profileBalanceDisplay').textContent = formatted;
+      localStorage.setItem('dp_user_balance', currentBalance.toString());
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.style.display = 'block';
+      setTimeout(() => { t.style.display = 'none'; }, 2600);
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // TAB SWITCHER
+    // ─────────────────────────────────────────────────────────────
+    function switchMainTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      const target = document.getElementById(tabId);
+      if (target) target.classList.add('active');
+
+      document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+      if (tabId === 'tab-store') document.getElementById('navStore').classList.add('active');
+      if (tabId === 'tab-wallet') document.getElementById('navWallet').classList.add('active');
+      if (tabId === 'tab-orders') {
+        document.getElementById('navOrders').classList.add('active');
+        renderOrders();
+      }
+      if (tabId === 'tab-account') {
+        document.getElementById('navAccount').classList.add('active');
+        document.getElementById('profileOrderCountDisplay').textContent = userOrders.length + ' Adet';
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // MULTI-LANGUAGE I18N DICTIONARY
+    // ─────────────────────────────────────────────────────────────
     let currentLang = localStorage.getItem('dp_lang') || 'tr';
 
     const I18N = {
       tr: {
         brandTitle: "Dijital Pazarım",
         brandSub: "Kod • Kupon • Üyelik",
-        stockStatus: "Aktif Stok",
         searchPlaceholder: "Ürün, kupon veya hesap ara...",
         tabAll: "Tüm Ürünler",
         tabMarket: "Kupon & Market",
         tabStreaming: "Dizi & Film",
         tabAI: "Yapay Zeka",
         tabMusic: "Müzik & Video",
-        trustBanner: "<strong>Referanslarımız mevcuttur.</strong> Tüm indirim kuponları ve hesaplar anında teslim edilmektedir.",
-        supportBtn: "Destek",
+        emptyMsg: "Aradığınız kriterlere uygun ürün bulunamadı.",
+        walletLabel: "MEVCUT BAKİYENİZ",
+        topupTitle: "Bakiye Yükleme Tutarı Seçin",
+        topupSub: "Yüklenen bakiye anında cüzdana aktarılır",
+        customAmount: "Veya Özel Tutar Girin (₺)",
+        topupBtn: "Shopier ile Güvenli Yükle",
+        ordersTitle: "Sipariş Geçmişim",
+        ordersSub: "Satın aldığınız lisans anahtarları ve kodlar",
+        noOrdersTitle: "Henüz Siparişiniz Bulunmuyor",
+        noOrdersDesc: "Mağazamızdan ürün satın aldığınızda lisans kodlarınız anında burada görüntülenecektir.",
+        statBalance: "CÜZDAN BAKİYESİ",
+        statOrders: "TOPLAM SİPARİŞ",
+        menuTopup: "Bakiye Yükle",
+        menuOrders: "Siparişlerim & Kodlarım",
+        menuSupport: "Canlı Destek (@DijitalPazarimBot)",
+        menuLang: "Dil Seçeneği / Language",
+        navStore: "Mağaza",
+        navWallet: "Bakiye",
+        navOrders: "Siparişlerim",
+        navAccount: "Hesabım",
         buyBtn: "Satın Al",
-        emptyState: "Aradığınız kriterlere uygun ürün bulunamadı.",
-        footerLine1: "Güvenli Alışveriş • <span>Shopier Güvencesi</span> • Anında Teslimat",
-        footerLine2: "© 2026 Dijital Pazarım Tüm Hakları Saklıdır."
+        footerText: "Güvenli Alışveriş • Shopier Güvencesi • Anında Teslimat<br>© 2026 Dijital Pazarım Tüm Hakları Saklıdır."
       },
       en: {
         brandTitle: "Digital Market",
         brandSub: "Codes • Coupons • Licenses",
-        stockStatus: "In Stock",
         searchPlaceholder: "Search products, codes or accounts...",
         tabAll: "All Products",
         tabMarket: "Coupons & Market",
         tabStreaming: "Movies & Shows",
         tabAI: "Artificial Intelligence",
         tabMusic: "Music & Video",
-        trustBanner: "<strong>Verified Merchant.</strong> All discount codes and digital subscriptions are delivered instantly.",
-        supportBtn: "Support",
+        emptyMsg: "No products found matching your search.",
+        walletLabel: "CURRENT BALANCE",
+        topupTitle: "Select Top-Up Amount",
+        topupSub: "Top-up amount is credited to your wallet instantly",
+        customAmount: "Or Enter Custom Amount (₺)",
+        topupBtn: "Top-Up Securely with Shopier",
+        ordersTitle: "Order History",
+        ordersSub: "Purchased license keys, accounts & codes",
+        noOrdersTitle: "No Orders Yet",
+        noOrdersDesc: "When you purchase items from our store, your digital codes will appear here instantly.",
+        statBalance: "WALLET BALANCE",
+        statOrders: "TOTAL ORDERS",
+        menuTopup: "Top-Up Balance",
+        menuOrders: "My Orders & Digital Keys",
+        menuSupport: "Live Support (@DijitalPazarimBot)",
+        menuLang: "Dil Seçeneği / Language",
+        navStore: "Store",
+        navWallet: "Wallet",
+        navOrders: "Orders",
+        navAccount: "Account",
         buyBtn: "Buy Now",
-        emptyState: "No products found matching your search.",
-        footerLine1: "Secure Payment • <span>Shopier Guarantee</span> • Instant Delivery",
-        footerLine2: "© 2026 Dijital Pazarım. All Rights Reserved."
+        footerText: "Secure Shopping • Shopier Guarantee • Instant Delivery<br>© 2026 Dijital Pazarım. All Rights Reserved."
       }
     };
 
-    // English Translations for Product Texts
+    // English Product Dictionary
     const EN_PRODUCT_DATA = {
-      "51358950": {
-        title: "Disney+ 1 Month Shared Account",
-        desc: "Disney+ 1-month shared account access. 4K Ultra HD quality with 30-day warranty. Instant auto-delivery.",
-        badge: "Special Deal",
-        cat: "MOVIES & SHOWS"
-      },
-      "51358951": {
-        title: "Disney+ 1 Month Private Profile",
-        desc: "Disney+ 1-month private personal profile with custom PIN protection. 4K Ultra HD quality, 30 days guaranteed.",
-        badge: "Private Profile",
-        cat: "MOVIES & SHOWS"
-      },
-      "51359045": {
-        title: "Trendyol Go 800/300 TL Discount Coupon",
-        desc: "Trendyol Go Market coupon valid on orders over 800 TL with 300 TL instant discount. Instant delivery.",
-        badge: "300 TL Off",
-        cat: "COUPON & MARKET"
-      },
-      "51359046": {
-        title: "Trendyol Food 750/250 TL Discount Code",
-        desc: "Trendyol Food coupon providing 250 TL instant discount on orders of 750 TL and above. Instant delivery.",
-        badge: "250 TL Off",
-        cat: "FOOD & COUPON"
-      },
-      "51359047": {
-        title: "Shell 75 TL Fuel Points Voucher",
-        desc: "Shell voucher code providing 75 TL fuel or gas discount at Shell stations. Instant delivery.",
-        badge: "75 TL Points",
-        cat: "FUEL & COMMUTE"
-      },
-      "51359048": {
-        title: "Uber 1,000 TL Discount Pack (500+500 TL)",
-        desc: "Uber ride discount bundle containing two 500 TL discount codes (1,000 TL total). Instant delivery.",
-        badge: "1,000 TL Pack",
-        cat: "TRANSPORTATION"
-      },
-      "51359049": {
-        title: "YouTube Premium 3 Months Individual Code",
-        desc: "YouTube and YouTube Music 3-month ad-free personal subscription activation code. Instant delivery.",
-        badge: "3 Months Code",
-        cat: "MUSIC & VIDEO"
-      },
-      "51359050": {
-        title: "Spotify Premium 4 Months Individual Code",
-        desc: "Spotify Premium 4-month individual subscription promo code. Ad-free offline music. Instant delivery.",
-        badge: "4 Months Code",
-        cat: "MUSIC & AUDIO"
-      },
-      "51359051": {
-        title: "Gemini Pro 18 Months (+5 Gift Invites)",
-        desc: "Google Gemini Pro 18-month access plus 5 gift invite licenses. Advanced AI workspace. Instant delivery.",
-        badge: "18M + 5 Invites",
-        cat: "ARTIFICIAL INTEL"
-      },
-      "51359052": {
-        title: "Gemini Pro 18 Months Personal Invite",
-        desc: "Google Gemini Pro 18-month private invite link activated directly on your personal account. 30-day warranty.",
-        badge: "18 Months Invite",
-        cat: "ARTIFICIAL INTEL"
-      },
-      "51359053": {
-        title: "Gemini Pro 12 Months Personal Invite",
-        desc: "Google Gemini Pro 12-month private invite link activated on your personal account. Guaranteed access.",
-        badge: "12 Months Invite",
-        cat: "ARTIFICIAL INTEL"
-      },
-      "51359054": {
-        title: "Gemini Pro 1 Month Personal Invite",
-        desc: "Google Gemini Pro 1-month fast start private invite link for your own account. Instant delivery.",
-        badge: "1 Month Invite",
-        cat: "ARTIFICIAL INTEL"
-      },
-      "51359055": {
-        title: "Netflix 4K Ultra HD Personal Profile",
-        desc: "Netflix 4K Ultra HD personal private profile (30 Days). Uninterrupted viewing with full replacement guarantee.",
-        badge: "4K UHD Profile",
-        cat: "MOVIES & SHOWS"
-      }
+      "51358950": { title: "Disney+ 1 Month Shared Account", desc: "Disney+ 1-month shared account access. 4K Ultra HD quality with 30-day warranty.", cat: "MOVIES & SHOWS" },
+      "51358951": { title: "Disney+ 1 Month Private Profile", desc: "Disney+ 1-month personal profile with custom PIN protection. 4K Ultra HD, 30 days guaranteed.", cat: "MOVIES & SHOWS" },
+      "51359045": { title: "Trendyol Go 800/300 TL Discount Coupon", desc: "Trendyol Go Market coupon valid on orders over 800 TL with 300 TL instant discount.", cat: "COUPON & MARKET" },
+      "51359046": { title: "Trendyol Food 750/250 TL Discount Code", desc: "Trendyol Food coupon providing 250 TL instant discount on orders over 750 TL.", cat: "FOOD & COUPON" },
+      "51359047": { title: "Shell 75 TL Fuel Points Voucher", desc: "Shell voucher code providing 75 TL fuel discount at Shell stations. Instant auto delivery.", cat: "FUEL & COMMUTE" },
+      "51359048": { title: "Uber 1,000 TL Discount Pack (500+500)", desc: "Uber ride discount bundle containing two 500 TL discount codes (1,000 TL total).", cat: "TRANSPORTATION" },
+      "51359049": { title: "YouTube Premium 3 Months Individual Code", desc: "YouTube and YouTube Music 3-month ad-free personal subscription activation promo code.", cat: "MUSIC & VIDEO" },
+      "51359050": { title: "Spotify Premium 4 Months Individual Code", desc: "Spotify Premium 4-month individual promo code. Ad-free offline high quality audio.", cat: "MUSIC & AUDIO" },
+      "51359051": { title: "Gemini Pro 18 Months (+5 Gift Invites)", desc: "Google Gemini Pro 18-month access plus 5 gift invite licenses. Advanced AI workspace.", cat: "ARTIFICIAL INTEL" },
+      "51359052": { title: "Gemini Pro 18 Months Personal Invite", desc: "Google Gemini Pro 18-month private invite link activated directly on your personal account.", cat: "ARTIFICIAL INTEL" },
+      "51359053": { title: "Gemini Pro 12 Months Personal Invite", desc: "Google Gemini Pro 12-month private invite link activated on your personal account.", cat: "ARTIFICIAL INTEL" },
+      "51359054": { title: "Gemini Pro 1 Month Personal Invite", desc: "Google Gemini Pro 1-month fast start private invite link for your own account.", cat: "ARTIFICIAL INTEL" },
+      "51359055": { title: "Netflix 4K Ultra HD Personal Profile", desc: "Netflix 4K Ultra HD personal private profile (30 Days). Uninterrupted with full replacement guarantee.", cat: "MOVIES & SHOWS" }
     };
-
-    let products = [];
-    let currentCategory = 'tumu';
-    let searchQuery = '';
 
     function switchLanguage(lang) {
       currentLang = lang;
       localStorage.setItem('dp_lang', lang);
-      document.getElementById('btnLangTR').classList.toggle('active', lang === 'tr');
-      document.getElementById('btnLangEN').classList.toggle('active', lang === 'en');
-      applyStaticTranslations();
-      renderProducts();
-    }
+      document.getElementById('btnLangTR').style.opacity = (lang === 'tr') ? '1' : '0.5';
+      document.getElementById('btnLangEN').style.opacity = (lang === 'en') ? '1' : '0.5';
 
-    function applyStaticTranslations() {
-      const t = I18N[currentLang];
+      const t = I18N[lang];
       document.getElementById('tBrandTitle').textContent = t.brandTitle;
       document.getElementById('tBrandSub').textContent = t.brandSub;
-      document.getElementById('tStockStatus').textContent = t.stockStatus;
       document.getElementById('searchInput').placeholder = t.searchPlaceholder;
       document.getElementById('tabAll').textContent = t.tabAll;
       document.getElementById('tabMarket').textContent = t.tabMarket;
       document.getElementById('tabStreaming').textContent = t.tabStreaming;
       document.getElementById('tabAI').textContent = t.tabAI;
       document.getElementById('tabMusic').textContent = t.tabMusic;
-      document.getElementById('tTrustBanner').innerHTML = t.trustBanner;
-      document.getElementById('tSupportBtn').textContent = t.supportBtn;
-      document.getElementById('emptyState').textContent = t.emptyState;
-      document.getElementById('tFooter').innerHTML = `
-        <div>${t.footerLine1}</div>
-        <div>${t.footerLine2}</div>
-      `;
+      document.getElementById('tEmptyMsg').textContent = t.emptyMsg;
+
+      document.getElementById('tWalletLabel').textContent = t.walletLabel;
+      document.getElementById('tTopupTitle').textContent = t.topupTitle;
+      document.getElementById('tTopupSub').textContent = t.topupSub;
+      document.getElementById('tCustomAmountLabel').textContent = t.customAmount;
+      document.getElementById('tTopupBtn').textContent = t.topupBtn;
+
+      document.getElementById('tOrdersTitle').textContent = t.ordersTitle;
+      document.getElementById('tOrdersSub').textContent = t.ordersSub;
+      document.getElementById('tNoOrdersTitle').textContent = t.noOrdersTitle;
+      document.getElementById('tNoOrdersDesc').textContent = t.noOrdersDesc;
+
+      document.getElementById('tStatBalance').textContent = t.statBalance;
+      document.getElementById('tStatOrders').textContent = t.statOrders;
+      document.getElementById('tMenuTopup').textContent = t.menuTopup;
+      document.getElementById('tMenuOrders').textContent = t.menuOrders;
+      document.getElementById('tMenuSupport').textContent = t.menuSupport;
+      document.getElementById('tMenuLang').textContent = t.menuLang;
+      document.getElementById('tFooterText').innerHTML = t.footerText;
+
+      document.getElementById('tNavStore').textContent = t.navStore;
+      document.getElementById('tNavWallet').textContent = t.navWallet;
+      document.getElementById('tNavOrders').textContent = t.navOrders;
+      document.getElementById('tNavAccount').textContent = t.navAccount;
+
+      renderProducts();
     }
 
-    // Fetch products
+    // ─────────────────────────────────────────────────────────────
+    // PRODUCTS ENGINE
+    // ─────────────────────────────────────────────────────────────
     async function loadProducts() {
       try {
         const res = await fetch('products_db.json');
         if (res.ok) {
           products = await res.json();
           renderProducts();
-        } else {
-          console.error("Ürünler yüklenemedi");
         }
       } catch (e) {
-        console.error("Veri hatası:", e);
+        console.error("Products load error:", e);
       }
     }
 
@@ -673,34 +1424,37 @@
       listEl.innerHTML = '';
 
       const filtered = products.filter(p => {
-        const matchesCat = (currentCategory === 'tumu') || (p.category === currentCategory);
-        const matchesSearch = !searchQuery || 
+        let matchCat = (currentCategory === 'tumu');
+        if (currentCategory === 'kupon') matchCat = (p.category === 'kupon' || p.category === 'market');
+        if (currentCategory === 'dizi') matchCat = (p.category === 'dizi' || p.category === 'streaming');
+        if (currentCategory === 'ai') matchCat = (p.category === 'ai');
+        if (currentCategory === 'muzik') matchCat = (p.category === 'muzik');
+
+        const matchSearch = !searchQuery ||
           p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          p.desc.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          p.category_label.toLowerCase().includes(searchQuery.toLowerCase());
-        return matchesCat && matchesSearch;
+          p.desc.toLowerCase().includes(searchQuery.toLowerCase());
+        return matchCat && matchSearch;
       });
 
       if (filtered.length === 0) {
-        emptyEl.style.display = 'block';
+        emptyEl.style.display = 'flex';
         return;
       }
       emptyEl.style.display = 'none';
-
-      const t = I18N[currentLang];
 
       filtered.forEach(p => {
         const enInfo = EN_PRODUCT_DATA[p.id];
         const displayTitle = (currentLang === 'en' && enInfo) ? enInfo.title : p.title;
         const displayDesc = (currentLang === 'en' && enInfo) ? enInfo.desc : p.desc;
-        const displayBadge = (currentLang === 'en' && enInfo) ? enInfo.badge : (p.badge || '');
-        const displayCat = (currentLang === 'en' && enInfo) ? enInfo.cat : p.category_label;
+        const displayCat = (currentLang === 'en' && enInfo) ? enInfo.cat : (p.category_label || 'LİSANS');
+        const displayBadge = p.badge || '';
 
         const card = document.createElement('div');
         card.className = 'product-card';
+        card.onclick = () => openProductModal(p);
         card.innerHTML = `
           <div class="product-thumb-wrap">
-            <img class="product-thumb" src="${p.image}" alt="${displayTitle}" onerror="this.src='assets/logo.jpg'">
+            <img class="product-thumb" src="${p.image}" alt="${displayTitle}" onerror="this.src='/static/dijitalpazarim_logo.jpg'">
             ${displayBadge ? `<div class="product-badge-corner">${displayBadge}</div>` : ''}
           </div>
           <div class="product-details">
@@ -711,9 +1465,9 @@
             </div>
             <div class="product-footer">
               <div class="product-price">${p.price}</div>
-              <a href="${p.url}" target="_blank" class="buy-btn" onclick="openShopier('${p.url}', event)">
-                ${t.buyBtn}
-              </a>
+              <button class="buy-btn" onclick="event.stopPropagation(); openProductModal(products.find(x => x.id === '${p.id}'))">
+                <i class="fa-solid fa-cart-shopping"></i> ${I18N[currentLang].buyBtn}
+              </button>
             </div>
           </div>
         `;
@@ -721,14 +1475,15 @@
       });
     }
 
-    function openShopier(url, event) {
-      if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openLink) {
-        event.preventDefault();
-        window.Telegram.WebApp.openLink(url);
-      }
+    function filterCategory(cat) {
+      currentCategory = cat;
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.cat === cat);
+      });
+      renderProducts();
     }
 
-    // Filter Buttons
+    // Filter Buttons binding
     document.querySelectorAll('.filter-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -738,13 +1493,176 @@
       });
     });
 
-    // Search Input
+    // Search input binding
     document.getElementById('searchInput').addEventListener('input', (e) => {
       searchQuery = e.target.value.trim();
       renderProducts();
     });
 
-    // Initialize
+    // ─────────────────────────────────────────────────────────────
+    // PRODUCT DETAIL MODAL & PURCHASES
+    // ─────────────────────────────────────────────────────────────
+    function openProductModal(product) {
+      if (!product) return;
+      selectedProductForModal = product;
+      const enInfo = EN_PRODUCT_DATA[product.id];
+      const title = (currentLang === 'en' && enInfo) ? enInfo.title : product.title;
+      const desc = (currentLang === 'en' && enInfo) ? enInfo.desc : product.desc;
+      const cat = (currentLang === 'en' && enInfo) ? enInfo.cat : (product.category_label || 'DİJİTAL LİSANS');
+
+      document.getElementById('modalTitle').textContent = title;
+      document.getElementById('modalPrice').textContent = product.price;
+      document.getElementById('modalDesc').textContent = desc;
+      document.getElementById('modalCatTag').textContent = cat;
+      document.getElementById('modalImg').src = product.image;
+      document.getElementById('productDetailModal').classList.add('open');
+    }
+
+    function closeProductModal(e) {
+      if (e && e.target !== e.currentTarget && !e.target.classList.contains('modal-close')) return;
+      document.getElementById('productDetailModal').classList.remove('open');
+    }
+
+    function buyViaShopier() {
+      if (!selectedProductForModal) return;
+      const url = selectedProductForModal.url;
+      closeProductModal();
+      if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openLink) {
+        window.Telegram.WebApp.openLink(url);
+      } else {
+        window.open(url, '_blank');
+      }
+    }
+
+    function buyViaWallet() {
+      if (!selectedProductForModal) return;
+      // Extract numeric price
+      const priceClean = parseFloat(selectedProductForModal.price.replace(/[^\d.,]/g, '').replace(',', '.'));
+      if (currentBalance < priceClean) {
+        showToast("Yetersiz Cüzdan Bakiyesi! Lütfen önce bakiye yükleyin.");
+        closeProductModal();
+        switchMainTab('tab-wallet');
+        return;
+      }
+
+      currentBalance -= priceClean;
+      updateBalanceUI();
+
+      // Create new order record
+      const newOrder = {
+        orderId: "DP-" + Math.floor(100000 + Math.random() * 900000),
+        title: selectedProductForModal.title,
+        price: selectedProductForModal.price,
+        date: new Date().toLocaleString("tr-TR"),
+        code: "DP-" + Math.random().toString(36).substring(2, 10).toUpperCase() + "-" + Math.random().toString(36).substring(2, 6).toUpperCase(),
+        status: "Teslim Edildi"
+      };
+      userOrders.unshift(newOrder);
+      localStorage.setItem('dp_user_orders', JSON.stringify(userOrders));
+
+      closeProductModal();
+      showToast("Sipariş Başarıyla Alındı! Kodunuz Siparişlerimde.");
+      switchMainTab('tab-orders');
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // WALLET & TOP-UP LOGIC
+    // ─────────────────────────────────────────────────────────────
+    function selectTopup(amt) {
+      selectedTopupAmount = amt;
+      document.querySelectorAll('.topup-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.textContent === '₺' + amt);
+      });
+      document.getElementById('customAmountInput').value = '';
+    }
+
+    function onCustomAmountChange(val) {
+      const num = parseFloat(val);
+      if (!isNaN(num) && num > 0) {
+        selectedTopupAmount = num;
+        document.querySelectorAll('.topup-btn').forEach(btn => btn.classList.remove('active'));
+      }
+    }
+
+    function proceedTopup() {
+      const amt = selectedTopupAmount;
+      if (!amt || amt < 10) {
+        showToast("Lütfen en az ₺10 tutarında yükleme miktarı seçin.");
+        return;
+      }
+      // Top-up via Shopier or simulation
+      const shopierStore = "https://www.shopier.com/39328221";
+      showToast(`₺${amt} Bakiye Yükleme Sayfası Açılıyor...`);
+      
+      // Auto add balance upon return simulation or open link
+      setTimeout(() => {
+        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openLink) {
+          window.Telegram.WebApp.openLink(shopierStore);
+        } else {
+          window.open(shopierStore, '_blank');
+        }
+      }, 500);
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // ORDERS ENGINE
+    // ─────────────────────────────────────────────────────────────
+    function renderOrders() {
+      const container = document.getElementById('ordersListContainer');
+      const emptyEl = document.getElementById('ordersEmptyState');
+      container.innerHTML = '';
+
+      if (userOrders.length === 0) {
+        emptyEl.style.display = 'flex';
+        return;
+      }
+      emptyEl.style.display = 'none';
+
+      userOrders.forEach(o => {
+        const item = document.createElement('div');
+        item.className = 'order-item';
+        item.innerHTML = `
+          <div class="order-item-header">
+            <div>
+              <div class="order-item-title">${o.title}</div>
+              <div style="font-size: 11px; color: var(--text-dim);">${o.date} • #${o.orderId}</div>
+            </div>
+            <div style="text-align: right;">
+              <span class="order-item-badge">${o.status}</span>
+              <div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 800; color: var(--price-gold); margin-top: 2px;">${o.price}</div>
+            </div>
+          </div>
+          <div class="order-code-box">
+            <span>${o.code}</span>
+            <button class="copy-btn" onclick="copyCode('${o.code}', this)">
+              <i class="fa-solid fa-copy"></i> Kopyala
+            </button>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function copyCode(code, btn) {
+      navigator.clipboard.writeText(code).then(() => {
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> Kopyalandı';
+        setTimeout(() => { btn.innerHTML = '<i class="fa-solid fa-copy"></i> Kopyala'; }, 2000);
+      });
+    }
+
+    function openTelegramSupport() {
+      const url = "https://t.me/DijitalPazarimBot";
+      if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
+        window.Telegram.WebApp.openTelegramLink(url);
+      } else {
+        window.open(url, '_blank');
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // INITIALIZATION
+    // ─────────────────────────────────────────────────────────────
+    updateBalanceUI();
     switchLanguage(currentLang);
     loadProducts();
   </script>
