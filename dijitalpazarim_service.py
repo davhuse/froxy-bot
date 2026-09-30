@@ -164,7 +164,7 @@ def health_status():
         "watchdog": {
             "status": WATCHDOG_STATS.get("status", "active"),
             "last_check": WATCHDOG_STATS.get("last_check"),
-            "bot_alive": t_bot.is_alive() if t_bot else False,
+            "bot_alive": BOT_HEALTH_STATE.get("status") == "online",
             "bot_health": BOT_HEALTH_STATE,
             "telethon_alive": t_acc.is_alive() if t_acc else False,
             "bot_restarts": WATCHDOG_STATS.get("bot_restarts", 0),
