@@ -165,6 +165,12 @@ def health_status():
             "bot_restarts": WATCHDOG_STATS.get("bot_restarts", 0),
             "telethon_restarts": WATCHDOG_STATS.get("telethon_restarts", 0)
         },
+        "join_safety": {
+            "max_joins_hourly": MAX_JOINS_PER_CYCLE,
+            "recent_joins_1h": get_recent_joins_count(3600),
+            "join_flood_active": time.time() < JOIN_FLOOD_UNTIL,
+            "failed_targets_count": len(FAILED_JOIN_TARGETS)
+        },
         "system": "standalone_dijital_pazarim_v3"
     })
 
@@ -397,6 +403,25 @@ API_ID = int(os.environ.get("TELEGRAM_API_ID", "31076280"))
 API_HASH = os.environ.get("TELEGRAM_API_HASH", "7ba4072dcf0a05a7ccf80e570866b6d8")
 ACCOUNT_SESSION = os.environ.get("AD_STRING_SESSION_DIJITALPAZARIM", "").strip()
 
+ADMIN_TELEGRAM_ID = int(os.environ.get("ADMIN_TELEGRAM_ID", "7499698483"))
+
+# Join and Broadcast safety thresholds - exactly matched to main project (otomatik_katil.py)
+JOIN_DELAY_MIN_SECONDS = 180  # 3 minutes
+JOIN_DELAY_MAX_SECONDS = 360  # 6 minutes
+MAX_JOINS_PER_CYCLE = 3       # Max 3 joins per 1-hour window
+GROUP_DELAY_MIN_SECONDS = 30  # 30 seconds
+GROUP_DELAY_MAX_SECONDS = 45  # 45 seconds
+
+RECENT_JOIN_TIMESTAMPS: list[float] = []
+FAILED_JOIN_TARGETS: set[str] = set()
+JOIN_FLOOD_UNTIL: float = 0.0
+
+def get_recent_joins_count(window_seconds: int = 3600) -> int:
+    global RECENT_JOIN_TIMESTAMPS
+    now = time.time()
+    RECENT_JOIN_TIMESTAMPS = [t for t in RECENT_JOIN_TIMESTAMPS if now - t < window_seconds]
+    return len(RECENT_JOIN_TIMESTAMPS)
+
 def load_ad_templates() -> list[str]:
     templates = []
     for i in range(1, 5):
@@ -441,7 +466,22 @@ async def run_telethon_account():
     TELETHON_CLIENT = client
     sys_log(f"[DijitalPazarimAccount] Aktif Hesap: {me.first_name} (@{me.username}) - {me.phone}")
 
-    # Auto DM Reply: Directs private inquiries to @DijitalPazarimBot
+    # 1. Telegram Resmi Güvenlik / Giriş Kodu Yakalayıcı (777000)
+    @client.on(events.NewMessage(incoming=True, chats=777000))
+    async def handle_official_telegram_code(event):
+        msg_text = event.raw_text or ""
+        sys_log(f"🚨 [GİRİŞ KODU YAKALANDI] Dijital Pazarım hesabına resmi kod geldi:\n{msg_text}")
+        try:
+            alert = (
+                f"🚨 <b>[DİJİTAL PAZARIM GİRİŞ KODU]</b>\n\n"
+                f"Hesap: <b>+18595173039 (@DijitalPazarimm)</b>\n"
+                f"Mesaj:\n<code>{msg_text}</code>"
+            )
+            send_bot_message(ADMIN_TELEGRAM_ID, alert)
+        except Exception as ex:
+            sys_log(f"[GirişKodu] Bildirim iletme hatası: {ex}")
+
+    # 2. Auto DM Reply: Directs private inquiries to @DijitalPazarimBot
     dm_replied_users = set()
 
     @client.on(events.NewMessage(incoming=True, func=lambda e: e.is_private))
@@ -449,12 +489,17 @@ async def run_telethon_account():
         sender_id = event.sender_id
         if sender_id == me.id or sender_id == 777000 or sender_id in dm_replied_users:
             return
+
+        sender = await event.get_sender()
+        if getattr(sender, 'bot', False):
+            return
+
         dm_replied_users.add(sender_id)
         reply_text = (
             "Merhaba,\n\n"
-            "İndirim kuponları, market & yemek kodları ve hesap alımları için "
-            "doğrudan resmi mağaza botumuz @DijitalPazarimBot üzerinden anında sipariş verebilirsiniz.\n\n"
-            "Referanslarımız mevcuttur. Keyifli alışverişler dileriz."
+            "İndirim kuponları, market & yemek kodları ve premium dijital lisanslar için "
+            "doğrudan resmi mağaza botumuz @DijitalPazarimBot üzerinden anında ve güvenle sipariş verebilirsiniz.\n\n"
+            "Referanslarımız mevcuttur, otomatik teslimat sağlanmaktadır."
         )
         try:
             await event.reply(reply_text)
@@ -462,9 +507,9 @@ async def run_telethon_account():
         except Exception as e:
             sys_log(f"[DijitalPazarimAccount] DM yanıt hatası: {e}")
 
-    # Background Ad Broadcast & Auto-Join loop
+    # 3. Background Ad Broadcast & Auto-Join loop (Ana projedeki tam mantık ve akıl)
     async def ad_broadcast_loop():
-        global TOTAL_ADS_SENT, LAST_CYCLE_TIME, JOINED_GROUPS_COUNT
+        global TOTAL_ADS_SENT, LAST_CYCLE_TIME, JOINED_GROUPS_COUNT, JOIN_FLOOD_UNTIL
         await asyncio.sleep(20) # Initial startup buffer
         templates = load_ad_templates()
         template_idx = 0
@@ -495,36 +540,59 @@ async def run_telethon_account():
                     
                     JOINED_GROUPS_COUNT = len(joined_groups)
 
-                    # 2. gruplar.txt listesini kontrol et ve henüz üye olunmamış hedeflere güvenli katıl (döngü başı maks 2 grup)
-                    targets = load_target_groups()
-                    blacklist = load_blacklist()
-                    joins_this_cycle = 0
-                    max_joins_per_cycle = 2
+                    # 2. gruplar.txt listesinden güvenli grup katılımı (Ana projedeki saatlik limit ve 3-6 dk bekleme)
+                    now_ts = time.time()
+                    if now_ts < JOIN_FLOOD_UNTIL:
+                        wait_sec = int(JOIN_FLOOD_UNTIL - now_ts)
+                        sys_log(f"[DijitalPazarimAccount] ⏳ Join FloodWait aktif ({wait_sec} sn kaldı), katılım adımı atlandı.")
+                    else:
+                        current_recent = get_recent_joins_count(3600)
+                        if current_recent >= MAX_JOINS_PER_CYCLE:
+                            sys_log(f"[DijitalPazarimAccount] 🔒 Saatlik katılım limiti ({MAX_JOINS_PER_CYCLE}/saat) doldu. Katılım adımı güvenle atlandı.")
+                        else:
+                            targets = load_target_groups()
+                            blacklist = load_blacklist()
+                            
+                            not_joined = []
+                            for target_name in targets:
+                                t_clean = target_name.lower().lstrip('@')
+                                if t_clean and t_clean not in blacklist and t_clean not in joined_usernames and t_clean not in FAILED_JOIN_TARGETS:
+                                    not_joined.append(t_clean)
+                            
+                            if not_joined:
+                                sys_log(f"[DijitalPazarimAccount] 🔍 {len(not_joined)} hedefe henüz üye değiliz (Kalan saatlik hak: {MAX_JOINS_PER_CYCLE - current_recent}). Güvenli katılım deneniyor...")
+                                for t_clean in not_joined:
+                                    if not AD_RUNNING:
+                                        break
+                                    try:
+                                        sys_log(f"[DijitalPazarimAccount] Hedef gruba katılınıyor: @{t_clean}")
+                                        entity = await client.get_entity(t_clean)
+                                        await client(JoinChannelRequest(entity))
+                                        joined_usernames.add(t_clean)
+                                        joined_groups[entity.id] = entity
+                                        JOINED_GROUPS_COUNT = len(joined_groups)
+                                        RECENT_JOIN_TIMESTAMPS.append(time.time())
+                                        sys_log(f"[DijitalPazarimAccount] ✅ Gruba başarıyla katıldı: @{t_clean}")
+                                        
+                                        # Ana projedeki gibi 3-6 dakika güvenli bekleme (ard arda katılımı engeller)
+                                        join_delay = random.randint(JOIN_DELAY_MIN_SECONDS, JOIN_DELAY_MAX_SECONDS)
+                                        sys_log(f"[DijitalPazarimAccount] 🛡️ Anti-flood koruması: Sonraki işlem öncesi {join_delay} sn bekleniyor...")
+                                        await asyncio.sleep(join_delay)
+                                        break # Bir döngüde en fazla 1 gruba katıl
+                                    except FloodWaitError as fwe:
+                                        JOIN_FLOOD_UNTIL = time.time() + fwe.seconds + 60
+                                        sys_log(f"[DijitalPazarimAccount] ⚠️ Join FloodWait: {fwe.seconds} sn. Katılım duraklatıldı.")
+                                        break
+                                    except (UserBannedInChannelError, ChannelPrivateError, UsernameNotOccupiedError, UsernameInvalidError) as e:
+                                        FAILED_JOIN_TARGETS.add(t_clean)
+                                        sys_log(f"[DijitalPazarimAccount] ⛔ Grup kalıcı olarak atlandı (@{t_clean}): {type(e).__name__}")
+                                    except Exception as e:
+                                        err_msg = str(e).lower()
+                                        if any(k in err_msg for k in ("private", "banned", "forbidden", "admin", "request")):
+                                            FAILED_JOIN_TARGETS.add(t_clean)
+                                        sys_log(f"[DijitalPazarimAccount] ⚠️ Gruba katılma hatası (@{t_clean}): {e}")
 
-                    for target_name in targets:
-                        if not AD_RUNNING or joins_this_cycle >= max_joins_per_cycle:
-                            break
-                        t_clean = target_name.lower().lstrip('@')
-                        if t_clean in blacklist or t_clean in joined_usernames:
-                            continue
-                        try:
-                            sys_log(f"[DijitalPazarimAccount] Hedef gruba katılınıyor: @{t_clean}")
-                            entity = await client.get_entity(t_clean)
-                            await client(JoinChannelRequest(entity))
-                            joined_usernames.add(t_clean)
-                            joined_groups[entity.id] = entity
-                            joins_this_cycle += 1
-                            JOINED_GROUPS_COUNT = len(joined_groups)
-                            sys_log(f"[DijitalPazarimAccount] Gruba başarıyla katıldı: @{t_clean}")
-                            await asyncio.sleep(15)
-                        except FloodWaitError as fwe:
-                            sys_log(f"[DijitalPazarimAccount] Katılma FloodWait: {fwe.seconds} sn.")
-                            break
-                        except (UserBannedInChannelError, ChannelPrivateError, UsernameNotOccupiedError, UsernameInvalidError) as e:
-                            sys_log(f"[DijitalPazarimAccount] Grup atlandı (@{t_clean}): {type(e).__name__}")
-                        except Exception as e:
-                            sys_log(f"[DijitalPazarimAccount] Gruba katılma hatası (@{t_clean}): {e}")
-
+                    # 3. Reklam gönderim döngüsü (30-45 saniye grup aralığı)
                     sys_log(f"[DijitalPazarimAccount] Reklam döngüsü başladı ({len(joined_groups)} aktif grup)...")
 
                     for gid, group in list(joined_groups.items()):
@@ -542,7 +610,7 @@ async def run_telethon_account():
                             await client.send_message(target_dest, current_ad)
                             TOTAL_ADS_SENT += 1
                             sys_log(f"[DijitalPazarimAccount] Reklam paylaşıldı -> {g_title}")
-                            await asyncio.sleep(random.randint(30, 45))
+                            await asyncio.sleep(random.randint(GROUP_DELAY_MIN_SECONDS, GROUP_DELAY_MAX_SECONDS))
                         except FloodWaitError as fwe:
                             sys_log(f"[DijitalPazarimAccount] FloodWait: {fwe.seconds} saniye bekleniyor...")
                             await asyncio.sleep(fwe.seconds + 5)
