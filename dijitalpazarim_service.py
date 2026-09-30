@@ -244,36 +244,30 @@ def get_product_summary() -> str:
     except Exception:
         return "Güncel ürünleri mağazadan inceleyebilirsiniz."
 
-def telegram_bot_worker():
-    """Background polling loop for @DijitalPazarimBot with robust conflict resolution."""
-    global _IS_BOT_WORKER_RUNNING, BOT_HEALTH_STATE
+@app.route("/api/telegram-webhook", methods=["POST"])
+def api_telegram_webhook():
+    """Telegram Bot API Webhook receiver for @DijitalPazarimBot."""
+    try:
+        update = request.get_json(force=True, silent=True)
+        if update:
+            BOT_HEALTH_STATE["last_ok"] = datetime.now().strftime("%H:%M:%S")
+            BOT_HEALTH_STATE["status"] = "online"
+            threading.Thread(target=handle_telegram_update, args=(update,), daemon=True).start()
+        return jsonify({"ok": True}), 200
+    except Exception as e:
+        sys_log(f"[DijitalPazarimBot] Webhook işleme hatası: {e}")
+        return jsonify({"ok": False, "error": str(e)}), 500
 
+def setup_telegram_bot():
+    """Configures menu button and webhook for @DijitalPazarimBot, locking out external conflicting pollers."""
+    global BOT_HEALTH_STATE
     if not BOT_TOKEN or BOT_TOKEN == "YOUR_TOKEN":
-        sys_log("[DijitalPazarimBot] Token bulunamadı, bot başlatılamıyor.")
+        sys_log("[DijitalPazarimBot] Token bulunamadı, bot yapılandırılamıyor.")
         return
 
-    with _BOT_WORKER_LOCK:
-        if _IS_BOT_WORKER_RUNNING:
-            sys_log("[DijitalPazarimBot] Polling iş parçacığı zaten aktif, mükerrer başlatma engellendi.")
-            return
-        _IS_BOT_WORKER_RUNNING = True
+    sys_log(f"[DijitalPazarimBot] Bot servisi webhook modunda yapılandırılıyor (@DijitalPazarimBot)...")
 
-    sys_log(f"[DijitalPazarimBot] Bot servisi başlatılıyor (@DijitalPazarimBot)...")
-    BOT_HEALTH_STATE["status"] = "starting"
-
-    # 1. Reset any stale webhook or pending updates on startup
-    try:
-        r_reset = requests.post(
-            f"https://api.telegram.org/bot{BOT_TOKEN}/deleteWebhook",
-            json={"drop_pending_updates": True},
-            timeout=10
-        )
-        desc = r_reset.json().get('description', 'OK') if r_reset.status_code == 200 else str(r_reset.status_code)
-        sys_log(f"[DijitalPazarimBot] Başlangıç webhook/kuyruk temizliği yapıldı: {desc}")
-    except Exception as e:
-        sys_log(f"[DijitalPazarimBot] deleteWebhook uyarısı: {e}")
-
-    # 2. Update Menu Button to Mini App (/dp)
+    # 1. Update Menu Button to Mini App (/dp)
     try:
         btn = {
             "type": "web_app",
@@ -292,60 +286,52 @@ def telegram_bot_worker():
     except Exception as e:
         sys_log(f"[DijitalPazarimBot] Menu button hatası: {e}")
 
-    session = requests.Session()
-    adapter = requests.adapters.HTTPAdapter(max_retries=2, pool_connections=5, pool_maxsize=5)
-    session.mount('https://', adapter)
-
-    offset = 0
-    in_conflict_state = False
-
+    # 2. Configure Telegram Webhook
+    webhook_url = f"{PUBLIC_BASE_URL}/api/telegram-webhook"
     try:
-        while True:
-            try:
-                r = session.get(
-                    f"https://api.telegram.org/bot{BOT_TOKEN}/getUpdates",
-                    params={"offset": offset, "timeout": 15},
-                    timeout=(5, 25)
-                )
-                if r.status_code == 200:
-                    data = r.json()
-                    if in_conflict_state:
-                        sys_log("[DijitalPazarimBot] Çakışma (409) giderildi, bot dinleme döngüsü normale döndü.")
-                        in_conflict_state = False
-                    BOT_HEALTH_STATE["status"] = "online"
-                    BOT_HEALTH_STATE["last_ok"] = datetime.now().strftime("%H:%M:%S")
+        res = requests.post(
+            f"https://api.telegram.org/bot{BOT_TOKEN}/setWebhook",
+            json={
+                "url": webhook_url,
+                "drop_pending_updates": True,
+                "allowed_updates": ["message", "callback_query"]
+            },
+            timeout=15
+        )
+        data = res.json()
+        if data.get("ok"):
+            BOT_HEALTH_STATE["status"] = "online"
+            BOT_HEALTH_STATE["mode"] = "webhook"
+            BOT_HEALTH_STATE["webhook_url"] = webhook_url
+            BOT_HEALTH_STATE["last_ok"] = datetime.now().strftime("%H:%M:%S")
+            sys_log(f"[DijitalPazarimBot] ✅ Webhook aktif -> {webhook_url}. Dış getUpdates çakışmaları engellendi.")
+        else:
+            BOT_HEALTH_STATE["status"] = "warning"
+            sys_log(f"[DijitalPazarimBot] ⚠️ Webhook uyarısı: {data}")
+    except Exception as e:
+        BOT_HEALTH_STATE["status"] = "error"
+        sys_log(f"[DijitalPazarimBot] Webhook kurulum hatası: {e}")
 
-                    for update in data.get("result", []):
-                        offset = update["update_id"] + 1
-                        handle_telegram_update(update)
-                elif r.status_code == 409:
-                    BOT_HEALTH_STATE["status"] = "conflict"
-                    BOT_HEALTH_STATE["last_conflict"] = datetime.now().strftime("%H:%M:%S")
-                    BOT_HEALTH_STATE["conflict_count"] += 1
-
-                    if not in_conflict_state:
-                        sys_log("[DijitalPazarimBot] ⚠️ 409 Conflict tespit edildi. Askıdaki bağlantı temizlenip 15 saniye bekleniyor...")
-                        in_conflict_state = True
-                    try:
-                        requests.post(
-                            f"https://api.telegram.org/bot{BOT_TOKEN}/deleteWebhook",
-                            json={"drop_pending_updates": True},
-                            timeout=10
-                        )
-                    except Exception:
-                        pass
-                    time.sleep(15)
-                else:
-                    time.sleep(2)
-            except requests.exceptions.Timeout:
-                # Normal long polling timeout, just continue
-                continue
-            except Exception as e:
-                time.sleep(3)
-    finally:
-        with _BOT_WORKER_LOCK:
-            _IS_BOT_WORKER_RUNNING = False
-        BOT_HEALTH_STATE["status"] = "stopped"
+def check_webhook_health():
+    """Periodically verifies that webhook remains active."""
+    global BOT_HEALTH_STATE
+    if not BOT_TOKEN or BOT_TOKEN == "YOUR_TOKEN":
+        return
+    expected_url = f"{PUBLIC_BASE_URL}/api/telegram-webhook"
+    try:
+        r = requests.get(f"https://api.telegram.org/bot{BOT_TOKEN}/getWebhookInfo", timeout=10)
+        if r.status_code == 200:
+            data = r.json().get("result", {})
+            curr_url = data.get("url", "")
+            if curr_url != expected_url:
+                sys_log(f"[DijitalPazarimBot] Webhook adresi güncelleniyor: {curr_url} -> {expected_url}")
+                setup_telegram_bot()
+            else:
+                BOT_HEALTH_STATE["status"] = "online"
+                BOT_HEALTH_STATE["mode"] = "webhook"
+                BOT_HEALTH_STATE["pending_updates"] = data.get("pending_update_count", 0)
+    except Exception:
+        pass
 
 def handle_telegram_update(update: dict):
     try:
@@ -771,12 +757,8 @@ def watchdog_supervisor():
     while True:
         try:
             WATCHDOG_STATS["last_check"] = datetime.now().strftime("%H:%M:%S")
-            # 1. Check Bot Thread
-            if (t_bot is None or not t_bot.is_alive()) and not _IS_BOT_WORKER_RUNNING:
-                sys_log("⚠️ [Watchdog] @DijitalPazarimBot iş parçacığı durmuş! Yeniden başlatılıyor...")
-                t_bot = threading.Thread(target=telegram_bot_worker, daemon=True, name="dp-bot-worker")
-                t_bot.start()
-                WATCHDOG_STATS["bot_restarts"] += 1
+            # 1. Check Bot Webhook Health
+            check_webhook_health()
             
             # 2. Check Telethon Thread
             if t_acc is None or not t_acc.is_alive():
@@ -785,19 +767,18 @@ def watchdog_supervisor():
                 t_acc.start()
                 WATCHDOG_STATS["telethon_restarts"] += 1
 
-            time.sleep(15)
+            time.sleep(20)
         except Exception as e:
             sys_log(f"[Watchdog] Hata: {e}")
-            time.sleep(15)
+            time.sleep(20)
 
 # ─────────────────────────────────────────────────────────────
 # 5. SERVICE RUNNER
 # ─────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    # 1. Start Bot Polling Thread (@DijitalPazarimBot)
-    t_bot = threading.Thread(target=telegram_bot_worker, daemon=True, name="dp-bot-worker")
-    t_bot.start()
+    # 1. Setup Telegram Bot Webhook & Menu Button (@DijitalPazarimBot)
+    setup_telegram_bot()
 
     # 2. Start User Account Ad Worker Thread (+18595173039)
     t_acc = threading.Thread(target=start_telethon_thread, daemon=True, name="dp-account-worker")
