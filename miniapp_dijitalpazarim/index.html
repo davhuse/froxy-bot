@@ -2,6 +2,9 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Language" content="tr">
+  <meta name="google" content="notranslate">
+  <meta name="language" content="Turkish">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Dijital Pazarım - Kod, Kupon & Dijital Lisans</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -206,7 +209,7 @@
       box-shadow: 0 4px 14px var(--purple-glow);
     }
 
-    /* Banner / Guarantee */
+    /* Trust Banner */
     .trust-banner {
       background: linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(236, 72, 153, 0.1));
       border: 1px solid rgba(192, 132, 252, 0.35);
@@ -371,7 +374,7 @@
       display: none;
     }
 
-    /* Floating Reference / Trust Footer */
+    /* Trust Footer */
     .trust-footer {
       text-align: center;
       font-size: 11px;
@@ -391,7 +394,7 @@
     <!-- Brand Header -->
     <header class="brand-header">
       <div class="brand-info">
-        <img class="brand-avatar" src="assets/logo.jpg" alt="Dijital Pazarım Logo" onerror="this.src='../static/dijitalpazarim_logo.jpg'">
+        <img class="brand-avatar" src="assets/logo.jpg" alt="Dijital Pazarım Logo" onerror="this.src='/static/dijitalpazarim_logo.jpg'">
         <div>
           <div class="brand-title">Dijital Pazarım</div>
           <div class="brand-sub">Kod • Kupon • Üyelik</div>
@@ -411,11 +414,11 @@
 
     <!-- Category Filter Tabs -->
     <div class="filter-scroll">
-      <button class="filter-btn active" data-cat="all">Tüm Ürünler</button>
+      <button class="filter-btn active" data-cat="tumu">Tüm Ürünler</button>
       <button class="filter-btn" data-cat="market">Kupon & Market</button>
-      <button class="filter-btn" data-cat="streaming">Dizi & Film</button>
+      <button class="filter-btn" data-cat="dizi">Dizi & Film</button>
       <button class="filter-btn" data-cat="ai">Yapay Zeka</button>
-      <button class="filter-btn" data-cat="music">Müzik & Video</button>
+      <button class="filter-btn" data-cat="muzik">Müzik & Video</button>
     </div>
 
     <!-- Trust Banner -->
@@ -454,7 +457,7 @@
     }
 
     let products = [];
-    let currentCategory = 'all';
+    let currentCategory = 'tumu';
     let searchQuery = '';
 
     // Fetch products
@@ -465,10 +468,10 @@
           products = await res.json();
           renderProducts();
         } else {
-          console.error("Products could not be loaded");
+          console.error("Ürünler yüklenemedi");
         }
       } catch (e) {
-        console.error("Fetch error:", e);
+        console.error("Veri hatası:", e);
       }
     }
 
@@ -478,7 +481,7 @@
       listEl.innerHTML = '';
 
       const filtered = products.filter(p => {
-        const matchesCat = (currentCategory === 'all') || (p.category === currentCategory);
+        const matchesCat = (currentCategory === 'tumu') || (p.category === currentCategory);
         const matchesSearch = !searchQuery || 
           p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
           p.desc.toLowerCase().includes(searchQuery.toLowerCase()) ||

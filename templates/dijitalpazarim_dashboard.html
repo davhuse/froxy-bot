@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Language" content="tr">
+  <meta name="google" content="notranslate">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dijital Pazarım — Canlı Servis Paneli</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --bg-dark: #080511;
+      --bg-card: rgba(18, 12, 33, 0.75);
+      --bg-card-hover: rgba(28, 18, 52, 0.85);
+      --purple-primary: #a855f7;
+      --purple-light: #c084fc;
+      --purple-dark: #7e22ce;
+      --purple-glow: rgba(168, 85, 247, 0.35);
+      --pink-accent: #ec4899;
+      --border-subtle: rgba(168, 85, 247, 0.22);
+      --border-glow: rgba(192, 132, 252, 0.6);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --success: #22c55e;
+      --price-gold: #facc15;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(168, 85, 247, 0.18) 0%, transparent 60%),
+        radial-gradient(circle at 100% 100%, rgba(236, 72, 153, 0.12) 0%, transparent 50%),
+        radial-gradient(circle at 0% 50%, rgba(126, 34, 206, 0.12) 0%, transparent 50%);
+      background-attachment: fixed;
+      color: var(--text-main);
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Header */
+    .header-panel {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 24px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .brand-avatar {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--purple-light);
+      box-shadow: 0 0 16px var(--purple-glow);
+    }
+
+    .brand-title {
+      font-size: 22px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #ffffff 40%, var(--purple-light) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-sub {
+      font-size: 13px;
+      color: var(--purple-light);
+      font-weight: 600;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--purple-primary), var(--purple-dark));
+      color: #ffffff;
+      border: 1px solid var(--purple-light);
+      box-shadow: 0 4px 16px var(--purple-glow);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(168, 85, 247, 0.5);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-main);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: var(--purple-light);
+    }
+
+    /* Status Grid */
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+    }
+
+    .status-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 18px;
+      padding: 18px 20px;
+      backdrop-filter: blur(14px);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: border-color 0.2s ease;
+    }
+
+    .status-card:hover {
+      border-color: var(--border-glow);
+    }
+
+    .status-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .status-card-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .status-pill.online {
+      background: rgba(34, 197, 94, 0.12);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      color: #4ade80;
+    }
+
+    .status-pill.running {
+      background: rgba(168, 85, 247, 0.15);
+      border: 1px solid rgba(168, 85, 247, 0.3);
+      color: var(--purple-light);
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #22c55e;
+      box-shadow: 0 0 8px #22c55e;
+      animation: pulse 1.8s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.3); opacity: 0.6; }
+    }
+
+    .status-card-value {
+      font-size: 20px;
+      font-weight: 800;
+      color: #ffffff;
+    }
+
+    .status-card-desc {
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    /* Content Layout */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 900px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 18px;
+      padding: 20px;
+      backdrop-filter: blur(14px);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .panel-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Products Table */
+    .product-list-scroll {
+      max-height: 480px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding-right: 4px;
+    }
+
+    .product-list-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .product-list-scroll::-webkit-scrollbar-thumb {
+      background: var(--purple-dark);
+      border-radius: 4px;
+    }
+
+    .product-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 14px;
+      gap: 12px;
+      transition: background 0.2s ease, border-color 0.2s ease;
+    }
+
+    .product-row:hover {
+      background: rgba(168, 85, 247, 0.06);
+      border-color: var(--border-subtle);
+    }
+
+    .prod-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .prod-img {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      object-fit: cover;
+      background: #140d25;
+      flex-shrink: 0;
+    }
+
+    .prod-texts {
+      min-width: 0;
+    }
+
+    .prod-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: #ffffff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .prod-meta {
+      font-size: 11px;
+      color: var(--purple-light);
+      font-weight: 600;
+    }
+
+    .prod-price {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--price-gold);
+      flex-shrink: 0;
+    }
+
+    .prod-btn {
+      padding: 6px 12px;
+      background: rgba(168, 85, 247, 0.15);
+      border: 1px solid var(--purple-light);
+      border-radius: 8px;
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 700;
+      text-decoration: none;
+      flex-shrink: 0;
+    }
+
+    .prod-btn:hover {
+      background: var(--purple-primary);
+    }
+
+    /* Live Logs */
+    .log-box {
+      background: #040208;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      padding: 14px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: #a78bfa;
+      height: 480px;
+      overflow-y: auto;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .log-box::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .log-box::-webkit-scrollbar-thumb {
+      background: var(--purple-dark);
+      border-radius: 4px;
+    }
+
+    .log-line {
+      margin-bottom: 4px;
+    }
+
+    .log-line.info { color: #94a3b8; }
+    .log-line.success { color: #4ade80; }
+    .log-line.warn { color: #facc15; }
+    .log-line.error { color: #f87171; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header-panel">
+      <div class="brand-section">
+        <img class="brand-avatar" src="/static/dijitalpazarim_logo.jpg" alt="Logo" onerror="this.src='/assets/logo.jpg'">
+        <div>
+          <div class="brand-title">Dijital Pazarım</div>
+          <div class="brand-sub">Canlı Servis & Yönetim Paneli</div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <a href="/dp" target="_blank" class="btn btn-primary">
+          <i class="fa-solid fa-store"></i> Mağazayı Aç (Mini App)
+        </a>
+        <a href="https://t.me/DijitalPazarimBot" target="_blank" class="btn btn-secondary">
+          <i class="fa-brands fa-telegram"></i> Telegram Botu
+        </a>
+        <a href="https://t.me/DijitalPazarimm" target="_blank" class="btn btn-secondary">
+          <i class="fa-solid fa-bullhorn"></i> Reklam Hesabı
+        </a>
+      </div>
+    </header>
+
+    <!-- Status Cards -->
+    <div class="status-grid">
+      <div class="status-card">
+        <div class="status-card-header">
+          <span class="status-card-title"><i class="fa-solid fa-server"></i> Servis Durumu</span>
+          <span class="status-pill online"><span class="status-dot"></span> AKTİF</span>
+        </div>
+        <div class="status-card-value">Çevrimiçi</div>
+        <div class="status-card-desc">Railway üzerinde bağımsız çalışıyor</div>
+      </div>
+
+      <div class="status-card">
+        <div class="status-card-header">
+          <span class="status-card-title"><i class="fa-solid fa-robot"></i> Satış Botu</span>
+          <span class="status-pill online"><span class="status-dot"></span> BAĞLI</span>
+        </div>
+        <div class="status-card-value">@DijitalPazarimBot</div>
+        <div class="status-card-desc">Telegram WebApp & Anında Satış</div>
+      </div>
+
+      <div class="status-card">
+        <div class="status-card-header">
+          <span class="status-card-title"><i class="fa-solid fa-user-shield"></i> Reklam Hesabı</span>
+          <span class="status-pill running"><i class="fa-solid fa-bolt"></i> DÖNGÜDE</span>
+        </div>
+        <div class="status-card-value">+18595173039</div>
+        <div class="status-card-desc">@DijitalPazarimm • 60 dk aralıklı gönderim</div>
+      </div>
+
+      <div class="status-card">
+        <div class="status-card-header">
+          <span class="status-card-title"><i class="fa-solid fa-tags"></i> Shopier İlanları</span>
+          <span class="status-pill online"><i class="fa-solid fa-check"></i> CANLI</span>
+        </div>
+        <div class="status-card-value" id="productCount">13 Ürün</div>
+        <div class="status-card-desc">Jarvis Shopier API ile anında teslimat</div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-grid">
+      <!-- Products List -->
+      <div class="panel-box">
+        <div class="panel-title">
+          <span><i class="fa-solid fa-box-open" style="color: var(--purple-light);"></i> Aktif Mağaza Ürünleri</span>
+          <a href="/dp" target="_blank" style="font-size: 12px; color: var(--purple-light); text-decoration: none;">
+            Önizle <i class="fa-solid fa-arrow-up-right-from-square"></i>
+          </a>
+        </div>
+        <div class="product-list-scroll" id="productsTable">
+          <!-- Injected via JS -->
+        </div>
+      </div>
+
+      <!-- Live Logs Console -->
+      <div class="panel-box">
+        <div class="panel-title">
+          <span><i class="fa-solid fa-terminal" style="color: #4ade80;"></i> Canlı Sistem Logları</span>
+          <span id="logStatus" style="font-size: 11px; color: var(--text-dim);">Otomatik yenileniyor</span>
+        </div>
+        <div class="log-box" id="logConsole">Sistem logları yükleniyor...</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Load Products
+    async function loadProducts() {
+      try {
+        const res = await fetch('/products_db.json');
+        if (res.ok) {
+          const prods = await res.json();
+          document.getElementById('productCount').textContent = prods.length + ' Ürün';
+          const container = document.getElementById('productsTable');
+          container.innerHTML = '';
+          prods.forEach(p => {
+            const row = document.createElement('div');
+            row.className = 'product-row';
+            row.innerHTML = `
+              <div class="prod-info">
+                <img class="prod-img" src="${p.image}" alt="${p.title}" onerror="this.src='/static/dijitalpazarim_logo.jpg'">
+                <div class="prod-texts">
+                  <div class="prod-name" title="${p.title}">${p.title}</div>
+                  <div class="prod-meta">${p.category_label || ''} • ID: ${p.id}</div>
+                </div>
+              </div>
+              <div class="prod-price">${p.price}</div>
+              <a href="${p.url}" target="_blank" class="prod-btn">İlan</a>
+            `;
+            container.appendChild(row);
+          });
+        }
+      } catch (e) {
+        console.error('Products load error:', e);
+      }
+    }
+
+    // Load Live Logs
+    async function fetchLogs() {
+      try {
+        const res = await fetch('/api/logs');
+        if (res.ok) {
+          const data = await res.json();
+          const logConsole = document.getElementById('logConsole');
+          if (data.logs && data.logs.length > 0) {
+            logConsole.textContent = data.logs.join('\n');
+            logConsole.scrollTop = logConsole.scrollHeight;
+          } else {
+            logConsole.textContent = 'Henüz log kaydı oluşmadı.';
+          }
+        }
+      } catch (e) {
+        console.error('Logs fetch error:', e);
+      }
+    }
+
+    loadProducts();
+    fetchLogs();
+    setInterval(fetchLogs, 3000);
+  </script>
+</body>
+</html>

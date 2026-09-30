@@ -2,9 +2,11 @@
 """
 Dijital Pazarım — Dedicated Independent Service
 Runs exclusively for Dijital Pazarım:
-- Serves Dijital Pazarım Mini App on root '/'
-- Telegram Bot (@DijitalPazarimBot) runner
-- Independent status and webhook endpoints
+- Serves Dijital Pazarım Canlı Servis Paneli on root '/'
+- Serves Dijital Pazarım Mini App on '/dp' and '/app'
+- Telegram Bot (@DijitalPazarimBot) runner with WebApp menu button to '/dp'
+- Telethon Ad Sender loop for +18595173039 (@DijitalPazarimm)
+- Independent live logs and status endpoints
 Zero dependency on KeyVadi, LisansArena, or Froxy.
 """
 
@@ -12,36 +14,66 @@ from __future__ import annotations
 import os
 import sys
 import json
+import collections
+from datetime import datetime
 import threading
 import time
 import requests
 from pathlib import Path
-from flask import Flask, send_from_directory, jsonify, request
+from flask import Flask, send_from_directory, render_template, jsonify, request
 
 sys.stdout.reconfigure(encoding='utf-8')
 
 BASE_DIR = Path(__file__).resolve().parent
 MINIAPP_DIR = BASE_DIR / "miniapp_dijitalpazarim"
 STATIC_DIR = BASE_DIR / "static"
+TEMPLATES_DIR = BASE_DIR / "templates"
 MESSAGES_DIR = BASE_DIR / "messages"
 
-app = Flask(__name__, static_folder=str(MINIAPP_DIR), static_url_path="")
+app = Flask(
+    __name__,
+    template_folder=str(TEMPLATES_DIR),
+    static_folder=str(STATIC_DIR),
+    static_url_path="/static"
+)
 
 BOT_TOKEN = os.environ.get("DIJITALPAZARIM_BOT_TOKEN", "8753762842:AAHH_uLartBSDD7hJ2ikwaDtoCYpWMziv9g").strip()
 PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL", "https://dijital-pazarim-service-production.up.railway.app").rstrip("/")
+MINIAPP_URL = f"{PUBLIC_BASE_URL}/dp"
+
+# In-memory Live Log Buffer
+LOG_BUFFER = collections.deque(maxlen=200)
+
+def sys_log(message: str):
+    """Outputs to stdout and records in log buffer."""
+    ts = datetime.now().strftime("%H:%M:%S")
+    formatted = f"[{ts}] {message}"
+    print(formatted, flush=True)
+    LOG_BUFFER.append(formatted)
+
+# Initial log
+sys_log("Dijital Pazarım Bağımsız Servisi başlatıldı.")
 
 # ─────────────────────────────────────────────────────────────
-# 1. WEB / MINI APP ROUTES (Dedicated exclusively to Dijital Pazarım)
+# 1. WEB & CANLI SERVİS PANELİ / MINI APP ROUTES
 # ─────────────────────────────────────────────────────────────
 
 @app.route("/")
+def live_service_dashboard():
+    """Dijital Pazarım Canlı Servis Paneli (Dashboard)."""
+    return render_template("dijitalpazarim_dashboard.html")
+
 @app.route("/dp")
 @app.route("/dp/")
-def root_index():
+@app.route("/app")
+@app.route("/app/")
+def miniapp_store():
+    """Dijital Pazarım Mini App Mağazası."""
     return send_from_directory(str(MINIAPP_DIR), "index.html")
 
 @app.route("/products_db.json")
 @app.route("/dp/products_db.json")
+@app.route("/app/products_db.json")
 def get_products():
     prod_file = MINIAPP_DIR / "products_db.json"
     if prod_file.exists():
@@ -50,12 +82,13 @@ def get_products():
 
 @app.route("/assets/<path:filepath>")
 @app.route("/dp/assets/<path:filepath>")
+@app.route("/app/assets/<path:filepath>")
 def serve_assets(filepath):
     return send_from_directory(str(MINIAPP_DIR / "assets"), filepath)
 
-@app.route("/static/<path:filepath>")
-def serve_static(filepath):
-    return send_from_directory(str(STATIC_DIR), filepath)
+@app.route("/api/logs")
+def get_live_logs():
+    return jsonify({"logs": list(LOG_BUFFER)})
 
 @app.route("/api/status")
 @app.route("/health")
@@ -71,9 +104,11 @@ def health_status():
         "status": "online",
         "brand": "Dijital Pazarım",
         "bot": "@DijitalPazarimBot",
+        "ad_account": "+18595173039",
         "domain": PUBLIC_BASE_URL,
+        "miniapp_url": MINIAPP_URL,
         "active_products": prod_count,
-        "system": "standalone_dijital_pazarim_v1"
+        "system": "standalone_dijital_pazarim_v2"
     })
 
 # ─────────────────────────────────────────────────────────────
@@ -96,28 +131,29 @@ def get_product_summary() -> str:
 def telegram_bot_worker():
     """Background polling loop for @DijitalPazarimBot."""
     if not BOT_TOKEN or BOT_TOKEN == "YOUR_TOKEN":
-        print("[DijitalPazarimBot] Token bulunamadı, bot başlatılamıyor.")
+        sys_log("[DijitalPazarimBot] Token bulunamadı, bot başlatılamıyor.")
         return
 
-    print(f"[DijitalPazarimBot] Bot servisi başlatılıyor... (@DijitalPazarimBot)")
+    sys_log(f"[DijitalPazarimBot] Bot servisi başlatılıyor (@DijitalPazarimBot)...")
     
-    # 1. Update Menu Button to Root Mini App
+    # 1. Update Menu Button to Mini App (/dp)
     try:
         btn = {
             "type": "web_app",
             "text": "Mağazayı Aç",
             "web_app": {
-                "url": PUBLIC_BASE_URL
+                "url": MINIAPP_URL
             }
         }
-        requests.post(
+        res = requests.post(
             f"https://api.telegram.org/bot{BOT_TOKEN}/setChatMenuButton",
-            json={"menu_button": json.dumps(btn)},
+            headers={"Content-Type": "application/json; charset=utf-8"},
+            data=json.dumps({"menu_button": btn}, ensure_ascii=False).encode('utf-8'),
             timeout=10
         )
-        print(f"[DijitalPazarimBot] Chat menu button güncellendi -> {PUBLIC_BASE_URL}")
+        sys_log(f"[DijitalPazarimBot] Chat menu button güncellendi -> {MINIAPP_URL} ({res.status_code})")
     except Exception as e:
-        print(f"[DijitalPazarimBot] Menu button hatası: {e}")
+        sys_log(f"[DijitalPazarimBot] Menu button hatası: {e}")
 
     offset = 0
     while True:
@@ -133,7 +169,7 @@ def telegram_bot_worker():
                     offset = update["update_id"] + 1
                     handle_telegram_update(update)
             elif r.status_code == 409:
-                print("[DijitalPazarimBot] 409 Conflict, 5 saniye bekleniyor...")
+                sys_log("[DijitalPazarimBot] 409 Conflict, 5 saniye bekleniyor...")
                 time.sleep(5)
             else:
                 time.sleep(2)
@@ -156,7 +192,7 @@ def handle_telegram_update(update: dict):
                 text = get_product_summary()
                 keyboard = {
                     "inline_keyboard": [
-                        [{"text": "Mağazayı Aç", "web_app": {"url": PUBLIC_BASE_URL}}],
+                        [{"text": "Mağazayı Aç", "web_app": {"url": MINIAPP_URL}}],
                         [{"text": "Canlı Destek", "callback_data": "support_info"}]
                     ]
                 }
@@ -170,7 +206,7 @@ def handle_telegram_update(update: dict):
                 )
                 keyboard = {
                     "inline_keyboard": [
-                        [{"text": "Mağazayı Aç", "web_app": {"url": PUBLIC_BASE_URL}}]
+                        [{"text": "Mağazayı Aç", "web_app": {"url": MINIAPP_URL}}]
                     ]
                 }
                 send_bot_message(chat_id, text, keyboard)
@@ -184,6 +220,7 @@ def handle_telegram_update(update: dict):
             first_name = msg.get("from", {}).get("first_name", "Değerli Müşterimiz")
 
             if text.startswith("/start") or text.startswith("/magaza"):
+                sys_log(f"[DijitalPazarimBot] /start komutu alındı -> Chat ID: {chat_id} ({first_name})")
                 welcome_text = (
                     f"Merhaba {first_name},\n\n"
                     "Dijital Pazarım'a hoş geldiniz.\n"
@@ -192,7 +229,7 @@ def handle_telegram_update(update: dict):
                 )
                 keyboard = {
                     "inline_keyboard": [
-                        [{"text": "Mağazayı Aç", "web_app": {"url": PUBLIC_BASE_URL}}],
+                        [{"text": "Mağazayı Aç", "web_app": {"url": MINIAPP_URL}}],
                         [
                             {"text": "Fiyat Listesi", "callback_data": "list_prices"},
                             {"text": "Canlı Destek", "callback_data": "support_info"}
@@ -204,7 +241,7 @@ def handle_telegram_update(update: dict):
                 summary = get_product_summary()
                 keyboard = {
                     "inline_keyboard": [
-                        [{"text": "Mağazayı Aç", "web_app": {"url": PUBLIC_BASE_URL}}]
+                        [{"text": "Mağazayı Aç", "web_app": {"url": MINIAPP_URL}}]
                     ]
                 }
                 send_bot_message(chat_id, summary, keyboard)
@@ -215,20 +252,20 @@ def handle_telegram_update(update: dict):
                 )
                 send_bot_message(chat_id, destek_text)
             else:
-                # General query reply
+                sys_log(f"[DijitalPazarimBot] Müşteri mesajı: {text[:40]}... -> Chat ID: {chat_id}")
                 reply = (
                     "Mesajınız müşteri ekibimize iletilmiştir. "
                     "Ürünleri incelemek ve anında sipariş vermek için mağazamızı ziyaret edebilirsiniz."
                 )
                 keyboard = {
                     "inline_keyboard": [
-                        [{"text": "Mağazayı Aç", "web_app": {"url": PUBLIC_BASE_URL}}]
+                        [{"text": "Mağazayı Aç", "web_app": {"url": MINIAPP_URL}}]
                     ]
                 }
                 send_bot_message(chat_id, reply, keyboard)
 
     except Exception as e:
-        print(f"[DijitalPazarimBot] Mesaj işleme hatası: {e}")
+        sys_log(f"[DijitalPazarimBot] Mesaj işleme hatası: {e}")
 
 def send_bot_message(chat_id: int | str, text: str, reply_markup: dict = None):
     payload = {
@@ -241,11 +278,12 @@ def send_bot_message(chat_id: int | str, text: str, reply_markup: dict = None):
     try:
         requests.post(
             f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
-            json=payload,
+            headers={"Content-Type": "application/json; charset=utf-8"},
+            data=json.dumps(payload, ensure_ascii=False).encode('utf-8'),
             timeout=8
         )
     except Exception as e:
-        print(f"[DijitalPazarimBot] sendMessage hatası: {e}")
+        sys_log(f"[DijitalPazarimBot] sendMessage hatası: {e}")
 
 # ─────────────────────────────────────────────────────────────
 # 3. USER ACCOUNT RUNNER (+18595173039 / @DijitalPazarimm)
@@ -277,20 +315,20 @@ async def run_telethon_account():
             session_to_use = session_file.read_text(encoding="utf-8").strip()
 
     if not session_to_use:
-        print("[DijitalPazarimAccount] Oturum anahtarı bulunamadı, kullanıcı hesabı başlatılamadı.")
+        sys_log("[DijitalPazarimAccount] Oturum anahtarı bulunamadı, kullanıcı hesabı başlatılamadı.")
         return
 
-    print("[DijitalPazarimAccount] Telethon kullanıcı hesabı başlatılıyor...")
+    sys_log("[DijitalPazarimAccount] Telethon kullanıcı hesabı başlatılıyor (+18595173039)...")
     client = TelegramClient(StringSession(session_to_use), API_ID, API_HASH)
     await client.connect()
 
     if not await client.is_user_authorized():
-        print("[DijitalPazarimAccount] Oturum yetkisiz, iptal edildi.")
+        sys_log("[DijitalPazarimAccount] Oturum yetkisiz, iptal edildi.")
         await client.disconnect()
         return
 
     me = await client.get_me()
-    print(f"[DijitalPazarimAccount] Aktif Hesap: {me.first_name} (@{me.username}) - {me.phone}")
+    sys_log(f"[DijitalPazarimAccount] Aktif Hesap: {me.first_name} (@{me.username}) - {me.phone}")
 
     # Auto DM Reply: Directs private inquiries to @DijitalPazarimBot
     dm_replied_users = set()
@@ -309,9 +347,9 @@ async def run_telethon_account():
         )
         try:
             await event.reply(reply_text)
-            print(f"[DijitalPazarimAccount] DM yönlendirmesi gönderildi -> Kullanıcı ID: {sender_id}")
+            sys_log(f"[DijitalPazarimAccount] DM yönlendirmesi gönderildi -> Kullanıcı ID: {sender_id}")
         except Exception as e:
-            print(f"[DijitalPazarimAccount] DM yanıt hatası: {e}")
+            sys_log(f"[DijitalPazarimAccount] DM yanıt hatası: {e}")
 
     # Background Ad Broadcast loop
     async def ad_broadcast_loop():
@@ -332,34 +370,38 @@ async def run_telethon_account():
                     dialogs = await client.get_dialogs(limit=50)
                     target_groups = [d for d in dialogs if d.is_group]
 
+                    sys_log(f"[DijitalPazarimAccount] Reklam döngüsü başladı ({len(target_groups)} grup hedefli)...")
+
                     for group in target_groups:
                         try:
                             await client.send_message(group.id, current_ad)
-                            print(f"[DijitalPazarimAccount] Reklam paylaşıldı -> {group.name}")
+                            sys_log(f"[DijitalPazarimAccount] Reklam paylaşıldı -> {group.name}")
                             await asyncio.sleep(30) # Delay between groups
                         except FloodWaitError as fwe:
-                            print(f"[DijitalPazarimAccount] FloodWait: {fwe.seconds} saniye bekleniyor...")
+                            sys_log(f"[DijitalPazarimAccount] FloodWait: {fwe.seconds} saniye bekleniyor...")
                             await asyncio.sleep(fwe.seconds + 5)
                         except Exception as e:
-                            print(f"[DijitalPazarimAccount] Grup gönderim hatası ({group.name}): {e}")
+                            sys_log(f"[DijitalPazarimAccount] Grup gönderim hatası ({group.name}): {e}")
 
+                sys_log("[DijitalPazarimAccount] Reklam turu tamamlandı. Sonraki döngü 60 dakika sonra.")
                 # Interval between broadcast rounds (60 minutes)
                 await asyncio.sleep(3600)
 
             except Exception as e:
-                print(f"[DijitalPazarimAccount] Döngü hatası: {e}")
+                sys_log(f"[DijitalPazarimAccount] Döngü hatası: {e}")
                 await asyncio.sleep(60)
 
     asyncio.create_task(ad_broadcast_loop())
     await client.run_until_disconnected()
 
 def start_telethon_thread():
+    import asyncio
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:
         loop.run_until_complete(run_telethon_account())
     except Exception as e:
-        print(f"[DijitalPazarimAccount] Thread hatası: {e}")
+        sys_log(f"[DijitalPazarimAccount] Thread hatası: {e}")
 
 # ─────────────────────────────────────────────────────────────
 # 4. SERVICE RUNNER
@@ -375,5 +417,5 @@ if __name__ == "__main__":
     t_acc.start()
 
     port = int(os.environ.get("PORT", 5000))
-    print(f"[DijitalPazarim] Web servisi {port} portunda başlatılıyor (Yalnızca Dijital Pazarım)...")
+    sys_log(f"[DijitalPazarim] Web servisi {port} portunda başlatılıyor...")
     app.run(host="0.0.0.0", port=port, debug=False)
