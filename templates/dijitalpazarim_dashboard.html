@@ -26,6 +26,7 @@
       --text-muted: #94a3b8;
       --text-dim: #64748b;
       --success: #22c55e;
+      --danger: #ef4444;
       --price-gold: #facc15;
     }
 
@@ -144,6 +145,56 @@
       border-color: var(--purple-light);
     }
 
+    .btn-success {
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: #ffffff;
+      border: 1px solid #4ade80;
+      box-shadow: 0 4px 14px rgba(34, 197, 94, 0.3);
+    }
+
+    .btn-success:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(34, 197, 94, 0.5);
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: #ffffff;
+      border: 1px solid #f87171;
+      box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3);
+    }
+
+    .btn-danger:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(239, 68, 68, 0.5);
+    }
+
+    /* Controls Bar */
+    .controls-banner {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 18px;
+      padding: 16px 22px;
+      backdrop-filter: blur(14px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .control-status-group {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .control-btn-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
     /* Status Grid */
     .status-grid {
       display: grid;
@@ -198,10 +249,10 @@
       color: #4ade80;
     }
 
-    .status-pill.running {
-      background: rgba(168, 85, 247, 0.15);
-      border: 1px solid rgba(168, 85, 247, 0.3);
-      color: var(--purple-light);
+    .status-pill.stopped {
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #f87171;
     }
 
     .status-dot {
@@ -211,6 +262,11 @@
       background: #22c55e;
       box-shadow: 0 0 8px #22c55e;
       animation: pulse 1.8s infinite;
+    }
+
+    .status-dot.red {
+      background: #ef4444;
+      box-shadow: 0 0 8px #ef4444;
     }
 
     @keyframes pulse {
@@ -260,6 +316,39 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+    }
+
+    /* Broadcast Box */
+    .broadcast-textarea {
+      width: 100%;
+      height: 100px;
+      background: #040208;
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 12px 14px;
+      color: #ffffff;
+      font-family: inherit;
+      font-size: 13px;
+      outline: none;
+      resize: vertical;
+      transition: border-color 0.2s ease;
+    }
+
+    .broadcast-textarea:focus {
+      border-color: var(--purple-light);
+      box-shadow: 0 0 12px var(--purple-glow);
+    }
+
+    .broadcast-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .broadcast-hint {
+      font-size: 12px;
+      color: var(--text-dim);
     }
 
     /* Products Table */
@@ -382,15 +471,6 @@
       background: var(--purple-dark);
       border-radius: 4px;
     }
-
-    .log-line {
-      margin-bottom: 4px;
-    }
-
-    .log-line.info { color: #94a3b8; }
-    .log-line.success { color: #4ade80; }
-    .log-line.warn { color: #facc15; }
-    .log-line.error { color: #f87171; }
   </style>
 </head>
 <body>
@@ -417,42 +497,77 @@
       </div>
     </header>
 
+    <!-- Controls Banner (Start / Stop) -->
+    <div class="controls-banner">
+      <div class="control-status-group">
+        <div>
+          <div style="font-size: 12px; color: var(--text-muted); font-weight: 600;">Reklam Motoru Durumu</div>
+          <div style="font-size: 17px; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 8px; margin-top: 2px;">
+            <span id="adStatusBadge" class="status-pill online"><span class="status-dot"></span> AKTİF (DÖNGÜDE)</span>
+          </div>
+        </div>
+      </div>
+      <div class="control-btn-group">
+        <button id="btnStart" class="btn btn-success" onclick="startAdEngine()">
+          <i class="fa-solid fa-play"></i> Başlat
+        </button>
+        <button id="btnStop" class="btn btn-danger" onclick="stopAdEngine()">
+          <i class="fa-solid fa-stop"></i> Durdur
+        </button>
+      </div>
+    </div>
+
     <!-- Status Cards -->
     <div class="status-grid">
       <div class="status-card">
         <div class="status-card-header">
-          <span class="status-card-title"><i class="fa-solid fa-server"></i> Servis Durumu</span>
-          <span class="status-pill online"><span class="status-dot"></span> AKTİF</span>
+          <span class="status-card-title"><i class="fa-solid fa-server"></i> Servis Altyapısı</span>
+          <span class="status-pill online"><span class="status-dot"></span> BAĞIMSIZ</span>
         </div>
-        <div class="status-card-value">Çevrimiçi</div>
-        <div class="status-card-desc">Railway üzerinde bağımsız çalışıyor</div>
+        <div class="status-card-value">Railway Çevrimiçi</div>
+        <div class="status-card-desc">İzole port & sıfır KeyVadi bağımlılığı</div>
       </div>
 
       <div class="status-card">
         <div class="status-card-header">
-          <span class="status-card-title"><i class="fa-solid fa-robot"></i> Satış Botu</span>
-          <span class="status-pill online"><span class="status-dot"></span> BAĞLI</span>
+          <span class="status-card-title"><i class="fa-solid fa-robot"></i> Satış & Mağaza Botu</span>
+          <span class="status-pill online"><span class="status-dot"></span> ONLINE</span>
         </div>
         <div class="status-card-value">@DijitalPazarimBot</div>
-        <div class="status-card-desc">Telegram WebApp & Anında Satış</div>
+        <div class="status-card-desc">Mini App menü butonu: /dp</div>
       </div>
 
       <div class="status-card">
         <div class="status-card-header">
           <span class="status-card-title"><i class="fa-solid fa-user-shield"></i> Reklam Hesabı</span>
-          <span class="status-pill running"><i class="fa-solid fa-bolt"></i> DÖNGÜDE</span>
+          <span class="status-pill online"><i class="fa-solid fa-check"></i> AKTİF</span>
         </div>
         <div class="status-card-value">+18595173039</div>
-        <div class="status-card-desc">@DijitalPazarimm • 60 dk aralıklı gönderim</div>
+        <div class="status-card-desc" id="adAccountDesc">@DijitalPazarimm • 60 dk aralık</div>
       </div>
 
       <div class="status-card">
         <div class="status-card-header">
           <span class="status-card-title"><i class="fa-solid fa-tags"></i> Shopier İlanları</span>
-          <span class="status-pill online"><i class="fa-solid fa-check"></i> CANLI</span>
+          <span class="status-pill online"><i class="fa-solid fa-store"></i> CANLI</span>
         </div>
         <div class="status-card-value" id="productCount">13 Ürün</div>
-        <div class="status-card-desc">Jarvis Shopier API ile anında teslimat</div>
+        <div class="status-card-desc">Jarvis API • Türkçe & .99 fiyatlama</div>
+      </div>
+    </div>
+
+    <!-- Broadcast Panel -->
+    <div class="panel-box">
+      <div class="panel-title">
+        <span><i class="fa-solid fa-bullhorn" style="color: var(--purple-light);"></i> Gruplara Toplu Duyuru Gönder</span>
+        <span id="broadcastResult" style="font-size: 12px; color: var(--purple-light); font-weight: 600;"></span>
+      </div>
+      <textarea id="broadcastInput" class="broadcast-textarea" placeholder="Tüm reklam gruplarına tek seferlik anlık duyuru veya kampanya mesajı yazın..."></textarea>
+      <div class="broadcast-actions">
+        <span class="broadcast-hint">+18595173039 hesabı üzerinden tüm aktif gruplara sırayla iletilir.</span>
+        <button id="btnSendBroadcast" class="btn btn-primary" onclick="sendBroadcast()">
+          <i class="fa-solid fa-paper-plane"></i> Duyuruyu Gönder
+        </button>
       </div>
     </div>
 
@@ -483,6 +598,89 @@
   </div>
 
   <script>
+    // Load Status
+    async function updateStatus() {
+      try {
+        const res = await fetch('/api/status');
+        if (res.ok) {
+          const s = await res.json();
+          const badge = document.getElementById('adStatusBadge');
+          if (s.ad_running) {
+            badge.className = 'status-pill online';
+            badge.innerHTML = '<span class="status-dot"></span> AKTİF (DÖNGÜDE)';
+          } else {
+            badge.className = 'status-pill stopped';
+            badge.innerHTML = '<span class="status-dot red"></span> DURDURULDU';
+          }
+          document.getElementById('adAccountDesc').textContent = 
+            `Toplam ${s.total_ads_sent || 0} reklam • Son döngü: ${s.last_cycle || 'Bekleniyor'}`;
+        }
+      } catch (e) {
+        console.error('Status fetch error:', e);
+      }
+    }
+
+    // Start / Stop
+    async function startAdEngine() {
+      try {
+        const res = await fetch('/api/start', { method: 'POST' });
+        if (res.ok) {
+          updateStatus();
+          fetchLogs();
+        }
+      } catch (e) {
+        alert('Hata: ' + e);
+      }
+    }
+
+    async function stopAdEngine() {
+      try {
+        const res = await fetch('/api/stop', { method: 'POST' });
+        if (res.ok) {
+          updateStatus();
+          fetchLogs();
+        }
+      } catch (e) {
+        alert('Hata: ' + e);
+      }
+    }
+
+    // Broadcast
+    async function sendBroadcast() {
+      const input = document.getElementById('broadcastInput');
+      const text = input.value.trim();
+      if (!text) {
+        alert('Lütfen gönderilecek duyuru metnini yazın.');
+        return;
+      }
+      const btn = document.getElementById('btnSendBroadcast');
+      const resEl = document.getElementById('broadcastResult');
+      btn.disabled = true;
+      btn.textContent = 'Gönderiliyor...';
+      resEl.textContent = 'Duyuru gruplara iletiliyor...';
+
+      try {
+        const r = await fetch('/api/broadcast', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text })
+        });
+        const data = await r.json();
+        if (data.success) {
+          resEl.textContent = `Başarılı! ${data.sent_count} gruba iletildi.`;
+          input.value = '';
+        } else {
+          resEl.textContent = `Hata: ${data.error}`;
+        }
+      } catch (e) {
+        resEl.textContent = 'Bağlantı hatası: ' + e;
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Duyuruyu Gönder';
+        fetchLogs();
+      }
+    }
+
     // Load Products
     async function loadProducts() {
       try {
@@ -534,7 +732,9 @@
     }
 
     loadProducts();
+    updateStatus();
     fetchLogs();
+    setInterval(updateStatus, 3000);
     setInterval(fetchLogs, 3000);
   </script>
 </body>

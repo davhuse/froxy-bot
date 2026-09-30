@@ -2,11 +2,11 @@
 """
 Dijital Pazarım — Dedicated Independent Service
 Runs exclusively for Dijital Pazarım:
-- Serves Dijital Pazarım Canlı Servis Paneli on root '/'
-- Serves Dijital Pazarım Mini App on '/dp' and '/app'
+- Serves Dijital Pazarım Canlı Servis Paneli on root '/' with Start/Stop and Broadcast controls
+- Serves Dijital Pazarım Mini App on '/dp' and '/app' with TR | EN language options
 - Telegram Bot (@DijitalPazarimBot) runner with WebApp menu button to '/dp'
 - Telethon Ad Sender loop for +18595173039 (@DijitalPazarimm)
-- Independent live logs and status endpoints
+- Real-time endpoints: /api/start, /api/stop, /api/broadcast, /api/logs, /api/status
 Zero dependency on KeyVadi, LisansArena, or Froxy.
 """
 
@@ -42,8 +42,14 @@ BOT_TOKEN = os.environ.get("DIJITALPAZARIM_BOT_TOKEN", "8753762842:AAHH_uLartBSD
 PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL", "https://dijital-pazarim-service-production.up.railway.app").rstrip("/")
 MINIAPP_URL = f"{PUBLIC_BASE_URL}/dp"
 
-# In-memory Live Log Buffer
-LOG_BUFFER = collections.deque(maxlen=200)
+# In-memory Live Log Buffer & Operational State
+LOG_BUFFER = collections.deque(maxlen=250)
+AD_RUNNING = True
+AD_INTERVAL_SECONDS = 3600
+TELETHON_CLIENT = None
+TELETHON_LOOP = None
+TOTAL_ADS_SENT = 0
+LAST_CYCLE_TIME = None
 
 def sys_log(message: str):
     """Outputs to stdout and records in log buffer."""
@@ -52,11 +58,10 @@ def sys_log(message: str):
     print(formatted, flush=True)
     LOG_BUFFER.append(formatted)
 
-# Initial log
 sys_log("Dijital Pazarım Bağımsız Servisi başlatıldı.")
 
 # ─────────────────────────────────────────────────────────────
-# 1. WEB & CANLI SERVİS PANELİ / MINI APP ROUTES
+# 1. WEB & CANLI SERVİS PANELİ / MINI APP / API ROUTES
 # ─────────────────────────────────────────────────────────────
 
 @app.route("/")
@@ -103,14 +108,66 @@ def health_status():
             pass
     return jsonify({
         "status": "online",
+        "ad_running": AD_RUNNING,
+        "ad_interval_minutes": AD_INTERVAL_SECONDS // 60,
+        "total_ads_sent": TOTAL_ADS_SENT,
+        "last_cycle": LAST_CYCLE_TIME or "Henüz tamamlanmadı",
         "brand": "Dijital Pazarım",
         "bot": "@DijitalPazarimBot",
-        "ad_account": "+18595173039",
+        "ad_account": "+18595173039 (@DijitalPazarimm)",
         "domain": PUBLIC_BASE_URL,
         "miniapp_url": MINIAPP_URL,
         "active_products": prod_count,
-        "system": "standalone_dijital_pazarim_v2"
+        "system": "standalone_dijital_pazarim_v3"
     })
+
+@app.route("/api/start", methods=["POST", "GET"])
+def api_start_ad():
+    global AD_RUNNING
+    AD_RUNNING = True
+    sys_log("[Panel] Reklam gönderimi panelden BAŞLATILDI.")
+    return jsonify({"success": True, "ad_running": AD_RUNNING, "message": "Reklam döngüsü başlatıldı."})
+
+@app.route("/api/stop", methods=["POST", "GET"])
+def api_stop_ad():
+    global AD_RUNNING
+    AD_RUNNING = False
+    sys_log("[Panel] Reklam gönderimi panelden DURDURULDU.")
+    return jsonify({"success": True, "ad_running": AD_RUNNING, "message": "Reklam döngüsü durduruldu."})
+
+@app.route("/api/broadcast", methods=["POST"])
+def api_broadcast():
+    data = request.get_json(silent=True) or request.form.to_dict()
+    text = (data.get("message") or data.get("text") or "").strip()
+    if not text:
+        return jsonify({"success": False, "error": "Duyuru metni boş olamaz."}), 400
+    
+    if not TELETHON_CLIENT or not TELETHON_LOOP:
+        return jsonify({"success": False, "error": "Kullanıcı hesabı bağlı değil veya henüz hazır değil."}), 503
+
+    async def do_broadcast(msg_text):
+        count = 0
+        dialogs = await TELETHON_CLIENT.get_dialogs(limit=60)
+        target_groups = [d for d in dialogs if d.is_group]
+        sys_log(f"[TopluDuyuru] {len(target_groups)} gruba duyuru gönderimi başlatılıyor...")
+        for group in target_groups:
+            try:
+                await TELETHON_CLIENT.send_message(group.id, msg_text)
+                count += 1
+                sys_log(f"[TopluDuyuru] Duyuru iletildi -> {group.name}")
+                await asyncio.sleep(2)
+            except Exception as e:
+                sys_log(f"[TopluDuyuru] Gönderim hatası ({group.name}): {e}")
+        sys_log(f"[TopluDuyuru] Tamamlandı! Toplam {count} gruba başarıyla duyuru iletildi.")
+        return count
+
+    future = asyncio.run_coroutine_threadsafe(do_broadcast(text), TELETHON_LOOP)
+    try:
+        sent_count = future.result(timeout=120)
+        return jsonify({"success": True, "sent_count": sent_count, "message": f"{sent_count} gruba duyuru iletildi."})
+    except Exception as e:
+        sys_log(f"[TopluDuyuru] Hata: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
 
 # ─────────────────────────────────────────────────────────────
 # 2. TELEGRAM BOT WORKER (@DijitalPazarimBot)
@@ -186,7 +243,6 @@ def handle_telegram_update(update: dict):
             cb_id = cb.get("id")
             cb_data = cb.get("data", "")
             
-            # Answer callback
             requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/answerCallbackQuery", json={"callback_query_id": cb_id}, timeout=5)
             
             if cb_data == "list_prices":
@@ -305,6 +361,7 @@ def load_ad_templates() -> list[str]:
     return templates
 
 async def run_telethon_account():
+    global TELETHON_CLIENT
     from telethon import TelegramClient, events
     from telethon.sessions import StringSession
     from telethon.errors import FloodWaitError
@@ -329,6 +386,7 @@ async def run_telethon_account():
         return
 
     me = await client.get_me()
+    TELETHON_CLIENT = client
     sys_log(f"[DijitalPazarimAccount] Aktif Hesap: {me.first_name} (@{me.username}) - {me.phone}")
 
     # Auto DM Reply: Directs private inquiries to @DijitalPazarimBot
@@ -354,12 +412,17 @@ async def run_telethon_account():
 
     # Background Ad Broadcast loop
     async def ad_broadcast_loop():
+        global TOTAL_ADS_SENT, LAST_CYCLE_TIME
         await asyncio.sleep(20) # Initial startup buffer
         templates = load_ad_templates()
         template_idx = 0
 
         while True:
             try:
+                if not AD_RUNNING:
+                    await asyncio.sleep(5)
+                    continue
+
                 if not templates:
                     templates = load_ad_templates()
                 
@@ -374,8 +437,12 @@ async def run_telethon_account():
                     sys_log(f"[DijitalPazarimAccount] Reklam döngüsü başladı ({len(target_groups)} grup hedefli)...")
 
                     for group in target_groups:
+                        if not AD_RUNNING:
+                            sys_log("[DijitalPazarimAccount] Gönderim döngü esnasında durduruldu.")
+                            break
                         try:
                             await client.send_message(group.id, current_ad)
+                            TOTAL_ADS_SENT += 1
                             sys_log(f"[DijitalPazarimAccount] Reklam paylaşıldı -> {group.name}")
                             await asyncio.sleep(30) # Delay between groups
                         except FloodWaitError as fwe:
@@ -384,23 +451,28 @@ async def run_telethon_account():
                         except Exception as e:
                             sys_log(f"[DijitalPazarimAccount] Grup gönderim hatası ({group.name}): {e}")
 
-                sys_log("[DijitalPazarimAccount] Reklam turu tamamlandı. Sonraki döngü 60 dakika sonra.")
-                # Interval between broadcast rounds (60 minutes)
-                await asyncio.sleep(3600)
+                LAST_CYCLE_TIME = datetime.now().strftime("%H:%M:%S")
+                sys_log("[DijitalPazarimAccount] Reklam turu tamamlandı. Sonraki döngü bekleniyor...")
+                
+                # Sleep in short intervals so that stop button takes effect immediately
+                elapsed = 0
+                while elapsed < AD_INTERVAL_SECONDS and AD_RUNNING:
+                    await asyncio.sleep(2)
+                    elapsed += 2
 
             except Exception as e:
                 sys_log(f"[DijitalPazarimAccount] Döngü hatası: {e}")
-                await asyncio.sleep(60)
+                await asyncio.sleep(30)
 
     asyncio.create_task(ad_broadcast_loop())
     await client.run_until_disconnected()
 
 def start_telethon_thread():
-    import asyncio
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
+    global TELETHON_LOOP
+    TELETHON_LOOP = asyncio.new_event_loop()
+    asyncio.set_event_loop(TELETHON_LOOP)
     try:
-        loop.run_until_complete(run_telethon_account())
+        TELETHON_LOOP.run_until_complete(run_telethon_account())
     except Exception as e:
         sys_log(f"[DijitalPazarimAccount] Thread hatası: {e}")
 

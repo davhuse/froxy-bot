@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta http-equiv="Content-Language" content="tr">
   <meta name="google" content="notranslate">
-  <meta name="language" content="Turkish">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Dijital Pazarım - Kod, Kupon & Dijital Lisans</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -91,7 +90,7 @@
     }
 
     .brand-title {
-      font-size: 18px;
+      font-size: 17px;
       font-weight: 800;
       letter-spacing: -0.3px;
       background: linear-gradient(135deg, #ffffff 40%, var(--purple-light) 100%);
@@ -107,22 +106,57 @@
       text-transform: uppercase;
     }
 
+    .header-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+    }
+
+    /* Language Switcher */
+    .lang-switch {
+      display: flex;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      padding: 2px;
+      gap: 2px;
+    }
+
+    .lang-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .lang-btn.active {
+      background: var(--purple-primary);
+      color: #ffffff;
+      box-shadow: 0 2px 8px var(--purple-glow);
+    }
+
     .live-status {
       display: flex;
       align-items: center;
       gap: 6px;
-      padding: 5px 10px;
+      padding: 4px 8px;
       background: rgba(34, 197, 94, 0.12);
       border: 1px solid rgba(34, 197, 94, 0.3);
       border-radius: 20px;
-      font-size: 11px;
-      font-weight: 600;
+      font-size: 10px;
+      font-weight: 700;
       color: #4ade80;
     }
 
     .status-dot {
-      width: 7px;
-      height: 7px;
+      width: 6px;
+      height: 6px;
       border-radius: 50%;
       background: #22c55e;
       box-shadow: 0 0 8px #22c55e;
@@ -396,13 +430,20 @@
       <div class="brand-info">
         <img class="brand-avatar" src="assets/logo.jpg" alt="Dijital Pazarım Logo" onerror="this.src='/static/dijitalpazarim_logo.jpg'">
         <div>
-          <div class="brand-title">Dijital Pazarım</div>
-          <div class="brand-sub">Kod • Kupon • Üyelik</div>
+          <div class="brand-title" id="tBrandTitle">Dijital Pazarım</div>
+          <div class="brand-sub" id="tBrandSub">Kod • Kupon • Üyelik</div>
         </div>
       </div>
-      <div class="live-status">
-        <div class="status-dot"></div>
-        <span>Aktif Stok</span>
+      <div class="header-right">
+        <!-- Language Switcher -->
+        <div class="lang-switch">
+          <button class="lang-btn active" id="btnLangTR" onclick="switchLanguage('tr')">TR</button>
+          <button class="lang-btn" id="btnLangEN" onclick="switchLanguage('en')">EN</button>
+        </div>
+        <div class="live-status">
+          <div class="status-dot"></div>
+          <span id="tStockStatus">Aktif Stok</span>
+        </div>
       </div>
     </header>
 
@@ -414,19 +455,19 @@
 
     <!-- Category Filter Tabs -->
     <div class="filter-scroll">
-      <button class="filter-btn active" data-cat="tumu">Tüm Ürünler</button>
-      <button class="filter-btn" data-cat="market">Kupon & Market</button>
-      <button class="filter-btn" data-cat="dizi">Dizi & Film</button>
-      <button class="filter-btn" data-cat="ai">Yapay Zeka</button>
-      <button class="filter-btn" data-cat="muzik">Müzik & Video</button>
+      <button class="filter-btn active" data-cat="tumu" id="tabAll">Tüm Ürünler</button>
+      <button class="filter-btn" data-cat="market" id="tabMarket">Kupon & Market</button>
+      <button class="filter-btn" data-cat="dizi" id="tabStreaming">Dizi & Film</button>
+      <button class="filter-btn" data-cat="ai" id="tabAI">Yapay Zeka</button>
+      <button class="filter-btn" data-cat="muzik" id="tabMusic">Müzik & Video</button>
     </div>
 
     <!-- Trust Banner -->
     <div class="trust-banner">
-      <div class="trust-text">
+      <div class="trust-text" id="tTrustBanner">
         <strong>Referanslarımız mevcuttur.</strong> Tüm indirim kuponları ve hesaplar anında teslim edilmektedir.
       </div>
-      <a href="https://t.me/DijitalPazarimBot" target="_blank" class="support-pill">Destek</a>
+      <a href="https://t.me/DijitalPazarimBot" target="_blank" class="support-pill" id="tSupportBtn">Destek</a>
     </div>
 
     <!-- Products Container -->
@@ -439,7 +480,7 @@
     </div>
 
     <!-- Trust Footer -->
-    <footer class="trust-footer">
+    <footer class="trust-footer" id="tFooter">
       <div>Güvenli Alışveriş • <span>Shopier Güvencesi</span> • Anında Teslimat</div>
       <div>© 2026 Dijital Pazarım Tüm Hakları Saklıdır.</div>
     </footer>
@@ -456,9 +497,160 @@
       } catch (e) {}
     }
 
+    // Language Dictionary
+    let currentLang = localStorage.getItem('dp_lang') || 'tr';
+
+    const I18N = {
+      tr: {
+        brandTitle: "Dijital Pazarım",
+        brandSub: "Kod • Kupon • Üyelik",
+        stockStatus: "Aktif Stok",
+        searchPlaceholder: "Ürün, kupon veya hesap ara...",
+        tabAll: "Tüm Ürünler",
+        tabMarket: "Kupon & Market",
+        tabStreaming: "Dizi & Film",
+        tabAI: "Yapay Zeka",
+        tabMusic: "Müzik & Video",
+        trustBanner: "<strong>Referanslarımız mevcuttur.</strong> Tüm indirim kuponları ve hesaplar anında teslim edilmektedir.",
+        supportBtn: "Destek",
+        buyBtn: "Satın Al",
+        emptyState: "Aradığınız kriterlere uygun ürün bulunamadı.",
+        footerLine1: "Güvenli Alışveriş • <span>Shopier Güvencesi</span> • Anında Teslimat",
+        footerLine2: "© 2026 Dijital Pazarım Tüm Hakları Saklıdır."
+      },
+      en: {
+        brandTitle: "Digital Market",
+        brandSub: "Codes • Coupons • Licenses",
+        stockStatus: "In Stock",
+        searchPlaceholder: "Search products, codes or accounts...",
+        tabAll: "All Products",
+        tabMarket: "Coupons & Market",
+        tabStreaming: "Movies & Shows",
+        tabAI: "Artificial Intelligence",
+        tabMusic: "Music & Video",
+        trustBanner: "<strong>Verified Merchant.</strong> All discount codes and digital subscriptions are delivered instantly.",
+        supportBtn: "Support",
+        buyBtn: "Buy Now",
+        emptyState: "No products found matching your search.",
+        footerLine1: "Secure Payment • <span>Shopier Guarantee</span> • Instant Delivery",
+        footerLine2: "© 2026 Dijital Pazarım. All Rights Reserved."
+      }
+    };
+
+    // English Translations for Product Texts
+    const EN_PRODUCT_DATA = {
+      "51358950": {
+        title: "Disney+ 1 Month Shared Account",
+        desc: "Disney+ 1-month shared account access. 4K Ultra HD quality with 30-day warranty. Instant auto-delivery.",
+        badge: "Special Deal",
+        cat: "MOVIES & SHOWS"
+      },
+      "51358951": {
+        title: "Disney+ 1 Month Private Profile",
+        desc: "Disney+ 1-month private personal profile with custom PIN protection. 4K Ultra HD quality, 30 days guaranteed.",
+        badge: "Private Profile",
+        cat: "MOVIES & SHOWS"
+      },
+      "51359045": {
+        title: "Trendyol Go 800/300 TL Discount Coupon",
+        desc: "Trendyol Go Market coupon valid on orders over 800 TL with 300 TL instant discount. Instant delivery.",
+        badge: "300 TL Off",
+        cat: "COUPON & MARKET"
+      },
+      "51359046": {
+        title: "Trendyol Food 750/250 TL Discount Code",
+        desc: "Trendyol Food coupon providing 250 TL instant discount on orders of 750 TL and above. Instant delivery.",
+        badge: "250 TL Off",
+        cat: "FOOD & COUPON"
+      },
+      "51359047": {
+        title: "Shell 75 TL Fuel Points Voucher",
+        desc: "Shell voucher code providing 75 TL fuel or gas discount at Shell stations. Instant delivery.",
+        badge: "75 TL Points",
+        cat: "FUEL & COMMUTE"
+      },
+      "51359048": {
+        title: "Uber 1,000 TL Discount Pack (500+500 TL)",
+        desc: "Uber ride discount bundle containing two 500 TL discount codes (1,000 TL total). Instant delivery.",
+        badge: "1,000 TL Pack",
+        cat: "TRANSPORTATION"
+      },
+      "51359049": {
+        title: "YouTube Premium 3 Months Individual Code",
+        desc: "YouTube and YouTube Music 3-month ad-free personal subscription activation code. Instant delivery.",
+        badge: "3 Months Code",
+        cat: "MUSIC & VIDEO"
+      },
+      "51359050": {
+        title: "Spotify Premium 4 Months Individual Code",
+        desc: "Spotify Premium 4-month individual subscription promo code. Ad-free offline music. Instant delivery.",
+        badge: "4 Months Code",
+        cat: "MUSIC & AUDIO"
+      },
+      "51359051": {
+        title: "Gemini Pro 18 Months (+5 Gift Invites)",
+        desc: "Google Gemini Pro 18-month access plus 5 gift invite licenses. Advanced AI workspace. Instant delivery.",
+        badge: "18M + 5 Invites",
+        cat: "ARTIFICIAL INTEL"
+      },
+      "51359052": {
+        title: "Gemini Pro 18 Months Personal Invite",
+        desc: "Google Gemini Pro 18-month private invite link activated directly on your personal account. 30-day warranty.",
+        badge: "18 Months Invite",
+        cat: "ARTIFICIAL INTEL"
+      },
+      "51359053": {
+        title: "Gemini Pro 12 Months Personal Invite",
+        desc: "Google Gemini Pro 12-month private invite link activated on your personal account. Guaranteed access.",
+        badge: "12 Months Invite",
+        cat: "ARTIFICIAL INTEL"
+      },
+      "51359054": {
+        title: "Gemini Pro 1 Month Personal Invite",
+        desc: "Google Gemini Pro 1-month fast start private invite link for your own account. Instant delivery.",
+        badge: "1 Month Invite",
+        cat: "ARTIFICIAL INTEL"
+      },
+      "51359055": {
+        title: "Netflix 4K Ultra HD Personal Profile",
+        desc: "Netflix 4K Ultra HD personal private profile (30 Days). Uninterrupted viewing with full replacement guarantee.",
+        badge: "4K UHD Profile",
+        cat: "MOVIES & SHOWS"
+      }
+    };
+
     let products = [];
     let currentCategory = 'tumu';
     let searchQuery = '';
+
+    function switchLanguage(lang) {
+      currentLang = lang;
+      localStorage.setItem('dp_lang', lang);
+      document.getElementById('btnLangTR').classList.toggle('active', lang === 'tr');
+      document.getElementById('btnLangEN').classList.toggle('active', lang === 'en');
+      applyStaticTranslations();
+      renderProducts();
+    }
+
+    function applyStaticTranslations() {
+      const t = I18N[currentLang];
+      document.getElementById('tBrandTitle').textContent = t.brandTitle;
+      document.getElementById('tBrandSub').textContent = t.brandSub;
+      document.getElementById('tStockStatus').textContent = t.stockStatus;
+      document.getElementById('searchInput').placeholder = t.searchPlaceholder;
+      document.getElementById('tabAll').textContent = t.tabAll;
+      document.getElementById('tabMarket').textContent = t.tabMarket;
+      document.getElementById('tabStreaming').textContent = t.tabStreaming;
+      document.getElementById('tabAI').textContent = t.tabAI;
+      document.getElementById('tabMusic').textContent = t.tabMusic;
+      document.getElementById('tTrustBanner').innerHTML = t.trustBanner;
+      document.getElementById('tSupportBtn').textContent = t.supportBtn;
+      document.getElementById('emptyState').textContent = t.emptyState;
+      document.getElementById('tFooter').innerHTML = `
+        <div>${t.footerLine1}</div>
+        <div>${t.footerLine2}</div>
+      `;
+    }
 
     // Fetch products
     async function loadProducts() {
@@ -495,24 +687,32 @@
       }
       emptyEl.style.display = 'none';
 
+      const t = I18N[currentLang];
+
       filtered.forEach(p => {
+        const enInfo = EN_PRODUCT_DATA[p.id];
+        const displayTitle = (currentLang === 'en' && enInfo) ? enInfo.title : p.title;
+        const displayDesc = (currentLang === 'en' && enInfo) ? enInfo.desc : p.desc;
+        const displayBadge = (currentLang === 'en' && enInfo) ? enInfo.badge : (p.badge || '');
+        const displayCat = (currentLang === 'en' && enInfo) ? enInfo.cat : p.category_label;
+
         const card = document.createElement('div');
         card.className = 'product-card';
         card.innerHTML = `
           <div class="product-thumb-wrap">
-            <img class="product-thumb" src="${p.image}" alt="${p.title}" onerror="this.src='assets/logo.jpg'">
-            ${p.badge ? `<div class="product-badge-corner">${p.badge}</div>` : ''}
+            <img class="product-thumb" src="${p.image}" alt="${displayTitle}" onerror="this.src='assets/logo.jpg'">
+            ${displayBadge ? `<div class="product-badge-corner">${displayBadge}</div>` : ''}
           </div>
           <div class="product-details">
             <div>
-              <div class="product-cat-tag">${p.category_label}</div>
-              <h3 class="product-title">${p.title}</h3>
-              <p class="product-desc">${p.desc}</p>
+              <div class="product-cat-tag">${displayCat}</div>
+              <h3 class="product-title">${displayTitle}</h3>
+              <p class="product-desc">${displayDesc}</p>
             </div>
             <div class="product-footer">
               <div class="product-price">${p.price}</div>
               <a href="${p.url}" target="_blank" class="buy-btn" onclick="openShopier('${p.url}', event)">
-                Satın Al
+                ${t.buyBtn}
               </a>
             </div>
           </div>
@@ -544,6 +744,8 @@
       renderProducts();
     });
 
+    // Initialize
+    switchLanguage(currentLang);
     loadProducts();
   </script>
 </body>
