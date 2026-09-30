@@ -554,6 +554,15 @@
         <div class="status-card-value" id="productCount">13 Ürün</div>
         <div class="status-card-desc">Jarvis API • Türkçe & .99 fiyatlama</div>
       </div>
+
+      <div class="status-card">
+        <div class="status-card-header">
+          <span class="status-card-title"><i class="fa-solid fa-shield-halved"></i> Hedef Havuzu & Watchdog</span>
+          <span class="status-pill online" id="watchdogBadge"><span class="status-dot"></span> AKTİF</span>
+        </div>
+        <div class="status-card-value" id="targetCount">66 Hedef Grup</div>
+        <div class="status-card-desc" id="watchdogDesc">Otomatik katılma & sürekli gözetim</div>
+      </div>
     </div>
 
     <!-- Broadcast Panel -->
@@ -614,6 +623,14 @@
           }
           document.getElementById('adAccountDesc').textContent = 
             `Toplam ${s.total_ads_sent || 0} reklam • Son döngü: ${s.last_cycle || 'Bekleniyor'}`;
+          if (s.target_groups_count !== undefined) {
+            document.getElementById('targetCount').textContent = 
+              `${s.target_groups_count} Hedef (${s.joined_groups_count || 0} Üye)`;
+          }
+          if (s.watchdog) {
+            document.getElementById('watchdogDesc').textContent = 
+              `Gözetim: ${s.watchdog.status} • Son kontrol: ${s.watchdog.last_check || 'Aktif'}`;
+          }
         }
       } catch (e) {
         console.error('Status fetch error:', e);

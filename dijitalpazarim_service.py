@@ -19,6 +19,7 @@ from datetime import datetime
 import threading
 import asyncio
 import time
+import random
 import requests
 from pathlib import Path
 from flask import Flask, send_from_directory, render_template, jsonify, request
@@ -50,6 +51,41 @@ TELETHON_CLIENT = None
 TELETHON_LOOP = None
 TOTAL_ADS_SENT = 0
 LAST_CYCLE_TIME = None
+JOINED_GROUPS_COUNT = 0
+
+t_bot: threading.Thread | None = None
+t_acc: threading.Thread | None = None
+
+WATCHDOG_STATS = {
+    "status": "active",
+    "last_check": None,
+    "bot_restarts": 0,
+    "telethon_restarts": 0
+}
+
+def load_target_groups() -> list[str]:
+    """Hedef ticaret ve kupon gruplarini gruplar.txt dosyasindan okur."""
+    g_file = BASE_DIR / "gruplar.txt"
+    if not g_file.exists():
+        return []
+    targets = []
+    for line in g_file.read_text(encoding="utf-8").splitlines():
+        line = line.strip().lstrip("@")
+        if line and not line.startswith("#"):
+            targets.append(line)
+    return targets
+
+def load_blacklist() -> set[str]:
+    """Kara listedeki gruplari blacklist.txt dosyasindan okur."""
+    b_file = BASE_DIR / "blacklist.txt"
+    if not b_file.exists():
+        return set()
+    b_set = set()
+    for line in b_file.read_text(encoding="utf-8").splitlines():
+        line = line.strip().lstrip("@").lower()
+        if line and not line.startswith("#"):
+            b_set.add(line)
+    return b_set
 
 def sys_log(message: str):
     """Outputs to stdout and records in log buffer."""
@@ -106,6 +142,7 @@ def health_status():
             prod_count = len(json.loads(prod_file.read_text(encoding="utf-8")))
         except Exception:
             pass
+    targets = load_target_groups()
     return jsonify({
         "status": "online",
         "ad_running": AD_RUNNING,
@@ -118,6 +155,16 @@ def health_status():
         "domain": PUBLIC_BASE_URL,
         "miniapp_url": MINIAPP_URL,
         "active_products": prod_count,
+        "target_groups_count": len(targets),
+        "joined_groups_count": JOINED_GROUPS_COUNT,
+        "watchdog": {
+            "status": WATCHDOG_STATS.get("status", "active"),
+            "last_check": WATCHDOG_STATS.get("last_check"),
+            "bot_alive": t_bot.is_alive() if t_bot else False,
+            "telethon_alive": t_acc.is_alive() if t_acc else False,
+            "bot_restarts": WATCHDOG_STATS.get("bot_restarts", 0),
+            "telethon_restarts": WATCHDOG_STATS.get("telethon_restarts", 0)
+        },
         "system": "standalone_dijital_pazarim_v3"
     })
 
@@ -361,10 +408,15 @@ def load_ad_templates() -> list[str]:
     return templates
 
 async def run_telethon_account():
-    global TELETHON_CLIENT
+    global TELETHON_CLIENT, JOINED_GROUPS_COUNT
     from telethon import TelegramClient, events
     from telethon.sessions import StringSession
-    from telethon.errors import FloodWaitError
+    from telethon.tl.functions.channels import JoinChannelRequest
+    from telethon.errors import (
+        FloodWaitError, SlowModeWaitError, ChatWriteForbiddenError,
+        UserBannedInChannelError, ChannelPrivateError, UsernameNotOccupiedError,
+        UsernameInvalidError
+    )
 
     session_to_use = ACCOUNT_SESSION
     if not session_to_use:
@@ -410,9 +462,9 @@ async def run_telethon_account():
         except Exception as e:
             sys_log(f"[DijitalPazarimAccount] DM yanıt hatası: {e}")
 
-    # Background Ad Broadcast loop
+    # Background Ad Broadcast & Auto-Join loop
     async def ad_broadcast_loop():
-        global TOTAL_ADS_SENT, LAST_CYCLE_TIME
+        global TOTAL_ADS_SENT, LAST_CYCLE_TIME, JOINED_GROUPS_COUNT
         await asyncio.sleep(20) # Initial startup buffer
         templates = load_ad_templates()
         template_idx = 0
@@ -430,31 +482,82 @@ async def run_telethon_account():
                     current_ad = templates[template_idx % len(templates)]
                     template_idx += 1
 
-                    # Get active trade dialogs
-                    dialogs = await client.get_dialogs(limit=50)
-                    target_groups = [d for d in dialogs if d.is_group]
+                    # 1. Mevcut diyalogları ve üye olunan grupları tara
+                    dialogs = await client.get_dialogs(limit=100)
+                    joined_groups = {}
+                    joined_usernames = set()
+                    for d in dialogs:
+                        if d.is_group:
+                            joined_groups[d.id] = d
+                            uname = getattr(d.entity, 'username', None)
+                            if uname:
+                                joined_usernames.add(uname.lower())
+                    
+                    JOINED_GROUPS_COUNT = len(joined_groups)
 
-                    sys_log(f"[DijitalPazarimAccount] Reklam döngüsü başladı ({len(target_groups)} grup hedefli)...")
+                    # 2. gruplar.txt listesini kontrol et ve henüz üye olunmamış hedeflere güvenli katıl (döngü başı maks 2 grup)
+                    targets = load_target_groups()
+                    blacklist = load_blacklist()
+                    joins_this_cycle = 0
+                    max_joins_per_cycle = 2
 
-                    for group in target_groups:
+                    for target_name in targets:
+                        if not AD_RUNNING or joins_this_cycle >= max_joins_per_cycle:
+                            break
+                        t_clean = target_name.lower().lstrip('@')
+                        if t_clean in blacklist or t_clean in joined_usernames:
+                            continue
+                        try:
+                            sys_log(f"[DijitalPazarimAccount] Hedef gruba katılınıyor: @{t_clean}")
+                            entity = await client.get_entity(t_clean)
+                            await client(JoinChannelRequest(entity))
+                            joined_usernames.add(t_clean)
+                            joined_groups[entity.id] = entity
+                            joins_this_cycle += 1
+                            JOINED_GROUPS_COUNT = len(joined_groups)
+                            sys_log(f"[DijitalPazarimAccount] Gruba başarıyla katıldı: @{t_clean}")
+                            await asyncio.sleep(15)
+                        except FloodWaitError as fwe:
+                            sys_log(f"[DijitalPazarimAccount] Katılma FloodWait: {fwe.seconds} sn.")
+                            break
+                        except (UserBannedInChannelError, ChannelPrivateError, UsernameNotOccupiedError, UsernameInvalidError) as e:
+                            sys_log(f"[DijitalPazarimAccount] Grup atlandı (@{t_clean}): {type(e).__name__}")
+                        except Exception as e:
+                            sys_log(f"[DijitalPazarimAccount] Gruba katılma hatası (@{t_clean}): {e}")
+
+                    sys_log(f"[DijitalPazarimAccount] Reklam döngüsü başladı ({len(joined_groups)} aktif grup)...")
+
+                    for gid, group in list(joined_groups.items()):
                         if not AD_RUNNING:
                             sys_log("[DijitalPazarimAccount] Gönderim döngü esnasında durduruldu.")
                             break
+
+                        g_title = getattr(group, 'name', str(gid))
+                        g_uname = getattr(getattr(group, 'entity', None), 'username', '') or ''
+                        if g_uname.lower() in blacklist:
+                            continue
+
                         try:
-                            await client.send_message(group.id, current_ad)
+                            target_dest = group.id if hasattr(group, 'id') else gid
+                            await client.send_message(target_dest, current_ad)
                             TOTAL_ADS_SENT += 1
-                            sys_log(f"[DijitalPazarimAccount] Reklam paylaşıldı -> {group.name}")
-                            await asyncio.sleep(30) # Delay between groups
+                            sys_log(f"[DijitalPazarimAccount] Reklam paylaşıldı -> {g_title}")
+                            await asyncio.sleep(random.randint(30, 45))
                         except FloodWaitError as fwe:
                             sys_log(f"[DijitalPazarimAccount] FloodWait: {fwe.seconds} saniye bekleniyor...")
                             await asyncio.sleep(fwe.seconds + 5)
+                        except SlowModeWaitError as sm:
+                            sys_log(f"[DijitalPazarimAccount] SlowMode ({g_title}): {sm.seconds} saniye.")
+                            await asyncio.sleep(5)
+                        except ChatWriteForbiddenError:
+                            sys_log(f"[DijitalPazarimAccount] Yazma izni yok, atlandı -> {g_title}")
                         except Exception as e:
-                            sys_log(f"[DijitalPazarimAccount] Grup gönderim hatası ({group.name}): {e}")
+                            sys_log(f"[DijitalPazarimAccount] Grup gönderim hatası ({g_title}): {e}")
 
                 LAST_CYCLE_TIME = datetime.now().strftime("%H:%M:%S")
                 sys_log("[DijitalPazarimAccount] Reklam turu tamamlandı. Sonraki döngü bekleniyor...")
                 
-                # Sleep in short intervals so that stop button takes effect immediately
+                # Bekleme döngüsü (panelden durdurulduğunda hemen yanıt verir)
                 elapsed = 0
                 while elapsed < AD_INTERVAL_SECONDS and AD_RUNNING:
                     await asyncio.sleep(2)
@@ -477,7 +580,38 @@ def start_telethon_thread():
         sys_log(f"[DijitalPazarimAccount] Thread hatası: {e}")
 
 # ─────────────────────────────────────────────────────────────
-# 4. SERVICE RUNNER
+# 4. WATCHDOG SUPERVISOR
+# ─────────────────────────────────────────────────────────────
+
+def watchdog_supervisor():
+    """Background watchdog thread monitoring bot and telethon workers."""
+    global t_bot, t_acc
+    time.sleep(15)
+    sys_log("[Watchdog] Sürekli gözetim ve otomatik kurtarma mekanizması aktif.")
+    while True:
+        try:
+            WATCHDOG_STATS["last_check"] = datetime.now().strftime("%H:%M:%S")
+            # 1. Check Bot Thread
+            if t_bot is None or not t_bot.is_alive():
+                sys_log("⚠️ [Watchdog] @DijitalPazarimBot iş parçacığı durmuş! Yeniden başlatılıyor...")
+                t_bot = threading.Thread(target=telegram_bot_worker, daemon=True, name="dp-bot-worker")
+                t_bot.start()
+                WATCHDOG_STATS["bot_restarts"] += 1
+            
+            # 2. Check Telethon Thread
+            if t_acc is None or not t_acc.is_alive():
+                sys_log("⚠️ [Watchdog] Telethon reklam hesabı iş parçacığı durmuş! Yeniden başlatılıyor...")
+                t_acc = threading.Thread(target=start_telethon_thread, daemon=True, name="dp-account-worker")
+                t_acc.start()
+                WATCHDOG_STATS["telethon_restarts"] += 1
+
+            time.sleep(15)
+        except Exception as e:
+            sys_log(f"[Watchdog] Hata: {e}")
+            time.sleep(15)
+
+# ─────────────────────────────────────────────────────────────
+# 5. SERVICE RUNNER
 # ─────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
@@ -488,6 +622,10 @@ if __name__ == "__main__":
     # 2. Start User Account Ad Worker Thread (+18595173039)
     t_acc = threading.Thread(target=start_telethon_thread, daemon=True, name="dp-account-worker")
     t_acc.start()
+
+    # 3. Start Watchdog Supervisor Thread
+    t_watchdog = threading.Thread(target=watchdog_supervisor, daemon=True, name="dp-watchdog")
+    t_watchdog.start()
 
     port = int(os.environ.get("PORT", 5000))
     sys_log(f"[DijitalPazarim] Web servisi {port} portunda başlatılıyor...")
