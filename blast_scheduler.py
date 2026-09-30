@@ -18,7 +18,7 @@ import time
 import uuid
 
 
-ACCOUNT_ORDER = ("KeyVadiOnline", "FroxyOnline", "LisansArenaOnline", "JarvisCraftOnline")
+ACCOUNT_ORDER = ("KeyVadiOnline", "FroxyOnline", "LisansArenaOnline")
 TERMINAL_TARGET_STATES = {
     "accepted", "failed", "skipped", "skipped_uncertain",
 }

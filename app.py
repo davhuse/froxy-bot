@@ -147,7 +147,6 @@ def add_security_headers(response):
     if (
         request.path.startswith('/la/')
         or request.path.startswith('/api/la/')
-        or request.path.startswith('/jarvis/')
         or request.path.startswith('/keyvadi')
         or request.path.startswith('/froxy')
         or request.path == '/api/shopier/lisansarena/webhook'
@@ -3026,13 +3025,6 @@ class _MountedRootMiddleware:
             environ['PATH_INFO'] = '/'
         return self.wsgi_app(environ, start_response)
 
-@app.route('/jarvis')
-@app.route('/jarvis/')
-@app.route('/jarvis/app')
-def jarvis_miniapp_view():
-    from jarvis_subscriptions import load_subscriptions
-    return render_template('jarvis_miniapp.html', subscriptions=load_subscriptions())
-
 try:
     from miniapp.server import app as keyvadi_miniapp
     mounts['/keyvadi'] = _MountedRootMiddleware(keyvadi_miniapp)
@@ -3055,15 +3047,6 @@ try:
     print('[App] Froxy Neural AI Studio Mini App mounted at /froxy and /froxy/app')
 except Exception as exc:
     print(f'[App] Froxy Mini App mount unavailable: {exc}')
-
-try:
-    from miniapp_dijitalpazarim.server import app as dijitalpazarim_miniapp
-    mounts['/dp'] = _MountedRootMiddleware(dijitalpazarim_miniapp)
-    mounts['/dp/app'] = _MountedRootMiddleware(dijitalpazarim_miniapp)
-    mounts['/dijitalpazarim'] = _MountedRootMiddleware(dijitalpazarim_miniapp)
-    print('[App] Dijital Pazarim Mini App mounted at /dp and /dijitalpazarim')
-except Exception as exc:
-    print(f'[App] Dijital Pazarim Mini App mount unavailable: {exc}')
 
 if mounts:
     app.wsgi_app = DispatcherMiddleware(app.wsgi_app, mounts)
