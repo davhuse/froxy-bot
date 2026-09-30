@@ -56,6 +56,10 @@ JOINED_GROUPS_COUNT = 0
 t_bot: threading.Thread | None = None
 t_acc: threading.Thread | None = None
 
+_BOT_WORKER_LOCK = threading.Lock()
+_IS_BOT_WORKER_RUNNING = False
+BOT_HEALTH_STATE = {"status": "starting", "last_ok": None, "last_conflict": None, "conflict_count": 0}
+
 WATCHDOG_STATS = {
     "status": "active",
     "last_check": None,
@@ -161,6 +165,7 @@ def health_status():
             "status": WATCHDOG_STATS.get("status", "active"),
             "last_check": WATCHDOG_STATS.get("last_check"),
             "bot_alive": t_bot.is_alive() if t_bot else False,
+            "bot_health": BOT_HEALTH_STATE,
             "telethon_alive": t_acc.is_alive() if t_acc else False,
             "bot_restarts": WATCHDOG_STATS.get("bot_restarts", 0),
             "telethon_restarts": WATCHDOG_STATS.get("telethon_restarts", 0)
@@ -240,14 +245,35 @@ def get_product_summary() -> str:
         return "Güncel ürünleri mağazadan inceleyebilirsiniz."
 
 def telegram_bot_worker():
-    """Background polling loop for @DijitalPazarimBot."""
+    """Background polling loop for @DijitalPazarimBot with robust conflict resolution."""
+    global _IS_BOT_WORKER_RUNNING, BOT_HEALTH_STATE
+
     if not BOT_TOKEN or BOT_TOKEN == "YOUR_TOKEN":
         sys_log("[DijitalPazarimBot] Token bulunamadı, bot başlatılamıyor.")
         return
 
+    with _BOT_WORKER_LOCK:
+        if _IS_BOT_WORKER_RUNNING:
+            sys_log("[DijitalPazarimBot] Polling iş parçacığı zaten aktif, mükerrer başlatma engellendi.")
+            return
+        _IS_BOT_WORKER_RUNNING = True
+
     sys_log(f"[DijitalPazarimBot] Bot servisi başlatılıyor (@DijitalPazarimBot)...")
-    
-    # 1. Update Menu Button to Mini App (/dp)
+    BOT_HEALTH_STATE["status"] = "starting"
+
+    # 1. Reset any stale webhook or pending updates on startup
+    try:
+        r_reset = requests.post(
+            f"https://api.telegram.org/bot{BOT_TOKEN}/deleteWebhook",
+            json={"drop_pending_updates": True},
+            timeout=10
+        )
+        desc = r_reset.json().get('description', 'OK') if r_reset.status_code == 200 else str(r_reset.status_code)
+        sys_log(f"[DijitalPazarimBot] Başlangıç webhook/kuyruk temizliği yapıldı: {desc}")
+    except Exception as e:
+        sys_log(f"[DijitalPazarimBot] deleteWebhook uyarısı: {e}")
+
+    # 2. Update Menu Button to Mini App (/dp)
     try:
         btn = {
             "type": "web_app",
@@ -266,26 +292,60 @@ def telegram_bot_worker():
     except Exception as e:
         sys_log(f"[DijitalPazarimBot] Menu button hatası: {e}")
 
+    session = requests.Session()
+    adapter = requests.adapters.HTTPAdapter(max_retries=2, pool_connections=5, pool_maxsize=5)
+    session.mount('https://', adapter)
+
     offset = 0
-    while True:
-        try:
-            r = requests.get(
-                f"https://api.telegram.org/bot{BOT_TOKEN}/getUpdates",
-                params={"offset": offset, "timeout": 20},
-                timeout=25
-            )
-            if r.status_code == 200:
-                data = r.json()
-                for update in data.get("result", []):
-                    offset = update["update_id"] + 1
-                    handle_telegram_update(update)
-            elif r.status_code == 409:
-                sys_log("[DijitalPazarimBot] 409 Conflict, 5 saniye bekleniyor...")
-                time.sleep(5)
-            else:
-                time.sleep(2)
-        except Exception as e:
-            time.sleep(3)
+    in_conflict_state = False
+
+    try:
+        while True:
+            try:
+                r = session.get(
+                    f"https://api.telegram.org/bot{BOT_TOKEN}/getUpdates",
+                    params={"offset": offset, "timeout": 15},
+                    timeout=(5, 25)
+                )
+                if r.status_code == 200:
+                    data = r.json()
+                    if in_conflict_state:
+                        sys_log("[DijitalPazarimBot] Çakışma (409) giderildi, bot dinleme döngüsü normale döndü.")
+                        in_conflict_state = False
+                    BOT_HEALTH_STATE["status"] = "online"
+                    BOT_HEALTH_STATE["last_ok"] = datetime.now().strftime("%H:%M:%S")
+
+                    for update in data.get("result", []):
+                        offset = update["update_id"] + 1
+                        handle_telegram_update(update)
+                elif r.status_code == 409:
+                    BOT_HEALTH_STATE["status"] = "conflict"
+                    BOT_HEALTH_STATE["last_conflict"] = datetime.now().strftime("%H:%M:%S")
+                    BOT_HEALTH_STATE["conflict_count"] += 1
+
+                    if not in_conflict_state:
+                        sys_log("[DijitalPazarimBot] ⚠️ 409 Conflict tespit edildi. Askıdaki bağlantı temizlenip 15 saniye bekleniyor...")
+                        in_conflict_state = True
+                    try:
+                        requests.post(
+                            f"https://api.telegram.org/bot{BOT_TOKEN}/deleteWebhook",
+                            json={"drop_pending_updates": True},
+                            timeout=10
+                        )
+                    except Exception:
+                        pass
+                    time.sleep(15)
+                else:
+                    time.sleep(2)
+            except requests.exceptions.Timeout:
+                # Normal long polling timeout, just continue
+                continue
+            except Exception as e:
+                time.sleep(3)
+    finally:
+        with _BOT_WORKER_LOCK:
+            _IS_BOT_WORKER_RUNNING = False
+        BOT_HEALTH_STATE["status"] = "stopped"
 
 def handle_telegram_update(update: dict):
     try:
@@ -414,7 +474,45 @@ GROUP_DELAY_MAX_SECONDS = 45  # 45 seconds
 
 RECENT_JOIN_TIMESTAMPS: list[float] = []
 FAILED_JOIN_TARGETS: set[str] = set()
+PENDING_INVITES: set[str] = set()
 JOIN_FLOOD_UNTIL: float = 0.0
+
+def load_persistent_join_state():
+    global RECENT_JOIN_TIMESTAMPS, FAILED_JOIN_TARGETS, PENDING_INVITES
+    p_file = BASE_DIR / "dijitalpazarim_pending_invites.json"
+    if p_file.exists():
+        try:
+            PENDING_INVITES = set(json.loads(p_file.read_text(encoding="utf-8")))
+        except Exception:
+            pass
+    f_file = BASE_DIR / "dijitalpazarim_failed_targets.json"
+    if f_file.exists():
+        try:
+            FAILED_JOIN_TARGETS = set(json.loads(f_file.read_text(encoding="utf-8")))
+        except Exception:
+            pass
+    h_file = BASE_DIR / "dijitalpazarim_join_history.json"
+    if h_file.exists():
+        try:
+            RECENT_JOIN_TIMESTAMPS = [t for t in json.loads(h_file.read_text(encoding="utf-8")) if time.time() - t < 3600]
+        except Exception:
+            pass
+
+def save_persistent_join_state():
+    try:
+        (BASE_DIR / "dijitalpazarim_pending_invites.json").write_text(
+            json.dumps(list(PENDING_INVITES), ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+        (BASE_DIR / "dijitalpazarim_failed_targets.json").write_text(
+            json.dumps(list(FAILED_JOIN_TARGETS), ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+        (BASE_DIR / "dijitalpazarim_join_history.json").write_text(
+            json.dumps(RECENT_JOIN_TIMESTAMPS, ensure_ascii=False), encoding="utf-8"
+        )
+    except Exception:
+        pass
+
+load_persistent_join_state()
 
 def get_recent_joins_count(window_seconds: int = 3600) -> int:
     global RECENT_JOIN_TIMESTAMPS
@@ -556,41 +654,53 @@ async def run_telethon_account():
                             not_joined = []
                             for target_name in targets:
                                 t_clean = target_name.lower().lstrip('@')
-                                if t_clean and t_clean not in blacklist and t_clean not in joined_usernames and t_clean not in FAILED_JOIN_TARGETS:
+                                if t_clean and t_clean not in blacklist and t_clean not in joined_usernames and t_clean not in FAILED_JOIN_TARGETS and t_clean not in PENDING_INVITES:
                                     not_joined.append(t_clean)
                             
                             if not_joined:
-                                sys_log(f"[DijitalPazarimAccount] 🔍 {len(not_joined)} hedefe henüz üye değiliz (Kalan saatlik hak: {MAX_JOINS_PER_CYCLE - current_recent}). Güvenli katılım deneniyor...")
-                                for t_clean in not_joined:
-                                    if not AD_RUNNING:
-                                        break
-                                    try:
-                                        sys_log(f"[DijitalPazarimAccount] Hedef gruba katılınıyor: @{t_clean}")
-                                        entity = await client.get_entity(t_clean)
-                                        await client(JoinChannelRequest(entity))
-                                        joined_usernames.add(t_clean)
-                                        joined_groups[entity.id] = entity
-                                        JOINED_GROUPS_COUNT = len(joined_groups)
+                                target_to_try = not_joined[0]
+                                sys_log(f"[DijitalPazarimAccount] 🔍 Hedef gruba katılım deneniyor (1/1): @{target_to_try} (Kalan saatlik hak: {MAX_JOINS_PER_CYCLE - current_recent})")
+                                
+                                try:
+                                    entity = await client.get_entity(target_to_try)
+                                    await client(JoinChannelRequest(entity))
+                                    joined_usernames.add(target_to_try)
+                                    joined_groups[entity.id] = entity
+                                    JOINED_GROUPS_COUNT = len(joined_groups)
+                                    RECENT_JOIN_TIMESTAMPS.append(time.time())
+                                    if target_to_try in PENDING_INVITES:
+                                        PENDING_INVITES.remove(target_to_try)
+                                    save_persistent_join_state()
+                                    sys_log(f"[DijitalPazarimAccount] ✅ Gruba başarıyla katıldı: @{target_to_try}")
+                                    
+                                    # Ana projedeki gibi 3-6 dakika güvenli bekleme
+                                    join_delay = random.randint(JOIN_DELAY_MIN_SECONDS, JOIN_DELAY_MAX_SECONDS)
+                                    sys_log(f"[DijitalPazarimAccount] 🛡️ Anti-flood koruması: Sonraki işlem öncesi {join_delay} sn bekleniyor...")
+                                    await asyncio.sleep(join_delay)
+                                except FloodWaitError as fwe:
+                                    JOIN_FLOOD_UNTIL = time.time() + fwe.seconds + 60
+                                    sys_log(f"[DijitalPazarimAccount] ⚠️ Join FloodWait: {fwe.seconds} sn. Katılım duraklatıldı.")
+                                except Exception as e:
+                                    err_msg = str(e).lower()
+                                    err_type = type(e).__name__
+                                    if "requested to join" in err_msg or "inviterequestsent" in err_type.lower():
+                                        PENDING_INVITES.add(target_to_try)
                                         RECENT_JOIN_TIMESTAMPS.append(time.time())
-                                        sys_log(f"[DijitalPazarimAccount] ✅ Gruba başarıyla katıldı: @{t_clean}")
-                                        
-                                        # Ana projedeki gibi 3-6 dakika güvenli bekleme (ard arda katılımı engeller)
-                                        join_delay = random.randint(JOIN_DELAY_MIN_SECONDS, JOIN_DELAY_MAX_SECONDS)
-                                        sys_log(f"[DijitalPazarimAccount] 🛡️ Anti-flood koruması: Sonraki işlem öncesi {join_delay} sn bekleniyor...")
-                                        await asyncio.sleep(join_delay)
-                                        break # Bir döngüde en fazla 1 gruba katıl
-                                    except FloodWaitError as fwe:
-                                        JOIN_FLOOD_UNTIL = time.time() + fwe.seconds + 60
-                                        sys_log(f"[DijitalPazarimAccount] ⚠️ Join FloodWait: {fwe.seconds} sn. Katılım duraklatıldı.")
-                                        break
-                                    except (UserBannedInChannelError, ChannelPrivateError, UsernameNotOccupiedError, UsernameInvalidError) as e:
-                                        FAILED_JOIN_TARGETS.add(t_clean)
-                                        sys_log(f"[DijitalPazarimAccount] ⛔ Grup kalıcı olarak atlandı (@{t_clean}): {type(e).__name__}")
-                                    except Exception as e:
-                                        err_msg = str(e).lower()
-                                        if any(k in err_msg for k in ("private", "banned", "forbidden", "admin", "request")):
-                                            FAILED_JOIN_TARGETS.add(t_clean)
-                                        sys_log(f"[DijitalPazarimAccount] ⚠️ Gruba katılma hatası (@{t_clean}): {e}")
+                                        save_persistent_join_state()
+                                        sys_log(f"[DijitalPazarimAccount] ⏳ @{target_to_try} katılım isteği iletildi (yönetici onayı bekleniyor).")
+                                    elif any(k in err_msg for k in ("private", "banned", "forbidden", "admin", "channel_private", "user_banned")) or isinstance(e, (UserBannedInChannelError, ChannelPrivateError, UsernameNotOccupiedError, UsernameInvalidError)):
+                                        FAILED_JOIN_TARGETS.add(target_to_try)
+                                        save_persistent_join_state()
+                                        sys_log(f"[DijitalPazarimAccount] ⛔ @{target_to_try} kalıcı olarak atlandı: {err_type}")
+                                    else:
+                                        FAILED_JOIN_TARGETS.add(target_to_try)
+                                        save_persistent_join_state()
+                                        sys_log(f"[DijitalPazarimAccount] ⚠️ Gruba katılma hatası (@{target_to_try}): {e}")
+                                    
+                                    # Güvenlik tamponu: Hata veya istek gönderiminde de en az 60-120 saniye beklenir
+                                    err_wait = random.randint(60, 120)
+                                    sys_log(f"[DijitalPazarimAccount] 🛡️ Güvenlik tamponu: {err_wait} sn bekleniyor...")
+                                    await asyncio.sleep(err_wait)
 
                     # 3. Reklam gönderim döngüsü (30-45 saniye grup aralığı)
                     sys_log(f"[DijitalPazarimAccount] Reklam döngüsü başladı ({len(joined_groups)} aktif grup)...")
@@ -615,10 +725,12 @@ async def run_telethon_account():
                             sys_log(f"[DijitalPazarimAccount] FloodWait: {fwe.seconds} saniye bekleniyor...")
                             await asyncio.sleep(fwe.seconds + 5)
                         except SlowModeWaitError as sm:
-                            sys_log(f"[DijitalPazarimAccount] SlowMode ({g_title}): {sm.seconds} saniye.")
-                            await asyncio.sleep(5)
-                        except ChatWriteForbiddenError:
-                            sys_log(f"[DijitalPazarimAccount] Yazma izni yok, atlandı -> {g_title}")
+                            wait_s = min(sm.seconds + 5, 120)
+                            sys_log(f"[DijitalPazarimAccount] SlowMode ({g_title}): {sm.seconds} sn, {wait_s} sn bekleniyor.")
+                            await asyncio.sleep(wait_s)
+                        except (ChatWriteForbiddenError, UserBannedInChannelError) as cwf:
+                            sys_log(f"[DijitalPazarimAccount] Yazma izni yok/banlı, listeden çıkarıldı -> {g_title}")
+                            joined_groups.pop(gid, None)
                         except Exception as e:
                             sys_log(f"[DijitalPazarimAccount] Grup gönderim hatası ({g_title}): {e}")
 
@@ -660,7 +772,7 @@ def watchdog_supervisor():
         try:
             WATCHDOG_STATS["last_check"] = datetime.now().strftime("%H:%M:%S")
             # 1. Check Bot Thread
-            if t_bot is None or not t_bot.is_alive():
+            if (t_bot is None or not t_bot.is_alive()) and not _IS_BOT_WORKER_RUNNING:
                 sys_log("⚠️ [Watchdog] @DijitalPazarimBot iş parçacığı durmuş! Yeniden başlatılıyor...")
                 t_bot = threading.Thread(target=telegram_bot_worker, daemon=True, name="dp-bot-worker")
                 t_bot.start()

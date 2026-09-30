@@ -407,7 +407,16 @@ GROUPS_TO_LEAVE = {
     "gurcistanticaret",
 }
 
-ACCOUNT_GROUPS_TO_LEAVE = {"KeyVadiOnline": {"ceksat"}}
+ACCOUNT_GROUPS_TO_LEAVE = {
+    "KeyVadiOnline": {
+        "ceksat",
+        "kuponkodindirimilanlar",
+        "kuponkodceksatis",
+        "kuponkodalimsatimm",
+        "kuponkodualsat",
+        "kuponsatimalim",
+    }
+}
 
 def automatic_leaves_enabled():
     """Return whether an operator explicitly enabled Telegram leave actions.
@@ -1001,7 +1010,11 @@ SEEDED_ACCOUNT_GROUP_BLOCKS = {
     ('LisansArenaOnline', 'yemeksepetikuponu'): 'UserBannedInChannel',
     ('FroxyOnline', 'yemeksepetikupon'): 'UserBannedInChannel',
     ('KeyVadiOnline', 'yemeksepetikupon'): 'UserBannedInChannel',
-    ('LisansArenaOnline', 'yemeksepetikupon'): 'UserBannedInChannel',
+    ('KeyVadiOnline', 'kuponkodindirimilanlar'): 'BlacklistedByUser',
+    ('KeyVadiOnline', 'kuponkodceksatis'): 'BlacklistedByUser',
+    ('KeyVadiOnline', 'kuponkodalimsatimm'): 'BlacklistedByUser',
+    ('KeyVadiOnline', 'kuponkodualsat'): 'BlacklistedByUser',
+    ('KeyVadiOnline', 'kuponsatimalim'): 'BlacklistedByUser',
     ('FroxyOnline', '1604204718'): 'UserBannedInChannel',
     ('KeyVadiOnline', '1604204718'): 'UserBannedInChannel',
     ('LisansArenaOnline', '1604204718'): 'UserBannedInChannel',
