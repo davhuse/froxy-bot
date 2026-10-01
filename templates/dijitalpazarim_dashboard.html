@@ -1,758 +1,930 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="Content-Language" content="tr">
-  <meta name="google" content="notranslate">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dijital Pazarım — Canlı Servis Paneli</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <style>
-    :root {
-      --bg-dark: #080511;
-      --bg-card: rgba(18, 12, 33, 0.75);
-      --bg-card-hover: rgba(28, 18, 52, 0.85);
-      --purple-primary: #a855f7;
-      --purple-light: #c084fc;
-      --purple-dark: #7e22ce;
-      --purple-glow: rgba(168, 85, 247, 0.35);
-      --pink-accent: #ec4899;
-      --border-subtle: rgba(168, 85, 247, 0.22);
-      --border-glow: rgba(192, 132, 252, 0.6);
-      --text-main: #f8fafc;
-      --text-muted: #94a3b8;
-      --text-dim: #64748b;
-      --success: #22c55e;
-      --danger: #ef4444;
-      --price-gold: #facc15;
-    }
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Language" content="tr">
+    <meta name="google" content="notranslate">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dijital Pazarım Yönetim Paneli</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inconsolata:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #050505;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --accent: #6C5CE7;
+            --accent-hover: #8172f3;
+            --danger: #ff4757;
+            --danger-hover: #ff6b78;
+            --success: #2ed573;
+            --text-primary: #f1f2f6;
+            --text-secondary: #a4b0be;
+            --text-dim: #71717a;
+            --price-gold: #facc15;
+        }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    body {
-      background-color: var(--bg-dark);
-      background-image: 
-        radial-gradient(circle at 50% 0%, rgba(168, 85, 247, 0.18) 0%, transparent 60%),
-        radial-gradient(circle at 100% 100%, rgba(236, 72, 153, 0.12) 0%, transparent 50%),
-        radial-gradient(circle at 0% 50%, rgba(126, 34, 206, 0.12) 0%, transparent 50%);
-      background-attachment: fixed;
-      color: var(--text-main);
-      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-      min-height: 100vh;
-      padding: 24px;
-    }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: 'Outfit', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            position: relative;
+            overflow-x: hidden;
+        }
 
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
+        .background-aurora {
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 50% 50%, rgba(108, 92, 231, 0.15), transparent 40%),
+                        radial-gradient(circle at 80% 20%, rgba(46, 213, 115, 0.1), transparent 30%);
+            filter: blur(80px);
+            z-index: -1;
+            animation: rotate 20s linear infinite;
+            pointer-events: none;
+        }
 
-    /* Header */
-    .header-panel {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 18px 24px;
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: 20px;
-      backdrop-filter: blur(16px);
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-      flex-wrap: wrap;
-      gap: 16px;
-    }
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
 
-    .brand-section {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
+        .dashboard-container {
+            width: 95%;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 22px;
+            z-index: 1;
+        }
 
-    .brand-avatar {
-      width: 54px;
-      height: 54px;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 2px solid var(--purple-light);
-      box-shadow: 0 0 16px var(--purple-glow);
-    }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
 
-    .brand-title {
-      font-size: 22px;
-      font-weight: 800;
-      background: linear-gradient(135deg, #ffffff 40%, var(--purple-light) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
 
-    .brand-sub {
-      font-size: 13px;
-      color: var(--purple-light);
-      font-weight: 600;
-    }
+        .header-logo {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            object-fit: cover;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 4px 20px rgba(108, 92, 231, 0.25);
+        }
 
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
+        .header-brand h1 {
+            font-weight: 700;
+            font-size: 1.85rem;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
 
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 18px;
-      border-radius: 12px;
-      font-size: 13px;
-      font-weight: 700;
-      text-decoration: none;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      border: none;
-    }
+        .header-brand h1 i {
+            color: var(--accent);
+        }
 
-    .btn-primary {
-      background: linear-gradient(135deg, var(--purple-primary), var(--purple-dark));
-      color: #ffffff;
-      border: 1px solid var(--purple-light);
-      box-shadow: 0 4px 16px var(--purple-glow);
-    }
+        .header-subtitle {
+            font-size: 0.88rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
 
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(168, 85, 247, 0.5);
-    }
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
 
-    .btn-secondary {
-      background: rgba(255, 255, 255, 0.05);
-      color: var(--text-main);
-      border: 1px solid var(--border-subtle);
-    }
+        /* Glass Panels */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
 
-    .btn-secondary:hover {
-      background: rgba(255, 255, 255, 0.1);
-      border-color: var(--purple-light);
-    }
+        /* Controls Panel */
+        .controls-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
 
-    .btn-success {
-      background: linear-gradient(135deg, #22c55e, #16a34a);
-      color: #ffffff;
-      border: 1px solid #4ade80;
-      box-shadow: 0 4px 14px rgba(34, 197, 94, 0.3);
-    }
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            padding: 8px 18px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
 
-    .btn-success:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 18px rgba(34, 197, 94, 0.5);
-    }
+        .status-badge .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: gray;
+            transition: all 0.3s;
+        }
 
-    .btn-danger {
-      background: linear-gradient(135deg, #ef4444, #dc2626);
-      color: #ffffff;
-      border: 1px solid #f87171;
-      box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3);
-    }
+        .status-badge.running {
+            background: rgba(46, 213, 115, 0.1);
+            border-color: rgba(46, 213, 115, 0.3);
+            color: #4ade80;
+        }
 
-    .btn-danger:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 18px rgba(239, 68, 68, 0.5);
-    }
+        .status-badge.running .dot {
+            background: var(--success);
+            box-shadow: 0 0 10px var(--success);
+        }
 
-    /* Controls Bar */
-    .controls-banner {
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: 18px;
-      padding: 16px 22px;
-      backdrop-filter: blur(14px);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 16px;
-    }
+        .status-badge.stopped {
+            background: rgba(255, 71, 87, 0.1);
+            border-color: rgba(255, 71, 87, 0.3);
+            color: #f87171;
+        }
 
-    .control-status-group {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-    }
+        .status-badge.stopped .dot {
+            background: var(--danger);
+            box-shadow: 0 0 10px var(--danger);
+        }
 
-    .control-btn-group {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
+        .control-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
 
-    /* Status Grid */
-    .status-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 16px;
-    }
+        /* Buttons */
+        .btn {
+            border: none;
+            outline: none;
+            padding: 11px 22px;
+            border-radius: 10px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            color: white;
+            text-decoration: none;
+        }
 
-    .status-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: 18px;
-      padding: 18px 20px;
-      backdrop-filter: blur(14px);
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      transition: border-color 0.2s ease;
-    }
+        .btn:disabled {
+            cursor: not-allowed;
+            filter: grayscale(0.6);
+            opacity: 0.55;
+        }
 
-    .status-card:hover {
-      border-color: var(--border-glow);
-    }
+        .btn:not(:disabled):hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
 
-    .status-card-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
+        .btn:not(:disabled):active {
+            transform: translateY(0);
+        }
 
-    .status-card-title {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text-muted);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
+        .btn.primary {
+            background: linear-gradient(135deg, #6C5CE7, #a29bfe);
+        }
 
-    .status-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 10px;
-      border-radius: 20px;
-      font-size: 11px;
-      font-weight: 700;
-    }
+        .btn.danger {
+            background: linear-gradient(135deg, #ff4757, #ff6b81);
+        }
 
-    .status-pill.online {
-      background: rgba(34, 197, 94, 0.12);
-      border: 1px solid rgba(34, 197, 94, 0.3);
-      color: #4ade80;
-    }
+        .btn.secondary {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--glass-border);
+        }
 
-    .status-pill.stopped {
-      background: rgba(239, 68, 68, 0.12);
-      border: 1px solid rgba(239, 68, 68, 0.3);
-      color: #f87171;
-    }
+        .btn.secondary:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.25);
+        }
 
-    .status-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: #22c55e;
-      box-shadow: 0 0 8px #22c55e;
-      animation: pulse 1.8s infinite;
-    }
+        /* Stats Bar */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+            gap: 16px;
+            width: 100%;
+        }
 
-    .status-dot.red {
-      background: #ef4444;
-      box-shadow: 0 0 8px #ef4444;
-    }
+        .stat-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px 16px;
+            text-align: center;
+            transition: border-color 0.25s ease;
+        }
 
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.3); opacity: 0.6; }
-    }
+        .stat-card:hover {
+            border-color: rgba(108, 92, 231, 0.35);
+        }
 
-    .status-card-value {
-      font-size: 20px;
-      font-weight: 800;
-      color: #ffffff;
-    }
+        .stat-title {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
 
-    .status-card-desc {
-      font-size: 12px;
-      color: var(--text-dim);
-    }
+        .stat-value {
+            font-size: 1.65rem;
+            font-weight: 700;
+            line-height: 1.2;
+        }
 
-    /* Content Layout */
-    .main-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-    }
+        .stat-sub {
+            font-size: 0.76rem;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
 
-    @media (max-width: 900px) {
-      .main-grid {
-        grid-template-columns: 1fr;
-      }
-    }
+        /* Toplu Duyuru */
+        textarea {
+            width: 100%;
+            height: 90px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-family: 'Outfit', sans-serif;
+            padding: 14px;
+            resize: vertical;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            outline: none;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
 
-    .panel-box {
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: 18px;
-      padding: 20px;
-      backdrop-filter: blur(14px);
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
+        textarea:focus {
+            border-color: rgba(108, 92, 231, 0.5);
+            box-shadow: 0 0 15px rgba(108, 92, 231, 0.15);
+        }
 
-    .panel-title {
-      font-size: 16px;
-      font-weight: 700;
-      color: #ffffff;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
+        /* Main Grid (Terminal + Products) */
+        .main-content-grid {
+            display: grid;
+            grid-template-columns: 1.35fr 1fr;
+            gap: 22px;
+            width: 100%;
+        }
 
-    /* Broadcast Box */
-    .broadcast-textarea {
-      width: 100%;
-      height: 100px;
-      background: #040208;
-      border: 1px solid var(--border-subtle);
-      border-radius: 12px;
-      padding: 12px 14px;
-      color: #ffffff;
-      font-family: inherit;
-      font-size: 13px;
-      outline: none;
-      resize: vertical;
-      transition: border-color 0.2s ease;
-    }
+        @media (max-width: 1024px) {
+            .main-content-grid {
+                grid-template-columns: 1fr;
+            }
+        }
 
-    .broadcast-textarea:focus {
-      border-color: var(--purple-light);
-      box-shadow: 0 0 12px var(--purple-glow);
-    }
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
 
-    .broadcast-actions {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
+        .section-header h2 {
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
 
-    .broadcast-hint {
-      font-size: 12px;
-      color: var(--text-dim);
-    }
+        /* High-Contrast Terminal */
+        .terminal {
+            background: #09090b;
+            border-radius: 12px;
+            border: 1px solid #27272a;
+            padding: 18px 20px;
+            height: 520px;
+            overflow-y: auto;
+            font-family: 'Inconsolata', monospace;
+            font-size: 0.95rem;
+            line-height: 1.65;
+            color: #d4d4d8;
+            box-shadow: inset 0 0 25px rgba(0, 0, 0, 0.85);
+            scrollbar-color: #3f3f46 transparent;
+        }
 
-    /* Products Table */
-    .product-list-scroll {
-      max-height: 480px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      padding-right: 4px;
-    }
+        .terminal p {
+            margin: 0;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+            margin-bottom: 4px;
+        }
 
-    .product-list-scroll::-webkit-scrollbar {
-      width: 6px;
-    }
+        .terminal p.success {
+            color: #4ade80;
+            font-weight: 600;
+        }
 
-    .product-list-scroll::-webkit-scrollbar-thumb {
-      background: var(--purple-dark);
-      border-radius: 4px;
-    }
+        .terminal p.warning {
+            color: #facc15;
+            font-weight: 600;
+        }
 
-    .product-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 14px;
-      background: rgba(255, 255, 255, 0.02);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      border-radius: 14px;
-      gap: 12px;
-      transition: background 0.2s ease, border-color 0.2s ease;
-    }
+        .terminal p.error {
+            color: #f87171;
+            font-weight: 600;
+        }
 
-    .product-row:hover {
-      background: rgba(168, 85, 247, 0.06);
-      border-color: var(--border-subtle);
-    }
+        .terminal p.info {
+            color: #60a5fa;
+        }
 
-    .prod-info {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex: 1;
-      min-width: 0;
-    }
+        /* Products Showcase */
+        .product-list-scroll {
+            height: 520px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding-right: 4px;
+        }
 
-    .prod-img {
-      width: 42px;
-      height: 42px;
-      border-radius: 10px;
-      object-fit: cover;
-      background: #140d25;
-      flex-shrink: 0;
-    }
+        .product-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 14px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            gap: 12px;
+            transition: all 0.2s ease;
+        }
 
-    .prod-texts {
-      min-width: 0;
-    }
+        .product-row:hover {
+            background: rgba(108, 92, 231, 0.08);
+            border-color: rgba(108, 92, 231, 0.3);
+            transform: translateY(-1px);
+        }
 
-    .prod-name {
-      font-size: 13px;
-      font-weight: 700;
-      color: #ffffff;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
+        .prod-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+            min-width: 0;
+        }
 
-    .prod-meta {
-      font-size: 11px;
-      color: var(--purple-light);
-      font-weight: 600;
-    }
+        .prod-img {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            object-fit: cover;
+            background: #121214;
+            flex-shrink: 0;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
 
-    .prod-price {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 14px;
-      font-weight: 700;
-      color: var(--price-gold);
-      flex-shrink: 0;
-    }
+        .prod-texts {
+            min-width: 0;
+        }
 
-    .prod-btn {
-      padding: 6px 12px;
-      background: rgba(168, 85, 247, 0.15);
-      border: 1px solid var(--purple-light);
-      border-radius: 8px;
-      color: #ffffff;
-      font-size: 11px;
-      font-weight: 700;
-      text-decoration: none;
-      flex-shrink: 0;
-    }
+        .prod-name {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #ffffff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
 
-    .prod-btn:hover {
-      background: var(--purple-primary);
-    }
+        .prod-meta {
+            font-size: 0.75rem;
+            color: #a78bfa;
+            font-weight: 500;
+        }
 
-    /* Live Logs */
-    .log-box {
-      background: #040208;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 14px;
-      padding: 14px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 12px;
-      color: #a78bfa;
-      height: 480px;
-      overflow-y: auto;
-      line-height: 1.6;
-      white-space: pre-wrap;
-      word-break: break-all;
-    }
+        .prod-price {
+            font-family: 'Inconsolata', monospace;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--price-gold);
+            flex-shrink: 0;
+        }
 
-    .log-box::-webkit-scrollbar {
-      width: 6px;
-    }
+        .prod-btn {
+            padding: 6px 12px;
+            background: rgba(108, 92, 231, 0.15);
+            border: 1px solid rgba(108, 92, 231, 0.4);
+            border-radius: 8px;
+            color: #ffffff;
+            font-size: 0.78rem;
+            font-weight: 600;
+            text-decoration: none;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+        }
 
-    .log-box::-webkit-scrollbar-thumb {
-      background: var(--purple-dark);
-      border-radius: 4px;
-    }
-  </style>
+        .prod-btn:hover {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+
+        /* Scrollbars */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.25);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.22);
+        }
+
+        /* Mobile Adjustments */
+        @media (max-width: 650px) {
+            .dashboard-container {
+                width: 95%;
+                padding: 18px 0;
+                gap: 16px;
+            }
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .header-actions {
+                width: 100%;
+            }
+            .header-actions .btn {
+                flex: 1;
+                justify-content: center;
+            }
+            .controls-panel {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .control-actions {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+            }
+            .control-actions .btn {
+                justify-content: center;
+            }
+            .terminal, .product-list-scroll {
+                height: 380px;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <!-- Header -->
-    <header class="header-panel">
-      <div class="brand-section">
-        <img class="brand-avatar" src="/static/dijitalpazarim_logo.jpg" alt="Logo" onerror="this.src='/assets/logo.jpg'">
-        <div>
-          <div class="brand-title">Dijital Pazarım</div>
-          <div class="brand-sub">Canlı Servis & Yönetim Paneli</div>
-        </div>
-      </div>
-      <div class="header-actions">
-        <a href="/dp" target="_blank" class="btn btn-primary">
-          <i class="fa-solid fa-store"></i> Mağazayı Aç (Mini App)
-        </a>
-        <a href="https://t.me/DijitalPazarimBot" target="_blank" class="btn btn-secondary">
-          <i class="fa-brands fa-telegram"></i> Telegram Botu
-        </a>
-        <a href="https://t.me/DijitalPazarimm" target="_blank" class="btn btn-secondary">
-          <i class="fa-solid fa-bullhorn"></i> Reklam Hesabı
-        </a>
-      </div>
-    </header>
+    <div class="background-aurora"></div>
 
-    <!-- Controls Banner (Start / Stop) -->
-    <div class="controls-banner">
-      <div class="control-status-group">
-        <div>
-          <div style="font-size: 12px; color: var(--text-muted); font-weight: 600;">Reklam Motoru Durumu</div>
-          <div style="font-size: 17px; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 8px; margin-top: 2px;">
-            <span id="adStatusBadge" class="status-pill online"><span class="status-dot"></span> AKTİF (DÖNGÜDE)</span>
-          </div>
-        </div>
-      </div>
-      <div class="control-btn-group">
-        <button id="btnStart" class="btn btn-success" onclick="startAdEngine()">
-          <i class="fa-solid fa-play"></i> Başlat
-        </button>
-        <button id="btnStop" class="btn btn-danger" onclick="stopAdEngine()">
-          <i class="fa-solid fa-stop"></i> Durdur
-        </button>
-      </div>
-    </div>
-
-    <!-- Status Cards -->
-    <div class="status-grid">
-      <div class="status-card">
-        <div class="status-card-header">
-          <span class="status-card-title"><i class="fa-solid fa-server"></i> Servis Altyapısı</span>
-          <span class="status-pill online"><span class="status-dot"></span> BAĞIMSIZ</span>
-        </div>
-        <div class="status-card-value">Railway Çevrimiçi</div>
-        <div class="status-card-desc">İzole port & sıfır KeyVadi bağımlılığı</div>
-      </div>
-
-      <div class="status-card">
-        <div class="status-card-header">
-          <span class="status-card-title"><i class="fa-solid fa-robot"></i> Satış & Mağaza Botu</span>
-          <span class="status-pill online"><span class="status-dot"></span> ONLINE</span>
-        </div>
-        <div class="status-card-value">@DijitalPazarimBot</div>
-        <div class="status-card-desc">Mini App menü butonu: /dp</div>
-      </div>
-
-      <div class="status-card">
-        <div class="status-card-header">
-          <span class="status-card-title"><i class="fa-solid fa-user-shield"></i> Reklam Hesabı</span>
-          <span class="status-pill online"><i class="fa-solid fa-check"></i> AKTİF</span>
-        </div>
-        <div class="status-card-value">+18595173039</div>
-        <div class="status-card-desc" id="adAccountDesc">@DijitalPazarimm • 60 dk aralık</div>
-      </div>
-
-      <div class="status-card">
-        <div class="status-card-header">
-          <span class="status-card-title"><i class="fa-solid fa-tags"></i> Shopier İlanları</span>
-          <span class="status-pill online"><i class="fa-solid fa-store"></i> CANLI</span>
-        </div>
-        <div class="status-card-value" id="productCount">13 Ürün</div>
-        <div class="status-card-desc">Jarvis API • Türkçe & .99 fiyatlama</div>
-      </div>
-
-      <div class="status-card">
-        <div class="status-card-header">
-          <span class="status-card-title"><i class="fa-solid fa-shield-halved"></i> Hedef Havuzu & Watchdog</span>
-          <span class="status-pill online" id="watchdogBadge"><span class="status-dot"></span> AKTİF</span>
-        </div>
-        <div class="status-card-value" id="targetCount">66 Hedef Grup</div>
-        <div class="status-card-desc" id="watchdogDesc">Otomatik katılma & sürekli gözetim</div>
-      </div>
-    </div>
-
-    <!-- Broadcast Panel -->
-    <div class="panel-box">
-      <div class="panel-title">
-        <span><i class="fa-solid fa-bullhorn" style="color: var(--purple-light);"></i> Gruplara Toplu Duyuru Gönder</span>
-        <span id="broadcastResult" style="font-size: 12px; color: var(--purple-light); font-weight: 600;"></span>
-      </div>
-      <textarea id="broadcastInput" class="broadcast-textarea" placeholder="Tüm reklam gruplarına tek seferlik anlık duyuru veya kampanya mesajı yazın..."></textarea>
-      <div class="broadcast-actions">
-        <span class="broadcast-hint">+18595173039 hesabı üzerinden tüm aktif gruplara sırayla iletilir.</span>
-        <button id="btnSendBroadcast" class="btn btn-primary" onclick="sendBroadcast()">
-          <i class="fa-solid fa-paper-plane"></i> Duyuruyu Gönder
-        </button>
-      </div>
-    </div>
-
-    <!-- Main Content -->
-    <div class="main-grid">
-      <!-- Products List -->
-      <div class="panel-box">
-        <div class="panel-title">
-          <span><i class="fa-solid fa-box-open" style="color: var(--purple-light);"></i> Aktif Mağaza Ürünleri</span>
-          <a href="/dp" target="_blank" style="font-size: 12px; color: var(--purple-light); text-decoration: none;">
-            Önizle <i class="fa-solid fa-arrow-up-right-from-square"></i>
-          </a>
-        </div>
-        <div class="product-list-scroll" id="productsTable">
-          <!-- Injected via JS -->
-        </div>
-      </div>
-
-      <!-- Live Logs Console -->
-      <div class="panel-box">
-        <div class="panel-title">
-          <span><i class="fa-solid fa-terminal" style="color: #4ade80;"></i> Canlı Sistem Logları</span>
-          <span id="logStatus" style="font-size: 11px; color: var(--text-dim);">Otomatik yenileniyor</span>
-        </div>
-        <div class="log-box" id="logConsole">Sistem logları yükleniyor...</div>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    // Load Status
-    async function updateStatus() {
-      try {
-        const res = await fetch('/api/status');
-        if (res.ok) {
-          const s = await res.json();
-          const badge = document.getElementById('adStatusBadge');
-          if (s.ad_running) {
-            badge.className = 'status-pill online';
-            badge.innerHTML = '<span class="status-dot"></span> AKTİF (DÖNGÜDE)';
-          } else {
-            badge.className = 'status-pill stopped';
-            badge.innerHTML = '<span class="status-dot red"></span> DURDURULDU';
-          }
-          document.getElementById('adAccountDesc').textContent = 
-            `Toplam ${s.total_ads_sent || 0} reklam • Son döngü: ${s.last_cycle || 'Bekleniyor'}`;
-          if (s.target_groups_count !== undefined) {
-            document.getElementById('targetCount').textContent = 
-              `${s.target_groups_count} Hedef (${s.joined_groups_count || 0} Üye)`;
-          }
-          if (s.watchdog) {
-            document.getElementById('watchdogDesc').textContent = 
-              `Gözetim: ${s.watchdog.status} • Son kontrol: ${s.watchdog.last_check || 'Aktif'}`;
-          }
-        }
-      } catch (e) {
-        console.error('Status fetch error:', e);
-      }
-    }
-
-    // Start / Stop
-    async function startAdEngine() {
-      try {
-        const res = await fetch('/api/start', { method: 'POST' });
-        if (res.ok) {
-          updateStatus();
-          fetchLogs();
-        }
-      } catch (e) {
-        alert('Hata: ' + e);
-      }
-    }
-
-    async function stopAdEngine() {
-      try {
-        const res = await fetch('/api/stop', { method: 'POST' });
-        if (res.ok) {
-          updateStatus();
-          fetchLogs();
-        }
-      } catch (e) {
-        alert('Hata: ' + e);
-      }
-    }
-
-    // Broadcast
-    async function sendBroadcast() {
-      const input = document.getElementById('broadcastInput');
-      const text = input.value.trim();
-      if (!text) {
-        alert('Lütfen gönderilecek duyuru metnini yazın.');
-        return;
-      }
-      const btn = document.getElementById('btnSendBroadcast');
-      const resEl = document.getElementById('broadcastResult');
-      btn.disabled = true;
-      btn.textContent = 'Gönderiliyor...';
-      resEl.textContent = 'Duyuru gruplara iletiliyor...';
-
-      try {
-        const r = await fetch('/api/broadcast', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: text })
-        });
-        const data = await r.json();
-        if (data.success) {
-          resEl.textContent = `Başarılı! ${data.sent_count} gruba iletildi.`;
-          input.value = '';
-        } else {
-          resEl.textContent = `Hata: ${data.error}`;
-        }
-      } catch (e) {
-        resEl.textContent = 'Bağlantı hatası: ' + e;
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Duyuruyu Gönder';
-        fetchLogs();
-      }
-    }
-
-    // Load Products
-    async function loadProducts() {
-      try {
-        const res = await fetch('/products_db.json');
-        if (res.ok) {
-          const prods = await res.json();
-          document.getElementById('productCount').textContent = prods.length + ' Ürün';
-          const container = document.getElementById('productsTable');
-          container.innerHTML = '';
-          prods.forEach(p => {
-            const row = document.createElement('div');
-            row.className = 'product-row';
-            row.innerHTML = `
-              <div class="prod-info">
-                <img class="prod-img" src="${p.image}" alt="${p.title}" onerror="this.src='/static/dijitalpazarim_logo.jpg'">
-                <div class="prod-texts">
-                  <div class="prod-name" title="${p.title}">${p.title}</div>
-                  <div class="prod-meta">${p.category_label || ''} • ID: ${p.id}</div>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <header>
+            <div class="header-brand">
+                <img class="header-logo" src="/static/dijitalpazarim_logo.jpg" alt="Logo" onerror="this.src='/assets/logo.jpg'">
+                <div>
+                    <h1><i class="fa-solid fa-store"></i> Dijital Pazarım</h1>
+                    <div class="header-subtitle">Canlı Servis ve Reklam Yönetim Paneli</div>
                 </div>
-              </div>
-              <div class="prod-price">${p.price}</div>
-              <a href="${p.url}" target="_blank" class="prod-btn">İlan</a>
-            `;
-            container.appendChild(row);
-          });
-        }
-      } catch (e) {
-        console.error('Products load error:', e);
-      }
-    }
+            </div>
+            <div class="header-actions">
+                <a href="/dp" target="_blank" class="btn primary">
+                    <i class="fa-solid fa-cart-shopping"></i> Mağaza (Mini App)
+                </a>
+                <a href="https://t.me/DijitalPazarimBot" target="_blank" class="btn secondary">
+                    <i class="fa-brands fa-telegram"></i> Telegram Botu
+                </a>
+                <a href="https://t.me/DijitalPazarimm" target="_blank" class="btn secondary">
+                    <i class="fa-solid fa-bullhorn"></i> Reklam Hesabı
+                </a>
+            </div>
+        </header>
 
-    // Load Live Logs
-    async function fetchLogs() {
-      try {
-        const res = await fetch('/api/logs');
-        if (res.ok) {
-          const data = await res.json();
-          const logConsole = document.getElementById('logConsole');
-          if (data.logs && data.logs.length > 0) {
-            logConsole.textContent = data.logs.join('\n');
-            logConsole.scrollTop = logConsole.scrollHeight;
-          } else {
-            logConsole.textContent = 'Henüz log kaydı oluşmadı.';
-          }
-        }
-      } catch (e) {
-        console.error('Logs fetch error:', e);
-      }
-    }
+        <!-- Controls Panel (Start / Stop) -->
+        <div class="controls-panel glass-panel">
+            <div>
+                <div style="font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.4px; font-weight: 600;">Reklam Motoru Durumu</div>
+                <div style="margin-top: 6px;">
+                    <div class="status-badge running" id="adStatusBadge">
+                        <span class="dot"></span>
+                        <span class="text" id="adStatusText">Kontrol Ediliyor...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="control-actions">
+                <button id="btnStart" class="btn primary" onclick="startAdEngine()">
+                    <i class="fa-solid fa-play"></i> Başlat
+                </button>
+                <button id="btnStop" class="btn danger" onclick="stopAdEngine()">
+                    <i class="fa-solid fa-stop"></i> Durdur
+                </button>
+            </div>
+        </div>
 
-    loadProducts();
-    updateStatus();
-    fetchLogs();
-    setInterval(updateStatus, 3000);
-    setInterval(fetchLogs, 3000);
-  </script>
+        <!-- Stats Bar -->
+        <div class="stats-bar">
+            <div class="stat-card glass-panel">
+                <span class="stat-title">Servis Altyapısı</span>
+                <span class="stat-value" style="color: var(--success);"><i class="fa-solid fa-circle-check" style="font-size: 1.15rem; margin-right: 4px;"></i> Çevrimiçi</span>
+                <span class="stat-sub">Railway Bağımsız Servis</span>
+            </div>
+            <div class="stat-card glass-panel">
+                <span class="stat-title">Satış & Mağaza Botu</span>
+                <span class="stat-value" style="color: #60a5fa; font-size: 1.35rem;">@DijitalPazarimBot</span>
+                <span class="stat-sub">Mini App Menü Entegre</span>
+            </div>
+            <div class="stat-card glass-panel">
+                <span class="stat-title">Reklam Hesabı</span>
+                <span class="stat-value" style="color: #a78bfa; font-size: 1.35rem;">+18595173039</span>
+                <span class="stat-sub" id="statAdAccountSub">@DijitalPazarimm • 60 dk</span>
+            </div>
+            <div class="stat-card glass-panel">
+                <span class="stat-title">Gönderilen Reklam</span>
+                <span class="stat-value" id="statSentAds" style="color: var(--success);">0</span>
+                <span class="stat-sub" id="statLastCycle">Son döngü: Bekleniyor</span>
+            </div>
+            <div class="stat-card glass-panel">
+                <span class="stat-title">Hedef Grup Havuzu</span>
+                <span class="stat-value" id="statTargetCount" style="color: var(--accent);">0</span>
+                <span class="stat-sub" id="statJoinedCount">0 gruba üye</span>
+            </div>
+            <div class="stat-card glass-panel">
+                <span class="stat-title">Shopier İlanları</span>
+                <span class="stat-value" id="statProductCount" style="color: #facc15;">13 Ürün</span>
+                <span class="stat-sub">Kategori & Fiyat Hazır</span>
+            </div>
+        </div>
+
+        <!-- Broadcast Panel -->
+        <div class="glass-panel" style="width: 100%;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+                <h2 style="font-size: 1.1rem; margin: 0; display: flex; align-items: center; gap: 8px; font-weight: 600;">
+                    <i class="fa-solid fa-paper-plane" style="color: #60a5fa;"></i> Gruplara Toplu Kampanya & Duyuru Gönderimi
+                </h2>
+                <span id="broadcastResultBadge" style="font-size: 0.85rem; font-weight: 600; color: #4ade80;"></span>
+            </div>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">
+                +18595173039 hesabı üzerinden üye olunan tüm aktif ticaret ve ilan gruplarına tek seferlik anlık duyuru veya indirim mesajı gönderir.
+            </p>
+            <textarea id="broadcastInput" rows="3" placeholder="Gruplara gönderilecek duyuru veya kampanya mesajını yazın..."></textarea>
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 10px;">
+                <span style="font-size: 0.8rem; color: var(--text-secondary);">
+                    <i class="fa-solid fa-shield-halved" style="color: #4ade80;"></i> Güvenlik koruması: Gruplar arası 2 saniyelik anti-flood beklemesi uygulanır.
+                </span>
+                <button id="btnSendBroadcast" class="btn primary" onclick="sendBroadcast()">
+                    <i class="fa-solid fa-paper-plane"></i> Duyuruyu Gönder
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="main-content-grid">
+            <!-- Left: High-Contrast Live Terminal Logs -->
+            <div class="glass-panel" style="display: flex; flex-direction: column;">
+                <div class="section-header">
+                    <h2><i class="fa-solid fa-terminal" style="color: #4ade80;"></i> Canlı Sistem & Reklam Günlükleri</h2>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 0.78rem; color: #4ade80; display: flex; align-items: center; gap: 6px; font-weight: 600;">
+                            <span style="width: 7px; height: 7px; border-radius: 50%; background: #4ade80; display: inline-block; box-shadow: 0 0 8px #4ade80;"></span> CANLI
+                        </span>
+                        <button class="btn secondary" onclick="document.getElementById('terminalOutput').innerHTML='';" style="padding: 5px 12px; font-size: 0.8rem;">
+                            <i class="fa-solid fa-trash-can"></i> Temizle
+                        </button>
+                    </div>
+                </div>
+                <div class="terminal" id="terminalOutput">
+                    <p style="color: #71717a; text-align: center; margin-top: 50px;">Sistem günlükleri yükleniyor...</p>
+                </div>
+            </div>
+
+            <!-- Right: Active Products (Shopier) -->
+            <div class="glass-panel" style="display: flex; flex-direction: column;">
+                <div class="section-header">
+                    <h2><i class="fa-solid fa-store" style="color: #a78bfa;"></i> Aktif Mağaza Ürünleri</h2>
+                    <a href="/dp" target="_blank" style="font-size: 0.82rem; color: #60a5fa; text-decoration: none; display: flex; align-items: center; gap: 4px; font-weight: 600;">
+                        Önizle <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                    </a>
+                </div>
+                <div class="product-list-scroll" id="productsTable">
+                    <p style="color: #71717a; text-align: center; margin-top: 50px;">Ürünler yükleniyor...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // Colorize log line according to status
+        function colorizeLog(line) {
+            if (!line) return '';
+            const l = line.toLowerCase();
+
+            // Success / Sent / Joined / Completed / Started
+            if (
+                l.includes('başarıyla') ||
+                l.includes('gönderildi') ||
+                l.includes('katıldı') ||
+                l.includes('çevrimiçi') ||
+                l.includes('bağlandı') ||
+                l.includes('tamamlandı') ||
+                l.includes('başlatıldı') ||
+                l.includes('[ok]') ||
+                l.includes('[+]') ||
+                line.includes('✅') ||
+                line.includes('📨')
+            ) {
+                return `<p class="success">${escapeHtml(line)}</p>`;
+            }
+
+            // Errors / Banned / Failed / Forbidden
+            if (
+                l.includes('hata') ||
+                l.includes('error') ||
+                l.includes('failed') ||
+                l.includes('yasaklı') ||
+                l.includes('engellendi') ||
+                l.includes('banned') ||
+                l.includes('forbidden') ||
+                l.includes('fail') ||
+                l.includes('[-]') ||
+                line.includes('❌') ||
+                line.includes('🚨')
+            ) {
+                return `<p class="error">${escapeHtml(line)}</p>`;
+            }
+
+            // Warnings / Wait / Cooldown / Skips
+            if (
+                l.includes('bekleniyor') ||
+                l.includes('bekleme') ||
+                l.includes('durduruldu') ||
+                l.includes('atlanıyor') ||
+                l.includes('uyarı') ||
+                l.includes('warning') ||
+                l.includes('flood') ||
+                l.includes('slowmode') ||
+                l.includes('limitine ulaşıldı') ||
+                l.includes('limit') ||
+                l.includes('[!]') ||
+                line.includes('⚠️') ||
+                line.includes('⏳') ||
+                line.includes('🔒')
+            ) {
+                return `<p class="warning">${escapeHtml(line)}</p>`;
+            }
+
+            // Info / Loop / Discovery / Group Info
+            if (
+                l.includes('[reklam]') ||
+                l.includes('[autojoin]') ||
+                l.includes('[topluduyuru]') ||
+                l.includes('[telethon]') ||
+                l.includes('[bot]') ||
+                l.includes('[panel]') ||
+                l.includes('[watchdog]') ||
+                l.includes('[bilgi]') ||
+                l.includes('döngü') ||
+                l.includes('hedef') ||
+                l.includes('info') ||
+                l.includes('[*]') ||
+                line.includes('🚀') ||
+                line.includes('📢') ||
+                line.includes('🔍')
+            ) {
+                return `<p class="info">${escapeHtml(line)}</p>`;
+            }
+
+            return `<p>${escapeHtml(line)}</p>`;
+        }
+
+        // Live Logs Fetcher
+        async function fetchLogs() {
+            try {
+                const res = await fetch('/api/logs');
+                if (res.ok) {
+                    const data = await res.json();
+                    const terminal = document.getElementById('terminalOutput');
+                    if (data.logs && data.logs.length > 0) {
+                        const isScrolledToBottom = terminal.scrollHeight - terminal.clientHeight <= terminal.scrollTop + 50;
+                        const html = data.logs.map(line => colorizeLog(line)).join('');
+                        terminal.innerHTML = html;
+                        if (isScrolledToBottom) {
+                            terminal.scrollTop = terminal.scrollHeight;
+                        }
+                    } else {
+                        terminal.innerHTML = '<p style="color: #71717a; text-align: center; margin-top: 50px;">Henüz log kaydı oluşmadı.</p>';
+                    }
+                }
+            } catch (e) {
+                console.error('Logs fetch error:', e);
+            }
+        }
+
+        // Status Polling
+        async function updateStatus() {
+            try {
+                const res = await fetch('/api/status');
+                if (res.ok) {
+                    const s = await res.json();
+                    const badge = document.getElementById('adStatusBadge');
+                    const text = document.getElementById('adStatusText');
+                    const btnStart = document.getElementById('btnStart');
+                    const btnStop = document.getElementById('btnStop');
+
+                    if (s.ad_running) {
+                        badge.className = 'status-badge running';
+                        text.textContent = 'Aktif (Döngüde)';
+                        btnStart.disabled = true;
+                        btnStop.disabled = false;
+                    } else {
+                        badge.className = 'status-badge stopped';
+                        text.textContent = 'Durduruldu';
+                        btnStart.disabled = false;
+                        btnStop.disabled = true;
+                    }
+
+                    document.getElementById('statSentAds').textContent = (s.total_ads_sent || 0);
+                    document.getElementById('statLastCycle').textContent = `Son döngü: ${s.last_cycle || 'Bekleniyor'}`;
+
+                    if (s.target_groups_count !== undefined) {
+                        document.getElementById('statTargetCount').textContent = `${s.target_groups_count} Grup`;
+                        document.getElementById('statJoinedCount').textContent = `${s.joined_groups_count || 0} gruba üye`;
+                    }
+
+                    if (s.ad_account) {
+                        document.getElementById('statAdAccountSub').textContent = `${s.ad_account} • 60 dk`;
+                    }
+                }
+            } catch (e) {
+                console.error('Status fetch error:', e);
+            }
+        }
+
+        // Start / Stop Controls
+        async function startAdEngine() {
+            const btn = document.getElementById('btnStart');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Başlatılıyor...';
+            try {
+                const res = await fetch('/api/start', { method: 'POST' });
+                if (res.ok) {
+                    await updateStatus();
+                    await fetchLogs();
+                }
+            } catch (e) {
+                alert('Başlatma hatası: ' + e);
+            } finally {
+                btn.innerHTML = '<i class="fa-solid fa-play"></i> Başlat';
+            }
+        }
+
+        async function stopAdEngine() {
+            const btn = document.getElementById('btnStop');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Durduruluyor...';
+            try {
+                const res = await fetch('/api/stop', { method: 'POST' });
+                if (res.ok) {
+                    await updateStatus();
+                    await fetchLogs();
+                }
+            } catch (e) {
+                alert('Durdurma hatası: ' + e);
+            } finally {
+                btn.innerHTML = '<i class="fa-solid fa-stop"></i> Durdur';
+            }
+        }
+
+        // Broadcast Announcement
+        async function sendBroadcast() {
+            const input = document.getElementById('broadcastInput');
+            const text = input.value.trim();
+            if (!text) {
+                alert('Lütfen gönderilecek duyuru metnini yazın.');
+                return;
+            }
+
+            const btn = document.getElementById('btnSendBroadcast');
+            const resultBadge = document.getElementById('broadcastResultBadge');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Gönderiliyor...';
+            resultBadge.textContent = 'Duyuru iletiliyor...';
+            resultBadge.style.color = '#60a5fa';
+
+            try {
+                const res = await fetch('/api/broadcast', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: text })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    resultBadge.textContent = `Başarılı! ${data.sent_count} gruba iletildi.`;
+                    resultBadge.style.color = '#4ade80';
+                    input.value = '';
+                } else {
+                    resultBadge.textContent = `Hata: ${data.error || 'Gönderilemedi'}`;
+                    resultBadge.style.color = '#f87171';
+                }
+            } catch (e) {
+                resultBadge.textContent = 'Bağlantı hatası: ' + e;
+                resultBadge.style.color = '#f87171';
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Duyuruyu Gönder';
+                fetchLogs();
+            }
+        }
+
+        // Load Products
+        async function loadProducts() {
+            try {
+                const res = await fetch('/products_db.json');
+                if (res.ok) {
+                    const prods = await res.json();
+                    document.getElementById('statProductCount').textContent = prods.length + ' Ürün';
+                    const container = document.getElementById('productsTable');
+                    container.innerHTML = '';
+                    prods.forEach(p => {
+                        const row = document.createElement('div');
+                        row.className = 'product-row';
+                        row.innerHTML = `
+                            <div class="prod-info">
+                                <img class="prod-img" src="${p.image}" alt="${escapeHtml(p.title)}" onerror="this.src='/static/dijitalpazarim_logo.jpg'">
+                                <div class="prod-texts">
+                                    <div class="prod-name" title="${escapeHtml(p.title)}">${escapeHtml(p.title)}</div>
+                                    <div class="prod-meta">${escapeHtml(p.category_label || '')} • ID: ${p.id}</div>
+                                </div>
+                            </div>
+                            <div class="prod-price">${escapeHtml(p.price)}</div>
+                            <a href="${p.url}" target="_blank" class="prod-btn">İlanı Aç</a>
+                        `;
+                        container.appendChild(row);
+                    });
+                }
+            } catch (e) {
+                console.error('Products load error:', e);
+            }
+        }
+
+        // Initial Boot
+        loadProducts();
+        updateStatus();
+        fetchLogs();
+        setInterval(updateStatus, 3000);
+        setInterval(fetchLogs, 3000);
+    </script>
 </body>
 </html>
