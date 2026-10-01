@@ -547,12 +547,26 @@
 
         <!-- Controls Panel (Start / Stop) -->
         <div class="controls-panel glass-panel">
-            <div>
-                <div style="font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.4px; font-weight: 600;">Reklam Motoru Durumu</div>
-                <div style="margin-top: 6px;">
-                    <div class="status-badge running" id="adStatusBadge">
-                        <span class="dot"></span>
-                        <span class="text" id="adStatusText">Kontrol Ediliyor...</span>
+            <div style="display: flex; gap: 24px; align-items: center; flex-wrap: wrap;">
+                <div>
+                    <div style="font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.4px; font-weight: 600;">Reklam Motoru Durumu</div>
+                    <div style="margin-top: 6px;">
+                        <div class="status-badge running" id="adStatusBadge">
+                            <span class="dot"></span>
+                            <span class="text" id="adStatusText">Kontrol Ediliyor...</span>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div style="font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.4px; font-weight: 600;">Firestore Koordinasyonu</div>
+                    <div style="margin-top: 6px; font-size: 0.88rem; font-weight: 600; color: #4ade80; display: flex; align-items: center; gap: 6px;" id="fsStatusText">
+                        <i class="fa-solid fa-cloud-check"></i> Aktif (bot-2-63772)
+                    </div>
+                </div>
+                <div>
+                    <div style="font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.4px; font-weight: 600;">Spam & Duplicate Koruması</div>
+                    <div style="margin-top: 6px; font-size: 0.88rem; font-weight: 600; color: #a78bfa; display: flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-shield-halved"></i> 50 dk Telegram Geçmiş Doğrulaması
                     </div>
                 </div>
             </div>
@@ -568,6 +582,11 @@
 
         <!-- Stats Bar -->
         <div class="stats-bar">
+            <div class="stat-card glass-panel">
+                <span class="stat-title">Sonraki Reklam Turu</span>
+                <span class="stat-value" id="statNextBlast" style="color: #60a5fa; font-size: 1.45rem;">--:--</span>
+                <span class="stat-sub" id="statBlastProtection">Firestore & Telegram Koruması</span>
+            </div>
             <div class="stat-card glass-panel">
                 <span class="stat-title">Servis Altyapısı</span>
                 <span class="stat-value" style="color: var(--success);"><i class="fa-solid fa-circle-check" style="font-size: 1.15rem; margin-right: 4px;"></i> Çevrimiçi</span>
@@ -799,6 +818,35 @@
 
                     document.getElementById('statSentAds').textContent = (s.total_ads_sent || 0);
                     document.getElementById('statLastCycle').textContent = `Son döngü: ${s.last_cycle || 'Bekleniyor'}`;
+
+                    if (s.remaining_seconds !== undefined) {
+                        const nextEl = document.getElementById('statNextBlast');
+                        if (s.blast_status === 'blasting') {
+                            nextEl.textContent = 'Döngü Sürüyor';
+                            nextEl.style.color = 'var(--success)';
+                        } else if (s.remaining_seconds > 0) {
+                            const mins = Math.floor(s.remaining_seconds / 60);
+                            const secs = s.remaining_seconds % 60;
+                            nextEl.textContent = `${mins} dk ${secs < 10 ? '0' : ''}${secs} sn`;
+                            nextEl.style.color = '#60a5fa';
+                        } else {
+                            nextEl.textContent = 'Hazır / Beklemede';
+                            nextEl.style.color = 'var(--text-primary)';
+                        }
+                    }
+
+                    if (s.firestore_connected !== undefined) {
+                        const fsEl = document.getElementById('fsStatusText');
+                        if (fsEl) {
+                            if (s.firestore_connected) {
+                                fsEl.innerHTML = '<i class="fa-solid fa-cloud-check"></i> Aktif (bot-2-63772)';
+                                fsEl.style.color = '#4ade80';
+                            } else {
+                                fsEl.innerHTML = '<i class="fa-solid fa-cloud"></i> Yerel Mod';
+                                fsEl.style.color = '#facc15';
+                            }
+                        }
+                    }
 
                     if (s.target_groups_count !== undefined) {
                         document.getElementById('statTargetCount').textContent = `${s.target_groups_count} Grup`;

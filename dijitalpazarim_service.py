@@ -15,7 +15,7 @@ import os
 import sys
 import json
 import collections
-from datetime import datetime
+from datetime import datetime, timezone
 import threading
 import asyncio
 import time
@@ -25,6 +25,11 @@ from pathlib import Path
 from flask import Flask, send_from_directory, render_template, jsonify, request
 
 sys.stdout.reconfigure(encoding='utf-8')
+
+# Ensure Firebase credentials compatibility
+if not os.environ.get("FIREBASE_API_KEY"):
+    os.environ["FIREBASE_API_KEY"] = "AIzaSyCZz54GBF4nCgP84DsTSwwMyPq70Lb_Mjo"
+import firestore_helper
 
 BASE_DIR = Path(__file__).resolve().parent
 MINIAPP_DIR = BASE_DIR / "miniapp_dijitalpazarim"
@@ -52,6 +57,7 @@ TELETHON_LOOP = None
 TOTAL_ADS_SENT = 0
 LAST_CYCLE_TIME = None
 JOINED_GROUPS_COUNT = 0
+LAST_BLAST_HEARTBEAT = time.time()
 
 t_bot: threading.Thread | None = None
 t_acc: threading.Thread | None = None
@@ -64,8 +70,167 @@ WATCHDOG_STATS = {
     "status": "active",
     "last_check": None,
     "bot_restarts": 0,
-    "telethon_restarts": 0
+    "telethon_restarts": 0,
+    "firestore_connected": False,
+    "blast_heartbeat_age": 0
 }
+
+# ─────────────────────────────────────────────────────────────
+# 0. FIRESTORE PERSISTENT CHECKPOINT & DUPLICATE PROTECTION
+# ─────────────────────────────────────────────────────────────
+
+def is_recent_message_from_account(message, account_id, now=None, window_seconds=3000) -> bool:
+    """Telegram sohbet geçmişinde bu hesabın son mesajını doğrular (deploy/restart spam koruması)."""
+    if not message or getattr(message, "empty", False):
+        return False
+    if getattr(message, "sender_id", None) != int(account_id or 0):
+        return False
+    message_date = getattr(message, "date", None)
+    if message_date is None:
+        return False
+    if getattr(message_date, "tzinfo", None) is None:
+        message_date = message_date.replace(tzinfo=timezone.utc)
+    current = datetime.now(timezone.utc) if now is None else now
+    if getattr(current, "tzinfo", None) is None:
+        current = current.replace(tzinfo=timezone.utc)
+    age = (current - message_date).total_seconds()
+    return 0 <= age <= max(1, int(window_seconds))
+
+CHECKPOINT_DOC_ID = "dijitalpazarim_blast_checkpoint"
+LOCAL_CHECKPOINT_FILE = BASE_DIR / "dijitalpazarim_blast_checkpoint.json"
+
+class DijitalPazarimCheckpoint:
+    """Persist Dijital Pazarim blast state across deploys and container restarts."""
+
+    def __init__(self):
+        self._lock = threading.RLock()
+        self.state = self.load()
+
+    def _empty_state(self) -> dict:
+        return {
+            "version": 1,
+            "status": "idle",
+            "last_blast_completed_at": 0.0,
+            "next_blast_due_at": 0.0,
+            "last_blast_started_at": 0.0,
+            "cycle_count": 0,
+            "total_sent": 0,
+            "last_group_sends": {},
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+
+    def load(self) -> dict:
+        with self._lock:
+            state = None
+            # 1. Firestore read
+            try:
+                if firestore_helper.remote_credentials_configured():
+                    doc = firestore_helper.get_document(CHECKPOINT_DOC_ID)
+                    if doc:
+                        raw = doc.get("payload")
+                        if raw:
+                            data = json.loads(raw) if isinstance(raw, str) else raw
+                            if isinstance(data, dict):
+                                state = data
+                        elif "next_blast_due_at" in doc:
+                            state = {
+                                "next_blast_due_at": float(doc.get("next_blast_due_at", 0)),
+                                "last_blast_completed_at": float(doc.get("last_blast_completed_at", 0)),
+                                "status": str(doc.get("status", "idle")),
+                                "updated_at": str(doc.get("updated_at", ""))
+                            }
+            except Exception as e:
+                sys_log(f"[Checkpoint] Firestore okuma uyarısı: {e}")
+
+            # 2. Local JSON read
+            if not state and LOCAL_CHECKPOINT_FILE.exists():
+                try:
+                    data = json.loads(LOCAL_CHECKPOINT_FILE.read_text(encoding="utf-8"))
+                    if isinstance(data, dict):
+                        state = data
+                except Exception as e:
+                    sys_log(f"[Checkpoint] Yerel checkpoint okuma uyarısı: {e}")
+
+            if not state:
+                state = self._empty_state()
+
+            empty = self._empty_state()
+            for k, v in empty.items():
+                state.setdefault(k, v)
+
+            return state
+
+    def save(self):
+        with self._lock:
+            self.state["updated_at"] = datetime.now(timezone.utc).isoformat()
+            # 1. Local disk
+            try:
+                LOCAL_CHECKPOINT_FILE.write_text(
+                    json.dumps(self.state, ensure_ascii=False, indent=2), encoding="utf-8"
+                )
+            except Exception as e:
+                sys_log(f"[Checkpoint] Yerel dosya yazma hatası: {e}")
+
+            # 2. Firestore
+            try:
+                if firestore_helper.remote_credentials_configured():
+                    firestore_helper.set_document(CHECKPOINT_DOC_ID, {
+                        "payload": json.dumps(self.state, ensure_ascii=False),
+                        "next_blast_due_at": float(self.state.get("next_blast_due_at", 0.0) or 0.0),
+                        "last_blast_completed_at": float(self.state.get("last_blast_completed_at", 0.0) or 0.0),
+                        "status": str(self.state.get("status", "idle")),
+                        "updated_at": self.state["updated_at"]
+                    })
+            except Exception as e:
+                sys_log(f"[Checkpoint] Firestore kaydetme hatası: {e}")
+
+    def get_remaining_seconds(self) -> float:
+        with self._lock:
+            due_at = float(self.state.get("next_blast_due_at", 0.0) or 0.0)
+            now = time.time()
+            if due_at > now:
+                return due_at - now
+            return 0.0
+
+    def record_blast_started(self):
+        with self._lock:
+            self.state["status"] = "blasting"
+            self.state["last_blast_started_at"] = time.time()
+            self.save()
+
+    def record_group_send(self, group_key: str):
+        with self._lock:
+            now = time.time()
+            if "last_group_sends" not in self.state or not isinstance(self.state["last_group_sends"], dict):
+                self.state["last_group_sends"] = {}
+            self.state["last_group_sends"][str(group_key).lower()] = now
+            self.state["last_group_sends"] = {
+                k: v for k, v in self.state["last_group_sends"].items()
+                if now - v < 7200
+            }
+            self.state["total_sent"] = int(self.state.get("total_sent", 0)) + 1
+            self.save()
+
+    def was_group_sent_recently(self, group_key: str, window_seconds: int = 3000) -> bool:
+        with self._lock:
+            sends = self.state.get("last_group_sends", {})
+            if not isinstance(sends, dict):
+                return False
+            last_time = sends.get(str(group_key).lower(), 0.0)
+            if not last_time:
+                return False
+            return (time.time() - float(last_time)) < window_seconds
+
+    def record_blast_completed(self, interval_seconds: int = 3600):
+        with self._lock:
+            now = time.time()
+            self.state["status"] = "waiting"
+            self.state["last_blast_completed_at"] = now
+            self.state["next_blast_due_at"] = now + interval_seconds
+            self.state["cycle_count"] = int(self.state.get("cycle_count", 0)) + 1
+            self.save()
+
+CHECKPOINT = DijitalPazarimCheckpoint()
 
 def load_target_groups() -> list[str]:
     """Hedef ticaret ve kupon gruplarini gruplar.txt dosyasindan okur."""
@@ -147,12 +312,24 @@ def health_status():
         except Exception:
             pass
     targets = load_target_groups()
+
+    remaining_sec = int(CHECKPOINT.get_remaining_seconds())
+    due_ts = float(CHECKPOINT.state.get("next_blast_due_at", 0.0) or 0.0)
+    due_str = datetime.fromtimestamp(due_ts).strftime("%H:%M:%S") if due_ts > 0 else "Hazır"
+    last_comp_ts = float(CHECKPOINT.state.get("last_blast_completed_at", 0.0) or 0.0)
+    last_comp_str = datetime.fromtimestamp(last_comp_ts).strftime("%H:%M:%S") if last_comp_ts > 0 else (LAST_CYCLE_TIME or "Henüz tamamlanmadı")
+
     return jsonify({
         "status": "online",
         "ad_running": AD_RUNNING,
         "ad_interval_minutes": AD_INTERVAL_SECONDS // 60,
-        "total_ads_sent": TOTAL_ADS_SENT,
-        "last_cycle": LAST_CYCLE_TIME or "Henüz tamamlanmadı",
+        "total_ads_sent": TOTAL_ADS_SENT or CHECKPOINT.state.get("total_sent", 0),
+        "last_cycle": last_comp_str,
+        "next_blast_due_at": due_str,
+        "remaining_seconds": remaining_sec,
+        "blast_status": CHECKPOINT.state.get("status", "idle"),
+        "firestore_connected": firestore_helper.remote_credentials_configured(),
+        "duplicate_guard": "active",
         "brand": "Dijital Pazarım",
         "bot": "@DijitalPazarimBot",
         "ad_account": "+18595173039 (@DijitalPazarimm)",
@@ -167,8 +344,11 @@ def health_status():
             "bot_alive": BOT_HEALTH_STATE.get("status") == "online",
             "bot_health": BOT_HEALTH_STATE,
             "telethon_alive": t_acc.is_alive() if t_acc else False,
+            "telethon_connected": bool(TELETHON_CLIENT and TELETHON_CLIENT.is_connected()),
             "bot_restarts": WATCHDOG_STATS.get("bot_restarts", 0),
-            "telethon_restarts": WATCHDOG_STATS.get("telethon_restarts", 0)
+            "telethon_restarts": WATCHDOG_STATS.get("telethon_restarts", 0),
+            "firestore_connected": WATCHDOG_STATS.get("firestore_connected", False),
+            "blast_heartbeat_age": WATCHDOG_STATS.get("blast_heartbeat_age", 0)
         },
         "join_safety": {
             "max_joins_hourly": MAX_JOINS_PER_CYCLE,
@@ -1039,16 +1219,34 @@ async def run_telethon_account():
 
     # 4. Background Ad Broadcast & Auto-Join loop
     async def ad_broadcast_loop():
-        global TOTAL_ADS_SENT, LAST_CYCLE_TIME, JOINED_GROUPS_COUNT, JOIN_FLOOD_UNTIL
-        await asyncio.sleep(10) # Hızlı 10 sn başlangıç hazırlığı
+        global TOTAL_ADS_SENT, LAST_CYCLE_TIME, JOINED_GROUPS_COUNT, JOIN_FLOOD_UNTIL, LAST_BLAST_HEARTBEAT
+        await asyncio.sleep(5)  # Hızlı başlangıç hazırlığı
         templates = load_ad_templates()
         template_idx = 0
 
         while True:
             try:
+                LAST_BLAST_HEARTBEAT = time.time()
                 if not AD_RUNNING:
                     await asyncio.sleep(5)
                     continue
+
+                # KORUMA A: Firestore / Yerel Checkpoint Koruması (Deploy / Restart sonrasında süreyi bekler)
+                remaining = CHECKPOINT.get_remaining_seconds()
+                if remaining > 0:
+                    mins = int(remaining // 60)
+                    secs = int(remaining % 60)
+                    sys_log(
+                        f"[DijitalPazarimAccount] Önceki reklam turu aktif: Firestore checkpoint doğrulandı. "
+                        f"Kalan bekleme süresi: {mins} dk {secs} sn. Erken gönderim engellendi."
+                    )
+                    while remaining > 0 and AD_RUNNING:
+                        sleep_chunk = min(5, remaining)
+                        await asyncio.sleep(sleep_chunk)
+                        remaining = CHECKPOINT.get_remaining_seconds()
+                        LAST_BLAST_HEARTBEAT = time.time()
+                    if not AD_RUNNING:
+                        continue
 
                 if not templates:
                     templates = load_ad_templates()
@@ -1067,9 +1265,11 @@ async def run_telethon_account():
 
                     # 2. Reklam gönderim döngüsü (30-45 saniye grup aralığı)
                     sys_log(f"[DijitalPazarimAccount] Reklam döngüsü başladı ({len(joined_groups)} aktif grup)...")
+                    CHECKPOINT.record_blast_started()
                     blacklist = load_blacklist()
 
                     for gid, group in list(joined_groups.items()):
+                        LAST_BLAST_HEARTBEAT = time.time()
                         if not AD_RUNNING:
                             sys_log("[DijitalPazarimAccount] Gönderim döngü esnasında durduruldu.")
                             break
@@ -1079,10 +1279,29 @@ async def run_telethon_account():
                         if g_uname.lower() in blacklist:
                             continue
 
+                        group_key = g_uname.lower() if g_uname else str(gid)
+
+                        # KORUMA B: Checkpoint kayıtlarında son 50 dakika kontrolü
+                        if CHECKPOINT.was_group_sent_recently(group_key, window_seconds=3000):
+                            sys_log(f"[DijitalPazarimAccount] {g_title} son 50 dakikada mesaj almış (checkpoint kaydı); tekrar atlanıyor.")
+                            continue
+
+                        dest = getattr(group, 'entity', None) or getattr(group, 'input_entity', None) or group
+
+                        # KORUMA C: Canlı Telegram Sohbet Geçmişi Koruması (Telethon get_messages limit=15)
                         try:
-                            dest = getattr(group, 'entity', None) or getattr(group, 'input_entity', None) or group
+                            recent_messages = await client.get_messages(dest, limit=15)
+                            if any(is_recent_message_from_account(m, me.id, window_seconds=3000) for m in recent_messages or []):
+                                sys_log(f"[DijitalPazarimAccount] {g_title} Telegram sohbet geçmişinde son 50 dakikada bu hesaptan mesaj tespit edildi; duplicate koruması ile atlandı.")
+                                CHECKPOINT.record_group_send(group_key)
+                                continue
+                        except Exception as guard_err:
+                            sys_log(f"[DijitalPazarimAccount] {g_title} geçmiş mesaj koruma kontrolü uyarısı: {type(guard_err).__name__}")
+
+                        try:
                             await client.send_message(dest, current_ad, link_preview=False)
                             TOTAL_ADS_SENT += 1
+                            CHECKPOINT.record_group_send(group_key)
                             sys_log(f"[DijitalPazarimAccount] Reklam paylaşıldı -> {g_title}")
                             await asyncio.sleep(random.randint(GROUP_DELAY_MIN_SECONDS, GROUP_DELAY_MAX_SECONDS))
                         except FloodWaitError as fwe:
@@ -1100,8 +1319,10 @@ async def run_telethon_account():
                         except Exception as e:
                             sys_log(f"[DijitalPazarimAccount] Grup gönderim hatası ({g_title}): {e}")
 
+                CHECKPOINT.record_blast_completed(interval_seconds=AD_INTERVAL_SECONDS)
                 LAST_CYCLE_TIME = datetime.now().strftime("%H:%M:%S")
-                sys_log("[DijitalPazarimAccount] Reklam turu tamamlandı. Sonraki döngü bekleniyor...")
+                next_due_dt = datetime.fromtimestamp(CHECKPOINT.state.get("next_blast_due_at", time.time() + AD_INTERVAL_SECONDS)).strftime("%H:%M:%S")
+                sys_log(f"[DijitalPazarimAccount] Reklam turu tamamlandı. Sonraki tur için 60 dakika bekleniyor (Hedef saat: {next_due_dt}).")
 
                 # 3. Tur bittiğinde de kalan saatlik hak varsa arka planda 1 yeni grup katılımı dene
                 try:
@@ -1111,13 +1332,16 @@ async def run_telethon_account():
                     sys_log(f"[DijitalPazarimAccount] Tur sonu katılım deneme hatası: {je}")
 
                 # 4. Bekleme döngüsü (60 dakika): Her 10 dakikada bir saatlik hak açıldıkça 1 yeni gruba katılmayı dener
-                elapsed = 0
                 last_join_check = 0
-                while elapsed < AD_INTERVAL_SECONDS and AD_RUNNING:
-                    await asyncio.sleep(5)
-                    elapsed += 5
-                    if (elapsed - last_join_check) >= 600:
-                        last_join_check = elapsed
+                while AD_RUNNING:
+                    rem = CHECKPOINT.get_remaining_seconds()
+                    if rem <= 0:
+                        break
+                    LAST_BLAST_HEARTBEAT = time.time()
+                    await asyncio.sleep(min(5, rem))
+                    last_join_check += 5
+                    if last_join_check >= 600:
+                        last_join_check = 0
                         if get_recent_joins_count(3600) < MAX_JOINS_PER_CYCLE and time.time() > JOIN_FLOOD_UNTIL:
                             sys_log("[DijitalPazarimAccount] Bekleme arası periyodik grup kontrolü...")
                             try:
@@ -1154,22 +1378,45 @@ def start_telethon_thread():
 # ─────────────────────────────────────────────────────────────
 
 def watchdog_supervisor():
-    """Background watchdog thread monitoring bot and telethon workers."""
-    global t_bot, t_acc
+    """Background watchdog thread monitoring bot, telethon, and firestore coordination."""
+    global t_bot, t_acc, WATCHDOG_STATS
     time.sleep(15)
-    sys_log("[Watchdog] Sürekli gözetim ve otomatik kurtarma mekanizması aktif.")
+    sys_log("[Watchdog] Sürekli gözetim, Firestore koordinasyonu ve otomatik kurtarma mekanizması aktif.")
     while True:
         try:
-            WATCHDOG_STATS["last_check"] = datetime.now().strftime("%H:%M:%S")
-            # 1. Check Bot Webhook Health
+            now_str = datetime.now().strftime("%H:%M:%S")
+            WATCHDOG_STATS["last_check"] = now_str
+
+            # 1. Firestore Connection Check
+            try:
+                fs_ok = firestore_helper.remote_credentials_configured()
+                WATCHDOG_STATS["firestore_connected"] = fs_ok
+            except Exception:
+                WATCHDOG_STATS["firestore_connected"] = False
+
+            # 2. Check Bot Webhook Health
             check_webhook_health()
-            
-            # 2. Check Telethon Thread
-            if t_acc is None or not t_acc.is_alive():
-                sys_log("⚠️ [Watchdog] Telethon reklam hesabı iş parçacığı durmuş! Yeniden başlatılıyor...")
+
+            # 3. Check Telethon Thread & Client Health
+            telethon_thread_alive = (t_acc is not None and t_acc.is_alive())
+            telethon_client_connected = bool(TELETHON_CLIENT and TELETHON_CLIENT.is_connected())
+            WATCHDOG_STATS["telethon_alive"] = telethon_thread_alive
+            WATCHDOG_STATS["telethon_connected"] = telethon_client_connected
+
+            if not telethon_thread_alive:
+                sys_log("[Watchdog] Telethon reklam hesabı iş parçacığı durmuş! Yeniden başlatılıyor...")
                 t_acc = threading.Thread(target=start_telethon_thread, daemon=True, name="dp-account-worker")
                 t_acc.start()
                 WATCHDOG_STATS["telethon_restarts"] += 1
+
+            # 4. Check Blast Heartbeat Age
+            heartbeat_age = int(time.time() - LAST_BLAST_HEARTBEAT)
+            WATCHDOG_STATS["blast_heartbeat_age"] = heartbeat_age
+            if AD_RUNNING and heartbeat_age > 1200:
+                sys_log(f"[Watchdog] Reklam döngüsü kalp atışı {heartbeat_age} saniyedir alınamadı! Döngü kilitlenmiş olabilir.")
+
+            # 5. Checkpoint Status Sync
+            WATCHDOG_STATS["next_blast_in_seconds"] = int(CHECKPOINT.get_remaining_seconds())
 
             time.sleep(20)
         except Exception as e:

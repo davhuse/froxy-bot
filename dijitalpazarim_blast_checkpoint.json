@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "status": "waiting",
+  "last_blast_completed_at": 1790822631.0,
+  "next_blast_due_at": 1790826231.0,
+  "last_blast_started_at": 1790822331.0,
+  "cycle_count": 1,
+  "total_sent": 3,
+  "last_group_sends": {},
+  "updated_at": "2026-10-01T02:43:51+00:00"
+}
