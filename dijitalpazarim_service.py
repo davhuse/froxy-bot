@@ -231,18 +231,225 @@ def api_broadcast():
 # 2. TELEGRAM BOT WORKER (@DijitalPazarimBot)
 # ─────────────────────────────────────────────────────────────
 
-def get_product_summary() -> str:
-    prod_file = MINIAPP_DIR / "products_db.json"
-    if not prod_file.exists():
-        return "Güncel stoklar mağazamızda listelenmektedir."
-    try:
-        data = json.loads(prod_file.read_text(encoding="utf-8"))
-        lines = ["DİJİTAL PAZARIM GÜNCEL FİYAT LİSTESİ:"]
-        for p in data:
-            lines.append(f"• {p['title']}: {p['price']}")
-        return "\n".join(lines)
-    except Exception:
-        return "Güncel ürünleri mağazadan inceleyebilirsiniz."
+ADMIN_TELEGRAM_ID = int(os.environ.get("ADMIN_TELEGRAM_ID", "7499698483"))
+
+def load_products_catalog() -> list[dict]:
+    p_file = MINIAPP_DIR / "products_db.json"
+    if p_file.exists():
+        try:
+            return json.loads(p_file.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+    return []
+
+def get_categorized_catalog():
+    prods = load_products_catalog()
+    cats = {
+        "market": {"title": "Market, Yemek & Ulaşım Kuponları", "items": []},
+        "dizi": {"title": "Dizi & Film Platformları", "items": []},
+        "muzik": {"title": "Müzik & Video Abonelikleri", "items": []},
+        "ai": {"title": "Yapay Zeka (Google Gemini Pro)", "items": []}
+    }
+    for p in prods:
+        c = p.get("category", "")
+        if c in cats:
+            cats[c]["items"].append(p)
+        else:
+            cats["market"]["items"].append(p)
+    return cats
+
+def get_full_price_list_text() -> str:
+    cats = get_categorized_catalog()
+    lines = [
+        "DİJİTAL PAZARIM - GÜNCEL FİYAT LİSTESİ",
+        "------------------------------------",
+        ""
+    ]
+    for code, info in cats.items():
+        lines.append(f"[{info['title'].upper()}]")
+        for item in info["items"]:
+            lines.append(f"• {item['title']} — {item['price']}")
+        lines.append("")
+    lines.append("Tüm ürünlerimiz 7/24 anında otomatik teslim edilmektedir.")
+    lines.append("Detaylı incelemek için aşağıdaki butonları veya mağazamızı kullanabilirsiniz.")
+    return "\n".join(lines).strip()
+
+def get_category_screen(cat_code: str):
+    cats = get_categorized_catalog()
+    if cat_code not in cats:
+        cat_code = "market"
+    info = cats[cat_code]
+    lines = [
+        f"{info['title'].upper()}",
+        "------------------------------------",
+        ""
+    ]
+    buttons = []
+    for item in info["items"]:
+        lines.append(f"• {item['title']} — {item['price']}")
+        if item.get("desc"):
+            lines.append(f"  {item['desc']}")
+        lines.append("")
+        buy_url = item.get("url") or MINIAPP_URL
+        buttons.append([{"text": f"{item['title'][:28]}... ({item['price']})", "url": buy_url}])
+
+    buttons.append([{"text": "Mağazayı Aç (Mini App)", "web_app": {"url": MINIAPP_URL}}])
+    buttons.append([
+        {"text": "<< Kategoriler", "callback_data": "menu_categories"},
+        {"text": "Ana Menü", "callback_data": "menu_main"}
+    ])
+    return "\n".join(lines).strip(), {"inline_keyboard": buttons}
+
+def get_welcome_screen(first_name: str = "Değerli Müşterimiz"):
+    text = (
+        f"Merhaba {first_name},\n\n"
+        "Dijital Pazarım resmi mağaza ve destek servisine hoş geldiniz.\n\n"
+        "En popüler dijital abonelik lisanslarını, indirim kuponlarını, market & yemek kodlarını "
+        "en avantajlı fiyatlarla, 7/24 anında teslimat ve garanti güvencesiyle temin edebilirsiniz.\n\n"
+        "ÖNE ÇIKAN KATEGORİLER:\n"
+        "• Market, Yemek & Ulaşım Kuponları (Trendyol Go, Trendyol Yemek, Shell, Uber)\n"
+        "• Dizi & Film Platformları (Netflix 4K Ultra HD, Disney+ Ortak & Özel Profil)\n"
+        "• Müzik & Video Abonelikleri (YouTube Premium, Spotify Premium)\n"
+        "• Yapay Zeka Çözümleri (Google Gemini Pro Lisans & Davet Paketleri)\n\n"
+        "Aşağıdaki menüden dilediğiniz kategoriyi inceleyebilir veya doğrudan mağazamıza giriş yapabilirsiniz."
+    )
+    keyboard = {
+        "inline_keyboard": [
+            [{"text": "Mağazayı Aç (Mini App)", "web_app": {"url": MINIAPP_URL}}],
+            [
+                {"text": "Kategoriler", "callback_data": "menu_categories"},
+                {"text": "Fiyat Listesi", "callback_data": "list_prices"}
+            ],
+            [
+                {"text": "Nasıl Sipariş Verilir?", "callback_data": "how_to_order"},
+                {"text": "Canlı Destek", "callback_data": "support_info"}
+            ]
+        ]
+    }
+    return text, keyboard
+
+def get_categories_menu():
+    text = (
+        "DİJİTAL PAZARIM - ÜRÜN KATEGORİLERİ\n"
+        "------------------------------------\n\n"
+        "Lütfen incelemek istediğiniz ürün grubunu seçiniz:\n\n"
+        "1. Market, Yemek & Ulaşım: Trendyol Go, Yemek, Uber, Shell kodları\n"
+        "2. Dizi & Film: Netflix 4K UHD, Disney+ hesapları\n"
+        "3. Müzik & Video: YouTube Premium, Spotify Premium\n"
+        "4. Yapay Zeka: Google Gemini Pro 1/12/18 Ay paketleri"
+    )
+    keyboard = {
+        "inline_keyboard": [
+            [{"text": "Market, Yemek & Ulaşım", "callback_data": "cat_market"}],
+            [{"text": "Dizi & Film Platformları", "callback_data": "cat_dizi"}],
+            [{"text": "Müzik & Video Abonelikleri", "callback_data": "cat_muzik"}],
+            [{"text": "Yapay Zeka (AI)", "callback_data": "cat_ai"}],
+            [
+                {"text": "Mağazayı Aç", "web_app": {"url": MINIAPP_URL}},
+                {"text": "<< Ana Menü", "callback_data": "menu_main"}
+            ]
+        ]
+    }
+    return text, keyboard
+
+def get_how_to_order_screen():
+    text = (
+        "NASIL SİPARİŞ VERİLİR? & GÜVENCE\n"
+        "------------------------------------\n\n"
+        "1. ÜRÜN SEÇİMİ:\n"
+        "Mağazayı Aç butonuna tıklayarak veya Kategoriler menüsünden dilediğiniz ürünü seçiniz.\n\n"
+        "2. GÜVENLİ ÖDEME:\n"
+        "Shopier altyapısı ve 3D Secure güvencesiyle kredi veya banka kartınızla güvenle ödemenizi tamamlayınız.\n\n"
+        "3. ANINDA OTOMATİK TESLİMAT:\n"
+        "Ödemeniz onaylandığı anda dijital kodunuz veya hesap erişim bilgileriniz anında ekranda görüntülenir ve e-postanıza iletilir.\n\n"
+        "4. 30 GÜN TELAFİ VE DEĞİŞİM GARANTİSİ:\n"
+        "Tüm lisans ve hesaplarımız 30 gün boyunca birebir telafi ve teknik destek garantisi altındadır.\n\n"
+        "Sorularınız için Canlı Destek butonundan yetkili ekibimize yazabilirsiniz."
+    )
+    keyboard = {
+        "inline_keyboard": [
+            [{"text": "Mağazayı Aç (Mini App)", "web_app": {"url": MINIAPP_URL}}],
+            [
+                {"text": "Kategoriler", "callback_data": "menu_categories"},
+                {"text": "Canlı Destek", "callback_data": "support_info"}
+            ],
+            [{"text": "<< Ana Menü", "callback_data": "menu_main"}]
+        ]
+    }
+    return text, keyboard
+
+def get_support_screen():
+    text = (
+        "DİJİTAL PAZARIM MÜŞTERİ DESTEĞİ\n"
+        "------------------------------------\n\n"
+        "Siparişleriniz, ürün teslimatları veya teknik sorularınız için "
+        "mesajınızı doğrudan bu sohbete yazabilirsiniz.\n\n"
+        "Yetkili ekibimiz mesajınızı inceleyerek anında bu sohbet üzerinden dönüş yapacaktır.\n\n"
+        "• Çalışma Saatleri: 7/24 Kesintisiz Destek\n"
+        "• Ortalama Yanıt Süresi: 5 - 15 Dakika\n"
+        "• Müşteri Memnuniyeti: Garantili Telafi Güvencesi"
+    )
+    keyboard = {
+        "inline_keyboard": [
+            [{"text": "Mağazayı Aç (Mini App)", "web_app": {"url": MINIAPP_URL}}],
+            [
+                {"text": "Kategoriler", "callback_data": "menu_categories"},
+                {"text": "<< Ana Menü", "callback_data": "menu_main"}
+            ]
+        ]
+    }
+    return text, keyboard
+
+def get_profile_screen(chat_id: int | str):
+    text = (
+        "HESAP VE SİPARİŞ TAKİBİ\n"
+        "------------------------------------\n\n"
+        f"Kullanıcı ID: {chat_id}\n\n"
+        "Sipariş geçmişinize, aktif lisanslarınıza ve bakiye hareketlerinize "
+        "doğrudan mağazamız içerisindeki 'Siparişlerim' ve 'Hesabım' sekmelerinden 7/24 ulaşabilirsiniz."
+    )
+    keyboard = {
+        "inline_keyboard": [
+            [{"text": "Siparişlerimi Görüntüle", "web_app": {"url": MINIAPP_URL}}],
+            [{"text": "<< Ana Menü", "callback_data": "menu_main"}]
+        ]
+    }
+    return text, keyboard
+
+def get_persistent_reply_keyboard():
+    return {
+        "keyboard": [
+            [
+                {"text": "Mağazayı Aç", "web_app": {"url": MINIAPP_URL}},
+                {"text": "Fiyat Listesi"}
+            ],
+            [
+                {"text": "Kategoriler"},
+                {"text": "Nasıl Sipariş Verilir?"}
+            ],
+            [
+                {"text": "Canlı Destek"},
+                {"text": "Hesabım & Siparişler"}
+            ]
+        ],
+        "resize_keyboard": True,
+        "is_persistent": True
+    }
+
+def match_product_by_text(query: str):
+    q = query.lower().strip()
+    prods = load_products_catalog()
+    matches = []
+    tokens = [t for t in q.split() if len(t) > 2]
+    for p in prods:
+        title = p.get("title", "").lower()
+        key = p.get("key", "").lower()
+        desc = p.get("desc", "").lower()
+        cat = p.get("category", "").lower()
+        cat_lbl = p.get("category_label", "").lower()
+        if any(tok in title or tok in key or tok in desc or tok in cat or tok in cat_lbl for tok in tokens):
+            matches.append(p)
+    return matches
 
 @app.route("/api/telegram-webhook", methods=["POST"])
 def api_telegram_webhook():
@@ -333,96 +540,6 @@ def check_webhook_health():
     except Exception:
         pass
 
-def handle_telegram_update(update: dict):
-    try:
-        # 1. Callback query
-        if "callback_query" in update:
-            cb = update["callback_query"]
-            chat_id = cb.get("message", {}).get("chat", {}).get("id")
-            cb_id = cb.get("id")
-            cb_data = cb.get("data", "")
-            
-            requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/answerCallbackQuery", json={"callback_query_id": cb_id}, timeout=5)
-            
-            if cb_data == "list_prices":
-                text = get_product_summary()
-                keyboard = {
-                    "inline_keyboard": [
-                        [{"text": "Mağazayı Aç", "web_app": {"url": MINIAPP_URL}}],
-                        [{"text": "Canlı Destek", "callback_data": "support_info"}]
-                    ]
-                }
-                send_bot_message(chat_id, text, keyboard)
-            elif cb_data == "support_info":
-                text = (
-                    "DİJİTAL PAZARIM MÜŞTERİ DESTEĞİ\n\n"
-                    "Siparişleriniz, teslimat veya kupon kodları ile ilgili sorularınızı doğrudan bu sohbete yazabilirsiniz.\n"
-                    "Yetkili ekibimiz mesajınızı inceleyip anında dönüş sağlayacaktır.\n\n"
-                    "Referanslarımız mevcuttur. Güvenli alışverişler dileriz."
-                )
-                keyboard = {
-                    "inline_keyboard": [
-                        [{"text": "Mağazayı Aç", "web_app": {"url": MINIAPP_URL}}]
-                    ]
-                }
-                send_bot_message(chat_id, text, keyboard)
-            return
-
-        # 2. Text message
-        if "message" in update and "text" in update["message"]:
-            msg = update["message"]
-            chat_id = msg["chat"]["id"]
-            text = msg["text"].strip()
-            first_name = msg.get("from", {}).get("first_name", "Değerli Müşterimiz")
-
-            if text.startswith("/start") or text.startswith("/magaza"):
-                sys_log(f"[DijitalPazarimBot] /start komutu alındı -> Chat ID: {chat_id} ({first_name})")
-                welcome_text = (
-                    f"Merhaba {first_name},\n\n"
-                    "Dijital Pazarım'a hoş geldiniz.\n"
-                    "İndirim kuponları, market & yemek kodları ve premium dijital lisansları "
-                    "aşağıdaki butondan mağazamıza giriş yaparak anında ve güvenle temin edebilirsiniz."
-                )
-                keyboard = {
-                    "inline_keyboard": [
-                        [{"text": "Mağazayı Aç", "web_app": {"url": MINIAPP_URL}}],
-                        [
-                            {"text": "Fiyat Listesi", "callback_data": "list_prices"},
-                            {"text": "Canlı Destek", "callback_data": "support_info"}
-                        ]
-                    ]
-                }
-                send_bot_message(chat_id, welcome_text, keyboard)
-            elif text.startswith("/fiyatlar"):
-                summary = get_product_summary()
-                keyboard = {
-                    "inline_keyboard": [
-                        [{"text": "Mağazayı Aç", "web_app": {"url": MINIAPP_URL}}]
-                    ]
-                }
-                send_bot_message(chat_id, summary, keyboard)
-            elif text.startswith("/destek"):
-                destek_text = (
-                    "Müşteri Hizmetleri:\n"
-                    "Mesajınızı bu sohbet üzerinden iletebilirsiniz. Ekibimiz en kısa sürede yanıt verecektir."
-                )
-                send_bot_message(chat_id, destek_text)
-            else:
-                sys_log(f"[DijitalPazarimBot] Müşteri mesajı: {text[:40]}... -> Chat ID: {chat_id}")
-                reply = (
-                    "Mesajınız müşteri ekibimize iletilmiştir. "
-                    "Ürünleri incelemek ve anında sipariş vermek için mağazamızı ziyaret edebilirsiniz."
-                )
-                keyboard = {
-                    "inline_keyboard": [
-                        [{"text": "Mağazayı Aç", "web_app": {"url": MINIAPP_URL}}]
-                    ]
-                }
-                send_bot_message(chat_id, reply, keyboard)
-
-    except Exception as e:
-        sys_log(f"[DijitalPazarimBot] Mesaj işleme hatası: {e}")
-
 def send_bot_message(chat_id: int | str, text: str, reply_markup: dict = None):
     payload = {
         "chat_id": chat_id,
@@ -440,6 +557,198 @@ def send_bot_message(chat_id: int | str, text: str, reply_markup: dict = None):
         )
     except Exception as e:
         sys_log(f"[DijitalPazarimBot] sendMessage hatası: {e}")
+
+def edit_bot_message(chat_id: int | str, message_id: int, text: str, reply_markup: dict = None):
+    payload = {
+        "chat_id": chat_id,
+        "message_id": message_id,
+        "text": text,
+        "parse_mode": "HTML"
+    }
+    if reply_markup:
+        payload["reply_markup"] = reply_markup
+    try:
+        r = requests.post(
+            f"https://api.telegram.org/bot{BOT_TOKEN}/editMessageText",
+            headers={"Content-Type": "application/json; charset=utf-8"},
+            data=json.dumps(payload, ensure_ascii=False).encode('utf-8'),
+            timeout=8
+        )
+        if not r.json().get("ok"):
+            send_bot_message(chat_id, text, reply_markup)
+    except Exception:
+        send_bot_message(chat_id, text, reply_markup)
+
+def handle_telegram_update(update: dict):
+    try:
+        # 1. Callback query
+        if "callback_query" in update:
+            cb = update["callback_query"]
+            chat_id = cb.get("message", {}).get("chat", {}).get("id")
+            message_id = cb.get("message", {}).get("message_id")
+            cb_id = cb.get("id")
+            cb_data = cb.get("data", "")
+            first_name = cb.get("from", {}).get("first_name", "Değerli Müşterimiz")
+            
+            try:
+                requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/answerCallbackQuery", json={"callback_query_id": cb_id}, timeout=5)
+            except Exception:
+                pass
+            
+            if cb_data == "menu_main":
+                text, kb = get_welcome_screen(first_name)
+                edit_bot_message(chat_id, message_id, text, kb)
+            elif cb_data == "menu_categories":
+                text, kb = get_categories_menu()
+                edit_bot_message(chat_id, message_id, text, kb)
+            elif cb_data in ("cat_market", "cat_dizi", "cat_muzik", "cat_ai"):
+                cat_code = cb_data.replace("cat_", "")
+                text, kb = get_category_screen(cat_code)
+                edit_bot_message(chat_id, message_id, text, kb)
+            elif cb_data == "list_prices":
+                text = get_full_price_list_text()
+                kb = {
+                    "inline_keyboard": [
+                        [{"text": "Mağazayı Aç (Mini App)", "web_app": {"url": MINIAPP_URL}}],
+                        [
+                            {"text": "Kategoriler", "callback_data": "menu_categories"},
+                            {"text": "Canlı Destek", "callback_data": "support_info"}
+                        ],
+                        [{"text": "<< Ana Menü", "callback_data": "menu_main"}]
+                    ]
+                }
+                edit_bot_message(chat_id, message_id, text, kb)
+            elif cb_data == "how_to_order":
+                text, kb = get_how_to_order_screen()
+                edit_bot_message(chat_id, message_id, text, kb)
+            elif cb_data == "support_info":
+                text, kb = get_support_screen()
+                edit_bot_message(chat_id, message_id, text, kb)
+            elif cb_data == "menu_profile":
+                text, kb = get_profile_screen(chat_id)
+                edit_bot_message(chat_id, message_id, text, kb)
+            return
+
+        # 2. Text message
+        if "message" in update and "text" in update["message"]:
+            msg = update["message"]
+            chat_id = msg["chat"]["id"]
+            raw_text = msg["text"].strip()
+            lower_text = raw_text.lower()
+            first_name = msg.get("from", {}).get("first_name", "Değerli Müşterimiz")
+            username = msg.get("from", {}).get("username", "")
+
+            # Start & Store
+            if lower_text.startswith("/start") or lower_text.startswith("/magaza") or lower_text in ("mağaza", "mağazayı aç", "başla"):
+                sys_log(f"[DijitalPazarimBot] /start komutu alındı -> Chat ID: {chat_id} ({first_name})")
+                text, inline_kb = get_welcome_screen(first_name)
+                send_bot_message(chat_id, text, inline_kb)
+                reply_kb = get_persistent_reply_keyboard()
+                send_bot_message(chat_id, "Hızlı erişim alt menüsü aktif edildi. Dilediğiniz zaman aşağıdaki menüden işlem yapabilirsiniz:", reply_kb)
+                return
+
+            # Kategoriler
+            if lower_text in ("/kategoriler", "kategoriler", "kategori", "ürünler"):
+                text, kb = get_categories_menu()
+                send_bot_message(chat_id, text, kb)
+                return
+
+            # Fiyat Listesi
+            if lower_text in ("/fiyatlar", "/fiyat", "fiyat listesi", "fiyatlar", "fiyat", "ücret"):
+                text = get_full_price_list_text()
+                kb = {
+                    "inline_keyboard": [
+                        [{"text": "Mağazayı Aç (Mini App)", "web_app": {"url": MINIAPP_URL}}],
+                        [
+                            {"text": "Kategoriler", "callback_data": "menu_categories"},
+                            {"text": "Canlı Destek", "callback_data": "support_info"}
+                        ]
+                    ]
+                }
+                send_bot_message(chat_id, text, kb)
+                return
+
+            # Nasıl Sipariş Verilir?
+            if any(k in lower_text for k in ("nasıl sipariş verilir", "nasıl çalışır", "nasıl alırım", "ödeme", "güvence")):
+                text, kb = get_how_to_order_screen()
+                send_bot_message(chat_id, text, kb)
+                return
+
+            # Canlı Destek
+            if lower_text in ("canlı destek", "destek", "/destek", "yardım", "iletişim", "admin"):
+                text, kb = get_support_screen()
+                send_bot_message(chat_id, text, kb)
+                return
+
+            # Hesabım / Siparişlerim / Bilgilerim
+            if any(k in lower_text for k in ("hesabım & siparişler", "hesabım", "siparişlerim", "bilgilerim", "bakiye")):
+                text, kb = get_profile_screen(chat_id)
+                send_bot_message(chat_id, text, kb)
+                return
+
+            # Özel Ürün Eşleştirme (Keyword Matcher)
+            matched = match_product_by_text(lower_text)
+            if matched:
+                item = matched[0]
+                lines = [
+                    f"ARANAN ÜRÜN BULUNDU: {item['title'].upper()}",
+                    "------------------------------------",
+                    f"Fiyat: {item['price']}",
+                    f"Özellik: {item.get('badge', 'Orijinal Lisans')}",
+                    ""
+                ]
+                if item.get("desc"):
+                    lines.append(item["desc"])
+                    lines.append("")
+                lines.append("Anında satın almak veya detayları görmek için aşağıdaki butona tıklayabilirsiniz.")
+                
+                buy_url = item.get("url") or MINIAPP_URL
+                kb = {
+                    "inline_keyboard": [
+                        [{"text": f"Satın Al ({item['price']})", "url": buy_url}],
+                        [{"text": "Mağazayı Aç (Mini App)", "web_app": {"url": MINIAPP_URL}}],
+                        [{"text": "Kategoriler", "callback_data": "menu_categories"}]
+                    ]
+                }
+                send_bot_message(chat_id, "\n".join(lines).strip(), kb)
+                sys_log(f"[DijitalPazarimBot] Anahtar kelime eşleşti ({lower_text[:20]}) -> {item['title']}")
+                return
+
+            # Genel Müşteri Sorusu / Mesajı
+            sys_log(f"[DijitalPazarimBot] Müşteri mesajı: {raw_text[:40]}... -> Chat ID: {chat_id} ({first_name})")
+            
+            # 1. Admin ID'ye Bildir
+            try:
+                import html
+                admin_alert = (
+                    "<b>[DİJİTAL PAZARIM MÜŞTERİ MESAJI]</b>\n\n"
+                    f"Müşteri: <b>{html.escape(first_name)}</b> (@{html.escape(username) if username else 'Kullanıcı adı yok'})\n"
+                    f"Kullanıcı ID: <code>{chat_id}</code>\n\n"
+                    f"Gelen Mesaj:\n<code>{html.escape(raw_text)}</code>"
+                )
+                send_bot_message(ADMIN_TELEGRAM_ID, admin_alert)
+            except Exception as ae:
+                sys_log(f"[DijitalPazarimBot] Admin bildirim hatası: {ae}")
+
+            # 2. Müşteriye Kurumsal Yanıt
+            reply_text = (
+                "Mesajınız canlı destek ekibimize iletilmiştir.\n"
+                "Yetkili temsilcimiz en kısa sürede doğrudan bu sohbete dönüş sağlayacaktır.\n\n"
+                "Ürünlerimizi incelemek veya anında sipariş vermek için aşağıdaki butonları kullanabilirsiniz."
+            )
+            keyboard = {
+                "inline_keyboard": [
+                    [{"text": "Mağazayı Aç (Mini App)", "web_app": {"url": MINIAPP_URL}}],
+                    [
+                        {"text": "Kategoriler", "callback_data": "menu_categories"},
+                        {"text": "Fiyat Listesi", "callback_data": "list_prices"}
+                    ]
+                ]
+            }
+            send_bot_message(chat_id, reply_text, keyboard)
+
+    except Exception as e:
+        sys_log(f"[DijitalPazarimBot] Mesaj işleme hatası: {e}")
 
 # ─────────────────────────────────────────────────────────────
 # 3. USER ACCOUNT RUNNER (+18595173039 / @DijitalPazarimm)
@@ -550,14 +859,22 @@ async def run_telethon_account():
     TELETHON_CLIENT = client
     sys_log(f"[DijitalPazarimAccount] Aktif Hesap: {me.first_name} (@{me.username}) - {me.phone}")
 
+    try:
+        init_dialogs = await client.get_dialogs(limit=200)
+        init_groups = [d for d in init_dialogs if d.is_group]
+        JOINED_GROUPS_COUNT = len(init_groups)
+        sys_log(f"[DijitalPazarimAccount] Başlangıç taraması: Toplam {JOINED_GROUPS_COUNT} gruba üye olunduğu tespit edildi.")
+    except Exception as ie:
+        sys_log(f"[DijitalPazarimAccount] Başlangıç diyalog tarama uyarısı: {ie}")
+
     # 1. Telegram Resmi Güvenlik / Giriş Kodu Yakalayıcı (777000)
     @client.on(events.NewMessage(incoming=True, chats=777000))
     async def handle_official_telegram_code(event):
         msg_text = event.raw_text or ""
-        sys_log(f"🚨 [GİRİŞ KODU YAKALANDI] Dijital Pazarım hesabına resmi kod geldi:\n{msg_text}")
+        sys_log(f"[GİRİŞ KODU YAKALANDI] Dijital Pazarım hesabına resmi kod geldi:\n{msg_text}")
         try:
             alert = (
-                f"🚨 <b>[DİJİTAL PAZARIM GİRİŞ KODU]</b>\n\n"
+                f"<b>[DİJİTAL PAZARIM GİRİŞ KODU]</b>\n\n"
                 f"Hesap: <b>+18595173039 (@DijitalPazarimm)</b>\n"
                 f"Mesaj:\n<code>{msg_text}</code>"
             )
@@ -591,12 +908,128 @@ async def run_telethon_account():
         except Exception as e:
             sys_log(f"[DijitalPazarimAccount] DM yanıt hatası: {e}")
 
-    # 3. Background Ad Broadcast & Auto-Join loop (Ana projedeki tam mantık ve akıl)
+    # 3. Akıllı Hedef Grup Katılım Motoru (Anti-Flood ve Saatlik Limit Korumalı)
+    async def try_join_target_groups(max_joins: int = 3) -> int:
+        global TOTAL_ADS_SENT, JOINED_GROUPS_COUNT, JOIN_FLOOD_UNTIL
+        now_ts = time.time()
+        if now_ts < JOIN_FLOOD_UNTIL:
+            wait_sec = int(JOIN_FLOOD_UNTIL - now_ts)
+            sys_log(f"[DijitalPazarimAccount] Join FloodWait aktif ({wait_sec} sn kaldı), katılım adımı atlandı.")
+            return 0
+
+        current_recent = get_recent_joins_count(3600)
+        allowed_joins = min(max_joins, MAX_JOINS_PER_CYCLE - current_recent)
+        if allowed_joins <= 0:
+            return 0
+
+        try:
+            dialogs = await client.get_dialogs(limit=200)
+        except Exception as de:
+            sys_log(f"[DijitalPazarimAccount] Diyalog tarama hatası: {de}")
+            return 0
+
+        joined_groups = {}
+        joined_usernames = set()
+        for d in dialogs:
+            if d.is_group:
+                joined_groups[d.id] = d
+                uname = getattr(d.entity, "username", None)
+                if uname:
+                    joined_usernames.add(uname.lower())
+
+        JOINED_GROUPS_COUNT = len(joined_groups)
+        targets = load_target_groups()
+        blacklist = load_blacklist()
+
+        not_joined = []
+        for target_name in targets:
+            t_clean = target_name.lower().lstrip("@")
+            if (
+                t_clean
+                and t_clean not in blacklist
+                and t_clean not in joined_usernames
+                and t_clean not in FAILED_JOIN_TARGETS
+                and t_clean not in PENDING_INVITES
+            ):
+                not_joined.append(t_clean)
+
+        if not not_joined:
+            return 0
+
+        sys_log(f"[DijitalPazarimAccount] Katılınabilecek {len(not_joined)} hedef grup mevcut (Saatlik hak: {allowed_joins}).")
+        joined_count = 0
+
+        for target_to_try in not_joined:
+            if joined_count >= allowed_joins:
+                break
+
+            if get_recent_joins_count(3600) >= MAX_JOINS_PER_CYCLE:
+                sys_log(f"[DijitalPazarimAccount] Saatlik katılım limiti ({MAX_JOINS_PER_CYCLE}/saat) doldu.")
+                break
+
+            sys_log(f"[DijitalPazarimAccount] Hedef gruba katılım deneniyor ({joined_count + 1}/{allowed_joins}): @{target_to_try}")
+            try:
+                entity = await client.get_entity(target_to_try)
+                await client(JoinChannelRequest(entity))
+                joined_usernames.add(target_to_try)
+                joined_groups[entity.id] = entity
+                JOINED_GROUPS_COUNT = len(joined_groups)
+                RECENT_JOIN_TIMESTAMPS.append(time.time())
+                if target_to_try in PENDING_INVITES:
+                    PENDING_INVITES.remove(target_to_try)
+                save_persistent_join_state()
+                sys_log(f"[DijitalPazarimAccount] Gruba başarıyla katıldı: @{target_to_try}")
+                joined_count += 1
+
+                if joined_count < allowed_joins:
+                    join_delay = random.randint(JOIN_DELAY_MIN_SECONDS, JOIN_DELAY_MAX_SECONDS)
+                    sys_log(f"[DijitalPazarimAccount] Anti-flood koruması: Sonraki katılım öncesi {join_delay} sn bekleniyor...")
+                    await asyncio.sleep(join_delay)
+                else:
+                    await asyncio.sleep(20)
+
+            except FloodWaitError as fwe:
+                JOIN_FLOOD_UNTIL = time.time() + fwe.seconds + 60
+                sys_log(f"[DijitalPazarimAccount] Join FloodWait: {fwe.seconds} sn. Katılım duraklatıldı.")
+                break
+            except Exception as e:
+                err_msg = str(e).lower()
+                err_type = type(e).__name__
+                if "already" in err_msg or "useralreadyparticipant" in err_type.lower():
+                    joined_usernames.add(target_to_try)
+                    sys_log(f"[DijitalPazarimAccount] Zaten üye olunan grup: @{target_to_try}")
+                    if target_to_try in PENDING_INVITES:
+                        PENDING_INVITES.remove(target_to_try)
+                    save_persistent_join_state()
+                elif "requested to join" in err_msg or "inviterequestsent" in err_type.lower():
+                    PENDING_INVITES.add(target_to_try)
+                    RECENT_JOIN_TIMESTAMPS.append(time.time())
+                    save_persistent_join_state()
+                    sys_log(f"[DijitalPazarimAccount] @{target_to_try} katılım isteği iletildi (yönetici onayı bekleniyor).")
+                elif any(k in err_msg for k in ("private", "banned", "forbidden", "admin", "channel_private", "user_banned")) or isinstance(e, (UserBannedInChannelError, ChannelPrivateError, UsernameNotOccupiedError, UsernameInvalidError)):
+                    FAILED_JOIN_TARGETS.add(target_to_try)
+                    save_persistent_join_state()
+                    sys_log(f"[DijitalPazarimAccount] @{target_to_try} kalıcı olarak atlandı: {err_type}")
+                else:
+                    sys_log(f"[DijitalPazarimAccount] Gruba katılma geçici hatası (@{target_to_try}): {e}")
+
+                err_wait = random.randint(45, 90)
+                await asyncio.sleep(err_wait)
+
+        return joined_count
+
+    # 4. Background Ad Broadcast & Auto-Join loop
     async def ad_broadcast_loop():
         global TOTAL_ADS_SENT, LAST_CYCLE_TIME, JOINED_GROUPS_COUNT, JOIN_FLOOD_UNTIL
-        await asyncio.sleep(20) # Initial startup buffer
+        await asyncio.sleep(15) # Initial startup buffer
         templates = load_ad_templates()
         template_idx = 0
+
+        # Başlangıçta hemen ilk güvenli katılım döngüsünü dene
+        try:
+            await try_join_target_groups(max_joins=MAX_JOINS_PER_CYCLE)
+        except Exception as je:
+            sys_log(f"[DijitalPazarimAccount] Başlangıç katılım hatası: {je}")
 
         while True:
             try:
@@ -611,85 +1044,17 @@ async def run_telethon_account():
                     current_ad = templates[template_idx % len(templates)]
                     template_idx += 1
 
-                    # 1. Mevcut diyalogları ve üye olunan grupları tara
-                    dialogs = await client.get_dialogs(limit=100)
+                    # 1. Mevcut grupları tara
+                    dialogs = await client.get_dialogs(limit=200)
                     joined_groups = {}
-                    joined_usernames = set()
                     for d in dialogs:
                         if d.is_group:
                             joined_groups[d.id] = d
-                            uname = getattr(d.entity, 'username', None)
-                            if uname:
-                                joined_usernames.add(uname.lower())
-                    
                     JOINED_GROUPS_COUNT = len(joined_groups)
 
-                    # 2. gruplar.txt listesinden güvenli grup katılımı (Ana projedeki saatlik limit ve 3-6 dk bekleme)
-                    now_ts = time.time()
-                    if now_ts < JOIN_FLOOD_UNTIL:
-                        wait_sec = int(JOIN_FLOOD_UNTIL - now_ts)
-                        sys_log(f"[DijitalPazarimAccount] ⏳ Join FloodWait aktif ({wait_sec} sn kaldı), katılım adımı atlandı.")
-                    else:
-                        current_recent = get_recent_joins_count(3600)
-                        if current_recent >= MAX_JOINS_PER_CYCLE:
-                            sys_log(f"[DijitalPazarimAccount] 🔒 Saatlik katılım limiti ({MAX_JOINS_PER_CYCLE}/saat) doldu. Katılım adımı güvenle atlandı.")
-                        else:
-                            targets = load_target_groups()
-                            blacklist = load_blacklist()
-                            
-                            not_joined = []
-                            for target_name in targets:
-                                t_clean = target_name.lower().lstrip('@')
-                                if t_clean and t_clean not in blacklist and t_clean not in joined_usernames and t_clean not in FAILED_JOIN_TARGETS and t_clean not in PENDING_INVITES:
-                                    not_joined.append(t_clean)
-                            
-                            if not_joined:
-                                target_to_try = not_joined[0]
-                                sys_log(f"[DijitalPazarimAccount] 🔍 Hedef gruba katılım deneniyor (1/1): @{target_to_try} (Kalan saatlik hak: {MAX_JOINS_PER_CYCLE - current_recent})")
-                                
-                                try:
-                                    entity = await client.get_entity(target_to_try)
-                                    await client(JoinChannelRequest(entity))
-                                    joined_usernames.add(target_to_try)
-                                    joined_groups[entity.id] = entity
-                                    JOINED_GROUPS_COUNT = len(joined_groups)
-                                    RECENT_JOIN_TIMESTAMPS.append(time.time())
-                                    if target_to_try in PENDING_INVITES:
-                                        PENDING_INVITES.remove(target_to_try)
-                                    save_persistent_join_state()
-                                    sys_log(f"[DijitalPazarimAccount] ✅ Gruba başarıyla katıldı: @{target_to_try}")
-                                    
-                                    # Ana projedeki gibi 3-6 dakika güvenli bekleme
-                                    join_delay = random.randint(JOIN_DELAY_MIN_SECONDS, JOIN_DELAY_MAX_SECONDS)
-                                    sys_log(f"[DijitalPazarimAccount] 🛡️ Anti-flood koruması: Sonraki işlem öncesi {join_delay} sn bekleniyor...")
-                                    await asyncio.sleep(join_delay)
-                                except FloodWaitError as fwe:
-                                    JOIN_FLOOD_UNTIL = time.time() + fwe.seconds + 60
-                                    sys_log(f"[DijitalPazarimAccount] ⚠️ Join FloodWait: {fwe.seconds} sn. Katılım duraklatıldı.")
-                                except Exception as e:
-                                    err_msg = str(e).lower()
-                                    err_type = type(e).__name__
-                                    if "requested to join" in err_msg or "inviterequestsent" in err_type.lower():
-                                        PENDING_INVITES.add(target_to_try)
-                                        RECENT_JOIN_TIMESTAMPS.append(time.time())
-                                        save_persistent_join_state()
-                                        sys_log(f"[DijitalPazarimAccount] ⏳ @{target_to_try} katılım isteği iletildi (yönetici onayı bekleniyor).")
-                                    elif any(k in err_msg for k in ("private", "banned", "forbidden", "admin", "channel_private", "user_banned")) or isinstance(e, (UserBannedInChannelError, ChannelPrivateError, UsernameNotOccupiedError, UsernameInvalidError)):
-                                        FAILED_JOIN_TARGETS.add(target_to_try)
-                                        save_persistent_join_state()
-                                        sys_log(f"[DijitalPazarimAccount] ⛔ @{target_to_try} kalıcı olarak atlandı: {err_type}")
-                                    else:
-                                        FAILED_JOIN_TARGETS.add(target_to_try)
-                                        save_persistent_join_state()
-                                        sys_log(f"[DijitalPazarimAccount] ⚠️ Gruba katılma hatası (@{target_to_try}): {e}")
-                                    
-                                    # Güvenlik tamponu: Hata veya istek gönderiminde de en az 60-120 saniye beklenir
-                                    err_wait = random.randint(60, 120)
-                                    sys_log(f"[DijitalPazarimAccount] 🛡️ Güvenlik tamponu: {err_wait} sn bekleniyor...")
-                                    await asyncio.sleep(err_wait)
-
-                    # 3. Reklam gönderim döngüsü (30-45 saniye grup aralığı)
+                    # 2. Reklam gönderim döngüsü (30-45 saniye grup aralığı)
                     sys_log(f"[DijitalPazarimAccount] Reklam döngüsü başladı ({len(joined_groups)} aktif grup)...")
+                    blacklist = load_blacklist()
 
                     for gid, group in list(joined_groups.items()):
                         if not AD_RUNNING:
@@ -722,12 +1087,27 @@ async def run_telethon_account():
 
                 LAST_CYCLE_TIME = datetime.now().strftime("%H:%M:%S")
                 sys_log("[DijitalPazarimAccount] Reklam turu tamamlandı. Sonraki döngü bekleniyor...")
-                
-                # Bekleme döngüsü (panelden durdurulduğunda hemen yanıt verir)
+
+                # 3. Tur bittiğinde de kalan saatlik hak varsa katılım dene
+                try:
+                    await try_join_target_groups(max_joins=1)
+                except Exception as je:
+                    sys_log(f"[DijitalPazarimAccount] Tur sonu katılım deneme hatası: {je}")
+
+                # 4. Bekleme döngüsü (60 dakika): Her 10 dakikada bir saatlik hak açıldıkça 1 yeni gruba katılmayı dener
                 elapsed = 0
+                last_join_check = 0
                 while elapsed < AD_INTERVAL_SECONDS and AD_RUNNING:
-                    await asyncio.sleep(2)
-                    elapsed += 2
+                    await asyncio.sleep(5)
+                    elapsed += 5
+                    if (elapsed - last_join_check) >= 600:
+                        last_join_check = elapsed
+                        if get_recent_joins_count(3600) < MAX_JOINS_PER_CYCLE and time.time() > JOIN_FLOOD_UNTIL:
+                            sys_log("[DijitalPazarimAccount] Bekleme arası periyodik grup kontrolü...")
+                            try:
+                                await try_join_target_groups(max_joins=1)
+                            except Exception as pe:
+                                sys_log(f"[DijitalPazarimAccount] Periyodik katılım hatası: {pe}")
 
             except Exception as e:
                 sys_log(f"[DijitalPazarimAccount] Döngü hatası: {e}")
