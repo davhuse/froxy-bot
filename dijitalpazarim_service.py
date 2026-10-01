@@ -974,16 +974,18 @@ async def run_telethon_account():
 
         sys_log(f"[DijitalPazarimAccount] Katılınabilecek {len(not_joined)} hedef grup mevcut (Saatlik hak: {allowed_joins}).")
         joined_count = 0
+        attempts = 0
 
         for target_to_try in not_joined:
-            if joined_count >= allowed_joins:
+            if joined_count >= allowed_joins or attempts >= allowed_joins:
                 break
 
             if get_recent_joins_count(3600) >= MAX_JOINS_PER_CYCLE:
                 sys_log(f"[DijitalPazarimAccount] Saatlik katılım limiti ({MAX_JOINS_PER_CYCLE}/saat) doldu.")
                 break
 
-            sys_log(f"[DijitalPazarimAccount] Hedef gruba katılım deneniyor ({joined_count + 1}/{allowed_joins}): @{target_to_try}")
+            attempts += 1
+            sys_log(f"[DijitalPazarimAccount] Hedef grup kontrol ediliyor ({attempts}/{allowed_joins}): @{target_to_try}")
             try:
                 entity = await client.get_entity(target_to_try)
                 await client(JoinChannelRequest(entity))
@@ -999,10 +1001,10 @@ async def run_telethon_account():
 
                 if joined_count < allowed_joins:
                     join_delay = random.randint(JOIN_DELAY_MIN_SECONDS, JOIN_DELAY_MAX_SECONDS)
-                    sys_log(f"[DijitalPazarimAccount] Anti-flood koruması: Sonraki katılım öncesi {join_delay} sn bekleniyor...")
+                    sys_log(f"[DijitalPazarimAccount] Güvenli aralık: Sonraki katılım öncesi {join_delay} sn bekleniyor...")
                     await asyncio.sleep(join_delay)
                 else:
-                    await asyncio.sleep(20)
+                    await asyncio.sleep(5)
 
             except FloodWaitError as fwe:
                 JOIN_FLOOD_UNTIL = time.time() + fwe.seconds + 60
@@ -1017,35 +1019,30 @@ async def run_telethon_account():
                     if target_to_try in PENDING_INVITES:
                         PENDING_INVITES.remove(target_to_try)
                     save_persistent_join_state()
+                    await asyncio.sleep(2)
                 elif "requested to join" in err_msg or "inviterequestsent" in err_type.lower():
                     PENDING_INVITES.add(target_to_try)
                     RECENT_JOIN_TIMESTAMPS.append(time.time())
                     save_persistent_join_state()
                     sys_log(f"[DijitalPazarimAccount] @{target_to_try} katılım isteği iletildi (yönetici onayı bekleniyor).")
+                    await asyncio.sleep(3)
                 elif any(k in err_msg for k in ("private", "banned", "forbidden", "admin", "channel_private", "user_banned")) or isinstance(e, (UserBannedInChannelError, ChannelPrivateError, UsernameNotOccupiedError, UsernameInvalidError)):
                     FAILED_JOIN_TARGETS.add(target_to_try)
                     save_persistent_join_state()
-                    sys_log(f"[DijitalPazarimAccount] @{target_to_try} kalıcı olarak atlandı: {err_type}")
+                    sys_log(f"[DijitalPazarimAccount] @{target_to_try} açık katılım kapalı ({err_type}), listeden elendi.")
+                    await asyncio.sleep(2)
                 else:
-                    sys_log(f"[DijitalPazarimAccount] Gruba katılma geçici hatası (@{target_to_try}): {e}")
-
-                err_wait = random.randint(45, 90)
-                await asyncio.sleep(err_wait)
+                    sys_log(f"[DijitalPazarimAccount] Gruba katılım atlandı (@{target_to_try}): {e}")
+                    await asyncio.sleep(3)
 
         return joined_count
 
     # 4. Background Ad Broadcast & Auto-Join loop
     async def ad_broadcast_loop():
         global TOTAL_ADS_SENT, LAST_CYCLE_TIME, JOINED_GROUPS_COUNT, JOIN_FLOOD_UNTIL
-        await asyncio.sleep(15) # Initial startup buffer
+        await asyncio.sleep(10) # Hızlı 10 sn başlangıç hazırlığı
         templates = load_ad_templates()
         template_idx = 0
-
-        # Başlangıçta hemen ilk güvenli katılım döngüsünü dene
-        try:
-            await try_join_target_groups(max_joins=MAX_JOINS_PER_CYCLE)
-        except Exception as je:
-            sys_log(f"[DijitalPazarimAccount] Başlangıç katılım hatası: {je}")
 
         while True:
             try:
@@ -1060,7 +1057,7 @@ async def run_telethon_account():
                     current_ad = templates[template_idx % len(templates)]
                     template_idx += 1
 
-                    # 1. Mevcut grupları tara
+                    # 1. Mevcut üye olunan grupları tara
                     dialogs = await client.get_dialogs(limit=200)
                     joined_groups = {}
                     for d in dialogs:
@@ -1083,8 +1080,8 @@ async def run_telethon_account():
                             continue
 
                         try:
-                            target_dest = group.id if hasattr(group, 'id') else gid
-                            await client.send_message(target_dest, current_ad)
+                            dest = getattr(group, 'entity', None) or getattr(group, 'input_entity', None) or group
+                            await client.send_message(dest, current_ad, link_preview=False)
                             TOTAL_ADS_SENT += 1
                             sys_log(f"[DijitalPazarimAccount] Reklam paylaşıldı -> {g_title}")
                             await asyncio.sleep(random.randint(GROUP_DELAY_MIN_SECONDS, GROUP_DELAY_MAX_SECONDS))
@@ -1092,21 +1089,24 @@ async def run_telethon_account():
                             sys_log(f"[DijitalPazarimAccount] FloodWait: {fwe.seconds} saniye bekleniyor...")
                             await asyncio.sleep(fwe.seconds + 5)
                         except SlowModeWaitError as sm:
-                            wait_s = min(sm.seconds + 5, 120)
-                            sys_log(f"[DijitalPazarimAccount] SlowMode ({g_title}): {sm.seconds} sn, {wait_s} sn bekleniyor.")
-                            await asyncio.sleep(wait_s)
+                            if sm.seconds > 45:
+                                sys_log(f"[DijitalPazarimAccount] SlowMode aktif ({g_title}): {sm.seconds} sn beklemede; grup bu tur atlanıp sonraki gruba devam ediliyor.")
+                            else:
+                                wait_s = sm.seconds + 2
+                                sys_log(f"[DijitalPazarimAccount] SlowMode ({g_title}): {sm.seconds} sn, {wait_s} sn bekleniyor...")
+                                await asyncio.sleep(wait_s)
                         except (ChatWriteForbiddenError, UserBannedInChannelError) as cwf:
-                            sys_log(f"[DijitalPazarimAccount] Yazma izni yok/banlı, listeden çıkarıldı -> {g_title}")
-                            joined_groups.pop(gid, None)
+                            sys_log(f"[DijitalPazarimAccount] Yazma izni yok/banlı, bu tur atlandı -> {g_title}")
                         except Exception as e:
                             sys_log(f"[DijitalPazarimAccount] Grup gönderim hatası ({g_title}): {e}")
 
                 LAST_CYCLE_TIME = datetime.now().strftime("%H:%M:%S")
                 sys_log("[DijitalPazarimAccount] Reklam turu tamamlandı. Sonraki döngü bekleniyor...")
 
-                # 3. Tur bittiğinde de kalan saatlik hak varsa katılım dene
+                # 3. Tur bittiğinde de kalan saatlik hak varsa arka planda 1 yeni grup katılımı dene
                 try:
-                    await try_join_target_groups(max_joins=1)
+                    if get_recent_joins_count(3600) < MAX_JOINS_PER_CYCLE and time.time() > JOIN_FLOOD_UNTIL:
+                        await try_join_target_groups(max_joins=1)
                 except Exception as je:
                     sys_log(f"[DijitalPazarimAccount] Tur sonu katılım deneme hatası: {je}")
 
@@ -1129,7 +1129,15 @@ async def run_telethon_account():
                 sys_log(f"[DijitalPazarimAccount] Döngü hatası: {e}")
                 await asyncio.sleep(30)
 
-    asyncio.create_task(ad_broadcast_loop())
+    async def supervised_ad_loop():
+        while True:
+            try:
+                await ad_broadcast_loop()
+            except Exception as loop_err:
+                sys_log(f"[DijitalPazarimAccount] Süpervizör döngü kurtarma hatası: {loop_err}")
+                await asyncio.sleep(15)
+
+    asyncio.create_task(supervised_ad_loop())
     await client.run_until_disconnected()
 
 def start_telethon_thread():
