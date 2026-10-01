@@ -1,12 +1,46 @@
 # -*- coding: utf-8 -*-
 import time
 import requests
+import json
 import sys
 
 sys.stdout.reconfigure(encoding='utf-8', line_buffering=True)
 token = 'cb8db854-3ede-42e7-af5a-8d896d8c7cb2'
 headers = {'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'}
-q = """
+
+cfg = json.load(open('dijitalpazarim_railway_config.json'))
+svc_id = cfg['service_id']
+
+q_list = """
+query GetDeployments($svcId: String!) {
+  deployments(first: 1, input: { serviceId: $svcId }) {
+    edges {
+      node {
+        id
+        status
+        createdAt
+      }
+    }
+  }
+}
+"""
+
+r = requests.post(
+    'https://backboard.railway.app/graphql/v2',
+    json={'query': q_list, 'variables': {'svcId': svc_id}},
+    headers=headers,
+    timeout=10
+)
+edges = r.json().get('data', {}).get('deployments', {}).get('edges', [])
+if not edges:
+    print("No deployments found for service!")
+    sys.exit(1)
+
+latest_dep = edges[0]['node']
+dep_id = latest_dep['id']
+print(f"Tracking latest Dijital Pazarım Deployment: {dep_id} (Initial status: {latest_dep['status']})")
+
+q_status = """
 query GetDeploy($id: String!) {
   deployment(id: $id) {
     id
@@ -15,17 +49,19 @@ query GetDeploy($id: String!) {
 }
 """
 
-main_id = '66686684-3380-43bf-8855-7656af97325e'
-dp_id = '7d97a11d-ceae-460d-bc15-109e53f78837'
-
-for i in range(12): # up to 2 minutes
+for i in range(25): # up to ~4 minutes
     time.sleep(10)
-    m = requests.post('https://backboard.railway.app/graphql/v2', json={'query': q, 'variables': {'id': main_id}}, headers=headers).json().get('data', {}).get('deployment', {}).get('status')
-    d = requests.post('https://backboard.railway.app/graphql/v2', json={'query': q, 'variables': {'id': dp_id}}, headers=headers).json().get('data', {}).get('deployment', {}).get('status')
-    print(f"Poll {i+1} ({round((i+1)*10)}s): Main: {m} | DP: {d}")
-    if m == 'SUCCESS' and d == 'SUCCESS':
-        print("Both deployments reached SUCCESS!")
+    res = requests.post(
+        'https://backboard.railway.app/graphql/v2',
+        json={'query': q_status, 'variables': {'id': dep_id}},
+        headers=headers,
+        timeout=10
+    ).json()
+    st = res.get('data', {}).get('deployment', {}).get('status')
+    print(f"Poll {i+1} ({(i+1)*10}s): Status = {st}")
+    if st == 'SUCCESS':
+        print("Dijital Pazarım deployment reached SUCCESS!")
         break
-    if m in ['FAILED', 'CRASHED'] or d in ['FAILED', 'CRASHED']:
-        print("A deployment failed!")
+    if st in ['FAILED', 'CRASHED']:
+        print(f"Deployment failed with status: {st}")
         break
