@@ -436,20 +436,36 @@ def get_persistent_reply_keyboard():
         "is_persistent": True
     }
 
+PRODUCT_TRIGGERS = {
+    "netflix": ["netflix"],
+    "disney": ["disney"],
+    "trendyol": ["trendyol", "go"],
+    "yemek": ["yemek"],
+    "uber": ["uber"],
+    "shell": ["shell", "akaryakıt", "yakıt"],
+    "spotify": ["spotify"],
+    "youtube": ["youtube"],
+    "gemini": ["gemini", "yapay zeka"]
+}
+
 def match_product_by_text(query: str):
     q = query.lower().strip()
     prods = load_products_catalog()
-    matches = []
-    tokens = [t for t in q.split() if len(t) > 2]
+    matched_keys = set()
+    for brand, triggers in PRODUCT_TRIGGERS.items():
+        if any(tr in q for tr in triggers):
+            matched_keys.add(brand)
+    
+    if not matched_keys:
+        return []
+
+    results = []
     for p in prods:
-        title = p.get("title", "").lower()
-        key = p.get("key", "").lower()
-        desc = p.get("desc", "").lower()
-        cat = p.get("category", "").lower()
-        cat_lbl = p.get("category_label", "").lower()
-        if any(tok in title or tok in key or tok in desc or tok in cat or tok in cat_lbl for tok in tokens):
-            matches.append(p)
-    return matches
+        k = p.get("key", "").lower()
+        t = p.get("title", "").lower()
+        if any(mk in k or mk in t for mk in matched_keys):
+            results.append(p)
+    return results
 
 @app.route("/api/telegram-webhook", methods=["POST"])
 def api_telegram_webhook():
