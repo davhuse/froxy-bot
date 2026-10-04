@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
 Dijital Pazarım — Dedicated Independent Service
 Runs exclusively for Dijital Pazarım:
@@ -1240,9 +1240,18 @@ async def run_telethon_account():
                         f"[DijitalPazarimAccount] Önceki reklam turu aktif: Firestore checkpoint doğrulandı. "
                         f"Kalan bekleme süresi: {mins} dk {secs} sn. Erken gönderim engellendi."
                     )
+                    join_tick = 590  # ilk katilim denemesi birkac saniye icinde
                     while remaining > 0 and AD_RUNNING:
                         sleep_chunk = min(5, remaining)
                         await asyncio.sleep(sleep_chunk)
+                        join_tick += sleep_chunk
+                        if join_tick >= 600:
+                            join_tick = 0
+                            if get_recent_joins_count(3600) < MAX_JOINS_PER_CYCLE and time.time() > JOIN_FLOOD_UNTIL:
+                                try:
+                                    await try_join_target_groups(max_joins=1)
+                                except Exception as pe:
+                                    sys_log(f"[DijitalPazarimAccount] Bekleme katılım hatası: {pe}")
                         remaining = CHECKPOINT.get_remaining_seconds()
                         LAST_BLAST_HEARTBEAT = time.time()
                     if not AD_RUNNING:
