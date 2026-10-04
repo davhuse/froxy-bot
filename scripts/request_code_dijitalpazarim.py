@@ -11,7 +11,7 @@ sys.stdout.reconfigure(encoding='utf-8')
 
 API_ID = 31076280
 API_HASH = '7ba4072dcf0a05a7ccf80e570866b6d8'
-PHONE = '+18595173039'
+PHONE = sys.argv[1] if len(sys.argv) > 1 else '+18595173039'
 
 async def main():
     print(f"Telegram'a bağlanılıyor ve {PHONE} numarasına kod talep ediliyor...")

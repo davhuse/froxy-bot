@@ -1,11 +1,11 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 Dijital Pazarım — Dedicated Independent Service
 Runs exclusively for Dijital Pazarım:
 - Serves Dijital Pazarım Canlı Servis Paneli on root '/' with Start/Stop and Broadcast controls
 - Serves Dijital Pazarım Mini App on '/dp' and '/app' with TR | EN language options
 - Telegram Bot (@DijitalPazarimBot) runner with WebApp menu button to '/dp'
-- Telethon Ad Sender loop for +18595173039 (@DijitalPazarimm)
+- Telethon Ad Sender loop for +905558556682 (@DijitalPazarimTR)
 - Real-time endpoints: /api/start, /api/stop, /api/broadcast, /api/logs, /api/status
 Zero dependency on KeyVadi, LisansArena, or Froxy.
 """
@@ -332,7 +332,7 @@ def health_status():
         "duplicate_guard": "active",
         "brand": "Dijital Pazarım",
         "bot": "@DijitalPazarimBot",
-        "ad_account": "+18595173039 (@DijitalPazarimm)",
+        "ad_account": "+905558556682 (@DijitalPazarimTR)",
         "domain": PUBLIC_BASE_URL,
         "miniapp_url": MINIAPP_URL,
         "active_products": prod_count,
@@ -947,7 +947,7 @@ def handle_telegram_update(update: dict):
         sys_log(f"[DijitalPazarimBot] Mesaj işleme hatası: {e}")
 
 # ─────────────────────────────────────────────────────────────
-# 3. USER ACCOUNT RUNNER (+18595173039 / @DijitalPazarimm)
+# 3. USER ACCOUNT RUNNER (+905558556682 / @DijitalPazarimTR)
 # ─────────────────────────────────────────────────────────────
 
 API_ID = int(os.environ.get("TELEGRAM_API_ID", "31076280"))
@@ -1042,7 +1042,7 @@ async def run_telethon_account():
         sys_log("[DijitalPazarimAccount] Oturum anahtarı bulunamadı, kullanıcı hesabı başlatılamadı.")
         return
 
-    sys_log("[DijitalPazarimAccount] Telethon kullanıcı hesabı başlatılıyor (+18595173039)...")
+    sys_log("[DijitalPazarimAccount] Telethon kullanıcı hesabı başlatılıyor (+905558556682)...")
     client = TelegramClient(StringSession(session_to_use), API_ID, API_HASH)
     await client.connect()
 
@@ -1071,7 +1071,7 @@ async def run_telethon_account():
         try:
             alert = (
                 f"<b>[DİJİTAL PAZARIM GİRİŞ KODU]</b>\n\n"
-                f"Hesap: <b>+18595173039 (@DijitalPazarimm)</b>\n"
+                f"Hesap: <b>+905558556682 (@DijitalPazarimTR)</b>\n"
                 f"Mesaj:\n<code>{msg_text}</code>"
             )
             send_bot_message(ADMIN_TELEGRAM_ID, alert)
@@ -1431,7 +1431,7 @@ if __name__ == "__main__":
     # 1. Setup Telegram Bot Webhook & Menu Button (@DijitalPazarimBot)
     setup_telegram_bot()
 
-    # 2. Start User Account Ad Worker Thread (+18595173039)
+    # 2. Start User Account Ad Worker Thread (+905558556682)
     t_acc = threading.Thread(target=start_telethon_thread, daemon=True, name="dp-account-worker")
     t_acc.start()
 
