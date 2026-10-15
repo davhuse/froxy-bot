@@ -1779,27 +1779,15 @@ def ingest_logs():
 
 @app.route('/api/logs', methods=['GET'])
 def get_logs():
-    lines = []
-    if os.path.exists(LOG_FILE):
-        try:
-            with open(LOG_FILE, 'r', encoding="utf-8", errors="replace") as f:
-                lines.extend(f.readlines())
-        except Exception:
-            pass
-    froxy_log = os.path.join(base_dir, "froxy_ad_service.log")
-    if os.path.exists(froxy_log):
-        try:
-            with open(froxy_log, 'r', encoding="utf-8", errors="replace") as f:
-                for line in f:
-                    if line not in lines:
-                        lines.append(line)
-        except Exception:
-            pass
-            
-    if not lines:
+    target = LOG_FILE if os.path.exists(LOG_FILE) else os.path.join(base_dir, "froxy_ad_service.log")
+    if not os.path.exists(target):
         return jsonify({"logs": []})
-    
-    return jsonify({"logs": lines[-100:]})
+    try:
+        with open(target, 'r', encoding="utf-8", errors="replace") as f:
+            lines = f.readlines()
+            return jsonify({"logs": lines[-100:]})
+    except Exception as e:
+        return jsonify({"logs": [f"Log okuma hatası: {str(e)}"]})
 
 @app.route('/api/full_logs', methods=['GET'])
 def get_full_logs():
