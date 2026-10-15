@@ -21,7 +21,12 @@ import urllib.request
 from typing import Awaitable, Callable
 
 import firestore_helper
-from campaign_preferences import notifications_enabled
+
+try:
+    from campaign_preferences import notifications_enabled
+except ImportError:
+    def notifications_enabled(brand, user_id):
+        return True
 
 
 class NotificationRetryLater(Exception):
