@@ -34,6 +34,7 @@ from announcement_delivery import (
     dispatch_pending_new_product_announcements,
     dispatch_pending_stock_announcements,
     dispatch_pending_discount_announcements,
+    dispatch_pending_delivery_announcements,
     stock_auto_enabled,
 )
 from shopier_campaigns import (
@@ -957,6 +958,7 @@ def index():
 @app.route('/api/status', methods=['GET'])
 def status():
     ad_processes = get_processes_by_script('otomatik_katil.py')
+    froxy_service_proc = get_processes_by_script('froxy_ad_service.py')
     ad_accounts = {}
     status_path = os.path.join(base_dir, 'ad_account_status.json')
     try:
@@ -969,24 +971,47 @@ def status():
     process_running = bool(ad_processes)
     expected_accounts = ('FroxyOnline', 'KeyVadiOnline', 'LisansArenaOnline')
     ad_accounts.pop('JarvisCraftOnline', None)
+
+    froxy_status_file = os.path.join(base_dir, 'froxy_ad_status.json')
+    froxy_active = bool(froxy_service_proc)
+    froxy_st_data = {}
+    if os.path.exists(froxy_status_file):
+        try:
+            with open(froxy_status_file, 'r', encoding='utf-8') as f_st:
+                froxy_st_data = json.load(f_st)
+                if time.time() - froxy_st_data.get('updated_at', 0) < 600 and froxy_st_data.get('status') in {'broadcasting', 'resting', 'flood_wait'}:
+                    froxy_active = True
+        except Exception:
+            pass
+
     for account_name in expected_accounts:
         account = ad_accounts.setdefault(account_name, {})
-        account['process_running'] = process_running
-        if not process_running:
-            account['telegram_connected'] = False
-            account['telegram_authorized'] = False
-            if account.get('phase') not in {'session_invalid', 'configuration_error'}:
-                account['phase'] = 'stopped'
+        if account_name == 'FroxyOnline' and froxy_active:
+            account['process_running'] = True
+            account['telegram_connected'] = True
+            account['telegram_authorized'] = True
+            account['phase'] = 'sending'
+            if froxy_st_data:
+                account['sent_count'] = froxy_st_data.get('total_sent', account.get('sent_count', 0))
+                account['target_groups'] = froxy_st_data.get('writable_groups_count', 54)
+                account['sendable_groups'] = froxy_st_data.get('writable_groups_count', 54)
         else:
-            account.setdefault('telegram_connected', False)
-            account.setdefault('telegram_authorized', False)
+            account['process_running'] = process_running
+            if not process_running:
+                account['telegram_connected'] = False
+                account['telegram_authorized'] = False
+                if account.get('phase') not in {'session_invalid', 'configuration_error'}:
+                    account['phase'] = 'stopped'
+            else:
+                account.setdefault('telegram_connected', False)
+                account.setdefault('telegram_authorized', False)
     authorized_count = sum(
         1 for account in ad_accounts.values()
         if account.get('telegram_authorized') is True
     )
     overall_status = (
-        'running' if process_running and authorized_count > 0
-        else 'degraded' if process_running
+        'running' if (process_running or froxy_active) and authorized_count > 0
+        else 'degraded' if (process_running or froxy_active)
         else 'stopped'
     )
     # Detailed group names belong to the token-protected group-status API.
@@ -1106,6 +1131,8 @@ def system_checkup():
         ),
         'jarvis_support': bool(
             (os.environ.get('JARVIS_BOT_TOKEN') or '').strip()
+            and os.environ.get('DISABLE_JARVIS_BOT','1').strip().lower() not in {'1','true','yes','on'}
+            and os.environ.get('DISABLE_JARVIS_AD','1').strip().lower() not in {'1','true','yes','on'}
         ),
         'blast_worker': ad_runtime_enabled(),
         'smm_publisher': smm_runtime_enabled(),
@@ -1337,6 +1364,18 @@ def stats():
         if item.get('state') in {'skipped', 'skipped_uncertain'}
     )
 
+    froxy_st_path = os.path.join(base_dir, 'froxy_ad_status.json')
+    if os.path.exists(froxy_st_path):
+        try:
+            with open(froxy_st_path, 'r', encoding='utf-8') as f_st:
+                f_data = json.load(f_st)
+                if time.time() - f_data.get('updated_at', 0) < 3600:
+                    total_groups = max(total_groups, f_data.get('writable_groups_count', 0))
+                    sent_count = max(sent_count, f_data.get('total_sent', 0))
+                    done_count = max(done_count, f_data.get('total_sent', 0))
+        except Exception:
+            pass
+
     blacklist_count = 0
     if os.path.exists("blacklist.txt"):
         try:
@@ -1531,25 +1570,6 @@ def purchase_redirect(token):
         arm=payload.get('a', ''),
         cta_key=payload.get('c', ''),
     )
-    # Optional campaign mode: create an exact-title, one-off Shopier listing
-    # at the price shown in the bot message.  The source product is never
-    # edited, and the idempotency key keeps repeated clicks on one CTA from
-    # creating a pile of abandoned listings.
-    try:
-        dynamic = create_dynamic_sale_listing(
-            payload['b'],
-            product,
-            price=campaign_price_for_product(payload['b'], product),
-            idempotency_key=f"cta:{payload.get('c') or token}",
-        )
-        if dynamic.get('payment_url'):
-            return redirect(dynamic['payment_url'], code=302)
-    except DynamicListingUnavailable as exc:
-        # The feature is fail-closed: missing/invalid Shopier write access
-        # never turns into a fake low price.  The normal source listing stays
-        # available as a safe fallback.
-        if os.environ.get('SHOPIER_DYNAMIC_SALE_LISTINGS_ENABLED', '0').strip().lower() in {'1', 'true', 'yes', 'on'}:
-            print(f'[Shopier] Dynamic CTA listing skipped: {type(exc).__name__}: {exc}')
     return redirect(purchase_target_url(payload['b'], product), code=302)
 
 @app.route('/api/start', methods=['POST'])
@@ -1715,17 +1735,71 @@ def recover_blast_checkpoint():
         return jsonify({"success": False, "message": str(exc)}), 400
     return jsonify({"success": True, "recovery": recovery})
 
+@app.route('/api/ingest-logs', methods=['POST'])
+def ingest_logs():
+    admin_token = os.environ.get("PANEL_ADMIN_TOKEN", "").strip()
+    req_token = (request.headers.get("X-Admin-Token") or request.args.get("token") or "").strip()
+    if admin_token and req_token != admin_token:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    data = request.get_json(silent=True) or {}
+    lines = data.get("logs", [])
+    if lines:
+        try:
+            with open(LOG_FILE, "a", encoding="utf-8") as f:
+                for line in lines:
+                    f.write(line.rstrip() + "\n")
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    account_status = data.get("account_status")
+    if account_status and isinstance(account_status, dict):
+        status_path = os.path.join(base_dir, 'ad_account_status.json')
+        try:
+            cur = {}
+            if os.path.exists(status_path):
+                with open(status_path, 'r', encoding='utf-8') as h:
+                    cur = json.load(h)
+            cur["FroxyOnline"] = account_status
+            with open(status_path, 'w', encoding='utf-8') as h:
+                json.dump(cur, h, ensure_ascii=False, indent=2)
+        except Exception:
+            pass
+            
+    froxy_status_data = data.get("froxy_status")
+    if froxy_status_data and isinstance(froxy_status_data, dict):
+        froxy_st_path = os.path.join(base_dir, 'froxy_ad_status.json')
+        try:
+            with open(froxy_st_path, 'w', encoding='utf-8') as h:
+                json.dump(froxy_status_data, h, ensure_ascii=False, indent=2)
+        except Exception:
+            pass
+
+    return jsonify({"success": True})
+
 @app.route('/api/logs', methods=['GET'])
 def get_logs():
-    if not os.path.exists(LOG_FILE):
+    lines = []
+    if os.path.exists(LOG_FILE):
+        try:
+            with open(LOG_FILE, 'r', encoding="utf-8", errors="replace") as f:
+                lines.extend(f.readlines())
+        except Exception:
+            pass
+    froxy_log = os.path.join(base_dir, "froxy_ad_service.log")
+    if os.path.exists(froxy_log):
+        try:
+            with open(froxy_log, 'r', encoding="utf-8", errors="replace") as f:
+                for line in f:
+                    if line not in lines:
+                        lines.append(line)
+        except Exception:
+            pass
+            
+    if not lines:
         return jsonify({"logs": []})
     
-    try:
-        with open(LOG_FILE, 'r', encoding="utf-8", errors="replace") as f:
-            lines = f.readlines()
-            return jsonify({"logs": lines[-100:]}) # Son 100 satır
-    except Exception as e:
-        return jsonify({"logs": [f"Log okuma hatası: {str(e)}"]})
+    return jsonify({"logs": lines[-100:]})
 
 @app.route('/api/full_logs', methods=['GET'])
 def get_full_logs():
@@ -1918,15 +1992,20 @@ def froxy_stop():
 
 @app.route('/api/froxy/logs', methods=['GET'])
 def get_froxy_logs():
-    if not os.path.exists(FROXY_LOG_FILE):
+    lines = []
+    froxy_log = os.path.join(base_dir, "froxy_ad_service.log")
+    for fpath in (FROXY_LOG_FILE, froxy_log):
+        if os.path.exists(fpath):
+            try:
+                with open(fpath, 'r', encoding="utf-8", errors="replace") as f:
+                    for l in f:
+                        if l not in lines:
+                            lines.append(l)
+            except Exception:
+                pass
+    if not lines:
         return jsonify({"logs": []})
-    
-    try:
-        with open(FROXY_LOG_FILE, 'r', encoding="utf-8", errors="replace") as f:
-            lines = f.readlines()
-            return jsonify({"logs": lines[-100:]})
-    except Exception as e:
-        return jsonify({"logs": [f"Log okuma hatası: {str(e)}"]})
+    return jsonify({"logs": lines[-100:]})
 
 @app.route('/api/froxy/config', methods=['GET'])
 def get_froxy_config():
@@ -2993,8 +3072,10 @@ def start_background_threads():
                                 "sales_conversion", fromlist=["load_sales_catalog"]
                             ).load_sales_catalog(brand)
                         )
+                        reconcile_configured_orders()
                         cleanup_result = cleanup_dynamic_sale_listings()
                         disc_result = dispatch_pending_discount_announcements()
+                        dispatch_pending_delivery_announcements()
                         if result.get("updated") or result.get("restored"):
                             print(f"[Campaign] Shopier price cycle: {result}")
                         if dynamic_result.get("updated") or dynamic_result.get("restored"):
