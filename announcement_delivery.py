@@ -21,6 +21,12 @@ import urllib.request
 from typing import Awaitable, Callable
 
 import firestore_helper
+from campaign_preferences import notifications_enabled
+
+
+class NotificationRetryLater(Exception):
+    def __init__(self, seconds):
+        self.seconds = max(1, int(seconds))
 
 
 ROOT = Path(__file__).resolve().parent
@@ -188,7 +194,7 @@ class AnnouncementQueue:
         for item in self.items():
             status = item.get("status")
             stale = status == "sending" and now - _epoch(item.get("updated_at")) > 600
-            if status == "pending" or stale:
+            if (status == "pending" or stale) and float(item.get("retry_at", 0) or 0) <= now:
                 result.append(item)
         return result
 
@@ -481,15 +487,31 @@ def drain_queue_sync(queue: AnnouncementQueue, send_one: Callable[[int, dict], b
     """Synchronous equivalent used by the Flask catalog worker."""
     total = {"success": 0, "failed": 0, "items": 0}
     for initial in queue.pending():
+        if initial.get('expires_at') and time.time() >= float(initial['expires_at']):
+            queue.update(initial['id'], status='expired')
+            continue
         item = queue.update(initial["id"], status="sending") or initial
         sent = set(str(uid) for uid in item.get("sent_ids", []))
         failed = set(str(uid) for uid in item.get("failed_ids", []))
         recipients = [int(uid) for uid in item.get("recipients", []) if str(uid).isdigit()]
+        expired = False
         for uid in recipients:
             if str(uid) in sent:
                 continue
+            if item.get('kind') == 'discount':
+                if time.time() >= float(item.get('expires_at') or 0):
+                    expired = True
+                    break
+                if not notifications_enabled(queue.brand, uid):
+                    sent.add(str(uid))
+                    queue.update(item['id'], sent_ids=sorted(sent))
+                    continue
             try:
                 ok = bool(send_one(uid, item))
+            except NotificationRetryLater as exc:
+                queue.update(item['id'], status='pending', retry_at=time.time() + exc.seconds,
+                             sent_ids=sorted(sent), failed_ids=sorted(failed))
+                return total
             except Exception:
                 ok = False
             if ok:
@@ -507,7 +529,7 @@ def drain_queue_sync(queue: AnnouncementQueue, send_one: Callable[[int, dict], b
             time.sleep(0.05)
         queue.update(
             item["id"],
-            status="completed",
+            status="expired" if expired else "completed",
             sent_ids=sorted(sent),
             failed_ids=sorted(failed),
             next_index=len(recipients),
@@ -521,6 +543,15 @@ def send_bot_api_message(brand: str, user_id: int, item: dict) -> bool:
     token = bot_token(brand)
     if not token:
         return False
+    if item.get('kind') == 'discount':
+        from campaign_media import CampaignRateLimited, keyboard, send_campaign_notice
+
+        markup = keyboard(item['button_callback'], item['shop_url'], 'sale_notify_off')
+        try:
+            return send_campaign_notice(token, user_id, item['text'], markup,
+                                        item.get('image_url', ''), item.get('animation_url', ''))
+        except CampaignRateLimited as error:
+            raise NotificationRetryLater(error.seconds) from error
     text = str(item.get("text") or "").strip()
     if not text:
         return False
@@ -533,6 +564,11 @@ def send_bot_api_message(brand: str, user_id: int, item: dict) -> bool:
                 "url": button_url,
             }]]
         }
+    if item.get('button_callback'):
+        payload['reply_markup'] = {'inline_keyboard': [
+            [{'text': 'Satın Al', 'callback_data': item['button_callback']}],
+            [{'text': 'Bildirimleri kapat', 'callback_data': 'sale_notify_off'}],
+        ]}
     image_url = str(item.get("image_url") or "").strip()
     method = "sendPhoto" if image_url.startswith("https://") else "sendMessage"
     if method == "sendPhoto":
@@ -555,7 +591,26 @@ def send_bot_api_message(brand: str, user_id: int, item: dict) -> bool:
 
     try:
         return call(payload)
-    except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, ValueError):
+    except urllib.error.HTTPError as exc:
+        if exc.code == 429:
+            try:
+                body = json.loads(exc.read().decode('utf-8'))
+                seconds = body.get('parameters', {}).get('retry_after', 30)
+            except Exception:
+                seconds = 30
+            raise NotificationRetryLater(seconds) from exc
+        if exc.code >= 500:
+            raise NotificationRetryLater(30) from exc
+        if exc.code == 403:
+            return False
+        payload.pop('parse_mode', None)
+        try:
+            return call(payload)
+        except Exception:
+            return False
+    except (urllib.error.URLError, TimeoutError) as exc:
+        raise NotificationRetryLater(30) from exc
+    except ValueError:
         # Telegram's legacy Markdown parser rejects some product names. A
         # plain-text retry preserves delivery without changing the card data.
         payload.pop("parse_mode", None)
@@ -586,6 +641,8 @@ def enqueue_new_product(brand: str, product: dict) -> tuple[dict, bool]:
 
 def dispatch_pending_new_product_announcements() -> dict:
     totals = {"success": 0, "failed": 0, "items": 0}
+    if os.environ.get('PROMOTIONAL_NOTICES_PAUSED', '').strip().lower() in {'1','true','yes','on'}:
+        return totals
     for brand in BRANDS:
         result = drain_queue_sync(
             AnnouncementQueue(brand, "new_product"),
@@ -598,6 +655,8 @@ def dispatch_pending_new_product_announcements() -> dict:
 
 def dispatch_pending_stock_announcements() -> dict:
     totals = {"success": 0, "failed": 0, "items": 0}
+    if os.environ.get('PROMOTIONAL_NOTICES_PAUSED', '').strip().lower() in {'1','true','yes','on'}:
+        return totals
     for brand in BRANDS:
         result = drain_queue_sync(
             AnnouncementQueue(brand, "stock"),
@@ -609,21 +668,16 @@ def dispatch_pending_stock_announcements() -> dict:
 
 
 def enqueue_campaign_announcement(brand: str, product: dict, campaign: dict) -> tuple[dict, bool]:
+    from campaign_media import animation_url, caption
+    from shopier_campaigns import _safe_dynamic_media
+
     title = str(campaign.get("title") or product.get("title") or "").strip()
     orig_price = str(campaign.get("original_price") or product.get("price") or "").strip()
     disc_price = str(campaign.get("discount_price") or "").strip()
     percent = int(campaign.get("discount_percent") or 5)
     
-    text = (
-        f"🔥 **SÜPER FIRSAT İNDİRİMİ!** (%{percent} İndirim)\n"
-        "━━━━━━━━━━━━━━━━━\n"
-        f"📦 **{title}**\n"
-        f"💰 Normal Fiyat: ~{orig_price} TL~\n"
-        f"⚡ **İndirimli Fiyat: {disc_price} TL**\n\n"
-        "⏳ **Önümüzdeki 3 saat boyunca geçerlidir!**\n"
-        "Aşağıdaki butona tıklayarak hemen indirimli fiyattan satın alabilirsiniz.\n"
-        "━━━━━━━━━━━━━━━━━"
-    )
+    text = caption(title, orig_price.removesuffix(' TL'), disc_price.removesuffix(' TL'),
+                   percent, campaign['restore_at'])
     product_copy = dict(product)
     try:
         from sales_conversion import purchase_url
@@ -632,18 +686,35 @@ def enqueue_campaign_announcement(brand: str, product: dict, campaign: dict) -> 
         pass
     
     queue = AnnouncementQueue(brand, "discount")
-    return queue.enqueue(build_announcement_item(
+    item = build_announcement_item(
         brand,
         product_copy,
         text=text,
         kind="discount",
         marker=f"camp_{campaign.get('product_id')}_{int(campaign.get('restore_at', 0))}",
         recipients=load_subscribers(brand),
-    ))
+    )
+    media = _safe_dynamic_media(product, brand)
+    image_url = str(media[0]['url']) if media else ''
+    base_url = os.environ.get('PUBLIC_BASE_URL', 'https://bot-service-production-9d74.up.railway.app').rstrip('/')
+    animated = ''
+    if image_url:
+        try:
+            animated = animation_url(brand, product['id'], image_url, percent, orig_price,
+                                     disc_price, campaign['restore_at'], base_url, ROOT / 'static', title=title)
+        except Exception:
+            pass
+    shop_path = {'keyvadi': '/keyvadi/', 'lisansarena': '/lisansarena/', 'froxy': '/froxy/'}[brand]
+    item.update(button_url='', button_callback=f"sale_buy_{campaign['campaign_id']}",
+                expires_at=campaign['restore_at'], campaign_id=campaign['campaign_id'],
+                image_url=image_url, animation_url=animated, shop_url=base_url + shop_path)
+    return queue.enqueue(item)
 
 
 def dispatch_pending_discount_announcements() -> dict:
     totals = {"success": 0, "failed": 0, "items": 0}
+    if os.environ.get('PROMOTIONAL_NOTICES_PAUSED', '').strip().lower() in {'1','true','yes','on'}:
+        return totals
     for brand in BRANDS:
         result = drain_queue_sync(
             AnnouncementQueue(brand, "discount"),
@@ -652,4 +723,9 @@ def dispatch_pending_discount_announcements() -> dict:
         for key in totals:
             totals[key] += int(result.get(key, 0) or 0)
     return totals
+
+
+def dispatch_pending_delivery_announcements():
+    return {brand: drain_queue_sync(AnnouncementQueue(brand, 'delivery'),
+                lambda uid, item, b=brand: send_bot_api_message(b, uid, item)) for brand in BRANDS}
 
